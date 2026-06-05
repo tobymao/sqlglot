@@ -11,6 +11,31 @@ if t.TYPE_CHECKING:
 
 DATE_PARTS = {"DAY", "WEEK", "MONTH", "QUARTER", "YEAR"}
 
+
+def _decimal(p: int, s: int) -> exp.DataType:
+    return exp.DataType(
+        this=exp.DType.DECIMAL,
+        expressions=[
+            exp.DataTypeParam(this=exp.Literal.number(p)),
+            exp.DataTypeParam(this=exp.Literal.number(s)),
+        ],
+    )
+
+
+def _decimal_ps(datatype: exp.DataType) -> tuple[int, int] | None:
+    if datatype and datatype.is_type(exp.DType.DECIMAL) and datatype.expressions:
+        return int(datatype.expressions[0].name), int(datatype.expressions[1].name)
+    return None
+
+
+def _round_literal_int(expr: exp.Expression) -> int | None:
+    if isinstance(expr, exp.Literal) and expr.is_int:
+        return int(expr.to_py())
+    if isinstance(expr, exp.Neg) and isinstance(expr.this, exp.Literal) and expr.this.is_int:
+        return -int(expr.this.to_py())
+    return None
+
+
 MAX_PRECISION = 38
 
 MAX_SCALE = 37
@@ -239,6 +264,21 @@ def _annotate_str_to_time(self: TypeAnnotator, expression: exp.StrToTime) -> exp
     return expression
 
 
+def _annotate_round(self: TypeAnnotator, expression: exp.Round) -> exp.Round:
+    in_type = expression.this.type
+    ps = _decimal_ps(in_type)
+    if ps is not None:
+        p, s = ps
+        d_expr = expression.args.get("decimals")
+        d = _round_literal_int(d_expr) if d_expr is not None else 0
+        if d is None:
+            return self._set_type(expression, _decimal(MAX_PRECISION if p > 18 else 18, s))
+        return self._set_type(expression, _decimal(min(MAX_PRECISION, p + 1), min(s, max(0, d))))
+    if in_type and in_type.this in exp.DataType.INTEGER_TYPES:
+        return self._set_type(expression, _decimal(MAX_PRECISION, 0))
+    return self._annotate_by_args(expression, "this")
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -252,7 +292,6 @@ EXPRESSION_METADATA = {
             exp.Mode,
             exp.Pad,
             exp.Right,
-            exp.Round,
             exp.Stuff,
             exp.Substring,
             exp.TimeSlice,
@@ -561,6 +600,7 @@ EXPRESSION_METADATA = {
     },
     exp.Median: {"annotator": _annotate_median},
     exp.Reverse: {"annotator": _annotate_reverse},
+    exp.Round: {"annotator": _annotate_round},
     exp.StrToTime: {"annotator": _annotate_str_to_time},
     exp.TimeAdd: {"annotator": _annotate_date_or_time_add},
     exp.TimestampFromParts: {"annotator": _annotate_timestamp_from_parts},

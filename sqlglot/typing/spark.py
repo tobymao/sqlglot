@@ -41,9 +41,11 @@ def _annotate_round(self: TypeAnnotator, expression: exp.Round) -> exp.Round:
     d_expr = expression.args.get("decimals")
     d = _round_literal_int(d_expr) if d_expr is not None else 0
     if d is None or d < 0:
-        return self._set_type(expression, _decimal(min(38, max(p - s + 1, -(d or 0) + 1)), 0))
-    d_eff = min(s, d)
-    return self._set_type(expression, _decimal(min(38, p - s + 1 + d_eff), d_eff))
+        self._set_type(expression, _decimal(min(38, max(p - s + 1, -(d or 0) + 1)), 0))
+    else:
+        d_eff = min(s, d)
+        self._set_type(expression, _decimal(min(38, p - s + 1 + d_eff), d_eff))
+    return expression
 
 
 EXPRESSION_METADATA = {

@@ -272,10 +272,13 @@ def _annotate_round(self: TypeAnnotator, expression: exp.Round) -> exp.Round:
         d_expr = expression.args.get("decimals")
         d = _round_literal_int(d_expr) if d_expr is not None else 0
         if d is None:
-            return self._set_type(expression, _decimal(MAX_PRECISION if p > 18 else 18, s))
-        return self._set_type(expression, _decimal(min(MAX_PRECISION, p + 1), min(s, max(0, d))))
+            self._set_type(expression, _decimal(MAX_PRECISION if p > 18 else 18, s))
+        else:
+            self._set_type(expression, _decimal(min(MAX_PRECISION, p + 1), min(s, max(0, d))))
+        return expression
     if in_type and in_type.this in exp.DataType.INTEGER_TYPES:
-        return self._set_type(expression, _decimal(MAX_PRECISION, 0))
+        self._set_type(expression, _decimal(MAX_PRECISION, 0))
+        return expression
     return self._annotate_by_args(expression, "this")
 
 

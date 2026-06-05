@@ -89,19 +89,31 @@ def _annotate_arg_max_min(self, expression):
 
 
 def _annotate_within_group(self: TypeAnnotator, expression: exp.WithinGroup) -> exp.WithinGroup:
-    """Annotate WithinGroup with correct type based on the inner function.
-
-    1) Annotate args first
-    2) Check if this is PercentileDisc/PercentileCont and if so, re-annotate its type to match the ordered expression's type
-    """
-
     if (
         isinstance(expression.this, (exp.PercentileDisc, exp.PercentileCont))
         and isinstance(order_expr := expression.expression, exp.Order)
         and len(order_expr.expressions) == 1
         and isinstance(ordered_expr := order_expr.expressions[0], exp.Ordered)
     ):
-        self._set_type(expression, ordered_expr.this.type)
+        sort_type = ordered_expr.this.type
+        if isinstance(expression.this, exp.PercentileCont):
+            # Snowflake empirical rule: NUMBER(p,s) -> NUMBER(min(38, p+3), s+3)
+            # FLOAT/DOUBLE propagates as-is. INT/BIGINT are aliases for NUMBER(38,0).
+            if sort_type and sort_type.is_type(exp.DType.FLOAT, exp.DType.DOUBLE):
+                self._set_type(expression, sort_type)
+            else:
+                exprs = sort_type.expressions if sort_type else []
+                precision_expr = seq_get(exprs, 0)
+                p = precision_expr.this.to_py() if precision_expr else MAX_PRECISION
+                scale_expr = seq_get(exprs, 1)
+                s = scale_expr.this.to_py() if scale_expr else 0
+                new_type = exp.DataType.from_str(
+                    f"NUMBER({min(MAX_PRECISION, p + 3)}, {s + 3})", dialect="snowflake"
+                )
+                self._set_type(expression, new_type)
+        else:
+            # PercentileDisc: propagate sort-expression type unchanged
+            self._set_type(expression, sort_type)
     else:
         self._set_type(expression, expression.this.type)
 

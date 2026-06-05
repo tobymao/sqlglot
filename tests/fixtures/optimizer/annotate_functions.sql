@@ -946,6 +946,42 @@ ARRAY_EXCEPT(tbl.array_col, tbl.array_col);
 ARRAY<STRING>;
 
 --------------------------------------
+-- Spark3 / Databricks ROUND
+--------------------------------------
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(10, 4)));
+DECIMAL(7, 0);
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(10, 4)), 2);
+DECIMAL(9, 2);
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(10, 4)), 0);
+DECIMAL(7, 0);
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(38, 4)), 0);
+DECIMAL(35, 0);
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(38, 4)), -2);
+DECIMAL(35, 0);
+
+# dialect: spark, databricks
+ROUND(tbl.bigint_col, 0);
+BIGINT;
+
+# dialect: spark, databricks
+ROUND(tbl.double_col, 0);
+DOUBLE;
+
+# dialect: spark, databricks
+ROUND(CAST(1 AS DECIMAL(10, 4)), ABS(0));
+DECIMAL(7, 0);
+
+--------------------------------------
 -- BigQuery
 --------------------------------------
 
@@ -6578,39 +6614,3 @@ INT;
 # dialect: duckdb
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
-
---------------------------------------
--- Spark3 / Databricks ROUND
---------------------------------------
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(10, 4)));
-DECIMAL(7, 0);
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(10, 4)), 2);
-DECIMAL(9, 2);
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(10, 4)), 0);
-DECIMAL(7, 0);
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(38, 4)), 0);
-DECIMAL(35, 0);
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(38, 4)), -2);
-DECIMAL(35, 0);
-
-# dialect: spark, databricks
-ROUND(tbl.bigint_col, 0);
-BIGINT;
-
-# dialect: spark, databricks
-ROUND(tbl.double_col, 0);
-DOUBLE;
-
-# dialect: spark, databricks
-ROUND(CAST(1 AS DECIMAL(10, 4)), ABS(0));
-DECIMAL(7, 0);

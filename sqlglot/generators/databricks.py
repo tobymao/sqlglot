@@ -109,3 +109,7 @@ class DatabricksGenerator(SparkGenerator):
             seed = gen.this
 
         return self.func("UNIFORM", expression.this, expression.expression, seed)
+
+    def clusterproperty_sql(self, expression):
+        this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
+        return f"CLUSTER BY {this}"

@@ -509,6 +509,13 @@ class BigQueryParser(parser.Parser):
 
         return column
 
+    def _parse_cluster_property(self) -> exp.ClusterProperty:
+        return self.expression(
+            exp.ClusterProperty(
+                expressions=self._parse_csv(self._parse_column),
+            )
+        )
+
     @t.overload
     def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...
 

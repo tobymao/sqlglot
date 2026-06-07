@@ -99,7 +99,7 @@ class TestStarrocks(Validator):
             },
         )
 
-        multi_column_cluster = exp.Cluster(
+        multi_column_cluster = exp.ClusterProperty(
             expressions=[
                 exp.column("c"),
                 exp.column("d"),
@@ -107,7 +107,7 @@ class TestStarrocks(Validator):
         )
         self.assertEqual(multi_column_cluster.sql(dialect="starrocks"), "ORDER BY (c, d)")
 
-        single_column_cluster = exp.Cluster(expressions=[exp.column("c")])
+        single_column_cluster = exp.ClusterProperty(expressions=[exp.column("c")])
         self.assertEqual(single_column_cluster.sql(dialect="starrocks"), "ORDER BY (c)")
 
         mv_properties = [

@@ -53,3 +53,8 @@ class DatabricksParser(SparkParser):
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
         return self.expression(exp.CurrentDate())
+
+    def _parse_cluster_property(self):
+        if self._match_texts(("AUTO", "NONE")):
+            return self.expression(exp.ClusterProperty(this=self._prev.text.upper()))
+        return super()._parse_cluster_property()

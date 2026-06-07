@@ -75,6 +75,10 @@ class ChecksumProperty(Property):
     arg_types = {"on": False, "default": False}
 
 
+class ClusterProperty(Property):
+    arg_types = {"this": False, "expressions": False}
+
+
 class CollateProperty(Property):
     arg_types = {"this": True, "default": False}
 

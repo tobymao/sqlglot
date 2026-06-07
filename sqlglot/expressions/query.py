@@ -859,8 +859,8 @@ class SkipJSONColumn(Expression):
     arg_types = {"regexp": False, "expression": True}
 
 
-class Cluster(Order):
-    pass
+class Cluster(Expression):
+    arg_types = {"expressions": True}
 
 
 class Distribute(Order):

@@ -458,7 +458,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
-        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
+        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")

@@ -1855,6 +1855,13 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         self.validate_identity("splitByChar('', x)")
 
+    def test_table_functions(self):
+        self.validate_identity(
+            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
+        )
+        self.validate_identity("SELECT * FROM file('path', Parquet) WHERE x > 1")
+        self.validate_identity("SELECT * FROM file('path', Parquet)")
+
     def test_sql_security(self):
         stmts = [
             "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",

@@ -69,7 +69,7 @@ class TestHive(Validator):
             },
             write={
                 "duckdb": "x << 1",
-                "presto": "BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)",
+                "presto": "BITWISE_LEFT_SHIFT(x, 1)",
                 "hive": "x << 1",
                 "spark": "SHIFTLEFT(x, 1)",
             },
@@ -81,7 +81,7 @@ class TestHive(Validator):
             },
             write={
                 "duckdb": "x >> 1",
-                "presto": "BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
+                "presto": "BITWISE_RIGHT_SHIFT(x, 1)",
                 "hive": "x >> 1",
                 "spark": "SHIFTRIGHT(x, 1)",
             },

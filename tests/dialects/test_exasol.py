@@ -227,7 +227,7 @@ class TestExasol(Validator):
             write={
                 "exasol": "SELECT BIT_LSHIFT(x, 1)",
                 "duckdb": "SELECT x << 1",
-                "presto": "SELECT BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)",
+                "presto": "SELECT BITWISE_LEFT_SHIFT(x, 1)",
                 "hive": "SELECT x << 1",
                 "spark": "SELECT SHIFTLEFT(x, 1)",
             },
@@ -243,7 +243,7 @@ class TestExasol(Validator):
             write={
                 "exasol": "SELECT BIT_RSHIFT(x, 1)",
                 "duckdb": "SELECT x >> 1",
-                "presto": "SELECT BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
+                "presto": "SELECT BITWISE_RIGHT_SHIFT(x, 1)",
                 "hive": "SELECT x >> 1",
                 "spark": "SELECT SHIFTRIGHT(x, 1)",
             },

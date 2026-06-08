@@ -316,6 +316,7 @@ class ClickHouseParser(parser.Parser):
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
         TokenType.AND,
+        TokenType.FILE,
         TokenType.OR,
         TokenType.SET,
     }

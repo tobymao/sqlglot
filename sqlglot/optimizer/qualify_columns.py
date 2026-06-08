@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import re
 import typing as t
 
 from sqlglot import alias, exp
@@ -774,6 +775,7 @@ def _expand_stars(
     except_columns: dict[int, set[str]] = {}
     replace_columns: dict[int, dict[str, exp.Alias]] = {}
     rename_columns: dict[int, dict[str, str]] = {}
+    ilike_columns: dict[int, str] = {}
 
     coalesced_columns = set()
     dialect = resolver.dialect
@@ -798,12 +800,14 @@ def _expand_stars(
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
             _add_rename_columns(expression, tables, rename_columns)
+            _add_ilike_columns(expression, tables, ilike_columns)
         elif expression.is_star:
             if isinstance(expression, exp.Column):
                 tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
+                _add_ilike_columns(expression.this, tables, ilike_columns)
             elif isinstance(expression, exp.Dot):
                 if (
                     dialect.SUPPORTS_STRUCT_STAR_EXPANSION
@@ -840,6 +844,7 @@ def _expand_stars(
             columns_to_exclude = except_columns.get(table_id) or set()
             renamed_columns = rename_columns.get(table_id, {})
             replaced_columns = replace_columns.get(table_id, {})
+            ilike_pattern = ilike_columns.get(table_id)
 
             if pivot:
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
@@ -854,6 +859,8 @@ def _expand_stars(
 
             for name in columns:
                 if name in columns_to_exclude or name in coalesced_columns:
+                    continue
+                if ilike_pattern and not re.fullmatch(ilike_pattern, name, re.IGNORECASE):
                     continue
                 if name in using_column_tables and table in using_column_tables[name]:
                     coalesced_columns.add(name)
@@ -876,6 +883,20 @@ def _expand_stars(
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
         scope_expression.set("expressions", new_selections)
+
+
+def _add_ilike_columns(
+    expression: exp.Expr, tables: list[str], ilike_columns: dict[int, str]
+) -> None:
+    ilike = expression.args.get("ilike")
+
+    if not ilike:
+        return
+
+    pattern = "".join(".*" if c == "%" else "." if c == "_" else re.escape(c) for c in ilike.name)
+
+    for table in tables:
+        ilike_columns[id(table)] = pattern
 
 
 def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, set[str]]) -> None:

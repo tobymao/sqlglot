@@ -2241,14 +2241,15 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT TRY_CAST('invalid' AS TIMESTAMP)",
             },
         )
+        self.validate_identity(
+            "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')"
+        )
         self.validate_all(
             "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
             write={
-                "snowflake": "SELECT TRY_TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
                 "duckdb": "SELECT CAST(TRY_STRPTIME('04/05/2013 01:02:03', '%m/%d/%Y %H:%M:%S') AS TIMESTAMP)",
             },
         )
-
         self.validate_all(
             "EDITDISTANCE(col1, col2)",
             write={

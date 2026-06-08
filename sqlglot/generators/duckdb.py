@@ -2189,38 +2189,46 @@ class DuckDBGenerator(generator.Generator):
     _TRYCAST_DATE_SLASH_FMT = "%m/%d/%Y"
     _TRYCAST_DATE_MON_FMT = "%d-%b-%Y"
 
-    # Snowflake AUTO detects 30 TIMESTAMP formats. DuckDB TRY_CAST handles most ISO-8601.
-    # CONTAINS('/') catches MM/DD/YYYY; REGEXP_MATCHES('^[A-Za-z]') catches RFC/ctime.
-    # Formats with %z (timezone offset) are only correct for TIMESTAMPTZ targets — Snowflake
-    # TIMESTAMP (NTZ) strips the offset and keeps wall-clock time, which DuckDB cannot replicate
-    # via TRY_STRPTIME+CAST (it converts through UTC instead).
-    # Ref: https://docs.snowflake.com/en/sql-reference/date-time-input-output#timestamp-formats
-    _TRYCAST_TIMESTAMP_SLASH_FMT = "%m/%d/%Y %H:%M:%S"
-    # RFC/ctime formats safe for NTZ (no timezone specifier)
+    _TRYCAST_TIMESTAMP_SLASH_NTZ_FMTS = (
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M:%S.%f",
+        "%m/%d/%Y",
+    )
+    _TRYCAST_TIMESTAMP_SLASH_FMTS = (
+        "%m/%d/%Y %H:%M:%S %z",
+        "%m/%d/%Y %H:%M:%S.%f %z",
+        "%m/%d/%Y %H:%M:%S",
+        "%m/%d/%Y %H:%M:%S.%f",
+        "%m/%d/%Y",
+    )
     _TRYCAST_TIMESTAMP_RFC_NTZ_FMTS = (
-        "%a, %d %b %Y %H:%M:%S",  # RFC no-tz: Thu, 21 Dec 2000 16:01:07
-        "%a, %d %b %Y %I:%M:%S %p",  # RFC 12h no-tz: Thu, 21 Dec 2000 04:01:07 PM
+        "%a, %d %b %Y %H:%M:%S",
+        "%a, %d %b %Y %H:%M:%S.%f",
+        "%a, %d %b %Y %I:%M:%S %p",
+        "%a, %d %b %Y %I:%M:%S.%f %p",
     )
-    # Full RFC/ctime set (includes tz-bearing formats) — correct for TIMESTAMPTZ only
     _TRYCAST_TIMESTAMP_RFC_FMTS = (
-        "%a %b %d %H:%M:%S %z %Y",  # ctime: Mon Jul 08 18:09:51 +0000 2013
-        "%a, %d %b %Y %H:%M:%S %z",  # RFC 2822: Thu, 21 Dec 2000 16:01:07 +0200
-        "%a, %d %b %Y %H:%M:%S",  # RFC no-tz
-        "%a, %d %b %Y %I:%M:%S %p %z",  # RFC 12h+tz: Thu, 21 Dec 2000 04:01:07 PM +0200
-        "%a, %d %b %Y %I:%M:%S %p",  # RFC 12h no-tz
+        "%a %b %d %H:%M:%S %z %Y",
+        "%a, %d %b %Y %H:%M:%S %z",
+        "%a, %d %b %Y %H:%M:%S.%f %z",
+        "%a, %d %b %Y %H:%M:%S",
+        "%a, %d %b %Y %H:%M:%S.%f",
+        "%a, %d %b %Y %I:%M:%S %p %z",
+        "%a, %d %b %Y %I:%M:%S.%f %p %z",
+        "%a, %d %b %Y %I:%M:%S %p",
+        "%a, %d %b %Y %I:%M:%S.%f %p",
     )
-    # ISO edge-cases safe for NTZ (no timezone specifier)
     _TRYCAST_TIMESTAMP_ISO_NTZ_FMTS = (
-        "%Y-%m-%dT%H",  # ISO hour-only T: 2013-04-28T20
-        "%Y-%m-%d %H",  # ISO hour-only space: 2013-04-28 20
+        "%Y-%m-%dT%H",
+        "%Y-%m-%d %H",
     )
-    # Full ISO edge-case set — correct for TIMESTAMPTZ only
     _TRYCAST_TIMESTAMP_ISO_FMTS = (
-        "%Y-%m-%d %H:%M:%S %z",  # ISO space-before-tz: 2013-04-28 20:57:01 +07:00
-        "%Y-%m-%dT%H:%M%z",  # ISO no-secs-with-tz T: 2013-04-28T20:57+07:00
-        "%Y-%m-%d %H:%M%z",  # ISO no-secs-with-tz space: 2013-04-28 20:57+07:00
-        "%Y-%m-%dT%H",  # ISO hour-only T
-        "%Y-%m-%d %H",  # ISO hour-only space
+        "%Y-%m-%d %H:%M:%S %z",
+        "%Y-%m-%d %H:%M:%S.%f %z",
+        "%Y-%m-%dT%H:%M%z",
+        "%Y-%m-%d %H:%M%z",
+        "%Y-%m-%dT%H",
+        "%Y-%m-%d %H",
     )
     _TRYCAST_TIMESTAMP_TYPES = frozenset(
         (exp.DType.TIMESTAMP, exp.DType.TIMESTAMPLTZ, exp.DType.TIMESTAMPNTZ, exp.DType.TIMESTAMPTZ)
@@ -4412,6 +4420,11 @@ class DuckDBGenerator(generator.Generator):
         ):
             needs_tz = to_type in (exp.DType.TIMESTAMPLTZ, exp.DType.TIMESTAMPTZ)
             ts_type = "TIMESTAMPTZ" if needs_tz else "TIMESTAMP"
+            slash_fmts = (
+                self._TRYCAST_TIMESTAMP_SLASH_FMTS
+                if needs_tz
+                else self._TRYCAST_TIMESTAMP_SLASH_NTZ_FMTS
+            )
             rfc_fmts = (
                 self._TRYCAST_TIMESTAMP_RFC_FMTS
                 if needs_tz
@@ -4430,7 +4443,10 @@ class DuckDBGenerator(generator.Generator):
                 exp.case()
                 .when(
                     exp.func("CONTAINS", src, exp.Literal.string("/")),
-                    _strptime(self._TRYCAST_TIMESTAMP_SLASH_FMT),
+                    exp.Coalesce(
+                        this=_strptime(slash_fmts[0]),
+                        expressions=[_strptime(f) for f in slash_fmts[1:]],
+                    ),
                 )
                 .when(
                     exp.RegexpLike(this=src, expression=exp.Literal.string("^[A-Za-z]")),

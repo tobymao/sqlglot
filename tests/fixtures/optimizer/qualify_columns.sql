@@ -543,6 +543,18 @@ WITH tbl1 AS (SELECT STRUCT(1 AS f0, 2 AS f1) AS col) SELECT tbl1.col.f0 AS f0, 
 SELECT one.* FROM structs;
 SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
 
+# dialect: bigquery
+# execute: false
+# title: BigQuery - Unreferenced CTE does not shadow struct column in star expansion
+WITH one AS (SELECT 1 AS x) SELECT one.* FROM structs;
+WITH one AS (SELECT 1 AS x) SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
+
+# dialect: bigquery
+# execute: false
+# title: BigQuery - CTE in FROM takes precedence over struct column in star expansion
+WITH one AS (SELECT 1 AS x) SELECT one.* FROM structs, one;
+WITH one AS (SELECT 1 AS x) SELECT one.x AS x FROM structs AS structs CROSS JOIN one AS one;
+
 # dialect: risingwave
 # execute: false
 # title: RisingWave - Expand top level nested struct

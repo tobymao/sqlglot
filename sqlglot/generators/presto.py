@@ -279,13 +279,11 @@ class PrestoGenerator(generator.Generator):
         exp.ArraySlice: rename_func("SLICE"),
         exp.AtTimeZone: rename_func("AT_TIMEZONE"),
         exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
-        exp.BitwiseLeftShift: lambda self, e: self.func(
-            "BITWISE_ARITHMETIC_SHIFT_LEFT", e.this, e.expression
-        ),
+        exp.BitwiseLeftShift: lambda self, e: self.func("BITWISE_LEFT_SHIFT", e.this, e.expression),
         exp.BitwiseNot: lambda self, e: self.func("BITWISE_NOT", e.this),
         exp.BitwiseOr: lambda self, e: self.func("BITWISE_OR", e.this, e.expression),
         exp.BitwiseRightShift: lambda self, e: self.func(
-            "BITWISE_ARITHMETIC_SHIFT_RIGHT", e.this, e.expression
+            "BITWISE_RIGHT_SHIFT", e.this, e.expression
         ),
         exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
         exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),

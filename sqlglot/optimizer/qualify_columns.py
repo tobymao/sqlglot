@@ -124,10 +124,10 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
                 column = scope.external_columns[0]
                 for_table = f" for table: '{column.table}'" if column.table else ""
-                line = column.this.meta.get("line")
-                col = column.this.meta.get("col")
-                start = column.this.meta.get("start")
-                end = column.this.meta.get("end")
+                line = column.this.meta_get("line")
+                col = column.this.meta_get("col")
+                start = column.this.meta_get("start")
+                end = column.this.meta_get("end")
 
                 error_msg = f"Column '{column.name}' could not be resolved{for_table}."
                 if line and col:
@@ -142,10 +142,10 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
 
     if all_unqualified_columns:
         first_column = all_unqualified_columns[0]
-        line = first_column.this.meta.get("line")
-        col = first_column.this.meta.get("col")
-        start = first_column.this.meta.get("start")
-        end = first_column.this.meta.get("end")
+        line = first_column.this.meta_get("line")
+        col = first_column.this.meta_get("col")
+        start = first_column.this.meta_get("start")
+        end = first_column.this.meta_get("end")
 
         error_msg = f"Ambiguous column '{first_column.name}'"
         if line and col:
@@ -204,6 +204,9 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
                 columns[column_name] = source_name
 
     joins = list(scope.find_all(exp.Join))
+    if not joins:
+        return {}
+
     names = {join.alias_or_name for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
 
@@ -212,6 +215,9 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
 
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: dict[str, dict[str, t.Any]] = {}
+
+    if not any(join.args.get("using") for join in joins):
+        return column_tables
 
     for source_name in ordered:
         _update_source_columns(source_name)
@@ -954,9 +960,15 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr) -> None:
 
 def quote_identifiers(expression: E, dialect: DialectType = None, identify: bool = True) -> E:
     """Makes sure all identifiers that need to be quoted are quoted."""
-    return expression.transform(
-        Dialect.get_or_raise(dialect).quote_identifier, identify=identify, copy=False
-    )
+    dialect = Dialect.get_or_raise(dialect)
+
+    # `quote_identifier` only mutates identifiers in place, so we avoid `transform` here
+    # because its node replacement machinery is wasteful for this case.
+    for node in expression.walk():
+        if isinstance(node, exp.Identifier):
+            dialect.quote_identifier(node, identify=identify)
+
+    return expression
 
 
 def pushdown_cte_alias_columns(scope: Scope) -> None:

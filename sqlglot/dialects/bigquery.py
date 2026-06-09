@@ -147,9 +147,9 @@ class BigQuery(Dialect):
                 or (
                     isinstance(parent, exp.Table)
                     and parent.db
-                    and (parent.meta.get("quoted_table") or not parent.meta.get("maybe_column"))
+                    and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
                 )
-                or expression.meta.get("is_table")
+                or expression.meta_get("is_table")
             )
             if not case_sensitive:
                 expression.set("this", expression.this.lower())

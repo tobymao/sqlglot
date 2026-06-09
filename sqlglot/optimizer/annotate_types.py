@@ -400,7 +400,7 @@ class TypeAnnotator:
                     isinstance(source, Scope)
                     and isinstance(source.expression, exp.Query)
                     and (
-                        source.expression.meta.get("query_type") or exp.DType.UNKNOWN.into_expr()
+                        source.expression.meta_get("query_type") or exp.DType.UNKNOWN.into_expr()
                     ).is_type(exp.DType.STRUCT)
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
@@ -497,7 +497,7 @@ class TypeAnnotator:
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
 
-                if expr.is_type(exp.DType.JSON) and (dot_parts := expr.meta.get("dot_parts")):
+                if expr.is_type(exp.DType.JSON) and (dot_parts := expr.meta_get("dot_parts")):
                     # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
                     i = iter(dot_parts)
                     parent = expr.parent
@@ -740,7 +740,7 @@ class TypeAnnotator:
             self._annotate_by_args(expression, left, right)
 
         if isinstance(expression, exp.Is) or (
-            left.meta.get("nonnull") is True and right.meta.get("nonnull") is True
+            left.meta_get("nonnull") is True and right.meta_get("nonnull") is True
         ):
             expression.meta["nonnull"] = True
 
@@ -752,7 +752,7 @@ class TypeAnnotator:
         else:
             self._set_type(expression, expression.this.type)
 
-        if expression.this.meta.get("nonnull") is True:
+        if expression.this.meta_get("nonnull") is True:
             expression.meta["nonnull"] = True
 
         return expression

@@ -101,7 +101,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 
         # Handle ARRAY(SELECT ...) - single SELECT query
         if isinstance(unnested, exp.Select):
-            query_type = unnested.meta.get("query_type")
+            query_type = unnested.meta_get("query_type")
 
             if query_type and query_type.is_type(exp.DType.STRUCT):
                 query_exprs = query_type.expressions

@@ -1374,6 +1374,9 @@ WHERE
 
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
         self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
+        self.validate_identity(
+            "CREATE FUNCTION dbo.f() RETURNS TABLE AS RETURN (WITH subquery AS (SELECT id AS id FROM subtable) SELECT other_id FROM main_table AS mt INNER JOIN subquery ON subquery.id = mt.other_id)"
+        )
 
         # The following two cases don't necessarily correspond to valid TSQL, but they are used to verify
         # that the syntax RETURNS @return_variable TABLE <table_type_definition> ... is parsed correctly.

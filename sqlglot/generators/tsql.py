@@ -417,6 +417,15 @@ class TSQLGenerator(generator.Generator):
                 # but CREATE VIEW actually requires the WITH clause to come after it so we need
                 # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
                 ctas_expression.set("with_", with_.pop())
+        elif (
+            kind == "FUNCTION"
+            and isinstance(ctas_expression, exp.Return)
+            and isinstance(body := ctas_expression.this.unnest(), exp.Query)
+            and (with_ := expression.args.get("with_"))
+        ):
+            # Similar to the VIEW branch, the table-valued functions require the WITH clause
+            # to stay inside the RETURN body, so we move back any CTEs that were bubbled up.
+            body.set("with_", with_.pop())
 
         table = expression.find(exp.Table)
 

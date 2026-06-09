@@ -1,6 +1,28 @@
 Changelog
 =========
 
+## [v30.10.0] - 2026-06-09
+### :boom: BREAKING CHANGES
+- due to [`287df74`](https://github.com/tobymao/sqlglot/commit/287df744e968e0b3cd70679abf443ce8db685313) - parsing and generation of `CLUSTER BY` *(PR [#7716](https://github.com/tobymao/sqlglot/pull/7716) by [@JoshuaM176](https://github.com/JoshuaM176))*:
+
+  parsing and generation of `CLUSTER BY` (#7716)
+
+
+### :sparkles: New Features
+- [`6ae53c2`](https://github.com/tobymao/sqlglot/commit/6ae53c2e8442c6ebe72741c75c41475374684551) - **duckdb**: Add transpilation support for TRY_CAST date-format *(PR [#7707](https://github.com/tobymao/sqlglot/pull/7707) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+
+### :bug: Bug Fixes
+- [`8be7236`](https://github.com/tobymao/sqlglot/commit/8be7236391931bb2643dabf6c0efb434b0b89995) - **clickhouse**: parse file() as a table function instead of a table alias *(PR [#7717](https://github.com/tobymao/sqlglot/pull/7717) by [@tobymao](https://github.com/tobymao))*
+  - :arrow_lower_right: *fixes issue [#7715](https://github.com/tobymao/sqlglot/issues/7715) opened by [@varoonp123](https://github.com/varoonp123)*
+- [`6c7c9e8`](https://github.com/tobymao/sqlglot/commit/6c7c9e87dc7c7dc4c32fb7e7763227c6c65e440e) - **optimizer**: column-to-dot conversion bug in qualify due to looking at wrong source set *(PR [#7718](https://github.com/tobymao/sqlglot/pull/7718) by [@georgesittas](https://github.com/georgesittas))*
+- [`a76439c`](https://github.com/tobymao/sqlglot/commit/a76439c1f5d66a93bb1d73ec578623bc56264310) - **presto**: Use valid bitwise shift left and right functions *(PR [#7719](https://github.com/tobymao/sqlglot/pull/7719) by [@gertjanal](https://github.com/gertjanal))*
+- [`287df74`](https://github.com/tobymao/sqlglot/commit/287df744e968e0b3cd70679abf443ce8db685313) - parsing and generation of `CLUSTER BY` *(PR [#7716](https://github.com/tobymao/sqlglot/pull/7716) by [@JoshuaM176](https://github.com/JoshuaM176))*
+- [`982bd16`](https://github.com/tobymao/sqlglot/commit/982bd166dff9f513ce070742673a1367a0527738) - **optimizer**: `merge_subqueries` bug where `Identifier` was set as a table alias *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`1253922`](https://github.com/tobymao/sqlglot/commit/125392226cc403f3b0dbba86187512564a42770a) - refactor clusterproperty_sql funcs *(commit by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v30.9.0] - 2026-06-04
 ### :boom: BREAKING CHANGES
 - due to [`a40dde9`](https://github.com/tobymao/sqlglot/commit/a40dde9d3992b2b1df4f4ff5dccde240d618dabd) - delimited global/temp table references closes [#7657](https://github.com/tobymao/sqlglot/pull/7657) *(commit by [@georgesittas](https://github.com/georgesittas))*:
@@ -14586,3 +14608,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.7.0]: https://github.com/tobymao/sqlglot/compare/v30.6.0...v30.7.0
 [v30.8.0]: https://github.com/tobymao/sqlglot/compare/v30.7.0...v30.8.0
 [v30.9.0]: https://github.com/tobymao/sqlglot/compare/v30.8.0...v30.9.0
+[v30.10.0]: https://github.com/tobymao/sqlglot/compare/v30.9.0...v30.10.0

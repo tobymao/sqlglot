@@ -859,8 +859,8 @@ class SkipJSONColumn(Expression):
     arg_types = {"regexp": False, "expression": True}
 
 
-class Cluster(Order):
-    pass
+class Cluster(Expression):
+    arg_types = {"expressions": True}
 
 
 class Distribute(Order):
@@ -1271,8 +1271,8 @@ class Select(Expression, Query):
         Set the CLUSTER BY expression.
 
         Example:
-            >>> Select().from_("tbl").select("x").cluster_by("x DESC").sql(dialect="hive")
-            'SELECT x FROM tbl CLUSTER BY x DESC'
+            >>> Select().from_("tbl").select("x").cluster_by("x").sql(dialect="hive")
+            'SELECT x FROM tbl CLUSTER BY x'
 
         Args:
             *expressions: the SQL code strings to parse.

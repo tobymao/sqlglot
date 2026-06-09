@@ -235,6 +235,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CREATE TABLE t CLUSTER BY col1, col2")
         self.validate_identity("DATE(2016, 12, 25)")
         self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
         self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")

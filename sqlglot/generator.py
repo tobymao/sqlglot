@@ -676,6 +676,7 @@ class Generator:
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ClusterProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DistributedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DuplicateKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DataBlocksizeProperty: exp.Properties.Location.POST_NAME,
@@ -3041,6 +3042,13 @@ class Generator:
 
     def cluster_sql(self, expression: exp.Cluster) -> str:
         return self.op_expressions("CLUSTER BY", expression)
+
+    def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
+        if expression.args.get("this"):
+            self.unsupported(f"Unsupported CLUSTER BY {self.sql(expression, 'this')}")
+            return ""
+        expressions = self.expressions(expression, flat=True)
+        return f"CLUSTER BY ({expressions})"
 
     def distribute_sql(self, expression: exp.Distribute) -> str:
         return self.op_expressions("DISTRIBUTE BY", expression)

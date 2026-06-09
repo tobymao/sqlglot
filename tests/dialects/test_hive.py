@@ -535,7 +535,7 @@ class TestHive(Validator):
         )
         self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z")
         self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z SORT BY x")
-        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y DESC")
+        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y")
         self.validate_identity("SELECT * FROM test CLUSTER BY y")
 
         self.validate_identity("(SELECT 1 UNION SELECT 2) SORT BY z")

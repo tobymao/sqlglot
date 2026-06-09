@@ -688,3 +688,9 @@ class BigQueryGenerator(generator.Generator):
                 return f"{self.sql(expression, 'to')}{self.sql(this)}"
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)
+
+    def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
+        if expression.args.get("this"):
+            self.unsupported(f"Unsupported CLUSTER BY {self.sql(expression, 'this')}")
+            return ""
+        return self.op_expressions("CLUSTER BY", expression)

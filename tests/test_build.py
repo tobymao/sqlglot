@@ -335,8 +335,8 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl ORDER BY x, y DESC",
             ),
             (
-                lambda: select("x").from_("tbl").cluster_by("x, y DESC"),
-                "SELECT x FROM tbl CLUSTER BY x, y DESC",
+                lambda: select("x").from_("tbl").cluster_by("x, y"),
+                "SELECT x FROM tbl CLUSTER BY x, y",
                 "hive",
             ),
             (

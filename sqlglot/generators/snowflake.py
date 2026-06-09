@@ -903,9 +903,6 @@ class SnowflakeGenerator(generator.Generator):
 
         return f"AUTOINCREMENT{start}{increment}{order_clause}"
 
-    def cluster_sql(self, expression: exp.Cluster) -> str:
-        return f"CLUSTER BY ({self.expressions(expression, flat=True)})"
-
     def struct_sql(self, expression: exp.Struct) -> str:
         if len(expression.expressions) == 1:
             arg = expression.expressions[0]

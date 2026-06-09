@@ -1238,7 +1238,7 @@ class Parser:
         "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHECKSUM": lambda self: self._parse_checksum(),
-        "CLUSTER BY": lambda self: self._parse_cluster(),
+        "CLUSTER BY": lambda self: self._parse_cluster_property(),
         "CLUSTERED": lambda self: self._parse_clustered_by(),
         "COLLATE": lambda self, **kwargs: self._parse_property_assignment(
             exp.CollateProperty, **kwargs
@@ -1437,7 +1437,7 @@ class Parser:
         "ADD": lambda self: self._parse_alter_table_add(),
         "AS": lambda self: self._parse_select(),
         "ALTER": lambda self: self._parse_alter_table_alter(),
-        "CLUSTER BY": lambda self: self._parse_cluster(wrapped=True),
+        "CLUSTER BY": lambda self: self._parse_cluster_property(),
         "DELETE": lambda self: self.expression(exp.Delete(where=self._parse_where())),
         "DROP": lambda self: self._parse_alter_table_drop(),
         "RENAME": lambda self: self._parse_alter_table_rename(),
@@ -1537,7 +1537,7 @@ class Parser:
         TokenType.USING: lambda self: ("sample", self._parse_table_sample(as_modifier=True)),
         TokenType.CLUSTER_BY: lambda self: (
             "cluster",
-            self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
+            self._parse_cluster(),
         ),
         TokenType.DISTRIBUTE_BY: lambda self: (
             "distribute",
@@ -3064,14 +3064,18 @@ class Parser:
 
         return self.expression(exp.ChecksumProperty(on=on, default=self._match(TokenType.DEFAULT)))
 
-    def _parse_cluster(self, wrapped: bool = False) -> exp.Cluster:
+    def _parse_cluster(self) -> exp.Cluster:
+        self._match(TokenType.CLUSTER_BY)
         return self.expression(
             exp.Cluster(
-                expressions=(
-                    self._parse_wrapped_csv(self._parse_ordered)
-                    if wrapped
-                    else self._parse_csv(self._parse_ordered)
-                )
+                expressions=self._parse_csv(self._parse_column),
+            )
+        )
+
+    def _parse_cluster_property(self) -> exp.ClusterProperty:
+        return self.expression(
+            exp.ClusterProperty(
+                expressions=self._parse_wrapped_csv(self._parse_column),
             )
         )
 

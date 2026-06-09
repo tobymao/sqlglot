@@ -310,10 +310,13 @@ class StarRocksGenerator(MySQLGenerator):
 
         return f"PARTITION BY {self.sql(this)}"
 
-    def cluster_sql(self, expression: exp.Cluster) -> str:
+    def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
         """Generate StarRocks ORDER BY clause for clustering."""
+        if expression.args.get("this"):
+            self.unsupported(f"Unsupported CLUSTER BY {self.sql(expression, 'this')}")
+            return ""
         expressions = self.expressions(expression, flat=True)
-        return f"ORDER BY ({expressions})" if expressions else ""
+        return f"ORDER BY ({expressions})"
 
     def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
         """Generate StarRocks REFRESH clause for materialized views.

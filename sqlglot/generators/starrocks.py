@@ -312,7 +312,7 @@ class StarRocksGenerator(MySQLGenerator):
 
     def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
         """Generate StarRocks ORDER BY clause for clustering."""
-        if expression.args.get("this"):
+        if expression.this:
             self.unsupported(f"Unsupported CLUSTER BY {self.sql(expression, 'this')}")
             return ""
         expressions = self.expressions(expression, flat=True)

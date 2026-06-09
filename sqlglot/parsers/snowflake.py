@@ -1153,9 +1153,6 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_identifier_function(self) -> exp.Expr:
         arg = self._parse_string()
-        if not arg and (self._advance_any() or self._match_set(self.ID_VAR_TOKENS)):
-            quoted = self._prev.token_type == TokenType.STRING
-            arg = self._identifier_expression(quoted=quoted)
         self._match_r_paren()
         return self._fold_identifier_literal(arg)
 

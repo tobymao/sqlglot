@@ -319,6 +319,11 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
     Returns:
         The identifier ast node.
     """
+    if isinstance(name, str) and SAFE_IDENTIFIER_RE.match(name):
+        # Simple names parse to a single unquoted identifier in all dialects, so we can
+        # avoid the tokenizer/parser round-trip for them.
+        return Identifier(this=name, quoted=False)
+
     try:
         expression = maybe_parse(name, dialect=dialect, into=Identifier)
     except (ParseError, TokenError):
@@ -822,7 +827,7 @@ def replace_tables(
     mapping = {normalize_table_name(k, dialect=dialect): v for k, v in mapping.items()}
 
     def _replace_tables(node: Expr) -> Expr:
-        if isinstance(node, Table) and node.meta.get("replace") is not False:
+        if isinstance(node, Table) and node.meta_get("replace") is not False:
             original = normalize_table_name(node, dialect=dialect)
             new_name = mapping.get(original)
 

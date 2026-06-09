@@ -240,6 +240,9 @@ class Expr:
     def meta(self) -> dict[str, t.Any]:
         raise NotImplementedError
 
+    def meta_get(self, key: str, default: t.Any = None) -> t.Any:
+        raise NotImplementedError
+
     def __deepcopy__(self, memo: t.Any) -> Expr:
         raise NotImplementedError
 
@@ -989,6 +992,11 @@ class Expression(Expr):
         if self._meta is None:
             self._meta = {}
         return self._meta
+
+    def meta_get(self, key: str, default: t.Any = None) -> t.Any:
+        """Reads a meta value without allocating the meta dict (unlike the `meta` property)."""
+        meta = self._meta
+        return meta.get(key, default) if meta is not None else default
 
     def __deepcopy__(self, memo: t.Any) -> Expr:
         root = self.__class__()

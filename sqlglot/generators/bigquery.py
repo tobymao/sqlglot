@@ -201,7 +201,7 @@ def _levenshtein_sql(self: BigQueryGenerator, expression: exp.Levenshtein) -> st
 
 
 def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) -> str:
-    name = (expression._meta and expression.meta.get("name")) or expression.sql_name()
+    name = expression.meta_get("name") or expression.sql_name()
     upper = name.upper()
 
     dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
@@ -565,7 +565,7 @@ class BigQueryGenerator(generator.Generator):
         )
 
     def column_parts(self, expression: exp.Column) -> str:
-        if expression.meta.get("quoted_column"):
+        if expression.meta_get("quoted_column"):
             # If a column reference is of the form `dataset.table`.name, we need
             # to preserve the quoted table path, otherwise the reference breaks
             table_parts = ".".join(p.name for p in expression.parts[:-1])
@@ -583,7 +583,7 @@ class BigQueryGenerator(generator.Generator):
         #
         # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x.y`   -> cross join
         # - WITH x AS (SELECT [1, 2] AS y) SELECT * FROM x, `x`.`y` -> implicit unnest
-        if expression.meta.get("quoted_table"):
+        if expression.meta_get("quoted_table"):
             table_parts = ".".join(p.name for p in expression.parts)
             return self.sql(exp.Identifier(this=table_parts, quoted=True))
 

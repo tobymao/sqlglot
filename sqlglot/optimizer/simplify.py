@@ -596,9 +596,9 @@ class Simplifier:
         joins: list[exp.Join] = []
 
         for node in expression.walk(
-            prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta.get(FINAL))
+            prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta_get(FINAL))
         ):
-            if node.meta.get(FINAL):
+            if node.meta_get(FINAL):
                 continue
 
             # group by expressions cannot be simplified, for example
@@ -687,10 +687,10 @@ class Simplifier:
                 original.replace(node)
 
             for n in node.iter_expressions(reverse=True):
-                if n.meta.get(FINAL):
+                if n.meta_get(FINAL):
                     raise
             pre_transformation_stack.extend(
-                n for n in node.iter_expressions(reverse=True) if not n.meta.get(FINAL)
+                n for n in node.iter_expressions(reverse=True) if not n.meta_get(FINAL)
             )
             post_transformation_stack.append((node, parent))
 
@@ -937,7 +937,7 @@ class Simplifier:
             ops = set(expression.flatten())
             for op in ops:
                 if isinstance(op, exp.Not) and op.this in ops:
-                    if expression.meta.get("nonnull") is True:
+                    if expression.meta_get("nonnull") is True:
                         return exp.false() if isinstance(expression, exp.And) else exp.true()
 
         return expression

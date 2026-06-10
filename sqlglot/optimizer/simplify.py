@@ -699,9 +699,16 @@ class Simplifier:
             root = original is expression
 
             # Resets parent, arg_key, index pointers– this is needed because some of the
-            # previous transformations mutate the AST, leading to an inconsistent state
+            # previous transformations mutate the AST, leading to an inconsistent state.
+            # We only fix pointers instead of calling `set` because the values are unchanged:
+            # actual mutations go through `set`/`replace`, which already invalidate cached
+            # hashes, so clearing them again here would force `while_changing` to rehash
+            # entire subtrees after every (mostly no-op) pass.
             for k, v in tuple(original.args.items()):
-                original.set(k, v)
+                if v is None:
+                    original.args.pop(k)
+                else:
+                    original._set_parent(k, v)
 
             # Post-order transformations
             node = self.simplify_not(original)

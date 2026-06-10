@@ -149,11 +149,15 @@ def _sqlglot_requirement():
                 fallback_version="0.0.0",
             )
     except Exception as e:
-        print(f"sqlglotc: failed to determine the sqlglot version to pin, skipping it: {e}")
+        print(f"sqlglotc: failed to determine the sqlglot version to pin: {e}")
         version = ""
 
-    # Dev and fallback (no git metadata) builds have no matching sqlglot release on PyPI.
-    return [] if version in ("", "0.0.0") or ".dev" in version else [f"sqlglot=={version}"]
+    # Dev and fallback (no git metadata) builds have no matching sqlglot release on PyPI;
+    # depend on sqlglot unpinned since the extensions can't be imported without it.
+    if version in ("", "0.0.0") or ".dev" in version:
+        return ["sqlglot"]
+
+    return [f"sqlglot=={version}"]
 
 
 setup(

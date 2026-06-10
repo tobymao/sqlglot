@@ -685,6 +685,41 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
 
+    def test_unpivot(self) -> None:
+        sql = """
+        SELECT id, metric_name, score
+        FROM sales UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+
+        node = lineage("metric_name", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.ID"])
+
+    def test_unpivot_with_cte(self) -> None:
+        sql = """
+        WITH src AS (
+          SELECT id, jan, feb FROM sales
+        )
+        SELECT id, metric_name, score
+        FROM src UNPIVOT (score FOR metric_name IN (jan, feb))
+        """
+        schema = {"sales": {"id": "int", "jan": "int", "feb": "int"}}
+
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
+        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
+
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual(node.downstream[0].name, "SRC.ID")
+        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.ID")
+
     def test_table_udtf_snowflake(self) -> None:
         lateral_flatten = """
         SELECT f.value:external_id::string AS external_id

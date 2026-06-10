@@ -3372,7 +3372,7 @@ class Generator:
         rename = self.expressions(expression, key="rename", flat=True)
         rename = f"{self.seg('RENAME')} ({rename})" if rename else ""
         ilike = self.sql(expression, "ilike")
-        ilike = f" ILIKE {ilike}" if ilike else ""
+        ilike = f"{self.seg('ILIKE')} {ilike}" if ilike else ""
         return f"*{ilike}{except_}{replace}{rename}"
 
     def parameter_sql(self, expression: exp.Parameter) -> str:

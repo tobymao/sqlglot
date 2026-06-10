@@ -9645,7 +9645,7 @@ class Parser:
                 this.set("unpack", True)
             return this
 
-        ilike = self._parse_primary() if self._match(TokenType.ILIKE) else None
+        ilike = self._parse_string() if self._match(TokenType.ILIKE) else None
 
         return self.expression(
             exp.Star(

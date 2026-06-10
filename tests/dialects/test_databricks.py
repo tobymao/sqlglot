@@ -141,9 +141,6 @@ class TestDatabricks(Validator):
 
         self.validate_all(
             "SELECT c1:item[1].price",
-            read={
-                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
-            },
             write={
                 "databricks": "SELECT c1:item[1].price",
                 "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
@@ -152,8 +149,11 @@ class TestDatabricks(Validator):
 
         self.validate_all(
             "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            read={
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
             write={
-                "databricks": "SELECT c1:item[1].price",
+                "databricks": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
                 "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
             },
         )
@@ -271,7 +271,7 @@ class TestDatabricks(Validator):
 
         self.validate_identity(
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT get_json_object(c, '$.x-y') FROM t""",
-            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
         ).selects[0].expression.assert_is(exp.JSONPath)
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
@@ -296,9 +296,11 @@ class TestDatabricks(Validator):
             """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
         )
         self.validate_identity(
-            """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)""",
-            """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)"""
         )
+        self.validate_identity("SELECT GET_JSON_OBJECT(col, path_col)")
+        self.validate_identity("SELECT GET_JSON_OBJECT(col, CONCAT('$.', field_name))")
+        self.validate_identity("SELECT GET_JSON_OBJECT(GET_JSON_OBJECT(col, '$[0]'), '$.a')")
         self.validate_identity(
             """SELECT raw:`zip code`, raw:`fb:testid`, raw:store['bicycle'], raw:store["zip code"]""",
             """SELECT raw:["zip code"], raw:["fb:testid"], raw:store.bicycle, raw:store["zip code"]""",

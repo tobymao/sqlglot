@@ -4384,6 +4384,15 @@ class DuckDBGenerator(generator.Generator):
                 )
                 .else_(exp.TryCast(this=src, to=to))
             )
+        elif isinstance(to_type, exp.Interval) and expression.args.get("requires_string"):
+            unit = to_type.unit
+            unit_str = exp.Literal.string(f" {unit}")
+            src_with_unit = (
+                exp.Literal.string(f"{src.name} {unit}")
+                if src.is_string
+                else exp.DPipe(this=src.copy(), expression=unit_str)
+            )
+            return self.sql(exp.TryCast(this=src_with_unit, to=exp.DataType.build("INTERVAL")))
 
         return super().trycast_sql(expression)
 

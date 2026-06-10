@@ -1749,7 +1749,7 @@ WHERE
         self.validate_all(
             "CONVERT(DATE, x, 121)",
             write={
-                "spark": "TO_DATE(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "TO_DATE(x, 'yyyy-M-d HH:mm:ss.SSSSSS')",
                 "tsql": "CONVERT(DATE, x, 121)",
             },
         )

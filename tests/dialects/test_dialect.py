@@ -1219,7 +1219,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
-                "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
+                "spark": "TO_DATE(x, 'yyyy-M-dTHH:mm:ss')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
             },
         )
@@ -1231,7 +1231,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
-                "spark": "TO_DATE(x)",
+                "spark": "TO_DATE(x, 'yyyy-M-d')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%d')",
             },
         )

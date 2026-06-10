@@ -27,7 +27,7 @@ def _map_sql(self: Spark2Generator, expression: exp.Map) -> str:
     return self.func("MAP_FROM_ARRAYS", keys, values)
 
 
-def _str_to_date(self: Spark2Generator, expression: exp.StrToDate) -> str:
+def _str_to_date_sql(self: Spark2Generator, expression: exp.StrToDate) -> str:
     time_format = self.format_time(expression)
     if time_format == HIVE_DATE_FORMAT:
         return self.func("TO_DATE", expression.this)
@@ -184,7 +184,7 @@ class Spark2Generator(HiveGenerator):
             exp.SHA2Digest: lambda self, e: self.func(
                 "SHA2", e.this, e.args.get("length") or exp.Literal.number(256)
             ),
-            exp.StrToDate: _str_to_date,
+            exp.StrToDate: _str_to_date_sql,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
             exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
             exp.UnixToTime: _unix_to_time_sql,

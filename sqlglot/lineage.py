@@ -372,25 +372,8 @@ def to_node(
     }
 
     pivots = scope.pivots
-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
-    if pivot:
-        # For each aggregation function, the pivot creates a new column for each field in category
-        # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
-        # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
-        # belongs to the column indices 0, 2, and the aggfunc 'max(price)' without an alias belongs
-        # to the column indices 1, 3. Here, only the columns used in the aggregations are of interest
-        # in the lineage, so lookup the pivot column name by index and map that with the columns used
-        # in the aggregation.
-        #
-        # Example: PIVOT (SUM(value) AS value_sum, MAX(price)) FOR category IN ('a' AS cat_a, 'b')
-        pivot_columns = pivot.args["columns"]
-        pivot_aggs_count = len(pivot.expressions)
-
-        pivot_column_mapping = {}
-        for i, agg in enumerate(pivot.expressions):
-            agg_cols = list(agg.find_all(exp.Column))
-            for col_index in range(i, len(pivot_columns), pivot_aggs_count):
-                pivot_column_mapping[pivot_columns[col_index].name] = agg_cols
+    pivot = pivots[0] if len(pivots) == 1 else None
+    pivot_column_mapping = _pivot_column_mapping(pivot) if pivot else {}
 
     for c in source_columns:
         table = c.table
@@ -422,7 +405,7 @@ def to_node(
             downstream_columns = []
 
             column_name = c.name
-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
+            if column_name in pivot_column_mapping:
                 downstream_columns.extend(pivot_column_mapping[column_name])
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
@@ -435,6 +418,10 @@ def to_node(
             for downstream_column in downstream_columns:
                 table = downstream_column.table
                 col_source = scope.sources.get(table)
+                if isinstance(col_source, exp.Table) and not col_source.db:
+                    # A pivoted CTE reference maps to the raw table in `scope.sources`,
+                    # so recover the CTE's scope to keep tracing through it
+                    col_source = scope.cte_sources.get(col_source.name, col_source)
                 if isinstance(col_source, Scope):
                     to_node(
                         downstream_column.name,
@@ -477,6 +464,48 @@ def to_node(
         on_node(node)
 
     return node
+
+
+def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+    """Map each (UN)PIVOT output column name to the source columns it's derived from."""
+    mapping: dict[str, list[exp.Column]] = {}
+
+    if pivot.unpivot:
+        # UNPIVOT(val FOR name IN (a, b)): both the value column(s) and the name column
+        # are derived from the IN-list source columns
+        unpivot_columns = [
+            col
+            for field in pivot.fields
+            for e in field.expressions
+            for col in e.find_all(exp.Column)
+        ]
+        for value_column in pivot.expressions:
+            for identifier in value_column.find_all(exp.Identifier):
+                mapping[identifier.name] = unpivot_columns
+        for field in pivot.fields:
+            if isinstance(field, exp.In):
+                mapping[field.this.name] = unpivot_columns
+
+        return mapping
+
+    # For each aggregation function, the pivot creates a new column for each field in category
+    # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+    # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+    # belongs to the column indices 0, 2, and the aggfunc 'max(price)' without an alias belongs
+    # to the column indices 1, 3. Here, only the columns used in the aggregations are of interest
+    # in the lineage, so lookup the pivot column name by index and map that with the columns used
+    # in the aggregation.
+    #
+    # Example: PIVOT (SUM(value) AS value_sum, MAX(price)) FOR category IN ('a' AS cat_a, 'b')
+    pivot_columns = pivot.args["columns"]
+    pivot_aggs_count = len(pivot.expressions)
+
+    mapping = {}
+    for i, agg in enumerate(pivot.expressions):
+        agg_cols = list(agg.find_all(exp.Column))
+        for col_index in range(i, len(pivot_columns), pivot_aggs_count):
+            mapping[pivot_columns[col_index].name] = agg_cols
+    return mapping
 
 
 class GraphHTML:

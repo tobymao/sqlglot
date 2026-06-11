@@ -370,6 +370,14 @@ class DropPrimaryKey(Expression):
     arg_types = {}
 
 
+class Undrop(Expression):
+    arg_types = {"this": True, "kind": True}
+
+    @property
+    def kind(self) -> str:
+        return self.args["kind"].upper()
+
+
 class Command(Expression):
     arg_types = {"this": True, "expression": False}
 

@@ -6784,3 +6784,18 @@ FROM SEMANTIC_VIEW(
                     prefix = natural + join_side + outer + " DIRECTED"
                     with self.subTest(f"Testing {prefix} JOIN"):
                         self.validate_identity(f"SELECT * FROM a {prefix} JOIN b USING (id)")
+
+    def test_undrop(self):
+        self.validate_identity("UNDROP TABLE my_table")
+        self.validate_identity("UNDROP SCHEMA my_schema")
+        self.validate_identity("UNDROP DATABASE my_db")
+        self.validate_identity("UNDROP ACCOUNT my_account")
+        self.validate_identity("UNDROP NOTEBOOK my_nb")
+        self.validate_identity("UNDROP SNAPSHOT my_snap")
+        self.validate_identity("UNDROP STREAMLIT my_app")
+        self.validate_identity("UNDROP TAG my_tag")
+        self.validate_identity("UNDROP TYPE my_type")
+        self.validate_identity("UNDROP DYNAMIC TABLE my_table")
+        self.validate_identity("UNDROP EXTERNAL VOLUME my_vol")
+        self.validate_identity("UNDROP ICEBERG TABLE my_table")
+        self.validate_identity("UNDROP TABLE db.schema.my_table")

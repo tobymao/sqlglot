@@ -1146,14 +1146,18 @@ class SnowflakeParser(parser.Parser):
     def _fold_identifier_literal(self, arg: exp.Expr | None) -> exp.Expr:
         if arg and arg.is_string:
             inner = arg.to_py()
-            if len(inner) >= 2 and inner.startswith('"') and inner.endswith('"'):
-                return exp.Identifier(this=inner[1:-1], quoted=True, identifier_func=True)
+            try:
+                ident = exp.maybe_parse(inner, into=exp.Identifier)
+                if isinstance(ident, exp.Identifier):
+                    ident.set("identifier_func", True)
+                    return ident
+            except Exception:
+                pass
             return exp.Identifier(this=inner, identifier_func=True)
         return self.expression(exp.Anonymous(this="IDENTIFIER", expressions=[arg]))
 
     def _parse_identifier_function(self) -> exp.Expr:
-        arg = self._parse_string()
-        self._match_r_paren()
+        arg = self._parse_string() or super()._parse_id_var()
         return self._fold_identifier_literal(arg)
 
     def _parse_id_var(

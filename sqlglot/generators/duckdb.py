@@ -4599,13 +4599,3 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(result)
 
         return super().uuid_sql(expression)
-
-    def identifier_sql(self, expression: exp.Identifier) -> str:
-        if expression.args.get("identifier_func"):
-            parts = expression.name.split(".")
-            if len(parts) > 1:
-                result: exp.Expr = exp.to_identifier(parts[0])
-                for part in parts[1:]:
-                    result = exp.Dot(this=result, expression=exp.to_identifier(part))
-                return self.sql(result)
-        return super().identifier_sql(expression)

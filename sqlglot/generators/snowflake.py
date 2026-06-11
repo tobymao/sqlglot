@@ -618,9 +618,19 @@ class SnowflakeGenerator(generator.Generator):
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
         if expression.args.get("identifier_func"):
-            name = f'"{expression.name}"' if expression.quoted else expression.name
+            name = super().identifier_sql(expression) if expression.quoted else expression.name
             return self.func("IDENTIFIER", exp.Literal.string(name))
         return super().identifier_sql(expression)
+
+    def column_sql(self, expression: exp.Column) -> str:
+        if (
+            expression.table
+            and isinstance(expression.this, exp.Identifier)
+            and expression.this.args.get("identifier_func")
+        ):
+            expression = expression.copy()
+            expression.this.set("identifier_func", False)
+        return super().column_sql(expression)
 
     def sortarray_sql(self, expression: exp.SortArray) -> str:
         asc = expression.args.get("asc")

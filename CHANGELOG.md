@@ -1,6 +1,35 @@
 Changelog
 =========
 
+## [v30.11.0] - 2026-06-11
+### :boom: BREAKING CHANGES
+- due to [`df507aa`](https://github.com/tobymao/sqlglot/commit/df507aac2887d79e229cbc6003ed206e8528449c) - GET_JSON_OBJECT roundtrip *(PR [#7728](https://github.com/tobymao/sqlglot/pull/7728) by [@geooo109](https://github.com/geooo109))*:
+
+  GET_JSON_OBJECT roundtrip (#7728)
+
+- due to [`333e3c7`](https://github.com/tobymao/sqlglot/commit/333e3c7fa82201c0f87160c7e956e6ee18bd14da) - ConcatWs args set incorrectly in `simplify_concat` *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  ConcatWs args set incorrectly in `simplify_concat`
+
+
+### :sparkles: New Features
+- [`74bef2f`](https://github.com/tobymao/sqlglot/commit/74bef2f4617f2fa25881dded12ae3851a7ddfa1f) - **lineage**: add support for `UNPIVOT` *(PR [#7729](https://github.com/tobymao/sqlglot/pull/7729) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *addresses issue [#7727](https://github.com/tobymao/sqlglot/issues/7727) opened by [@tomoki-takahashi-oisix](https://github.com/tomoki-takahashi-oisix)*
+- [`f3ba8e4`](https://github.com/tobymao/sqlglot/commit/f3ba8e4d20311c4e657f4f763c3e354fa533ba47) - **lineage**: more `UNPIVOT` lineage improvements *(PR [#7736](https://github.com/tobymao/sqlglot/pull/7736) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`6ae4b49`](https://github.com/tobymao/sqlglot/commit/6ae4b49f1d2ef0c4f30575a29a0d1b3273520abf) - **tsql**: do not bubble up CTEs in TVF DDLs with inline `RETURN` queries closes [#7721](https://github.com/tobymao/sqlglot/pull/7721) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`df507aa`](https://github.com/tobymao/sqlglot/commit/df507aac2887d79e229cbc6003ed206e8528449c) - **databricks**: GET_JSON_OBJECT roundtrip *(PR [#7728](https://github.com/tobymao/sqlglot/pull/7728) by [@geooo109](https://github.com/geooo109))*
+- [`1955881`](https://github.com/tobymao/sqlglot/commit/19558813d3f51e39a20f4e5b669408d72af4e5d6) - **sqlglotc**: pin sqlglot to the exact matching version *(PR [#7730](https://github.com/tobymao/sqlglot/pull/7730) by [@georgesittas](https://github.com/georgesittas))*
+- [`2284484`](https://github.com/tobymao/sqlglot/commit/22844841f1de93643f17ae51077ceac79b0ec69a) - **optimizer**: infinite recursion in the resolver *(PR [#7737](https://github.com/tobymao/sqlglot/pull/7737) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#7732](https://github.com/tobymao/sqlglot/issues/7732) opened by [@treff7es](https://github.com/treff7es)*
+- [`333e3c7`](https://github.com/tobymao/sqlglot/commit/333e3c7fa82201c0f87160c7e956e6ee18bd14da) - **optimizer**: ConcatWs args set incorrectly in `simplify_concat` *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :zap: Performance Improvements
+- [`9e4b3d1`](https://github.com/tobymao/sqlglot/commit/9e4b3d15e67bf3508c9b25c0c025da0ea3d1a87b) - **optimizer**: speed up qualify by ~24% and optimize by ~17% *(PR [#7724](https://github.com/tobymao/sqlglot/pull/7724) by [@tobymao](https://github.com/tobymao))*
+- [`32ed149`](https://github.com/tobymao/sqlglot/commit/32ed149002aa76a1b0b674b2c27af39daf70fdf5) - **optimizer**: skip redundant hash invalidation in simplify's pointer-reset loop *(PR [#7725](https://github.com/tobymao/sqlglot/pull/7725) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v30.10.0] - 2026-06-09
 ### :boom: BREAKING CHANGES
 - due to [`287df74`](https://github.com/tobymao/sqlglot/commit/287df744e968e0b3cd70679abf443ce8db685313) - parsing and generation of `CLUSTER BY` *(PR [#7716](https://github.com/tobymao/sqlglot/pull/7716) by [@JoshuaM176](https://github.com/JoshuaM176))*:
@@ -14609,3 +14638,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.8.0]: https://github.com/tobymao/sqlglot/compare/v30.7.0...v30.8.0
 [v30.9.0]: https://github.com/tobymao/sqlglot/compare/v30.8.0...v30.9.0
 [v30.10.0]: https://github.com/tobymao/sqlglot/compare/v30.9.0...v30.10.0
+[v30.11.0]: https://github.com/tobymao/sqlglot/compare/v30.10.0...v30.11.0

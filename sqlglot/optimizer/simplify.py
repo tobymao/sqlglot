@@ -1296,15 +1296,15 @@ class Simplifier:
             sep_expr, *expressions = expression.expressions
             sep = sep_expr.name
             concat_type = exp.ConcatWs
-            args = {}
         else:
             expressions = expression.expressions
             sep = ""
             concat_type = exp.Concat
-            args = {
-                "safe": expression.args.get("safe"),
-                "coalesce": expression.args.get("coalesce"),
-            }
+
+        args = {
+            "safe": expression.args.get("safe"),
+            "coalesce": expression.args.get("coalesce"),
+        }
 
         new_args = []
         for is_string_group, group in itertools.groupby(

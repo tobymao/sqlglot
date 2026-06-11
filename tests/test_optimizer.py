@@ -894,6 +894,15 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
 
+        # Both Databricks' and DuckDB's CONCAT_WS skip NULL args, so no CASE wrapping is needed
+        concat_ws = parse_one("CONCAT_WS(' ', a, NULL, 'b', 'c')", read="databricks")
+        simplified_concat_ws = optimizer.simplify.simplify(concat_ws)
+
+        self.assertEqual(simplified_concat_ws.args["coalesce"], True)
+        self.assertEqual(
+            "CONCAT_WS(' ', a, NULL, 'b c')", simplified_concat_ws.sql(dialect="duckdb")
+        )
+
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS(x,y)")
 

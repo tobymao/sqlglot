@@ -157,9 +157,8 @@ class Resolver:
             ):
                 columns = source_expr.named_selects
 
-                # in bigquery, unnest structs are automatically scoped as tables, so you can
-                # directly select a struct field in a query.
-                # this handles the case where the unnest is statically defined.
+                # in bigquery, unnest structs are automatically scoped as tables, so you can directly select
+                # a struct field in a query. This handles the case where the unnest is statically defined.
                 if self.dialect.UNNEST_COLUMN_ONLY and isinstance(source_expr, exp.Unnest):
                     if not source_expr.type or source_expr.type.is_type(exp.DType.UNKNOWN):
                         unnest_expr = seq_get(source_expr.expressions, 0)
@@ -178,7 +177,10 @@ class Resolver:
                 ):
                     explode_col = source_expr.this.this
 
-                    if isinstance(explode_col, exp.Column) and source.parent:
+                    # If the column is unqualified at this point, it couldn't be resolved when
+                    # this scope's children were qualified; disambiguating it here would require
+                    # enumerating this very source's columns, i.e recurse without bound
+                    if isinstance(explode_col, exp.Column) and explode_col.table and source.parent:
                         col_type = self._get_unnest_column_type(explode_col, source.parent)
                         columns.extend(self._struct_field_names(col_type))
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):

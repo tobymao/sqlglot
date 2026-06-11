@@ -750,6 +750,32 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
 
+        # An unqualified struct field is disambiguated through the lateral's extended columns
+        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ).sql(dialect="spark"),
+            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+        )
+
+        # Resolving an unqualified lateral column whose table is missing from the schema must
+        # raise instead of recursing infinitely
+        with self.assertRaisesRegex(OptimizeError, "Column 'ITEMS' could not be resolved"):
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT f.value AS v FROM my_db.raw.events, LATERAL FLATTEN(items) AS f",
+                    read="snowflake",
+                ),
+                schema={"my_db": {"other": {"some_view": {"v": "VARIANT"}}}},
+                dialect="snowflake",
+            )
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

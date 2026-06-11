@@ -1807,7 +1807,7 @@ class Opclass(Expression):
 
 
 class Star(Expression):
-    arg_types = {"except_": False, "replace": False, "rename": False}
+    arg_types = {"except_": False, "replace": False, "rename": False, "ilike": False}
 
     @property
     def name(self) -> str:

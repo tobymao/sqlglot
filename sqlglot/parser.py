@@ -9645,8 +9645,11 @@ class Parser:
                 this.set("unpack", True)
             return this
 
+        ilike = self._parse_string() if self._match(TokenType.ILIKE) else None
+
         return self.expression(
             exp.Star(
+                ilike=ilike,
                 except_=self._parse_star_op("EXCEPT", "EXCLUDE"),
                 replace=self._parse_star_op("REPLACE"),
                 rename=self._parse_star_op("RENAME"),

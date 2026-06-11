@@ -42,6 +42,9 @@ def _normalize_partition(e: exp.Expr) -> exp.Expr:
 
 
 def _str_to_datetime_sql(self: SparkGenerator, expression: exp.StrToDate | exp.StrToTime) -> str:
+    from sqlglot.dialects.spark import Spark
+
+    assert isinstance(self.dialect, Spark)
     return self.func(
         f"TO_{'DATE' if isinstance(expression, exp.StrToDate) else 'TIMESTAMP'}",
         expression.this,

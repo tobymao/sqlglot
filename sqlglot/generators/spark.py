@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     date_delta_to_binary_interval_op,
     groupconcat_sql,
 )
-from sqlglot.generators.hive import HIVE_DATE_FORMAT
 from sqlglot.generators.spark2 import Spark2Generator, temporary_storage_provider
 from sqlglot.helper import seq_get
 from sqlglot.transforms import (
@@ -42,15 +41,16 @@ def _normalize_partition(e: exp.Expr) -> exp.Expr:
     return e
 
 
-def _str_to_date_sql(self: SparkGenerator, expression: exp.StrToDate) -> str:
-     time_format = self.format_time(
-         expression,
-         self.dialect.LENIENT_INVERSE_TIME_MAPPING,
-         self.dialect.LENIENT_INVERSE_TIME_TRIE,
-     )
-     if time_format == HIVE_DATE_FORMAT:
-         return self.func("TO_DATE", expression.this)
-     return self.func("TO_DATE", expression.this, time_format)
+def _str_to_datetime_sql(self: SparkGenerator, expression: exp.StrToDate | exp.StrToTime) -> str:
+    return self.func(
+        f"TO_{'DATE' if isinstance(expression, exp.StrToDate) else 'TIMESTAMP'}",
+        expression.this,
+        self.format_time(
+            expression,
+            self.dialect.LENIENT_INVERSE_TIME_MAPPING,
+            self.dialect.LENIENT_INVERSE_TIME_TRIE,
+        ),
+    )
 
 
 def _dateadd_sql(self: SparkGenerator, expression: exp.TsOrDsAdd | exp.TimestampAdd) -> str:
@@ -141,7 +141,8 @@ class SparkGenerator(Spark2Generator):
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),
             exp.StartsWith: rename_func("STARTSWITH"),
-            exp.StrToDate: _str_to_date_sql,
+            exp.StrToDate: _str_to_datetime_sql,
+            exp.StrToTime: _str_to_datetime_sql,
             exp.TimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.TimeSub: date_delta_to_binary_interval_op(cast=False),
             exp.TsOrDsAdd: _dateadd_sql,

@@ -659,14 +659,14 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             read={
-                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%m-%d')",
             },
             write={
-                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
-                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
-                "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+                "": "SELECT STR_TO_TIME('2016-1-1', '%Y-%-m-%-d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%-m-%-d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             },
         )
         self.validate_all(

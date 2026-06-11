@@ -4384,15 +4384,23 @@ class DuckDBGenerator(generator.Generator):
                 )
                 .else_(exp.TryCast(this=src, to=to))
             )
-        elif isinstance(to_type, exp.Interval) and expression.args.get("requires_string"):
-            unit = to_type.unit
-            unit_str = exp.Literal.string(f" {unit}")
-            src_with_unit = (
-                exp.Literal.string(f"{src.name} {unit}")
-                if src.is_string
-                else exp.DPipe(this=src.copy(), expression=unit_str)
+        elif (
+            isinstance(to_type, exp.Interval)
+            and (unit := to_type.unit)
+            and expression.args.get("requires_string")
+        ):
+            interval_type = exp.DataType.build("INTERVAL")
+            if isinstance(unit, exp.IntervalSpan):
+                self.unsupported(
+                    "TRY_CAST to INTERVAL with span (e.g. HOUR TO MINUTE) is not supported in DuckDB"
+                )
+                return self.sql(exp.TryCast(this=src, to=interval_type))
+            return self.sql(
+                exp.TryCast(
+                    this=exp.DPipe(this=src, expression=exp.Literal.string(f" {unit.name}")),
+                    to=interval_type,
+                )
             )
-            return self.sql(exp.TryCast(this=src_with_unit, to=exp.DataType.build("INTERVAL")))
 
         return super().trycast_sql(expression)
 

@@ -1,6 +1,6 @@
 [project]
 name = "sqlglotc"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 description = "mypyc-compiled extensions for sqlglot"
 authors = [{ name = "Toby Mao", email = "toby.mao@gmail.com" }]
 license = "MIT"

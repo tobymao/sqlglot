@@ -128,9 +128,42 @@ class sdist(_sdist):
             shutil.rmtree(local_sqlglot, ignore_errors=True)
 
 
+def _sqlglot_requirement():
+    """Pin sqlglot to the matching version so resolvers keep the two packages in lockstep."""
+    try:
+        pkg_info = os.path.join(os.path.dirname(os.path.abspath(__file__)), "PKG-INFO")
+        if os.path.isfile(pkg_info):
+            # Building from an sdist: no git metadata; the released version is frozen in PKG-INFO.
+            with open(pkg_info, encoding="utf-8") as fd:
+                version = next(
+                    (line.split(":", 1)[1].strip() for line in fd if line.startswith("Version:")),
+                    "",
+                )
+        else:
+            from setuptools_scm import get_version
+
+            version = get_version(
+                root="..",
+                relative_to=__file__,
+                local_scheme="no-local-version",
+                fallback_version="0.0.0",
+            )
+    except Exception as e:
+        print(f"sqlglotc: failed to determine the sqlglot version to pin: {e}")
+        version = ""
+
+    # Dev and fallback (no git metadata) builds have no matching sqlglot release on PyPI;
+    # depend on sqlglot unpinned since the extensions can't be imported without it.
+    if version in ("", "0.0.0") or ".dev" in version:
+        return ["sqlglot"]
+
+    return [f"sqlglot=={version}"]
+
+
 setup(
     name="sqlglotc",
     packages=[],
+    install_requires=_sqlglot_requirement(),
     ext_modules=mypycify(
         _source_paths(), opt_level=os.environ.get("MYPYC_OPT", "2"), separate=True, verbose=True
     ),

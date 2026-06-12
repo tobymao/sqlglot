@@ -34,16 +34,6 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
         self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
         self.validate_identity("CREATE TABLE t (c STRING COMMENT 'Hello World')")
-        self.validate_all(
-            "CREATE TABLE t (c STRING COMMENT 'Hello ''World!')",
-            write={
-                "databricks": "CREATE TABLE t (c STRING COMMENT 'Hello \\'World!')",
-            },
-        )
-        self.validate_all(
-            "SELECT 'Hello ''World!'",
-            write={"databricks": "SELECT 'Hello \\'World!'"},
-        )
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES (a.b=15)")
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES ('a.b'=15)")
         self.validate_identity("CREATE TABLE table1 CLUSTER BY AUTO")

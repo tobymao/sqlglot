@@ -89,7 +89,7 @@ class Hive(Dialect):
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
-        STRING_ESCAPES = ["\\", "'"]
+        STRING_ESCAPES = ["\\"]
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

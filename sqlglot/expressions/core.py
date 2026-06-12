@@ -1794,7 +1794,6 @@ class Identifier(Expression):
         "quoted": False,
         "global_": False,
         "temporary": False,
-        "identifier_func": False,
     }
     is_primitive = True
     _hash_raw_args = True
@@ -1806,6 +1805,10 @@ class Identifier(Expression):
     @property
     def output_name(self) -> str:
         return self.name
+
+
+class DynamicIdentifier(Expression):
+    arg_types = {"this": True}
 
 
 class Opclass(Expression):

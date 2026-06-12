@@ -1951,6 +1951,12 @@ class Generator:
         params = self.sql(expression, "params")
         return f"{unique}{primary}{amp}{index}{name}{table}{params}"
 
+    def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
+        this = expression.this
+        if this and this.is_string:
+            return this.name
+        return self.func("IDENTIFIER", this)
+
     def identifier_sql(self, expression: exp.Identifier) -> str:
         text = expression.name
         lower = text.lower()

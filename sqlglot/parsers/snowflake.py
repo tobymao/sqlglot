@@ -1144,17 +1144,7 @@ class SnowflakeParser(parser.Parser):
         return table
 
     def _fold_identifier_literal(self, arg: exp.Expr | None) -> exp.Expr:
-        if arg and arg.is_string:
-            inner = arg.to_py()
-            try:
-                ident = exp.maybe_parse(inner, into=exp.Identifier)
-                if isinstance(ident, exp.Identifier):
-                    ident.set("identifier_func", True)
-                    return ident
-            except Exception:
-                pass
-            return exp.Identifier(this=inner, identifier_func=True)
-        return self.expression(exp.Anonymous(this="IDENTIFIER", expressions=[arg]))
+        return self.expression(exp.DynamicIdentifier(this=arg))
 
     def _parse_identifier_function(self) -> exp.Expr:
         arg = self._parse_string() or super()._parse_id_var()

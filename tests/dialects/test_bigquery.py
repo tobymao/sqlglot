@@ -1975,6 +1975,15 @@ WHERE
         self.validate_identity(
             "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"
         )
+        self.validate_all(
+            "SELECT PARSE_DATETIME('%F %T', '2023-01-15 14:30:00')",
+            write={
+                # The default_year flag set by the parser must not leak as an argument
+                # when generating for dialects without a dedicated ParseDatetime handler.
+                "snowflake": "SELECT PARSE_DATETIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')",
+                "duckdb": "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')",
+            },
+        )
         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
         self.validate_identity("BYTE_LENGTH('foo')")

@@ -438,7 +438,7 @@ class FromISO8601Timestamp(Expression, Func):
 
 
 class ParseDatetime(Expression, Func):
-    arg_types = {"this": True, "format": False, "zone": False}
+    arg_types = {"this": True, "format": False, "zone": False, "default_year": False}
 
 
 class ParseTime(Expression, Func):

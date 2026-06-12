@@ -4348,6 +4348,13 @@ class DuckDBGenerator(generator.Generator):
 
         return self.func(func, this, decimals, truncate)
 
+    def div_sql(self, expression: exp.Div) -> str:
+        for side in ("this", "expression"):
+            operand = expression.args[side]
+            if operand.is_string:
+                operand.replace(exp.cast(operand, "DOUBLE"))
+        return super().div_sql(expression)
+
     def trycast_sql(self, expression: exp.TryCast) -> str:
         to = expression.to
         to_type = to.this

@@ -98,12 +98,6 @@ def _build_parse_timestamp(args: list, dialect: Dialect) -> exp.StrToTime:
     return this
 
 
-def _build_parse_datetime(args: list, dialect: Dialect) -> exp.ParseDatetime:
-    this = build_formatted_time(exp.ParseDatetime)([seq_get(args, 1), seq_get(args, 0)], dialect)
-    this.set("default_year", True)
-    return this
-
-
 def _build_regexp_extract(expr_type: type[E], default_group: exp.Expr | None = None) -> t.Callable:
     def _builder(args: list, dialect: Dialect) -> E:
         try:
@@ -254,7 +248,11 @@ class BigQueryParser(parser.Parser):
             [seq_get(args, 1), seq_get(args, 0)], dialect
         ),
         "PARSE_TIMESTAMP": _build_parse_timestamp,
-        "PARSE_DATETIME": _build_parse_datetime,
+        "PARSE_DATETIME": lambda args, dialect: exp.ParseDatetime(
+            this=seq_get(args, 1),
+            format=dialect.format_time(seq_get(args, 0)),
+            default_year=exp.Literal.number(1970),
+        ),
         "REGEXP_CONTAINS": exp.RegexpLike.from_arg_list,
         "REGEXP_EXTRACT": _build_regexp_extract(exp.RegexpExtract),
         "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),

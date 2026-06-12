@@ -4056,6 +4056,14 @@ class Generator:
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
         return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
 
+    def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
+        return self.func(
+            "PARSE_DATETIME",
+            expression.this,
+            expression.args.get("format"),
+            expression.args.get("zone"),
+        )
+
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"

@@ -377,7 +377,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("editDistance")
         ),
-        exp.ParseDatetime: rename_func("parseDateTime"),
+        exp.ParseDatetime: lambda self, e: self.func(
+            "parseDateTime", e.this, e.args.get("format"), e.args.get("zone")
+        ),
     }
 
     PROPERTIES_LOCATION = {

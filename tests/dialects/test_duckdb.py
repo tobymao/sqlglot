@@ -1827,19 +1827,27 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
-            read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
+            read={
+                "bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))",
+            },
         )
         self.validate_all(
             "SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)",
-            read={"bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')"},
+            read={
+                "bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')",
+            },
         )
         self.validate_all(
             "SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)",
-            read={"bigquery": "SELECT PARSE_TIME('%H:%M:%E6S', '15:30:00.123456')"},
+            read={
+                "bigquery": "SELECT PARSE_TIME('%H:%M:%E6S', '15:30:00.123456')",
+            },
         )
         self.validate_all(
             "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')",
-            read={"bigquery": "SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2023-01-15 14:30:00')"},
+            read={
+                "bigquery": "SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2023-01-15 14:30:00')",
+            },
         )
         self.validate_all(
             "SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y ' || '%a %b %-d %I:%M:%S %Y')",

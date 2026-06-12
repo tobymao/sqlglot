@@ -114,7 +114,13 @@ def qualify_tables(
         for query in scope.subqueries:
             subquery = query.parent
             if isinstance(subquery, exp.Subquery):
-                subquery.unwrap().replace(subquery)
+                unwrapped = subquery.unwrap()
+                if isinstance(unwrapped.parent, exp.Create) and unwrapped is not subquery:
+                    # Function bodies may require wrapping parentheses, e.g. in BigQuery
+                    # `... AS ((SELECT 1))` the outer parens delimit the body itself
+                    unwrapped.set("this", subquery)
+                else:
+                    unwrapped.replace(subquery)
 
         for derived_table in scope.derived_tables:
             unnested = derived_table.unnest()

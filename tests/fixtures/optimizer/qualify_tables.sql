@@ -287,3 +287,8 @@ SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g);
 # canonicalize_table_aliases: true
 SELECT jsonvalue.id FROM deal, JSONB_TO_RECORDSET(CAST(deal.type AS JSONB)) AS jsonvalue(id INT, key VARCHAR, text VARCHAR);
 SELECT _1.id FROM c.db.deal AS _0, JSONB_TO_RECORDSET(CAST(_0.type AS JSONB)) AS _1(id INT, key VARCHAR, text VARCHAR);
+
+# title: Preserve wrapping parens of a query used as a function body
+# dialect: bigquery
+CREATE TEMPORARY FUNCTION f() RETURNS STRING AS ((((SELECT 'foo'))));
+CREATE TEMPORARY FUNCTION c.db.f() RETURNS STRING AS ((SELECT 'foo'));

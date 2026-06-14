@@ -50,6 +50,7 @@ EXPRESSION_METADATA = {
             exp.Rank,
             exp.RowNumber,
             exp.Second,
+            exp.Minute,
         }
     },
     exp.PercentileDisc: {"returns": exp.DType.DOUBLE},

@@ -2661,16 +2661,15 @@ class DuckDBGenerator(generator.Generator):
 
     def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
         formatted_time = self.format_time(expression)
-        if expression.args.get("default_year"):
-            # BigQuery defaults a missing year to 1970, DuckDB to 1900. Prepend a 1970
-            # year to both value and format so a yearless input lands on 1970. When the
-            # input already carries a year, DuckDB binds the last %Y match, so the real
-            # year overrides the prepended 1970 harmlessly.
-            year_str = exp.Literal.string("1970 ")
+
+        default_year = expression.args.get("default_year")
+        if default_year:
+            year_str = exp.Literal.string(f"{default_year.name} ")
             fmt_prefix = exp.Literal.string("%Y ")
             value = exp.DPipe(this=year_str, expression=expression.this)
             fmt = exp.DPipe(this=fmt_prefix, expression=formatted_time)
             return self.func("STRPTIME", value, fmt)
+
         return self.func("STRPTIME", expression.this, formatted_time)
 
     def parsetime_sql(self, expression: exp.ParseTime) -> str:

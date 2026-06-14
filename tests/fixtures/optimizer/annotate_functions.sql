@@ -945,6 +945,10 @@ ARRAY<INT>;
 ARRAY_EXCEPT(tbl.array_col, tbl.array_col);
 ARRAY<STRING>;
 
+# dialect: hive, spark2, spark, databricks
+MINUTE('2024-01-01 12:30:00');
+INT;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

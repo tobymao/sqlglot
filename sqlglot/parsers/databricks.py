@@ -11,6 +11,7 @@ class DatabricksParser(SparkParser):
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = True
     COLON_IS_VARIANT_EXTRACT = True
+    COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,

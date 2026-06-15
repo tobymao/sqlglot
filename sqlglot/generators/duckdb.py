@@ -717,8 +717,6 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
     connect = expression.args["connect"]
     connect_pred = connect.args.get("connect")
-    if not connect_pred:
-        return expression
 
     priors = list(connect_pred.find_all(exp.Prior))
     if len(priors) != 1:
@@ -742,33 +740,34 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
     # LEVEL is a Snowflake pseudo-column: it's always computed as a depth counter in the CTE
     # Raw LEVEL column refs are replaced with the computed value
-    def _is_level_ref(e: exp.Expr) -> bool:
-        col = e.this if isinstance(e, exp.Alias) else e
-        return isinstance(col, exp.Column) and col.name.upper() == "LEVEL" and not col.table
+    def _has_level_ref(e: exp.Expr) -> bool:
+        return any(
+            isinstance(col, exp.Column) and col.name.upper() == "LEVEL" and not col.table
+            for col in e.find_all(exp.Column)
+        )
 
-    has_level = any(_is_level_ref(e) for e in base_select_exprs)
-    has_star = any(e.is_star for e in base_select_exprs)
+    level_exprs = [e for e in base_select_exprs if _has_level_ref(e)]
+    non_level_exprs = [e for e in base_select_exprs if not _has_level_ref(e)]
+    has_level = bool(level_exprs)
+    has_star = expression.is_star
 
     # WHERE columns absent from SELECT must be carried through the CTE so the outer filter can see them.
     # With SELECT *, all columns are already included so no extras are needed.
-    select_names = {e.alias_or_name for e in base_select_exprs}
-    extra_cols = (
-        dict.fromkeys(
+    select_names = expression.named_selects
+    if has_star:
+        extra_cols = {}
+    else:
+        extra_cols = dict.fromkeys(
             col.name
             for col in (base_where.find_all(exp.Column) if base_where else [])
             if (not col.table or col.table == source_table_alias) and col.name not in select_names
         )
-        if not has_star
-        else {}
-    )
     # The PRIOR column must be projected into the CTE so _parent_row.<col> is valid in the join.
     if not has_star and child_col_name not in select_names:
         extra_cols.setdefault(child_col_name, None)
 
     # Anchor: seed LEVEL at 1 and start the ancestor path with the root's parent key value.
-    anchor_projs = [e for e in base_select_exprs if not _is_level_ref(e)] + [
-        exp.column(c) for c in extra_cols
-    ]
+    anchor_projs = non_level_exprs + [exp.column(c) for c in extra_cols]
     anchor_projs.append(exp.alias_(exp.Literal.number(1), "level"))
     anchor_projs.append(exp.alias_(exp.array(exp.column(child_col_name)), "_path"))
     anchor = exp.select(*anchor_projs).from_(source_table)
@@ -807,8 +806,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row"))
         if e.is_star
         else exp.column(e.alias_or_name, "_child_row")
-        for e in base_select_exprs
-        if not _is_level_ref(e)
+        for e in non_level_exprs
     ]
     inner_select_exprs += [exp.column(c, "_child_row") for c in extra_cols]
     inner_select_exprs.append(exp.alias_(exp.column("level", "_parent_row") + 1, "level"))
@@ -840,15 +838,18 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         exclude.append(exp.column("_path"))
         outer_select_exprs: list[exp.Expr] = [exp.Star(except_=exclude)]
     else:
-        outer_select_exprs = []
-        for e in base_select_exprs:
-            if _is_level_ref(e):
-                col = exp.column("level", cte_name)
-                outer_select_exprs.append(
-                    exp.alias_(col, e.alias) if isinstance(e, exp.Alias) else col
-                )
-            else:
-                outer_select_exprs.append(exp.column(e.alias_or_name, cte_name))
+
+        def _replace_level(n: exp.Expression) -> exp.Expression:
+            if isinstance(n, exp.Column) and n.name.upper() == "LEVEL" and not n.table:
+                return exp.column("level", cte_name)
+            return n
+
+        outer_select_exprs = [
+            e.transform(_replace_level)
+            if _has_level_ref(e)
+            else exp.column(e.alias_or_name, cte_name)
+            for e in base_select_exprs
+        ]
     outer_query = exp.select(*outer_select_exprs).from_(cte_name)
     if base_where:
         outer_query = outer_query.where(_qualify_cols(base_where.this, cte_name))

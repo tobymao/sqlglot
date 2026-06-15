@@ -1791,6 +1791,10 @@ class Parser:
     # Whether the `:` operator is used to extract a value from a VARIANT column
     COLON_IS_VARIANT_EXTRACT: t.ClassVar = False
 
+    # Whether a chain of colon extractions (x:y:z) is a single extraction with a merged
+    # path (x:y.z, e.g. Snowflake) or each colon extracts from the previous result (e.g. Databricks)
+    COLON_CHAIN_IS_SINGLE_EXTRACT: t.ClassVar = True
+
     # Whether or not a VALUES keyword needs to be followed by '(' to form a VALUES clause.
     # If this is True and '(' is not found, the keyword will be treated as an identifier
     VALUES_FOLLOWED_BY_PAREN: t.ClassVar = True
@@ -6685,6 +6689,10 @@ class Parser:
         escape = None
 
         while self._match(TokenType.COLON):
+            if not self.COLON_CHAIN_IS_SINGLE_EXTRACT:
+                this, path_parts = self._build_json_extract(this, path_parts, escape)
+                escape = None
+
             key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
 
             if key:

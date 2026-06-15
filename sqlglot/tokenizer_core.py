@@ -431,6 +431,7 @@ class TokenType(IntEnum):
     TRIGGER = auto()
     TYPE = auto()
     UNCACHE = auto()
+    UNDROP = auto()
     UNION = auto()
     UNNEST = auto()
     UNPIVOT = auto()

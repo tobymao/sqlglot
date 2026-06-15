@@ -760,6 +760,7 @@ class SnowflakeParser(parser.Parser):
         TokenType.GET: lambda self: self._parse_get(),
         TokenType.PUT: lambda self: self._parse_put(),
         TokenType.SHOW: lambda self: self._parse_show(),
+        TokenType.UNDROP: lambda self: self._parse_undrop(),
     }
 
     PROPERTY_PARSERS = {
@@ -864,6 +865,21 @@ class SnowflakeParser(parser.Parser):
     SCHEMA_KINDS = {"OBJECTS", "TABLES", "VIEWS", "SEQUENCES", "UNIQUE KEYS", "IMPORTED KEYS"}
 
     NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
+
+    UNDROP_OBJECTS = {
+        "ACCOUNT",
+        "DATABASE",
+        "DYNAMIC TABLE",
+        "EXTERNAL VOLUME",
+        "ICEBERG TABLE",
+        "NOTEBOOK",
+        "SCHEMA",
+        "SNAPSHOT",
+        "STREAMLIT",
+        "TABLE",
+        "TAG",
+        "TYPE",
+    }
 
     CREATABLES = {
         *parser.Parser.CREATABLES,
@@ -1180,6 +1196,25 @@ class SnowflakeParser(parser.Parser):
                 and self._parse_csv(lambda: self._parse_var(any_token=True, upper=True)),
             )
         )
+
+    def _parse_undrop(self) -> exp.Undrop | exp.Command:
+        start = self._prev
+        kind_parts: list[str] = []
+
+        while self._curr:
+            kind_parts.append(self._curr.text.upper())
+            self._advance()
+            kind = " ".join(kind_parts)
+            if kind in self.UNDROP_OBJECTS:
+                break
+            if not any(k.startswith(f"{kind} ") for k in self.UNDROP_OBJECTS):
+                return self._parse_as_command(start)
+        else:
+            return self._parse_as_command(start)
+
+        is_db_ref = kind in {"ACCOUNT", "DATABASE", "SCHEMA"}
+        this = self._parse_table_parts(is_db_reference=is_db_ref)
+        return self.expression(exp.Undrop(this=this, kind=kind))
 
     def _parse_put(self) -> exp.Put | exp.Command:
         if self._curr.token_type != TokenType.STRING:

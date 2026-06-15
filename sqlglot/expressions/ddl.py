@@ -371,7 +371,7 @@ class DropPrimaryKey(Expression):
 
 
 class Undrop(Expression):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {"this": True, "kind": True, "rename": False}
 
     @property
     def kind(self) -> str:

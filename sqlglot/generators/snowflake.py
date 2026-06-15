@@ -840,7 +840,9 @@ class SnowflakeGenerator(generator.Generator):
     def undrop_sql(self, expression: exp.Undrop) -> str:
         this = self.sql(expression, "this")
         kind = expression.kind
-        return f"UNDROP {kind} {this}"
+        rename = self.sql(expression, "rename")
+        rename = f" RENAME TO {rename}" if rename else ""
+        return f"UNDROP {kind} {this}{rename}"
 
     def show_sql(self, expression: exp.Show) -> str:
         terse = "TERSE " if expression.args.get("terse") else ""

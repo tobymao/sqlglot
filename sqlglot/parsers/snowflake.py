@@ -866,19 +866,24 @@ class SnowflakeParser(parser.Parser):
 
     NON_TABLE_CREATABLES = {"STORAGE INTEGRATION", "TAG", "WAREHOUSE", "STREAMLIT"}
 
-    UNDROP_OBJECTS = {
-        "ACCOUNT",
-        "DATABASE",
-        "DYNAMIC TABLE",
-        "EXTERNAL VOLUME",
-        "ICEBERG TABLE",
-        "NOTEBOOK",
-        "SCHEMA",
-        "SNAPSHOT",
-        "STREAMLIT",
-        "TABLE",
-        "TAG",
-        "TYPE",
+    UNDROP_OBJECTS: t.ClassVar[parser.OPTIONS_TYPE] = {
+        **dict.fromkeys(
+            (
+                "ACCOUNT",
+                "DATABASE",
+                "NOTEBOOK",
+                "SCHEMA",
+                "SNAPSHOT",
+                "STREAMLIT",
+                "TABLE",
+                "TAG",
+                "TYPE",
+            ),
+            tuple(),
+        ),
+        "DYNAMIC": ("TABLE",),
+        "EXTERNAL": ("VOLUME",),
+        "ICEBERG": ("TABLE",),
     }
 
     CREATABLES = {
@@ -1199,22 +1204,15 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_undrop(self) -> exp.Undrop | exp.Command:
         start = self._prev
-        kind_parts: list[str] = []
-
-        while self._curr:
-            kind_parts.append(self._curr.text.upper())
-            self._advance()
-            kind = " ".join(kind_parts)
-            if kind in self.UNDROP_OBJECTS:
-                break
-            if not any(k.startswith(f"{kind} ") for k in self.UNDROP_OBJECTS):
-                return self._parse_as_command(start)
-        else:
+        kind = self._parse_var_from_options(self.UNDROP_OBJECTS, raise_unmatched=False)
+        if not kind:
             return self._parse_as_command(start)
 
-        is_db_ref = kind in {"ACCOUNT", "DATABASE", "SCHEMA"}
-        this = self._parse_table_parts(is_db_reference=is_db_ref)
-        return self.expression(exp.Undrop(this=this, kind=kind))
+        this = self._parse_table_parts(
+            is_db_reference=kind.name in ("ACCOUNT", "DATABASE", "SCHEMA")
+        )
+        rename = self._parse_table_parts() if self._match_text_seq("RENAME", "TO") else None
+        return self.expression(exp.Undrop(this=this, kind=kind.name, rename=rename))
 
     def _parse_put(self) -> exp.Put | exp.Command:
         if self._curr.token_type != TokenType.STRING:

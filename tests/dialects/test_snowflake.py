@@ -6799,3 +6799,5 @@ FROM SEMANTIC_VIEW(
         self.validate_identity("UNDROP EXTERNAL VOLUME my_vol")
         self.validate_identity("UNDROP ICEBERG TABLE my_table")
         self.validate_identity("UNDROP TABLE db.schema.my_table")
+        self.validate_identity("UNDROP SNAPSHOT IDENTIFIER('my_snap')")
+        self.validate_identity("UNDROP SNAPSHOT my_snap RENAME TO new_snap")

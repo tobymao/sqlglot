@@ -421,6 +421,7 @@ class ClickHouseParser(parser.Parser):
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
         TokenType.FORMAT,
+        TokenType.SETTINGS,
     }
 
     LOG_DEFAULTS_TO_LN = True

@@ -42,6 +42,7 @@ class TestClickhouse(Validator):
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
 
+        self.validate_identity("SELECT 1 SETTINGS log_comment = 'performance'")
         self.validate_identity('SELECT DISTINCT ON ("id") * FROM t')
         self.validate_identity("SELECT 1 OR (1 = 2)")
         self.validate_identity("SELECT 1 AND (1 = 2)")

@@ -3014,6 +3014,27 @@ class DuckDBGenerator(generator.Generator):
 
         return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
+    def column_sql(self, expression: exp.Column) -> str:
+        # $N in DuckDB is a prepared-statement parameter, not a positional column ref
+        param = expression.this
+        table_name = expression.text("table")
+        if (
+            table_name
+            and isinstance(param, exp.Parameter)
+            and isinstance(param.this, exp.Literal)
+            and param.this.is_number
+        ):
+            select = expression.find_ancestor(exp.Select)
+            if select:
+                from_ = select.args.get("from_")
+                sources = ([from_.this] if from_ else []) + [
+                    j.this for j in select.args.get("joins") or []
+                ]
+                for source in sources:
+                    if isinstance(source, exp.Values) and source.alias_or_name == table_name:
+                        return f"{self.sql(expression, 'table')}.col{int(param.this.to_py()) - 1}"
+        return super().column_sql(expression)
+
     def join_sql(self, expression: exp.Join) -> str:
         if (
             not expression.args.get("using")

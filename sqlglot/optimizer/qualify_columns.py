@@ -324,6 +324,7 @@ def _expand_alias_refs(
         nonlocal replaced
         is_group_by = isinstance(node, exp.Group)
         is_having = isinstance(node, exp.Having)
+        is_qualify = isinstance(node, exp.Qualify)
         if not node or (expand_only_groupby and not is_group_by):
             return
 
@@ -353,12 +354,12 @@ def _expand_alias_refs(
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;
                 # If "HAVING x" is expanded to "HAVING max(x.b)", BQ would blindly replace the "x" reference with the projection MAX(x.b)
                 # i.e HAVING MAX(MAX(x.b).b), resulting in the error: "Aggregations of aggregations are not allowed"
-                if is_having and dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+                if (is_having or is_qualify) and dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     skip_replace = skip_replace or any(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (is_group_by or is_having):
+            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (is_group_by or is_having or is_qualify):
                 column_table = table.name if table else column.table
                 if column_table in projections:
                     # BigQuery's GROUP BY and HAVING clauses get confused if the column name

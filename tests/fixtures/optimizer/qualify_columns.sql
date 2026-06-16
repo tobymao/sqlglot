@@ -895,6 +895,18 @@ SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_
 SELECT * FROM x QUALIFY COUNT(a) OVER (PARTITION BY b) > 1;
 SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b) > 1;
 
+# title: BigQuery alias expansion in QUALIFY with source shadowing
+# dialect: bigquery
+# execute: false
+SELECT a, MAX(b) AS x FROM x GROUP BY a QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY a QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+
+# title: BigQuery alias expansion in QUALIFY with source shadowing and GROUP BY positional ref
+# dialect: bigquery
+# execute: false
+SELECT x.a, MAX(x.b) AS x FROM x GROUP BY 1 QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+
 --------------------------------------
 -- Expand laterals
 --------------------------------------

@@ -5270,12 +5270,7 @@ class Parser:
                 if isinstance(seq_get(pivot_field_expressions, 0), exp.PivotAny):
                     continue
 
-                all_fields.append(
-                    [
-                        fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
-                        for fld in pivot_field_expressions
-                    ]
-                )
+                all_fields.append([fld.alias_or_name for fld in pivot_field_expressions])
 
             if all_fields:
                 if names:

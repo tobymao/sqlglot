@@ -87,7 +87,7 @@ class _TokenizerBase:
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]]
     _IDENTIFIER_ESCAPES: t.ClassVar[set[str]]
     _COMMENTS: t.ClassVar[dict[str, str | None]]
-    _KEYWORD_TRIE: t.ClassVar[dict[str, object]]
+    _KEYWORD_TRIE: t.ClassVar[dict[str | int, object]]
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -208,7 +208,7 @@ class Tokenizer(_TokenizerBase):
     _QUOTES: t.ClassVar[dict[str, str]] = {}
     _STRING_ESCAPES: t.ClassVar[set[str]] = set()
     _BYTE_STRING_ESCAPES: t.ClassVar[set[str]] = set()
-    _KEYWORD_TRIE: t.ClassVar[dict[str, object]] = {}
+    _KEYWORD_TRIE: t.ClassVar[dict[str | int, object]] = {}
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]] = set()
 
     KEYWORDS: t.ClassVar[dict[str, TokenType]] = {

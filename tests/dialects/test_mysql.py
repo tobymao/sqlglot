@@ -488,6 +488,27 @@ class TestMySQL(Validator):
                 "tsql": "CHAR(10)",
             },
         )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP(ts)",
+            write={
+                "mysql": "SELECT UNIX_TIMESTAMP(CAST(ts AS DATETIME))",
+                "duckdb": "SELECT EPOCH(CAST(ts AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2021-01-01 00:00:00')",
+            write={
+                "mysql": "SELECT UNIX_TIMESTAMP(CAST('2021-01-01 00:00:00' AS DATETIME))",
+                "duckdb": "SELECT EPOCH(CAST('2021-01-01 00:00:00' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP()",
+            write={
+                "mysql": "SELECT UNIX_TIMESTAMP(CURRENT_TIMESTAMP())",
+                "duckdb": "SELECT EPOCH(CURRENT_TIMESTAMP)",
+            },
+        )
         self.validate_identity("CREATE TABLE t (foo VARBINARY(5))")
         self.validate_all(
             "CREATE TABLE t (foo BLOB)",

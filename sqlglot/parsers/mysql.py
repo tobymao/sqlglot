@@ -33,6 +33,16 @@ def _has_time_specifier(date_format: str) -> bool:
     return False
 
 
+def _build_unix_timestamp(args: list) -> exp.TimeToUnix:
+    # UNIX_TIMESTAMP(): with no arg, convert the current timestamp to epoch seconds
+    if not args:
+        return exp.TimeToUnix(this=exp.CurrentTimestamp())
+
+    # UNIX_TIMESTAMP(ts): the arg may be a string, so cast it to a timestamp first
+    # and then convert to epoch seconds
+    return exp.TimeToUnix(this=exp.TsOrDsToTimestamp(this=args[0]))
+
+
 def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
     mysql_date_format = seq_get(args, 1)
     date_format = Dialect["mysql"].format_time(mysql_date_format)
@@ -143,6 +153,7 @@ class MySQLParser(parser.Parser):
             )
             + 1
         ),
+        "UNIX_TIMESTAMP": _build_unix_timestamp,
         "VERSION": exp.CurrentVersion.from_arg_list,
         "WEEK": lambda args: exp.Week(
             this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)

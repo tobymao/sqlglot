@@ -210,6 +210,7 @@ class MySQLGenerator(generator.Generator):
         ),
         exp.TimestampSub: date_add_interval_sql("DATE", "SUB"),
         exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
+        exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
         exp.TimeStrToTime: lambda self, e: timestrtotime_sql(
             self,
             e,

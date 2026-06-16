@@ -359,7 +359,9 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (is_group_by or is_having or is_qualify):
+            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (
+                is_group_by or is_having or is_qualify
+            ):
                 column_table = table.name if table else column.table
                 if column_table in projections:
                     # BigQuery's GROUP BY and HAVING clauses get confused if the column name

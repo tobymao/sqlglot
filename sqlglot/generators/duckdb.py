@@ -710,20 +710,16 @@ def _seq_to_range_in_generator(expression: exp.Expr) -> exp.Expr:
 
 
 def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
-    # Rewrites START WITH ... CONNECT BY PRIOR into WITH RECURSIVE with path-based cycle detection.
-    # Falls through unchanged for multiple PRIORs or a non-column PRIOR expression.
+    # Rewrites START WITH ... CONNECT BY PRIOR into WITH RECURSIVE
+    # Falls through unchanged if there are no PRIORs.
     if not isinstance(expression, exp.Select) or not expression.args.get("connect"):
         return expression
 
     connect = expression.args["connect"]
-    connect_pred = connect.args.get("connect")
+    connect_pred = connect.args["connect"]
 
     priors = list(connect_pred.find_all(exp.Prior))
-    if len(priors) != 1:
-        return expression
-
-    prior = priors[0]
-    if not isinstance(prior.this, exp.Column):
+    if not priors:
         return expression
 
     from_ = expression.args.get("from_")
@@ -733,7 +729,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     # Pull everything we need from the original SELECT up front.
     source_table = from_.this
     source_table_alias = source_table.alias
-    child_col_name = prior.this.name
+    prior_col_names = [p.this.name for p in priors if isinstance(p.this, exp.Column)]
     base_select_exprs = expression.expressions
     base_where = expression.args.get("where")
     base_with = expression.args.get("with_")
@@ -762,14 +758,15 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
             for col in (base_where.find_all(exp.Column) if base_where else [])
             if (not col.table or col.table == source_table_alias) and col.name not in select_names
         )
-    # The PRIOR column must be projected into the CTE so _parent_row.<col> is valid in the join.
-    if not has_star and child_col_name not in select_names:
-        extra_cols.setdefault(child_col_name, None)
+    # All PRIOR columns must be projected into the CTE so _parent_row.<col> is valid in the join.
+    if not has_star:
+        for col_name in prior_col_names:
+            if col_name not in select_names:
+                extra_cols.setdefault(col_name, None)
 
-    # Anchor: seed LEVEL at 1 and start the ancestor path with the root's parent key value.
+    # Anchor: seed LEVEL at 1.
     anchor_projs = non_level_exprs + [exp.column(c) for c in extra_cols]
     anchor_projs.append(exp.alias_(exp.Literal.number(1), "level"))
-    anchor_projs.append(exp.alias_(exp.array(exp.column(child_col_name)), "_path"))
     anchor = exp.select(*anchor_projs).from_(source_table)
     if connect.args.get("start"):
         anchor = anchor.where(connect.args["start"])
@@ -799,9 +796,6 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
         return node.transform(_transform)
 
-    parent_row = exp.column("_path", "_parent_row")
-    child_row = exp.column(child_col_name, "_child_row")
-
     inner_select_exprs: list[exp.Expr] = [
         exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row"))
         if e.is_star
@@ -810,7 +804,6 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     ]
     inner_select_exprs += [exp.column(c, "_child_row") for c in extra_cols]
     inner_select_exprs.append(exp.alias_(exp.column("level", "_parent_row") + 1, "level"))
-    inner_select_exprs.append(exp.alias_(exp.func("LIST_APPEND", parent_row, child_row), "_path"))
 
     # Avoid colliding with any CTE names already on the query.
     cte_name = find_new_name(
@@ -822,7 +815,6 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         exp.select(*inner_select_exprs)
         .from_(source_table.as_("_child_row"))
         .join(exp.to_table(cte_name).as_("_parent_row"), on=_qualify_connect_pred(connect_pred))
-        .where(exp.not_(exp.func("LIST_CONTAINS", parent_row, child_row)))
     )
 
     # CTE body is anchor UNION ALL recursive arm.
@@ -831,12 +823,12 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         alias=exp.TableAlias(this=exp.to_identifier(cte_name)),
     )
 
-    # Outer SELECT re-projects from the CTE. Synthetic _path and level columns are excluded.
+    # Outer SELECT re-projects from the CTE. Synthetic level column is excluded unless referenced.
     # Explicit LEVEL references are projected from the CTE's computed column, preserving aliases.
     if has_star:
-        exclude = [] if has_level else [exp.column("level")]
-        exclude.append(exp.column("_path"))
-        outer_select_exprs: list[exp.Expr] = [exp.Star(except_=exclude)]
+        outer_select_exprs: list[exp.Expr] = (
+            [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
+        )
     else:
 
         def _replace_level(n: exp.Expression) -> exp.Expression:

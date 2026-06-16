@@ -475,6 +475,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
         exp.DayOfYear: rename_func("DAYOFYEAR"),
         exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
+        exp.DynamicIdentifier: rename_func("IDENTIFIER"),
         exp.Explode: rename_func("FLATTEN"),
         exp.Extract: lambda self, e: self.func(
             "DATE_PART", map_date_part(e.this, self.dialect), e.expression
@@ -615,9 +616,6 @@ class SnowflakeGenerator(generator.Generator):
             "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
         ),
     }
-
-    def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
-        return self.func("IDENTIFIER", expression.this)
 
     def sortarray_sql(self, expression: exp.SortArray) -> str:
         asc = expression.args.get("asc")

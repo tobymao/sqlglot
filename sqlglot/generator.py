@@ -9,6 +9,7 @@ from functools import reduce, wraps
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
+from sqlglot.expressions.core import maybe_parse
 from sqlglot.helper import csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
@@ -1954,7 +1955,8 @@ class Generator:
     def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
         this = expression.this
         if this and this.is_string:
-            return this.name
+            return maybe_parse(this.name).sql(self.dialect)
+        self.unsupported("IDENTIFIER() with non-literal arguments is not supported")
         return self.func("IDENTIFIER", this)
 
     def identifier_sql(self, expression: exp.Identifier) -> str:

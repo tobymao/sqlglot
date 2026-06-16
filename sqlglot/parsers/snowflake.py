@@ -723,6 +723,7 @@ class SnowflakeParser(parser.Parser):
             expression=seq_get(args, 1) or exp.Literal.string(" "),
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
+        "IDENTIFIER": exp.DynamicIdentifier.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,
@@ -733,7 +734,6 @@ class SnowflakeParser(parser.Parser):
         **parser.Parser.FUNCTION_PARSERS,
         "DATE_PART": lambda self: self._parse_date_part(),
         "DIRECTORY": lambda self: self._parse_directory(),
-        "IDENTIFIER": lambda self: self._parse_identifier_function(),
         "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
         "LISTAGG": lambda self: self._parse_string_agg(),
         "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
@@ -1143,13 +1143,6 @@ class SnowflakeParser(parser.Parser):
 
         return table
 
-    def _fold_identifier_literal(self, arg: exp.Expr | None) -> exp.Expr:
-        return self.expression(exp.DynamicIdentifier(this=arg))
-
-    def _parse_identifier_function(self) -> exp.Expr:
-        arg = self._parse_string() or super()._parse_id_var()
-        return self._fold_identifier_literal(arg)
-
     def _parse_id_var(
         self,
         any_token: bool = True,
@@ -1160,7 +1153,7 @@ class SnowflakeParser(parser.Parser):
                 super()._parse_id_var(any_token=any_token, tokens=tokens) or self._parse_string()
             )
             self._match_r_paren()
-            return self._fold_identifier_literal(identifier)
+            return self.expression(exp.DynamicIdentifier(this=identifier))
 
         return super()._parse_id_var(any_token=any_token, tokens=tokens)
 

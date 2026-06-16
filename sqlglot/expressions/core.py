@@ -1807,8 +1807,9 @@ class Identifier(Expression):
         return self.name
 
 
-class DynamicIdentifier(Expression):
-    arg_types = {"this": True}
+# https://docs.snowflake.com/en/sql-reference/identifier-literal
+class DynamicIdentifier(Expression, Func):
+    pass
 
 
 class Opclass(Expression):

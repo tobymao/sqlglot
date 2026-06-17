@@ -1967,7 +1967,7 @@ class JSON(Expression):
 
 
 class JSONPath(Expression):
-    arg_types = {"expressions": True, "escape": False}
+    arg_types = {"expressions": True}
 
     @property
     def output_name(self) -> str:
@@ -1984,7 +1984,7 @@ class JSONPathFilter(JSONPathPart):
 
 
 class JSONPathKey(JSONPathPart):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "quoted": False}
 
 
 class JSONPathRecursive(JSONPathPart):

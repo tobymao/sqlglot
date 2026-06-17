@@ -6669,13 +6669,12 @@ class Parser:
         self,
         this: exp.Expr | None,
         path_parts: list[exp.JSONPathPart],
-        escape: bool | None,
     ) -> tuple[exp.Expr | None, list[exp.JSONPathPart]]:
         if len(path_parts) > 1:
             this = self.expression(
                 exp.JSONExtract(
                     this=this,
-                    expression=exp.JSONPath(expressions=path_parts, escape=escape),
+                    expression=exp.JSONPath(expressions=path_parts),
                     variant_extract=True,
                     requires_json=self.JSON_EXTRACT_REQUIRES_JSON_EXPRESSION,
                 )
@@ -6686,28 +6685,24 @@ class Parser:
 
     def _parse_colon_as_variant_extract(self, this: exp.Expr | None) -> exp.Expr | None:
         path_parts: list[exp.JSONPathPart] = [exp.JSONPathRoot()]
-        escape = None
 
         while self._match(TokenType.COLON):
             if not self.COLON_CHAIN_IS_SINGLE_EXTRACT:
-                this, path_parts = self._build_json_extract(this, path_parts, escape)
-                escape = None
+                this, path_parts = self._build_json_extract(this, path_parts)
 
             key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
 
             if key:
-                if isinstance(key, exp.Identifier) and key.quoted:
-                    escape = True
-                path_parts.append(exp.JSONPathKey(this=key.name))
+                quoted = isinstance(key, exp.Identifier) and key.quoted
+                path_parts.append(exp.JSONPathKey(this=key.name, quoted=quoted))
 
             while True:
                 if self._match(TokenType.DOT):
                     next_key = self._parse_id_var(any_token=True, tokens=(TokenType.SELECT,))
 
                     if next_key:
-                        if isinstance(next_key, exp.Identifier) and next_key.quoted:
-                            escape = True
-                        path_parts.append(exp.JSONPathKey(this=next_key.name))
+                        quoted = isinstance(next_key, exp.Identifier) and next_key.quoted
+                        path_parts.append(exp.JSONPathKey(this=next_key.name, quoted=quoted))
                 elif self._match(TokenType.L_BRACKET):
                     bracket_expr = self._parse_bracket_key_value()
 
@@ -6716,15 +6711,13 @@ class Parser:
 
                     if bracket_expr:
                         if bracket_expr.is_string:
-                            path_parts.append(exp.JSONPathKey(this=bracket_expr.name))
-                            escape = True
+                            path_parts.append(exp.JSONPathKey(this=bracket_expr.name, quoted=True))
                         elif bracket_expr.is_star:
                             path_parts.append(exp.JSONPathSubscript(this=exp.JSONPathWildcard()))
                         elif bracket_expr.is_number:
                             path_parts.append(exp.JSONPathSubscript(this=bracket_expr.to_py()))
                         else:
-                            this, path_parts = self._build_json_extract(this, path_parts, escape)
-                            escape = None
+                            this, path_parts = self._build_json_extract(this, path_parts)
 
                             this = self.expression(
                                 exp.Bracket(
@@ -6733,8 +6726,7 @@ class Parser:
                             )
 
                 elif self._match(TokenType.DCOLON):
-                    this, path_parts = self._build_json_extract(this, path_parts, escape)
-                    escape = None
+                    this, path_parts = self._build_json_extract(this, path_parts)
 
                     cast_type = self._parse_types()
                     if cast_type:
@@ -6744,7 +6736,7 @@ class Parser:
                 else:
                     break
 
-        this, _ = self._build_json_extract(this, path_parts, escape)
+        this, _ = self._build_json_extract(this, path_parts)
 
         return this
 

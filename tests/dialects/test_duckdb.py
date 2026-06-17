@@ -830,7 +830,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
+            "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1' AS \"'Q1'\", 'Q2' AS \"'Q2'\"))",
             read={
                 "snowflake": "SELECT * FROM produce PIVOT(SUM(produce.sales) FOR produce.quarter IN ('Q1', 'Q2'))",
             },

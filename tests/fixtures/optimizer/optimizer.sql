@@ -639,8 +639,8 @@ PIVOT(SUM(`u_cte`.`f`) AS `sum` FOR `u_cte`.`h` IN ('x', 'y')) AS `_0`;
 SELECT * FROM u PIVOT (SUM(f) FOR h IN ('x', 'y'));
 SELECT
   "_0"."G" AS "G",
-  "_0"."X" AS "X",
-  "_0"."Y" AS "Y"
+  "_0"."'x'" AS "'x'",
+  "_0"."'y'" AS "'y'"
 FROM "U" AS "U"
 PIVOT(SUM("U"."F") FOR "U"."H" IN ('x', 'y')) AS "_0";
 

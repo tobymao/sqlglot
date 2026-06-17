@@ -688,7 +688,7 @@ class TestParser(unittest.TestCase):
                 "bigquery": ["prop", "rudder"],
                 "duckdb": ["prop", "rudder"],
                 "redshift": ["prop", "rudder"],
-                "snowflake": ["prop", "rudder"],
+                "snowflake": ['''"'prop'"''', '''"'rudder'"'''],
                 "spark": ["prop", "rudder"],
             },
             everything_aliased: {

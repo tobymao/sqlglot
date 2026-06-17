@@ -2492,7 +2492,7 @@ class Generator:
 
         # Derive the per-value suffix from the first stored column vs the first IN-list value.
         # This correctly handles dialects (e.g. Spark single-agg) that ignore agg aliases.
-        first_base = in_exprs[0].alias_or_name
+        first_base = in_exprs[0].sql() if src_identify_pivot_strings else in_exprs[0].alias_or_name
         first_stored = columns[0].name
 
         # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)

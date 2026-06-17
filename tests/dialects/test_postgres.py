@@ -1202,6 +1202,9 @@ FROM json_data, field_ids""",
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
         )
         self.validate_identity(
+            "INSERT INTO tbl (a, b) VALUES (1, 'x') ON CONFLICT(a, LOWER(b)) DO UPDATE SET b = excluded.b"
+        )
+        self.validate_identity(
             "ALTER TABLE tested_table ADD CONSTRAINT unique_example UNIQUE (column_name) NOT VALID"
         )
         self.validate_identity(

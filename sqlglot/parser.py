@@ -3544,7 +3544,7 @@ class Parser:
             if self._match_text_seq("ON", "CONSTRAINT"):
                 constraint = self._parse_id_var()
             elif self._match(TokenType.L_PAREN):
-                conflict_keys = self._parse_csv(self._parse_id_var)
+                conflict_keys = self._parse_csv(self._parse_with_operator)
                 self._match_r_paren()
 
         index_predicate = self._parse_where()

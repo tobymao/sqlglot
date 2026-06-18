@@ -295,6 +295,18 @@ class TestSQLite(Validator):
         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity(
+            "INSERT INTO tbl (x, y) SELECT 1, 'a' WHERE TRUE ON CONFLICT(x, LOWER(y)) DO UPDATE SET y = excluded.y"
+        )
+        self.validate_identity(
+            "INSERT INTO tbl (x, y) VALUES (1, 'a') ON CONFLICT(x, LOWER(y) COLLATE NOCASE ASC, y DESC) DO NOTHING"
+        )
+        self.validate_identity(
+            "INSERT INTO tbl (x, y) VALUES (1, 'a') ON CONFLICT(CASE WHEN x > 0 THEN x ELSE -x END) DO NOTHING"
+        )
+        self.validate_identity(
+            "INSERT INTO tbl (x, y) VALUES (1, 'a') ON CONFLICT(x) WHERE x > 0 DO UPDATE SET y = excluded.y"
+        )
         self.validate_identity("CREATE TABLE foo (id INTEGER PRIMARY KEY ASC)")
         self.validate_identity("CREATE TEMPORARY TABLE foo (id INTEGER)")
         self.validate_identity("CREATE VIRTUAL TABLE docs USING fts5(title, content)")

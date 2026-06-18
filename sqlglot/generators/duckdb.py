@@ -726,50 +726,19 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     if not from_ or expression.args.get("joins"):
         return expression
 
-    # Pull everything we need from the original SELECT up front.
     source_table = from_.this
     source_table_alias = source_table.alias
-    prior_col_names = [p.this.name for p in priors if isinstance(p.this, exp.Column)]
     base_select_exprs = expression.expressions
     base_where = expression.args.get("where")
     base_with = expression.args.get("with_")
 
-    # LEVEL is a Snowflake pseudo-column: it's always computed as a depth counter in the CTE
-    # Raw LEVEL column refs are replaced with the computed value
-    def _has_level_ref(e: exp.Expr) -> bool:
-        return any(
-            isinstance(col, exp.Column) and col.name.upper() == "LEVEL" and not col.table
-            for col in e.find_all(exp.Column)
-        )
-
-    level_exprs = [e for e in base_select_exprs if _has_level_ref(e)]
-    non_level_exprs = [e for e in base_select_exprs if not _has_level_ref(e)]
-    has_level = bool(level_exprs)
+    # LEVEL is a Snowflake pseudo-column: it's always computed as a depth counter in the CTE.
+    has_level = any(
+        isinstance(col, exp.Column) and col.name.upper() == "LEVEL" and not col.table
+        for e in base_select_exprs
+        for col in e.find_all(exp.Column)
+    )
     has_star = expression.is_star
-
-    # WHERE columns absent from SELECT must be carried through the CTE so the outer filter can see them.
-    # With SELECT *, all columns are already included so no extras are needed.
-    select_names = expression.named_selects
-    if has_star:
-        extra_cols = {}
-    else:
-        extra_cols = dict.fromkeys(
-            col.name
-            for col in (base_where.find_all(exp.Column) if base_where else [])
-            if (not col.table or col.table == source_table_alias) and col.name not in select_names
-        )
-    # All PRIOR columns must be projected into the CTE so _parent_row.<col> is valid in the join.
-    if not has_star:
-        for col_name in prior_col_names:
-            if col_name not in select_names:
-                extra_cols.setdefault(col_name, None)
-
-    # Anchor: seed LEVEL at 1.
-    anchor_projs = non_level_exprs + [exp.column(c) for c in extra_cols]
-    anchor_projs.append(exp.alias_(exp.Literal.number(1), "level"))
-    anchor = exp.select(*anchor_projs).from_(source_table)
-    if connect.args.get("start"):
-        anchor = anchor.where(connect.args["start"])
 
     def _qualify_cols(node: exp.Expression, table: str) -> exp.Expression:
         def _transform(n: exp.Expression) -> exp.Expression:
@@ -796,35 +765,28 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
         return node.transform(_transform)
 
-    inner_select_exprs: list[exp.Expr] = [
-        exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row"))
-        if e.is_star
-        else exp.column(e.alias_or_name, "_child_row")
-        for e in non_level_exprs
-    ]
-    inner_select_exprs += [exp.column(c, "_child_row") for c in extra_cols]
-    inner_select_exprs.append(exp.alias_(exp.column("level", "_parent_row") + 1, "level"))
-
     # Avoid colliding with any CTE names already on the query.
     cte_name = find_new_name(
         {cte.alias for cte in (base_with.expressions if base_with else [])}, "_rootcte"
     )
 
-    # Build main query body
+    # Anchor: project all source columns + seed LEVEL at 1.
+    anchor = exp.select(exp.Star(), exp.alias_(exp.Literal.number(1), "level")).from_(source_table)
+    if connect.args.get("start"):
+        anchor = anchor.where(connect.args["start"])
+
+    # Recursive arm: carry all child columns + increment level.
+    # SELECT * in both arms means WHERE/PRIOR columns are always available without explicit tracking.
     inner_query = (
-        exp.select(*inner_select_exprs)
+        exp.select(
+            exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row")),
+            exp.alias_(exp.column("level", "_parent_row") + 1, "level"),
+        )
         .from_(source_table.as_("_child_row"))
         .join(exp.to_table(cte_name).as_("_parent_row"), on=_qualify_connect_pred(connect_pred))
     )
 
-    # CTE body is anchor UNION ALL recursive arm.
-    cte = exp.CTE(
-        this=anchor.union(inner_query, distinct=False),
-        alias=exp.TableAlias(this=exp.to_identifier(cte_name)),
-    )
-
     # Outer SELECT re-projects from the CTE. Synthetic level column is excluded unless referenced.
-    # Explicit LEVEL references are projected from the CTE's computed column, preserving aliases.
     if has_star:
         outer_select_exprs: list[exp.Expr] = (
             [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
@@ -837,10 +799,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
             return n
 
         outer_select_exprs = [
-            e.transform(_replace_level)
-            if _has_level_ref(e)
-            else exp.column(e.alias_or_name, cte_name)
-            for e in base_select_exprs
+            _qualify_cols(e.transform(_replace_level), cte_name) for e in base_select_exprs
         ]
     outer_query = exp.select(*outer_select_exprs).from_(cte_name)
     if base_where:
@@ -848,12 +807,10 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
     # Attach the CTE, marking the WITH clause recursive.
     if base_with:
-        new_with = base_with.copy()
-        new_with.set("recursive", True)
-        new_with.expressions.append(cte)
-        outer_query.set("with_", new_with)
-    else:
-        outer_query.set("with_", exp.With(expressions=[cte], recursive=True))
+        outer_query.set("with_", base_with.copy())
+    outer_query = outer_query.with_(
+        cte_name, as_=anchor.union(inner_query, distinct=False), recursive=True
+    )
 
     for arg in exp.QUERY_MODIFIERS:
         if arg not in ("connect", "where") and (val := expression.args.get(arg)):

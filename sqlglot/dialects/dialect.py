@@ -2134,10 +2134,9 @@ def json_extract_segments(
         if not isinstance(path, exp.JSONPath):
             return rename_func(name)(self, expression)
 
-        escape = path.args.get("escape")
-
         segments = []
         for segment in path.expressions:
+            escape = segment.args.get("quoted")
             path = self.sql(segment)
             if path:
                 if isinstance(segment, exp.JSONPathPart) and (

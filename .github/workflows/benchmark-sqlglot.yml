@@ -24,9 +24,10 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=${{ github.event.issue.number }}
-          PR_HEAD=$(gh pr view $PR_NUMBER --json headRefName -q .headRefName)
-          git fetch origin "$PR_HEAD"
-          git checkout "$PR_HEAD"
+          PR_HEAD_REPO=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.repo.clone_url')
+          PR_HEAD_REF=$(gh api "repos/${{ github.repository }}/pulls/$PR_NUMBER" --jq '.head.ref')
+          git fetch "$PR_HEAD_REPO" "$PR_HEAD_REF"
+          git checkout FETCH_HEAD
 
       - name: Set up Python
         uses: actions/setup-python@v5

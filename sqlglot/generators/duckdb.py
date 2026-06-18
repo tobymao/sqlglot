@@ -740,18 +740,45 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     )
     has_star = expression.is_star
 
-    def _qualify_cols(node: exp.Expression, table: str) -> exp.Expression:
-        def _transform(n: exp.Expression) -> exp.Expression:
-            if isinstance(n, exp.Column) and (not n.table or n.table == source_table_alias):
-                return exp.column(n.name, table)
+    def _scoped_transform(
+        node: exp.Expression, fn: t.Callable[[exp.Expression], exp.Expression]
+    ) -> exp.Expression:
+        if isinstance(node, exp.Subquery):
+            return node
+        result = fn(node)
+        if result is not node:
+            return result
+        node = node.copy()
+        for key, value in node.args.items():
+            if isinstance(value, exp.Expression):
+                node.set(key, _scoped_transform(value, fn))
+            elif isinstance(value, list):
+                node.set(
+                    key,
+                    [
+                        _scoped_transform(v, fn) if isinstance(v, exp.Expression) else v
+                        for v in value
+                    ],
+                )
+        return node
+
+    def _qualify_cols(
+        node: exp.Expression, table: str, replace_level: bool = False
+    ) -> exp.Expression:
+        def _fn(n: exp.Expression) -> exp.Expression:
+            if isinstance(n, exp.Column):
+                if replace_level and n.name.upper() == "LEVEL" and not n.table:
+                    return exp.column("level", table)
+                if not n.table or n.table == source_table_alias:
+                    return exp.column(n.name, table)
             return n
 
-        return node.transform(_transform)
+        return _scoped_transform(node, _fn)
 
     # Build the join condition from the full CONNECT BY predicate:
     # PRIOR(col) → _parent_row.col, unqualified cols → _child_row.col.
     def _qualify_connect_pred(node: exp.Expression) -> exp.Expression:
-        def _transform(n: exp.Expression) -> exp.Expression:
+        def _fn(n: exp.Expression) -> exp.Expression:
             if isinstance(n, exp.Prior):
                 inner = n.this
                 if isinstance(inner, exp.Column) and (
@@ -763,7 +790,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
                 return exp.column(n.name, "_child_row")
             return n
 
-        return node.transform(_transform)
+        return _scoped_transform(node, _fn)
 
     # Avoid colliding with any CTE names already on the query.
     cte_name = find_new_name(
@@ -792,14 +819,8 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
             [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
         )
     else:
-
-        def _replace_level(n: exp.Expression) -> exp.Expression:
-            if isinstance(n, exp.Column) and n.name.upper() == "LEVEL" and not n.table:
-                return exp.column("level", cte_name)
-            return n
-
         outer_select_exprs = [
-            _qualify_cols(e.transform(_replace_level), cte_name) for e in base_select_exprs
+            _qualify_cols(e, cte_name, replace_level=True) for e in base_select_exprs
         ]
     outer_query = exp.select(*outer_select_exprs).from_(cte_name)
     if base_where:

@@ -853,7 +853,7 @@ def _expand_stars(
 
                 if pivot_columns:
                     new_selections.extend(
-                        alias(exp.column(name, table=pivot.alias), name, copy=False)
+                        alias(exp.column(name, table=pivot.alias or None), name, copy=False)
                         for name in pivot_columns
                         if name not in columns_to_exclude
                     )

@@ -75,6 +75,7 @@ class Postgres(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
             "@@": TokenType.DAT,
+            "@?": TokenType.AT_QMARK,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "?&": TokenType.QMARK_AMP,

@@ -6,7 +6,6 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, transforms
-
 from sqlglot.dialects.dialect import (
     DATETIME_DELTA,
     JSON_EXTRACT_TYPE,
@@ -38,8 +37,11 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import is_date_unit, seq_get
+from sqlglot.helper import find_new_name, is_date_unit, seq_get
+from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
+
+_CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
@@ -708,6 +710,101 @@ def _seq_to_range_in_generator(expression: exp.Expr) -> exp.Expr:
         return node
 
     return expression.transform(replace_seq, copy=False)
+
+
+def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
+    # Rewrites START WITH ... CONNECT BY PRIOR into WITH RECURSIVE
+    # Falls through unchanged if there are no PRIORs.
+    if not isinstance(expression, exp.Select) or not expression.args.get("connect"):
+        return expression
+
+    connect = expression.args["connect"]
+    connect_pred = connect.args["connect"]
+
+    priors = list(connect_pred.find_all(exp.Prior))
+    if not priors:
+        return expression
+
+    from_ = expression.args.get("from_")
+    if not from_ or expression.args.get("joins"):
+        return expression
+
+    source_table = from_.this
+    base_select_exprs = expression.expressions
+    base_where = expression.args.get("where")
+    base_with = expression.args.get("with_")
+
+    # LEVEL is a Snowflake pseudo-column: it's always computed as a depth counter in the CTE.
+    has_level = any(
+        isinstance(col, exp.Column) and col.name.upper() == "LEVEL"
+        for e in base_select_exprs
+        for col in e.find_all(exp.Column)
+    )
+    has_star = expression.is_star
+
+    # Build the join condition from the full CONNECT BY predicate:
+    # PRIOR(col) → _parent_row.col, unqualified cols → _child_row.col.
+    def _qualify_connect_pred(node: exp.Expression) -> exp.Expression:
+        for col in find_all_in_scope(node, exp.Column):
+            col.set(
+                "table",
+                exp.to_identifier(
+                    "_parent_row" if isinstance(col.parent, exp.Prior) else "_child_row"
+                ),
+            )
+        for prior in find_all_in_scope(node, exp.Prior):
+            prior.replace(prior.this)
+        return node
+
+    # Avoid colliding with any CTE names already on the query.
+    cte_name = find_new_name(
+        {cte.alias for cte in (base_with.expressions if base_with else [])}, "_rootcte"
+    )
+
+    # Anchor: project all source columns + seed LEVEL at 1.
+    anchor = exp.select(exp.Star(), exp.alias_(exp.Literal.number(1), "level")).from_(source_table)
+    if connect.args.get("start"):
+        anchor = anchor.where(connect.args["start"])
+
+    # Recursive arm: carry all child columns + increment level.
+    # SELECT * in both arms means WHERE/PRIOR columns are always available without explicit tracking.
+    inner_query = (
+        exp.select(
+            exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row")),
+            exp.alias_(exp.column("level", "_parent_row") + 1, "level"),
+        )
+        .from_(source_table.as_("_child_row"))
+        .join(exp.to_table(cte_name).as_("_parent_row"), on=_qualify_connect_pred(connect_pred))
+    )
+
+    # Outer SELECT re-projects from the CTE. Synthetic level column is excluded unless referenced.
+    if has_star:
+        outer_select_exprs: list[exp.Expr] = (
+            [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
+        )
+    else:
+        outer_select_exprs = base_select_exprs
+    outer_query = exp.select(*outer_select_exprs).from_(cte_name)
+    if base_where:
+        outer_query = outer_query.where(base_where.this)
+
+    # Attach the CTE, marking the WITH clause recursive.
+    if base_with:
+        outer_query.set("with_", base_with)
+    outer_query = outer_query.with_(
+        cte_name, as_=anchor.union(inner_query, distinct=False), recursive=True, copy=False
+    )
+
+    for arg, val in expression.args.items():
+        if val and arg not in _CONNECT_BY_ARGS_TO_SKIP:
+            outer_query.set(arg, val)
+
+    # Strip stale source table qualifiers in one pass; CTEs are child scopes so
+    # find_all_in_scope stays within the outer query only.
+    for col in find_all_in_scope(outer_query, exp.Column):
+        col.set("table", None)
+
+    return outer_query
 
 
 def _seq_sql(self: DuckDBGenerator, expression: exp.Func, byte_width: int) -> str:
@@ -1616,7 +1713,9 @@ class DuckDBGenerator(generator.Generator):
         exp.Lateral: _explode_to_unnest_sql,
         exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
         exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
-        exp.Select: transforms.preprocess([_seq_to_range_in_generator]),
+        exp.Select: transforms.preprocess(
+            [connect_by_to_recursive_cte, _seq_to_range_in_generator]
+        ),
         exp.Seq1: lambda self, e: _seq_sql(self, e, 1),
         exp.Seq2: lambda self, e: _seq_sql(self, e, 2),
         exp.Seq4: lambda self, e: _seq_sql(self, e, 4),

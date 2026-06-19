@@ -16,6 +16,8 @@ from sqlglot.typing.snowflake import EXPRESSION_METADATA
 class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
+    # https://docs.snowflake.com/en/sql-reference/data-types-text#escape-sequences
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False

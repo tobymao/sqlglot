@@ -1192,7 +1192,7 @@ class Parser:
         TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
         TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
-        TokenType.LT_AT: binary_range_parser(exp.ArrayContainsAll, reverse_args=True),
+        TokenType.LT_AT: binary_range_parser(exp.ArrayContainedBy),
         TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
         TokenType.RLIKE: binary_range_parser(exp.RegexpLike),
         TokenType.SIMILAR_TO: binary_range_parser(exp.SimilarTo),

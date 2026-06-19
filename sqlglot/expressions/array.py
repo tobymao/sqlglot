@@ -114,6 +114,10 @@ class ArrayContainsAll(Expression, Binary, Func):
     _sql_names = ["ARRAY_CONTAINS_ALL", "ARRAY_HAS_ALL"]
 
 
+class ArrayContainedBy(Expression, Binary, Func):
+    _sql_names = ["ARRAY_CONTAINED_BY"]
+
+
 class ArrayExcept(Expression, Func):
     arg_types = {"this": True, "expression": True, "is_multiset": False}
 

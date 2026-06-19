@@ -710,25 +710,8 @@ def _seq_to_range_in_generator(expression: exp.Expr) -> exp.Expr:
 
 
 def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
-    """
-    Rewrites Snowflake's START WITH ... CONNECT BY PRIOR into a WITH RECURSIVE CTE.
-
-    Snowflake CONNECT BY is a hierarchical traversal — each row in the result is
-    produced by following PRIOR links from a starting set. The equivalent in DuckDB
-    is a recursive CTE with two members joined by UNION ALL:
-
-        WITH RECURSIVE _hier AS (
-            -- anchor: starting rows (START WITH condition)
-            SELECT ... FROM t WHERE <start>
-            UNION ALL
-            -- recursive: one step down the hierarchy per iteration
-            SELECT _r.* FROM t AS _r JOIN _hier AS _h ON _r.child_col = _h.parent_col
-        )
-        SELECT ... FROM _hier WHERE <original where>
-
-    Only handles the common single-table, single-PRIOR equality case.
-    NOCYCLE, multiple PRIORs, and non-equality predicates fall through unchanged.
-    """
+    # Rewrites START WITH ... CONNECT BY PRIOR into WITH RECURSIVE.
+    # Falls through unchanged for NOCYCLE, multiple PRIORs, or non-equality predicates.
     if not isinstance(expression, exp.Select) or not expression.args.get("connect"):
         return expression
 
@@ -736,99 +719,85 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     if connect.args.get("nocycle") or not isinstance(connect.args.get("connect"), exp.EQ):
         return expression
 
-    connect_expr = connect.args["connect"]
-    priors = list(connect_expr.find_all(exp.Prior))
+    connect_pred = connect.args["connect"]
+    priors = list(connect_pred.find_all(exp.Prior))
     if len(priors) != 1:
         return expression
 
-    # CONNECT BY PRIOR parent_col = child_col  (or the reverse — PRIOR can be on either side)
     prior = priors[0]
-    parent_col = prior.this
-    child_col = connect_expr.expression if connect_expr.this is prior else connect_expr.this
 
-    from_ = expression.args.get("from_")
-    source_table = from_.this  # type: ignore[union-attr]
-
-    # Generate names that don't collide with any CTEs already present in the query.
-    existing_with = expression.args.get("with_")
-    existing_ctes = {cte.alias for cte in (existing_with.expressions if existing_with else [])}
-    cte_name = find_new_name(existing_ctes, "_hier")
-    used_names = existing_ctes | {cte_name}
-    rec_alias = find_new_name(used_names, "_r")  # alias for the new-row side of the join
-    cte_ref_alias = find_new_name(used_names | {rec_alias}, "_h")  # alias for the CTE (parent) side
-
-    # --- Anchor member ---
-    # The anchor is the starting set: original SELECT columns filtered by START WITH.
-    # LEVEL is a Snowflake pseudo-column (depth in the hierarchy); seed it at 1.
-    anchor_projections = [e.copy() for e in expression.expressions]
-    has_level = any(p.alias_or_name.upper() == "LEVEL" for p in anchor_projections)
-
-    # Columns referenced in WHERE but absent from SELECT must be carried through the
-    # CTE so the outer SELECT can filter on them — DuckDB can't see them otherwise.
+    # Pull everything we need from the original SELECT up front.
+    src = expression.args["from_"].this  # type: ignore[union-attr]
+    selects = expression.expressions
     existing_where = expression.args.get("where")
-    select_col_names = {e.alias_or_name for e in expression.expressions}
-    where_extra: list[str] = []
-    if existing_where:
-        for col in existing_where.find_all(exp.Column):
-            if not col.table and col.name not in select_col_names and col.name not in where_extra:
-                where_extra.append(col.name)
-    for col_name in where_extra:
-        anchor_projections.append(exp.column(col_name))
+    existing_with = expression.args.get("with_")
 
-    if not has_level:
-        anchor_projections.append(exp.alias_(exp.Literal.number(1), "level"))
-
-    anchor = exp.select(*anchor_projections).from_(source_table.copy())
-    if connect.args.get("start"):
-        anchor.where(connect.args["start"].copy(), copy=False)
-
-    # --- Recursive member ---
-    # Each iteration extends the hierarchy by one level.  Columns must be qualified
-    # to the new-row alias (_r) so DuckDB knows they come from the source table,
-    # not from the CTE reference (_h) used on the join's other side.
-    def _qualify_rec(e: exp.Expression) -> exp.Expression:
-        if isinstance(e, exp.Column) and not e.table:
-            return exp.column(e.this, rec_alias)
-        if isinstance(e, exp.Star):
-            return exp.Column(this=exp.Star(), table=exp.to_identifier(rec_alias))
-        return e
-
-    rec_projections = [e.copy().transform(_qualify_rec) for e in expression.expressions]
-    for col_name in where_extra:
-        rec_projections.append(exp.column(col_name, rec_alias))
-    if not has_level:
-        # Increment LEVEL by joining to the parent row in the CTE (_h).
-        rec_projections.append(exp.alias_(exp.column("level", cte_ref_alias) + 1, "level"))
-
-    # Join condition: new row's child column matches the CTE's parent column.
-    join_cond = exp.column(child_col.this, rec_alias).eq(exp.column(parent_col.this, cte_ref_alias))
-
-    rec_select = (
-        exp.select(*rec_projections)
-        .from_(source_table.as_(rec_alias))
-        .join(exp.to_table(cte_name).as_(cte_ref_alias), on=join_cond)
+    # WHERE columns absent from SELECT must be carried through the CTE so the outer filter can see them.
+    select_names = {e.alias_or_name for e in selects}
+    extra_cols = list(
+        dict.fromkeys(
+            col.name
+            for col in (existing_where.find_all(exp.Column) if existing_where else [])
+            if not col.table and col.name not in select_names
+        )
     )
 
+    # Inject LEVEL as a synthetic depth counter unless the query already projects it.
+    has_level = any(e.alias_or_name.upper() == "LEVEL" for e in selects)
+
+    # Anchor: original projections filtered by START WITH; seeds LEVEL at 1.
+    anchor_projs = [e.copy() for e in selects] + [exp.column(c) for c in extra_cols]
+    if not has_level:
+        anchor_projs.append(exp.alias_(exp.Literal.number(1), "level"))
+    anchor = exp.select(*anchor_projs).from_(src.copy())
+    if connect.args.get("start"):
+        anchor = anchor.where(connect.args["start"].copy())
+
+    # Recursive arm: qualify every column to _child_row (the new row) to disambiguate from _parent_row (the CTE/parent row).
+    # Identify which side of the equality is PRIOR (parent key) and which is the child FK.
+    parent_col = prior.this
+    child_col = connect_pred.expression if connect_pred.this is prior else connect_pred.this
+
+    rec_projs: list[exp.Expr] = []
+    rec_projs += [
+        exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row"))
+        if isinstance(e, exp.Star)
+        else exp.column(e.alias_or_name, "_child_row")
+        for e in selects
+    ]
+    rec_projs += [exp.column(c, "_child_row") for c in extra_cols]
+    if not has_level:
+        rec_projs.append(exp.alias_(exp.column("level", "_parent_row") + 1, "level"))
+    join_on = exp.column(child_col.name, "_child_row").eq(
+        exp.column(parent_col.name, "_parent_row")
+    )
+
+    # Avoid colliding with any CTE names already on the query.
+    cte_name = find_new_name(
+        {cte.alias for cte in (existing_with.expressions if existing_with else [])}, "_rootcte"
+    )
+    rec = (
+        exp.select(*rec_projs)
+        .from_(src.as_("_child_row"))
+        .join(exp.to_table(cte_name).as_("_parent_row"), on=join_on)
+    )
+
+    # CTE body is anchor UNION ALL recursive arm.
     cte = exp.CTE(
-        this=anchor.union(rec_select, distinct=False),  # UNION ALL
+        this=anchor.union(rec, distinct=False),
         alias=exp.TableAlias(this=exp.to_identifier(cte_name)),
     )
 
-    # --- Outer select ---
-    # Wraps the CTE to apply WHERE, ORDER BY, LIMIT, OFFSET.
-    # WHERE goes here (not inside the CTE) because Snowflake applies it post-hierarchy,
-    # filtering the fully-expanded result set rather than pruning the traversal.
-    def _outer_proj(e: exp.Expression) -> exp.Expression:
-        if isinstance(e, exp.Star):
-            return e.copy()
-        return exp.column(e.alias_or_name, cte_name)
-
-    outer = exp.select(*[_outer_proj(e) for e in expression.expressions]).from_(cte_name)
-
+    # Outer SELECT re-projects from the CTE, applying WHERE post-hierarchy and preserving ORDER/LIMIT/OFFSET.
+    outer_projs = [
+        e.copy() if isinstance(e, exp.Star) else exp.column(e.alias_or_name, cte_name)
+        for e in selects
+    ]
+    outer = exp.select(*outer_projs).from_(cte_name)
     if existing_where:
-        outer.where(existing_where.this.copy(), copy=False)
+        outer = outer.where(existing_where.this.copy())
 
-    # Preserve any WITH clause already on the query; mark it recursive.
+    # Attach the CTE, marking the WITH clause recursive. Preserve any existing CTEs.
     if existing_with:
         new_with = existing_with.copy()
         new_with.set("recursive", True)
@@ -838,8 +807,8 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         outer.set("with_", exp.With(expressions=[cte], recursive=True))
 
     for arg in ("order", "limit", "offset"):
-        if expression.args.get(arg):
-            outer.set(arg, expression.args[arg].copy())
+        if val := expression.args.get(arg):
+            outer.set(arg, val.copy())
 
     return outer
 

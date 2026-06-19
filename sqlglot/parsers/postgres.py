@@ -134,6 +134,7 @@ class PostgresParser(parser.Parser):
             if len(args) == 2
             else exp.WidthBucket.from_arg_list(args)
         ),
+        "UUID": lambda args: exp.cast(args[0], exp.DType.UUID) if args else exp.Uuid(),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

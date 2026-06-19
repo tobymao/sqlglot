@@ -38,6 +38,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, is_date_unit, seq_get
+from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
@@ -727,70 +728,31 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         return expression
 
     source_table = from_.this
-    source_table_alias = source_table.alias
     base_select_exprs = expression.expressions
     base_where = expression.args.get("where")
     base_with = expression.args.get("with_")
 
     # LEVEL is a Snowflake pseudo-column: it's always computed as a depth counter in the CTE.
     has_level = any(
-        isinstance(col, exp.Column) and col.name.upper() == "LEVEL" and not col.table
+        isinstance(col, exp.Column) and col.name.upper() == "LEVEL"
         for e in base_select_exprs
         for col in e.find_all(exp.Column)
     )
     has_star = expression.is_star
 
-    def _scoped_transform(
-        node: exp.Expression, fn: t.Callable[[exp.Expression], exp.Expression]
-    ) -> exp.Expression:
-        if isinstance(node, exp.Subquery):
-            return node
-        result = fn(node)
-        if result is not node:
-            return result
-        node = node.copy()
-        for key, value in node.args.items():
-            if isinstance(value, exp.Expression):
-                node.set(key, _scoped_transform(value, fn))
-            elif isinstance(value, list):
-                node.set(
-                    key,
-                    [
-                        _scoped_transform(v, fn) if isinstance(v, exp.Expression) else v
-                        for v in value
-                    ],
-                )
-        return node
-
-    def _qualify_cols(
-        node: exp.Expression, table: str, replace_level: bool = False
-    ) -> exp.Expression:
-        def _fn(n: exp.Expression) -> exp.Expression:
-            if isinstance(n, exp.Column):
-                if replace_level and n.name.upper() == "LEVEL" and not n.table:
-                    return exp.column("level", table)
-                if not n.table or n.table == source_table_alias:
-                    return exp.column(n.name, table)
-            return n
-
-        return _scoped_transform(node, _fn)
-
     # Build the join condition from the full CONNECT BY predicate:
     # PRIOR(col) → _parent_row.col, unqualified cols → _child_row.col.
     def _qualify_connect_pred(node: exp.Expression) -> exp.Expression:
-        def _fn(n: exp.Expression) -> exp.Expression:
-            if isinstance(n, exp.Prior):
-                inner = n.this
-                if isinstance(inner, exp.Column) and (
-                    not inner.table or inner.table == source_table_alias
-                ):
-                    return exp.column(inner.name, "_parent_row")
-                return inner
-            if isinstance(n, exp.Column) and (not n.table or n.table == source_table_alias):
-                return exp.column(n.name, "_child_row")
-            return n
-
-        return _scoped_transform(node, _fn)
+        for col in find_all_in_scope(node, exp.Column):
+            col.set(
+                "table",
+                exp.to_identifier(
+                    "_parent_row" if isinstance(col.parent, exp.Prior) else "_child_row"
+                ),
+            )
+        for prior in find_all_in_scope(node, exp.Prior):
+            prior.replace(prior.this)
+        return node
 
     # Avoid colliding with any CTE names already on the query.
     cte_name = find_new_name(
@@ -819,23 +781,26 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
             [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
         )
     else:
-        outer_select_exprs = [
-            _qualify_cols(e, cte_name, replace_level=True) for e in base_select_exprs
-        ]
+        outer_select_exprs = base_select_exprs
     outer_query = exp.select(*outer_select_exprs).from_(cte_name)
     if base_where:
-        outer_query = outer_query.where(_qualify_cols(base_where.this, cte_name))
+        outer_query = outer_query.where(base_where.this)
 
     # Attach the CTE, marking the WITH clause recursive.
     if base_with:
-        outer_query.set("with_", base_with.copy())
+        outer_query.set("with_", base_with)
     outer_query = outer_query.with_(
-        cte_name, as_=anchor.union(inner_query, distinct=False), recursive=True
+        cte_name, as_=anchor.union(inner_query, distinct=False), recursive=True, copy=False
     )
 
-    for arg in exp.QUERY_MODIFIERS:
-        if arg not in ("connect", "where") and (val := expression.args.get(arg)):
+    for arg, val in expression.args.items():
+        if val and arg not in {"connect", "where", "from_", "with_", "expressions"}:
             outer_query.set(arg, val)
+
+    # Strip stale source table qualifiers in one pass; CTEs are child scopes so
+    # find_all_in_scope stays within the outer query only.
+    for col in find_all_in_scope(outer_query, exp.Column):
+        col.set("table", None)
 
     return outer_query
 

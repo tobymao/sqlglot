@@ -62,6 +62,10 @@ class JSONBDeleteAtPath(Expression, Binary, Func):
     pass
 
 
+class JSONBPathExists(Expression, Binary, Predicate, Func):
+    pass
+
+
 class JSONBExists(Expression, Func):
     arg_types = {"this": True, "path": True}
     _sql_names = ["JSONB_EXISTS"]

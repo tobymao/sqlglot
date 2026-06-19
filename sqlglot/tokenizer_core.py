@@ -64,6 +64,7 @@ class TokenType(IntEnum):
     LR_ARROW = auto()
     LLRR_ARROW = auto()
     DAT = auto()
+    AT_QMARK = auto()
     LT_AT = auto()
     AT_GT = auto()
     DOLLAR = auto()

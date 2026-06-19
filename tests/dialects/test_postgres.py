@@ -42,6 +42,8 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
+        self.validate_identity("doc @? '$.a[*] ? (@ > 2)'")
+        self.validate_identity("SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")

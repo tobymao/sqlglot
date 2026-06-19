@@ -41,6 +41,8 @@ from sqlglot.helper import find_new_name, is_date_unit, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
 
+_CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
+
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
@@ -794,7 +796,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     )
 
     for arg, val in expression.args.items():
-        if val and arg not in {"connect", "where", "from_", "with_", "expressions"}:
+        if val and arg not in _CONNECT_BY_ARGS_TO_SKIP:
             outer_query.set(arg, val)
 
     # Strip stale source table qualifiers in one pass; CTEs are child scopes so

@@ -503,7 +503,7 @@ class PostgresGenerator(generator.Generator):
         exprs = expression.expressions
         func_name = self.normalize_func("ARRAY")
 
-        if isinstance(seq_get(exprs, 0), exp.Select):
+        if isinstance(seq_get(exprs, 0), exp.Query):
             return f"{func_name}({self.sql(exprs[0])})"
 
         return f"{func_name}{inline_array_sql(self, expression)}"

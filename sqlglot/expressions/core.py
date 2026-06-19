@@ -1789,7 +1789,12 @@ class JoinHint(Expression):
 
 
 class Identifier(Expression):
-    arg_types = {"this": True, "quoted": False, "global_": False, "temporary": False}
+    arg_types = {
+        "this": True,
+        "quoted": False,
+        "global_": False,
+        "temporary": False,
+    }
     is_primitive = True
     _hash_raw_args = True
 
@@ -1800,6 +1805,11 @@ class Identifier(Expression):
     @property
     def output_name(self) -> str:
         return self.name
+
+
+# https://docs.snowflake.com/en/sql-reference/identifier-literal
+class DynamicIdentifier(Expression, Func):
+    pass
 
 
 class Opclass(Expression):

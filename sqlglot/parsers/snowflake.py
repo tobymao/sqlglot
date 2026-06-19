@@ -723,6 +723,7 @@ class SnowflakeParser(parser.Parser):
             expression=seq_get(args, 1) or exp.Literal.string(" "),
         ),
         "SYSTIMESTAMP": exp.CurrentTimestamp.from_arg_list,
+        "IDENTIFIER": exp.DynamicIdentifier.from_arg_list,
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_zero=True),
         "WEEKISO": exp.WeekOfYear.from_arg_list,
         "WEEKOFYEAR": exp.Week.from_arg_list,
@@ -1152,7 +1153,7 @@ class SnowflakeParser(parser.Parser):
                 super()._parse_id_var(any_token=any_token, tokens=tokens) or self._parse_string()
             )
             self._match_r_paren()
-            return self.expression(exp.Anonymous(this="IDENTIFIER", expressions=[identifier]))
+            return self.expression(exp.DynamicIdentifier(this=identifier))
 
         return super()._parse_id_var(any_token=any_token, tokens=tokens)
 

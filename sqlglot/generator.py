@@ -1015,23 +1015,24 @@ class Generator:
         if not comments or isinstance(expression, self.EXCLUDE_COMMENTS):
             return sql
 
-        comments_sql = " ".join(
-            f"/*{self.sanitize_comment(comment)}*/" for comment in comments if comment
-        )
+        comments_list = [
+            f"/*{self._replace_line_breaks(self.sanitize_comment(comment))}*/"
+            for comment in comments
+            if comment
+        ]
 
-        if not comments_sql:
+        if not comments_list:
             return sql
 
-        comments_sql = self._replace_line_breaks(comments_sql)
-
         if separated or isinstance(expression, self.WITH_SEPARATED_COMMENTS):
+            comments_sql = self.sep().join(comments_list)
             return (
                 f"{self.sep()}{comments_sql}{sql}"
                 if not sql or sql[0].isspace()
                 else f"{comments_sql}{self.sep()}{sql}"
             )
 
-        return f"{sql} {comments_sql}"
+        return f"{sql} {' '.join(comments_list)}"
 
     def wrap(self, expression: exp.Expr | str) -> str:
         this_sql = (

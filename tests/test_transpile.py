@@ -216,7 +216,9 @@ SELECT * FROM foo
 -- comment 2
 -- comment 3
 SELECT * FROM foo""",
-            """/* comment 1 */ /* comment 2 */ /* comment 3 */
+            """/* comment 1 */
+/* comment 2 */
+/* comment 3 */
 SELECT
   *
 FROM foo""",
@@ -367,7 +369,9 @@ FROM v""",
             -- comment3
             DROP TABLE IF EXISTS db.tba
             """,
-            """/* comment1 */ /* comment2 */ /* comment3 */
+            """/* comment1 */
+/* comment2 */
+/* comment3 */
 DROP TABLE IF EXISTS db.tba""",
             pretty=True,
         )
@@ -428,7 +432,8 @@ INNER JOIN b""",
             """SELECT
   *
 FROM a
-/* comment 1 */ /* comment 2 */
+/* comment 1 */
+/* comment 2 */
 LEFT OUTER JOIN b""",
             pretty=True,
         )
@@ -619,7 +624,8 @@ FROM tbl1""",
   SELECT
     2 AS n /* b */
   FROM (
-    /* c */ /* c2 */
+    /* c */
+    /* c2 */
     SELECT
       a /* d */
     FROM t
@@ -636,6 +642,26 @@ WHERE
   ) /* f */
 ORDER BY
   n /* g */ /* h */""",
+            pretty=True,
+        )
+
+        # Round-trip stress: multiple trailing comments on the same expression must
+        # stay space-separated (same line) in pretty mode. Re-parsing would otherwise
+        # detach the later ones onto the next token.
+        self.validate(
+            "SELECT a /* foo */ /* bar */ FROM tbl",
+            """SELECT
+  a /* foo */ /* bar */
+FROM tbl""",
+            pretty=True,
+        )
+        self.validate(
+            "SELECT x FROM t WHERE x = 1 /* a */ /* b */ /* c */",
+            """SELECT
+  x
+FROM t
+WHERE
+  x = 1 /* a */ /* b */ /* c */""",
             pretty=True,
         )
 

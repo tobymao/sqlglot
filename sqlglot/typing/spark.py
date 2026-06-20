@@ -35,6 +35,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
             exp.Overlay,
+            exp.Typeof,
         }
     },
     exp.BitmapCount: {"returns": exp.DType.BIGINT},

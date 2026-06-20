@@ -242,8 +242,7 @@ line3*/ /*another comment*/ where 1=1 -- comment at the end""",
   *
 FROM tbl /* line1
 line2
-line3 */
-/* another comment */
+line3 */ /* another comment */
 WHERE
   1 = 1 /* comment at the end */""",
             pretty=True,
@@ -397,9 +396,7 @@ SELECT
   c
 FROM tb_01
 WHERE
-  a /* comment5 */ = 1 AND b = 2 /* comment6 */
-  /* and c = 1 */
-  /* comment7 */""",
+  a /* comment5 */ = 1 AND b = 2 /* comment6 */ /* and c = 1 */ /* comment7 */""",
             pretty=True,
         )
         self.validate(
@@ -443,8 +440,7 @@ LEFT OUTER JOIN b""",
         self.validate(
             "SELECT\n  a /* sqlglot.meta case_sensitive */ -- noqa\nFROM tbl",
             """SELECT
-  a /* sqlglot.meta case_sensitive */
-  /* noqa */
+  a /* sqlglot.meta case_sensitive */ /* noqa */
 FROM tbl""",
             pretty=True,
         )
@@ -645,8 +641,27 @@ WHERE
     FROM t
   ) /* f */
 ORDER BY
-  n /* g */
-  /* h */""",
+  n /* g */ /* h */""",
+            pretty=True,
+        )
+
+        # Round-trip stress: multiple trailing comments on the same expression must
+        # stay space-separated (same line) in pretty mode. Re-parsing would otherwise
+        # detach the later ones onto the next token.
+        self.validate(
+            "SELECT a /* foo */ /* bar */ FROM tbl",
+            """SELECT
+  a /* foo */ /* bar */
+FROM tbl""",
+            pretty=True,
+        )
+        self.validate(
+            "SELECT x FROM t WHERE x = 1 /* a */ /* b */ /* c */",
+            """SELECT
+  x
+FROM t
+WHERE
+  x = 1 /* a */ /* b */ /* c */""",
             pretty=True,
         )
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp
 from sqlglot import generator
@@ -19,6 +20,9 @@ from sqlglot.transforms import (
     preprocess,
     move_partitioned_by_to_schema_columns,
 )
+
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.spark import Spark
 
 
 def _normalize_partition(e: exp.Expr) -> exp.Expr:
@@ -89,6 +93,8 @@ class SparkGenerator(Spark2Generator):
         exp.DType.SMALLMONEY: ((6, 4), ()),
     }
 
+    dialect: Spark
+
     # Expressions that parse a string with a format; Spark 3+ parses these leniently,
     # so emit M/d (not the padded MM/dd used for formatting) for the canonical %m/%d. Must
     # stay in sync with dialect.STRICT_PARSE_TIME_EXPRESSIONS (the parse-side counterpart).
@@ -101,9 +107,6 @@ class SparkGenerator(Spark2Generator):
         inverse_time_trie: dict | None = None,
     ) -> str | None:
         if inverse_time_mapping is None and isinstance(expression, self.LENIENT_TIME_EXPRESSIONS):
-            from sqlglot.dialects.spark import Spark
-
-            assert isinstance(self.dialect, Spark)
             inverse_time_mapping = self.dialect.LENIENT_INVERSE_TIME_MAPPING
             inverse_time_trie = self.dialect.LENIENT_INVERSE_TIME_TRIE
 

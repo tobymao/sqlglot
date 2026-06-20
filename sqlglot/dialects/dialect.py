@@ -134,6 +134,16 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
+def _with_strict_time_fallback(inverse_mapping: dict[str, str]) -> dict[str, str]:
+    # Dialects that define a "strict" format (e.g. Spark) keep their own mapping;
+    # everyone else degrades it to the lax counterpart's mapping, so the internal
+    # token never leaks into generated SQL.
+    for strict_format, lax_format in STRICT_TIME_FORMATS.items():
+        inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
+
+    return inverse_mapping
+
+
 class _Dialect(type):
     _classes: dict[str, Type[Dialect]] = {}
 
@@ -238,18 +248,14 @@ class _Dialect(type):
         )
         # Merge class-defined INVERSE_TIME_MAPPING with auto-generated mappings
         # This allows dialects to define custom inverse mappings for roundtrip correctness
-        inverse_time_mapping = {v: k for k, v in klass.TIME_MAPPING.items()} | (
-            klass.__dict__.get("INVERSE_TIME_MAPPING") or {}
+        klass.INVERSE_TIME_MAPPING = _with_strict_time_fallback(
+            {v: k for k, v in klass.TIME_MAPPING.items()}
+            | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
-        # Dialects that define a "strict" format (e.g. Spark) keep their own mapping;
-        # everyone else degrades it to the lax counterpart's mapping.
-        for strict_format, lax_format in STRICT_TIME_FORMATS.items():
-            inverse_time_mapping.setdefault(
-                strict_format, inverse_time_mapping.get(lax_format, lax_format)
-            )
-        klass.INVERSE_TIME_MAPPING = inverse_time_mapping
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
-        klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        klass.INVERSE_FORMAT_MAPPING = _with_strict_time_fallback(
+            {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        )
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
         klass.INVERSE_CREATABLE_KIND_MAPPING = {

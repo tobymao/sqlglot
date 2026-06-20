@@ -682,6 +682,18 @@ TBLPROPERTIES (
         )
         # Formatting keeps zero-padded MM/dd, unlike the lenient parsing above.
         self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd')")
+        # The strict canonical token must degrade in BigQuery's FORMAT clause too,
+        # not just INVERSE_TIME_MAPPING (it previously leaked as 'MMstrict/DDstrict').
+        self.validate_all(
+            "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+            write={
+                "": "SELECT CAST(STR_TO_TIME(x, '%m/%d/%Y') AS DATE)",
+                "duckdb": "SELECT CAST(CAST(TRY_STRPTIME(x, '%m/%d/%Y') AS TIMESTAMP) AS DATE)",
+                "bigquery": "SELECT CAST(SAFE_CAST(x AS TIMESTAMP FORMAT 'MM/DD/YYYY') AS DATE)",
+                "spark": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+                "databricks": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+            },
+        )
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={

@@ -11,7 +11,7 @@ from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
-from sqlglot.time import format_time
+from sqlglot.time import STRICT_TIME_FORMATS, STRICT_TIME_TRIE, format_time
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -4052,7 +4052,13 @@ class Generator:
 
     # Base implementation that excludes safe, zone, and target_type metadata args
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
-        return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
+        # Normalize internal "strict" canonical formats (e.g. Spark's %mstrict) to
+        # standard strftime, since this generic fallback emits the format verbatim.
+        return self.func(
+            "STR_TO_TIME",
+            expression.this,
+            self.format_time(expression, STRICT_TIME_FORMATS, STRICT_TIME_TRIE),
+        )
 
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")

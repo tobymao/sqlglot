@@ -669,6 +669,19 @@ TBLPROPERTIES (
                 "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             },
         )
+        # Spark 3+ parses MM/dd strictly, so the strict parse format roundtrips, but
+        # widens to the lax %m/%d for dialects that parse leniently (e.g. duckdb).
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            write={
+                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
+                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+                "databricks": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
+        # Formatting keeps zero-padded MM/dd, unlike the lenient parsing above.
+        self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd')")
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={

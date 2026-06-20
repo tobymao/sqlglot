@@ -21,17 +21,6 @@ from sqlglot.transforms import (
 )
 
 
-def _groupconcat_sql(self: SparkGenerator, expression: exp.GroupConcat) -> str:
-    if self.dialect.version < (4,):
-        expr = exp.ArrayToString(
-            this=exp.ArrayAgg(this=expression.this),
-            expression=expression.args.get("separator") or exp.Literal.string(""),
-        )
-        return self.sql(expr)
-
-    return groupconcat_sql(self, expression)
-
-
 def _normalize_partition(e: exp.Expr) -> exp.Expr:
     """Normalize the expressions in PARTITION BY (<expression>, <expression>, ...)"""
     if isinstance(e, str):
@@ -39,21 +28,6 @@ def _normalize_partition(e: exp.Expr) -> exp.Expr:
     if isinstance(e, exp.Literal):
         return exp.to_identifier(e.name)
     return e
-
-
-def _str_to_datetime_sql(self: SparkGenerator, expression: exp.StrToDate | exp.StrToTime) -> str:
-    from sqlglot.dialects.spark import Spark
-
-    assert isinstance(self.dialect, Spark)
-    return self.func(
-        f"TO_{'DATE' if isinstance(expression, exp.StrToDate) else 'TIMESTAMP'}",
-        expression.this,
-        self.format_time(
-            expression,
-            self.dialect.LENIENT_INVERSE_TIME_MAPPING,
-            self.dialect.LENIENT_INVERSE_TIME_TRIE,
-        ),
-    )
 
 
 def _dateadd_sql(self: SparkGenerator, expression: exp.TsOrDsAdd | exp.TimestampAdd) -> str:
@@ -80,6 +54,17 @@ def _dateadd_sql(self: SparkGenerator, expression: exp.TsOrDsAdd | exp.Timestamp
     return this
 
 
+def _groupconcat_sql(self: SparkGenerator, expression: exp.GroupConcat) -> str:
+    if self.dialect.version < (4,):
+        expr = exp.ArrayToString(
+            this=exp.ArrayAgg(this=expression.this),
+            expression=expression.args.get("separator") or exp.Literal.string(""),
+        )
+        return self.sql(expr)
+
+    return groupconcat_sql(self, expression)
+
+
 class SparkGenerator(Spark2Generator):
     SUPPORTS_TO_NUMBER = True
     PAD_FILL_PATTERN_IS_REQUIRED = False
@@ -103,6 +88,26 @@ class SparkGenerator(Spark2Generator):
         exp.DType.MONEY: ((15, 4), ()),
         exp.DType.SMALLMONEY: ((6, 4), ()),
     }
+
+    # Expressions that parse a string with a format; Spark 3+ parses these leniently,
+    # so emit M/d (not the padded MM/dd used for formatting) for the canonical %m/%d. Must
+    # stay in sync with dialect.STRICT_PARSE_TIME_EXPRESSIONS (the parse-side counterpart).
+    LENIENT_TIME_EXPRESSIONS = (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)
+
+    def format_time(
+        self,
+        expression: exp.Expr,
+        inverse_time_mapping: dict[str, str] | None = None,
+        inverse_time_trie: dict | None = None,
+    ) -> str | None:
+        if inverse_time_mapping is None and isinstance(expression, self.LENIENT_TIME_EXPRESSIONS):
+            from sqlglot.dialects.spark import Spark
+
+            assert isinstance(self.dialect, Spark)
+            inverse_time_mapping = self.dialect.LENIENT_INVERSE_TIME_MAPPING
+            inverse_time_trie = self.dialect.LENIENT_INVERSE_TIME_TRIE
+
+        return super().format_time(expression, inverse_time_mapping, inverse_time_trie)
 
     TRANSFORMS = {
         k: v
@@ -144,8 +149,6 @@ class SparkGenerator(Spark2Generator):
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),
             exp.StartsWith: rename_func("STARTSWITH"),
-            exp.StrToDate: _str_to_datetime_sql,
-            exp.StrToTime: _str_to_datetime_sql,
             exp.TimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.TimeSub: date_delta_to_binary_interval_op(cast=False),
             exp.TsOrDsAdd: _dateadd_sql,

@@ -480,9 +480,9 @@ class TestExasol(Validator):
                 "duckdb": "CAST(x AS DATE)",
                 "hive": "TO_DATE(x)",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
-                "spark": "TO_DATE(x)",
+                "spark": "TO_DATE(x, 'yyyy-M-d')",
                 "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",
-                "databricks": "TO_DATE(x)",
+                "databricks": "TO_DATE(x, 'yyyy-M-d')",
             },
         )
         self.validate_all(

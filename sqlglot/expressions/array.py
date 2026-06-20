@@ -115,7 +115,7 @@ class ArrayContainsAll(Expression, Binary, Func):
 
 
 class ArrayContainedBy(Expression, Binary, Func):
-    _sql_names = ["ARRAY_CONTAINED_BY"]
+    pass
 
 
 class ArrayExcept(Expression, Func):

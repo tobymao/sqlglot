@@ -5,6 +5,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot import generator
 from sqlglot.dialects.dialect import (
+    STRICT_PARSE_TIME_EXPRESSIONS,
     array_append_sql,
     rename_func,
     unit_to_var,
@@ -95,18 +96,16 @@ class SparkGenerator(Spark2Generator):
 
     dialect: Spark
 
-    # Expressions that parse a string with a format; Spark 3+ parses these leniently,
-    # so emit M/d (not the padded MM/dd used for formatting) for the canonical %m/%d. Must
-    # stay in sync with dialect.STRICT_PARSE_TIME_EXPRESSIONS (the parse-side counterpart).
-    LENIENT_TIME_EXPRESSIONS = (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)
-
     def format_time(
         self,
         expression: exp.Expr,
         inverse_time_mapping: dict[str, str] | None = None,
         inverse_time_trie: dict | None = None,
     ) -> str | None:
-        if inverse_time_mapping is None and isinstance(expression, self.LENIENT_TIME_EXPRESSIONS):
+        # Spark 3+ parses these leniently, so emit M/d (not the padded MM/dd used for
+        # formatting) for the canonical %m/%d. The expression set is shared with the parser
+        # (STRICT_PARSE_TIME_EXPRESSIONS), which is what guarantees the strict roundtrip.
+        if inverse_time_mapping is None and isinstance(expression, STRICT_PARSE_TIME_EXPRESSIONS):
             inverse_time_mapping = self.dialect.LENIENT_INVERSE_TIME_MAPPING
             inverse_time_trie = self.dialect.LENIENT_INVERSE_TIME_TRIE
 

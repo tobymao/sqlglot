@@ -4052,8 +4052,10 @@ class Generator:
 
     # Base implementation that excludes safe, zone, and target_type metadata args
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
-        # Normalize internal "strict" canonical formats (e.g. Spark's %mstrict) to
-        # standard strftime, since this generic fallback emits the format verbatim.
+        # STR_TO_TIME is sqlglot's canonical form, so the format must stay canonical
+        # strftime - we only strip the internal "strict" tokens (e.g. Spark's %mstrict)
+        # rather than routing through self.format_time(), which would also rewrite every
+        # other specifier into the dialect's INVERSE_TIME_MAPPING.
         return self.func(
             "STR_TO_TIME",
             expression.this,

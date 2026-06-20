@@ -1573,9 +1573,10 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
     return self.sql(result)
 
 
-# Expressions that parse a string with a format. Dialects with strict parsing
-# semantics (STRICT_TIME_MAPPING) use it for these, but not for formatting. Must stay in
-# sync with the generator's lenient set (e.g. SparkGenerator.LENIENT_TIME_EXPRESSIONS).
+# Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
+# Dialects with strict parsing semantics (STRICT_TIME_MAPPING) use it for these on the
+# parser side, and the corresponding generator (e.g. SparkGenerator.format_time) reuses
+# this same set to emit the lenient inverse, which is what preserves the roundtrip.
 STRICT_PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.TsOrDsToDate)
 
 

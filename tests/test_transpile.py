@@ -216,7 +216,9 @@ SELECT * FROM foo
 -- comment 2
 -- comment 3
 SELECT * FROM foo""",
-            """/* comment 1 */ /* comment 2 */ /* comment 3 */
+            """/* comment 1 */
+/* comment 2 */
+/* comment 3 */
 SELECT
   *
 FROM foo""",
@@ -240,7 +242,8 @@ line3*/ /*another comment*/ where 1=1 -- comment at the end""",
   *
 FROM tbl /* line1
 line2
-line3 */ /* another comment */
+line3 */
+/* another comment */
 WHERE
   1 = 1 /* comment at the end */""",
             pretty=True,
@@ -367,7 +370,9 @@ FROM v""",
             -- comment3
             DROP TABLE IF EXISTS db.tba
             """,
-            """/* comment1 */ /* comment2 */ /* comment3 */
+            """/* comment1 */
+/* comment2 */
+/* comment3 */
 DROP TABLE IF EXISTS db.tba""",
             pretty=True,
         )
@@ -392,7 +397,9 @@ SELECT
   c
 FROM tb_01
 WHERE
-  a /* comment5 */ = 1 AND b = 2 /* comment6 */ /* and c = 1 */ /* comment7 */""",
+  a /* comment5 */ = 1 AND b = 2 /* comment6 */
+  /* and c = 1 */
+  /* comment7 */""",
             pretty=True,
         )
         self.validate(
@@ -428,14 +435,16 @@ INNER JOIN b""",
             """SELECT
   *
 FROM a
-/* comment 1 */ /* comment 2 */
+/* comment 1 */
+/* comment 2 */
 LEFT OUTER JOIN b""",
             pretty=True,
         )
         self.validate(
             "SELECT\n  a /* sqlglot.meta case_sensitive */ -- noqa\nFROM tbl",
             """SELECT
-  a /* sqlglot.meta case_sensitive */ /* noqa */
+  a /* sqlglot.meta case_sensitive */
+  /* noqa */
 FROM tbl""",
             pretty=True,
         )
@@ -619,7 +628,8 @@ FROM tbl1""",
   SELECT
     2 AS n /* b */
   FROM (
-    /* c */ /* c2 */
+    /* c */
+    /* c2 */
     SELECT
       a /* d */
     FROM t
@@ -635,7 +645,8 @@ WHERE
     FROM t
   ) /* f */
 ORDER BY
-  n /* g */ /* h */""",
+  n /* g */
+  /* h */""",
             pretty=True,
         )
 

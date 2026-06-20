@@ -1007,14 +1007,14 @@ class Generator:
         if not comments or isinstance(expression, self.EXCLUDE_COMMENTS):
             return sql
 
-        comments_sql = " ".join(
-            f"/*{self.sanitize_comment(comment)}*/" for comment in comments if comment
+        comments_sql = self.sep().join(
+            f"/*{self._replace_line_breaks(self.sanitize_comment(comment))}*/"
+            for comment in comments
+            if comment
         )
 
         if not comments_sql:
             return sql
-
-        comments_sql = self._replace_line_breaks(comments_sql)
 
         if separated or isinstance(expression, self.WITH_SEPARATED_COMMENTS):
             return (

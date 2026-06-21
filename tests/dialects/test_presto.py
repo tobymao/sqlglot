@@ -41,6 +41,18 @@ class TestPresto(Validator):
             },
         )
         self.validate_all(
+            "SELECT FROM_ISO8601_DATE('2020-05-11')",
+            write={
+                "duckdb": "SELECT CAST('2020-05-11' AS DATE)",
+                "presto": "SELECT FROM_ISO8601_DATE('2020-05-11')",
+                "trino": "SELECT FROM_ISO8601_DATE('2020-05-11')",
+                "snowflake": "SELECT CAST('2020-05-11' AS DATE)",
+                "spark": "SELECT CAST('2020-05-11' AS DATE)",
+                "databricks": "SELECT CAST('2020-05-11' AS DATE)",
+                "bigquery": "SELECT CAST('2020-05-11' AS DATE)",
+            },
+        )
+        self.validate_all(
             "CAST(x AS INTERVAL YEAR TO MONTH)",
             write={
                 "oracle": "CAST(x AS INTERVAL YEAR TO MONTH)",

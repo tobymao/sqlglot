@@ -951,15 +951,15 @@ INT;
 
 # dialect: spark, databricks
 TYPEOF(tbl.int_col);
-INT;
+VARCHAR;
 
 # dialect: spark, databricks
 TYPEOF(tbl.double_col);
-DOUBLE;
+VARCHAR;
 
 # dialect: spark, databricks
 TYPEOF(tbl.str_col);
-STRING;
+VARCHAR;
 
 --------------------------------------
 -- BigQuery

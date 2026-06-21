@@ -24,6 +24,7 @@ EXPRESSION_METADATA = {
             exp.Collation,
             exp.CurrentTimezone,
             exp.Randstr,
+            exp.Typeof,
         }
     },
     **{
@@ -35,7 +36,6 @@ EXPRESSION_METADATA = {
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
             exp.Overlay,
-            exp.Typeof,
         }
     },
     exp.BitmapCount: {"returns": exp.DType.BIGINT},

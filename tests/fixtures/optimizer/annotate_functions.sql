@@ -6081,6 +6081,10 @@ VARCHAR;
 CURRENT_TIMESTAMP();
 DATETIME;
 
+# dialect: mysql
+REPLACE(tbl.str_col, tbl.str_col, tbl.str_col);
+VARCHAR;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

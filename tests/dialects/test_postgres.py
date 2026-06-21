@@ -213,9 +213,8 @@ class TestPostgres(Validator):
             "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
             "SELECT SUBSTRING('Thomas' FROM 2 FOR 3)",
         )
-        self.validate_identity(
-            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
-            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
+        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]").expressions[0].assert_is(
+            exp.ArrayContainedBy
         )
         self.validate_identity(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",

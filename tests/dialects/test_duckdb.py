@@ -1350,8 +1350,8 @@ class TestDuckDB(Validator):
         self.validate_identity("a ** b", "POWER(a, b)")
         self.validate_identity("a ~~~ b", "a GLOB b")
         self.validate_identity("a ~~ b", "a LIKE b")
-        self.validate_identity("a @> b")
-        self.validate_identity("a <@ b", "b @> a")
+        self.validate_identity("a @> b").assert_is(exp.ArrayContainsAll)
+        self.validate_identity("a <@ b").assert_is(exp.ArrayContainedBy)
         self.validate_identity("a && b").assert_is(exp.ArrayOverlaps)
         self.validate_identity("a ^@ b", "STARTS_WITH(a, b)")
         self.validate_identity(

@@ -653,6 +653,10 @@ class MySQLGenerator(generator.Generator):
         self.unsupported("Array operations are not supported by MySQL")
         return self.function_fallback_sql(expression)
 
+    def arraycontainedby_sql(self, expression: exp.ArrayContainedBy) -> str:
+        self.unsupported("Array operations are not supported by MySQL")
+        return self.function_fallback_sql(expression)
+
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.func("CONCAT", *expression.flatten())
 

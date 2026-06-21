@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-from sqlglot import exp
+from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
@@ -28,6 +28,9 @@ class StarRocksParser(MySQLParser):
         ),
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
         "REGEXP": exp.RegexpLike.from_arg_list,
+        # StarRocks' MAP() is a variadic constructor: MAP(k1, v1, k2, v2, ...)
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/
+        "MAP": parser.build_var_map,
     }
 
     PROPERTY_PARSERS = {

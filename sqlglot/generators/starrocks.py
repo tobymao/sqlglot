@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     inline_array_sql,
     property_sql,
+    var_map_sql,
 )
 from sqlglot.generators.mysql import MySQLGenerator
 
@@ -86,9 +87,18 @@ class StarRocksGenerator(MySQLGenerator):
     }
 
     TRANSFORMS = {
-        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k is not exp.DateTrunc},
+        # StarRocks uses the native TRIM(str, chars)/LTRIM/RTRIM function form, not
+        # MySQL's TRIM(chars FROM str) syntax, so it falls back to the base generator.
+        **{
+            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
+        },
+        exp.ArgMax: rename_func("MAX_BY"),
+        exp.ArgMin: rename_func("MIN_BY"),
         exp.Array: inline_array_sql,
         exp.ArrayAgg: rename_func("ARRAY_AGG"),
+        # a <@ b (ArrayContainedBy) is equivalent to ARRAY_CONTAINS_ALL(b, a)
+        exp.ArrayContainedBy: lambda self, e: self.func("ARRAY_CONTAINS_ALL", e.expression, e.this),
+        exp.ArrayContainsAll: rename_func("ARRAY_CONTAINS_ALL"),
         exp.ArrayFilter: rename_func("ARRAY_FILTER"),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
@@ -98,6 +108,9 @@ class StarRocksGenerator(MySQLGenerator):
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
         exp.JSONExtract: arrow_json_extract_sql,
+        # Both MAP forms (two-array MAP([keys], [values]) and variadic MAP(k1, v1, ...))
+        # generate StarRocks' variadic MAP(k1, v1, k2, v2, ...) constructor
+        exp.Map: lambda self, e: var_map_sql(self, e, "MAP"),
         exp.Property: property_sql,
         exp.RegexpLike: rename_func("REGEXP"),
         # Inherited from MySQL, minus operations StarRocks supports natively
@@ -116,6 +129,7 @@ class StarRocksGenerator(MySQLGenerator):
         exp.TimeStrToDate: rename_func("TO_DATE"),
         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+        exp.VarMap: lambda self, e: var_map_sql(self, e, "MAP"),
     }
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/keywords/#reserved-keywords

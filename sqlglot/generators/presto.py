@@ -308,6 +308,7 @@ class PrestoGenerator(generator.Generator):
         exp.Encode: lambda self, e: encode_decode_sql(self, e, "TO_UTF8"),
         exp.FileFormatProperty: lambda self, e: f"format={self.sql(exp.Literal.string(e.name))}",
         exp.First: _first_last_sql,
+        exp.FromISO8601Timestamp: rename_func("FROM_ISO8601_TIMESTAMP"),
         exp.FromTimeZone: lambda self, e: (
             f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
         ),

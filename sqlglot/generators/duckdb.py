@@ -2471,9 +2471,6 @@ class DuckDBGenerator(generator.Generator):
         )
         return self.function_fallback_sql(expression)
 
-    def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
-        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
-
     def strposition_sql(self, expression: exp.StrPosition) -> str:
         this = expression.this
         substr = expression.args.get("substr")

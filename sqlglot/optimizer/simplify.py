@@ -241,7 +241,7 @@ def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> DateRange | Non
     Returns:
         tuple of [min, max) or None if a value can never be equal to `date` for `unit`
     """
-    floor = date_floor(date, unit, dialect)
+    floor = datetimestamp_floor(date, unit, dialect)
 
     if date != floor:
         # This will always be False, except for NULL values.
@@ -450,31 +450,50 @@ def interval(unit: str, n: int = 1) -> relativedelta:
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def date_floor(d: date, unit: str, dialect: Dialect) -> date:
-    if unit == "year":
-        return d.replace(month=1, day=1)
-    if unit == "quarter":
-        if d.month <= 3:
-            return d.replace(month=1, day=1)
-        elif d.month <= 6:
-            return d.replace(month=4, day=1)
-        elif d.month <= 9:
-            return d.replace(month=7, day=1)
-        else:
-            return d.replace(month=10, day=1)
-    if unit == "month":
-        return d.replace(month=d.month, day=1)
-    if unit == "week":
-        # Assuming week starts on Monday (0) and ends on Sunday (6)
-        return d - timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
-    if unit == "day":
-        return d
+def datetimestamp_floor(d: date, unit: str, dialect: Dialect) -> date:
+    # Truncate sub-day units — only valid for datetime inputs
+    if isinstance(d, datetime):
+        if unit == "hour":
+            return d.replace(minute=0, second=0, microsecond=0)
+        elif unit == "minute":
+            return d.replace(second=0, microsecond=0)
+        elif unit == "second":
+            return d.replace(microsecond=0)
+        elif unit == "millisecond":
+            return d.replace(microsecond=(d.microsecond // 1000) * 1000)
+        elif unit == "microsecond":
+            return d
 
-    raise UnsupportedUnit(f"Unsupported unit: {unit}")
+    # Truncate date-level units, shared for both date and datetime
+    if unit == "year":
+        result: date = d.replace(month=1, day=1)
+    elif unit == "quarter":
+        if d.month <= 3:
+            result = d.replace(month=1, day=1)
+        elif d.month <= 6:
+            result = d.replace(month=4, day=1)
+        elif d.month <= 9:
+            result = d.replace(month=7, day=1)
+        else:
+            result = d.replace(month=10, day=1)
+    elif unit == "month":
+        result = d.replace(month=d.month, day=1)
+    elif unit == "week":
+        # Assuming week starts on Monday (0) and ends on Sunday (6)
+        result = d - timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
+    elif unit == "day":
+        result = d
+    else:
+        raise UnsupportedUnit(f"Unsupported unit: {unit}")
+
+    # For datetime inputs, zero out the time component after date-level truncation
+    if isinstance(result, datetime):
+        return result.replace(hour=0, minute=0, second=0, microsecond=0)
+    return result
 
 
 def date_ceil(d: date, unit: str, dialect: Dialect) -> date:
-    floor = date_floor(d, unit, dialect)
+    floor = datetimestamp_floor(d, unit, dialect)
 
     if floor == d:
         return d
@@ -561,11 +580,18 @@ class Simplifier:
         exp.LT: lambda l, dt, u, d, t: (
             l
             < date_literal(
-                dt if dt == date_floor(dt, u, d) else date_floor(dt, u, d) + interval(u), t
+                dt
+                if dt == datetimestamp_floor(dt, u, d)
+                else datetimestamp_floor(dt, u, d) + interval(u),
+                t,
             )
         ),
-        exp.GT: lambda l, dt, u, d, t: l >= date_literal(date_floor(dt, u, d) + interval(u), t),
-        exp.LTE: lambda l, dt, u, d, t: l < date_literal(date_floor(dt, u, d) + interval(u), t),
+        exp.GT: lambda l, dt, u, d, t: (
+            l >= date_literal(datetimestamp_floor(dt, u, d) + interval(u), t)
+        ),
+        exp.LTE: lambda l, dt, u, d, t: (
+            l < date_literal(datetimestamp_floor(dt, u, d) + interval(u), t)
+        ),
         exp.GTE: lambda l, dt, u, d, t: l >= date_literal(date_ceil(dt, u, d), t),
         exp.EQ: _datetrunc_eq,
         exp.NEQ: _datetrunc_neq,
@@ -1386,7 +1412,8 @@ class Simplifier:
             date = extract_date(this)
             if date and expression.unit:
                 return date_literal(
-                    date_floor(date, expression.unit.name.lower(), self.dialect), trunc_type
+                    datetimestamp_floor(date, expression.unit.name.lower(), self.dialect),
+                    trunc_type,
                 )
         elif comparison not in self.DATETRUNC_COMPARISONS:
             return expression

@@ -80,13 +80,11 @@ def catch(*exceptions):
     """Decorator that ignores a simplification function if any of `exceptions` are raised"""
 
     def decorator(func):
-        def wrapped(expression, *args, **kwargs):
+        def wrapped(self, expression, *args, **kwargs):
             try:
-                return func(expression, *args, **kwargs)
+                return func(self, expression, *args, **kwargs)
             except exceptions:
-                # When stacked under @annotate_types_on_change, that decorator calls func(self, expression)
-                # directly, so `expression` here is the Simplifier instance and the SQL node is args[0].
-                return args[0] if args else expression
+                return expression
 
         return wrapped
 

@@ -84,7 +84,9 @@ def catch(*exceptions):
             try:
                 return func(expression, *args, **kwargs)
             except exceptions:
-                return expression
+                # When stacked under @annotate_types_on_change, that decorator calls func(self, expression)
+                # directly, so `expression` here is the Simplifier instance and the SQL node is args[0].
+                return args[0] if args else expression
 
         return wrapped
 

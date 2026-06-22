@@ -70,7 +70,12 @@ class Cast(Expression, Func):
 
 
 class TryCast(Cast):
-    arg_types = {**Cast.arg_types, "requires_string": False}
+    arg_types = {
+        **Cast.arg_types,
+        "requires_string": False,
+        "null_on_text_overflow": False,
+        "probe_date_format": False,
+    }
 
 
 class JSONCast(Cast):
@@ -146,6 +151,10 @@ class Least(Expression, Func):
 
 class Nullif(Expression, Func):
     arg_types = {"this": True, "expression": True}
+
+
+class ObjectTransform(Expression, Func):
+    arg_types = {"this": True, "keep": False, "set_": False}
 
 
 class Nvl2(Expression, Func):
@@ -301,6 +310,10 @@ class CurrentUser(Expression, Func):
     arg_types = {"this": False}
 
 
+class CurrentUserId(Expression, Func):
+    arg_types = {}
+
+
 class CurrentVersion(Expression, Func):
     arg_types = {}
 
@@ -319,6 +332,24 @@ class SessionUser(Expression, Func):
 class AIClassify(Expression, Func):
     arg_types = {"this": True, "categories": True, "config": False}
     _sql_names = ["AI_CLASSIFY"]
+
+
+class AIEmbed(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_EMBED"]
+
+
+class AISimilarity(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_SIMILARITY"]
+
+
+class AIGenerate(Expression, Func):
+    arg_types = {"expressions": True}
+    is_var_len_args = True
+    _sql_names = ["AI_GENERATE"]
 
 
 class FeaturesAtTime(Expression, Func):
@@ -408,6 +439,10 @@ class ReadParquet(Expression, Func):
 class XMLElement(Expression, Func):
     _sql_names = ["XMLELEMENT"]
     arg_types = {"this": True, "expressions": False, "evalname": False}
+
+
+class GetIgnoreCase(Expression, Func):
+    arg_types = {"this": True, "expression": True}
 
 
 class XMLGet(Expression, Func):

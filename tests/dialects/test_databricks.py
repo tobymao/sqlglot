@@ -7,6 +7,9 @@ class TestDatabricks(Validator):
     dialect = "databricks"
 
     def test_databricks(self):
+        self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
+        self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")
+        self.validate_identity("SELECT CAST('a' AS STRING COLLATE UTF8_BINARY)")
         self.validate_identity("SELECT COSH(1.5)")
         null_type = exp.DataType.build("VOID", dialect="databricks")
         self.assertEqual(null_type.sql(), "NULL")
@@ -30,8 +33,15 @@ class TestDatabricks(Validator):
         self.validate_identity("DESCRIBE history.tbl")
         self.validate_identity("CREATE TABLE t (a STRUCT<c: MAP<STRING, STRING>>)")
         self.validate_identity("CREATE TABLE t (c STRUCT<interval: DOUBLE COMMENT 'aaa'>)")
+        self.validate_identity("CREATE TABLE t (c STRING COMMENT 'Hello World')")
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES (a.b=15)")
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES ('a.b'=15)")
+        self.validate_identity("CREATE TABLE table1 CLUSTER BY AUTO")
+        self.validate_identity("ALTER TABLE t CLUSTER BY NONE")
+        self.validate_identity("CREATE TABLE t CLUSTER BY (col1)")
+        self.validate_identity("CREATE TABLE t CLUSTER BY (col1, col2)")
+        self.validate_identity("SELECT col1 FROM t CLUSTER BY col1")
+        self.validate_identity("SELECT col1, col2 FROM t CLUSTER BY col1, col2")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO HOUR)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO MINUTE)")
         self.validate_identity("SELECT CAST('11 23:4:0' AS INTERVAL DAY TO SECOND)")
@@ -132,9 +142,6 @@ class TestDatabricks(Validator):
 
         self.validate_all(
             "SELECT c1:item[1].price",
-            read={
-                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
-            },
             write={
                 "databricks": "SELECT c1:item[1].price",
                 "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
@@ -143,8 +150,11 @@ class TestDatabricks(Validator):
 
         self.validate_all(
             "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            read={
+                "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
+            },
             write={
-                "databricks": "SELECT c1:item[1].price",
+                "databricks": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
                 "spark": "SELECT GET_JSON_OBJECT(c1, '$.item[1].price')",
             },
         )
@@ -262,7 +272,7 @@ class TestDatabricks(Validator):
 
         self.validate_identity(
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT get_json_object(c, '$.x-y') FROM t""",
-            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
         ).selects[0].expression.assert_is(exp.JSONPath)
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
@@ -284,15 +294,17 @@ class TestDatabricks(Validator):
         )
         self.validate_identity(
             """SELECT c1:['price'] FROM VALUES ('{ "price": 5 }') AS T(c1)""",
-            """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT c1:["price"] FROM VALUES ('{ "price": 5 }') AS T(c1)""",
         )
         self.validate_identity(
-            """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)""",
-            """SELECT c1:price FROM VALUES ('{ "price": 5 }') AS T(c1)""",
+            """SELECT GET_JSON_OBJECT(c1, '$.price') FROM VALUES ('{ "price": 5 }') AS T(c1)"""
         )
+        self.validate_identity("SELECT GET_JSON_OBJECT(col, path_col)")
+        self.validate_identity("SELECT GET_JSON_OBJECT(col, CONCAT('$.', field_name))")
+        self.validate_identity("SELECT GET_JSON_OBJECT(GET_JSON_OBJECT(col, '$[0]'), '$.a')")
         self.validate_identity(
             """SELECT raw:`zip code`, raw:`fb:testid`, raw:store['bicycle'], raw:store["zip code"]""",
-            """SELECT raw:["zip code"], raw:["fb:testid"], raw:store.bicycle, raw:store["zip code"]""",
+            """SELECT raw:["zip code"], raw:["fb:testid"], raw:store["bicycle"], raw:store["zip code"]""",
         )
         self.validate_all(
             "SELECT col:`fr'uit`",
@@ -386,7 +398,7 @@ class TestDatabricks(Validator):
             "SELECT DATEADD(year, 1, '2020-01-01')",
             write={
                 "tsql": "SELECT DATEADD(YEAR, 1, '2020-01-01')",
-                "databricks": "SELECT DATEADD(YEAR, 1, '2020-01-01')",
+                "databricks": "SELECT DATE_ADD(YEAR, 1, '2020-01-01')",
             },
         )
         self.validate_all(
@@ -396,9 +408,14 @@ class TestDatabricks(Validator):
         self.validate_all(
             "SELECT DATE_ADD('2020-01-01', 1)",
             write={
-                "tsql": "SELECT DATEADD(DAY, 1, '2020-01-01')",
-                "databricks": "SELECT DATEADD(DAY, 1, '2020-01-01')",
+                "tsql": "SELECT DATEADD(DAY, 1, CAST(CAST('2020-01-01' AS DATETIME2) AS DATE))",
+                "databricks": "SELECT DATE_ADD('2020-01-01', 1)",
             },
+        )
+        self.validate_identity("SELECT DATE_ADD(MONTH, 1, '2020-01-01')")
+        self.validate_identity(
+            "SELECT DATEADD(e, 24) FROM t",
+            "SELECT DATE_ADD(e, 24) FROM t",
         )
 
     def test_without_as(self):
@@ -507,6 +524,18 @@ class TestDatabricks(Validator):
             write={
                 "databricks": "SELECT IF(x > 0, 'positive', 'non-positive')",
                 "snowflake": "SELECT IFF(x > 0, 'positive', 'non-positive')",
+            },
+        )
+
+    def test_try_divide(self):
+        self.validate_all(
+            "SELECT TRY_DIVIDE(a, b)",
+            read={"databricks": "SELECT TRY_DIVIDE(a, b)"},
+            write={
+                "databricks": "SELECT TRY_DIVIDE(a, b)",
+                "snowflake": "SELECT IFF(b <> 0, a / b, NULL)",
+                "duckdb": "SELECT CASE WHEN b <> 0 THEN a / b ELSE NULL END",
+                "spark": "SELECT TRY_DIVIDE(a, b)",
             },
         )
 

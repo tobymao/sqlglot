@@ -42,6 +42,7 @@ class TestClickhouse(Validator):
         expr = parse_one("count(x)")
         self.assertEqual(expr.sql(dialect="clickhouse"), "COUNT(x)")
 
+        self.validate_identity("SELECT 1 SETTINGS log_comment = 'performance'")
         self.validate_identity('SELECT DISTINCT ON ("id") * FROM t')
         self.validate_identity("SELECT 1 OR (1 = 2)")
         self.validate_identity("SELECT 1 AND (1 = 2)")
@@ -454,22 +455,24 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT xor(0, 1, xor(1, 0, 0))",
             write={
-                "clickhouse": "SELECT xor(0, 1, xor(1, 0, 0))",
-                "mysql": "SELECT 0 XOR 1 XOR 1 XOR 0 XOR 0",
+                "clickhouse": "SELECT xor(xor(0, 1), (xor(xor(1, 0), 0)))",
+                "mysql": "SELECT 0 XOR 1 XOR (1 XOR 0 XOR 0)",
             },
         )
         self.validate_all(
             "SELECT xor(xor(1, 0), 1)",
             read={
-                "clickhouse": "SELECT xor(xor(1, 0), 1)",
                 "mysql": "SELECT 1 XOR 0 XOR 1",
             },
             write={
-                "clickhouse": "SELECT xor(xor(1, 0), 1)",
-                "mysql": "SELECT 1 XOR 0 XOR 1",
+                "clickhouse": "SELECT xor((xor(1, 0)), 1)",
+                "mysql": "SELECT (1 XOR 0) XOR 1",
             },
         )
-        self.validate_identity("SELECT xor(0, 1, 1, 0)")
+        self.validate_identity(
+            "SELECT xor(0, 1, 1, 0)",
+            "SELECT xor(xor(xor(0, 1), 1), 0)",
+        )
         self.validate_all(
             "CONCAT(a, b)",
             read={
@@ -1719,6 +1722,47 @@ LIFETIME(MIN 0 MAX 0)""",
             "SELECT row_number() OVER (PARTITION BY column2 ORDER BY column3) FROM table"
         )
 
+    def test_groupconcat(self):
+        # groupConcat(sep)(col) - parametric form with separator
+        parsed = self.validate_identity("SELECT groupConcat(', ')(part_name) FROM system.parts")
+        gc = parsed.selects[0]
+        self.assertIsInstance(gc, exp.GroupConcat)
+        self.assertEqual(gc.this.name, "part_name")
+        self.assertEqual(gc.args["separator"].name, ", ")
+
+        # groupConcat(col) - no separator
+        parsed2 = self.validate_identity("SELECT groupConcat(part_name) FROM t")
+        gc2 = parsed2.selects[0]
+        self.assertIsInstance(gc2, exp.GroupConcat)
+        self.assertEqual(gc2.this.name, "part_name")
+        self.assertIsNone(gc2.args.get("separator"))
+
+        # groupConcat(sep, limit)(col) - with limit
+        parsed3 = self.validate_identity("SELECT groupConcat(', ', 2)(part_name) FROM t")
+        gc3 = parsed3.selects[0]
+        self.assertIsInstance(gc3, exp.GroupConcat)
+        self.assertIsInstance(gc3.this, exp.Limit)
+        self.assertEqual(gc3.this.this.name, "part_name")
+
+        # Combinators are preserved as CombinedAggFunc / CombinedParameterizedAgg
+        self.validate_identity("SELECT groupConcatIf(x, cond) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        self.validate_identity("SELECT groupConcatIf(', ')(x, cond) FROM t").selects[0].assert_is(
+            exp.CombinedParameterizedAgg
+        )
+
+        # Cross-dialect transpilation
+        self.validate_all(
+            "SELECT groupConcat(', ')(part_name) FROM t",
+            read={"mysql": "SELECT GROUP_CONCAT(part_name SEPARATOR ', ') FROM t"},
+            write={
+                "clickhouse": "SELECT groupConcat(', ')(part_name) FROM t",
+                "mysql": "SELECT GROUP_CONCAT(part_name SEPARATOR ', ') FROM t",
+                "duckdb": "SELECT LISTAGG(part_name, ', ') FROM t",
+            },
+        )
+
     def test_functions(self):
         self.validate_identity("SELECT TRANSFORM(foo, [1, 2], ['first', 'second']) FROM table")
         self.validate_identity(
@@ -1776,6 +1820,14 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
 
+        self.validate_all(
+            "date_trunc('WEEK', today())",
+            write={
+                "clickhouse, version=23.8": "dateTrunc('week', today())",
+                "clickhouse, version=24.1": "dateTrunc('WEEK', today())",
+            },
+        )
+
     def test_string_split(self):
         self.validate_all(
             "splitByString('s', x)",
@@ -1803,6 +1855,13 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
         self.validate_identity("splitByChar('', x)")
+
+    def test_table_functions(self):
+        self.validate_identity(
+            "CREATE VIEW myschema.myview (c1 String NOT NULL) AS SELECT c1 FROM file('base/dir/*.parquet', Parquet)"
+        )
+        self.validate_identity("SELECT * FROM file('path', Parquet) WHERE x > 1")
+        self.validate_identity("SELECT * FROM file('path', Parquet)")
 
     def test_sql_security(self):
         stmts = [

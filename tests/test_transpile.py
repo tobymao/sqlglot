@@ -216,7 +216,9 @@ SELECT * FROM foo
 -- comment 2
 -- comment 3
 SELECT * FROM foo""",
-            """/* comment 1 */ /* comment 2 */ /* comment 3 */
+            """/* comment 1 */
+/* comment 2 */
+/* comment 3 */
 SELECT
   *
 FROM foo""",
@@ -367,7 +369,9 @@ FROM v""",
             -- comment3
             DROP TABLE IF EXISTS db.tba
             """,
-            """/* comment1 */ /* comment2 */ /* comment3 */
+            """/* comment1 */
+/* comment2 */
+/* comment3 */
 DROP TABLE IF EXISTS db.tba""",
             pretty=True,
         )
@@ -428,7 +432,8 @@ INNER JOIN b""",
             """SELECT
   *
 FROM a
-/* comment 1 */ /* comment 2 */
+/* comment 1 */
+/* comment 2 */
 LEFT OUTER JOIN b""",
             pretty=True,
         )
@@ -619,7 +624,8 @@ FROM tbl1""",
   SELECT
     2 AS n /* b */
   FROM (
-    /* c */ /* c2 */
+    /* c */
+    /* c2 */
     SELECT
       a /* d */
     FROM t
@@ -636,6 +642,69 @@ WHERE
   ) /* f */
 ORDER BY
   n /* g */ /* h */""",
+            pretty=True,
+        )
+
+        # Round-trip stress: multiple trailing comments on the same expression must
+        # stay space-separated (same line) in pretty mode. Re-parsing would otherwise
+        # detach the later ones onto the next token.
+        self.validate(
+            "SELECT a /* foo */ /* bar */ FROM tbl",
+            """SELECT
+  a /* foo */ /* bar */
+FROM tbl""",
+            pretty=True,
+        )
+        self.validate(
+            "SELECT x FROM t WHERE x = 1 /* a */ /* b */ /* c */",
+            """SELECT
+  x
+FROM t
+WHERE
+  x = 1 /* a */ /* b */ /* c */""",
+            pretty=True,
+        )
+
+        self.validate(
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1 AND /*
+  hello
+  world
+*/ 1 = 0""",
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1 AND /*
+  hello
+  world
+*/ 1 = 0""",
+            pretty=True,
+        )
+        self.validate(
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1
+  AND /*
+  line1
+
+  line3
+*/ b = 2""",
+            """SELECT
+  *
+FROM x
+WHERE
+  a = 1
+  AND /*
+  line1
+
+  line3
+*/ b = 2""",
             pretty=True,
         )
 
@@ -678,7 +747,7 @@ ORDER BY
             transpile("x::z", read="clickhouse")
 
     def test_not_range(self):
-        self.validate("a NOT LIKE b", "NOT a LIKE b")
+        self.validate("a NOT LIKE b", "a NOT LIKE b")
         self.validate("a NOT BETWEEN b AND c", "NOT a BETWEEN b AND c")
         self.validate("a NOT IN (1, 2)", "NOT a IN (1, 2)")
         self.validate("a IS NOT NULL", "NOT a IS NULL")
@@ -987,6 +1056,11 @@ ORDER BY
         self.assertEqual(
             transpile("SELECT '1\n2'", pretty=True, unsupported_level=ErrorLevel.IGNORE)[0],
             "SELECT\n  '1\n2'",
+        )
+        self.assertEqual(transpile('SELECT "1\n2"', pretty=True)[0], 'SELECT\n  "1\n2"')
+        self.assertEqual(
+            transpile('SELECT "Product\n(Foo, Bar)" AS x FROM t', pretty=True)[0],
+            'SELECT\n  "Product\n(Foo, Bar)" AS x\nFROM t',
         )
 
     def test_sql_security(self):

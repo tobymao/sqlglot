@@ -558,6 +558,37 @@ class TestTSQL(Validator):
         self.validate_identity("OBJECT_ID('foo')")
         self.validate_identity("OBJECT_ID('foo', 'U')")
 
+    def test_null_ordering_simulation_resolves_ordered_against_projection(self):
+        # T-SQL hits the same NULLS FIRST/LAST CASE simulation as MySQL
+        # (NULL_ORDERING_SUPPORTED is None), so a bare ORDER BY name needs the
+        # matching projection's full sub-AST substituted in.
+        self.validate_all(
+            "SELECT e.employee_id FROM employees AS e LEFT JOIN employee_positions AS ep"
+            " ON e.employee_id = ep.employee_id"
+            " ORDER BY CASE WHEN e.employee_id IS NULL THEN 1 ELSE 0 END, e.employee_id",
+            read={
+                "duckdb": (
+                    "SELECT e.employee_id FROM employees e"
+                    " LEFT JOIN employee_positions ep ON e.employee_id = ep.employee_id"
+                    " ORDER BY employee_id"
+                ),
+            },
+        )
+        self.validate_all(
+            "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING (id)"
+            " ORDER BY CASE WHEN (-1) * col IS NULL THEN 1 ELSE 0 END, (-1) * col",
+            read={
+                "duckdb": "SELECT (-1) * col AS col FROM t1 LEFT JOIN t2 USING(id) ORDER BY col",
+            },
+        )
+        self.validate_all(
+            "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id"
+            " ORDER BY CASE WHEN t1.x + t2.y IS NULL THEN 1 ELSE 0 END, t1.x + t2.y",
+            read={
+                "duckdb": "SELECT t1.x + t2.y AS s FROM t1 JOIN t2 ON t1.id = t2.id ORDER BY s",
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",
@@ -709,6 +740,64 @@ FOR XML
   ELEMENTS XSINIL""",
             pretty=True,
         )
+
+    def test_for_modifiers(self):
+        # https://learn.microsoft.com/en-us/sql/relational-databases/json/format-query-results-as-json-with-for-json-sql-server
+        json_possible_options = [
+            "AUTO",
+            "PATH",
+            "AUTO, ROOT('RootName')",
+            "PATH, ROOT('RootName')",
+            "AUTO, INCLUDE_NULL_VALUES",
+            "PATH, INCLUDE_NULL_VALUES",
+            "AUTO, WITHOUT_ARRAY_WRAPPER",
+            "PATH, WITHOUT_ARRAY_WRAPPER",
+            "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES",
+            "PATH, ROOT('RootName'), WITHOUT_ARRAY_WRAPPER",
+            "PATH, INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+            "PATH, ROOT('RootName'), INCLUDE_NULL_VALUES, WITHOUT_ARRAY_WRAPPER",
+            # SQL Server accepts the modifiers in any order after the mode
+            "PATH, WITHOUT_ARRAY_WRAPPER, ROOT('Root'), INCLUDE_NULL_VALUES",
+        ]
+
+        for json_option in json_possible_options:
+            with self.subTest(f"Testing FOR JSON option: {json_option}"):
+                self.validate_identity(f"SELECT * FROM t FOR JSON {json_option}")
+
+        # Correlated subquery — the canonical SQL Server JSON shaping pattern
+        self.validate_identity(
+            "SELECT (SELECT TOP 5 a, b FROM t ORDER BY b DESC FOR JSON PATH) AS j FROM x"
+        )
+
+        # Inside a derived table
+        self.validate_identity("SELECT j FROM (SELECT a AS j FROM t FOR JSON PATH) AS x")
+
+        self.validate_identity(
+            "SELECT * FROM t FOR JSON PATH, ROOT('Root'), INCLUDE_NULL_VALUES",
+            """SELECT
+  *
+FROM t
+FOR JSON
+  PATH,
+  ROOT('Root'),
+  INCLUDE_NULL_VALUES""",
+            pretty=True,
+        )
+
+        # Other dialects don't support FOR JSON — it's silently dropped
+        self.validate_all(
+            "SELECT * FROM t FOR JSON AUTO",
+            read={"tsql": "SELECT * FROM t FOR JSON AUTO"},
+            write={
+                "tsql": "SELECT * FROM t FOR JSON AUTO",
+                "postgres": "SELECT * FROM t",
+                "duckdb": "SELECT * FROM t",
+            },
+        )
+
+        # FOR BROWSE is a bare keyword — no options follow.
+        # https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+        self.validate_identity("SELECT * FROM t FOR BROWSE")
 
     def test_types(self):
         self.validate_identity("CAST(x AS XML)")
@@ -1285,6 +1374,9 @@ WHERE
 
         self.validate_identity("CREATE FUNCTION foo(@bar INTEGER) RETURNS TABLE AS RETURN SELECT 1")
         self.validate_identity("CREATE FUNCTION dbo.ISOweek(@DATE DATETIME2) RETURNS INTEGER")
+        self.validate_identity(
+            "CREATE FUNCTION dbo.f() RETURNS TABLE AS RETURN (WITH subquery AS (SELECT id AS id FROM subtable) SELECT other_id FROM main_table AS mt INNER JOIN subquery ON subquery.id = mt.other_id)"
+        )
 
         # The following two cases don't necessarily correspond to valid TSQL, but they are used to verify
         # that the syntax RETURNS @return_variable TABLE <table_type_definition> ... is parsed correctly.
@@ -2007,6 +2099,37 @@ WHERE
             .assert_is(exp.Column)
             .this.assert_is(exp.Identifier)
             .args.get("global_")
+        )
+
+        # Quoted bracket form: the # must live inside the brackets in T-SQL
+        temp_ident = (
+            self.validate_identity("SELECT * FROM [#temp_table]")
+            .args["from_"]
+            .this.assert_is(exp.Table)
+            .this.assert_is(exp.Identifier)
+        )
+        self.assertTrue(temp_ident.args.get("temporary"))
+        self.assertEqual(temp_ident.name, "temp_table")
+
+        global_ident = (
+            self.validate_identity("SELECT * FROM [##temp_table]")
+            .args["from_"]
+            .this.assert_is(exp.Table)
+            .this.assert_is(exp.Identifier)
+        )
+        self.assertTrue(global_ident.args.get("global_"))
+        self.assertEqual(global_ident.name, "temp_table")
+
+        # duckdb -> tsql -> duckdb round-trip preserves TEMPORARY
+        self.validate_all(
+            "CREATE TABLE [#temptest] (name INTEGER)",
+            read={
+                "duckdb": "CREATE TEMPORARY TABLE 'temptest' (name INTEGER)",
+            },
+            write={
+                "tsql": "CREATE TABLE [#temptest] (name INTEGER)",
+                "duckdb": 'CREATE TEMPORARY TABLE "temptest" (name INT)',
+            },
         )
 
         self.validate_identity("@x").assert_is(exp.Parameter).this.assert_is(exp.Var)

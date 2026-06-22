@@ -61,6 +61,7 @@ class Exasol(Dialect):
             "REGEXP_LIKE": TokenType.RLIKE,
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
+            "MINUS": TokenType.EXCEPT,
         }
         KEYWORDS.pop("DIV")
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    groupconcat_sql,
     no_ilike_sql,
     rename_func,
     strposition_sql,
-    to_number_with_nls_param,
     trim_sql,
 )
 
@@ -25,6 +25,7 @@ class OracleGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True
+    SUPPORTS_MERGE_WHERE = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     DATA_TYPE_SPECIFIERS_ALLOWED = True
@@ -63,6 +64,7 @@ class OracleGenerator(generator.Generator):
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
+        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         exp.DateStrToDate: lambda self, e: self.func(
             "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
         ),
@@ -91,7 +93,6 @@ class OracleGenerator(generator.Generator):
         exp.TemporaryProperty: lambda _, e: f"{e.name or 'GLOBAL'} TEMPORARY",
         exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
         exp.ToChar: lambda self, e: self.function_fallback_sql(e),
-        exp.ToNumber: to_number_with_nls_param,
         exp.Trim: _trim_sql,
         exp.Unicode: lambda self, e: f"ASCII(UNISTR({self.sql(e.this)}))",
         exp.UnixToTime: lambda self, e: (
@@ -155,6 +156,16 @@ class OracleGenerator(generator.Generator):
 
     def interval_sql(self, expression: exp.Interval) -> str:
         return f"{'INTERVAL ' if isinstance(expression.this, exp.Literal) else ''}{self.sql(expression, 'this')} {self.sql(expression, 'unit')}"
+
+    def tonumber_sql(self, expression: exp.ToNumber) -> str:
+        this = self.sql(expression, "this")
+        default = self.sql(expression, "default")
+        if default:
+            this = f"{this} DEFAULT {default} ON CONVERSION ERROR"
+
+        return self.func(
+            "TO_NUMBER", this, expression.args.get("format"), expression.args.get("nlsparam")
+        )
 
     def columndef_sql(self, expression: exp.ColumnDef, sep: str = " ") -> str:
         param_constraint = expression.find(exp.InOutColumnConstraint)

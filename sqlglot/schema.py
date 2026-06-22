@@ -18,7 +18,7 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence
     from typing_extensions import Unpack
 
-    ColumnMapping = t.Union[dict, str, list]
+    ColumnMapping = t.Union[dict[str, t.Any], str, list[str]]
 
 
 @trait
@@ -317,6 +317,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
         self._type_mapping_cache: dict[str, exp.DataType] = {}
         self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
+        self._find_cache: dict[tuple[exp.Table, bool], dict[str, object] | None] = {}
         self._depth: int = 0
         schema = {} if schema is None else schema
         udf_mapping = {} if udf_mapping is None else udf_mapping
@@ -344,14 +345,17 @@ class MappingSchema(AbstractMappingSchema, Schema):
     def find(
         self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
     ) -> t.Any | None:
-        schema = super().find(
-            table, raise_on_missing=raise_on_missing, ensure_data_types=ensure_data_types
-        )
-        if ensure_data_types and isinstance(schema, dict):
-            schema = {
-                col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
-                for col, dtype in schema.items()
-            }
+        cache_key = (table, ensure_data_types)
+        schema = self._find_cache.get(cache_key)
+
+        if schema is None:
+            schema = super().find(table, raise_on_missing=raise_on_missing)
+            if ensure_data_types and isinstance(schema, dict):
+                schema = {
+                    col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
+                    for col, dtype in schema.items()
+                }
+            self._find_cache[cache_key] = schema
 
         return schema
 
@@ -407,6 +411,8 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
         new_trie([parts], self.mapping_trie)
+        self._find_cache.pop((normalized_table, True), None)
+        self._find_cache.pop((normalized_table, False), None)
 
     def column_names(
         self,
@@ -417,7 +423,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
     ) -> list[str]:
         normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
 
-        schema = self.find(normalized_table)
+        schema: dict[str, object] | None = self.find(normalized_table)
         if schema is None:
             return []
 
@@ -440,7 +446,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
         if table_schema:
             column_type = table_schema.get(normalized_column_name)
 
@@ -500,7 +506,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
         return normalized_column_name in table_schema if table_schema else False
 
     def _normalize(self, schema: dict[str, object]) -> dict[str, object]:
@@ -672,7 +678,7 @@ class MappingSchema(AbstractMappingSchema, Schema):
             udt = dialect.SUPPORTS_USER_DEFINED_TYPES
 
             try:
-                expression = exp.DataType.build(schema_type, dialect=dialect, udt=udt)
+                expression = exp.DataType.from_str(schema_type, dialect=dialect, udt=udt)
                 expression.transform(dialect.normalize_identifier, copy=False)
                 self._type_mapping_cache[schema_type] = expression
             except AttributeError:
@@ -708,7 +714,7 @@ def ensure_schema(
     return MappingSchema(schema, **kwargs)
 
 
-def ensure_column_mapping(mapping: ColumnMapping | None) -> dict:
+def ensure_column_mapping(mapping: ColumnMapping | None) -> dict[str, t.Any]:
     if mapping is None:
         return {}
     elif isinstance(mapping, dict):

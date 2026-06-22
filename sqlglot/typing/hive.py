@@ -28,6 +28,7 @@ EXPRESSION_METADATA = {
             exp.CurrentSchema,
             exp.Hex,
             exp.NextDay,
+            exp.RegexpExtract,
             exp.Repeat,
             exp.Replace,
             exp.Soundex,
@@ -43,24 +44,33 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DType.INT}
         for expr_type in {
+            exp.DenseRank,
             exp.Month,
+            exp.Ntile,
+            exp.Rank,
+            exp.RowNumber,
             exp.Second,
+            exp.Minute,
         }
     },
+    exp.PercentileDisc: {"returns": exp.DType.DOUBLE},
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.ArrayDistinct,
             exp.ArrayExcept,
+            exp.First,
+            exp.Last,
             exp.Reverse,
         }
     },
     exp.ApproxQuantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
+    exp.WithinGroup: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.ArrayIntersect: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
     exp.Quantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
-    exp.RegexpSplit: {"returns": exp.DataType.build("ARRAY<STRING>")},
+    exp.RegexpSplit: {"returns": exp.DataType.from_str("ARRAY<STRING>")},
 }

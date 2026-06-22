@@ -97,6 +97,17 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_no_paren_functions_after_dot(self):
+        # NO_PAREN_FUNCTIONS (token-type-based): should be identifiers after a dot
+        col = parse_one("SELECT t.current_date FROM t").find(exp.Column)
+        self.assertEqual(col.table, "t")
+        self.assertEqual(col.name, "current_date")
+
+        # Slow path via :: cast
+        cast = parse_one("SELECT t.current_user::TEXT FROM t", dialect="postgres").find(exp.Cast)
+        self.assertIsInstance(cast.this, exp.Column)
+        self.assertEqual(cast.this.name, "current_user")
+
     def test_tuple(self):
         parse_one("(a,)").assert_is(exp.Tuple)
 
@@ -1064,6 +1075,24 @@ class TestParser(unittest.TestCase):
             "SELECT * FROM a WHERE c = 'false'",
         )
 
+    def test_window_clause_without_from(self):
+        # https://github.com/tobymao/sqlglot/issues/7438
+        for dialect in (None, "sqlite", "postgres", "mysql", "duckdb", "bigquery"):
+            sql = "SELECT 1 WINDOW a AS (PARTITION BY x)"
+            self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+
+        # multiple named windows still work
+        self.assertEqual(
+            parse_one("SELECT 1 WINDOW a AS (PARTITION BY x), b AS (ORDER BY y)").sql(),
+            "SELECT 1 WINDOW a AS (PARTITION BY x), b AS (ORDER BY y)",
+        )
+
+        # WINDOW can still be used as an explicit alias (SELECT 1 AS WINDOW)
+        self.assertEqual(parse_one("SELECT 1 AS WINDOW").sql(), "SELECT 1 AS WINDOW")
+
+        # WINDOW remains usable as an implicit alias when not followed by `<id> AS (`
+        self.assertEqual(parse_one("SELECT col window FROM t").sql(), "SELECT col AS window FROM t")
+
     def test_parse_into_grant_principal(self):
         self.assertIsInstance(parse_one("ROLE blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
         self.assertIsInstance(parse_one("GROUP blah", into=exp.GrantPrincipal), exp.GrantPrincipal)
@@ -1084,3 +1113,29 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(
             parse_one("ALL PRIVILEGES", into=exp.GrantPrivilege), exp.GrantPrivilege
         )
+
+    def test_max_nodes(self):
+        self.assertIsInstance(parse_one("SELECT 1", max_nodes=1_000_000), exp.Select)
+
+        cols = [f"col{i}" for i in range(500)]
+        sql = f"SELECT {','.join(cols)} FROM t"
+        self.assertIsInstance(parse_one(sql, max_nodes=1_000_000), exp.Select)
+
+        width = 10000
+        depth = 100
+        expr = "x" + "=x" * depth
+        cols = [expr for _ in range(width)]
+        sql = f"SELECT {','.join(cols)}"
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=1_000_000)
+        self.assertIn("Maximum number of AST nodes", str(ctx.exception))
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql, max_nodes=50_000)
+        self.assertIn("(50000)", str(ctx.exception))
+
+        # Hitting a limit in one parse doesn't affect the next
+        with self.assertRaises(ParseError):
+            parse_one("SELECT " + ",".join(f"x={i}" for i in range(100)), max_nodes=5)
+        self.assertIsInstance(parse_one("SELECT 1, 2, 3"), exp.Select)

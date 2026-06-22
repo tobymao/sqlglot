@@ -14,12 +14,13 @@ from sqlglot.parser import build_trim
 
 
 def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
-    return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.build(to_type))
+    return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.from_str(to_type))
 
 
 class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
+    PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
 
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
@@ -59,10 +60,10 @@ class Spark2Parser(HiveParser):
         "STRING": build_as_cast("string"),
         "SLICE": exp.ArraySlice.from_arg_list,
         "TIMESTAMP": build_as_cast("timestamp"),
-        "TO_TIMESTAMP": lambda args: (
+        "TO_TIMESTAMP": lambda args, dialect: (
             build_as_cast("timestamp")(args)
             if len(args) == 1
-            else build_formatted_time(exp.StrToTime, "spark")(args)
+            else build_formatted_time(exp.StrToTime)(args, dialect)
         ),
         "TO_UNIX_TIMESTAMP": exp.StrToUnix.from_arg_list,
         "TO_UTC_TIMESTAMP": lambda args, dialect: exp.FromTimeZone(

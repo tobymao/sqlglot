@@ -42,6 +42,69 @@ class TestBigQuery(Validator):
         self.assertEqual(table.db, "x-0")
         self.assertEqual(table.name, "_y")
 
+        # Domain-scoped (legacy) project IDs (`domain.com:project-id`) contain dots in
+        # the domain that must not be treated as path separators, otherwise the domain
+        # prefix is dropped and the project ID becomes invalid.
+        table = self.parse_one(
+            "`domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`", into=exp.Table
+        )
+        self.assertEqual(table.catalog, "domain.com:project-id")
+        self.assertEqual(table.db, "region-us")
+        self.assertEqual(table.name, "INFORMATION_SCHEMA.JOBS")
+
+        table = self.parse_one("`domain.com:project-id.mydataset.mytable`", into=exp.Table)
+        self.assertEqual(table.catalog, "domain.com:project-id")
+        self.assertEqual(table.db, "mydataset")
+        self.assertEqual(table.name, "mytable")
+
+        # A domain-scoped project with no dataset/table must stay in the name position
+        # (like any bare identifier), not be promoted to catalog — otherwise consumers
+        # that read the identifier's name (e.g. macro interpolation) lose the project.
+        table = self.parse_one("`domain.com:project-id`", into=exp.Table)
+        self.assertEqual(table.name, "domain.com:project-id")
+        self.assertIsNone(table.args.get("catalog"))
+        self.assertIsNone(table.args.get("db"))
+
+        # A colon without a domain (no dot before it) is not a domain-scoped project,
+        # so the reference splits on dots as usual.
+        table = self.parse_one("`proj:weird.ds.tbl`", into=exp.Table)
+        self.assertEqual(table.catalog, "proj:weird")
+        self.assertEqual(table.db, "ds")
+        self.assertEqual(table.name, "tbl")
+
+        # Domains with multiple dots (e.g. `a.b.com:`) are kept intact too.
+        table = self.parse_one("`a.b.com:project-id.mydataset.mytable`", into=exp.Table)
+        self.assertEqual(table.catalog, "a.b.com:project-id")
+        self.assertEqual(table.db, "mydataset")
+        self.assertEqual(table.name, "mytable")
+
+        table = self.parse_one(
+            "`a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`", into=exp.Table
+        )
+        self.assertEqual(table.catalog, "a.b.com:project-id")
+        self.assertEqual(table.db, "region-us")
+        self.assertEqual(table.name, "INFORMATION_SCHEMA.JOBS")
+
+        table = self.parse_one("`a.b.com:project-id`", into=exp.Table)
+        self.assertEqual(table.name, "a.b.com:project-id")
+        self.assertIsNone(table.args.get("catalog"))
+        self.assertIsNone(table.args.get("db"))
+
+        self.validate_identity("SELECT * FROM `domain.com:project-id.mydataset.mytable`")
+        self.validate_identity(
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA`.JOBS",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS JOBS",
+        )
+        self.validate_identity(
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+        )
+        self.validate_identity("SELECT * FROM `a.b.com:project-id.mydataset.mytable`")
+        self.validate_identity(
+            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+        )
+
         self.validate_identity("SAFE.SOME_RANDOM_FUNC(a, b, c)").assert_is(exp.SafeFunc)
         self.validate_identity(
             "SAFE.SUBSTR('foo', 0, -2)",
@@ -172,6 +235,7 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT CAST(CURRENT_DATE AS STRING FORMAT 'DAY') AS current_day")
         self.validate_identity("SAFE_CAST(encrypted_value AS STRING FORMAT 'BASE64')")
         self.validate_identity("CAST(encrypted_value AS STRING FORMAT 'BASE64')")
+        self.validate_identity("CREATE TABLE t CLUSTER BY col1, col2")
         self.validate_identity("DATE(2016, 12, 25)")
         self.validate_identity("DATE(CAST('2016-12-25 23:59:59' AS DATETIME))")
         self.validate_identity("SELECT foo IN UNNEST(bar) AS bla")
@@ -202,6 +266,10 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN DECLARE y INT64", check_command_warning=True)
         self.validate_identity("LOOP SET x = x + 1", check_command_warning=True)
         self.validate_identity("REPEAT SET x = x + 1", check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE foo DROP PRIMARY KEY IF EXISTS",
+            check_command_warning=True,
+        )
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 1, 12, 30, 10)")
         self.validate_identity(
             "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
@@ -210,6 +278,13 @@ class TestBigQuery(Validator):
         self.validate_identity("BEGIN TRANSACTION")
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
+        for load_data_sql in (
+            "LOAD DATA OVERWRITE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+            "LOAD DATA INTO TEMP TABLE mydataset.table1 FROM FILES(FORMAT='AVRO', uris=['gs://bucket/path/file.avro'])",
+        ):
+            with self.subTest(load_data_sql=load_data_sql):
+                self.validate_identity(load_data_sql).assert_is(exp.LoadData)
         self.validate_identity("CAST(x AS BIGNUMERIC)")
         self.validate_identity("SELECT y + 1 FROM x GROUP BY y + 1 ORDER BY 1")
         self.validate_identity("SELECT TIMESTAMP_SECONDS(2) AS t")
@@ -1768,8 +1843,8 @@ WHERE
                 "trino": "IF(y <> 0, CAST(x AS DOUBLE) / y, NULL)",
                 "hive": "IF(y <> 0, x / y, NULL)",
                 "spark2": "IF(y <> 0, x / y, NULL)",
-                "spark": "IF(y <> 0, x / y, NULL)",
-                "databricks": "IF(y <> 0, x / y, NULL)",
+                "spark": "TRY_DIVIDE(x, y)",
+                "databricks": "TRY_DIVIDE(x, y)",
                 "snowflake": "IFF(y <> 0, x / y, NULL)",
                 "postgres": "CASE WHEN y <> 0 THEN CAST(x AS DOUBLE PRECISION) / y ELSE NULL END",
             },
@@ -1783,8 +1858,8 @@ WHERE
                 "trino": "IF((2 * y) <> 0, CAST((x + 1) AS DOUBLE) / (2 * y), NULL)",
                 "hive": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
                 "spark2": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
-                "spark": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
-                "databricks": "IF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
+                "spark": "TRY_DIVIDE(x + 1, 2 * y)",
+                "databricks": "TRY_DIVIDE(x + 1, 2 * y)",
                 "snowflake": "IFF((2 * y) <> 0, (x + 1) / (2 * y), NULL)",
                 "postgres": "CASE WHEN (2 * y) <> 0 THEN CAST((x + 1) AS DOUBLE PRECISION) / (2 * y) ELSE NULL END",
             },
@@ -1899,6 +1974,13 @@ WHERE
         )
         self.validate_identity(
             "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"
+        )
+        self.validate_all(
+            "SELECT PARSE_DATETIME('%F %T', '2023-01-15 14:30:00')",
+            write={
+                "snowflake": "SELECT PARSE_DATETIME('2023-01-15 14:30:00', '%Y-%m-%d %H:%M:%S')",
+                "duckdb": "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')",
+            },
         )
         self.validate_identity("FORMAT_TIME('%R', CAST('15:30:00' AS TIME))")
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
@@ -2448,6 +2530,18 @@ OPTIONS (
         self.validate_identity(
             "SELECT AI.GENERATE_BOOL(MODEL `mydataset.gemini_model`, 'Is sky blue?')"
         )
+
+        ast = self.validate_identity("SELECT AI.EMBED('hello')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIEmbed)
+
+        ast = self.validate_identity("SELECT AI.SIMILARITY('a', 'b')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AISimilarity)
+
+        ast = self.validate_identity("SELECT AI.GENERATE('Write a haiku')")
+        assert isinstance(ast.expressions[0], exp.Dot)
+        assert isinstance(ast.expressions[0].expression, exp.AIGenerate)
 
     def test_merge(self):
         self.validate_all(
@@ -3799,6 +3893,22 @@ OPTIONS (
                     write={
                         "bigquery": "SELECT CAST('1' AS BIGNUMERIC)",
                         "duckdb": "SELECT CAST('1' AS DECIMAL(38, 5))",
+                    },
+                )
+
+                self.validate_all(
+                    f"DECLARE x {type_}(20, 4)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(20, 4)",
+                        "duckdb": "DECLARE x DECIMAL(20, 4)",
+                    },
+                )
+
+                self.validate_all(
+                    f"DECLARE x {type_}(76, 38)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(76, 38)",
+                        "duckdb": "DECLARE x DECIMAL(38, 38)",
                     },
                 )
 

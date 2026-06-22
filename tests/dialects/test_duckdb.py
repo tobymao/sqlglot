@@ -180,6 +180,7 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT GET_BIT(CAST('0110010' AS BIT), 2)")
         self.validate_identity("SELECT 1 WHERE x > $1")
         self.validate_identity("SELECT 1 WHERE x > $name")
+        self.validate_identity("SELECT 1 AS a$b")
         self.validate_identity("""SELECT '{"x": 1}' -> c FROM t""")
 
         self.assertEqual(
@@ -232,7 +233,7 @@ class TestDuckDB(Validator):
                     "snowflake": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "spark": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "sqlite": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
-                    "starrocks": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+                    "starrocks": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "teradata": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "trino": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "tsql": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
@@ -485,6 +486,14 @@ class TestDuckDB(Validator):
         self.validate_identity("FROM (FROM tbl)", "SELECT * FROM (SELECT * FROM tbl)")
         self.validate_identity("FROM tbl", "SELECT * FROM tbl")
         self.validate_identity(
+            "FROM (FROM tbl_1) AS t1 POSITIONAL JOIN (FROM tbl_2) AS t2 SELECT t1.x AS x1, t2.x AS x2",
+            "SELECT t1.x AS x1, t2.x AS x2 FROM (SELECT * FROM tbl_1) AS t1 POSITIONAL JOIN (SELECT * FROM tbl_2) AS t2",
+        )
+        self.validate_identity(
+            "FROM (FROM a) AS t1 JOIN (FROM b) AS t2 ON t1.x = t2.x JOIN (FROM c) AS t3 ON t2.y = t3.y SELECT t1.x, t2.x, t3.y",
+            "SELECT t1.x, t2.x, t3.y FROM (SELECT * FROM a) AS t1 JOIN (SELECT * FROM b) AS t2 ON t1.x = t2.x JOIN (SELECT * FROM c) AS t3 ON t2.y = t3.y",
+        )
+        self.validate_identity(
             "SELECT * FROM t1 WHERE NOT EXISTS(FROM t2 WHERE t2.id = t1.id)",
             "SELECT * FROM t1 WHERE NOT EXISTS(SELECT * FROM t2 WHERE t2.id = t1.id)",
         )
@@ -547,6 +556,41 @@ class TestDuckDB(Validator):
         self.validate_identity(
             """SELECT JSON_EXTRACT_STRING('{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }', ['$.family', '$.species'])""",
             """SELECT '{ "family": "anatidae", "species": [ "duck", "goose", "swan", null ] }' ->> ['$.family', '$.species']""",
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL, 'a', 1)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL, 'a', 1)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL, 'a', 1))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY(NULL)",
+            write={
+                "duckdb": "SELECT JSON_ARRAY(NULL)",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT(NULL))",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY()",
+            write={
+                "duckdb": "SELECT JSON_ARRAY()",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT())",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+            write={
+                "duckdb": "SELECT JSON_ARRAY('a', 'b', 'c', 'd', 'e')",
+                "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c', 'd', 'e'))",
+            },
         )
         self.validate_identity(
             "SELECT col FROM t WHERE JSON_EXTRACT_STRING(col, '$.id') NOT IN ('b')",
@@ -662,6 +706,20 @@ class TestDuckDB(Validator):
             read={"spark": "SELECT COLLECT_SET(sample_col) FROM sample_table"},
         )
         self.validate_all(
+            "SELECT LIST(col) FROM t",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(col) FROM t",
+                "snowflake": "SELECT ARRAY_AGG(col) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT LIST_DISTINCT(col)",
+            write={
+                "duckdb": "SELECT LIST_DISTINCT(col)",
+                "snowflake": "SELECT ARRAY_DISTINCT(ARRAY_COMPACT(col))",
+            },
+        )
+        self.validate_all(
             "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
             write={
                 "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
@@ -760,11 +818,20 @@ class TestDuckDB(Validator):
                 "duckdb": """SELECT '{"x": 1}'::JSON""",
                 "postgres": """SELECT '{"x": 1}'::JSONB""",
             },
+            write={
+                "duckdb": """SELECT CAST('{"x": 1}' AS JSON)""",
+                "snowflake": """SELECT CAST('{"x": 1}' AS VARIANT)""",
+            },
         )
         self.validate_all(
             "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
             read={
                 "duckdb": "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'))",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM produce PIVOT(SUM(sales) FOR quarter IN ('Q1' AS \"'Q1'\", 'Q2' AS \"'Q2'\"))",
+            read={
                 "snowflake": "SELECT * FROM produce PIVOT(SUM(produce.sales) FOR produce.quarter IN ('Q1', 'Q2'))",
             },
         )
@@ -928,9 +995,6 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "STRING_TO_ARRAY(x, 'a')",
-            read={
-                "snowflake": "STRTOK_TO_ARRAY(x, 'a')",
-            },
             write={
                 "duckdb": "STR_SPLIT(x, 'a')",
                 "presto": "SPLIT(x, 'a')",
@@ -1286,17 +1350,17 @@ class TestDuckDB(Validator):
         self.validate_identity("a ** b", "POWER(a, b)")
         self.validate_identity("a ~~~ b", "a GLOB b")
         self.validate_identity("a ~~ b", "a LIKE b")
-        self.validate_identity("a @> b")
-        self.validate_identity("a <@ b", "b @> a")
+        self.validate_identity("a @> b").assert_is(exp.ArrayContainsAll)
+        self.validate_identity("a <@ b").assert_is(exp.ArrayContainedBy)
         self.validate_identity("a && b").assert_is(exp.ArrayOverlaps)
         self.validate_identity("a ^@ b", "STARTS_WITH(a, b)")
         self.validate_identity(
             "a !~~ b",
-            "NOT a LIKE b",
+            "a NOT LIKE b",
         )
         self.validate_identity(
             "a !~~* b",
-            "NOT a ILIKE b",
+            "a NOT ILIKE b",
         )
 
         self.validate_all(
@@ -1763,7 +1827,37 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
-            read={"bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))"},
+            read={
+                "bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(STRPTIME('14:30', '%H:%M') AS TIME)",
+            read={
+                "bigquery": "SELECT PARSE_TIME('%H:%M', '14:30')",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(STRPTIME('15:30:00.123456', '%H:%M:%S.%f') AS TIME)",
+            read={
+                "bigquery": "SELECT PARSE_TIME('%H:%M:%E6S', '15:30:00.123456')",
+            },
+        )
+        self.validate_all(
+            "SELECT STRPTIME('1970 ' || '2023-01-15 14:30:00', '%Y ' || '%Y-%m-%d %H:%M:%S')",
+            read={
+                "bigquery": "SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2023-01-15 14:30:00')",
+            },
+        )
+        self.validate_all(
+            "SELECT STRPTIME('1970 ' || 'Thu Dec 25 07:30:00 2008', '%Y ' || '%a %b %-d %I:%M:%S %Y')",
+            read={
+                "bigquery": "SELECT PARSE_DATETIME('%a %b %e %I:%M:%S %Y', 'Thu Dec 25 07:30:00 2008')"
+            },
+        )
+        self.validate_all(
+            "SELECT STRPTIME('1970 ' || '15:30:00.123456', '%Y ' || '%H:%M:%S.%f')",
+            read={"bigquery": "SELECT PARSE_DATETIME('%H:%M:%E6S', '15:30:00.123456')"},
         )
         self.validate_all(
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '-1' DAY",
@@ -2310,6 +2404,14 @@ class TestDuckDB(Validator):
             "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
             "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
         )
+        self.validate_identity(
+            "FROM (FROM t1 LEFT JOIN t2 USING (id) SELECT *)",
+            "SELECT * FROM (SELECT * FROM t1 LEFT JOIN t2 USING (id))",
+        )
+        self.validate_identity(
+            "PIVOT (FROM tbl_1 LEFT JOIN tbl_2 USING (id) SELECT *) ON col_1 USING SUM(col_2)",
+            "PIVOT (SELECT * FROM tbl_1 LEFT JOIN tbl_2 USING (id)) ON col_1 USING SUM(col_2)",
+        )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE")
@@ -2532,6 +2634,29 @@ class TestDuckDB(Validator):
                 "duckdb": "CREATE OR REPLACE FUNCTION func(a INT, b REAL) AS TABLE SELECT a",
             },
         )
+
+        overloaded = self.validate_identity(
+            "CREATE MACRO add_x (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        overloads = overloaded.expression
+        self.assertIsInstance(overloads, exp.MacroOverloads)
+        self.assertEqual(len(overloads.expressions), 2)
+        self.assertIsNone(overloaded.this.args.get("expressions"))
+
+        self.validate_identity(
+            "CREATE OR REPLACE MACRO foo (a) AS a, (a, b) AS a + b, (a, b, c) AS a + b + c"
+        )
+        self.validate_identity("CREATE MACRO foo (a TINYINT) AS a + 1, (a INT) AS a + 2")
+        self.validate_identity("CREATE MACRO foo(a TINYINT) AS a = 127")
+        self.validate_identity(
+            "CREATE MACRO is_maximal (a TINYINT) AS a = 127, (a INT) AS a = 2147483647"
+        )
+        table_overloaded = self.validate_identity(
+            "CREATE MACRO tbl (a) AS TABLE (SELECT a AS x), (a, b) AS TABLE (SELECT a AS x, b AS y)"
+        )
+        table_overloads = table_overloaded.expression
+        self.assertIsInstance(table_overloads, exp.MacroOverloads)
+        self.assertTrue(all(o.args.get("is_table") for o in table_overloads.expressions))
 
     def test_bitwise_agg(self):
         self.validate_all(

@@ -442,7 +442,7 @@ class FromISO8601Date(Expression, Func):
 
 
 class ParseDatetime(Expression, Func):
-    arg_types = {"this": True, "format": False, "zone": False}
+    arg_types = {"this": True, "format": False, "zone": False, "default_year": False}
 
 
 class ParseTime(Expression, Func):

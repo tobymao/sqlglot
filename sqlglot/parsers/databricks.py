@@ -11,17 +11,16 @@ class DatabricksParser(SparkParser):
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = True
     COLON_IS_VARIANT_EXTRACT = True
+    COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,
         "IFF": exp.If.from_arg_list,
         "GETDATE": exp.CurrentTimestamp.from_arg_list,
-        "DATEADD": build_date_delta(exp.DateAdd),
-        "DATE_ADD": build_date_delta(exp.DateAdd),
         "DATEDIFF": build_date_delta(exp.DateDiff),
         "DATE_DIFF": build_date_delta(exp.DateDiff),
         "NOW": exp.CurrentTimestamp.from_arg_list,
-        "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "databricks"),
+        "TO_DATE": build_formatted_time(exp.TsOrDsToDate),
         "UNIFORM": lambda args: exp.Uniform(
             this=seq_get(args, 0), expression=seq_get(args, 1), seed=seq_get(args, 2)
         ),
@@ -55,3 +54,8 @@ class DatabricksParser(SparkParser):
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
         return self.expression(exp.CurrentDate())
+
+    def _parse_cluster_property(self):
+        if self._match_texts(("AUTO", "NONE")):
+            return self.expression(exp.ClusterProperty(this=self._prev.text.upper()))
+        return super()._parse_cluster_property()

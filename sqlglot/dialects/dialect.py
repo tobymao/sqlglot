@@ -399,6 +399,9 @@ class Dialect(metaclass=_Dialect):
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
 
+    CONCAT_WS_COALESCE = False
+    """A `NULL` arg in `CONCAT_WS` yields `NULL` by default, but in some dialects it is skipped."""
+
     HEX_LOWERCASE = False
     """Whether the `HEX` function returns a lowercase hexadecimal string."""
 
@@ -520,6 +523,11 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_ORDER_BY_ALL = False
     """
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
+    """
+
+    SUPPORTS_LIMIT_ALL = False
+    """
+    Whether LIMIT ALL is supported (equivalent to no limit) as in Postgres.
     """
 
     PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = False
@@ -1216,7 +1224,9 @@ def inline_array_unless_query(self: Generator, expression: exp.Expr) -> str:
 def no_ilike_sql(self: Generator, expression: exp.ILike) -> str:
     return self.like_sql(
         exp.Like(
-            this=exp.Lower(this=expression.this), expression=exp.Lower(this=expression.expression)
+            this=exp.Lower(this=expression.this),
+            expression=exp.Lower(this=expression.expression),
+            negate=expression.args.get("negate"),
         )
     )
 
@@ -1535,27 +1545,31 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
 
 
 def build_formatted_time(
-    exp_class: Type[E], dialect: str, default: bool | str | None = None
-) -> t.Callable[[BuilderArgs], E]:
+    exp_class: Type[E], dialect_override: str | None = None, default: bool | str | None = None
+) -> t.Callable[[BuilderArgs, Dialect], E]:
     """Helper used for time expressions.
 
     Args:
         exp_class: the expression class to instantiate.
-        dialect: target sql dialect.
+        dialect_override: optional sql dialect to override the parser's one.
         default: the default format, True being time.
 
     Returns:
         A callable that can be used to return the appropriately formatted time expression.
     """
 
-    def _builder(args: BuilderArgs) -> E:
-        return exp_class(
-            this=seq_get(args, 0),
-            format=Dialect[dialect].format_time(
-                seq_get(args, 1)
-                or (Dialect[dialect].TIME_FORMAT if default is True else default or None)
-            ),
+    def _builder(args: BuilderArgs, dialect: Dialect) -> E:
+        target_dialect = (
+            t.cast(Dialect, Dialect[dialect_override])
+            if isinstance(dialect_override, str)
+            else dialect
         )
+
+        fmt = seq_get(args, 1)
+        if not fmt:
+            fmt = target_dialect.TIME_FORMAT if default is True else default or None
+
+        return exp_class(this=seq_get(args, 0), format=target_dialect.format_time(fmt))
 
     return _builder
 
@@ -1598,6 +1612,7 @@ def build_date_delta(
 
 def build_date_delta_with_interval(
     expression_class: Type[E],
+    default_unit: str | None = None,
 ) -> t.Callable[[BuilderArgs], E | None]:
     def _builder(args: BuilderArgs) -> E | None:
         if len(args) < 2:
@@ -1606,7 +1621,13 @@ def build_date_delta_with_interval(
         interval = args[1]
 
         if not isinstance(interval, exp.Interval):
-            raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+            if default_unit is None:
+                raise ParseError(f"INTERVAL expression expected but got '{interval}'")
+            return expression_class(
+                this=args[0],
+                expression=interval,
+                unit=exp.Literal.string(default_unit),
+            )
 
         return expression_class(this=args[0], expression=interval.this, unit=unit_to_str(interval))
 
@@ -1754,14 +1775,15 @@ def count_if_to_sum(self: Generator, expression: exp.CountIf) -> str:
 
 
 def trim_sql(self: Generator, expression: exp.Trim, default_trim_type: str = "") -> str:
-    target = self.sql(expression, "this")
-    trim_type = self.sql(expression, "position") or default_trim_type
     remove_chars = self.sql(expression, "expression")
-    collation = self.sql(expression, "collation")
 
     # Use TRIM/LTRIM/RTRIM syntax if the expression isn't database-specific
     if not remove_chars:
         return self.trim_sql(expression)
+
+    target = self.sql(expression, "this")
+    trim_type = self.sql(expression, "position") or default_trim_type
+    collation = self.sql(expression, "collation")
 
     trim_type = f"{trim_type} " if trim_type else ""
     remove_chars = f"{remove_chars} " if remove_chars else ""
@@ -1820,7 +1842,7 @@ def pivot_column_names(aggregations: Iterable[exp.Expr], dialect: DialectType) -
             be quoted in the base parser's `_parse_pivot` method, due to `to_identifier`.
             Otherwise, we'd end up with `col_avg(`foo`)` (notice the double quotes).
             """
-            agg_all_unquoted = agg.transform(
+            agg_all_unquoted: exp.Expr = agg.transform(
                 lambda node: (
                     exp.Identifier(this=node.name, quoted=False)
                     if isinstance(node, exp.Identifier)
@@ -2112,10 +2134,9 @@ def json_extract_segments(
         if not isinstance(path, exp.JSONPath):
             return rename_func(name)(self, expression)
 
-        escape = path.args.get("escape")
-
         segments = []
         for segment in path.expressions:
+            escape = segment.args.get("quoted")
             path = self.sql(segment)
             if path:
                 if isinstance(segment, exp.JSONPathPart) and (
@@ -2229,7 +2250,7 @@ def build_default_decimal_type(
             return dtype
 
         params = f"{precision}{f', {scale}' if scale is not None else ''}"
-        return exp.DataType.build(f"DECIMAL({params})")
+        return exp.DataType.from_str(f"DECIMAL({params})")
 
     return _builder
 
@@ -2452,8 +2473,7 @@ def build_timetostr_or_tochar(
             annotate_types(this, dialect=dialect)
 
         if this.is_type(*exp.DataType.TEMPORAL_TYPES):
-            dialect_name = dialect.__class__.__name__.lower()
-            return build_formatted_time(exp.TimeToStr, dialect_name, default=True)(args)
+            return build_formatted_time(exp.TimeToStr, default=True)(args, t.cast(Dialect, dialect))
 
     return exp.ToChar.from_arg_list(args)
 

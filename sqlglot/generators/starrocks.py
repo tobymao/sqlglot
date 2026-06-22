@@ -100,6 +100,14 @@ class StarRocksGenerator(MySQLGenerator):
         exp.JSONExtract: arrow_json_extract_sql,
         exp.Property: property_sql,
         exp.RegexpLike: rename_func("REGEXP"),
+        # Inherited from MySQL, minus operations StarRocks supports natively
+        # (QUALIFY, FULL OUTER JOIN, SEMI/ANTI JOIN)
+        exp.Select: transforms.preprocess(
+            [
+                transforms.eliminate_distinct_on,
+                transforms.unnest_generate_date_array_using_recursive_cte,
+            ]
+        ),
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
         exp.StDistance: st_distance_sphere,
@@ -302,10 +310,13 @@ class StarRocksGenerator(MySQLGenerator):
 
         return f"PARTITION BY {self.sql(this)}"
 
-    def cluster_sql(self, expression: exp.Cluster) -> str:
+    def clusterproperty_sql(self, expression: exp.ClusterProperty) -> str:
         """Generate StarRocks ORDER BY clause for clustering."""
+        if expression.this:
+            self.unsupported(f"Unsupported CLUSTER BY {self.sql(expression, 'this')}")
+            return ""
         expressions = self.expressions(expression, flat=True)
-        return f"ORDER BY ({expressions})" if expressions else ""
+        return f"ORDER BY ({expressions})"
 
     def refreshtriggerproperty_sql(self, expression: exp.RefreshTriggerProperty) -> str:
         """Generate StarRocks REFRESH clause for materialized views.

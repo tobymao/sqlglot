@@ -5,13 +5,17 @@ from sqlglot.dialects.dialect import Dialect
 from sqlglot.generators.postgres import PostgresGenerator
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.postgres import EXPRESSION_METADATA
 
 
 class Postgres(Dialect):
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
+    CONCAT_WS_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
+    SUPPORTS_LIMIT_ALL = True
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
@@ -71,6 +75,7 @@ class Postgres(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,
             "@@": TokenType.DAT,
+            "@?": TokenType.AT_QMARK,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
             "?&": TokenType.QMARK_AMP,
@@ -97,6 +102,7 @@ class Postgres(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SMALLSERIAL": TokenType.SMALLSERIAL,
             "TEMP": TokenType.TEMPORARY,
+            "TYPE": TokenType.TYPE,
             "REGCLASS": TokenType.OBJECT_IDENTIFIER,
             "REGCOLLATION": TokenType.OBJECT_IDENTIFIER,
             "REGCONFIG": TokenType.OBJECT_IDENTIFIER,

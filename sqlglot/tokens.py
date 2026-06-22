@@ -1,11 +1,26 @@
 from __future__ import annotations
 
+import threading
 import typing as t
 
 from sqlglot.trie import new_trie
 
-# Import Token and TokenType from tokenizer_core (compiled with mypyc)
-from sqlglot.tokenizer_core import Token, TokenType
+from sqlglot.tokenizer_core import Token, TokenizerCore, TokenType
+
+T = t.TypeVar("T")
+
+
+class ThreadLocalCache(threading.local):
+    """Per-thread cache. Each thread sees its own dict; safe for caching stateful objects."""
+
+    def __init__(self) -> None:
+        self.cache: dict[type, t.Any] = {}
+
+    def get_or_build(self, key: type, build: t.Callable[[], T]) -> T:
+        if not (obj := self.cache.get(key)):
+            self.cache[key] = obj = build()
+        return obj
+
 
 try:
     import sqlglotc  # noqa: F401
@@ -72,7 +87,7 @@ class _TokenizerBase:
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]]
     _IDENTIFIER_ESCAPES: t.ClassVar[set[str]]
     _COMMENTS: t.ClassVar[dict[str, str | None]]
-    _KEYWORD_TRIE: t.ClassVar[dict[str, object]]
+    _KEYWORD_TRIE: t.ClassVar[dict[str | int, object]]
 
     @classmethod
     def __init_subclass__(cls, **kwargs: t.Any) -> None:
@@ -193,7 +208,7 @@ class Tokenizer(_TokenizerBase):
     _QUOTES: t.ClassVar[dict[str, str]] = {}
     _STRING_ESCAPES: t.ClassVar[set[str]] = set()
     _BYTE_STRING_ESCAPES: t.ClassVar[set[str]] = set()
-    _KEYWORD_TRIE: t.ClassVar[dict[str, object]] = {}
+    _KEYWORD_TRIE: t.ClassVar[dict[str | int, object]] = {}
     _ESCAPE_FOLLOW_CHARS: t.ClassVar[set[str]] = set()
 
     KEYWORDS: t.ClassVar[dict[str, TokenType]] = {
@@ -221,6 +236,7 @@ class Tokenizer(_TokenizerBase):
         "#>": TokenType.HASH_ARROW,
         "#>>": TokenType.DHASH_ARROW,
         "<->": TokenType.LR_ARROW,
+        "<<->>": TokenType.LLRR_ARROW,
         "&&": TokenType.DAMP,
         "??": TokenType.DQMARK,
         "~~~": TokenType.GLOB,
@@ -532,6 +548,8 @@ class Tokenizer(_TokenizerBase):
 
     COMMENTS = ["--", ("/*", "*/")]
 
+    _core_cache: t.ClassVar[ThreadLocalCache] = ThreadLocalCache()
+
     __slots__ = (
         "dialect",
         "_core",
@@ -539,11 +557,12 @@ class Tokenizer(_TokenizerBase):
 
     def __init__(self, dialect: DialectType = None) -> None:
         from sqlglot.dialects.dialect import Dialect
-        from sqlglot.tokenizer_core import TokenizerCore as _TokenizerCore
 
         self.dialect = Dialect.get_or_raise(dialect)
+        self._core = self._core_cache.get_or_build(type(self), self._init_core)
 
-        self._core = _TokenizerCore(
+    def _init_core(self) -> TokenizerCore:
+        return TokenizerCore(
             single_tokens=self.SINGLE_TOKENS,
             keywords=self.KEYWORDS,
             quotes=self._QUOTES,
@@ -559,8 +578,8 @@ class Tokenizer(_TokenizerBase):
             nested_comments=self.NESTED_COMMENTS,
             hint_start=self.HINT_START,
             tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
-            bit_strings=list[t.Union[str, tuple[str, str]]](self.BIT_STRINGS),
-            hex_strings=list[t.Union[str, tuple[str, str]]](self.HEX_STRINGS),
+            has_bit_strings=bool(self.BIT_STRINGS),
+            has_hex_strings=bool(self.HEX_STRINGS),
             numeric_literals=self.NUMERIC_LITERALS,
             var_single_tokens=self.VAR_SINGLE_TOKENS,
             string_escapes_allowed_in_raw_strings=self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,

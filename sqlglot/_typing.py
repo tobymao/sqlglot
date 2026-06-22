@@ -4,9 +4,9 @@ import typing as t
 from collections.abc import Mapping, Sequence
 
 if t.TYPE_CHECKING:
-    from typing_extensions import ParamSpec
-
     import sqlglot
+    from sqlglot import exp
+    from typing_extensions import ParamSpec
     from sqlglot.dialects.dialect import DialectType
     from sqlglot.errors import ErrorLevel
 
@@ -29,6 +29,16 @@ class ParserNoDialectArgs(t.TypedDict, total=False):
     error_level: ErrorLevel | None
     error_message_context: int
     max_errors: int
+    max_nodes: int
+
+
+class DataTypeArgs(ParserNoDialectArgs, total=False):
+    expressions: list[exp.Expr] | None
+    nested: bool
+    values: list[exp.Expr] | None
+    kind: exp.Expr | str
+    nullable: bool
+    collate: exp.Identifier | exp.Column
 
 
 class ParserArgs(ParserNoDialectArgs, _DialectArg, total=False):

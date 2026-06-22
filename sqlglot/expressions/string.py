@@ -220,7 +220,7 @@ class Stuff(Expression, Func):
 
 class Substring(Expression, Func):
     _sql_names = ["SUBSTRING", "SUBSTR"]
-    arg_types = {"this": True, "start": False, "length": False}
+    arg_types = {"this": True, "start": False, "length": False, "zero_start": False}
 
 
 class SubstringIndex(Expression, Func):
@@ -303,15 +303,11 @@ class FromBase64(Expression, Func):
 
 
 class Hex(Expression, Func):
-    pass
+    arg_types = {"this": True, "case": False}
 
 
 class HexDecodeString(Expression, Func):
     pass
-
-
-class HexEncode(Expression, Func):
-    arg_types = {"this": True, "case": False}
 
 
 class LowerHex(Hex):
@@ -379,6 +375,7 @@ class ToNumber(Expression, Func):
         "scale": False,
         "safe": False,
         "safe_name": False,
+        "default": False,
     }
 
 

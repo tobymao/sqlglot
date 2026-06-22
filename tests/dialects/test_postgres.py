@@ -22,6 +22,7 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity("""CAST('a' AS TEXT COLLATE "de_DE")""")
         self.validate_identity("SELECT '%' SIMILAR TO '^%' ESCAPE '^'")
         self.validate_identity("SELECT GET_BIT(CAST(44 AS BIT(10)), 6)")
         self.validate_identity("SELECT * FROM t GROUP BY ROLLUP (a || '^' || b)")
@@ -41,6 +42,8 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
         self.validate_identity("x @@ y")
+        self.validate_identity("doc @? '$.a[*] ? (@ > 2)'")
+        self.validate_identity("SELECT * FROM events WHERE doc @? '$.a[*] ? (@ > 2)'")
         self.validate_identity("CAST(x AS MONEY)")
         self.validate_identity("CAST(x AS INT4RANGE)")
         self.validate_identity("CAST(x AS INT4MULTIRANGE)")
@@ -68,6 +71,12 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CASE WHEN SUBSTRING('abcdefg') IN ('ab') THEN 1 ELSE 0 END")
         self.validate_identity("COMMENT ON TABLE mytable IS 'this'")
         self.validate_identity("COMMENT ON MATERIALIZED VIEW my_view IS 'this'")
+        self.validate_identity("COMMENT ON TYPE mood IS 'x'")
+        self.validate_identity("COMMENT ON TYPE foo.mood IS 'x'")
+        self.validate_identity("COMMENT ON VIEW foo.bat IS 'x'")
+        self.validate_identity("COMMENT ON MATERIALIZED VIEW foo.my_view IS 'x'")
+        self.validate_identity("COMMENT ON SEQUENCE public.seq IS 'x'")
+        self.validate_identity("COMMENT ON INDEX public.idx IS 'x'")
         self.validate_identity("SELECT e'\\xDEADBEEF'")
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
@@ -91,6 +100,16 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
         self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
         self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
+        self.validate_identity("SELECT date_col - INTERVAL '30' FROM t")
+        self.validate_identity("SELECT date_col - INTERVAL '1' AS one_second_later")
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '30' DAY FROM t",
+            "SELECT date_col - INTERVAL '30 DAY' FROM t",
+        )
+        self.validate_identity(
+            "SELECT date_col - INTERVAL '1' HOUR AS one_hour_later",
+            "SELECT date_col - INTERVAL '1 HOUR' AS one_hour_later",
+        )
         self.validate_identity(
             "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"
         )
@@ -194,9 +213,8 @@ class TestPostgres(Validator):
             "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
             "SELECT SUBSTRING('Thomas' FROM 2 FOR 3)",
         )
-        self.validate_identity(
-            "SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]",
-            "SELECT ARRAY[1, 2] @> ARRAY[1, 2, 3]",
+        self.validate_identity("SELECT ARRAY[1, 2, 3] <@ ARRAY[1, 2]").expressions[0].assert_is(
+            exp.ArrayContainedBy
         )
         self.validate_identity(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",
@@ -251,12 +269,26 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "x !~~ 'y'",
-            "NOT x LIKE 'y'",
+            "x NOT LIKE 'y'",
         )
         self.validate_identity(
             "x !~~* 'y'",
-            "NOT x ILIKE 'y'",
+            "x NOT ILIKE 'y'",
         )
+        self.validate_identity("SELECT 'testa 1' NOT LIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT 'testa 1' NOT LIKE ANY(ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT 'testa 1' NOT ILIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT 'testa 1' NOT ILIKE ANY(ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT NOT 'testa 1' LIKE ALL (ARRAY['testa%', 'testb%'])")
+        self.validate_identity("SELECT NOT ('testa 1' LIKE ALL (ARRAY['testa%', 'testb%']))")
+        infix_not_like = self.parse_one("SELECT a NOT LIKE ALL (b)").expressions[0]
+        prefix_not_like = self.parse_one("SELECT NOT a LIKE ALL (b)").expressions[0]
+        self.assertIsInstance(infix_not_like, exp.Like)
+        self.assertTrue(infix_not_like.args.get("negate"))
+        self.assertIsInstance(prefix_not_like, exp.Not)
+        self.assertIsInstance(prefix_not_like.this, exp.Like)
+        self.assertFalse(prefix_not_like.this.args.get("negate"))
+        self.assertNotEqual(infix_not_like, prefix_not_like)
         self.validate_identity(
             "'45 days'::interval day",
             "CAST('45 days' AS INTERVAL DAY)",
@@ -428,6 +460,35 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_all(
+            "SELECT E'a\\tb'",
+            write={
+                "postgres": "SELECT e'a\\tb'",
+                "mysql": "SELECT 'a\\tb'",
+                "sqlite": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT CAST('2025-02-01 00:00:00' AS TIMESTAMP) - MAKE_INTERVAL(years => 1)",
+            write={
+                "mysql": "SELECT CAST('2025-02-01 00:00:00' AS DATETIME) - INTERVAL 1 YEAR",
+                "postgres": "SELECT CAST('2025-02-01 00:00:00' AS TIMESTAMP) - MAKE_INTERVAL(years => 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT NOW() + MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            write={
+                "mysql": "SELECT CURRENT_TIMESTAMP() + INTERVAL 1 YEAR + INTERVAL 2 MONTH + INTERVAL 3 DAY",
+                "postgres": "SELECT CURRENT_TIMESTAMP + MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            },
+        )
+        self.validate_all(
+            "SELECT NOW() - MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            write={
+                "mysql": "SELECT CURRENT_TIMESTAMP() - INTERVAL 1 YEAR - INTERVAL 2 MONTH - INTERVAL 3 DAY",
+                "postgres": "SELECT CURRENT_TIMESTAMP - MAKE_INTERVAL(years => 1, months => 2, days => 3)",
+            },
+        )
+        self.validate_all(
             "SELECT CURRENT_TIMESTAMP + INTERVAL '-3 MONTH'",
             read={
                 "mysql": "SELECT DATE_ADD(CURRENT_TIMESTAMP, INTERVAL -1 QUARTER)",
@@ -596,7 +657,9 @@ FROM json_data, field_ids""",
         self.validate_all(
             "e'x'",
             write={
-                "mysql": "x",
+                "postgres": "e'x'",
+                "mysql": "'x'",
+                "sqlite": UnsupportedError,
             },
         )
         self.validate_all(
@@ -1066,6 +1129,28 @@ FROM json_data, field_ids""",
             exp.DataType
         )
 
+        create_type = self.validate_identity(
+            "CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')"
+        ).assert_is(exp.Create)
+        self.assertTrue(create_type.expression.assert_is(exp.DataType).is_type(exp.DType.ENUM))
+
+        self.validate_identity("CREATE TYPE mood AS ENUM ()").assert_is(exp.Create)
+
+        create_type = self.validate_identity(
+            "CREATE TYPE inventory_item AS (name TEXT, supplier_id INT, price DECIMAL)"
+        ).assert_is(exp.Create)
+        create_type.expression.assert_is(exp.Schema)
+
+        self.validate_identity("CREATE TYPE public.mood AS ENUM ('sad', 'ok')").assert_is(
+            exp.Create
+        )
+
+        self.validate_identity("CREATE TYPE widget", check_command_warning=True)
+        self.validate_identity(
+            "CREATE TYPE float8range AS RANGE (subtype = float8, subtype_diff = float8mi)",
+            check_command_warning=True,
+        )
+
         # Checks that OID is parsed into a DataType (ObjectIdentifier)
         self.assertIsInstance(
             self.parse_one("CREATE TABLE p.t (c oid)").find(exp.DataType), exp.ObjectIdentifier
@@ -1116,6 +1201,9 @@ FROM json_data, field_ids""",
         )
         self.validate_identity(
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
+        )
+        self.validate_identity(
+            "INSERT INTO tbl (a, b) VALUES (1, 'x') ON CONFLICT(a, LOWER(b)) DO UPDATE SET b = excluded.b"
         )
         self.validate_identity(
             "ALTER TABLE tested_table ADD CONSTRAINT unique_example UNIQUE (column_name) NOT VALID"
@@ -1379,6 +1467,9 @@ FROM json_data, field_ids""",
     def test_unnest(self):
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
+        )
+        self.validate_identity(
+            "SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))"
         )
 
         self.validate_all(
@@ -1815,6 +1906,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             "CREATE OR REPLACE TRIGGER replace_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_INSERT()",
             "CREATE TRIGGER param_trigger BEFORE INSERT ON users FOR EACH ROW EXECUTE FUNCTION LOG_WITH_PARAMS('insert', 'users')",
             "CREATE TRIGGER my_trigger BEFORE INSERT ON myschema.users FOR EACH ROW EXECUTE FUNCTION LOG_CHANGES()",
+            "CREATE TRIGGER trg_foo BEFORE UPDATE ON bar.bat FOR EACH ROW EXECUTE FUNCTION baz.asdf()",
+            "CREATE TRIGGER trg_foo BEFORE UPDATE ON bar.bat FOR EACH ROW EXECUTE FUNCTION c.s.asdf('x', 1)",
             "CREATE TRIGGER truncate_trigger BEFORE TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION LOG_TRUNCATE()",
             "CREATE TRIGGER complex_when BEFORE UPDATE ON accounts FOR EACH ROW WHEN (OLD.balance IS DISTINCT FROM NEW.balance AND NEW.balance > 0) EXECUTE FUNCTION CHECK_BALANCE()",
             "CREATE TRIGGER emp_stamp BEFORE INSERT OR UPDATE ON emp FOR EACH ROW EXECUTE FUNCTION EMP_STAMP()",
@@ -1854,3 +1947,6 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity(
             'CREATE TRIGGER "MyTrigger" BEFORE INSERT ON "MyTable" FOR EACH ROW EXECUTE FUNCTION MYFUNCTION()'
         )
+
+    def test_postgis_distance_3d(self):
+        self.validate_identity("SELECT a <<->> b")

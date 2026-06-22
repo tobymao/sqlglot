@@ -18,6 +18,12 @@ if t.TYPE_CHECKING:
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
+# Set-returning (table) functions multiply the rows of the entire query, so a projection
+# containing one affects the cardinality of every output column and must never be pruned,
+# even when the projection itself is otherwise unreferenced. Posexplode and the *Outer
+# variants are subclasses of Explode, so matching Explode covers them too.
+SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
+
 
 # Selection to use if selection list is empty
 def default_selection(is_agg: bool) -> exp.Alias:
@@ -99,7 +105,7 @@ def pushdown_projections(
             if remove_unused_selections:
                 _remove_unused_selections(scope, parent_selections, schema, alias_count)
 
-            if scope.expression.is_star:
+            if scope.scans_all_subscope_columns:
                 continue
 
             # Group columns by source name
@@ -150,6 +156,12 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
         if select_all or name in parent_selections or name in order_refs or alias_count > 0:
             new_selections.append(selection)
             alias_count -= 1
+        elif selection.find(*SET_RETURNING_FUNCTIONS):
+            # A set-returning function multiplies the rows of the whole query, so this
+            # projection affects the cardinality of every output column and must be kept
+            # even though it is otherwise unreferenced. It is not a positional alias slot,
+            # so alias_count is left untouched.
+            new_selections.append(selection)
         else:
             if selection.is_star:
                 star = True

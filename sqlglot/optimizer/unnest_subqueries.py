@@ -1,9 +1,11 @@
+from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
+from sqlglot._typing import E
 
 
-def unnest_subqueries(expression: exp.Expr) -> exp.Expr:
+def unnest_subqueries(expression: E) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
 
@@ -51,11 +53,20 @@ def unnest(select, parent_select, next_alias_name):
         )
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
+        # NOT IN has three-valued semantics that the LEFT-JOIN-anti rewrite doesn't preserve:
+        # a NULL in the subquery makes NOT IN evaluate to NULL for every outer row.
+        or (isinstance(predicate, exp.In) and isinstance(predicate.parent, exp.Not))
     ):
         return
 
     if isinstance(select, exp.SetOperation):
-        select = exp.select(*select.selects).from_(select.subquery(next_alias_name()))
+        inner_alias = next_alias_name()
+        select = exp.select(
+            *(
+                exp.alias_(exp.column(s.alias_or_name, inner_alias), s.alias_or_name)
+                for s in select.selects
+            )
+        ).from_(select.subquery(inner_alias))
 
     alias = next_alias_name()
     clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
@@ -303,11 +314,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     )
 
 
-def _replace(expression, condition):
+def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
     return expression.replace(exp.condition(condition))
 
 
-def _other_operand(expression):
+def _other_operand(expression: object) -> exp.Expr | None:
     if isinstance(expression, exp.In):
         return expression.this
 

@@ -96,7 +96,7 @@ class PRQLParser(parser.Parser):
     def _parse_selection(
         self,
         query: exp.Query,
-        parse_method: t.Callable | None = None,
+        parse_method: t.Callable[..., exp.Expr | None] | None = None,
         append: bool = True,
     ) -> exp.Query:
         parse_method = parse_method if parse_method else self._parse_expression
@@ -109,7 +109,7 @@ class PRQLParser(parser.Parser):
             expression = parse_method()
             selects = [expression] if expression else []
 
-        projections = {
+        projections: dict[str, exp.Expr] = {
             select.alias_or_name: select.this if isinstance(select, exp.Alias) else select
             for select in query.selects
         }

@@ -1451,10 +1451,10 @@ WITH "_u_0" AS (
     "cascade"."tag_input" = 'XXX' OR "cascade"."tag_output" = 'XXX'
 ), "_u_1" AS (
   SELECT
-    "cascade"."tag_input" AS "tagname"
+    "_u_0"."tagname" AS "tagname"
   FROM "_u_0" AS "_u_0"
   GROUP BY
-    "cascade"."tag_input"
+    "_u_0"."tagname"
 )
 SELECT
   *

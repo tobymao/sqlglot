@@ -24,7 +24,12 @@ class Redshift(Postgres):
 
     # ref: https://docs.aws.amazon.com/redshift/latest/dg/r_FORMAT_strings.html
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
-    TIME_MAPPING = {**Postgres.TIME_MAPPING, "MON": "%b", "HH24": "%H", "HH": "%I"}
+
+    TIME_MAPPING = {
+        **Postgres.TIME_MAPPING,
+        "MON": "%b",
+        "MONTH": "%B",
+    }
 
     Parser = RedshiftParser
 
@@ -36,13 +41,15 @@ class Redshift(Postgres):
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
+            "BINARY VARYING": TokenType.VARBINARY,
+            "CURRENT_USER_ID": TokenType.CURRENT_USER_ID,
             "HLLSKETCH": TokenType.HLLSKETCH,
             "MINUS": TokenType.EXCEPT,
             "SUPER": TokenType.SUPER,
             "TOP": TokenType.TOP,
             "UNLOAD": TokenType.COMMAND,
+            "USER": TokenType.CURRENT_USER,
             "VARBYTE": TokenType.VARBINARY,
-            "BINARY VARYING": TokenType.VARBINARY,
         }
         KEYWORDS.pop("VALUES")
 

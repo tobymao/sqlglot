@@ -10,19 +10,12 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.spark import SparkGenerator
 
 
-def _jsonextract_sql(
-    self: DatabricksGenerator, expression: exp.JSONExtract | exp.JSONExtractScalar
-) -> str:
-    this = self.sql(expression, "this")
-    expr = self.sql(expression, "expression")
-    return f"{this}:{expr}"
-
-
 class DatabricksGenerator(SparkGenerator):
     TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
     COPY_PARAMS_ARE_WRAPPED = False
     COPY_PARAMS_EQ_REQUIRED = True
     JSON_PATH_SINGLE_QUOTE_ESCAPE = False
+    JSON_PATH_KEY_QUOTED_FORCES_BRACKETS = True
     SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
     QUOTE_JSON_PATH = False
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
@@ -52,9 +45,10 @@ class DatabricksGenerator(SparkGenerator):
                     transforms.any_to_exists,
                 ]
             ),
-            exp.JSONExtract: _jsonextract_sql,
-            exp.JSONExtractScalar: _jsonextract_sql,
-            exp.JSONPathRoot: lambda *_: "",
+            exp.JSONExtract: lambda self, e: f"{self.sql(e, 'this')}:{self.sql(e, 'expression')}",
+            exp.JSONPathRoot: lambda self, e: (
+                "$" if isinstance(e.parent and e.parent.parent, exp.JSONExtractScalar) else ""
+            ),
             exp.ToChar: lambda self, e: (
                 self.cast_sql(exp.Cast(this=e.this, to=exp.DataType(this="STRING")))
                 if e.args.get("is_numeric")
@@ -98,7 +92,12 @@ class DatabricksGenerator(SparkGenerator):
 
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
         expression.set("escape", None)
-        return super().jsonpath_sql(expression)
+        path = super().jsonpath_sql(expression)
+
+        if isinstance(expression.parent, exp.JSONExtractScalar):
+            return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+
+        return path
 
     def uniform_sql(self, expression: exp.Uniform) -> str:
         gen = expression.args.get("gen")
@@ -109,3 +108,7 @@ class DatabricksGenerator(SparkGenerator):
             seed = gen.this
 
         return self.func("UNIFORM", expression.this, expression.expression, seed)
+
+    def clusterproperty_sql(self, expression):
+        this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
+        return f"CLUSTER BY {this}"

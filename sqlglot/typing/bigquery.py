@@ -93,22 +93,33 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     #
     # SELECT t, TYPEOF(t) FROM (SELECT 'foo') AS t            -- foo, STRUCT<STRING>
     # SELECT ARRAY(SELECT 'foo'), TYPEOF(ARRAY(SELECT 'foo')) -- foo, ARRAY<STRING>
-    # ARRAY(SELECT ... UNION ALL SELECT ...) -- ARRAY<type from coerced projections>
+    # ARRAY(SELECT ... UNION ALL SELECT ...)                  -- ARRAY<type from coerced projections>
+    # ARRAY(SELECT AS STRUCT 1 AS a, 'b' AS b)                -- ARRAY<STRUCT<INT64, STRING>>
     if len(array_args) == 1:
         unnested = array_args[0].unnest()
         projection_type: exp.DataType | exp.DType | None = None
 
         # Handle ARRAY(SELECT ...) - single SELECT query
         if isinstance(unnested, exp.Select):
-            if (
-                (query_type := unnested.meta.get("query_type")) is not None
-                and query_type.is_type(exp.DType.STRUCT)
-                and len(query_type.expressions) == 1
-                and isinstance(col_def := query_type.expressions[0], exp.ColumnDef)
-                and (col_type := col_def.kind) is not None
-                and not col_type.is_type(exp.DType.UNKNOWN)
-            ):
-                projection_type = col_type
+            query_type = unnested.meta_get("query_type")
+
+            if query_type and query_type.is_type(exp.DType.STRUCT):
+                query_exprs = query_type.expressions
+
+                col_defs = [
+                    e
+                    for e in query_exprs
+                    if isinstance(e, exp.ColumnDef)
+                    and not (e.kind and e.kind.is_type(exp.DType.UNKNOWN))
+                ]
+
+                if len(col_defs) == len(query_exprs):
+                    if unnested.args.get("kind") == "STRUCT":
+                        # ARRAY(SELECT AS STRUCT ...) -> ARRAY<STRUCT<col1, col2, ...>>
+                        projection_type = query_type
+                    elif len(col_defs) == 1 and (col_type := col_defs[0].kind):
+                        # ARRAY(SELECT col FROM ...) -> ARRAY<col_type>
+                        projection_type = col_type
 
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):
@@ -167,15 +178,12 @@ EXPRESSION_METADATA = {
             exp.DateAdd,
             exp.DateTrunc,
             exp.DatetimeTrunc,
-            exp.FirstValue,
             exp.GroupConcat,
             exp.IgnoreNulls,
             exp.JSONExtract,
-            exp.Lead,
             exp.Left,
             exp.Lower,
             exp.NetFunc,
-            exp.NthValue,
             exp.Pad,
             exp.PercentileDisc,
             exp.RegexpExtract,
@@ -203,16 +211,12 @@ EXPRESSION_METADATA = {
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
             exp.ByteLength,
-            exp.DenseRank,
             exp.FarmFingerprint,
             exp.Grouping,
             exp.LaxInt64,
             exp.Length,
-            exp.Ntile,
-            exp.Rank,
             exp.RangeBucket,
             exp.RegexpInstr,
-            exp.RowNumber,
             exp.UnixDate,
         }
     },
@@ -254,11 +258,9 @@ EXPRESSION_METADATA = {
             exp.CovarSamp,
             exp.Csc,
             exp.Csch,
-            exp.CumeDist,
             exp.EuclideanDistance,
             exp.Float64,
             exp.LaxFloat64,
-            exp.PercentRank,
             exp.Sec,
             exp.Sech,
         }
@@ -328,7 +330,7 @@ EXPRESSION_METADATA = {
     exp.DateFromUnixDate: {"returns": exp.DType.DATE},
     exp.GenerateTimestampArray: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("ARRAY<TIMESTAMP>", dialect="bigquery")
+            e, exp.DataType.from_str("ARRAY<TIMESTAMP>", dialect="bigquery")
         )
     },
     exp.JSONFormat: {
@@ -338,21 +340,20 @@ EXPRESSION_METADATA = {
     },
     exp.JSONKeysAtDepth: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
+            e, exp.DataType.from_str("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
     exp.JSONValueArray: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("ARRAY<VARCHAR>", dialect="bigquery")
+            e, exp.DataType.from_str("ARRAY<VARCHAR>", dialect="bigquery")
         )
     },
-    exp.Lag: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "default")},
     exp.ParseBignumeric: {"returns": exp.DType.BIGDECIMAL},
     exp.ParseNumeric: {"returns": exp.DType.DECIMAL},
     exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
     exp.ToCodePoints: {
         "annotator": lambda self, e: self._set_type(
-            e, exp.DataType.build("ARRAY<BIGINT>", dialect="bigquery")
+            e, exp.DataType.from_str("ARRAY<BIGINT>", dialect="bigquery")
         )
     },
 }

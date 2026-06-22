@@ -526,6 +526,10 @@ class Simplifier:
         exp.Is,
     )
 
+    # Operand types that allow a connector pair to combine in _flat_simplify: constants
+    # (matched by the is_false/is_null/is_zero/always_true checks) and comparisons.
+    CONNECTOR_COMBINABLE: t.ClassVar = (exp.Boolean, exp.Literal, exp.Null, *COMPARISONS)
+
     INVERSE_COMPARISONS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {
         exp.LT: exp.GT,
         exp.GT: exp.LT,
@@ -592,9 +596,9 @@ class Simplifier:
         joins: list[exp.Join] = []
 
         for node in expression.walk(
-            prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta.get(FINAL))
+            prune=lambda n: bool(isinstance(n, exp.Condition) or n.meta_get(FINAL))
         ):
-            if node.meta.get(FINAL):
+            if node.meta_get(FINAL):
                 continue
 
             # group by expressions cannot be simplified, for example
@@ -683,10 +687,10 @@ class Simplifier:
                 original.replace(node)
 
             for n in node.iter_expressions(reverse=True):
-                if n.meta.get(FINAL):
+                if n.meta_get(FINAL):
                     raise
             pre_transformation_stack.extend(
-                n for n in node.iter_expressions(reverse=True) if not n.meta.get(FINAL)
+                n for n in node.iter_expressions(reverse=True) if not n.meta_get(FINAL)
             )
             post_transformation_stack.append((node, parent))
 
@@ -695,9 +699,16 @@ class Simplifier:
             root = original is expression
 
             # Resets parent, arg_key, index pointers– this is needed because some of the
-            # previous transformations mutate the AST, leading to an inconsistent state
+            # previous transformations mutate the AST, leading to an inconsistent state.
+            # We only fix pointers instead of calling `set` because the values are unchanged:
+            # actual mutations go through `set`/`replace`, which already invalidate cached
+            # hashes, so clearing them again here would force `while_changing` to rehash
+            # entire subtrees after every (mostly no-op) pass.
             for k, v in tuple(original.args.items()):
-                original.set(k, v)
+                if v is None:
+                    original.args.pop(k)
+                else:
+                    original._set_parent(k, v)
 
             # Post-order transformations
             node = self.simplify_not(original)
@@ -933,7 +944,7 @@ class Simplifier:
             ops = set(expression.flatten())
             for op in ops:
                 if isinstance(op, exp.Not) and op.this in ops:
-                    if expression.meta.get("nonnull") is True:
+                    if expression.meta_get("nonnull") is True:
                         return exp.false() if isinstance(expression, exp.And) else exp.true()
 
         return expression
@@ -1285,15 +1296,15 @@ class Simplifier:
             sep_expr, *expressions = expression.expressions
             sep = sep_expr.name
             concat_type = exp.ConcatWs
-            args = {}
         else:
             expressions = expression.expressions
             sep = ""
             concat_type = exp.Concat
-            args = {
-                "safe": expression.args.get("safe"),
-                "coalesce": expression.args.get("coalesce"),
-            }
+
+        args = {
+            "safe": expression.args.get("safe"),
+            "coalesce": expression.args.get("coalesce"),
+        }
 
         new_args = []
         for is_string_group, group in itertools.groupby(
@@ -1467,6 +1478,16 @@ class Simplifier:
             queue = deque(expression.flatten(unnest=False))
             size = len(queue)
 
+            # The pairwise scan below is O(n^2). For connectors, a pair only combines if one side
+            # is a constant or both are comparisons (see _simplify_connectors / _simplify_comparison);
+            # if no operand is combinable the scan is a guaranteed no-op, so return early. This
+            # avoids the quadratic blowup on large connectors of inert operands (e.g. a 1000-way OR
+            # of ANDs). Non-connector callers (simplify_equality) are unaffected by the type guard.
+            if isinstance(expression, exp.Connector) and not any(
+                isinstance(op, self.CONNECTOR_COMBINABLE) for op in queue
+            ):
+                return expression
+
             while queue:
                 a = queue.popleft()
 
@@ -1508,6 +1529,7 @@ class Gen:
     def gen(self, expression: exp.Expr, comments: bool = False) -> str:
         self.stack = [expression]
         self.sqls.clear()
+        dispatch = GEN_DISPATCH
 
         while self.stack:
             node = self.stack.pop()
@@ -1516,10 +1538,10 @@ class Gen:
                 if comments and node.comments:
                     self.stack.append(f" /*{','.join(node.comments)}*/")
 
-                exp_handler_name = f"{node.key}_sql"
+                handler = dispatch.get(node.key)
 
-                if hasattr(self, exp_handler_name):
-                    getattr(self, exp_handler_name)(node)
+                if handler is not None:
+                    handler(self, node)
                 elif isinstance(node, exp.Func):
                     self._function(node)
                 else:
@@ -1748,3 +1770,16 @@ class Gen:
             self.stack.append(kvs)
             return True
         return False
+
+
+def _build_gen_dispatch() -> dict[str, t.Callable[..., None]]:
+    # Precompute {expr key -> unbound handler}, mirroring the generator's _build_dispatch, so gen()
+    # avoids the per-node f-string + hasattr/getattr lookup (which mypyc can't devirtualize).
+    dispatch: dict[str, t.Callable[..., None]] = {}
+    for name in dir(Gen):
+        if name.endswith("_sql") and not name.startswith("_"):
+            dispatch[name[:-4]] = getattr(Gen, name)
+    return dispatch
+
+
+GEN_DISPATCH = _build_gen_dispatch()

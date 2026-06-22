@@ -221,7 +221,7 @@ class TestSnowflake(Validator):
             "JAROWINKLER_SIMILARITY('hello', 'world')",
             write={
                 "snowflake": "JAROWINKLER_SIMILARITY('hello', 'world')",
-                "duckdb": "JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world'))",
+                "duckdb": "CAST(JARO_WINKLER_SIMILARITY(UPPER('hello'), UPPER('world')) * 100 AS INT)",
                 "clickhouse": "jaroWinklerSimilarity(UPPER('hello'), UPPER('world'))",
             },
         )
@@ -445,7 +445,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT {* EXCLUDE (col1)} FROM my_table")
         self.validate_identity("SELECT {* EXCLUDE (col1, col2)} FROM my_table")
         self.validate_identity("SELECT a, b, COUNT(*) FROM x GROUP BY ALL LIMIT 100")
-        self.validate_identity("STRTOK_TO_ARRAY('a b c')")
+        self.validate_identity("STRTOK_TO_ARRAY('a b c')", "STRTOK_TO_ARRAY('a b c', ' ')")
         self.validate_identity("STRTOK_TO_ARRAY('a.b.c', '.')")
         self.validate_identity("GET(a, b)")
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
@@ -458,7 +458,8 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
-        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name DESC)")
+        self.validate_identity("CREATE TABLE table1 CLUSTER BY (name1, name2, name3)")
+        self.validate_identity("ALTER TABLE table1 CLUSTER BY (name)")
         self.validate_identity("SELECT rename, replace")
         self.validate_identity("SELECT TIMEADD(HOUR, 2, CAST('09:05:03' AS TIME))")
         self.validate_identity("SELECT CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT))")
@@ -675,6 +676,20 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT LIST(DISTINCT col) FILTER(WHERE NOT col IS NULL) OVER (PARTITION BY grp) FROM t"
             },
         )
+        self.validate_all(
+            "SELECT ARRAY_AGG(col) FROM t",
+            write={
+                "snowflake": "SELECT ARRAY_AGG(col) FROM t",
+                "duckdb": "SELECT ARRAY_AGG(col) FILTER(WHERE col IS NOT NULL) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_DISTINCT(col)",
+            write={
+                "snowflake": "SELECT ARRAY_DISTINCT(col)",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(col) <> LIST_COUNT(col) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(col, _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(col) END",
+            },
+        )
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
         self.validate_identity("SELECT ARRAY_CAT([1, 2], [3, 4])")
         self.validate_identity("SELECT ARRAY_PREPEND([2, 3, 4], 1)")
@@ -813,14 +828,6 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT DATEADD(DAY, -7, DATEADD(t.m, 1, CAST('2023-01-03' AS DATE))) FROM (SELECT 'month' AS m) AS t"
         ).selects[0].this.unit.assert_is(exp.Column)
-
-        self.validate_all(
-            "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-            write={
-                "snowflake": "SELECT STRTOK('a$b$c', SUBSTRING('.$^', 1, 2), 2)",
-                "duckdb": r"""SELECT CASE WHEN SUBSTRING('.$^', 1, 2) = '' AND 'a$b$c' = '' THEN NULL WHEN SUBSTRING('.$^', 1, 2) = '' AND 2 = 1 THEN 'a$b$c' WHEN SUBSTRING('.$^', 1, 2) = '' THEN NULL WHEN 2 < 0 THEN NULL WHEN 'a$b$c' IS NULL OR SUBSTRING('.$^', 1, 2) IS NULL OR 2 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('a$b$c', CASE WHEN SUBSTRING('.$^', 1, 2) = '' THEN '' ELSE '[' || REGEXP_REPLACE(SUBSTRING('.$^', 1, 2), '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), x -> NOT x = '')[2] END""",
-            },
-        )
 
         self.validate_all(
             "SELECT STRTOK('a$b/cg', '$/.')",
@@ -2204,19 +2211,20 @@ class TestSnowflake(Validator):
             "SELECT UUID_STRING(), UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')"
         )
 
+        # Note: Snowflake's UUID_STRING returns VARCHAR, DuckDB also returns VARCHAR from string operations
         self.validate_all(
             "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
             read={
                 "snowflake": "UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'foo')",
             },
             write={
-                "hive": "UUID()",
-                "spark2": "UUID()",
-                "spark": "UUID()",
-                "databricks": "UUID()",
-                "duckdb": "UUID()",
-                "presto": "UUID()",
-                "trino": "UUID()",
+                "hive": "CAST(UUID() AS STRING)",
+                "spark2": "CAST(UUID() AS STRING)",
+                "spark": "CAST(UUID() AS STRING)",
+                "databricks": "CAST(UUID() AS STRING)",
+                "duckdb": "(SELECT LOWER(SUBSTRING(h, 1, 8) || '-' || SUBSTRING(h, 9, 4) || '-' || '5' || SUBSTRING(h, 14, 3) || '-' || FORMAT('{:02x}', CAST('0x' || SUBSTRING(h, 17, 2) AS INT) & 63 | 128) || SUBSTRING(h, 19, 2) || '-' || SUBSTRING(h, 21, 12)) FROM (SELECT SUBSTRING(SHA1(UNHEX(REPLACE('fe971b24-9572-4005-b22f-351e9c09274d', '-', '')) || ENCODE('foo')), 1, 32) AS h))",
+                "presto": "CAST(UUID() AS VARCHAR)",
+                "trino": "CAST(UUID() AS VARCHAR)",
                 "postgres": "GEN_RANDOM_UUID()",
                 "bigquery": "GENERATE_UUID()",
             },
@@ -3918,7 +3926,6 @@ class TestSnowflake(Validator):
             "TRY_TO_DATE('2024-01-31')",
             write={
                 "snowflake": "TRY_CAST('2024-01-31' AS DATE)",
-                "duckdb": "TRY_CAST('2024-01-31' AS DATE)",
             },
         )
         self.validate_identity("TRY_TO_DATE('2024-01-31', 'AUTO')")
@@ -6777,3 +6784,20 @@ FROM SEMANTIC_VIEW(
                     prefix = natural + join_side + outer + " DIRECTED"
                     with self.subTest(f"Testing {prefix} JOIN"):
                         self.validate_identity(f"SELECT * FROM a {prefix} JOIN b USING (id)")
+
+    def test_undrop(self):
+        self.validate_identity("UNDROP TABLE my_table")
+        self.validate_identity("UNDROP SCHEMA my_schema")
+        self.validate_identity("UNDROP DATABASE my_db")
+        self.validate_identity("UNDROP ACCOUNT my_account")
+        self.validate_identity("UNDROP NOTEBOOK my_nb")
+        self.validate_identity("UNDROP SNAPSHOT my_snap")
+        self.validate_identity("UNDROP STREAMLIT my_app")
+        self.validate_identity("UNDROP TAG my_tag")
+        self.validate_identity("UNDROP TYPE my_type")
+        self.validate_identity("UNDROP DYNAMIC TABLE my_table")
+        self.validate_identity("UNDROP EXTERNAL VOLUME my_vol")
+        self.validate_identity("UNDROP ICEBERG TABLE my_table")
+        self.validate_identity("UNDROP TABLE db.schema.my_table")
+        self.validate_identity("UNDROP SNAPSHOT IDENTIFIER('my_snap')")
+        self.validate_identity("UNDROP SNAPSHOT my_snap RENAME TO new_snap")

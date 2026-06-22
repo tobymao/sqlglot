@@ -8,6 +8,7 @@ from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
 from sqlglot.expressions.core import (
     Aliases,
+    Column,
     Condition,
     Distinct,
     Dot,
@@ -858,8 +859,8 @@ class SkipJSONColumn(Expression):
     arg_types = {"regexp": False, "expression": True}
 
 
-class Cluster(Order):
-    pass
+class Cluster(Expression):
+    arg_types = {"expressions": True}
 
 
 class Distribute(Order):
@@ -912,6 +913,11 @@ class Tuple(Expression):
 
 class QueryOption(Expression):
     arg_types = {"this": True, "expression": False}
+
+
+# FOR { XML | JSON } query modifier; `kind` is the discriminant ("XML" or "JSON").
+class ForClause(Expression):
+    arg_types = {"kind": True, "expressions": False}
 
 
 class WithTableHint(Expression):
@@ -1265,8 +1271,8 @@ class Select(Expression, Query):
         Set the CLUSTER BY expression.
 
         Example:
-            >>> Select().from_("tbl").select("x").cluster_by("x DESC").sql(dialect="hive")
-            'SELECT x FROM tbl CLUSTER BY x DESC'
+            >>> Select().from_("tbl").select("x").cluster_by("x").sql(dialect="hive")
+            'SELECT x FROM tbl CLUSTER BY x'
 
         Args:
             *expressions: the SQL code strings to parse.
@@ -1752,6 +1758,9 @@ class Pivot(Expression):
         "default_on_null": False,
         "into": False,
         "with_": False,
+        "identify_pivot_strings": False,
+        "prefixed_pivot_columns": False,
+        "pivot_column_naming": False,
     }
 
     @property
@@ -1761,6 +1770,75 @@ class Pivot(Expression):
     @property
     def fields(self) -> list[Expr]:
         return self.args.get("fields", [])
+
+    def output_columns(self, pre_pivot_columns: t.Iterable[str]) -> dict[str, str]:
+        """
+        Returns an ordered map of post-rename output column name -> pre-rename
+        source-side name, in the order the (UN)PIVOT produces them.
+
+        For callers that just want the names, iterate the dict (or call .keys()):
+            >>> from sqlglot import parse_one, exp
+            >>> piv = parse_one("SELECT * FROM t UNPIVOT(val FOR name IN (a, b))").find(exp.Pivot)
+            >>> list(piv.output_columns(["a", "b", "c"]))
+            ['c', 'name', 'val']
+
+        AST shape:
+            PIVOT(SUM(val) FOR name IN ('a', 'b')):
+                expressions: aggregate(s), e.g. [Sum(this=Column(val))]
+                fields:      [In(this=Column(name), expressions=[Literal('a'), Literal('b')])]
+                columns:     optional explicit output identifiers (e.g. set by Snowflake)
+
+            UNPIVOT(val FOR name IN (a, b)):
+                expressions: value Identifier(s), or Tuple(Identifiers) for multi-value
+                fields:      [In(this=Identifier(name), expressions=[Column(a), Column(b)])]
+                             For literal-aliased entries (`a AS 'x'`) the IN expressions
+                             are wrapped in PivotAlias(this=Column, alias=Literal).
+
+        Args:
+            pre_pivot_columns: Columns visible to the operator before it runs
+                (e.g. the source table or subquery's projections).
+        """
+        if self.unpivot:
+            excluded: set[str] = set()
+            name_columns: list[Identifier] = []
+            for field in self.fields:
+                if not isinstance(field, In):
+                    continue
+                if isinstance(field.this, Identifier):
+                    name_columns.append(field.this)
+                for e in field.expressions:
+                    excluded.update(c.output_name for c in e.find_all(Column))
+            value_columns = [
+                ident
+                for e in self.expressions
+                for ident in (e.expressions if isinstance(e, Tuple) else [e])
+                if isinstance(ident, Identifier)
+            ]
+            outputs = [i.name for i in name_columns + value_columns]
+        else:
+            excluded = {c.output_name for c in self.find_all(Column)}
+            outputs = [c.output_name for c in self.args.get("columns") or []]
+            if not outputs:
+                outputs = [c.alias_or_name for c in self.expressions]
+
+        if not excluded or not outputs:
+            return {}
+
+        pre_rename = [c for c in pre_pivot_columns if c not in excluded] + outputs
+
+        alias = self.args.get("alias")
+        renames = alias.args.get("columns") if alias else None
+
+        # `PIVOT(...) AS alias(c1, c2, ...)` renames the operator's output columns
+        # positionally from the front (DuckDB, Snowflake): the user's names cover
+        # the leading N output columns, remaining columns keep their auto names.
+        if renames:
+            rename_names = [r.name for r in renames]
+            post_rename = rename_names + pre_rename[len(rename_names) :]
+        else:
+            post_rename = pre_rename
+
+        return dict(zip(post_rename, pre_rename))
 
 
 class UnpivotColumns(Expression):
@@ -1889,7 +1967,7 @@ class JSON(Expression):
 
 
 class JSONPath(Expression):
-    arg_types = {"expressions": True, "escape": False}
+    arg_types = {"expressions": True}
 
     @property
     def output_name(self) -> str:
@@ -1906,7 +1984,7 @@ class JSONPathFilter(JSONPathPart):
 
 
 class JSONPathKey(JSONPathPart):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "quoted": False}
 
 
 class JSONPathRecursive(JSONPathPart):
@@ -1956,6 +2034,7 @@ class JSONColumnDef(Expression):
         "path": False,
         "nested_schema": False,
         "ordinality": False,
+        "format_json": False,
     }
 
 
@@ -2012,7 +2091,9 @@ class Semicolon(Expression):
 
 
 class TableColumn(Expression):
-    pass
+    @property
+    def output_name(self) -> str:
+        return self.name
 
 
 class Variadic(Expression):

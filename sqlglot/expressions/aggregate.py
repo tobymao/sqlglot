@@ -208,7 +208,7 @@ class NthValue(Expression, AggFunc):
 
 
 class ObjectAgg(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class PercentileCont(Expression, AggFunc):

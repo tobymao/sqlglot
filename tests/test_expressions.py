@@ -529,6 +529,12 @@ class TestExprs(unittest.TestCase):
             },
         )
 
+    def test_hash_invalidated_on_append(self):
+        expr = parse_one("SELECT a")
+        hash(expr)  # populate the cached _hash
+        expr.append("expressions", exp.column("b"))
+        self.assertEqual(hash(expr), hash(parse_one("SELECT a, b")))
+
     def test_sql(self):
         self.assertEqual(parse_one("x + y * 2").sql(), "x + y * 2")
         self.assertEqual(parse_one('select "x"').sql(dialect="hive", pretty=True), "SELECT\n  `x`")
@@ -1342,7 +1348,6 @@ FROM foo""",
         assert expr1.meta == {}
 
     def test_pipe_and_apply(self) -> None:
-
         def add_val(expr: exp.Expr, val: int, *, squared: bool) -> exp.Expr:
             nb = val**2 if squared else val
             return expr + nb

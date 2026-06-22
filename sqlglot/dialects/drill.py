@@ -17,6 +17,7 @@ class Drill(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
+    CONCAT_WS_COALESCE = True
 
     TIME_MAPPING = {
         "y": "%Y",

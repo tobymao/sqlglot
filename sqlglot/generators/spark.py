@@ -76,11 +76,17 @@ class SparkGenerator(Spark2Generator):
 
     TYPE_MAPPING = {
         **Spark2Generator.TYPE_MAPPING,
-        exp.DType.MONEY: "DECIMAL(15, 4)",
-        exp.DType.SMALLMONEY: "DECIMAL(6, 4)",
+        exp.DType.MONEY: "DECIMAL",
+        exp.DType.SMALLMONEY: "DECIMAL",
         exp.DType.UUID: "STRING",
         exp.DType.TIMESTAMPLTZ: "TIMESTAMP_LTZ",
         exp.DType.TIMESTAMPNTZ: "TIMESTAMP_NTZ",
+    }
+
+    TYPE_PARAM_SETTINGS = {
+        **Spark2Generator.TYPE_PARAM_SETTINGS,
+        exp.DType.MONEY: ((15, 4), ()),
+        exp.DType.SMALLMONEY: ((6, 4), ()),
     }
 
     TRANSFORMS = {
@@ -119,6 +125,7 @@ class SparkGenerator(Spark2Generator):
                 f"PARTITIONED BY {self.wrap(self.expressions(sqls=[_normalize_partition(e) for e in e.this.expressions], skip_first=True))}"
             ),
             exp.SafeAdd: rename_func("TRY_ADD"),
+            exp.SafeDivide: rename_func("TRY_DIVIDE"),
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),
             exp.StartsWith: rename_func("STARTSWITH"),

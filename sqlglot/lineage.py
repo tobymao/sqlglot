@@ -9,6 +9,7 @@ from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
 from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
 from sqlglot.optimizer.scope import ScopeType
+from sqlglot.schema import ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -27,6 +28,9 @@ class Node:
     downstream: list[Node] = field(default_factory=list)
     source_name: str = ""
     reference_node_name: str = ""
+
+    # Caller-injected per-node data, populated via the `on_node` hook on lineage()
+    payload: dict[str, t.Any] = field(default_factory=dict)
 
     def walk(self) -> Iterator[Node]:
         visited: set[int] = set()
@@ -74,8 +78,16 @@ class Node:
         return GraphHTML(nodes, edges, **opts)
 
 
+@t.overload
+def lineage(column: str | exp.Column, sql: str | exp.Expr, **kwargs: t.Any) -> Node: ...
+
+
+@t.overload
+def lineage(column: None, sql: str | exp.Expr, **kwargs: t.Any) -> dict[str, Node]: ...
+
+
 def lineage(
-    column: str | exp.Column,
+    column: str | exp.Column | None,
     sql: str | exp.Expr,
     schema: dict | Schema | None = None,
     sources: Mapping[str, str | exp.Query] | None = None,
@@ -83,12 +95,17 @@ def lineage(
     scope: Scope | None = None,
     trim_selects: bool = True,
     copy: bool = True,
+    on_node: t.Callable[[Node], None] | None = None,
     **kwargs,
-) -> Node:
-    """Build the lineage graph for a column of a SQL query.
+) -> Node | dict[str, Node]:
+    """Build the lineage graph for a SQL query.
+
+    If `column` is given, returns the lineage Node for that single output column.
+    If `column` is None, returns a dict mapping every top-level output column name
+    to its lineage Node (with a shared cache so cross-column work is deduplicated).
 
     Args:
-        column: The column to build the lineage for.
+        column: The column to build the lineage for. Pass None to get all output columns.
         sql: The SQL string or expression.
         schema: The schema of tables.
         sources: A mapping of queries which will be used to continue building lineage.
@@ -96,14 +113,15 @@ def lineage(
         scope: A pre-created scope to use instead.
         trim_selects: Whether to clean up selects by trimming to only relevant columns.
         copy: Whether to copy the Expr arguments.
+        on_node: Optional callback invoked for every Node created during the walk,
+            after the Node's downstream is populated. Useful for injecting
+            caller-managed data into Node.payload during the walk.
         **kwargs: Qualification optimizer kwargs.
 
     Returns:
-        A lineage node.
+        A Node when `column` is provided, or a dict[str, Node] when `column` is None.
     """
-
     expression = maybe_parse(sql, copy=copy, dialect=dialect)
-    column = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
 
     if sources:
         expression = exp.expand(
@@ -116,6 +134,8 @@ def lineage(
             copy=copy,
         )
 
+    schema = ensure_schema(schema, dialect=dialect)
+
     if not scope:
         expression = qualify.qualify(
             expression,
@@ -123,19 +143,54 @@ def lineage(
             schema=schema,
             **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
         )
-
         scope = build_scope(expression)
 
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")
 
     selectable = scope.expression
-    if not isinstance(selectable, exp.Selectable) or not any(
-        select.alias_or_name == column for select in selectable.selects
-    ):
-        raise SqlglotError(f"Cannot find column '{column}' in query.")
+    if not isinstance(selectable, exp.Selectable):
+        raise SqlglotError("Cannot build lineage, sql must be a query")
 
-    return to_node(column, scope, dialect, trim_selects=trim_selects, _cache={})
+    cache: dict[tuple, Node] = {}
+    scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] = {}
+
+    if column is not None:
+        column_name = normalize_identifiers.normalize_identifiers(column, dialect=dialect).name
+        if not any(select.alias_or_name == column_name for select in selectable.selects):
+            raise SqlglotError(f"Cannot find column '{column_name}' in query.")
+
+        return to_node(
+            column_name,
+            scope,
+            dialect,
+            trim_selects=trim_selects,
+            schema=schema,
+            _cache=cache,
+            _scope_meta=scope_meta,
+            on_node=on_node,
+        )
+
+    result: dict[str, Node] = {}
+    for sel in selectable.selects:
+        name = sel.alias_or_name
+        if not name:
+            raise SqlglotError(
+                f"Cannot fetch lineage for unnamed projection: {sel.sql(dialect=dialect)}."
+            )
+
+        result[name] = to_node(
+            name,
+            scope,
+            dialect,
+            trim_selects=trim_selects,
+            schema=schema,
+            _cache=cache,
+            _scope_meta=scope_meta,
+            on_node=on_node,
+        )
+
+    return result
 
 
 def to_node(
@@ -147,7 +202,10 @@ def to_node(
     source_name: str | None = None,
     reference_node_name: str | None = None,
     trim_selects: bool = True,
+    schema: Schema | None = None,
     _cache: dict[tuple, Node] | None = None,
+    _scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] | None = None,
+    on_node: t.Callable[[Node], None] | None = None,
 ) -> Node:
     cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
 
@@ -167,10 +225,24 @@ def to_node(
             )
         select = selectable.selects[column]
     else:
-        select = next(
-            (select for select in selectable.selects if select.alias_or_name == column),
-            exp.Star() if selectable.is_star else scope.expression,
-        )
+        # Resolving a column to its select scans selectable.selects on every call;
+        # memoize a per-scope {name: select} map and is_star bit instead.
+        if _scope_meta is None:
+            select = next(
+                (s for s in selectable.selects if s.alias_or_name == column),
+                exp.Star() if selectable.is_star else scope.expression,
+            )
+        else:
+            scope_id = id(scope)
+            meta = _scope_meta.get(scope_id)
+            if meta is None:
+                select_by_name: dict[str, exp.Expr] = {}
+                for sel in selectable.selects:
+                    select_by_name.setdefault(sel.alias_or_name, sel)
+                meta = (selectable.is_star, select_by_name)
+                _scope_meta[scope_id] = meta
+            is_star, select_by_name = meta
+            select = select_by_name.get(column, exp.Star() if is_star else scope.expression)
 
     if isinstance(scope.expression, exp.Subquery):
         for inner_scope in scope.subquery_scopes:
@@ -182,13 +254,20 @@ def to_node(
                 source_name=source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                schema=schema,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
-            if _cache is not None:
+            # Skip caching a passed-in upstream returned by an inner SetOp:
+            # a sibling call at the same key with that node as its upstream
+            # would otherwise self-loop on the cache hit.
+            if _cache is not None and result is not upstream:
                 _cache[cache_key] = result
             return result
     if isinstance(scope.expression, exp.SetOperation):
         name = type(scope.expression).__name__.upper()
+        created_setop = upstream is None
         upstream = upstream or Node(name=name, source=scope.expression, expression=select)
 
         index = (
@@ -216,11 +295,16 @@ def to_node(
                 source_name=source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                schema=schema,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
 
-        if _cache is not None:
+        if _cache is not None and created_setop:
             _cache[cache_key] = upstream
+        if created_setop and on_node:
+            on_node(upstream)
         return upstream
 
     if trim_selects and isinstance(scope.expression, exp.Select):
@@ -261,16 +345,20 @@ def to_node(
                 dialect=dialect,
                 upstream=node,
                 trim_selects=trim_selects,
+                schema=schema,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
 
     # if the select is a star add all scope sources as downstreams
     if isinstance(select, exp.Star):
         for src in scope.sources.values():
             src_expr = src.expression if isinstance(src, Scope) else src
-            node.downstream.append(
-                Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
-            )
+            star_node = Node(name=select.sql(comments=False), source=src_expr, expression=src_expr)
+            node.downstream.append(star_node)
+            if on_node:
+                on_node(star_node)
 
     # Find all columns that went into creating this one to list their lineage nodes.
     source_columns = set(find_all_in_scope(select, exp.Column))
@@ -293,25 +381,19 @@ def to_node(
     }
 
     pivots = scope.pivots
-    pivot = pivots[0] if len(pivots) == 1 and not pivots[0].unpivot else None
-    if pivot:
-        # For each aggregation function, the pivot creates a new column for each field in category
-        # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
-        # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
-        # belongs to the column indices 0, 2, and the aggfunc 'max(price)' without an alias belongs
-        # to the column indices 1, 3. Here, only the columns used in the aggregations are of interest
-        # in the lineage, so lookup the pivot column name by index and map that with the columns used
-        # in the aggregation.
-        #
-        # Example: PIVOT (SUM(value) AS value_sum, MAX(price)) FOR category IN ('a' AS cat_a, 'b')
-        pivot_columns = pivot.args["columns"]
-        pivot_aggs_count = len(pivot.expressions)
+    pivot = pivots[0] if len(pivots) == 1 else None
+    pivot_renames: dict[str, str] = {}
+    pivot_column_mapping: dict[str, list[exp.Column]] = {}
 
-        pivot_column_mapping = {}
-        for i, agg in enumerate(pivot.expressions):
-            agg_cols = list(agg.find_all(exp.Column))
-            for col_index in range(i, len(pivot_columns), pivot_aggs_count):
-                pivot_column_mapping[pivot_columns[col_index].name] = agg_cols
+    if pivot:
+        pivot_renames = _pivot_output_renames(pivot, scope, schema)
+        pivot_column_mapping = _pivot_column_mapping(pivot)
+        if pivot_renames:
+            pivot_column_mapping = {
+                post: pivot_column_mapping[pre]
+                for post, pre in pivot_renames.items()
+                if pre in pivot_column_mapping
+            }
 
     for c in source_columns:
         table = c.table
@@ -335,25 +417,44 @@ def to_node(
                 source_name=source_names.get(table) or source_name,
                 reference_node_name=reference_node_name,
                 trim_selects=trim_selects,
+                schema=schema,
                 _cache=_cache,
+                _scope_meta=_scope_meta,
+                on_node=on_node,
             )
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
 
             column_name = c.name
-            if any(column_name == pivot_column.name for pivot_column in pivot_columns):
+            if column_name in pivot_column_mapping:
                 downstream_columns.extend(pivot_column_mapping[column_name])
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
                 # pivoted source -- adapt column to be from the implicit pivoted source.
                 pivot_parent = pivot.parent
                 downstream_columns.append(
-                    exp.column(c.this, table=pivot_parent.alias_or_name if pivot_parent else "")
+                    exp.column(
+                        pivot_renames.get(c.name, c.this),
+                        table=pivot_parent.alias_or_name if pivot_parent else None,
+                    )
                 )
 
             for downstream_column in downstream_columns:
+                if not downstream_column.table:
+                    # Some dialects (e.g. bigquery) don't qualify the IN-list columns,
+                    # but they can only come from the pivoted source
+                    pivot_parent = pivot.parent
+                    downstream_column = exp.column(
+                        downstream_column.this,
+                        table=pivot_parent.alias_or_name if pivot_parent else None,
+                    )
+
                 table = downstream_column.table
                 col_source = scope.sources.get(table)
+                if isinstance(col_source, exp.Table) and not col_source.db:
+                    # A pivoted CTE reference maps to the raw table in `scope.sources`,
+                    # so recover the CTE's scope to keep tracing through it
+                    col_source = scope.cte_sources.get(col_source.name, col_source)
                 if isinstance(col_source, Scope):
                     to_node(
                         downstream_column.name,
@@ -364,31 +465,122 @@ def to_node(
                         source_name=source_names.get(table) or source_name,
                         reference_node_name=reference_node_name,
                         trim_selects=trim_selects,
+                        schema=schema,
                         _cache=_cache,
+                        _scope_meta=_scope_meta,
+                        on_node=on_node,
                     )
                 else:
                     col_expr = col_source or exp.Placeholder()
-                    node.downstream.append(
-                        Node(
-                            name=downstream_column.sql(comments=False),
-                            source=col_expr,
-                            expression=col_expr,
-                        )
+                    pivot_leaf = Node(
+                        name=downstream_column.sql(comments=False),
+                        source=col_expr,
+                        expression=col_expr,
                     )
+                    node.downstream.append(pivot_leaf)
+                    if on_node:
+                        on_node(pivot_leaf)
         else:
             # The source is not a scope and the column is not in any pivot - we've reached the end
             # of the line. At this point, if a source is not found it means this column's lineage
             # is unknown. This can happen if the definition of a source used in a query is not
             # passed into the `sources` map.
             col_expr = col_source or exp.Placeholder()
-            node.downstream.append(
-                Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
-            )
+            leaf = Node(name=c.sql(comments=False), source=col_expr, expression=col_expr)
+            node.downstream.append(leaf)
+            if on_node:
+                on_node(leaf)
 
     if _cache is not None:
         _cache[cache_key] = node
 
+    if on_node:
+        on_node(node)
+
     return node
+
+
+def _pivot_output_renames(
+    pivot: exp.Pivot, scope: Scope, schema: Schema | None = None
+) -> dict[str, str]:
+    """
+    Map each (UN)PIVOT output column name to its pre-rename name, when an alias column
+    list (`... AS t(c1, c2, ...)`) renames the outputs. The renames are positional over
+    the operator's full output, so they can only be aligned when the pre-pivot columns
+    are known: from the projections of a derived table or CTE source, or from the
+    schema for a physical table.
+    """
+    if not pivot.alias_column_names:
+        return {}
+
+    parent = pivot.parent
+    pre_pivot_columns: list[str] = []
+    if isinstance(parent, exp.DerivedTable) and isinstance(parent.this, exp.Query):
+        pre_pivot_columns = parent.this.named_selects
+    elif isinstance(parent, exp.Table):
+        cte_source = scope.cte_sources.get(parent.name) if not parent.db else None
+        if isinstance(cte_source, Scope) and isinstance(cte_source.expression, exp.Query):
+            pre_pivot_columns = cte_source.expression.named_selects
+        elif schema is not None:
+            pre_pivot_columns = list(schema.column_names(parent, only_visible=True))
+
+    # The alignment is also unknowable when the source's projections aren't fully
+    # expanded (e.g. an unresolved star), since the renames would silently shift
+    if not pre_pivot_columns or "*" in pre_pivot_columns:
+        return {}
+
+    return pivot.output_columns(pre_pivot_columns)
+
+
+def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:
+    """Map each (UN)PIVOT output column name to the source columns it's derived from."""
+    mapping: dict[str, list[exp.Column]] = {}
+
+    if pivot.unpivot:
+        # UNPIVOT((v1, v2) FOR name IN ((a1, a2), (b1, b2))): each value column is derived
+        # positionally from the IN-list entries, and the name column from all of them
+        value_columns = [
+            identifier for e in pivot.expressions for identifier in e.find_all(exp.Identifier)
+        ]
+        for value_column in value_columns:
+            mapping[value_column.name] = []
+
+        for field in pivot.fields:
+            if not isinstance(field, exp.In):
+                continue
+
+            name_columns = mapping.setdefault(field.this.name, [])
+            for entry in field.expressions:
+                entry_columns = list(entry.find_all(exp.Column))
+                name_columns.extend(entry_columns)
+
+                if len(entry_columns) == len(value_columns):
+                    for value_column, column in zip(value_columns, entry_columns):
+                        mapping[value_column.name].append(column)
+                else:
+                    for value_column in value_columns:
+                        mapping[value_column.name].extend(entry_columns)
+
+        return mapping
+
+    # For each aggregation function, the pivot creates a new column for each field in category
+    # combined with the aggfunc. So the columns parsed have this order: cat_a_value_sum, cat_a,
+    # b_value_sum, b. Because of this step wise manner the aggfunc 'sum(value) as value_sum'
+    # belongs to the column indices 0, 2, and the aggfunc 'max(price)' without an alias belongs
+    # to the column indices 1, 3. Here, only the columns used in the aggregations are of interest
+    # in the lineage, so lookup the pivot column name by index and map that with the columns used
+    # in the aggregation.
+    #
+    # Example: PIVOT (SUM(value) AS value_sum, MAX(price)) FOR category IN ('a' AS cat_a, 'b')
+    pivot_columns = pivot.args["columns"]
+    pivot_aggs_count = len(pivot.expressions)
+
+    mapping = {}
+    for i, agg in enumerate(pivot.expressions):
+        agg_cols = list(agg.find_all(exp.Column))
+        for col_index in range(i, len(pivot_columns), pivot_aggs_count):
+            mapping[pivot_columns[col_index].name] = agg_cols
+    return mapping
 
 
 class GraphHTML:

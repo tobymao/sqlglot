@@ -30,6 +30,14 @@ class TestJsonpath(unittest.TestCase):
             exp.JSONPath(expressions=expected_expressions),
         )
 
+    def test_unclosed_filter_raises_parse_error(self):
+        # A filter/script that runs off the end of the path without a closing
+        # bracket must raise ParseError, not IndexError.
+        for selector in ("$[?(@.x", "$[(@.x", "$[?(1"):
+            with self.subTest(selector):
+                with self.assertRaises(ParseError):
+                    parse(selector)
+
     def test_identity(self):
         for selector, expected in (
             ("$.select", "$.select"),

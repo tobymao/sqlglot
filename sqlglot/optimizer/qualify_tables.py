@@ -80,7 +80,7 @@ def qualify_tables(
         target_alias: str | None = None,
         scope: Scope | None = None,
         normalize: bool = False,
-        columns: Sequence[str | exp.Identifier] | None = None,
+        columns: Sequence[str | exp.Identifier | exp.ColumnDef] | None = None,
     ) -> None:
         alias = expression.args.get("alias") or exp.TableAlias()
 
@@ -97,7 +97,10 @@ def qualify_tables(
         alias.set("this", exp.to_identifier(new_alias_name))
 
         if columns:
-            alias.set("columns", [exp.to_identifier(c) for c in columns])
+            alias.set(
+                "columns",
+                [exp.to_identifier(c) if isinstance(c, str) else c.copy() for c in columns],
+            )
 
         expression.set("alias", alias)
 
@@ -111,7 +114,13 @@ def qualify_tables(
         for query in scope.subqueries:
             subquery = query.parent
             if isinstance(subquery, exp.Subquery):
-                subquery.unwrap().replace(subquery)
+                unwrapped = subquery.unwrap()
+                if isinstance(unwrapped.parent, exp.Create) and unwrapped is not subquery:
+                    # Function bodies may require wrapping parentheses, e.g. in BigQuery
+                    # `... AS ((SELECT 1))` the outer parens delimit the body itself
+                    unwrapped.set("this", subquery)
+                else:
+                    unwrapped.replace(subquery)
 
         for derived_table in scope.derived_tables:
             unnested = derived_table.unnest()
@@ -137,7 +146,7 @@ def qualify_tables(
 
                 table_this = source.this
                 table_alias = source.args.get("alias")
-                function_columns: Sequence[str | exp.Identifier] | None = None
+                function_columns: Sequence[str | exp.Identifier | exp.ColumnDef] | None = None
                 if isinstance(table_this, exp.Func):
                     if not table_alias:
                         function_columns = ensure_list(

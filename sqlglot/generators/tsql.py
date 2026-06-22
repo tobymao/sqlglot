@@ -234,6 +234,7 @@ class TSQLGenerator(generator.Generator):
         exp.TemporaryProperty: lambda self, e: "",
         exp.TimeStrToTime: _timestrtotime_sql,
         exp.TimeToStr: _format_sql,
+        exp.TimestampAdd: date_delta_sql("DATEADD"),
         exp.Trim: trim_sql,
         exp.TsOrDsAdd: date_delta_sql("DATEADD", cast=True),
         exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
@@ -384,11 +385,16 @@ class TSQLGenerator(generator.Generator):
         sql = self.sql(expression, "this")
         properties = expression.args.get("properties")
 
-        if sql[:1] != "#" and any(
-            isinstance(prop, exp.TemporaryProperty)
-            for prop in (properties.expressions if properties else [])
+        start = self._identifier_start
+        if (
+            not sql.startswith("#")
+            and not sql.startswith(f"{start}#")
+            and any(
+                isinstance(prop, exp.TemporaryProperty)
+                for prop in (properties.expressions if properties else [])
+            )
         ):
-            sql = f"[#{sql[1:]}" if sql.startswith("[") else f"#{sql}"
+            sql = f"{start}#{sql[len(start) :]}" if sql.startswith(start) else f"#{sql}"
 
         return sql
 
@@ -411,6 +417,15 @@ class TSQLGenerator(generator.Generator):
                 # but CREATE VIEW actually requires the WITH clause to come after it so we need
                 # to amend the AST by moving the CTEs to the CREATE VIEW statement's query.
                 ctas_expression.set("with_", with_.pop())
+        elif (
+            kind == "FUNCTION"
+            and isinstance(ctas_expression, exp.Return)
+            and isinstance(body := ctas_expression.this.unnest(), exp.Query)
+            and (with_ := expression.args.get("with_"))
+        ):
+            # Similar to the VIEW branch, the table-valued functions require the WITH clause
+            # to stay inside the RETURN body, so we move back any CTEs that were bubbled up.
+            body.set("with_", with_.pop())
 
         table = expression.find(exp.Table)
 
@@ -527,11 +542,17 @@ class TSQLGenerator(generator.Generator):
         identifier = super().identifier_sql(expression)
 
         if expression.args.get("global_"):
-            identifier = f"##{identifier}"
+            prefix = "##"
         elif expression.args.get("temporary"):
-            identifier = f"#{identifier}"
+            prefix = "#"
+        else:
+            return identifier
 
-        return identifier
+        start = self._identifier_start
+        if expression.quoted and identifier.startswith(start):
+            return f"{start}{prefix}{identifier[len(start) :]}"
+
+        return f"{prefix}{identifier}"
 
     def constraint_sql(self, expression: exp.Constraint) -> str:
         this = self.sql(expression, "this")

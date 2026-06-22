@@ -16,6 +16,7 @@ class JSONArray(Expression, Func):
         "return_type": False,
         "strict": False,
     }
+    is_var_len_args = True
 
 
 class JSONArrayAgg(Expression, AggFunc):
@@ -58,6 +59,10 @@ class JSONBContainsAnyTopKeys(Expression, Binary, Func):
 
 
 class JSONBDeleteAtPath(Expression, Binary, Func):
+    pass
+
+
+class JSONBPathExists(Expression, Binary, Predicate, Func):
     pass
 
 

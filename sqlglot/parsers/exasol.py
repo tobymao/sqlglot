@@ -86,7 +86,7 @@ class ExasolParser(parser.Parser):
         "TRUNC": build_trunc,
         "TRUNCATE": build_trunc,
         "TO_CHAR": build_timetostr_or_tochar,
-        "TO_DATE": build_formatted_time(exp.TsOrDsToDate, "exasol"),
+        "TO_DATE": build_formatted_time(exp.TsOrDsToDate),
         "USER": exp.CurrentUser.from_arg_list,
         "VAR_POP": exp.VariancePop.from_arg_list,
         "ZEROIFNULL": _build_zeroifnull,
@@ -126,6 +126,12 @@ class ExasolParser(parser.Parser):
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/json_extract.htm
         "JSON_EXTRACT": lambda self: self._parse_json_extract(),
     }
+
+    def _parse_statement(self) -> exp.Expr | None:
+        # https://docs.exasol.com/db/latest/sql/open_schema.htm
+        if self._match_text_seq("OPEN", "SCHEMA"):
+            return self.expression(exp.Use(this=self._parse_table(schema=False)))
+        return super()._parse_statement()
 
     def _parse_column(self) -> exp.Expr | None:
         column = super()._parse_column()

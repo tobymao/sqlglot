@@ -279,14 +279,10 @@ class PrestoGenerator(generator.Generator):
         exp.ArraySlice: rename_func("SLICE"),
         exp.AtTimeZone: rename_func("AT_TIMEZONE"),
         exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
-        exp.BitwiseLeftShift: lambda self, e: self.func(
-            "BITWISE_ARITHMETIC_SHIFT_LEFT", e.this, e.expression
-        ),
+        exp.BitwiseLeftShift: rename_func("BITWISE_LEFT_SHIFT"),
         exp.BitwiseNot: lambda self, e: self.func("BITWISE_NOT", e.this),
         exp.BitwiseOr: lambda self, e: self.func("BITWISE_OR", e.this, e.expression),
-        exp.BitwiseRightShift: lambda self, e: self.func(
-            "BITWISE_ARITHMETIC_SHIFT_RIGHT", e.this, e.expression
-        ),
+        exp.BitwiseRightShift: rename_func("BITWISE_RIGHT_SHIFT"),
         exp.BitwiseXor: lambda self, e: self.func("BITWISE_XOR", e.this, e.expression),
         exp.Cast: transforms.preprocess([transforms.epoch_cast_to_ts]),
         exp.CurrentTime: lambda *_: "CURRENT_TIME",
@@ -309,6 +305,7 @@ class PrestoGenerator(generator.Generator):
         exp.FileFormatProperty: lambda self, e: f"format={self.sql(exp.Literal.string(e.name))}",
         exp.First: _first_last_sql,
         exp.FromISO8601Date: rename_func("FROM_ISO8601_DATE"),
+        exp.FromISO8601Timestamp: rename_func("FROM_ISO8601_TIMESTAMP"),
         exp.FromTimeZone: lambda self, e: (
             f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
         ),
@@ -390,6 +387,7 @@ class PrestoGenerator(generator.Generator):
         exp.SHA1Digest: rename_func("SHA1"),
         exp.SHA2: sha256_sql,
         exp.SHA2Digest: sha2_digest_sql,
+        exp.Substring: rename_func("SUBSTR"),
     }
 
     RESERVED_KEYWORDS = {

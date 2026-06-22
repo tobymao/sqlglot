@@ -248,7 +248,7 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
         new_alias = exp.to_identifier(new_name)
 
         if isinstance(source, exp.Table) and source.alias:
-            source.set("alias", new_alias)
+            source.set("alias", exp.TableAlias(this=new_alias))
         elif isinstance(source, exp.Table):
             source.replace(exp.alias_(source, new_alias))
         elif isinstance(source.parent, exp.Subquery):

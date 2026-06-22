@@ -22,3 +22,9 @@ class TestDruid(Validator):
             "FLOOR(__time TO WEEK)",
             write=write,
         )
+
+    def test_json_value(self):
+        json_doc = """'{"item": "shoes", "price": "49.95"}'"""
+        self.validate_identity(f"SELECT JSON_VALUE({json_doc}, '$.item')")
+        self.validate_identity(f"SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DOUBLE)")
+        self.validate_identity("SELECT JSON_VALUE(x, '$.a' RETURNING BIGINT) FROM t")

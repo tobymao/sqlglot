@@ -10,7 +10,9 @@ import sqlglot
 from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
 from sqlglot.optimizer.normalize import normalization_distance
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -25,6 +27,10 @@ from tests.helpers import (
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
     return func(parse_one(sql, read=read_dialect), **kwargs)
+
+
+def qualify_then_canonicalize(expression, **qualify_kwargs):
+    return canonicalize_internal_names(qualify(expression, **qualify_kwargs))
 
 
 def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
@@ -306,6 +312,19 @@ class TestOptimizer(unittest.TestCase):
             catalog="c",
         )
 
+    def test_qualify_tables_copies_typed_alias_columns(self):
+        expression = parse_one('SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)')
+
+        original = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(original, exp.ColumnDef)
+
+        optimizer.qualify_tables.qualify_tables(expression, canonicalize_table_aliases=True)
+
+        new = expression.find(exp.Table).args["alias"].columns[0]
+        self.assertIsInstance(new, exp.ColumnDef)
+        self.assertIsNot(original, new)
+        self.assertEqual(original.sql(), new.sql())
+
     def test_normalize(self):
         self.assertEqual(
             optimizer.normalize.normalize(
@@ -320,6 +339,16 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("x AND (y OR z)"),
             ).sql(),
             "x AND (y OR z)",
+        )
+
+        # Snowflake's BOOLXOR builds a Xor connector carrying a `round_input` arg, so unpacking
+        # via args.values() yields 3 values. The enclosing predicate isn't normalized, which forces
+        # _predicate_lengths to recurse into the Xor node.
+        self.assertEqual(
+            optimizer.normalize.normalize(
+                parse_one("(a AND b) OR BOOLXOR(x, y)", read="snowflake"),
+            ).sql(dialect="snowflake"),
+            "((BOOLXOR(x, y)) OR a) AND ((BOOLXOR(x, y)) OR b)",
         )
 
         self.check_file("normalize", normalize, schema=self.schema)
@@ -619,6 +648,50 @@ class TestOptimizer(unittest.TestCase):
             "SELECT t.end AS end FROM t AS t",
         )
 
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2) "
+                    "SELECT * FROM produce UNPIVOT(sales FOR quarter IN (q1, q2))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`quarter` AS `quarter`, "
+            "`produce`.`sales` AS `sales` FROM `produce` AS `produce` "
+            "UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`)) AS `produce`",
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH cte AS (SELECT 1 AS a, 2 AS b, 3 AS c) "
+                    "SELECT u.val, u.name FROM cte UNPIVOT(val FOR name IN (a, b, c)) AS u"
+                ),
+            ).sql(),
+            'WITH "cte" AS (SELECT 1 AS "a", 2 AS "b", 3 AS "c") '
+            'SELECT "u"."val" AS "val", "u"."name" AS "name" FROM "cte" AS "cte" '
+            'UNPIVOT("val" FOR "name" IN ("cte"."a", "cte"."b", "cte"."c")) AS "u"',
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH produce AS (SELECT 'Kale' AS product, 51 AS q1, 23 AS q2, 45 AS q3, 3 AS q4) "
+                    "SELECT * FROM produce UNPIVOT((first_half, second_half) FOR semesters "
+                    "IN ((q1, q2) AS 'h1', (q3, q4) AS 'h2'))",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            ).sql(dialect="bigquery"),
+            "WITH `produce` AS (SELECT 'Kale' AS `product`, 51 AS `q1`, 23 AS `q2`, 45 AS `q3`, 3 AS `q4`) "
+            "SELECT `produce`.`product` AS `product`, `produce`.`semesters` AS `semesters`, "
+            "`produce`.`first_half` AS `first_half`, `produce`.`second_half` AS `second_half` "
+            "FROM `produce` AS `produce` UNPIVOT((`first_half`, `second_half`) FOR `semesters` "
+            "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"
@@ -637,6 +710,71 @@ class TestOptimizer(unittest.TestCase):
                 expression, schema={"x": {"a": "int", "b": "int", "c": "str"}}
             )
             optimizer.qualify_columns.validate_qualify_columns(qualified)
+
+        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT ci.name, ci.age FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("STRING", dialect="spark"))
+        self.assertEqual(expression.selects[1].type, exp.DataType.build("INT", dialect="spark"))
+
+        schema = {"my_table": {"items": "ARRAY<STRUCT<amount FLOAT, type STRING>>"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT (SELECT SUM(ci.amount) FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci WHERE ci.type = 'promotion') AS total FROM my_table",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            expression.sql(dialect="spark"),
+            "SELECT (SELECT SUM(`ci`.`amount`) AS `_col_0` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci` WHERE `ci`.`type` = 'promotion') AS `total` FROM `my_table` AS `my_table`",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
+
+        # An unqualified struct field is disambiguated through the lateral's extended columns
+        schema = {"my_table": {"items": "ARRAY<STRUCT<name STRING, age INT>>"}}
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT name FROM my_table LATERAL VIEW EXPLODE(items) ci AS ci",
+                    read="spark",
+                ),
+                schema=schema,
+                dialect="spark",
+            ).sql(dialect="spark"),
+            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+        )
+
+        # Resolving an unqualified lateral column whose table is missing from the schema must
+        # raise instead of recursing infinitely
+        with self.assertRaisesRegex(OptimizeError, "Column 'ITEMS' could not be resolved"):
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT f.value AS v FROM my_db.raw.events, LATERAL FLATTEN(items) AS f",
+                    read="snowflake",
+                ),
+                schema={"my_db": {"other": {"some_view": {"v": "VARIANT"}}}},
+                dialect="snowflake",
+            )
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
@@ -755,6 +893,15 @@ class TestOptimizer(unittest.TestCase):
 
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_concat.sql(dialect="presto"))
         self.assertEqual("CONCAT('a', x, 'bc')", simplified_safe_concat.sql())
+
+        # Both Databricks' and DuckDB's CONCAT_WS skip NULL args, so no CASE wrapping is needed
+        concat_ws = parse_one("CONCAT_WS(' ', a, NULL, 'b', 'c')", read="databricks")
+        simplified_concat_ws = optimizer.simplify.simplify(concat_ws)
+
+        self.assertEqual(simplified_concat_ws.args["coalesce"], True)
+        self.assertEqual(
+            "CONCAT_WS(' ', a, NULL, 'b c')", simplified_concat_ws.sql(dialect="duckdb")
+        )
 
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS(x,y)")
@@ -929,6 +1076,245 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_eliminate_subqueries(self):
         self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)
 
+    def test_canonicalize_internal_names(self):
+        schema = {
+            **self.schema,
+            "jtbl": {"j": "JSON"},
+            "pvt": {"c": "TEXT", "v": "INT"},
+        }
+
+        self.check_file(
+            "canonicalize_internal_names",
+            qualify_then_canonicalize,
+            schema=schema,
+            catalog="c",
+            db="db",
+        )
+
+        # Physical table identity is part of the data contract: reading the same columns
+        # from a different table is a real change and must produce a different canonical form.
+        # (Tables are assumed to be qualified with catalog.db.table; an unqualified table
+        # name is treated as an internal handle and canonicalized, like a CTE reference.)
+        canon_a = qualify_then_canonicalize(
+            parse_one("SELECT id, name FROM cat.db.users WHERE id > 5"),
+            schema={"cat": {"db": {"users": {"id": "INT", "name": "TEXT"}}}},
+        )
+        canon_diff_table = qualify_then_canonicalize(
+            parse_one("SELECT id, name FROM cat.db.employees WHERE id > 5"),
+            schema={"cat": {"db": {"employees": {"id": "INT", "name": "TEXT"}}}},
+        )
+        self.assertNotEqual(canon_a.sql(), canon_diff_table.sql())
+
+        # Renaming a base-table column is likewise a data-contract change and must be
+        # detected even when everything else about the query shape is identical.
+        canon_rename = qualify_then_canonicalize(
+            parse_one("SELECT emp_id, full_name FROM cat.db.users WHERE emp_id > 5"),
+            schema={"cat": {"db": {"users": {"emp_id": "INT", "full_name": "TEXT"}}}},
+        )
+        self.assertNotEqual(canon_a.sql(), canon_rename.sql())
+
+        # User-chosen table alias is an internal handle with no semantic effect — the same
+        # query with a different alias produces the same canonical form.
+        canon_alias_a = qualify_then_canonicalize(
+            parse_one("SELECT foo.id FROM users AS foo"),
+            schema={"users": {"id": "INT"}},
+        )
+        canon_alias_b = qualify_then_canonicalize(
+            parse_one("SELECT bar.id FROM users AS bar"),
+            schema={"users": {"id": "INT"}},
+        )
+        self.assertEqual(canon_alias_a.sql(), canon_alias_b.sql())
+
+        # Aliases on sources whose columns are never referenced are still internal
+        # handles and must be canonicalized — otherwise structurally identical queries
+        # would diverge purely on user-chosen names.
+        canon_unref_a = qualify_then_canonicalize(
+            parse_one("SELECT 1 FROM users AS foo CROSS JOIN logs AS bar"),
+            schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
+        )
+        canon_unref_b = qualify_then_canonicalize(
+            parse_one("SELECT 1 FROM users AS baz CROSS JOIN logs AS qux"),
+            schema={"users": {"id": "INT"}, "logs": {"id": "INT"}},
+        )
+        self.assertEqual(canon_unref_a.sql(), canon_unref_b.sql())
+
+        canon_exists_a = qualify_then_canonicalize(
+            parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS abc)"),
+            schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
+        )
+        canon_exists_b = qualify_then_canonicalize(
+            parse_one("SELECT 1 FROM t WHERE EXISTS(SELECT 1 FROM s AS xyz)"),
+            schema={"t": {"id": "INT"}, "s": {"id": "INT"}},
+        )
+        self.assertEqual(canon_exists_a.sql(), canon_exists_b.sql())
+
+        # Physical table identity is preserved for real tables (only the alias is
+        # canonicalized); base-table column names and top-level output aliases are
+        # preserved because they're part of the query's outward data contract.
+        canon = qualify_then_canonicalize(
+            parse_one("SELECT a FROM x"),
+            schema={"x": {"a": "INT"}},
+            db="mydb",
+            catalog="cat",
+        )
+        self.assertEqual(canon.sql(), 'SELECT "_t0"."a" AS "a" FROM "cat"."mydb"."x" AS "_t0"')
+
+        # Top-level output alias is part of the contract — renaming it changes the
+        # canonical form even though the underlying data is identical.
+        canon_named = qualify_then_canonicalize(
+            parse_one("SELECT a AS alpha FROM x"), schema={"x": {"a": "INT"}}
+        )
+        canon_renamed = qualify_then_canonicalize(
+            parse_one("SELECT a AS beta FROM x"), schema={"x": {"a": "INT"}}
+        )
+        self.assertNotEqual(canon_named.sql(), canon_renamed.sql())
+
+        # Internal alias inside a CTE is self-consistent (the outer query must use the
+        # same name for the rename to be valid SQL), so renaming it with the top-level
+        # contract name held constant must not change the canonical form.
+        canon_inner_a = qualify_then_canonicalize(
+            parse_one("WITH t AS (SELECT a AS foo FROM x) SELECT foo AS result FROM t"),
+            schema={"x": {"a": "INT"}},
+        )
+        canon_inner_b = qualify_then_canonicalize(
+            parse_one("WITH t AS (SELECT a AS bar FROM x) SELECT bar AS result FROM t"),
+            schema={"x": {"a": "INT"}},
+        )
+        self.assertEqual(canon_inner_a.sql(), canon_inner_b.sql())
+
+        # Changing which base-table column a CTE reads must be detected as a real
+        # change even when the outer query is byte-for-byte identical (the CTE
+        # internally aliases the column so the outer reference name doesn't move).
+        canon_cte_col_a = qualify_then_canonicalize(
+            parse_one("WITH t AS (SELECT a AS x FROM src) SELECT x FROM t"),
+            schema={"src": {"a": "INT", "b": "INT"}},
+        )
+        canon_cte_col_b = qualify_then_canonicalize(
+            parse_one("WITH t AS (SELECT b AS x FROM src) SELECT x FROM t"),
+            schema={"src": {"a": "INT", "b": "INT"}},
+        )
+        self.assertNotEqual(canon_cte_col_a.sql(), canon_cte_col_b.sql())
+
+        # UNION BY NAME: different column-name sets must produce different canonical forms
+        # (two branches share no column name => NULL-padded) vs (both share "a" => unified)
+        schema_ux = {"x": {"a": "INT"}, "y": {"a": "INT", "b": "INT"}}
+        canon_match = qualify_then_canonicalize(
+            parse_one("SELECT a FROM x UNION BY NAME SELECT a FROM y", dialect="duckdb"),
+            schema=schema_ux,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        canon_diff = qualify_then_canonicalize(
+            parse_one("SELECT a FROM x UNION BY NAME SELECT b FROM y", dialect="duckdb"),
+            schema=schema_ux,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        self.assertNotEqual(canon_match, canon_diff)
+
+        # UNION BY NAME with a nested rhs: swapping the source column inside the nested
+        # branch must still be caught as a data-contract change.
+        schema_nested = {
+            "x": {"a": "INT"},
+            "y": {"b": "INT"},
+            "z": {"c": "INT", "d": "INT"},
+        }
+        canon_nested_a = qualify_then_canonicalize(
+            parse_one(
+                "SELECT a + 1 AS shared FROM x UNION BY NAME "
+                "(SELECT b AS shared FROM y UNION BY NAME SELECT c AS shared FROM z)",
+                dialect="duckdb",
+            ),
+            schema=schema_nested,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        canon_nested_b = qualify_then_canonicalize(
+            parse_one(
+                "SELECT a + 1 AS shared FROM x UNION BY NAME "
+                "(SELECT b AS shared FROM y UNION BY NAME SELECT d AS shared FROM z)",
+                dialect="duckdb",
+            ),
+            schema=schema_nested,
+            dialect="duckdb",
+        ).sql(dialect="duckdb")
+        self.assertNotEqual(canon_nested_a, canon_nested_b)
+
+        # Case-folding semantics: in case-insensitive dialects (e.g. postgres, lowercase-folding)
+        # unquoted `a` and quoted `"a"` refer to the same column and must match.
+        pg_schema = {"x": {"a": "INT", "b": "INT"}}
+        canon_pg_a = qualify_then_canonicalize(
+            parse_one("SELECT a FROM x", dialect="postgres"), schema=pg_schema, dialect="postgres"
+        ).sql(dialect="postgres")
+        canon_pg_qa = qualify_then_canonicalize(
+            parse_one('SELECT "a" FROM x', dialect="postgres"), schema=pg_schema, dialect="postgres"
+        ).sql(dialect="postgres")
+        self.assertEqual(canon_pg_a, canon_pg_qa)
+
+        # In Snowflake (upper-folding), unquoted `a` becomes `A`, while quoted `"a"` stays
+        # lowercase — they reference *different* columns. Base-table names are preserved,
+        # and the quote state on the lowercase column is retained because dropping it
+        # would let Snowflake re-case-fold `a` back to `A` (changing semantics).
+        sf_schema = {"X": {"A": "INT", '"a"': "INT"}}
+        canon_sf = qualify_then_canonicalize(
+            parse_one('SELECT a, "a" FROM x', dialect="snowflake"),
+            schema=sf_schema,
+            dialect="snowflake",
+        ).sql(dialect="snowflake")
+        self.assertEqual(
+            canon_sf,
+            'SELECT "_t0"."A" AS "A", "_t0"."a" AS "a" FROM "_t0" AS "_t0"',
+        )
+
+        # But unquoted `A` and quoted `"A"` reference the same column — they must coalesce
+        # to the same canonical form.
+        sf_schema2 = {"X": {"A": "INT"}}
+        canon_sf2 = qualify_then_canonicalize(
+            parse_one('SELECT A, "A" FROM x', dialect="snowflake"),
+            schema=sf_schema2,
+            dialect="snowflake",
+        ).sql(dialect="snowflake")
+        self.assertEqual(canon_sf2, 'SELECT "_t0"."A" AS "A", "_t0"."A" AS "A" FROM "_t0" AS "_t0"')
+
+        # Multiple references to the same source within a single scope (self-join on a
+        # CTE) must produce distinct per-reference aliases. Forcing each Table.alias to
+        # match the source's canonical name collapses both into `_tN AS _tN` and breaks
+        # downstream consumers (lineage's Scope.selected_sources raises "Alias already
+        # used"); column qualifiers like `x.foo` and `y.foo` also collapse to identical
+        # AST nodes, losing the distinction between the two references.
+        cte_self_join_schema = {"src": {"foo": "INT", "bar": "INT"}}
+        canon_self_join = qualify_then_canonicalize(
+            parse_one(
+                "WITH t AS (SELECT * FROM src) "
+                "SELECT x.foo AS l, y.bar AS r FROM t AS x JOIN t AS y ON x.foo = y.foo"
+            ),
+            schema=cte_self_join_schema,
+        )
+        self.assertEqual(
+            canon_self_join.sql(),
+            'WITH "_t1" AS (SELECT "_t0"."foo" AS "_c0", "_t0"."bar" AS "_c1" FROM "_t0" AS "_t0") '
+            'SELECT "_t2"."_c0" AS "l", "_t3"."_c1" AS "r" '
+            'FROM "_t1" AS "_t2" JOIN "_t1" AS "_t3" ON "_t2"."_c0" = "_t3"."_c0"',
+        )
+
+        # Three references to the same CTE: each gets its own alias from the global
+        # `_tN` sequence, and column refs are correctly disambiguated per reference.
+        canon_triple = qualify_then_canonicalize(
+            parse_one(
+                "WITH t AS (SELECT * FROM src) "
+                "SELECT a.foo, b.foo, c.foo FROM t AS a "
+                "JOIN t AS b ON a.foo = b.foo "
+                "JOIN t AS c ON b.foo = c.foo"
+            ),
+            schema=cte_self_join_schema,
+        )
+        # Re-walking the canonicalized AST must succeed (this is exactly what lineage
+        # does when computing Scope.selected_sources, and where the bug surfaced).
+        # selected_sources on the outer scope must contain three distinct entries —
+        # one per Table reference — even though they all back the same CTE source.
+        canon_triple_scope = build_scope(canon_triple)
+        assert canon_triple_scope is not None
+        outer_table_aliases = [t.alias for t in canon_triple_scope.tables]
+        self.assertEqual(len(set(outer_table_aliases)), 3, outer_table_aliases)
+        self.assertEqual(len(canon_triple_scope.selected_sources), 3)
+
     def test_canonicalize(self):
         optimize = partial(
             optimizer.optimize,
@@ -947,6 +1333,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(
             ast.sql("postgres"),
             'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
+        )
+
+        # DateDiff args without inferred types should not crash _coerce_datediff_args.
+        # Callers that run canonicalize without annotate_types (or whose args fall outside
+        # the schema) used to hit AttributeError: 'NoneType' object has no attribute 'this'.
+        self.assertEqual(
+            optimizer.canonicalize.canonicalize(parse_one("SELECT DATEDIFF(a, b) FROM t")).sql(),
+            "SELECT DATEDIFF(CAST(a AS DATETIME), CAST(b AS DATETIME)) FROM t",
         )
 
     def test_tpch(self):
@@ -1127,6 +1521,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     result.type.sql(dialect),
                     exp.DataType.build(expected, dialect=dialect).sql(dialect),
                 )
+
+    def test_annotate_types_caches_schema_lookups(self):
+        schema = MappingSchema({"t": {"a": "INT"}})
+        qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)
+        pre = len(schema._find_cache)
+        annotate_types(qualified, schema=schema)
+        self.assertEqual(len(schema._find_cache) - pre, 1)
 
     def test_annotate_funcs(self):
         test_schema = {
@@ -2014,9 +2415,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotated = _annotate(example_query)
 
         self.assertIsInstance(annotated.selects[0].this, exp.TableColumn)
-        self.assertEqual(
-            annotated.sql("bigquery"), "SELECT `t` AS `_col_0` FROM `d`.`s`.`t` AS `t`"
-        )
+        self.assertEqual(annotated.sql("bigquery"), "SELECT `t` AS `t` FROM `d`.`s`.`t` AS `t`")
         self.assertTrue(
             annotated.selects[0].is_type("STRUCT<c1 BIGINT, c2 STRUCT<f1 BIGINT, f2 TEXT>>")
         )

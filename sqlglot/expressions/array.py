@@ -114,6 +114,10 @@ class ArrayContainsAll(Expression, Binary, Func):
     _sql_names = ["ARRAY_CONTAINS_ALL", "ARRAY_HAS_ALL"]
 
 
+class ArrayContainedBy(Expression, Binary, Func):
+    pass
+
+
 class ArrayExcept(Expression, Func):
     arg_types = {"this": True, "expression": True, "is_multiset": False}
 
@@ -189,7 +193,11 @@ class Flatten(Expression, Func):
 
 class StringToArray(Expression, Func):
     arg_types = {"this": True, "expression": False, "null": False}
-    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING", "STRTOK_TO_ARRAY"]
+    _sql_names = ["STRING_TO_ARRAY", "SPLIT_BY_STRING"]
+
+
+class StrtokToArray(Expression, Func):
+    arg_types = {"this": True, "expression": False}
 
 
 # Higher-order / lambda
@@ -361,5 +369,5 @@ class StDistance(Expression, Func):
 
 
 class StPoint(Expression, Func):
-    arg_types = {"this": True, "expression": True, "null": False}
+    arg_types = {"this": True, "expression": True, "z": False, "m": False}
     _sql_names = ["ST_POINT", "ST_MAKEPOINT"]

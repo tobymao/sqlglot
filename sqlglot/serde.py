@@ -3,6 +3,10 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
+from types import ModuleType
+
+
+StackVal = tuple[t.Any, t.Optional[int], t.Optional[str], bool]
 
 
 INDEX = "i"
@@ -21,8 +25,8 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
     Dump an Expr into a JSON serializable List.
     """
     i = 0
-    payloads = []
-    stack: list[tuple[t.Any, int | None, str | None, bool]] = [(expression, None, None, False)]
+    payloads: list[dict[str, t.Any]] = []
+    stack: list[StackVal] = [(expression, None, None, False)]
 
     while stack:
         node, index, arg_key, is_array = stack.pop()
@@ -46,7 +50,7 @@ def dump(expression: exp.Expr) -> list[dict[str, t.Any]]:
 
             payload[CLASS] = klass
 
-            if node.type:
+            if node.type and node.type is not node:
                 payload[TYPE] = dump(node.type)
             if node.comments:
                 payload[COMMENTS] = node.comments
@@ -90,8 +94,8 @@ def load(
             node = payload[VALUE]
 
         nodes.append(node)
-        parent = nodes[payload[INDEX]]
-        arg_key = payload[ARG_KEY]
+        parent: exp.Expr = nodes[payload[INDEX]]
+        arg_key: str = payload[ARG_KEY]
 
         if payload.get(IS_ARRAY):
             parent.append(arg_key, node)
@@ -102,11 +106,11 @@ def load(
 
 
 def _load(payload: dict[str, t.Any]) -> exp.Expr | exp.DType:
-    class_name = payload[CLASS]
+    class_name: str = payload[CLASS]
 
     if class_name == DATA_TYPE:
         return exp.DType(payload[VALUE])
-
+    module: ModuleType
     if "." in class_name:
         module_path, class_name = class_name.rsplit(".", maxsplit=1)
         module = __import__(module_path, fromlist=[class_name])

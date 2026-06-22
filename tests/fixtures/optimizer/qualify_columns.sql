@@ -290,7 +290,7 @@ SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK
 # execute: false
 # dialect: postgres
 WITH t AS (SELECT 1 AS c) SELECT t FROM t;
-WITH t AS (SELECT 1 AS c) SELECT t AS _col_0 FROM t AS t;
+WITH t AS (SELECT 1 AS c) SELECT t AS t FROM t AS t;
 
 --------------------------------------
 -- Derived tables
@@ -542,6 +542,18 @@ WITH tbl1 AS (SELECT STRUCT(1 AS f0, 2 AS f1) AS col) SELECT tbl1.col.f0 AS f0, 
 # title: BigQuery - Expand top level nested struct
 SELECT one.* FROM structs;
 SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
+
+# dialect: bigquery
+# execute: false
+# title: BigQuery - Unreferenced CTE does not shadow struct column in star expansion
+WITH one AS (SELECT 1 AS x) SELECT one.* FROM structs;
+WITH one AS (SELECT 1 AS x) SELECT structs.one.a_1 AS a_1, structs.one.b_1 AS b_1 FROM structs AS structs;
+
+# dialect: bigquery
+# execute: false
+# title: BigQuery - CTE in FROM takes precedence over struct column in star expansion
+WITH one AS (SELECT 1 AS x) SELECT one.* FROM structs, one;
+WITH one AS (SELECT 1 AS x) SELECT one.x AS x FROM structs AS structs CROSS JOIN one AS one;
 
 # dialect: risingwave
 # execute: false
@@ -882,6 +894,18 @@ SELECT x.b AS b, x.a AS a FROM x AS x LEFT JOIN y AS y ON x.b = y.b QUALIFY ROW_
 
 SELECT * FROM x QUALIFY COUNT(a) OVER (PARTITION BY b) > 1;
 SELECT x.a AS a, x.b AS b FROM x AS x QUALIFY COUNT(x.a) OVER (PARTITION BY x.b) > 1;
+
+# title: BigQuery alias expansion in QUALIFY with source shadowing
+# dialect: bigquery
+# execute: false
+SELECT a, MAX(b) AS x FROM x GROUP BY a QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY a QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+
+# title: BigQuery alias expansion in QUALIFY with source shadowing and GROUP BY positional ref
+# dialect: bigquery
+# execute: false
+SELECT x.a, MAX(x.b) AS x FROM x GROUP BY 1 QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
+SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY a) = 1;
 
 --------------------------------------
 -- Expand laterals

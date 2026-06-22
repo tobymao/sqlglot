@@ -53,7 +53,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "SELECT x, x1 FROM (FROM (SELECT 1 as x, 2 as x1) |> AGGREGATE SUM(x1) as xx GROUP BY x,x1) |> SELECT x",
-            "WITH __tmp2 AS (SELECT x FROM (SELECT * FROM (WITH __tmp1 AS (SELECT SUM(x1) AS xx, x, x1 FROM (SELECT 1 AS x, 2 AS x1) GROUP BY x, x1) SELECT * FROM __tmp1))) SELECT * FROM __tmp2",
+            "WITH __tmp2 AS (SELECT x FROM (SELECT * FROM (WITH __tmp1 AS (SELECT x, x1, SUM(x1) AS xx FROM (SELECT 1 AS x, 2 AS x1) GROUP BY x, x1) SELECT * FROM __tmp1))) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM (SELECT 1 as x1) AS x |> SELECT x.x1 |> UNION ALL (FROM (SELECT 1 AS c) |> SELECT c) |> SELECT x1",
@@ -74,6 +74,22 @@ class TestPipeSyntax(Validator):
         self.validate_identity(
             "(SELECT 1 AS col1) |> EXTEND col1 + 1 AS col2",
             "WITH __tmp1 AS (SELECT *, col1 + 1 AS col2 FROM (SELECT 1 AS col1)) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1, 2 AS x2",
+            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "WITH x AS (SELECT 1 AS x1) FROM x |> SELECT x1 AS a |> SELECT a AS b",
+            "WITH x AS (SELECT 1 AS x1), __tmp1 AS (SELECT x1 AS a FROM x), __tmp2 AS (SELECT a AS b FROM __tmp1) SELECT * FROM __tmp2",
+        )
+        self.validate_identity(
+            "WITH RECURSIVE x AS (SELECT 1 AS x1 UNION ALL SELECT x1 + 1 FROM x WHERE x1 < 5) FROM x |> SELECT x1, 2 AS x2",
+            "WITH RECURSIVE x AS (SELECT 1 AS x1 UNION ALL SELECT x1 + 1 FROM x WHERE x1 < 5), __tmp1 AS (SELECT x1, 2 AS x2 FROM x) SELECT * FROM __tmp1",
+        )
+        self.validate_identity(
+            "WITH RECURSIVE r AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM r WHERE n < 5) FROM r |> SELECT n |> EXTEND n * 2 AS m",
+            "WITH RECURSIVE r AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM r WHERE n < 5), __tmp1 AS (SELECT n FROM r), __tmp2 AS (SELECT *, n * 2 AS m FROM __tmp1) SELECT * FROM __tmp2",
         )
 
     def test_order_by(self):
@@ -131,15 +147,15 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4, x5",
-            "WITH __tmp1 AS (SELECT SUM(x1), MAX(x2), MIN(x3), x4, x5 FROM x GROUP BY x4, x5) SELECT * FROM __tmp1",
+            "WITH __tmp1 AS (SELECT x4, x5, SUM(x1), MAX(x2), MIN(x3) FROM x GROUP BY x4, x5) SELECT * FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1), MAX(x2), MIN(x3) GROUP BY x4 AS a_x4, x5 AS a_x5",
-            "WITH __tmp1 AS (SELECT SUM(x1), MAX(x2), MIN(x3), x4 AS a_x4, x5 AS a_x5 FROM x GROUP BY a_x4, a_x5) SELECT * FROM __tmp1",
+            "WITH __tmp1 AS (SELECT x4 AS a_x4, x5 AS a_x5, SUM(x1), MAX(x2), MIN(x3) FROM x GROUP BY a_x4, a_x5) SELECT * FROM __tmp1",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x1 |> SELECT s_x1, x1 as ss_x1",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x1 FROM x GROUP BY x1), __tmp2 AS (SELECT s_x1, x1 AS ss_x1 FROM __tmp1) SELECT * FROM __tmp2",
+            "WITH __tmp1 AS (SELECT x1, SUM(x1) AS s_x1 FROM x GROUP BY x1), __tmp2 AS (SELECT s_x1, x1 AS ss_x1 FROM __tmp1) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) GROUP",
@@ -147,7 +163,7 @@ class TestPipeSyntax(Validator):
         )
         self.validate_identity(
             "FROM x |> AGGREGATE SUM(x1) as s_x1 GROUP BY x2 as g_x2 |> WHERE s_x1 > 0",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, x2 AS g_x2 FROM x GROUP BY g_x2) SELECT * FROM __tmp1 WHERE s_x1 > 0",
+            "WITH __tmp1 AS (SELECT x2 AS g_x2, SUM(x1) AS s_x1 FROM x GROUP BY g_x2) SELECT * FROM __tmp1 WHERE s_x1 > 0",
         )
         for order_option in ("ASC", "DESC", "ASC NULLS LAST", "DESC NULLS FIRST"):
             with self.subTest(f"Testing pipe syntax AGGREGATE for order option: {order_option}"):
@@ -158,7 +174,7 @@ class TestPipeSyntax(Validator):
                     },
                 )
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY x_s {order_option}) SELECT * FROM __tmp1",
+                    f"WITH __tmp1 AS (SELECT x1 AS g_x1, SUM(x1) AS x_s FROM x GROUP BY g_x1 ORDER BY x_s {order_option}) SELECT * FROM __tmp1",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s {order_option} GROUP BY x1 AS g_x1",
                     },
@@ -167,7 +183,7 @@ class TestPipeSyntax(Validator):
                 f"Testing pipe syntax AGGREGATE with GROUP AND ORDER BY for order option: {order_option}"
             ):
                 self.validate_all(
-                    f"WITH __tmp1 AS (SELECT SUM(x1) AS x_s, x1 AS g_x1 FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}), __tmp2 AS (SELECT g_x1, x_s FROM __tmp1) SELECT * FROM __tmp2",
+                    f"WITH __tmp1 AS (SELECT x1 AS g_x1, SUM(x1) AS x_s FROM x GROUP BY g_x1 ORDER BY g_x1 {order_option}), __tmp2 AS (SELECT g_x1, x_s FROM __tmp1) SELECT * FROM __tmp2",
                     read={
                         "bigquery": f"FROM x |> AGGREGATE SUM(x1) AS x_s GROUP AND ORDER BY x1 AS g_x1 {order_option} |> SELECT g_x1, x_s",
                     },
@@ -411,7 +427,7 @@ WHERE
         )
         self.validate_identity(
             "FROM x AS t |> AGGREGATE SUM(x1) AS s_x1 GROUP BY id, x2 |> AS t1 |> JOIN y AS t2 ON t1.id = t2.id |> SELECT t2.id, s_x1",
-            "WITH __tmp1 AS (SELECT SUM(x1) AS s_x1, id, x2 FROM x AS t GROUP BY id, x2), t1 AS (SELECT * FROM __tmp1), __tmp2 AS (SELECT t2.id, s_x1 FROM t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
+            "WITH __tmp1 AS (SELECT id, x2, SUM(x1) AS s_x1 FROM x AS t GROUP BY id, x2), t1 AS (SELECT * FROM __tmp1), __tmp2 AS (SELECT t2.id, s_x1 FROM t1 JOIN y AS t2 ON t1.id = t2.id) SELECT * FROM __tmp2",
         )
         self.validate_identity(
             "FROM x |> JOIN y ON x.x1 = y.y1 |> AS a |> WHERE a.x2 > 1",

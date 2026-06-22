@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast unit testc unitc style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast test-branch unit testc unitc leakcheck style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
 
 ifdef UV
     PIP := uv pip
@@ -8,6 +8,7 @@ endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
 FIND_SO := find sqlglot -name "*.so"
+NPROC := $(shell python -c "import os; print(os.cpu_count() or 1)")
 
 hidec:
 	rm -rf $(SO_BACKUP) && $(FIND_SO) | tar cf $(SO_BACKUP) -T - 2>/dev/null && $(FIND_SO) -delete; true
@@ -23,8 +24,12 @@ install:
 	$(PIP) install -e .
 
 install-dev:
-	$(PIP) install -e ".[dev]"
 	git submodule update --init 2>/dev/null || true
+	@if [ -f sqlglot-integration-tests/Makefile ]; then \
+		$(MAKE) -C sqlglot-integration-tests install; \
+	fi
+	$(PIP) install -e ".[dev]"
+	$(PIP) uninstall -y sqlglotc 2>/dev/null || true
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo ""; \
 		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
@@ -37,11 +42,23 @@ install-dev:
 		fi; \
 	fi
 
+# sqlglotc requires Python 3.10+ (sqlglot-mypy 1.20+ dropped 3.9). On 3.9
+# we skip the C build; tests fall back to pure-Python sqlglot.
+PY_GE_310 := $(shell python -c "import sys; print(int(sys.version_info >= (3, 10)))")
+
 install-devc:
-	cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace
+	@if [ "$(PY_GE_310)" = "1" ]; then \
+		cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC); \
+	else \
+		echo "Skipping sqlglotc build: requires Python 3.10+"; \
+	fi
 
 install-devc-release: clean
-	cd sqlglotc && python setup.py build_ext --inplace
+	@if [ "$(PY_GE_310)" = "1" ]; then \
+		cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC); \
+	else \
+		echo "Skipping sqlglotc build: requires Python 3.10+"; \
+	fi
 
 install-pre-commit:
 	pre-commit install
@@ -68,6 +85,25 @@ test: hidec
 test-fast:
 	python -m unittest --failfast
 
+BRANCH_BASE ?= main
+
+test-branch:
+	@changed_main=$$({ git diff origin/$(BRANCH_BASE)...HEAD --name-only 2>/dev/null; git diff HEAD --name-only; git diff --cached --name-only; } \
+	  | sort -u | grep '^tests/.*\.py$$' | grep -v '__init__' | sed 's/\.py$$//' | tr '/' '.'); \
+	changed_int=$$({ git -C sqlglot-integration-tests log --name-only --format='' origin/HEAD..HEAD 2>/dev/null; git -C sqlglot-integration-tests diff HEAD --name-only 2>/dev/null; } \
+	  | sort -u | grep '^tests/sqlglot/.*\.py$$' | grep -v '__init__'); \
+	if [ -z "$$changed_main" ] && [ -z "$$changed_int" ]; then \
+	  echo "No test files changed vs $(BRANCH_BASE)"; exit 0; \
+	fi; \
+	if [ -n "$$changed_main" ]; then \
+	  echo "Main tests:"; echo "$$changed_main" | tr ' ' '\n' | sed 's/^/  /'; \
+	  python -m unittest $$changed_main || exit 1; \
+	fi; \
+	if [ -n "$$changed_int" ]; then \
+	  echo "Integration tests:"; echo "$$changed_int" | tr ' ' '\n' | sed 's/^/  /'; \
+	  cd sqlglot-integration-tests && PYTHONPATH=. pytest $$changed_int; \
+	fi
+
 unit: hidec
 	trap '$(MAKE) showc' EXIT; SKIP_INTEGRATION=1 python -m unittest
 
@@ -77,9 +113,15 @@ testc: install-devc
 unitc: install-devc
 	SKIP_INTEGRATION=1 python -m unittest
 
+leakcheck: install-devc
+	python -m tests.leakcheck
+
 style:
 	pre-commit run --all-files
-	@if [ -f sqlglot-integration-tests/Makefile ]; then $(MAKE) -C sqlglot-integration-tests check-submodule; fi
+	@if [ -f sqlglot-integration-tests/Makefile ]; then \
+		MYPYPATH=$(abspath .) $(MAKE) -C sqlglot-integration-tests style && \
+		$(MAKE) -C sqlglot-integration-tests check-submodule; \
+	fi
 
 check: style test testc
 

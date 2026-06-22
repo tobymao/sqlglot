@@ -19,6 +19,22 @@ if t.TYPE_CHECKING:
 
 TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
 
+ROW_LEVEL_AGG_FUNCS = (exp.Count,)
+
+# The node types `Scope._collect` classifies, roughly ordered by frequency. `exp.Query`
+# covers subqueries, and `exp.UDTF` covers laterals.
+COLLECTIBLE_TYPES = (
+    exp.Column,
+    exp.Dot,
+    exp.Table,
+    exp.Query,
+    exp.UDTF,
+    exp.CTE,
+    exp.Star,
+    exp.TableColumn,
+    exp.JoinHint,
+)
+
 
 class ScopeType(Enum):
     ROOT = auto()
@@ -63,6 +79,7 @@ class Scope:
     """
 
     _collected: bool
+    _scans_all_subscope_columns: bool
     _raw_columns: list[exp.Column]
     _table_columns: list[exp.TableColumn]
     _stars: list[exp.Column | exp.Dot]
@@ -112,6 +129,7 @@ class Scope:
 
     def clear_cache(self) -> None:
         self._collected = False
+        self._scans_all_subscope_columns = False
         self._raw_columns = []
         self._table_columns = []
         self._stars = []
@@ -166,7 +184,9 @@ class Scope:
         self._column_index = set()
 
         for node in self.walk():
-            if node is self.expression:
+            # Most nodes (identifiers, literals, operators etc.) aren't collectible, so a
+            # single isinstance gate lets them skip the classification chain below.
+            if node is self.expression or not isinstance(node, COLLECTIBLE_TYPES):
                 continue
 
             if isinstance(node, exp.Dot) and node.is_star:
@@ -186,7 +206,9 @@ class Scope:
                 self._tables.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
-            elif isinstance(node, exp.UDTF):
+            elif type(node) is exp.Lateral or (
+                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
+            ):
                 self._udtfs.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
@@ -196,6 +218,10 @@ class Scope:
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
+            elif isinstance(node, exp.Star) and (
+                node.args.get("except_") or not isinstance(node.parent, ROW_LEVEL_AGG_FUNCS)
+            ):
+                self._scans_all_subscope_columns = True
 
         self._collected = True
 
@@ -285,6 +311,11 @@ class Scope:
         """
         self._ensure_collected()
         return self._subqueries
+
+    @property
+    def scans_all_subscope_columns(self) -> bool:
+        self._ensure_collected()
+        return self._scans_all_subscope_columns
 
     @property
     def stars(self) -> list[exp.Column | exp.Dot]:
@@ -445,8 +476,10 @@ class Scope:
             list[exp.Column]: Column instances that reference sources in the current scope.
         """
         if self._local_columns is None:
-            external_columns = set(self.external_columns)
-            self._local_columns = [c for c in self.columns if c not in external_columns]
+            # Compare nodes by identity: structural equality would conflate distinct
+            # column nodes that happen to look the same, and is much more expensive.
+            external_column_ids = {id(c) for c in self.external_columns}
+            self._local_columns = [c for c in self.columns if id(c) not in external_column_ids]
 
         return self._local_columns
 
@@ -935,11 +968,17 @@ def walk_in_scope(
 
         yield node
 
-        if node is not expression and (
-            isinstance(node, exp.CTE)
-            or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
-            or (isinstance(node.parent, exp.UDTF) and isinstance(node, exp.Query))
-            or isinstance(node, exp.UNWRAPPED_QUERIES)
+        # Only CTEs and Queries can start child scopes; checking that first lets all
+        # other nodes (the vast majority) skip the rest of the boundary checks.
+        if (
+            node is not expression
+            and isinstance(node, (exp.CTE, exp.Query))
+            and (
+                isinstance(node, exp.CTE)
+                or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
+                or isinstance(node.parent, exp.UDTF)
+                or isinstance(node, exp.UNWRAPPED_QUERIES)
+            )
         ):
             if isinstance(node, (exp.Subquery, exp.UDTF)):
                 for key in ("joins", "laterals", "pivots"):

@@ -33,6 +33,10 @@ class AutoIncrementColumnConstraint(Expression, ColumnConstraintKind):
     pass
 
 
+class InvisibleColumnConstraint(Expression, ColumnConstraintKind):
+    arg_types = {}
+
+
 class ZeroFillColumnConstraint(ColumnConstraint):
     arg_types = {}
 

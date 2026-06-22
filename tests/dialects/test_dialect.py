@@ -951,7 +951,7 @@ class TestDialect(Validator):
             write={
                 "duckdb": "SUBSTRING(CAST(x AS TEXT), 1, 10)",
                 "hive": "SUBSTRING(CAST(x AS STRING), 1, 10)",
-                "presto": "SUBSTRING(CAST(x AS VARCHAR), 1, 10)",
+                "presto": "SUBSTR(CAST(x AS VARCHAR), 1, 10)",
                 "doris": "SUBSTRING(CAST(x AS STRING), 1, 10)",
             },
         )
@@ -1399,7 +1399,6 @@ class TestDialect(Validator):
             "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
             write={
                 "trino": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
-                "duckdb": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "hive": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "spark": "AGGREGATE(x, 0, (acc, x) -> acc + x, acc -> acc)",
                 "presto": "REDUCE(x, 0, (acc, x) -> acc + x, acc -> acc)",
@@ -2404,7 +2403,7 @@ class TestDialect(Validator):
         self.validate_all(
             "STR_POSITION(haystack, needle, position)",
             write={
-                "athena": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "athena": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "bigquery": "INSTR(haystack, needle, position)",
                 "clickhouse": "POSITION(haystack, needle, position)",
                 "databricks": "LOCATE(needle, haystack, position)",
@@ -2416,7 +2415,7 @@ class TestDialect(Validator):
                 "mysql": "LOCATE(needle, haystack, position)",
                 "oracle": "INSTR(haystack, needle, position)",
                 "postgres": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
-                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "presto": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "redshift": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
                 "risingwave": "CASE WHEN POSITION(needle IN SUBSTRING(haystack FROM position)) = 0 THEN 0 ELSE POSITION(needle IN SUBSTRING(haystack FROM position)) + position - 1 END",
                 "snowflake": "CHARINDEX(needle, haystack, position)",
@@ -2425,7 +2424,7 @@ class TestDialect(Validator):
                 "sqlite": "IIF(INSTR(SUBSTRING(haystack, position), needle) = 0, 0, INSTR(SUBSTRING(haystack, position), needle) + position - 1)",
                 "tableau": "IF FIND(SUBSTRING(haystack, position), needle) = 0 THEN 0 ELSE FIND(SUBSTRING(haystack, position), needle) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position)",
-                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle) + position - 1)",
+                "trino": "IF(STRPOS(SUBSTR(haystack, position), needle) = 0, 0, STRPOS(SUBSTR(haystack, position), needle) + position - 1)",
                 "tsql": "CHARINDEX(needle, haystack, position)",
             },
         )
@@ -2439,10 +2438,10 @@ class TestDialect(Validator):
             write={
                 "bigquery": "INSTR(haystack, needle, position, occurrence)",
                 "oracle": "INSTR(haystack, needle, position, occurrence)",
-                "presto": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "presto": "IF(STRPOS(SUBSTR(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTR(haystack, position), needle, occurrence) + position - 1)",
                 "tableau": "IF FINDNTH(SUBSTRING(haystack, position), needle, occurrence) = 0 THEN 0 ELSE FINDNTH(SUBSTRING(haystack, position), needle, occurrence) + position - 1 END",
                 "teradata": "INSTR(haystack, needle, position, occurrence)",
-                "trino": "IF(STRPOS(SUBSTRING(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTRING(haystack, position), needle, occurrence) + position - 1)",
+                "trino": "IF(STRPOS(SUBSTR(haystack, position), needle, occurrence) = 0, 0, STRPOS(SUBSTR(haystack, position), needle, occurrence) + position - 1)",
             },
         )
         self.validate_all(
@@ -2450,10 +2449,9 @@ class TestDialect(Validator):
             write={
                 "clickhouse": "CONCAT_WS('-', 'a', 'b')",
                 "duckdb": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
-                "presto": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
-                "hive": "CONCAT_WS('-', 'a', 'b')",
-                "spark": "CONCAT_WS('-', 'a', 'b')",
-                "trino": "CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR))",
+                "hive": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
+                "spark": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', 'a', 'b') END",
+                "trino": "CASE WHEN '-' IS NULL OR 'a' IS NULL OR 'b' IS NULL THEN NULL ELSE CONCAT_WS('-', CAST('a' AS VARCHAR), CAST('b' AS VARCHAR)) END",
             },
         )
 
@@ -2462,10 +2460,9 @@ class TestDialect(Validator):
             write={
                 "clickhouse": "CONCAT_WS('-', x)",
                 "duckdb": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
-                "hive": "CONCAT_WS('-', x)",
-                "presto": "CONCAT_WS('-', CAST(x AS VARCHAR))",
-                "spark": "CONCAT_WS('-', x)",
-                "trino": "CONCAT_WS('-', CAST(x AS VARCHAR))",
+                "hive": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
+                "spark": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', x) END",
+                "trino": "CASE WHEN '-' IS NULL OR x IS NULL THEN NULL ELSE CONCAT_WS('-', CAST(x AS VARCHAR)) END",
             },
         )
         self.validate_all(
@@ -2750,6 +2747,18 @@ class TestDialect(Validator):
         )
 
     def test_limit(self):
+        self.validate_identity("WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all")
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t",
+            read={
+                "databricks": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "duckdb": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "presto": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "postgres": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+                "spark": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
+            },
+        )
+
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",
             write={"sqlite": "SELECT * FROM data LIMIT 20 OFFSET 10"},
@@ -3642,6 +3651,7 @@ FROM subquery2""",
                 "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1' WEEK))",
                 "duckdb": "SELECT * FROM UNNEST(CAST(GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1' WEEK) AS DATE[]))",
                 "mysql": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
+                "starrocks": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_value, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
                 "postgres": "SELECT * FROM (SELECT CAST(value AS DATE) FROM GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), INTERVAL '1 WEEK') AS _t(value)) AS _unnested_generate_series",
                 "presto": "SELECT * FROM UNNEST(SEQUENCE(CAST('2020-01-01' AS DATE), CAST('2020-02-01' AS DATE), (1 * INTERVAL '7' DAY)))",
                 "redshift": "WITH RECURSIVE _generated_dates(date_value) AS (SELECT CAST('2020-01-01' AS DATE) AS date_value UNION ALL SELECT CAST(DATEADD(WEEK, 1, date_value) AS DATE) FROM _generated_dates WHERE CAST(DATEADD(WEEK, 1, date_value) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_value FROM _generated_dates) AS _generated_dates",
@@ -3883,7 +3893,6 @@ FROM subquery2""",
                 "trino": "UUID()",
                 "mysql": "UUID()",
                 "postgres": "GEN_RANDOM_UUID()",
-                "snowflake": "UUID_STRING()",
                 "tsql": "NEWID()",
             },
             write={
@@ -4185,6 +4194,24 @@ FROM subquery2""",
                     write={
                         "": f"SELECT col ILIKE {quantifier} (x, y, z)",
                         "duckdb": f"SELECT (col ILIKE x {connector} col ILIKE y) {connector} col ILIKE z",
+                    },
+                )
+
+            with self.subTest(f"Testing NOT LIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col NOT LIKE {quantifier} (x, y, z)",
+                    write={
+                        "": f"SELECT col NOT LIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col NOT LIKE x {connector} col NOT LIKE y) {connector} col NOT LIKE z",
+                    },
+                )
+
+            with self.subTest(f"Testing NOT ILIKE {quantifier}"):
+                self.validate_all(
+                    f"SELECT col NOT ILIKE {quantifier} (x, y, z)",
+                    write={
+                        "": f"SELECT col NOT ILIKE {quantifier} (x, y, z)",
+                        "duckdb": f"SELECT (col NOT ILIKE x {connector} col NOT ILIKE y) {connector} col NOT ILIKE z",
                     },
                 )
 

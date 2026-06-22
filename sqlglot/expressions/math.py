@@ -108,7 +108,12 @@ class EuclideanDistance(Expression, Func):
 
 
 class JarowinklerSimilarity(Expression, Func):
-    arg_types = {"this": True, "expression": True, "case_insensitive": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "case_insensitive": False,
+        "integer_scale": False,
+    }
 
 
 class ManhattanDistance(Expression, Func):

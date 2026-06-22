@@ -11,6 +11,7 @@ from sqlglot.typing.spark import EXPRESSION_METADATA
 
 class Spark(Spark2):
     SUPPORTS_ORDER_BY_ALL = True
+    SUPPORTS_LIMIT_ALL = True
     SUPPORTS_NULL_TYPE = True
     ARRAY_FUNCS_PROPAGATES_NULLS = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()

@@ -56,6 +56,13 @@ class TestOracle(Validator):
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
         self.validate_identity("SELECT INSTR(haystack, needle)")
+        self.validate_all(
+            "SELECT fred FROM barney WHERE dino ^= 'wilma'",
+            write={
+                "oracle": "SELECT fred FROM barney WHERE dino <> 'wilma'",
+                "postgres": "SELECT fred FROM barney WHERE dino <> 'wilma'",
+            },
+        )
         self.validate_identity(
             "SELECT (TIMESTAMP '2025-12-30 20:00:00' - TIMESTAMP '2025-12-29 14:30:00') DAY TO SECOND",
             "SELECT (TO_TIMESTAMP('2025-12-30 20:00:00', 'YYYY-MM-DD HH24:MI:SS.FF6') - TO_TIMESTAMP('2025-12-29 14:30:00', 'YYYY-MM-DD HH24:MI:SS.FF6')) DAY TO SECOND",
@@ -247,6 +254,12 @@ class TestOracle(Validator):
                 "redshift": "TO_NUMBER(x, fmt)",
                 "teradata": "TO_NUMBER(x, fmt)",
             },
+        )
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html
+        self.validate_identity("TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR)")
+        self.validate_identity("TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR, '9999')")
+        self.validate_identity(
+            "TO_NUMBER('dino' DEFAULT 0 ON CONVERSION ERROR, '9999', 'NLS_NUMERIC_CHARACTERS = ''.,''')"
         )
         self.validate_all(
             "SELECT CAST(NULL AS VARCHAR2(2328 CHAR)) AS COL1",
@@ -580,6 +593,9 @@ FROM JSON_TABLE(res, '$.info[*]' COLUMNS(
 )) src""",
             pretty=True,
         )
+        self.validate_identity(
+            "SELECT * FROM JSON_TABLE(my_doc, '$.data[*]' COLUMNS(NAME VARCHAR2(200) PATH '$.name', DATA CLOB FORMAT JSON PATH '$.data')) j"
+        )
         self.validate_identity("CONVERT('foo', 'dst')")
         self.validate_identity("CONVERT('foo', 'dst', 'src')")
 
@@ -744,7 +760,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_all(
             "TRUNC(SYSDATE, 'YEAR')",
             write={
-                "clickhouse": "DATE_TRUNC('YEAR', CURRENT_TIMESTAMP())",
+                "clickhouse": "dateTrunc('YEAR', CURRENT_TIMESTAMP())",
                 "oracle": "TRUNC(SYSDATE, 'YEAR')",
             },
         )
@@ -880,6 +896,31 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("UTC_TIME(6)").assert_is(exp.UtcTime)
         self.validate_identity("UTC_TIMESTAMP()").assert_is(exp.UtcTimestamp)
         self.validate_identity("UTC_TIMESTAMP(6)").assert_is(exp.UtcTimestamp)
+
+    def test_listagg(self):
+        self.validate_identity(
+            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW TRUNCATE '...' WITH COUNT) "
+            "WITHIN GROUP (ORDER BY hire_date) FROM employees"
+        )
+        self.validate_identity(
+            "SELECT LISTAGG(last_name, '; ' ON OVERFLOW ERROR) "
+            "WITHIN GROUP (ORDER BY hire_date) FROM employees"
+        )
+
+    def test_merge(self):
+        self.validate_all(
+            "MERGE INTO target tgt USING (SELECT id, col1 FROM source_tbl) src ON tgt.id = src.id "
+            "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 WHERE tgt.some_column IS NULL "
+            "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1) WHERE NOT src.col1 IS NULL",
+            write={
+                "oracle": "MERGE INTO target tgt USING (SELECT id, col1 FROM source_tbl) src ON tgt.id = src.id "
+                "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 WHERE tgt.some_column IS NULL "
+                "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1) WHERE NOT src.col1 IS NULL",
+                "": "MERGE INTO target AS tgt USING (SELECT id, col1 FROM source_tbl) AS src ON tgt.id = src.id "
+                "WHEN MATCHED THEN UPDATE SET tgt.col1 = src.col1 "
+                "WHEN NOT MATCHED THEN INSERT (id, col1) VALUES (src.id, src.col1)",
+            },
+        )
 
     def test_merge_builder_alias(self):
         merge_stmt = exp.merge(

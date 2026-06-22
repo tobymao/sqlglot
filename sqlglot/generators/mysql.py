@@ -84,6 +84,19 @@ def date_add_sql(
     return func
 
 
+_MAKE_INTERVAL_UNIT_ALIASES = {
+    "years": "year",
+    "months": "month",
+    "weeks": "week",
+    "days": "day",
+    "hours": "hour",
+    "minutes": "minute",
+    "mins": "minute",
+    "seconds": "second",
+    "secs": "second",
+}
+
+
 def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) -> str:
     time_format = expression.args.get("format")
     return _str_to_date_sql(self, expression) if time_format else self.func("DATE", expression.this)
@@ -111,6 +124,8 @@ class MySQLGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_MODIFY_COLUMN = True
+    SUPPORTS_CHANGE_COLUMN = True
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -588,6 +603,30 @@ class MySQLGenerator(generator.Generator):
 
     SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_CREATE
 
+    def makeinterval_sql(self: MySQLGenerator, expression: exp.MakeInterval) -> str:
+        intervals: list[exp.Interval] = []
+        for arg_key, value in expression.args.items():
+            if value is None:
+                continue
+
+            if isinstance(value, exp.Kwarg):
+                unit_name = _MAKE_INTERVAL_UNIT_ALIASES.get(
+                    value.this.name.lower(), value.this.name.lower()
+                )
+                value = value.expression
+            else:
+                unit_name = arg_key
+
+            intervals.append(exp.Interval(this=value.copy(), unit=exp.var(unit_name.upper())))
+
+        if not intervals:
+            return self.function_fallback_sql(expression)
+
+        parent = expression.parent
+        sep = " - " if isinstance(parent, exp.Sub) and parent.expression is expression else " + "
+
+        return sep.join(self.sql(interval) for interval in intervals)
+
     def locate_properties(self, properties: exp.Properties) -> defaultdict:
         locations = super().locate_properties(properties)
 
@@ -611,6 +650,10 @@ class MySQLGenerator(generator.Generator):
         return self.function_fallback_sql(expression)
 
     def arraycontainsall_sql(self, expression: exp.ArrayContainsAll) -> str:
+        self.unsupported("Array operations are not supported by MySQL")
+        return self.function_fallback_sql(expression)
+
+    def arraycontainedby_sql(self, expression: exp.ArrayContainedBy) -> str:
         self.unsupported("Array operations are not supported by MySQL")
         return self.function_fallback_sql(expression)
 

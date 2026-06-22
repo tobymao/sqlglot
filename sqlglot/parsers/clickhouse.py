@@ -22,9 +22,9 @@ if t.TYPE_CHECKING:
 
 def _build_datetime_format(
     expr_type: Type[E],
-) -> t.Callable[[list], E]:
-    def _builder(args: list) -> E:
-        expr = build_formatted_time(expr_type, "clickhouse")(args)
+) -> t.Callable:
+    def _builder(args: list, dialect: t.Any) -> E:
+        expr = build_formatted_time(expr_type)(args, dialect)
 
         timezone = seq_get(args, 2)
         if timezone:
@@ -126,6 +126,7 @@ AGG_FUNCTIONS = {
     "deltaSumTimestamp",
     "groupArray",
     "groupArrayLast",
+    "groupConcat",
     "groupUniqArray",
     "groupArrayInsertAt",
     "groupArrayMovingAvg",
@@ -295,7 +296,6 @@ class ClickHouseParser(parser.Parser):
         "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
         "UNIQ": exp.ApproxDistinct.from_arg_list,
-        "XOR": lambda args: exp.Xor(expressions=args),
         "MD5": exp.MD5Digest.from_arg_list,
         "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
         "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
@@ -316,6 +316,7 @@ class ClickHouseParser(parser.Parser):
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
         TokenType.AND,
+        TokenType.FILE,
         TokenType.OR,
         TokenType.SET,
     }
@@ -362,12 +363,14 @@ class ClickHouseParser(parser.Parser):
     FUNCTION_PARSERS = {
         **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "MATCH"},
         "ARRAYJOIN": lambda self: self.expression(exp.Explode(this=self._parse_expression())),
+        "GROUPCONCAT": lambda self: self._parse_group_concat(),
         "QUANTILE": lambda self: self._parse_quantile(),
         "MEDIAN": lambda self: self._parse_quantile(),
         "COLUMNS": lambda self: self._parse_columns(),
         "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
         "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
         "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
+        "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
     }
 
     PROPERTY_PARSERS = {
@@ -418,6 +421,7 @@ class ClickHouseParser(parser.Parser):
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {
         TokenType.FORMAT,
+        TokenType.SETTINGS,
     }
 
     LOG_DEFAULTS_TO_LN = True
@@ -485,10 +489,17 @@ class ClickHouseParser(parser.Parser):
         return self._parse_lambda()
 
     def _parse_types(
-        self, check_func: bool = False, schema: bool = False, allow_identifiers: bool = True
+        self,
+        check_func: bool = False,
+        schema: bool = False,
+        allow_identifiers: bool = True,
+        with_collation: bool = False,
     ) -> exp.Expr | None:
         dtype = super()._parse_types(
-            check_func=check_func, schema=schema, allow_identifiers=allow_identifiers
+            check_func=check_func,
+            schema=schema,
+            allow_identifiers=allow_identifiers,
+            with_collation=with_collation,
         )
         if isinstance(dtype, exp.DataType) and dtype.args.get("nullable") is not True:
             # Mark every type as non-nullable which is ClickHouse's default, unless it's
@@ -654,9 +665,14 @@ class ClickHouseParser(parser.Parser):
         return is_global, side or kind, kind_pre or kind
 
     def _parse_join(
-        self, skip_join_token: bool = False, parse_bracket: bool = False
+        self,
+        skip_join_token: bool = False,
+        parse_bracket: bool = False,
+        alias_tokens: t.Collection[TokenType] | None = None,
     ) -> exp.Join | None:
-        join = super()._parse_join(skip_join_token=skip_join_token, parse_bracket=True)
+        join = super()._parse_join(
+            skip_join_token=skip_join_token, parse_bracket=True, alias_tokens=alias_tokens
+        )
         if join:
             method = join.args.get("method")
             join.set("method", None)
@@ -728,6 +744,22 @@ class ClickHouseParser(parser.Parser):
             return params
 
         return None
+
+    def _parse_group_concat(self) -> exp.GroupConcat:
+        args = self._parse_csv(self._parse_lambda)
+        params = self._parse_func_params()
+
+        if params:
+            # groupConcat(sep [, limit])(expr)
+            separator = seq_get(args, 0)
+            limit = seq_get(args, 1)
+            this: exp.Expr | None = seq_get(params, 0)
+            if limit is not None:
+                this = exp.Limit(this=this, expression=limit)
+            return self.expression(exp.GroupConcat(this=this, separator=separator))
+
+        # groupConcat(expr)
+        return self.expression(exp.GroupConcat(this=seq_get(args, 0)))
 
     def _parse_quantile(self) -> exp.Quantile:
         this = self._parse_lambda()

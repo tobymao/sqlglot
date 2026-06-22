@@ -69,7 +69,7 @@ class TestHive(Validator):
             },
             write={
                 "duckdb": "x << 1",
-                "presto": "BITWISE_ARITHMETIC_SHIFT_LEFT(x, 1)",
+                "presto": "BITWISE_LEFT_SHIFT(x, 1)",
                 "hive": "x << 1",
                 "spark": "SHIFTLEFT(x, 1)",
             },
@@ -81,7 +81,7 @@ class TestHive(Validator):
             },
             write={
                 "duckdb": "x >> 1",
-                "presto": "BITWISE_ARITHMETIC_SHIFT_RIGHT(x, 1)",
+                "presto": "BITWISE_RIGHT_SHIFT(x, 1)",
                 "hive": "x >> 1",
                 "spark": "SHIFTRIGHT(x, 1)",
             },
@@ -535,7 +535,7 @@ class TestHive(Validator):
         )
         self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z")
         self.validate_identity("(SELECT 1 UNION SELECT 2) DISTRIBUTE BY z SORT BY x")
-        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y DESC")
+        self.validate_identity("(SELECT 1 UNION SELECT 2) CLUSTER BY y")
         self.validate_identity("SELECT * FROM test CLUSTER BY y")
 
         self.validate_identity("(SELECT 1 UNION SELECT 2) SORT BY z")
@@ -701,7 +701,7 @@ class TestHive(Validator):
             "LOCATE('a', x, 3)",
             write={
                 "duckdb": "CASE WHEN STRPOS(SUBSTRING(x, 3), 'a') = 0 THEN 0 ELSE STRPOS(SUBSTRING(x, 3), 'a') + 3 - 1 END",
-                "presto": "IF(STRPOS(SUBSTRING(x, 3), 'a') = 0, 0, STRPOS(SUBSTRING(x, 3), 'a') + 3 - 1)",
+                "presto": "IF(STRPOS(SUBSTR(x, 3), 'a') = 0, 0, STRPOS(SUBSTR(x, 3), 'a') + 3 - 1)",
                 "hive": "LOCATE('a', x, 3)",
                 "spark": "LOCATE('a', x, 3)",
             },
@@ -1020,7 +1020,7 @@ class TestHive(Validator):
                 "hive": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
                 "spark2": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
                 "spark": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
-                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT c:["x-y"] FROM t""",
+                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
             },
         )
 

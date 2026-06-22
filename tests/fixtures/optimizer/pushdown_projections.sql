@@ -115,3 +115,46 @@ SELECT _0.a AS a, _0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT
 
 SELECT a, b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) (SELECT a, b, c FROM cte1));
 SELECT _0.a AS a, _0.b AS b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b) SELECT cte1.a AS a, cte1.b AS b FROM cte1 AS cte1) AS _0;
+
+--------------------------------------
+-- Star used by a function
+--------------------------------------
+
+# dialect: snowflake
+SELECT OBJECT_CONSTRUCT(*) FROM (SELECT a, b FROM x) AS t;
+SELECT OBJECT_CONSTRUCT(*) AS _col_0 FROM (SELECT a AS a, b AS b FROM x AS x) AS t;
+
+# dialect: snowflake
+WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) FROM base;
+WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) AS _col_0 FROM base AS base;
+
+# dialect: snowflake
+WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT obj:A, obj:B FROM (SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) AS obj, a FROM base) AS t;
+WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT GET_PATH(t.obj, 'A') AS A, GET_PATH(t.obj, 'B') AS B FROM (SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) AS obj FROM base AS base) AS t;
+
+# dialect: snowflake
+WITH cte AS (SELECT 1 AS a, 2 as b) SELECT HASH_AGG(*) FROM cte;
+WITH cte AS (SELECT 1 AS a, 2 AS b) SELECT HASH_AGG(*) AS _col_0 FROM cte AS cte;
+
+# dialect: snowflake
+WITH cte AS (SELECT a, b FROM x) SELECT COUNT(* EXCLUDE a) FROM cte;
+WITH cte AS (SELECT a AS a, b AS b FROM x AS x) SELECT COUNT(* EXCLUDE (a)) AS _col_0 FROM cte AS cte;
+
+WITH cte1 AS (SELECT a, SUM(b) AS sale FROM x GROUP BY a), cte2 AS (SELECT cte1.a, COUNT(*) AS cnt FROM cte1 GROUP BY cte1.a) SELECT a, cnt FROM cte2;
+WITH cte1 AS (SELECT x.a AS a FROM x AS x GROUP BY x.a), cte2 AS (SELECT cte1.a AS a, COUNT(*) AS cnt FROM cte1 AS cte1 GROUP BY cte1.a) SELECT cte2.a AS a, cte2.cnt AS cnt FROM cte2 AS cte2;
+
+--------------------------------------
+-- Set-returning functions affect cardinality and are retained even when unused
+--------------------------------------
+SELECT d FROM (SELECT EXPLODE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT EXPLODE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+SELECT d FROM (SELECT POSEXPLODE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT POSEXPLODE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+SELECT d FROM (SELECT INLINE(e) AS col, d FROM w);
+SELECT _0.d AS d FROM (SELECT INLINE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
+
+-- Window functions do not affect cardinality and stay prunable
+SELECT d FROM (SELECT d, ROW_NUMBER() OVER (PARTITION BY e ORDER BY d) AS rn FROM w);
+SELECT _0.d AS d FROM (SELECT w.d AS d FROM w AS w) AS _0;

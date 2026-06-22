@@ -8,6 +8,7 @@ from enum import auto
 from sqlglot.helper import AutoName
 from sqlglot.errors import ErrorLevel, ParseError
 from sqlglot.expressions.core import (
+    Expr,
     Expression,
     _TimeUnit,
     Identifier,
@@ -17,11 +18,17 @@ from sqlglot.expressions.core import (
 from builtins import type as Type
 
 if t.TYPE_CHECKING:
+    from sqlglot._typing import DataTypeArgs
     from sqlglot.dialects.dialect import DialectType
+    from typing_extensions import Self, Unpack
 
 
 class DataTypeParam(Expression):
     arg_types = {"this": True, "expression": False}
+
+    @property
+    def this(self) -> Expr:
+        return self.args["this"]
 
     @property
     def name(self) -> str:
@@ -177,7 +184,10 @@ class DataType(Expression):
         "values": False,
         "kind": False,
         "nullable": False,
+        "collate": False,
     }
+
+    is_data_type: t.ClassVar[bool] = True
 
     Type: t.ClassVar[Type[DType]] = DType
 
@@ -329,8 +339,8 @@ class DataType(Expression):
         dialect: DialectType = None,
         udt: bool = False,
         copy: bool = True,
-        **kwargs: object,
-    ) -> DataType:
+        **kwargs: Unpack[DataTypeArgs],
+    ) -> Self:
         """
         Constructs a DataType object.
 
@@ -345,32 +355,54 @@ class DataType(Expression):
         Returns:
             The constructed DataType object.
         """
-        from sqlglot import parse_one
-
         if isinstance(dtype, str):
-            if dtype.upper() == "UNKNOWN":
-                return DataType(this=DType.UNKNOWN, **kwargs)
-
-            try:
-                data_type_exp = parse_one(
-                    dtype, read=dialect, into=DataType, error_level=ErrorLevel.IGNORE
-                )
-            except ParseError:
-                if udt:
-                    return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
-                raise
+            return cls.from_str(dtype, dialect, udt, **kwargs)
         elif isinstance(dtype, DType):
-            data_type_exp = DataType(this=dtype)
+            data_type_exp = cls(this=dtype)
+            if kwargs:
+                for k, v in kwargs.items():
+                    data_type_exp.set(k, v)
+            return data_type_exp
         elif isinstance(dtype, (Identifier, Dot)) and udt:
-            return DataType(this=DType.USERDEFINED, kind=dtype, **kwargs)
-        elif isinstance(dtype, DataType):
+            return cls(this=DType.USERDEFINED, kind=dtype, **kwargs)
+        elif isinstance(dtype, cls):
             return maybe_copy(dtype, copy)
         else:
             raise ValueError(f"Invalid data type: {type(dtype)}. Expected str or DType")
-        if kwargs:
-            for k, v in kwargs.items():
-                data_type_exp.set(k, v)
-        return data_type_exp
+
+    @classmethod
+    def from_str(
+        cls,
+        dtype: str,
+        dialect: DialectType = None,
+        udt: bool = False,
+        **kwargs: Unpack[DataTypeArgs],
+    ) -> Self:
+        """
+        Constructs a `DataType` object from a `str` representation.
+
+        Args:
+            dtype: the data type of interest.
+            dialect: the dialect to use for parsing `dtype`.
+            udt: when set to True, `dtype` will be used as-is if it can't be parsed into a
+                `DataType`, thus creating a user-defined type.
+            kwargs: additional arguments to pass in the constructor of `DataType`.
+
+        Returns:
+            The constructed `DataType` object.
+        """
+        from sqlglot import parse_one
+
+        if dtype.upper() == "UNKNOWN":
+            return cls(this=DType.UNKNOWN, **kwargs)
+        try:
+            return parse_one(
+                dtype, read=dialect, into=cls, error_level=ErrorLevel.IGNORE
+            ).set_kwargs(kwargs)
+        except ParseError:
+            if udt:
+                return cls(this=DType.USERDEFINED, kind=dtype, **kwargs)
+            raise
 
     def is_type(self, *dtypes: DATA_TYPE, check_nullable: bool = False) -> bool:
         """
@@ -385,10 +417,10 @@ class DataType(Expression):
         Returns:
             True, if and only if there is a type in `dtypes` which is equal to this DataType.
         """
-        self_is_nullable = self.args.get("nullable")
+        self_is_nullable: bool | None = self.args.get("nullable")
         for dtype in dtypes:
             other_type = DataType.build(dtype, copy=False, udt=True)
-            other_is_nullable = other_type.args.get("nullable")
+            other_is_nullable: bool | None = other_type.args.get("nullable")
             if (
                 other_type.expressions
                 or (check_nullable and (self_is_nullable or other_is_nullable))

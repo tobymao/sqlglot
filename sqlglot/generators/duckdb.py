@@ -742,6 +742,21 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
     )
     has_star = expression.is_star
 
+    # CONNECT_BY_ROOT col yields the value of `col` from the START WITH row that begins each
+    # branch. Each one is threaded through the CTE as an extra column: the anchor binds it to the
+    # row's own value, the recursive arm forwards the parent's value unchanged.
+    root_col_names: list[str] = []
+    anchor_root_cols: list[exp.Expr] = []
+    inner_root_cols: list[exp.Expr] = []
+    roots = [root for e in base_select_exprs for root in e.find_all(exp.ConnectByRoot)]
+
+    for i, root in enumerate(roots):
+        name = f"_connect_by_root_{i}"
+        root_col_names.append(name)
+        anchor_root_cols.append(exp.alias_(root.this, name))
+        inner_root_cols.append(exp.alias_(exp.column(name, "_parent_row"), name))
+        root.replace(exp.column(name))
+
     # Build the join condition from the full CONNECT BY predicate:
     # PRIOR(col) → _parent_row.col, unqualified cols → _child_row.col.
     def _qualify_connect_pred(node: exp.Expression) -> exp.Expression:
@@ -761,27 +776,35 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
         {cte.alias for cte in (base_with.expressions if base_with else [])}, "_rootcte"
     )
 
-    # Anchor: project all source columns + seed LEVEL at 1.
-    anchor = exp.select(exp.Star(), exp.alias_(exp.Literal.number(1), "level")).from_(source_table)
+    # Anchor: project all source columns + seed LEVEL at 1 + bind each root column to its own value.
+    anchor = exp.select(
+        exp.Star(), exp.alias_(exp.Literal.number(1), "level"), *anchor_root_cols
+    ).from_(source_table)
     if connect.args.get("start"):
         anchor = anchor.where(connect.args["start"])
 
-    # Recursive arm: carry all child columns + increment level.
+    # Recursive arm: carry all child columns + increment level + forward each root value.
     # SELECT * in both arms means WHERE/PRIOR columns are always available without explicit tracking.
     inner_query = (
         exp.select(
             exp.Column(this=exp.Star(), table=exp.to_identifier("_child_row")),
             exp.alias_(exp.column("level", "_parent_row") + 1, "level"),
+            *inner_root_cols,
         )
         .from_(source_table.as_("_child_row"))
         .join(exp.to_table(cte_name).as_("_parent_row"), on=_qualify_connect_pred(connect_pred))
     )
 
-    # Outer SELECT re-projects from the CTE. Synthetic level column is excluded unless referenced.
+    # Outer SELECT re-projects from the CTE. Synthetic level/root columns are excluded from any
+    # star expansion (level only when not referenced) but kept where explicitly projected.
     if has_star:
-        outer_select_exprs: list[exp.Expr] = (
-            [exp.Star()] if has_level else [exp.Star(except_=[exp.column("level")])]
-        )
+        except_cols = [] if has_level else [exp.column("level")]
+        except_cols.extend(exp.column(name) for name in root_col_names)
+        star = exp.Star(except_=except_cols) if except_cols else exp.Star()
+        outer_select_exprs: list[exp.Expr] = [
+            star,
+            *(e for e in base_select_exprs if not e.is_star),
+        ]
     else:
         outer_select_exprs = base_select_exprs
     outer_query = exp.select(*outer_select_exprs).from_(cte_name)

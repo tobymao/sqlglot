@@ -32,7 +32,6 @@ EXPRESSION_METADATA = {
             exp.Repeat,
             exp.Replace,
             exp.Soundex,
-            exp.Typeof,
         }
     },
     **{

@@ -3991,6 +3991,9 @@ class Generator:
         zone = self.sql(expression, "zone")
         return f"{this} AT TIME ZONE {zone} AT TIME ZONE 'UTC'"
 
+    def fromiso8601date_sql(self, expression: exp.FromISO8601Date) -> str:
+        return self.sql(exp.cast(expression.this, exp.DType.DATE))
+
     def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
         return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
 

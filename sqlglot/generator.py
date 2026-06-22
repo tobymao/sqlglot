@@ -2410,10 +2410,12 @@ class Generator:
         laterals = self.expressions(expression, key="laterals", sep="")
 
         file_format = self.sql(expression, "format")
+        pattern = self.sql(expression, "pattern")
         if file_format:
-            pattern = self.sql(expression, "pattern")
             pattern = f", PATTERN => {pattern}" if pattern else ""
             file_format = f" (FILE_FORMAT => {file_format}{pattern})"
+        elif pattern:
+            file_format = f" (PATTERN => {pattern})"
 
         ordinality = expression.args.get("ordinality") or ""
         if ordinality:

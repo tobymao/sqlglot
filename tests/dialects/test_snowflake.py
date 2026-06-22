@@ -1,10 +1,10 @@
 from unittest import mock
 
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
-from sqlglot.parser import logger as parser_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify_columns import quote_identifiers
+from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -3429,6 +3429,9 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT * FROM '@mystage'")
         self.validate_identity("SELECT * FROM @namespace.mystage/path/to/file.json.gz")
         self.validate_identity("SELECT * FROM @namespace.%table_name/path/to/file.json.gz")
+        self.validate_identity(
+            "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')"
+        )
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
         self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
@@ -3453,7 +3456,6 @@ class TestSnowflake(Validator):
             "SELECT * FROM @foo/bar (PATTERN => 'test', FILE_FORMAT => ds_sandbox.test.my_csv_format) AS bla",
             "SELECT * FROM @foo/bar (FILE_FORMAT => ds_sandbox.test.my_csv_format, PATTERN => 'test') AS bla",
         )
-
         self.validate_identity(
             "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",
             "SELECT * FROM @test.public.thing/location/somefile.csv (FILE_FORMAT => 'fmt')",

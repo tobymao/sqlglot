@@ -949,15 +949,15 @@ ARRAY<STRING>;
 MINUTE('2024-01-01 12:30:00');
 INT;
 
-# dialect: spark, databricks
+# dialect: hive, spark, databricks
 TYPEOF(tbl.int_col);
 VARCHAR;
 
-# dialect: spark, databricks
+# dialect: hive, spark, databricks
 TYPEOF(tbl.double_col);
 VARCHAR;
 
-# dialect: spark, databricks
+# dialect: hive, spark, databricks
 TYPEOF(tbl.str_col);
 VARCHAR;
 

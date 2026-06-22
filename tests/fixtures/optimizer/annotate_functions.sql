@@ -961,6 +961,9 @@ VARCHAR;
 TYPEOF(tbl.str_col);
 VARCHAR;
 
+TYPEOF(foo);
+VARCHAR;
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

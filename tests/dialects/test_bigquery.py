@@ -24,6 +24,15 @@ class TestBigQuery(Validator):
     maxDiff = None
 
     def test_bigquery(self):
+        self.validate_identity(
+            "SELECT 'foo' 'bar'",
+            "SELECT CONCAT('foo', 'bar')",
+        )
+        self.validate_identity(
+            "SELECT 'foo'/* c */'bar'",
+            "SELECT CONCAT('foo' /* c */, 'bar')",
+        )
+
         for prefix in ("c.db.", "db.", ""):
             with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):
                 table = self.parse_one(f"`{prefix}INFORMATION_SCHEMA.X`", into=exp.Table)
@@ -2175,6 +2184,9 @@ WHERE
         )
 
     def test_errors(self):
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT 'foo''bar'")
+
         with self.assertRaises(ParseError):
             self.parse_one("SELECT * FROM a - b.c.d2")
 

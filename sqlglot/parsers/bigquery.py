@@ -174,6 +174,7 @@ class BigQueryParser(parser.Parser):
     LOG_DEFAULTS_TO_LN: t.ClassVar = True
     SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = True
     JOINS_HAVE_EQUAL_PRECEDENCE: t.ClassVar = True
+    ADJACENT_STRINGS_CANNOT_BE_CONNECTED: t.ClassVar = True
 
     # BigQuery does not allow ASC/DESC to be used as an identifier, allows GRANT as an identifier
     ID_VAR_TOKENS: t.ClassVar = {

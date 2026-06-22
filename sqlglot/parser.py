@@ -1847,6 +1847,10 @@ class Parser:
     # can omit the span unit `DAY TO MINUTE` or `DAY TO SECOND`
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT: t.ClassVar = False
 
+    # Whether adjacent string literals like 'foo' 'bar' require a whitespace or comment between them
+    # to be considered valid syntactically. Such expressions evaluate to the strings' concatenation.
+    ADJACENT_STRINGS_CANNOT_BE_CONNECTED: t.ClassVar = False
+
     SHOW_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SET_PARSERS)
 
@@ -6849,7 +6853,13 @@ class Parser:
 
             if token_type == TokenType.STRING:
                 expressions = [primary]
-                while self._match(TokenType.STRING):
+                while self._match(TokenType.STRING, advance=False):
+                    if self._is_connected() and self.ADJACENT_STRINGS_CANNOT_BE_CONNECTED:
+                        self.raise_error(
+                            "Adjacent string literals need to be separated by whitespace or comments"
+                        )
+
+                    self._advance()
                     expressions.append(exp.Literal.string(self._prev.text))
 
                 if len(expressions) > 1:

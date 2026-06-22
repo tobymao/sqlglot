@@ -306,6 +306,7 @@ class _Dialect(type):
             }
 
         klass.ESCAPED_SEQUENCES = {
+            # The filter is necessary because of `\\a -> a` in Snowflake; we can't replace `a` with `\a`.
             v: k for k, v in klass.UNESCAPED_SEQUENCES.items() if not v.isprintable() or v == "\\"
         }
 

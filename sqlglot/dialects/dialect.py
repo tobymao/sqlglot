@@ -305,7 +305,10 @@ class _Dialect(type):
                 **klass.UNESCAPED_SEQUENCES,
             }
 
-        klass.ESCAPED_SEQUENCES = {v: k for k, v in klass.UNESCAPED_SEQUENCES.items()}
+        klass.ESCAPED_SEQUENCES = {
+            # The filter is necessary because of `\\a -> a` in Snowflake; we can't replace `a` with `\a`.
+            v: k for k, v in klass.UNESCAPED_SEQUENCES.items() if not v.isprintable() or v == "\\"
+        }
 
         klass.SUPPORTS_COLUMN_JOIN_MARKS = "(+)" in klass.tokenizer_class.KEYWORDS
 

@@ -80,9 +80,9 @@ def catch(*exceptions):
     """Decorator that ignores a simplification function if any of `exceptions` are raised"""
 
     def decorator(func):
-        def wrapped(expression, *args, **kwargs):
+        def wrapped(self, expression, *args, **kwargs):
             try:
-                return func(expression, *args, **kwargs)
+                return func(self, expression, *args, **kwargs)
             except exceptions:
                 return expression
 

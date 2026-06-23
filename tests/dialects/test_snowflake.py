@@ -4266,8 +4266,8 @@ class TestSnowflake(Validator):
         self.validate_identity("CREATE TABLE geospatial_table (id INT, g GEOGRAPHY)")
         self.validate_identity("CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE")
         self.validate_identity(
-            "CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)",
-            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE",
+            "CREATE TABLE t CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1 (id INT)",
+            "CREATE TABLE t (id INT) CHANGE_TRACKING=TRUE DATA_RETENTION_TIME_IN_DAYS=1",
         )
         self.validate_identity("CREATE MATERIALIZED VIEW a COMMENT='...' AS SELECT 1 FROM x")
         self.validate_identity("CREATE DATABASE mytestdb_clone CLONE mytestdb")

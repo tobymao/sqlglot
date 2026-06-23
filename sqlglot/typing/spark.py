@@ -7,6 +7,13 @@ from sqlglot.typing.spark2 import EXPRESSION_METADATA
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
+        exp_type: {"returns": exp.DType.BIGINT}
+        for exp_type in {
+            exp.BitmapCount,
+            exp.IntDiv,
+        }
+    },
+    **{
         exp_type: {"returns": exp.DType.DOUBLE}
         for exp_type in {
             exp.Sec,
@@ -37,7 +44,6 @@ EXPRESSION_METADATA = {
             exp.Overlay,
         }
     },
-    exp.BitmapCount: {"returns": exp.DType.BIGINT},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMPNTZ},
     exp.ToBinary: {"returns": exp.DType.BINARY},
     exp.DateFromUnixDate: {"returns": exp.DType.DATE},

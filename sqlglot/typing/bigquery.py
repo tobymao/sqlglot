@@ -9,6 +9,34 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
+# DATE_ADD / DATE_SUB / *_TRUNC return the type of their first argument. BigQuery
+# implicitly casts a string literal first arg to the function's own temporal type,
+# so map each to that type (e.g. DATE_ADD('2020-01-01', ...) -> DATE,
+# TIMESTAMP_TRUNC('...') -> TIMESTAMP).
+_DATE_FUNC_LITERAL_TYPE: t.Dict[t.Type[exp.Expr], exp.DType] = {
+    exp.DateAdd: exp.DType.DATE,
+    exp.DateSub: exp.DType.DATE,
+    exp.DateTrunc: exp.DType.DATE,
+    exp.DatetimeTrunc: exp.DType.DATETIME,
+    exp.TimestampTrunc: exp.DType.TIMESTAMPTZ,
+}
+
+
+def _annotate_date_func(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    """Annotate DATE_ADD / DATE_SUB / *_TRUNC, which return their first arg's type.
+
+    A typed first argument keeps its exact type (e.g. DATE_ADD(DATETIME, ...) ->
+    DATETIME). For a string literal first argument, BigQuery implicitly casts it to
+    the function's own temporal type, so the result is that type (e.g.
+    DATE_ADD('2020-01-01', INTERVAL 1 DAY) -> DATE).
+    """
+    this = expression.this
+    if isinstance(this, exp.Literal) and this.is_string:
+        return self._set_type(expression, _DATE_FUNC_LITERAL_TYPE[type(expression)])
+
+    return self._annotate_by_args(expression, "this")
+
+
 def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """
     Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
@@ -175,9 +203,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.ArgMax,
             exp.ArgMin,
-            exp.DateAdd,
-            exp.DateTrunc,
-            exp.DatetimeTrunc,
             exp.GroupConcat,
             exp.IgnoreNulls,
             exp.JSONExtract,
@@ -197,10 +222,19 @@ EXPRESSION_METADATA = {
             exp.SafeNegate,
             exp.Sign,
             exp.Substring,
-            exp.TimestampTrunc,
             exp.Translate,
             exp.Trim,
             exp.Upper,
+        }
+    },
+    **{
+        expr_type: {"annotator": lambda self, e: _annotate_date_func(self, e)}
+        for expr_type in {
+            exp.DateAdd,
+            exp.DateSub,
+            exp.DateTrunc,
+            exp.DatetimeTrunc,
+            exp.TimestampTrunc,
         }
     },
     **{

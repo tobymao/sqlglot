@@ -241,7 +241,7 @@ def _datetrunc_range(date: date, unit: str, dialect: Dialect) -> DateRange | Non
     Returns:
         tuple of [min, max) or None if a value can never be equal to `date` for `unit`
     """
-    floor = datetimestamp_floor(date, unit, dialect)
+    floor = datetime_floor(date, unit, dialect)
 
     if date != floor:
         # This will always be False, except for NULL values.
@@ -454,7 +454,7 @@ def interval(unit: str, n: int = 1) -> relativedelta:
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 
 
-def datetimestamp_floor(d: date, unit: str, dialect: Dialect) -> date:
+def datetime_floor(d: date, unit: str, dialect: Dialect) -> date:
     # Truncate sub-day units — only valid for datetime inputs
     if isinstance(d, datetime):
         if unit == "hour":
@@ -497,7 +497,7 @@ def datetimestamp_floor(d: date, unit: str, dialect: Dialect) -> date:
 
 
 def date_ceil(d: date, unit: str, dialect: Dialect) -> date:
-    floor = datetimestamp_floor(d, unit, dialect)
+    floor = datetime_floor(d, unit, dialect)
 
     if floor == d:
         return d
@@ -584,18 +584,12 @@ class Simplifier:
         exp.LT: lambda l, dt, u, d, t: (
             l
             < date_literal(
-                dt
-                if dt == datetimestamp_floor(dt, u, d)
-                else datetimestamp_floor(dt, u, d) + interval(u),
+                dt if dt == datetime_floor(dt, u, d) else datetime_floor(dt, u, d) + interval(u),
                 t,
             )
         ),
-        exp.GT: lambda l, dt, u, d, t: (
-            l >= date_literal(datetimestamp_floor(dt, u, d) + interval(u), t)
-        ),
-        exp.LTE: lambda l, dt, u, d, t: (
-            l < date_literal(datetimestamp_floor(dt, u, d) + interval(u), t)
-        ),
+        exp.GT: lambda l, dt, u, d, t: l >= date_literal(datetime_floor(dt, u, d) + interval(u), t),
+        exp.LTE: lambda l, dt, u, d, t: l < date_literal(datetime_floor(dt, u, d) + interval(u), t),
         exp.GTE: lambda l, dt, u, d, t: l >= date_literal(date_ceil(dt, u, d), t),
         exp.EQ: _datetrunc_eq,
         exp.NEQ: _datetrunc_neq,
@@ -1416,7 +1410,7 @@ class Simplifier:
             date = extract_date(this)
             if date and expression.unit:
                 return date_literal(
-                    datetimestamp_floor(date, expression.unit.name.lower(), self.dialect),
+                    datetime_floor(date, expression.unit.name.lower(), self.dialect),
                     trunc_type,
                 )
         elif comparison not in self.DATETRUNC_COMPARISONS:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp
 from sqlglot import generator
 from sqlglot.dialects.dialect import (
@@ -21,9 +19,6 @@ from sqlglot.transforms import (
     preprocess,
     move_partitioned_by_to_schema_columns,
 )
-
-if t.TYPE_CHECKING:
-    from sqlglot.dialects.spark import Spark
 
 
 def _normalize_partition(e: exp.Expr) -> exp.Expr:
@@ -93,8 +88,6 @@ class SparkGenerator(Spark2Generator):
         exp.DType.MONEY: ((15, 4), ()),
         exp.DType.SMALLMONEY: ((6, 4), ()),
     }
-
-    dialect: Spark
 
     def format_time(
         self,

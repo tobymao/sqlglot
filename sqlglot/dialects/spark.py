@@ -6,7 +6,6 @@ from sqlglot.dialects.spark2 import Spark2
 from sqlglot.generators.spark import SparkGenerator
 from sqlglot.parsers.spark import SparkParser
 from sqlglot.tokens import TokenType
-from sqlglot.trie import new_trie
 from sqlglot.typing.spark import EXPRESSION_METADATA
 
 
@@ -27,13 +26,13 @@ class Spark(Spark2):
         "dd": "%dstrict",
     }
     # Generating a parse format is lenient: %m/%d -> M/d (matching strptime), while the
-    # strict tokens map back to MM/dd. Used by the generator's format_time override.
+    # strict tokens map back to MM/dd. Used by the generator's format_time override (the
+    # matching trie is built by the metaclass).
     LENIENT_INVERSE_TIME_MAPPING = {
         **{v: k for k, v in STRICT_TIME_MAPPING.items()},
         "%m": "M",
         "%d": "d",
     }
-    LENIENT_INVERSE_TIME_TRIE = new_trie(LENIENT_INVERSE_TIME_MAPPING)
 
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False

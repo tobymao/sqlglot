@@ -243,6 +243,7 @@ class _Dialect(type):
 
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
         klass.STRICT_TIME_TRIE = new_trie(klass.STRICT_TIME_MAPPING)
+        klass.LENIENT_INVERSE_TIME_TRIE = new_trie(klass.LENIENT_INVERSE_TIME_MAPPING)
         klass.FORMAT_TRIE = (
             new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
         )
@@ -431,6 +432,13 @@ class Dialect(metaclass=_Dialect):
     Variant of `TIME_MAPPING` used when *parsing* a string with a format (e.g. `StrToTime`).
     Lets dialects with strict parsing (e.g. Spark 3+'s zero-padded `MM`/`dd`) map those to a
     distinct canonical format, preserving the roundtrip. Empty means `TIME_MAPPING` is used.
+    """
+
+    LENIENT_INVERSE_TIME_MAPPING: dict[str, str] = {}
+    """
+    Inverse mapping used when *generating* a parse format (e.g. `StrToTime`) for dialects that
+    parse leniently. Lets e.g. Spark emit the lenient single-letter specifiers from the
+    canonical formats while mapping the strict tokens back to the padded forms.
     """
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
@@ -796,6 +804,7 @@ class Dialect(metaclass=_Dialect):
 
     INVERSE_TIME_MAPPING: dict[str, str] = {}
     INVERSE_TIME_TRIE: dict = {}
+    LENIENT_INVERSE_TIME_TRIE: dict = {}
     INVERSE_FORMAT_MAPPING: dict[str, str] = {}
     INVERSE_FORMAT_TRIE: dict = {}
 

@@ -334,6 +334,17 @@ class TestExasol(Validator):
                 "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
             },
         )
+        # The second LISTAGG argument is the separator, not part of the value
+        # (matching Oracle/Snowflake/Trino/DuckDB), not a GROUP_CONCAT-style concat.
+        self.validate_identity("SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t")
+        self.validate_all(
+            "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
+            read={
+                "exasol": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
+                "oracle": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
+                "snowflake": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
+            },
+        )
         self.validate_all(
             "EDIT_DISTANCE(col1, col2)",
             read={

@@ -978,18 +978,29 @@ class SnowflakeParser(parser.Parser):
         return self.expression(exp.Tags(expressions=self._parse_wrapped_csv(self._parse_property)))
 
     def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
+        index = self._index
         prop = super()._parse_property_before()
         if prop:
             return prop
 
-        if self._next and self._next.token_type == TokenType.EQ:
-            # Snowflake allows `KEY = VALUE` properties to precede the column list, e.g.
-            # `CREATE TABLE t CHANGE_TRACKING=TRUE (id INT)`, so we parse them here. The
-            # value is parsed greedily, so an unquoted value would swallow the following
-            # column list (`VALUE (...)` read as a function call). No real property uses
-            # such a value, but we wrap it in `_try_parse` to back off instead of raising.
-            return self._try_parse(self._parse_property)
+        if self._index != index or not self._next or self._next.token_type != TokenType.EQ:
+            return None
 
+        seq_props = self._parse_sequence_properties()
+        if seq_props:
+            return seq_props
+
+        key = self._parse_column()
+        self._match(TokenType.EQ)
+        value = self._parse_primary_or_var()
+
+        if key and value:
+            if isinstance(key, exp.Column):
+                key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
+
+            return self.expression(exp.Property(this=key, value=value))
+
+        self._retreat(index)
         return None
 
     def _parse_with_constraint(self) -> exp.Expr | None:

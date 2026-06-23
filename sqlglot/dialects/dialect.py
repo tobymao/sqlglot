@@ -437,8 +437,8 @@ class Dialect(metaclass=_Dialect):
     LENIENT_INVERSE_TIME_MAPPING: dict[str, str] = {}
     """
     Inverse mapping used when *generating* a parse format (e.g. `StrToTime`) for dialects that
-    parse leniently. Lets e.g. Spark emit the lenient single-letter specifiers from the
-    canonical formats while mapping the strict tokens back to the padded forms.
+    parse leniently (e.g. Spark). Maps the canonical specifiers to their lenient single-letter
+    forms, and the strict tokens back to the padded forms.
     """
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time

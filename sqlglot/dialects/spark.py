@@ -26,8 +26,7 @@ class Spark(Spark2):
         "dd": "%dstrict",
     }
     # Generating a parse format is lenient: %m/%d -> M/d (matching strptime), while the
-    # strict tokens map back to MM/dd. Used by the generator's format_time override (the
-    # matching trie is built by the metaclass).
+    # strict tokens map back to MM/dd.
     LENIENT_INVERSE_TIME_MAPPING = {
         **{v: k for k, v in STRICT_TIME_MAPPING.items()},
         "%m": "M",

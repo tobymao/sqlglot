@@ -446,6 +446,10 @@ def interval(unit: str, n: int = 1) -> relativedelta:
         return relativedelta(minutes=1 * n)
     if unit == "second":
         return relativedelta(seconds=1 * n)
+    if unit == "millisecond":
+        return relativedelta(microseconds=1000 * n)
+    if unit == "microsecond":
+        return relativedelta(microseconds=1 * n)
 
     raise UnsupportedUnit(f"Unsupported unit: {unit}")
 

@@ -346,9 +346,7 @@ class TestExasol(Validator):
             },
         )
         # Routing LISTAGG through STRING_AGG also preserves the ON OVERFLOW clause.
-        self.validate_identity(
-            "LISTAGG(x, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY y)"
-        )
+        self.validate_identity("LISTAGG(x, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY y)")
         self.validate_identity(
             "LISTAGG(x, ',' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY y)"
         )

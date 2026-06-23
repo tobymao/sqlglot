@@ -349,7 +349,7 @@ class ExasolGenerator(generator.Generator):
         exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
         exp.DatetimeTrunc: timestamptrunc_sql(),
         exp.GroupConcat: lambda self, e: groupconcat_sql(
-            self, e, func_name="LISTAGG", within_group=True
+            self, e, func_name="LISTAGG", within_group=True, on_overflow=True
         ),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(

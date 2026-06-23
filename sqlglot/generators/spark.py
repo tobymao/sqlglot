@@ -98,9 +98,9 @@ class SparkGenerator(Spark2Generator):
         # Spark 3+ parses these leniently, so emit M/d (not the padded MM/dd used for
         # formatting) for the canonical %m/%d. The expression set is shared with the parser
         # (STRICT_PARSE_TIME_EXPRESSIONS), which is what guarantees the strict roundtrip.
-        if inverse_time_mapping is None and isinstance(expression, STRICT_PARSE_TIME_EXPRESSIONS):
-            inverse_time_mapping = self.dialect.LENIENT_INVERSE_TIME_MAPPING
-            inverse_time_trie = self.dialect.LENIENT_INVERSE_TIME_TRIE
+        if isinstance(expression, STRICT_PARSE_TIME_EXPRESSIONS):
+            inverse_time_mapping = inverse_time_mapping or self.dialect.LENIENT_INVERSE_TIME_MAPPING
+            inverse_time_trie = inverse_time_trie or self.dialect.LENIENT_INVERSE_TIME_TRIE
 
         return super().format_time(expression, inverse_time_mapping, inverse_time_trie)
 

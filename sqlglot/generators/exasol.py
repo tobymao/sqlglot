@@ -348,9 +348,7 @@ class ExasolGenerator(generator.Generator):
         exp.DateTrunc: _date_trunc_sql,
         exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
         exp.DatetimeTrunc: timestamptrunc_sql(),
-        exp.GroupConcat: lambda self, e: groupconcat_sql(
-            self, e, func_name="LISTAGG", within_group=True, on_overflow=True
-        ),
+        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("EDIT_DISTANCE")

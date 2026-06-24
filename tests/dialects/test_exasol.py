@@ -334,8 +334,6 @@ class TestExasol(Validator):
                 "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
             },
         )
-        # The second LISTAGG argument is the separator, not part of the value
-        # (matching Oracle/Snowflake/Trino/DuckDB), not a GROUP_CONCAT-style concat.
         self.validate_identity("SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t")
         self.validate_all(
             "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
@@ -345,7 +343,6 @@ class TestExasol(Validator):
                 "snowflake": "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FROM t",
             },
         )
-        # Routing LISTAGG through STRING_AGG also preserves the ON OVERFLOW clause.
         self.validate_identity("LISTAGG(x, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY y)")
         self.validate_identity(
             "LISTAGG(x, ',' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY y)"

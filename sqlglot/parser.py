@@ -2901,12 +2901,11 @@ class Parser:
         )
 
     def _parse_called_on_null_input_property(self) -> exp.CalledOnNullInputProperty | None:
-        index = self._index
-        if self._match_text_seq("ON", "NULL", "INPUT"):
-            return self.expression(exp.CalledOnNullInputProperty())
+        if not self._match_text_seq("ON", "NULL", "INPUT"):
+            self._retreat(self._index - 1)
+            return None
 
-        self._retreat(index - 1)
-        return None
+        return self.expression(exp.CalledOnNullInputProperty())
 
     def _parse_volatile_property(self) -> exp.VolatileProperty | exp.StabilityProperty:
         if self._index >= 2:

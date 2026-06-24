@@ -3,24 +3,25 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     Dialect,
+    binary_from_function,
     build_default_decimal_type,
     build_formatted_time,
     build_like,
     build_replace_with_optional_replacement,
     build_timetostr_or_tochar,
     build_trunc,
-    binary_from_function,
     date_trunc_to_time,
     map_date_part,
 )
 from sqlglot.helper import is_date_unit, is_int, seq_get
 from sqlglot.tokens import TokenType
+from sqlglot.trie import new_trie
 
 if t.TYPE_CHECKING:
     from collections.abc import Collection
+
     from sqlglot._typing import B, E
     from sqlglot.dialects.dialect import Dialect
 
@@ -975,6 +976,18 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_tag(self) -> exp.Tags:
         return self.expression(exp.Tags(expressions=self._parse_wrapped_csv(self._parse_property)))
+
+    def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
+        prop = super()._parse_property_before()
+        if prop:
+            return prop
+
+        if not self._next or self._next.token_type != TokenType.EQ:
+            return None
+
+        return self._parse_sequence_properties() or self._parse_key_value_property(
+            self._parse_primary_or_var
+        )
 
     def _parse_with_constraint(self) -> exp.Expr | None:
         if self._prev.token_type != TokenType.WITH:

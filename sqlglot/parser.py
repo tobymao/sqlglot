@@ -2812,6 +2812,12 @@ class Parser:
             return seq_props
 
         self._retreat(index)
+        return self._parse_key_value_property()
+
+    def _parse_key_value_property(
+        self, parse_value: t.Callable[[], exp.Expr | None] | None = None
+    ) -> exp.Property | None:
+        index = self._index
         key = self._parse_column()
 
         if not self._match(TokenType.EQ):
@@ -2822,7 +2828,11 @@ class Parser:
         if isinstance(key, exp.Column):
             key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
 
-        value = self._parse_bitwise() or self._parse_var(any_token=True)
+        value = (
+            parse_value()
+            if parse_value
+            else self._parse_bitwise() or self._parse_var(any_token=True)
+        )
 
         # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
         if isinstance(value, exp.Column):

@@ -31,6 +31,8 @@ def _annotate_date_func(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     DATE_ADD('2020-01-01', INTERVAL 1 DAY) -> DATE).
     """
     this = expression.this
+
+    # BigQuery rejects expressions like DATE_ADD(c, ...); it requires the first argument to be a literal
     if isinstance(this, exp.Literal) and this.is_string:
         return self._set_type(expression, _DATE_FUNC_LITERAL_TYPE[type(expression)])
 

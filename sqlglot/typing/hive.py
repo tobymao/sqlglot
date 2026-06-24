@@ -37,8 +37,9 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DType.BIGINT}
         for expr_type in {
-            exp.StrToUnix,
             exp.Factorial,
+            exp.IntDiv,
+            exp.StrToUnix,
         }
     },
     **{

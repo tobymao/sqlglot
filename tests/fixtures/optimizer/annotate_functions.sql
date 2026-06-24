@@ -964,6 +964,18 @@ VARCHAR;
 TYPEOF(foo);
 VARCHAR;
 
+# dialect: spark2, spark, databricks
+tbl.int_col DIV tbl.int_col;
+BIGINT;
+
+# dialect: spark2, spark, databricks
+tbl.double_col DIV tbl.double_col;
+BIGINT; 
+
+# dialect: hive
+tbl.bigint DIV tbl.bigint;
+BIGINT; 
+
 --------------------------------------
 -- BigQuery
 --------------------------------------

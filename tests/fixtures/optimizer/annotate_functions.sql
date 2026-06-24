@@ -2449,6 +2449,74 @@ DATE_ADD(DATETIME '2008-12-25 15:30:00', INTERVAL 30 MINUTE);
 DATETIME;
 
 # dialect: bigquery
+DATE_ADD('2008-12-25', INTERVAL 5 DAY);
+DATE;
+
+# dialect: bigquery
+DATE_TRUNC('2008-12-25', MONTH);
+DATE;
+
+# dialect: bigquery
+DATETIME_TRUNC('2008-12-25', DAY);
+DATETIME;
+
+# dialect: bigquery
+DATETIME_TRUNC('2008-12-25 15:30:00', DAY);
+DATETIME;
+
+# dialect: bigquery
+TIMESTAMP_TRUNC('2008-12-25 15:30:00', DAY);
+TIMESTAMP;
+
+# dialect: bigquery
+TIMESTAMP_TRUNC('2008-12-25', DAY);
+TIMESTAMP;
+
+# dialect: bigquery
+DATE_SUB('2008-12-25', INTERVAL 1 MONTH);
+DATE;
+
+# dialect: bigquery
+DATE_SUB(DATE '2008-12-25', INTERVAL 1 MONTH);
+DATE;
+
+# dialect: bigquery
+DATE_SUB(DATETIME '2008-12-25 15:30:00', INTERVAL 1 DAY);
+DATETIME;
+
+# dialect: bigquery
+DATE_SUB(TIMESTAMP '2008-12-25 15:30:00', INTERVAL 1 HOUR);
+TIMESTAMP;
+
+# dialect: bigquery
+DATETIME_ADD('2008-12-25 15:30:00', INTERVAL 1 DAY);
+DATETIME;
+
+# dialect: bigquery
+DATETIME_SUB('2008-12-25 15:30:00', INTERVAL 1 DAY);
+DATETIME;
+
+# dialect: bigquery
+TIMESTAMP_ADD('2008-12-25 15:30:00', INTERVAL 1 HOUR);
+TIMESTAMP;
+
+# dialect: bigquery
+TIMESTAMP_SUB('2008-12-25 15:30:00', INTERVAL 1 HOUR);
+TIMESTAMP;
+
+# dialect: bigquery
+TIME_ADD('08:50:48', INTERVAL 1 HOUR);
+TIME;
+
+# dialect: bigquery
+TIME_SUB('08:50:48', INTERVAL 1 HOUR);
+TIME;
+
+# dialect: bigquery
+TIME_TRUNC('08:50:48', HOUR);
+TIME;
+
+# dialect: bigquery
 UNIX_DATE(tbl.date_col);
 BIGINT;
 

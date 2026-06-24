@@ -255,10 +255,11 @@ def canonicalize_internal_names(expression: E) -> E:
 
         scope_outputs[id(scope_expr)] = output_map
 
-        # Unqualified alias references (ORDER BY a, HAVING a > 5, ...)
+        # Unqualified alias references (ORDER BY a, HAVING a > 5, ...).
         for col in find_all_in_scope(scope_expr, exp.Column):
-            if not col.table and col.name in output_map:
-                _canon(col.this, output_map[col.name])
+            # Only rewrite when the alias is actually being renamed
+            if not col.table and (canon := output_map.get(col.name)) and canon != col.name:
+                _canon(col.this, canon)
 
         # UBN matches branches by original alias. When both branches are internal
         # and aliased to distinct _cN, matching originals land on different slots

@@ -149,6 +149,7 @@ class Generator:
         exp.CaseSpecificColumnConstraint: lambda _, e: (
             f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC"
         ),
+        exp.CalledOnNullInputProperty: lambda *_: "CALLED ON NULL INPUT",
         exp.Ceil: lambda self, e: self.ceil_floor(e),
         exp.CharacterSetColumnConstraint: lambda self, e: f"CHARACTER SET {self.sql(e, 'this')}",
         exp.CharacterSetProperty: lambda self, e: (
@@ -677,6 +678,7 @@ class Generator:
         exp.AutoRefreshProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BackupProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BlockCompressionProperty: exp.Properties.Location.POST_NAME,
+        exp.CalledOnNullInputProperty: exp.Properties.Location.POST_SCHEMA,
         exp.CatalogProperty: exp.Properties.Location.POST_CREATE,
         exp.CharacterSetProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ChecksumProperty: exp.Properties.Location.POST_NAME,

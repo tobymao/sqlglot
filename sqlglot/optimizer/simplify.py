@@ -1096,6 +1096,12 @@ class Simplifier:
             l     r
             x + 1 = 3
             a   b
+
+        Subtraction is not commutative, so when the variable is the subtrahend the operands
+        can't simply be swapped; the comparison is inverted instead:
+
+            5 - x = 2 becomes x = 3
+            5 - x < 2 becomes x > 3
         """
         if isinstance(expression, self.COMPARISONS):
             l, r = expression.left, expression.right
@@ -1123,6 +1129,10 @@ class Simplifier:
             if not a_predicate(a) and b_predicate(b):
                 pass
             elif not a_predicate(b) and b_predicate(a):
+                if isinstance(l, exp.Sub):
+                    return self.INVERSE_COMPARISONS.get(expression.__class__, expression.__class__)(
+                        this=b, expression=exp.Sub(this=a, expression=r)
+                    )
                 a, b = b, a
             else:
                 return expression

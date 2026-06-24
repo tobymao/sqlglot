@@ -4428,9 +4428,8 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity(
-            "CREATE FUNCTION a(x DOUBLE) RETURNS DOUBLE LANGUAGE SQL RETURNS NULL ON NULL INPUT AS ' x * 2 '",
+            "CREATE FUNCTION a(x DOUBLE) RETURNS DOUBLE LANGUAGE SQL CALLED ON NULL INPUT AS ' x * 2 '"
         ).assert_is(exp.Create)
-
         self.validate_identity(
             "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
         )

@@ -231,13 +231,7 @@ EXPRESSION_METADATA = {
     },
     **{
         expr_type: {"annotator": lambda self, e: _annotate_date_func(self, e)}
-        for expr_type in {
-            exp.DateAdd,
-            exp.DateSub,
-            exp.DateTrunc,
-            exp.DatetimeTrunc,
-            exp.TimestampTrunc,
-        }
+        for expr_type in _DATE_FUNC_LITERAL_TYPE
     },
     **{
         expr_type: {"returns": exp.DType.BIGINT}

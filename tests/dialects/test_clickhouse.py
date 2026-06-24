@@ -1768,6 +1768,28 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
         )
+        self.validate_all(
+            "SELECT arrayMap(x -> x + 1, arr) FROM t",
+            read={
+                "duckdb": "SELECT LIST_TRANSFORM(arr, x -> x + 1) FROM t",
+                "spark": "SELECT TRANSFORM(arr, x -> x + 1) FROM t",
+            },
+            write={
+                "clickhouse": "SELECT arrayMap(x -> x + 1, arr) FROM t",
+                "duckdb": "SELECT LIST_TRANSFORM(arr, x -> x + 1) FROM t",
+                "spark": "SELECT TRANSFORM(arr, x -> x + 1) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT arrayFilter(x -> x > 0, arr) FROM t",
+            read={
+                "duckdb": "SELECT LIST_FILTER(arr, x -> x > 0) FROM t",
+            },
+            write={
+                "clickhouse": "SELECT arrayFilter(x -> x > 0, arr) FROM t",
+                "duckdb": "SELECT LIST_FILTER(arr, x -> x > 0) FROM t",
+            },
+        )
 
     def test_array_offset(self):
         with self.assertLogs(helper_logger) as cm:

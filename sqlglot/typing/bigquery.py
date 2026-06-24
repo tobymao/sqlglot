@@ -13,7 +13,15 @@ if t.TYPE_CHECKING:
 # implicitly casts a string literal first arg to the function's own temporal type,
 # so map each to that type (e.g. DATE_ADD('2020-01-01', ...) -> DATE,
 # TIMESTAMP_TRUNC('...') -> TIMESTAMP).
-_DATE_FUNC_LITERAL_TYPE: dict[type[exp.Expr], exp.DType] = {
+_DateFunc = t.Union[
+    exp.DateAdd,
+    exp.DateSub,
+    exp.DateTrunc,
+    exp.DatetimeTrunc,
+    exp.TimestampTrunc,
+]
+
+_DATE_FUNC_LITERAL_TYPE: dict[type[_DateFunc], exp.DType] = {
     exp.DateAdd: exp.DType.DATE,
     exp.DateSub: exp.DType.DATE,
     exp.DateTrunc: exp.DType.DATE,
@@ -22,7 +30,7 @@ _DATE_FUNC_LITERAL_TYPE: dict[type[exp.Expr], exp.DType] = {
 }
 
 
-def _annotate_date_func(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+def _annotate_date_func(self: TypeAnnotator, expression: _DateFunc) -> exp.Expr:
     """Annotate DATE_ADD / DATE_SUB / *_TRUNC, which return their first arg's type.
 
     A typed first argument keeps its exact type (e.g. DATE_ADD(DATETIME, ...) ->

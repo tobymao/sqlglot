@@ -1236,6 +1236,7 @@ class Parser:
             exp.BackupProperty(this=self._parse_var(any_token=True))
         ),
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
+        "CALLED": lambda self: self._parse_called_on_null_input_property(),
         "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHECKSUM": lambda self: self._parse_checksum(),
@@ -2899,6 +2900,14 @@ class Parser:
         return self.expression(
             exp.SettingsProperty(expressions=self._parse_csv(self._parse_assignment))
         )
+
+    def _parse_called_on_null_input_property(self) -> exp.CalledOnNullInputProperty | None:
+        index = self._index
+        if self._match_text_seq("ON", "NULL", "INPUT"):
+            return self.expression(exp.CalledOnNullInputProperty())
+
+        self._retreat(index - 1)
+        return None
 
     def _parse_volatile_property(self) -> exp.VolatileProperty | exp.StabilityProperty:
         if self._index >= 2:

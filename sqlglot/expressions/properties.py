@@ -63,6 +63,10 @@ class BlockCompressionProperty(Property):
     }
 
 
+class CalledOnNullInputProperty(Property):
+    arg_types = {}
+
+
 class CatalogProperty(Property):
     arg_types = {}
 

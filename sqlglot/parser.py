@@ -4,7 +4,9 @@ import itertools
 import logging
 import re
 import typing as t
+from builtins import type as Type
 from collections import defaultdict
+from collections.abc import Sequence
 
 from sqlglot import exp
 from sqlglot.errors import (
@@ -17,19 +19,16 @@ from sqlglot.errors import (
 )
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import ensure_list, i64, seq_get
-from sqlglot.trie import new_trie
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
-from sqlglot.trie import TrieResult, in_trie
-from collections.abc import Sequence
-from builtins import type as Type
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot.expressions import ExpOrStr
-    from sqlglot._typing import E, BuilderArgs
-    from sqlglot.dialects.dialect import Dialect, DialectType
-
     from re import Pattern
+
+    from sqlglot._typing import BuilderArgs, E
+    from sqlglot.dialects.dialect import Dialect, DialectType
+    from sqlglot.expressions import ExpOrStr
 
     T = t.TypeVar("T")
     TCeilFloor = t.TypeVar("TCeilFloor", exp.Ceil, exp.Floor)

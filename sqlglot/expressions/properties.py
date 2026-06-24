@@ -5,8 +5,8 @@ from __future__ import annotations
 import typing as t
 from enum import auto
 
+from sqlglot.expressions.core import ColumnConstraintKind, Expression, Literal, convert
 from sqlglot.helper import AutoName
-from sqlglot.expressions.core import Expression, ColumnConstraintKind, Literal, convert
 
 
 class Property(Expression):

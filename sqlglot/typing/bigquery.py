@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
 # implicitly casts a string literal first arg to the function's own temporal type,
 # so map each to that type (e.g. DATE_ADD('2020-01-01', ...) -> DATE,
 # TIMESTAMP_TRUNC('...') -> TIMESTAMP).
-_DATE_FUNC_LITERAL_TYPE: t.Dict[t.Type[exp.Expr], exp.DType] = {
+_DATE_FUNC_LITERAL_TYPE: dict[type[exp.Expr], exp.DType] = {
     exp.DateAdd: exp.DType.DATE,
     exp.DateSub: exp.DType.DATE,
     exp.DateTrunc: exp.DType.DATE,

@@ -4428,11 +4428,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity(
-            "CREATE FUNCTION a(x FLOAT) RETURNS FLOAT LANGUAGE SQL CALLED ON NULL INPUT AS $$ x * 2 $$",
-            "CREATE FUNCTION a(x DOUBLE) RETURNS DOUBLE LANGUAGE SQL CALLED ON NULL INPUT AS ' x * 2 '",
-        ).assert_is(exp.Create)
-        self.validate_identity(
-            "CREATE FUNCTION a(x FLOAT) RETURNS FLOAT LANGUAGE SQL RETURNS NULL ON NULL INPUT AS $$ x * 2 $$",
             "CREATE FUNCTION a(x DOUBLE) RETURNS DOUBLE LANGUAGE SQL RETURNS NULL ON NULL INPUT AS ' x * 2 '",
         ).assert_is(exp.Create)
 

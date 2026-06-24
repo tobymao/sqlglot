@@ -6562,6 +6562,22 @@ DOUBLE;
 PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY tbl.int_col);
 DOUBLE;
 
+# dialect: spark2, spark, databricks
+ABS(tbl.int_col);
+INT;
+
+# dialect: spark2, spark, databricks
+ABS(tbl.bigint_col);
+BIGINT;
+
+# dialect: spark2, spark, databricks
+ABS(tbl.double_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
+ABS(tbl.float_col);
+FLOAT;
+
 # dialect: duckdb
 QUANTILE_DISC(tbl.int_col, 0.5);
 INT;

@@ -4,7 +4,9 @@ import itertools
 import logging
 import re
 import typing as t
+from builtins import type as Type
 from collections import defaultdict
+from collections.abc import Sequence
 
 from sqlglot import exp
 from sqlglot.errors import (
@@ -17,19 +19,16 @@ from sqlglot.errors import (
 )
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import ensure_list, i64, seq_get
-from sqlglot.trie import new_trie
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
-from sqlglot.trie import TrieResult, in_trie
-from collections.abc import Sequence
-from builtins import type as Type
+from sqlglot.trie import TrieResult, in_trie, new_trie
 
 if t.TYPE_CHECKING:
-    from sqlglot.expressions import ExpOrStr
-    from sqlglot._typing import E, BuilderArgs
-    from sqlglot.dialects.dialect import Dialect, DialectType
-
     from re import Pattern
+
+    from sqlglot._typing import BuilderArgs, E
+    from sqlglot.dialects.dialect import Dialect, DialectType
+    from sqlglot.expressions import ExpOrStr
 
     T = t.TypeVar("T")
     TCeilFloor = t.TypeVar("TCeilFloor", exp.Ceil, exp.Floor)
@@ -2812,6 +2811,12 @@ class Parser:
             return seq_props
 
         self._retreat(index)
+        return self._parse_key_value_property()
+
+    def _parse_key_value_property(
+        self, parse_value: t.Callable[[], exp.Expr | None] | None = None
+    ) -> exp.Property | None:
+        index = self._index
         key = self._parse_column()
 
         if not self._match(TokenType.EQ):
@@ -2822,7 +2827,11 @@ class Parser:
         if isinstance(key, exp.Column):
             key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
 
-        value = self._parse_bitwise() or self._parse_var(any_token=True)
+        value = (
+            parse_value()
+            if parse_value
+            else self._parse_bitwise() or self._parse_var(any_token=True)
+        )
 
         # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
         if isinstance(value, exp.Column):

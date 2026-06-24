@@ -10,7 +10,6 @@ EXPRESSION_METADATA = {
         exp_type: {"returns": exp.DType.BIGINT}
         for exp_type in {
             exp.BitmapCount,
-            exp.IntDiv,
         }
     },
     **{

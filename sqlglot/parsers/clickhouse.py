@@ -267,9 +267,7 @@ class ClickHouseParser(parser.Parser):
         "ARRAYFILTER": lambda args: exp.ArrayFilter(
             this=seq_get(args, 1), expression=seq_get(args, 0)
         ),
-        "ARRAYMAP": lambda args: exp.Transform(
-            this=seq_get(args, 1), expression=seq_get(args, 0)
-        ),
+        "ARRAYMAP": lambda args: exp.Transform(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,

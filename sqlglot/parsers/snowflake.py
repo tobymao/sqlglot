@@ -1156,6 +1156,31 @@ class SnowflakeParser(parser.Parser):
 
         return table
 
+    def _parse_function_call(
+        self,
+        functions: dict[str, t.Callable] | None = None,
+        anonymous: bool = False,
+        optional_parens: bool = True,
+        any_token: bool = False,
+    ) -> exp.Expr | None:
+        this = super()._parse_function_call(
+            functions=functions,
+            anonymous=anonymous,
+            optional_parens=optional_parens,
+            any_token=any_token,
+        )
+
+        # Snowflake can invoke a function whose name is dynamically resolved, e.g.
+        # `IDENTIFIER('my_func')(1, 2)`. The trailing argument list is the call's arguments.
+        #
+        # https://docs.snowflake.com/en/sql-reference/identifier-literal
+        if isinstance(this, exp.DynamicIdentifier) and self._match(
+            TokenType.L_PAREN, advance=False
+        ):
+            this.set("expressions", self._parse_wrapped_csv(self._parse_lambda))
+
+        return this
+
     def _parse_id_var(
         self,
         any_token: bool = True,

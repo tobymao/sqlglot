@@ -1960,7 +1960,14 @@ class Generator:
     def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
         this = expression.this
         if this and this.is_string:
-            return maybe_parse(this.name).sql(self.dialect)
+            resolved = maybe_parse(this.name).sql(self.dialect)
+            if "expressions" in expression.args:
+                # `IDENTIFIER(...)` invoked as a function, e.g. `IDENTIFIER('my_func')(1, 2)`
+                # We can't safely emit the call to other dialects since name/arg semantics may differ
+                self.unsupported(
+                    "Transpiling dynamically-invoked IDENTIFIER() functions is unsupported"
+                )
+            return resolved
         self.unsupported("IDENTIFIER() with non-literal arguments is not supported")
         return self.func("IDENTIFIER", this)
 

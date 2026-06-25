@@ -769,6 +769,15 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT KURTOSIS(x) OVER (PARTITION BY 1)")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT foo FROM IDENTIFIER('x')")
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
+        self.validate_identity("SELECT IDENTIFIER($my_function_name)()")
+        self.validate_identity("SELECT IDENTIFIER('speed_of_light')()")
+        self.validate_all(
+            "SELECT IDENTIFIER('my_func')(1, 2)",
+            write={
+                "snowflake": "SELECT IDENTIFIER('my_func')(1, 2)",
+                "duckdb": UnsupportedError,
+            },
+        )
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")

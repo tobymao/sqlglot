@@ -775,7 +775,7 @@ class TestSnowflake(Validator):
             "SELECT IDENTIFIER('my_func')(1, 2)",
             write={
                 "snowflake": "SELECT IDENTIFIER('my_func')(1, 2)",
-                "duckdb": "SELECT my_func(1, 2)",
+                "duckdb": UnsupportedError,
             },
         )
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")

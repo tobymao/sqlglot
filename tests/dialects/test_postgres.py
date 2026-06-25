@@ -1765,6 +1765,14 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )
 
+    def test_extract_date_parts(self):
+        self.validate_all(
+            "SELECT EXTRACT(DAY FROM x), EXTRACT(MONTH FROM x), EXTRACT(YEAR FROM x)",
+            read={
+                "tsql": "SELECT DAY(x), MONTH(x), YEAR(x)",
+            },
+        )
+
     def test_datatype(self):
         self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")
         self.validate_identity("CREATE TABLE foo (data XML)")

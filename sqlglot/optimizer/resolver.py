@@ -183,6 +183,10 @@ class Resolver:
                     if isinstance(explode_col, exp.Column) and explode_col.table and source.parent:
                         col_type = self._get_unnest_column_type(explode_col, source.parent)
                         columns.extend(self._struct_field_names(col_type))
+                elif isinstance(source_expr, exp.Lateral) and isinstance(
+                    source_expr.this, exp.Query
+                ):
+                    columns = source_expr.this.named_selects
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
             else:

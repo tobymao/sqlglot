@@ -105,7 +105,12 @@ class UDTF(DerivedTable):
     @property
     def selects(self) -> list[Expr]:
         alias = self.args.get("alias")
-        return alias.columns if alias else []
+        if alias and alias.columns:
+            return alias.columns
+
+        # A UDTF without explicit alias columns (e.g. `LATERAL (<subquery>)`) exposes the
+        # columns produced by the query it wraps, so fall back to those.
+        return super().selects
 
 
 @trait

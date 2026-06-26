@@ -464,6 +464,20 @@ class TestOptimizer(unittest.TestCase):
             "SELECT `test`.`bar_bazfoo_$id` AS `bar_bazfoo_$id` FROM `test` AS `test`",
         )
 
+        # A LATERAL subquery exposes the columns of the query it wraps, so the outer
+        # scope must be able to resolve them (e.g. the WITH ORDINALITY column `pos`).
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT pos, val FROM t CROSS JOIN LATERAL (SELECT pos - 1 AS pos, val FROM UNNEST(t.arr) WITH ORDINALITY AS _t0(val, pos))",
+                    read="duckdb",
+                ),
+                schema={"t": {"arr": "ARRAY<VARCHAR>"}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT "_0"."pos" AS "pos", "_0"."val" AS "val" FROM "t" AS "t" CROSS JOIN LATERAL (SELECT "_t0"."pos" - 1 AS "pos", "_t0"."val" AS "val" FROM UNNEST("t"."arr") WITH ORDINALITY AS "_t0"("val", pos)) AS "_0"',
+        )
+
         qualified = optimizer.qualify.qualify(
             parse_one("WITH t AS (SELECT 1 AS c) (SELECT c FROM t)")
         )

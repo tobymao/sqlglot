@@ -79,7 +79,13 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
 
 def _extract_sql(part: str) -> t.Callable[[PostgresGenerator, exp.Func], str]:
     def func(self: PostgresGenerator, expression: exp.Func) -> str:
-        return self.sql(exp.Extract(this=exp.var(part), expression=expression.this))
+        this = expression.this
+        if this.is_type(*exp.DataType.INTEGER_TYPES):
+            self.unsupported(f"Cannot transpile {part} of an integer value to Postgres")
+        if not this.is_type(exp.DType.DATE):
+            this = exp.cast(this, exp.DType.DATE)
+
+        return self.sql(exp.Extract(this=exp.var(part), expression=this))
 
     return func
 

@@ -11,5 +11,9 @@ EXPRESSION_METADATA = {
             exp.RegexpCount,
         }
     },
-    exp.RegexpExtractAll: {"returns": exp.DataType.build("ARRAY<STRING>", dialect="databricks")},
+    exp.RegexpExtractAll: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DataType.from_str("ARRAY<STRING>", dialect="databricks")
+        )
+    },
 }

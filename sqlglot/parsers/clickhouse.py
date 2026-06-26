@@ -262,6 +262,10 @@ class ClickHouseParser(parser.Parser):
         "ARRAYMIN": exp.ArrayMin.from_arg_list,
         "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
         "ARRAYSLICE": exp.ArraySlice.from_arg_list,
+        "ARRAYFILTER": lambda args: exp.ArrayFilter(
+            this=seq_get(args, 1), expression=seq_get(args, 0)
+        ),
+        "ARRAYMAP": lambda args: exp.Transform(this=seq_get(args, 1), expression=seq_get(args, 0)),
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,

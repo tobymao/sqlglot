@@ -1768,6 +1768,8 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT TRANSFORM(foo, [1, 2], ['first', 'second'], 'default') FROM table"
         )
+        self.validate_identity("arrayMap(x -> x + 1, arr)").assert_is(exp.Transform)
+        self.validate_identity("arrayFilter(x -> x > 0, arr)").assert_is(exp.ArrayFilter)
 
     def test_array_offset(self):
         with self.assertLogs(helper_logger) as cm:

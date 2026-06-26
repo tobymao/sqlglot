@@ -384,6 +384,7 @@ class TestOptimizer(unittest.TestCase):
             ).sql(dialect="bigquery"),
             "SELECT `teams`.`name` AS `name`, count(*) AS `_col_1` FROM `raw`.`TeamMemberships` AS `teammemberships` JOIN `raw`.`Teams` AS `teams` ON `teams`.`id` = `teammemberships`.`teamid` GROUP BY `teams`.`name`",
         )
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
@@ -393,6 +394,54 @@ class TestOptimizer(unittest.TestCase):
                 dialect="bigquery",
             ).sql(dialect="bigquery"),
             "SELECT `my_table`.`my_column` AS `my_column` FROM `my_db.my_table` AS `my_table`",
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT pos, val FROM t CROSS JOIN LATERAL (SELECT pos - 1 AS pos, val FROM UNNEST(t.arr) WITH ORDINALITY AS _t0(val, pos))",
+                    read="duckdb",
+                ),
+                schema={"t": {"arr": "ARRAY<VARCHAR>"}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT "_0"."pos" AS "pos", "_0"."val" AS "val" FROM "t" AS "t" CROSS JOIN LATERAL (SELECT "_t0"."pos" - 1 AS "pos", "_t0"."val" AS "val" FROM UNNEST("t"."arr") WITH ORDINALITY AS "_t0"("val", pos)) AS "_0"',
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT * FROM t CROSS JOIN LATERAL (SELECT 1 AS x, 2 AS y) AS foo",
+                    read="duckdb",
+                ),
+                schema={"t": {"k": "INT"}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT "t"."k" AS "k", "foo"."x" AS "x", "foo"."y" AS "y" FROM "t" AS "t" CROSS JOIN LATERAL (SELECT 1 AS "x", 2 AS "y") AS "foo"',
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT c, d FROM t CROSS JOIN LATERAL (SELECT 1 AS a, 2 AS b) AS x(c, d)",
+                    read="duckdb",
+                ),
+                schema={"t": {"k": "INT"}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT "x"."c" AS "c", "x"."d" AS "d" FROM "t" AS "t" CROSS JOIN LATERAL (SELECT 1 AS "a", 2 AS "b") AS "x"("c", "d")',
+        )
+
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "SELECT * FROM t CROSS JOIN LATERAL (SELECT 1 AS a, 2 AS b) AS x(c)",
+                    read="duckdb",
+                ),
+                schema={"t": {"k": "INT"}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT "t"."k" AS "k", "x"."c" AS "c", "x"."b" AS "b" FROM "t" AS "t" CROSS JOIN LATERAL (SELECT 1 AS "a", 2 AS "b") AS "x"("c")',
         )
 
         self.assertEqual(

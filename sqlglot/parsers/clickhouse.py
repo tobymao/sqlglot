@@ -262,8 +262,6 @@ class ClickHouseParser(parser.Parser):
         "ARRAYMIN": exp.ArrayMin.from_arg_list,
         "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
         "ARRAYSLICE": exp.ArraySlice.from_arg_list,
-        # ClickHouse higher-order array functions: the lambda comes first, the array second.
-        # This is the opposite of exp.ArrayFilter(this=array, expression=lambda) convention.
         "ARRAYFILTER": lambda args: exp.ArrayFilter(
             this=seq_get(args, 1), expression=seq_get(args, 0)
         ),

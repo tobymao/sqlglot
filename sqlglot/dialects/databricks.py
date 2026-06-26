@@ -9,11 +9,13 @@ from sqlglot.generators.databricks import DatabricksGenerator
 from sqlglot.parsers.databricks import DatabricksParser
 from sqlglot.tokens import TokenType
 from sqlglot.optimizer.annotate_types import TypeAnnotator
+from sqlglot.typing.databricks import EXPRESSION_METADATA
 
 
 class Databricks(Spark):
     SAFE_DIVISION = False
     COPY_PARAMS_ARE_CSV = False
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:

@@ -970,7 +970,27 @@ BIGINT;
 
 # dialect: spark2, spark, databricks
 tbl.double_col DIV tbl.double_col;
-BIGINT; 
+BIGINT;
+
+# dialect: databricks
+tbl.str_col REGEXP 'pattern';
+BOOLEAN;
+
+# dialect: databricks
+tbl.str_col REGEXP tbl.str_col;
+BOOLEAN;
+
+# dialect: databricks
+REGEXP_COUNT(tbl.str_col, 'l');
+INT;
+
+# dialect: databricks
+REGEXP_COUNT(tbl.str_col, tbl.str_col);
+INT;
+
+# dialect: databricks
+REGEXP_EXTRACT_ALL(tbl.str_col, 'pattern');
+ARRAY<VARCHAR>;
 
 # dialect: hive
 tbl.bigint DIV tbl.bigint;

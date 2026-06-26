@@ -1,3 +1,0 @@
-[submodule "sqlglot-integration-tests"]
-	path = sqlglot-integration-tests
-	url = git@github.com:fivetran/sqlglot-integration-tests.git

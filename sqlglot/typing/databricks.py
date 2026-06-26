@@ -11,10 +11,5 @@ EXPRESSION_METADATA = {
             exp.RegexpCount,
         }
     },
-    **{
-        exp_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this", array=True)}
-        for exp_type in {
-            exp.RegexpExtractAll,
-        }
-    },
+    exp.RegexpExtractAll: {"returns": exp.DataType.build("ARRAY<TEXT>")},
 }

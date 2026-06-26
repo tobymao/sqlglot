@@ -11,5 +11,5 @@ EXPRESSION_METADATA = {
             exp.RegexpCount,
         }
     },
-    exp.RegexpExtractAll: {"returns": exp.DataType.build("ARRAY<TEXT>")},
+    exp.RegexpExtractAll: {"returns": exp.DataType.build("ARRAY<STRING>", dialect="databricks")},
 }

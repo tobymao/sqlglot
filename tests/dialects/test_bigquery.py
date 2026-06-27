@@ -546,7 +546,7 @@ LANGUAGE js AS
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
                 "bigquery": "PARSE_TIMESTAMP('%FT%H:%M:%E6S%z', x)",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+                "duckdb": "STRPTIME('1970 ' || x, '%Y ' || '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
         self.validate_all(
@@ -620,7 +620,7 @@ LANGUAGE js AS
             "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
             write={
                 "bigquery": "PARSE_TIMESTAMP('%FT%H:%M:%E6S%z', x)",
-                "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S.%f%z')",
+                "duckdb": "STRPTIME('1970 ' || x, '%Y ' || '%Y-%m-%dT%H:%M:%S.%f%z')",
             },
         )
         self.validate_all(
@@ -1799,15 +1799,29 @@ WHERE
             "SELECT PARSE_DATE('%A %b %e %Y', 'Thursday Dec 25 2008')",
             write={
                 "bigquery": "SELECT PARSE_DATE('%A %b %e %Y', 'Thursday Dec 25 2008')",
-                "duckdb": "SELECT CAST(STRPTIME('Thursday Dec 25 2008', '%A %b %-d %Y') AS DATE)",
+                "duckdb": "SELECT CAST(STRPTIME('1970 ' || 'Thursday Dec 25 2008', '%Y ' || '%A %b %-d %Y') AS DATE)",
             },
         )
         self.validate_all(
             "SELECT PARSE_DATE('%Y%m%d', '20081225')",
             write={
                 "bigquery": "SELECT PARSE_DATE('%Y%m%d', '20081225')",
-                "duckdb": "SELECT CAST(STRPTIME('20081225', '%Y%m%d') AS DATE)",
+                "duckdb": "SELECT CAST(STRPTIME('1970 ' || '20081225', '%Y ' || '%Y%m%d') AS DATE)",
                 "snowflake": "SELECT DATE('20081225', 'yyyymmDD')",
+            },
+        )
+        self.validate_all(
+            "SELECT PARSE_DATE('%m-%d', '12-25')",
+            write={
+                "duckdb": "SELECT CAST(STRPTIME('1970 ' || '12-25', '%Y ' || '%m-%d') AS DATE)",
+                "mysql": "SELECT STR_TO_DATE('12-25', '%m-%d')",
+            },
+        )
+        self.validate_all(
+            "SELECT PARSE_TIMESTAMP('%m-%d %H:%M:%S', '12-25 07:30:00')",
+            write={
+                "duckdb": "SELECT STRPTIME('1970 ' || '12-25 07:30:00', '%Y ' || '%m-%d %H:%M:%S')",
+                "mysql": "SELECT STR_TO_DATE('12-25 07:30:00', '%m-%d %T')",
             },
         )
         self.validate_all(

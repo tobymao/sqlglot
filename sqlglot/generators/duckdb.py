@@ -32,7 +32,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
     remove_from_array_using_filter,
     strposition_sql,
-    str_to_time_sql,
     timestrtotime_sql,
     unit_to_str,
 )
@@ -2751,14 +2750,13 @@ class DuckDBGenerator(generator.Generator):
             exp.DType.TIMESTAMPTZ,
         )
 
-        if expression.args.get("safe"):
-            formatted_time = self.format_time(expression)
-            cast_type = exp.DType.TIMESTAMPTZ if needs_tz else exp.DType.TIMESTAMP
-            return self.sql(
-                exp.cast(self.func("TRY_STRPTIME", expression.this, formatted_time), cast_type)
-            )
+        value, formatted_time = self._strptime_default_year(expression)
 
-        base_sql = str_to_time_sql(self, expression)
+        if expression.args.get("safe"):
+            cast_type = exp.DType.TIMESTAMPTZ if needs_tz else exp.DType.TIMESTAMP
+            return self.sql(exp.cast(self.func("TRY_STRPTIME", value, formatted_time), cast_type))
+
+        base_sql = self.func("STRPTIME", value, formatted_time)
         if needs_tz:
             return self.sql(
                 exp.cast(
@@ -2769,27 +2767,30 @@ class DuckDBGenerator(generator.Generator):
         return base_sql
 
     def strtodate_sql(self, expression: exp.StrToDate) -> str:
-        formatted_time = self.format_time(expression)
+        value, formatted_time = self._strptime_default_year(expression)
         function_name = "STRPTIME" if not expression.args.get("safe") else "TRY_STRPTIME"
         return self.sql(
             exp.cast(
-                self.func(function_name, expression.this, formatted_time),
+                self.func(function_name, value, formatted_time),
                 exp.DataType(this=exp.DType.DATE),
             )
         )
 
+    def _strptime_default_year(
+        self, expression: exp.StrToTime | exp.StrToDate | exp.ParseDatetime
+    ) -> tuple[exp.ExpOrStr, exp.ExpOrStr | None]:
+        value: exp.ExpOrStr = expression.this
+        formatted_time: exp.ExpOrStr | None = self.format_time(expression)
+
+        if default_year := expression.args.get("default_year"):
+            value = exp.DPipe(this=exp.Literal.string(f"{default_year.name} "), expression=value)
+            formatted_time = exp.DPipe(this=exp.Literal.string("%Y "), expression=formatted_time)
+
+        return value, formatted_time
+
     def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
-        formatted_time = self.format_time(expression)
-
-        default_year = expression.args.get("default_year")
-        if default_year:
-            year_str = exp.Literal.string(f"{default_year.name} ")
-            fmt_prefix = exp.Literal.string("%Y ")
-            value = exp.DPipe(this=year_str, expression=expression.this)
-            fmt = exp.DPipe(this=fmt_prefix, expression=formatted_time)
-            return self.func("STRPTIME", value, fmt)
-
-        return self.func("STRPTIME", expression.this, formatted_time)
+        value, formatted_time = self._strptime_default_year(expression)
+        return self.func("STRPTIME", value, formatted_time)
 
     def parsetime_sql(self, expression: exp.ParseTime) -> str:
         formatted_time = self.format_time(expression)

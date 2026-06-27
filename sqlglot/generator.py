@@ -4087,6 +4087,10 @@ class Generator:
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
         return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
 
+    # Base implementation that excludes the safe and default_year metadata args
+    def strtodate_sql(self, expression: exp.StrToDate) -> str:
+        return self.func("STR_TO_DATE", expression.this, expression.args.get("format"))
+
     def parsedatetime_sql(self, expression: exp.ParseDatetime) -> str:
         return self.func(
             "PARSE_DATETIME",

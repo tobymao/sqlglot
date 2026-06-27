@@ -518,7 +518,6 @@ EXPRESSION_METADATA = {
             exp.Randstr,
             exp.RegexpExtract,
             exp.RegexpReplace,
-            exp.Repeat,
             exp.Replace,
             exp.Soundex,
             exp.SoundexP123,

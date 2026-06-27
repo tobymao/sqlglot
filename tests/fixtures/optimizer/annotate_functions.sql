@@ -193,6 +193,9 @@ BINARY;
 ARRAY_CONTAINS(tbl.array_col, '1');
 BOOLEAN;
 
+REPEAT(tbl.str_col, tbl.int_col);
+VARCHAR;
+
 --------------------------------------
 -- Spark2 / Spark3 / Databricks
 --------------------------------------

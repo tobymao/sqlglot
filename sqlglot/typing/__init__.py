@@ -236,6 +236,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.MD5,
             exp.Monthname,
             exp.RawString,
+            exp.Repeat,
             exp.SHA,
             exp.SHA2,
             exp.SessionUser,

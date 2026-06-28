@@ -4008,6 +4008,9 @@ class Generator:
     def fromiso8601timestamp_sql(self, expression: exp.FromISO8601Timestamp) -> str:
         return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
 
+    def fromiso8601timestampnanos_sql(self, expression: exp.FromISO8601TimestampNanos) -> str:
+        return self.sql(exp.cast(expression.this, exp.DType.TIMESTAMPTZ))
+
     def add_sql(self, expression: exp.Add) -> str:
         return self.binary(expression, "+")
 

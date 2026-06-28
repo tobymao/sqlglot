@@ -6841,6 +6841,8 @@ class Parser:
 
         if not this and self._match(TokenType.R_PAREN, advance=False):
             this = self.expression(exp.Tuple())
+        elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
+            this = self.expression(exp.Tuple(expressions=expressions))
         elif isinstance(this, exp.UNWRAPPED_QUERIES):
             this = self._parse_subquery(this=this, parse_alias=False)
         elif isinstance(this, (exp.Subquery, exp.Values)):
@@ -6848,8 +6850,6 @@ class Parser:
                 this=self._parse_query_modifiers(self._parse_set_operations(this)),
                 parse_alias=False,
             )
-        elif len(expressions) > 1 or self._prev.token_type == TokenType.COMMA:
-            this = self.expression(exp.Tuple(expressions=expressions))
         else:
             this = self.expression(exp.Paren(this=this))
 

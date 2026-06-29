@@ -29,6 +29,7 @@ EXPRESSION_METADATA = {
             exp.Hex,
             exp.NextDay,
             exp.RegexpExtract,
+            exp.RegexpReplace,
             exp.Replace,
             exp.Soundex,
         }

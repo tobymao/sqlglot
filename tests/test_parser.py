@@ -17,6 +17,7 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(parse_one("(1)", into=exp.Tuple), exp.Tuple)
         self.assertIsInstance(parse_one("(1,)", into=exp.Tuple), exp.Tuple)
         self.assertIsInstance(parse_one("(x=1)", into=exp.Tuple), exp.Tuple)
+        self.assertIsInstance(parse_one("((SELECT 42), 1)", into=exp.Tuple), exp.Tuple)
 
         self.assertIsInstance(parse_one("select * from t", into=exp.Select), exp.Select)
         self.assertIsInstance(parse_one("select * from t limit 5", into=exp.Select), exp.Select)

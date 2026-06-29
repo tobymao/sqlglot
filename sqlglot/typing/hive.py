@@ -27,6 +27,7 @@ EXPRESSION_METADATA = {
             exp.CurrentUser,
             exp.CurrentSchema,
             exp.Hex,
+            exp.JSONFormat,
             exp.NextDay,
             exp.RegexpExtract,
             exp.RegexpReplace,

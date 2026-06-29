@@ -238,6 +238,22 @@ VARCHAR;
 REGEXP_REPLACE(tbl.bin_col, pattern, replacement);
 VARCHAR;
 
+# dialect: hive, spark2, spark, databricks
+REGEXP_REPLACE(tbl.str_col, pattern, replacement);
+STRING;
+
+# dialect: spark, databricks
+REGEXP_REPLACE(tbl.str_col, pattern, replacement, 2);
+STRING;
+
+# dialect: spark2, spark, databricks
+REGEXP_REPLACE(tbl.bin_col, pattern, replacement);
+STRING;
+
+# dialect: spark, databricks
+REGEXP_REPLACE(tbl.bin_col, pattern, replacement, 2);
+STRING;
+
 # dialect: spark2, spark, databricks
 CONCAT(tbl.bin_col, tbl.bin_col);
 BINARY;
@@ -1001,6 +1017,9 @@ INT;
 REGEXP_EXTRACT_ALL(tbl.str_col, 'pattern');
 ARRAY<VARCHAR>;
 
+# dialect: hive, spark2, spark, databricks
+TO_JSON(STRUCT(1, 'hello'));
+VARCHAR;
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

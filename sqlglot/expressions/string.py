@@ -477,6 +477,10 @@ class RegexpSplit(Expression, Func):
     arg_types = {"this": True, "expression": True, "limit": False}
 
 
+class RegexpSubstr(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 # Hashing / cryptographic
 
 

@@ -234,19 +234,19 @@ STRING;
 
 # dialect: hive, spark2, spark, databricks
 REGEXP_REPLACE(tbl.str_col, pattern, replacement);
-VARCHAR;
+STRING;
 
 # dialect: spark, databricks
 REGEXP_REPLACE(tbl.str_col, pattern, replacement, 2);
-VARCHAR;
+STRING;
 
 # dialect: spark2, spark, databricks
 REGEXP_REPLACE(tbl.bin_col, pattern, replacement);
-VARCHAR;
+STRING;
 
 # dialect: spark, databricks
 REGEXP_REPLACE(tbl.bin_col, pattern, replacement, 2);
-VARCHAR;
+STRING;
 
 # dialect: spark2, spark, databricks
 CONCAT(tbl.bin_col, tbl.bin_col);

@@ -8,6 +8,10 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_sqlite(self):
+        # Range operators (IN/LIKE) are left-associative and can be chained.
+        self.validate_identity("SELECT 1 IN (0) IN (1)")
+        self.validate_identity("SELECT 1 LIKE 2 LIKE 3")
+        self.validate_identity("SELECT 1 NOT IN (0) IN (1)", "SELECT NOT 1 IN (0) IN (1)")
         self.validate_identity("WITH xyz(x) AS (SELECT 1) SELECT x FROM xyz")
         self.validate_identity("SELECT * FROM t AS t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY s.i")

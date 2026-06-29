@@ -5859,20 +5859,24 @@ class Parser:
         this = this or self._parse_bitwise()
         negate = self._match(TokenType.NOT)
 
-        if self._match_set(self.RANGE_PARSERS):
-            expression = self.RANGE_PARSERS[self._prev.token_type](self, this)
-            if not expression:
-                return this
+        # Range operators are left-associative and can be chained, e.g.
+        # `x IN (1) IN (2)` or `x LIKE 'a' LIKE 'b'`, so keep consuming them.
+        while True:
+            if self._match_set(self.RANGE_PARSERS):
+                expression = self.RANGE_PARSERS[self._prev.token_type](self, this)
+                if not expression:
+                    return this
 
-            this = expression
-        elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
-            this = self.expression(exp.Is(this=this, expression=exp.Null()))
-
-        # Postgres supports ISNULL and NOTNULL for conditions.
-        # https://blog.andreiavram.ro/postgresql-null-composite-type/
-        if self._match(TokenType.NOTNULL):
-            this = self.expression(exp.Is(this=this, expression=exp.Null()))
-            this = self.expression(exp.Not(this=this))
+                this = expression
+            elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
+                this = self.expression(exp.Is(this=this, expression=exp.Null()))
+            # Postgres supports ISNULL and NOTNULL for conditions.
+            # https://blog.andreiavram.ro/postgresql-null-composite-type/
+            elif self._match(TokenType.NOTNULL):
+                this = self.expression(exp.Is(this=this, expression=exp.Null()))
+                this = self.expression(exp.Not(this=this))
+            else:
+                break
 
         if negate:
             this = self._negate_range(this)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 import typing as t
 
+from sqlglot import tokenizer_core
 from sqlglot.trie import new_trie
 
 from sqlglot.tokenizer_core import Token, TokenizerCore, TokenType
@@ -22,16 +23,16 @@ class ThreadLocalCache(threading.local):
         return obj
 
 
-try:
-    import sqlglotc  # noqa: F401
-except ImportError:
-    pass
+# The sqlglotc distribution ships no importable `sqlglotc` module; it overlays
+# compiled .so files onto sqlglot's modules, so detect it via the compiled core.
+SQLGLOTC_INSTALLED = not getattr(tokenizer_core, "__file__", "py").endswith(".py")
 
 try:
     import sqlglotrs  # type: ignore # noqa: F401
-    import warnings
 
-    if "sqlglotc" not in globals():
+    if not SQLGLOTC_INSTALLED:
+        import warnings
+
         warnings.warn(
             "sqlglot[rs] is deprecated and no longer compatible with sqlglot. "
             "Please use sqlglotc instead for faster parsing: pip install sqlglot[c]",

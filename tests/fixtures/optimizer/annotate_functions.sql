@@ -1020,6 +1020,9 @@ ARRAY<VARCHAR>;
 # dialect: hive, spark2, spark, databricks
 TO_JSON(STRUCT(1, 'hello'));
 VARCHAR;
+# dialect: hive, spark2, spark, databricks
+GET_JSON_OBJECT('{"a":1}', '$.a');
+VARCHAR;
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

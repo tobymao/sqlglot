@@ -52,7 +52,6 @@ class DuckDB(Dialect):
         "%f_seven": "%n",
         "%f_eight": "%n",
         "%f_nine": "%n",
-        "%benupper": "%b",
     }
 
     def to_json_path(self, path: exp.Expr | None) -> exp.Expr | None:

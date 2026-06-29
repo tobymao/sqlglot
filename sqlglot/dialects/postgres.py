@@ -51,18 +51,8 @@ class Postgres(Dialect):
         "TMDy": "%a",
         "TMMon": "%b",  # Sep
         "TMMonth": "%B",  # September
-        "Day": "%Aen",  # Tuesday
         "day": "%Aenlower",  # tuesday
-        "DAY": "%Aenupper",  # TUESDAY
-        "Dy": "%aen",  # Tue
         "dy": "%aenlower",  # tue
-        "DY": "%aenupper",  # TUE
-        "Month": "%Ben",  # September
-        "month": "%Benlower",  # september
-        "MONTH": "%Benupper",  # SEPTEMBER
-        "Mon": "%ben",  # Sep
-        "mon": "%benlower",  # sep
-        "MON": "%benupper",  # SEP
         "TZ": "%Z",  # uppercase timezone name
         "US": "%f",  # zero padded microsecond
         "ww": "%U",  # 1-based week of year

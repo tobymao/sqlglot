@@ -30,6 +30,17 @@ class TestTrino(Validator):
         )
 
         self.validate_all(
+            "SELECT FROM_ISO8601_TIMESTAMP_NANOS('2020-05-11T11:15:05.000000000')",
+            write={
+                "duckdb": "SELECT CAST('2020-05-11T11:15:05.000000000' AS TIMESTAMPTZ)",
+                "trino": "SELECT FROM_ISO8601_TIMESTAMP_NANOS('2020-05-11T11:15:05.000000000')",
+                "snowflake": "SELECT CAST('2020-05-11T11:15:05.000000000' AS TIMESTAMPTZ)",
+                "spark": "SELECT CAST('2020-05-11T11:15:05.000000000' AS TIMESTAMP)",
+                "databricks": "SELECT CAST('2020-05-11T11:15:05.000000000' AS TIMESTAMP)",
+                "bigquery": "SELECT CAST('2020-05-11T11:15:05.000000000' AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
             "SELECT TIMESTAMP '2012-10-31 01:00:00 +02:00'",
             write={
                 "duckdb": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMPTZ)",

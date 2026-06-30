@@ -5857,12 +5857,9 @@ class Parser:
 
     def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
         this = this or self._parse_bitwise()
-        negate = self._match(TokenType.NOT)
 
-        # Range operators (IN, LIKE, IS, ...) are left-associative and can be
-        # chained, e.g. `x IN (1) IN (2)` or `x LIKE 'a' LIKE 'b'`, so keep
-        # consuming them instead of stopping after the first one.
         while True:
+            negate = self._match(TokenType.NOT)
             if self._match_set(self.RANGE_PARSERS):
                 expression = self.RANGE_PARSERS[self._prev.token_type](self, this)
                 if not expression:
@@ -5871,30 +5868,23 @@ class Parser:
                 this = expression
             elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
                 this = self.expression(exp.Is(this=this, expression=exp.Null()))
-            # Postgres supports ISNULL and NOTNULL for conditions.
-            # https://blog.andreiavram.ro/postgresql-null-composite-type/
             elif self._match(TokenType.NOTNULL):
+                # Postgres supports ISNULL and NOTNULL for conditions.
+                # https://blog.andreiavram.ro/postgresql-null-composite-type/
                 this = self.expression(exp.Is(this=this, expression=exp.Null()))
                 this = self.expression(exp.Not(this=this))
             else:
+                if negate:
+                    self._retreat(self._index - 1)
                 break
 
-            # A leading NOT negates only the first range term. When another
-            # range operator follows, wrap the negated term so it does not
-            # re-associate with the rest of the chain (exp.In, unlike exp.Like,
-            # has no inline NOT to render the negation unambiguously).
             if negate:
                 this = self._negate_range(this)
-                negate = False
-                if (
-                    self._curr
-                    and self._curr.token_type != TokenType.IS
-                    and self._curr.token_type in self.RANGE_PARSERS
+                if self._curr and (
+                    self._curr.token_type == TokenType.NOT
+                    or self._curr.token_type in self.RANGE_PARSERS
                 ):
                     this = self.expression(exp.Paren(this=this))
-
-        if negate:
-            this = self._negate_range(this)
 
         return this
 

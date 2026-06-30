@@ -14,7 +14,8 @@ class TestSQLite(Validator):
         # A leading NOT binds to the first term only and is parenthesized so the
         # chain does not re-associate (exp.In has no inline NOT to render).
         self.validate_identity("SELECT 1 NOT IN (0) IN (0, 1)", "SELECT (NOT 1 IN (0)) IN (0, 1)")
-        self.validate_identity("SELECT x NOT IN (1) IS TRUE", "SELECT NOT x IN (1) IS TRUE")
+        self.validate_identity("SELECT x NOT IN (1) IS TRUE", "SELECT (NOT x IN (1)) IS TRUE")
+        self.validate_identity("SELECT 0 NOT IN (1) NOT IN (2)", "SELECT NOT (NOT 0 IN (1)) IN (2)")
         self.validate_identity("WITH xyz(x) AS (SELECT 1) SELECT x FROM xyz")
         self.validate_identity("SELECT * FROM t AS t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY s.i")

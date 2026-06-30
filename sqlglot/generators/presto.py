@@ -306,7 +306,6 @@ class PrestoGenerator(generator.Generator):
         exp.First: _first_last_sql,
         exp.FromISO8601Date: rename_func("FROM_ISO8601_DATE"),
         exp.FromISO8601Timestamp: rename_func("FROM_ISO8601_TIMESTAMP"),
-        exp.FromISO8601TimestampNanos: rename_func("FROM_ISO8601_TIMESTAMP_NANOS"),
         exp.FromTimeZone: lambda self, e: (
             f"WITH_TIMEZONE({self.sql(e, 'this')}, {self.sql(e, 'zone')}) AT TIME ZONE 'UTC'"
         ),

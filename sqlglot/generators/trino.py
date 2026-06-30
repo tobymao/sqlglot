@@ -25,6 +25,7 @@ class TrinoGenerator(PrestoGenerator):
         ),
         exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
         exp.CurrentVersion: rename_func("VERSION"),
+        exp.FromISO8601TimestampNanos: rename_func("FROM_ISO8601_TIMESTAMP_NANOS"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         exp.LocationProperty: lambda self, e: self.property_sql(e),
         exp.Merge: merge_without_target_sql,

@@ -831,7 +831,8 @@ def _expand_stars(
             continue
 
         for table in tables:
-            if table not in scope.sources:
+            source = scope.sources.get(table)
+            if source is None:
                 raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(table, only_visible=True)
@@ -848,9 +849,8 @@ def _expand_stars(
             renamed_columns = rename_columns.get(table_id, {})
             replaced_columns = replace_columns.get(table_id, {})
 
-            # Preserve case-sensitivity of quoted source columns when expanding stars, so the
-            # synthesized output alias matches an explicit reference to the same column.
-            source = scope.sources.get(table)
+            # Preserve case-sensitivity of quoted source columns when expanding stars,
+            # so the generated alias isn't folded by dialect normalization
             source_expression = source.expression if isinstance(source, Scope) else None
             quoted_columns = (
                 {s.output_name: _output_identifier_quoted(s) for s in source_expression.selects}
@@ -960,7 +960,7 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: DialectType = None) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect | None = None) -> None:
     """Ensure all output columns are aliased"""
     if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
@@ -973,8 +973,6 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: DialectType 
 
     if not isinstance(expression, exp.Selectable):
         return
-
-    dialect = Dialect.get_or_raise(dialect)
 
     new_selections = []
 
@@ -994,7 +992,9 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: DialectType 
                 alias=selection.output_name or f"_col_{i}",
                 copy=False,
             )
-            if not source_quoted:
+            if source_quoted:
+                selection.args["alias"].set("quoted", True)
+            if dialect:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))

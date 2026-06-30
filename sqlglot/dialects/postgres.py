@@ -51,12 +51,16 @@ class Postgres(Dialect):
         "TMDy": "%a",
         "TMMon": "%b",  # Sep
         "TMMonth": "%B",  # September
+        "day": "%Aenlower",  # tuesday
+        "dy": "%aenlower",  # tue
         "TZ": "%Z",  # uppercase timezone name
         "US": "%f",  # zero padded microsecond
         "ww": "%U",  # 1-based week of year
         "WW": "%U",  # 1-based week of year
         "yy": "%y",  # 15
         "YY": "%y",  # 15
+        "yyy": "%Ythree",  # 015
+        "YYY": "%Ythree",  # 015
         "yyyy": "%Y",  # 2015
         "YYYY": "%Y",  # 2015
     }

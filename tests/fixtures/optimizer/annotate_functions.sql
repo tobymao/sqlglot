@@ -1011,6 +1011,13 @@ INT;
 REGEXP_EXTRACT_ALL(tbl.str_col, 'pattern');
 ARRAY<VARCHAR>;
 
+# dialect: spark2, spark, databricks
+TO_JSON(STRUCT(1, 'hello'));
+STRING;
+
+# dialect: hive, spark2, spark, databricks
+GET_JSON_OBJECT('{"a":1}', '$.a');
+STRING;
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

@@ -70,9 +70,9 @@ def canonicalize_internal_names(expression: E) -> E:
             columns_by_source.setdefault(table_col.name, []).append(table_col)
 
         # Include qualified stars (e.g. `t.*`)
-        for col in find_all_in_scope(scope_expr, exp.Column):
-            if isinstance(col.this, exp.Star) and col.table:
-                columns_by_source.setdefault(col.table, []).append(col)
+        for star in scope.stars:
+            if isinstance(star, exp.Column) and star.table:
+                columns_by_source.setdefault(star.table, []).append(star)
 
         # source_canon: source's canonical name (used in WITH "_tN" AS, and as
         #   the physical table name in `Table.this`). Shared across every reference

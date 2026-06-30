@@ -101,7 +101,7 @@ def qualify_columns(
                     pseudocolumns,
                     annotator,
                 )
-            qualify_outputs(scope)
+            qualify_outputs(scope, dialect=dialect)
 
         _expand_group_by(scope, dialect)
 
@@ -831,7 +831,8 @@ def _expand_stars(
             continue
 
         for table in tables:
-            if table not in scope.sources:
+            source = scope.sources.get(table)
+            if source is None:
                 raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(table, only_visible=True)
@@ -847,6 +848,15 @@ def _expand_stars(
             columns_to_exclude = except_columns.get(table_id) or set()
             renamed_columns = rename_columns.get(table_id, {})
             replaced_columns = replace_columns.get(table_id, {})
+
+            # Preserve case-sensitivity of quoted source columns when expanding stars,
+            # so the generated alias isn't folded by dialect normalization
+            source_expression = source.expression if isinstance(source, Scope) else None
+            quoted_columns = (
+                {s.output_name: _output_identifier_quoted(s) for s in source_expression.selects}
+                if isinstance(source_expression, exp.Query)
+                else {}
+            )
 
             if pivot:
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
@@ -876,6 +886,8 @@ def _expand_stars(
                 else:
                     alias_ = renamed_columns.get(name, name)
                     selection_expr = replaced_columns.get(name) or exp.column(name, table=table)
+                    if quoted_columns.get(name) and isinstance(selection_expr, exp.Column):
+                        selection_expr.this.set("quoted", True)
                     new_selections.append(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name
@@ -885,6 +897,18 @@ def _expand_stars(
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
         scope_expression.set("expressions", new_selections)
+
+
+def _output_identifier_quoted(selection: exp.Expr) -> bool:
+    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+    if isinstance(selection, exp.Alias):
+        identifier = selection.args.get("alias")
+    elif isinstance(selection, exp.Column):
+        identifier = selection.this
+    else:
+        identifier = None
+
+    return isinstance(identifier, exp.Identifier) and identifier.quoted
 
 
 def _add_ilike_columns(expression: exp.Expr) -> str | None:
@@ -936,7 +960,7 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expr) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect | None = None) -> None:
     """Ensure all output columns are aliased"""
     if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
@@ -962,11 +986,16 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr) -> None:
             if not selection.output_name:
                 selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+            source_quoted = isinstance(selection, exp.Column) and selection.this.quoted
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",
                 copy=False,
             )
+            if source_quoted:
+                selection.args["alias"].set("quoted", True)
+            if dialect:
+                dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
 

@@ -1298,9 +1298,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(canon_pg_a, canon_pg_qa)
 
         # In Snowflake (upper-folding), unquoted `a` becomes `A`, while quoted `"a"` stays
-        # lowercase — they reference *different* columns. Base-table names are preserved,
-        # and the quote state on the lowercase column is retained because dropping it
-        # would let Snowflake re-case-fold `a` back to `A` (changing semantics).
+        # lowercase — they reference *different* columns. The generated alias for the quoted
+        # column keeps its exact spelling, since folding it would re-case-fold `a` back to `A`.
         sf_schema = {"X": {"A": "INT", '"a"': "INT"}}
         canon_sf = qualify_then_canonicalize(
             parse_one('SELECT a, "a" FROM x', dialect="snowflake"),
@@ -2388,8 +2387,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             """
             SELECT
              "source"."ID" AS "ID",
-             "source"."name" AS "name",
-             "source"."payload" AS "payload"
+             "source"."name" AS "NAME",
+             "source"."payload" AS "PAYLOAD"
             FROM "EXAMPLE"."source" AS "source"
             """,
             read="snowflake",
@@ -2701,7 +2700,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # Databricks
         sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="databricks")
-        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `A` FROM `t` AS `t`"
+        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `a` FROM `t` AS `t`"
 
         # Clickhouse
         sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="clickhouse")
@@ -2715,7 +2714,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="snowflake")
         assert (
             sql
-            == '''SELECT GET_PATH("T"."COL", 'A.a') AS "a", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
+            == '''SELECT GET_PATH("T"."COL", 'A.a') AS "A", GET_PATH("T"."COL", 'a.A') AS "A" FROM "T" AS "T"'''
         )
 
         query = parse_one(

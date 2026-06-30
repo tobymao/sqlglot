@@ -1826,7 +1826,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CAST(CAST(STRPTIME('05/06/2020', '%m/%d/%Y') AS DATE) AS DATE)",
+            "SELECT CAST(CAST(STRPTIME('1970 ' || '05/06/2020', '%Y ' || '%m/%d/%Y') AS DATE) AS DATE)",
             read={
                 "bigquery": "SELECT DATE(PARSE_DATE('%m/%d/%Y', '05/06/2020'))",
             },

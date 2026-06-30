@@ -1797,10 +1797,6 @@ def trim_sql(self: Generator, expression: exp.Trim, default_trim_type: str = "")
     return f"TRIM({trim_type}{remove_chars}{from_part}{target}{collation})"
 
 
-def str_to_time_sql(self: Generator, expression: exp.Expr) -> str:
-    return self.func("STRPTIME", expression.this, self.format_time(expression))
-
-
 def concat_to_dpipe_sql(self: Generator, expression: exp.Concat) -> str:
     return self.sql(reduce(lambda x, y: exp.DPipe(this=x, expression=y), expression.expressions))
 

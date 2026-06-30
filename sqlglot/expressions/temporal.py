@@ -441,6 +441,10 @@ class FromISO8601Date(Expression, Func):
     _sql_names = ["FROM_ISO8601_DATE"]
 
 
+class FromISO8601TimestampNanos(Expression, Func):
+    _sql_names = ["FROM_ISO8601_TIMESTAMP_NANOS"]
+
+
 class ParseDatetime(Expression, Func):
     arg_types = {"this": True, "format": False, "zone": False, "default_year": False}
 

@@ -1015,6 +1015,10 @@ ARRAY<VARCHAR>;
 TO_JSON(STRUCT(1, 'hello'));
 STRING;
 
+# dialect: hive, databricks
+TO_JSON(PARSE_JSON('{"key": 123}'));
+STRING;
+
 # dialect: hive, spark2, spark, databricks
 GET_JSON_OBJECT('{"a":1}', '$.a');
 STRING;

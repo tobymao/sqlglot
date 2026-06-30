@@ -231,12 +231,6 @@ STRING;
 # dialect: spark2, spark, databricks
 REGEXP_EXTRACT(tbl.bin_col, pattern, 0);
 STRING;
-# dialect: spark2, spark, databricks
-REGEXP_REPLACE(tbl.str_col, pattern, replacement);
-VARCHAR;
-# dialect: spark2, spark, databricks
-REGEXP_REPLACE(tbl.bin_col, pattern, replacement);
-VARCHAR;
 
 # dialect: hive, spark2, spark, databricks
 REGEXP_REPLACE(tbl.str_col, pattern, replacement);

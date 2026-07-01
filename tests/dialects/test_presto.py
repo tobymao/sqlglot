@@ -323,7 +323,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
                 "hive": "CAST(x AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss')",
             },
         )
         self.validate_all(
@@ -332,7 +332,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%d')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -347,7 +347,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -356,7 +356,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )
         self.validate_all(

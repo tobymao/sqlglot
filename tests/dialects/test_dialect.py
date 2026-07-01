@@ -763,7 +763,7 @@ class TestDialect(Validator):
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%T')",
                 "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH24:MI:SS')",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-dTHH:mm:ss')",
             },
         )
         self.validate_all(
@@ -776,7 +776,7 @@ class TestDialect(Validator):
                 "postgres": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
                 "redshift": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
-                "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP('2020-01-01', 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -1219,7 +1219,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-MM-ddTHH:mm:ss')) AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
-                "spark": "TO_DATE(x, 'yyyy-MM-ddTHH:mm:ss')",
+                "spark": "TO_DATE(x, 'yyyy-M-dTHH:mm:ss')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
             },
         )
@@ -1231,7 +1231,7 @@ class TestDialect(Validator):
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
-                "spark": "TO_DATE(x)",
+                "spark": "TO_DATE(x, 'yyyy-M-d')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%d')",
             },
         )

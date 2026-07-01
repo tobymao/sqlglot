@@ -26,7 +26,7 @@ from sqlglot.helper import (
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
-from sqlglot.time import TIMEZONES, format_time, subsecond_precision
+from sqlglot.time import STRICT_TIME_FORMATS, TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 from sqlglot.typing import EXPRESSION_METADATA
@@ -134,6 +134,16 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
+def _with_strict_time_fallback(inverse_mapping: dict[str, str]) -> dict[str, str]:
+    # Dialects that define a "strict" format (e.g. Spark) keep their own mapping;
+    # everyone else degrades it to the lax counterpart's mapping, so the internal
+    # token never leaks into generated SQL.
+    for strict_format, lax_format in STRICT_TIME_FORMATS.items():
+        inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
+
+    return inverse_mapping
+
+
 class _Dialect(type):
     _classes: dict[str, Type[Dialect]] = {}
 
@@ -232,16 +242,21 @@ class _Dialect(type):
         cls._classes[enum.value if enum is not None else clsname.lower()] = klass
 
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
+        klass.STRICT_TIME_TRIE = new_trie(klass.STRICT_TIME_MAPPING)
+        klass.LENIENT_INVERSE_TIME_TRIE = new_trie(klass.LENIENT_INVERSE_TIME_MAPPING)
         klass.FORMAT_TRIE = (
             new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
         )
         # Merge class-defined INVERSE_TIME_MAPPING with auto-generated mappings
         # This allows dialects to define custom inverse mappings for roundtrip correctness
-        klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()} | (
-            klass.__dict__.get("INVERSE_TIME_MAPPING") or {}
+        klass.INVERSE_TIME_MAPPING = _with_strict_time_fallback(
+            {v: k for k, v in klass.TIME_MAPPING.items()}
+            | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
-        klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        klass.INVERSE_FORMAT_MAPPING = _with_strict_time_fallback(
+            {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        )
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
         klass.INVERSE_CREATABLE_KIND_MAPPING = {
@@ -416,6 +431,20 @@ class Dialect(metaclass=_Dialect):
 
     TIME_MAPPING: dict[str, str] = {}
     """Associates this dialect's time formats with their equivalent Python `strftime` formats."""
+
+    STRICT_TIME_MAPPING: dict[str, str] = {}
+    """
+    Variant of `TIME_MAPPING` used when *parsing* a string with a format (e.g. `StrToTime`).
+    Lets dialects with strict parsing (e.g. Spark 3+'s zero-padded `MM`/`dd`) map those to a
+    distinct canonical format, preserving the roundtrip. Empty means `TIME_MAPPING` is used.
+    """
+
+    LENIENT_INVERSE_TIME_MAPPING: dict[str, str] = {}
+    """
+    Inverse mapping used when *generating* a parse format (e.g. `StrToTime`) for dialects that
+    parse leniently (e.g. Spark). Maps the canonical specifiers to their lenient single-letter
+    forms, and the strict tokens back to the padded forms.
+    """
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
     # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Exprs-and-Predicates/March-2017/Data-Type-Conversions/Character-to-DATE-Conversion/Forcing-a-FORMAT-on-CAST-for-Converting-Character-to-DATE
@@ -775,10 +804,12 @@ class Dialect(metaclass=_Dialect):
 
     # A trie of the time_mapping keys
     TIME_TRIE: dict = {}
+    STRICT_TIME_TRIE: dict = {}
     FORMAT_TRIE: dict = {}
 
     INVERSE_TIME_MAPPING: dict[str, str] = {}
     INVERSE_TIME_TRIE: dict = {}
+    LENIENT_INVERSE_TIME_TRIE: dict = {}
     INVERSE_FORMAT_MAPPING: dict[str, str] = {}
     INVERSE_FORMAT_TRIE: dict = {}
 
@@ -971,16 +1002,23 @@ class Dialect(metaclass=_Dialect):
         raise ValueError(f"Invalid dialect type for '{dialect}': '{type(dialect)}'.")
 
     @classmethod
-    def format_time(cls, expression: str | exp.Expr | None) -> exp.Expr | None:
+    def format_time(
+        cls, expression: str | exp.Expr | None, strict: bool = False
+    ) -> exp.Expr | None:
         """Converts a time format in this dialect to its equivalent Python `strftime` format."""
+        if strict and cls.STRICT_TIME_MAPPING:
+            mapping, trie = cls.STRICT_TIME_MAPPING, cls.STRICT_TIME_TRIE
+        else:
+            mapping, trie = cls.TIME_MAPPING, cls.TIME_TRIE
+
         if isinstance(expression, str):
             return exp.Literal.string(
                 # the time formats are quoted
-                format_time(expression[1:-1], cls.TIME_MAPPING, cls.TIME_TRIE)
+                format_time(expression[1:-1], mapping, trie)
             )
 
         if expression and expression.is_string:
-            return exp.Literal.string(format_time(expression.this, cls.TIME_MAPPING, cls.TIME_TRIE))
+            return exp.Literal.string(format_time(expression.this, mapping, trie))
 
         return expression
 
@@ -1549,6 +1587,13 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
     return self.sql(result)
 
 
+# Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
+# Dialects with strict parsing semantics (STRICT_TIME_MAPPING) use it for these on the
+# parser side, and the corresponding generator (e.g. SparkGenerator.format_time) reuses
+# this same set to emit the lenient inverse, which is what preserves the roundtrip.
+STRICT_PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.TsOrDsToDate)
+
+
 def build_formatted_time(
     exp_class: Type[E], dialect_override: str | None = None, default: bool | str | None = None
 ) -> t.Callable[[BuilderArgs, Dialect], E]:
@@ -1574,7 +1619,10 @@ def build_formatted_time(
         if not fmt:
             fmt = target_dialect.TIME_FORMAT if default is True else default or None
 
-        return exp_class(this=seq_get(args, 0), format=target_dialect.format_time(fmt))
+        strict = exp_class in STRICT_PARSE_TIME_EXPRESSIONS
+        return exp_class(
+            this=seq_get(args, 0), format=target_dialect.format_time(fmt, strict=strict)
+        )
 
     return _builder
 

@@ -659,14 +659,39 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             read={
-                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%m-%d')",
             },
+            write={
+                "": "SELECT STR_TO_TIME('2016-1-1', '%Y-%-m-%-d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%-m-%-d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
+            },
+        )
+        # Spark 3+ parses MM/dd strictly, so the strict parse format roundtrips, but
+        # widens to the lax %m/%d for dialects that parse leniently (e.g. duckdb).
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
             write={
                 "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
                 "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
                 "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+                "databricks": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
+        # Formatting keeps zero-padded MM/dd, unlike the lenient parsing above.
+        self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd')")
+        # The strict canonical token must degrade in BigQuery's FORMAT clause too,
+        # not just INVERSE_TIME_MAPPING (it previously leaked as 'MMstrict/DDstrict').
+        self.validate_all(
+            "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+            write={
+                "": "SELECT CAST(STR_TO_TIME(x, '%m/%d/%Y') AS DATE)",
+                "duckdb": "SELECT CAST(CAST(TRY_STRPTIME(x, '%m/%d/%Y') AS TIMESTAMP) AS DATE)",
+                "bigquery": "SELECT CAST(SAFE_CAST(x AS TIMESTAMP FORMAT 'MM/DD/YYYY') AS DATE)",
+                "spark": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+                "databricks": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
             },
         )
         self.validate_all(

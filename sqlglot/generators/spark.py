@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-
 from sqlglot import exp
 from sqlglot import generator
 from sqlglot.dialects.dialect import (
+    STRICT_PARSE_TIME_EXPRESSIONS,
     array_append_sql,
     rename_func,
     unit_to_var,
@@ -88,6 +88,21 @@ class SparkGenerator(Spark2Generator):
         exp.DType.MONEY: ((15, 4), ()),
         exp.DType.SMALLMONEY: ((6, 4), ()),
     }
+
+    def format_time(
+        self,
+        expression: exp.Expr,
+        inverse_time_mapping: dict[str, str] | None = None,
+        inverse_time_trie: dict | None = None,
+    ) -> str | None:
+        # Spark 3+ parses these leniently, so emit M/d (not the padded MM/dd used for
+        # formatting) for the canonical %m/%d. The expression set is shared with the parser
+        # (STRICT_PARSE_TIME_EXPRESSIONS), which is what guarantees the strict roundtrip.
+        if isinstance(expression, STRICT_PARSE_TIME_EXPRESSIONS):
+            inverse_time_mapping = inverse_time_mapping or self.dialect.LENIENT_INVERSE_TIME_MAPPING
+            inverse_time_trie = inverse_time_trie or self.dialect.LENIENT_INVERSE_TIME_TRIE
+
+        return super().format_time(expression, inverse_time_mapping, inverse_time_trie)
 
     TRANSFORMS = {
         k: v

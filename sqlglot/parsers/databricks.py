@@ -16,7 +16,6 @@ class DatabricksParser(SparkParser):
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,
         "IFF": exp.If.from_arg_list,
-        "REGEXP_SUBSTR": exp.RegexpSubstr.from_arg_list,
         "GETDATE": exp.CurrentTimestamp.from_arg_list,
         "DATEDIFF": build_date_delta(exp.DateDiff),
         "DATE_DIFF": build_date_delta(exp.DateDiff),

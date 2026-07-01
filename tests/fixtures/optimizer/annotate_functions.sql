@@ -1042,6 +1042,15 @@ DOUBLE;
 # dialect: databricks
 REGR_AVGX(tbl.int_col, tbl.int_col);
 DOUBLE;
+
+# dialect: databricks
+REGR_AVGX(ALL tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_AVGX(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

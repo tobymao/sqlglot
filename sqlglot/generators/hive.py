@@ -10,7 +10,6 @@ from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
     datestrtodate_sql,
     if_sql,
-    is_parse_json,
     left_to_substring_sql,
     max_or_greatest,
     min_or_least,
@@ -115,27 +114,6 @@ def _date_diff_sql(self: HiveGenerator, expression: exp.DateDiff | exp.TsOrDsDif
     return diff_sql
 
 
-def _json_format_sql(self: HiveGenerator, expression: exp.JSONFormat) -> str:
-    this = expression.this
-
-    if is_parse_json(this):
-        if this.this.is_string:
-            # Since FROM_JSON requires a nested type, we always wrap the json string with
-            # an array to ensure that "naked" strings like "'a'" will be handled correctly
-            wrapped_json = exp.Literal.string(f"[{this.this.name}]")
-
-            from_json = self.func(
-                "FROM_JSON", wrapped_json, self.func("SCHEMA_OF_JSON", wrapped_json)
-            )
-            to_json = self.func("TO_JSON", from_json)
-
-            # This strips the [, ] delimiters of the dummy array printed by TO_JSON
-            return self.func("REGEXP_EXTRACT", to_json, "'^.(.*).$'", "1")
-        return self.sql(this)
-
-    return self.func("TO_JSON", this, expression.args.get("options"))
-
-
 @generator.unsupported_args(("expression", "Hive's SORT_ARRAY does not support a comparator."))
 def _array_sort_sql(self: HiveGenerator, expression: exp.ArraySort) -> str:
     return self.func("SORT_ARRAY", expression.this)
@@ -199,7 +177,7 @@ class HiveGenerator(generator.Generator):
     SAFE_JSON_PATH_KEY_RE = re.compile(r"^[_\-a-zA-Z][\-\w]*$")
     SUPPORTS_TO_NUMBER = False
     WITH_PROPERTIES_PREFIX = "TBLPROPERTIES"
-    PARSE_JSON_NAME: str | None = None
+    PARSE_JSON_NAME: str | None = "PARSE_JSON"
     PAD_FILL_PATTERN_IS_REQUIRED = True
     SUPPORTS_MEDIAN = False
     ARRAY_SIZE_NAME = "SIZE"
@@ -265,7 +243,7 @@ class HiveGenerator(generator.Generator):
         exp.IsNan: rename_func("ISNAN"),
         exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
         exp.JSONExtractScalar: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
-        exp.JSONFormat: _json_format_sql,
+        exp.JSONFormat: rename_func("TO_JSON"),
         exp.Left: left_to_substring_sql,
         exp.Map: var_map_sql,
         exp.Max: max_or_greatest,

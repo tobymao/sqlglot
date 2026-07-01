@@ -17,6 +17,27 @@ from sqlglot.transforms import (
 )
 
 
+def _json_format_sql(self: Spark2Generator, expression: exp.JSONFormat) -> str:
+    this = expression.this
+
+    if is_parse_json(this):
+        if this.this.is_string:
+            # Since FROM_JSON requires a nested type, we always wrap the json string with
+            # an array to ensure that "naked" strings like "'a'" will be handled correctly
+            wrapped_json = exp.Literal.string(f"[{this.this.name}]")
+
+            from_json = self.func(
+                "FROM_JSON", wrapped_json, self.func("SCHEMA_OF_JSON", wrapped_json)
+            )
+            to_json = self.func("TO_JSON", from_json)
+
+            # This strips the [, ] delimiters of the dummy array printed by TO_JSON
+            return self.func("REGEXP_EXTRACT", to_json, "'^.(.*).$'", "1")
+        return self.sql(this)
+
+    return self.func("TO_JSON", this, expression.args.get("options"))
+
+
 def _map_sql(self: Spark2Generator, expression: exp.Map) -> str:
     keys = expression.args.get("keys")
     values = expression.args.get("values")
@@ -108,6 +129,7 @@ class Spark2Generator(HiveGenerator):
     NVL2_SUPPORTED = True
     CAN_IMPLEMENT_ARRAY_ANY = True
     ALTER_SET_TYPE = "TYPE"
+    PARSE_JSON_NAME: str | None = None
 
     PROPERTIES_LOCATION = {
         **HiveGenerator.PROPERTIES_LOCATION,
@@ -161,6 +183,7 @@ class Spark2Generator(HiveGenerator):
             exp.FromTimeZone: lambda self, e: self.func(
                 "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")
             ),
+            exp.JSONFormat: _json_format_sql,
             exp.LogicalAnd: rename_func("BOOL_AND"),
             exp.LogicalOr: rename_func("BOOL_OR"),
             exp.Map: _map_sql,

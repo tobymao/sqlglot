@@ -1022,6 +1022,35 @@ STRING;
 # dialect: hive, spark2, spark, databricks
 GET_JSON_OBJECT('{"a":1}', '$.a');
 STRING;
+
+# dialect: databricks
+REGEXP_INSTR(tbl.str_col, 'pattern');
+INT;
+
+# dialect: databricks
+REGEXP_LIKE(tbl.str_col, 'pattern');
+BOOLEAN;
+
+# dialect: databricks
+REGEXP_SUBSTR(tbl.str_col, 'pattern');
+VARCHAR;
+
+# dialect: databricks
+REGR_AVGX(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_AVGX(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_AVGX(ALL tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_AVGX(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

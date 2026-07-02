@@ -994,7 +994,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect | No
             )
             if source_quoted:
                 selection.args["alias"].set("quoted", True)
-            if dialect:
+            if dialect and not (dialect.PRESERVE_ORIGINAL_OUTPUT_NAME_CASE):
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))

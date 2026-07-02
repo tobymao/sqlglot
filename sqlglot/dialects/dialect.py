@@ -379,6 +379,13 @@ class Dialect(metaclass=_Dialect):
     e.g JSON_VALUE vs JSON_EXTRACT_SCALAR in BigQuery
     """
 
+    PRESERVE_ORIGINAL_OUTPUT_NAME_CASE: bool = False
+    """
+    Whether the dialect preserves the original case of derived output column names (e.g. from
+    semi-structured path access) rather than normalizing them. When True, qualify_outputs will
+    not apply normalize_identifier to synthesized aliases for non-Column expressions.
+    """
+
     LOG_BASE_FIRST: bool | None = True
     """
     Whether the base comes first in the `LOG` function.

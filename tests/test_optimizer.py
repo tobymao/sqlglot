@@ -2747,7 +2747,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # Databricks
         sql = _parse_and_optimize("SELECT col:A.a, col:a.A FROM t", dialect="databricks")
-        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `a` FROM `t` AS `t`"
+        assert sql == "SELECT `t`.`col`:A.a AS `a`, `t`.`col`:a.A AS `A` FROM `t` AS `t`"
 
         # Clickhouse
         sql = _parse_and_optimize("SELECT col.A.a, col.a.A FROM t", dialect="clickhouse")

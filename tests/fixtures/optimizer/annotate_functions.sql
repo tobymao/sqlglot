@@ -1022,9 +1022,11 @@ STRING;
 # dialect: hive, spark2, spark, databricks
 GET_JSON_OBJECT('{"a":1}', '$.a');
 STRING;
+
 # dialect: hive, spark2, spark, databricks
 STR_TO_MAP('a:1,b:2', ',', ':');
 MAP<STRING, STRING>;
+
 # dialect: hive
 tbl.bigint DIV tbl.bigint;
 BIGINT; 

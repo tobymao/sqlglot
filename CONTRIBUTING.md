@@ -62,7 +62,7 @@ Our policy:
   to a review question. If you cannot explain why a change is correct, do not open the PR.
 - **Disclose LLM use.** Human contributors who used an LLM are encouraged to mention it in a disclaimer.
 - **Write the PR description yourself.** Keep it concise and human-written; a few clear sentences without
-  emojis summaries and restatements of the diff are woth more than a wall of text.
+  emojis summaries and restatements of the diff are worth more than a wall of text.
 - **If you are a new contributor, prefer opening an issue over a PR.** We are interested in growing
   long-term contributors who genuinely understand the codebase. If you have found a bug or have a fix in
   mind, open a well-written issue with a reproducible example (see below). The core team can usually

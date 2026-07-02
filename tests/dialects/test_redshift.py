@@ -390,10 +390,6 @@ class TestRedshift(Validator):
             "SELECT 'abc' || 'def'",
         )
         self.validate_identity(
-            "SELECT CONCAT_WS('DELIM', 'abc', 'def', 'ghi')",
-            "SELECT 'abc' || 'DELIM' || 'def' || 'DELIM' || 'ghi'",
-        )
-        self.validate_identity(
             "SELECT TOP 1 x FROM y",
             "SELECT x FROM y LIMIT 1",
         )

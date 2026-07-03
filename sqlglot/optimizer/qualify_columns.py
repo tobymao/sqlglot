@@ -994,7 +994,10 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
 
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
-                selection.set("alias", exp.TableAlias(this=exp.to_identifier(f"_col_{i}")))
+                alias_identifier = exp.to_identifier(f"_col_{i}")
+                if dialect and not (dialect.PRESERVE_ORIGINAL_OUTPUT_NAME_CASE):
+                    dialect.normalize_identifier(alias_identifier)
+                selection.set("alias", exp.TableAlias(this=alias_identifier))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
             source_quoted = isinstance(selection, exp.Column) and selection.this.quoted
             selection = alias(

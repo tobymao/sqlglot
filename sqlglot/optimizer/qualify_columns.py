@@ -887,7 +887,7 @@ def _expand_stars(
                     alias_ = renamed_columns.get(name, name)
                     quoted = quoted_columns.get(name) or (
                         # if it has characters that the dialect would have changed, infer that it was quoted.
-                        not source_expression and dialect.case_sensitive(name)
+                        isinstance(source, exp.Table) and dialect.case_sensitive(name)
                     )
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted

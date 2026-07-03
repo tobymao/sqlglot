@@ -741,6 +741,53 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
+    def test_unnest_type_trace_is_memoized(self):
+        """Tracing an UNNEST's element type must not re-walk shared parts of the scope graph.
+
+        qualify resolves an unnested column's type by walking it back to a base table
+        (Resolver._get_column_type_from_scope). Each order_attrs_k joins order_attrs_{k-1}
+        back to the shared `orders` CTE, which does not hold `attrs`, so the walk cannot
+        short-circuit and revisits it through every path. Without memoization the trace is
+        called ~93k times at 12 levels; with it, ~90.
+        """
+        from sqlglot.optimizer import resolver as resolver_module
+
+        n_levels = 12
+        ctes = [
+            "order_attrs0 AS (SELECT id, [STRUCT('color' AS key, 'red' AS value)] AS attrs FROM orders)"
+        ]
+        for k in range(1, n_levels):
+            prev = f"order_attrs{k - 1}"
+            ctes.append(
+                f"order_attrs{k} AS (SELECT a.id AS id, "
+                f"array_concat(a.attrs, [STRUCT('size' AS key, 'large' AS value)]) AS attrs "
+                f"FROM {prev} AS a JOIN orders AS o ON a.id = o.id)"
+            )
+        ctes.append(
+            f"non_null_attrs AS (SELECT ARRAY(SELECT x FROM UNNEST(attrs) AS x "
+            f"WHERE NOT x.value IS NULL) AS attrs FROM order_attrs{n_levels - 1})"
+        )
+        sql = "WITH " + ", ".join(ctes) + " SELECT * FROM non_null_attrs"
+
+        original = resolver_module.Resolver._get_column_type_from_scope
+        with patch.object(
+            resolver_module.Resolver,
+            "_get_column_type_from_scope",
+            autospec=True,
+            side_effect=original,
+        ) as traced:
+            optimizer.qualify.qualify(
+                parse_one(sql, dialect="bigquery"),
+                schema={"orders": {"id": "INT64"}},
+                dialect="bigquery",
+            )
+
+        self.assertLess(
+            traced.call_count,
+            1000,
+            f"got {traced.call_count} trace calls -- memoization may be broken",
+        )
+
     def test_validate_columns(self):
         with self.assertRaisesRegex(
             OptimizeError, "Column 'foo' could not be resolved. Line: 1, Col: 10"

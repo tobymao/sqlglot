@@ -30,6 +30,7 @@ class Resolver:
         self._all_columns: set[str] | None = None
         self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
+        self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -404,16 +405,28 @@ class Resolver:
         Returns:
             The DataType of the column, or None if not found.
         """
+        # A single source can be reachable through many paths of a scope DAG (e.g. a CTE
+        # referenced by several other CTEs). The schema and scope are immutable during
+        # qualification, so the type of `column` under `source` depends only on
+        # `(source, column name)`; memoize it to walk each source once.
+        cache_key = (id(source), column.name)
+        if cache_key in self._column_type_from_scope_cache:
+            return self._column_type_from_scope_cache[cache_key]
+
+        # None is a valid result if DataType could not be determined!
+        result: exp.DataType | None = None
         if isinstance(source, exp.Table):
             # base table - get the column type from schema
-            col_type: exp.DataType | None = self.schema.get_column_type(source, column)
+            col_type = self.schema.get_column_type(source, column)
             if col_type and not col_type.is_type(exp.DType.UNKNOWN):
-                return col_type
+                result = col_type
         elif isinstance(source, Scope):
             # iterate over all sources in the scope
-            for source_name, nested_source in source.sources.items():
-                col_type = self._get_column_type_from_scope(nested_source, column)
-                if col_type and not col_type.is_type(exp.DType.UNKNOWN):
-                    return col_type
+            for nested_source in source.sources.values():
+                nested_type = self._get_column_type_from_scope(nested_source, column)
+                if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
+                    result = nested_type
+                    break
 
-        return None
+        self._column_type_from_scope_cache[cache_key] = result
+        return result

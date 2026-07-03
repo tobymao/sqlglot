@@ -885,8 +885,18 @@ def _expand_stars(
                     )
                 else:
                     alias_ = renamed_columns.get(name, name)
-                    selection_expr = replaced_columns.get(name) or exp.column(name, table=table)
-                    if quoted_columns.get(name) and isinstance(selection_expr, exp.Column):
+                    quoted = quoted_columns.get(name) or (
+                        # if it has characters that the dialect would have changed, infer that it was quoted.
+                        not source_expression and dialect.case_sensitive(name)
+                    )
+                    selection_expr = replaced_columns.get(name) or exp.column(
+                        name, table=table, quoted=quoted
+                    )
+                    if (
+                        quoted
+                        and isinstance(selection_expr, exp.Column)
+                        and not selection_expr.this.quoted
+                    ):
                         selection_expr.this.set("quoted", True)
                     new_selections.append(
                         alias(selection_expr, alias_, copy=False)
@@ -960,7 +970,7 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect | None = None) -> None:
+def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> None:
     """Ensure all output columns are aliased"""
     if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)

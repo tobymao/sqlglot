@@ -2423,7 +2423,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema = {
             "example": {
                 '"source"': {
-                    "id": "text",
+                    '"ID"': "text",
                     '"name"': "text",
                     '"payload"': "text",
                 }
@@ -2434,8 +2434,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             """
             SELECT
              "source"."ID" AS "ID",
-             "source"."name" AS "NAME",
-             "source"."payload" AS "PAYLOAD"
+             "source"."name" AS "name",
+             "source"."payload" AS "payload"
             FROM "EXAMPLE"."source" AS "source"
             """,
             read="snowflake",

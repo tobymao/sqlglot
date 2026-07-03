@@ -74,6 +74,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         and isinstance(alias, exp.TableAlias)
         and not alias.columns
     ):
+        from sqlglot.dialects.tsql import TSQL
         from sqlglot.optimizer.qualify_columns import qualify_outputs
 
         # We keep track of the unaliased column projection indexes instead of the expressions
@@ -84,7 +85,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
 
-        qualify_outputs(query)
+        qualify_outputs(query, dialect=TSQL())
 
         # Preserve the quoting information of columns for newly added Alias nodes
         query_selects = query.selects

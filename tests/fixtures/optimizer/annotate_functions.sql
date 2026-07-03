@@ -4259,6 +4259,14 @@ DOUBLE;
 REGR_AVGY(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
 
+# dialect: databricks
+REGR_AVGY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_AVGY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
 # dialect: snowflake
 REGR_COUNT(tbl.double_col, tbl.double_col);
 DOUBLE;
@@ -4274,6 +4282,14 @@ DOUBLE;
 # dialect: snowflake
 REGR_COUNT(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
+
+# dialect: databricks
+REGR_COUNT(tbl.double_col, tbl.double_col);
+BIGINT;
+
+# dialect: databricks
+REGR_COUNT(tbl.int_col, tbl.int_col);
+BIGINT;
 
 # dialect: snowflake
 REGR_INTERCEPT(tbl.double_col, tbl.double_col);
@@ -4291,6 +4307,14 @@ DOUBLE;
 REGR_INTERCEPT(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
 
+# dialect: databricks
+REGR_INTERCEPT(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_INTERCEPT(tbl.int_col, tbl.int_col);
+DOUBLE;
+
 # dialect: snowflake
 REGR_R2(tbl.double_col, tbl.double_col);
 DOUBLE;
@@ -4306,6 +4330,14 @@ DOUBLE;
 # dialect: snowflake
 REGR_R2(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
+
+# dialect: databricks
+REGR_R2(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_R2(tbl.int_col, tbl.int_col);
+DOUBLE;
 
 # dialect: snowflake
 REGR_SXX(tbl.double_col, tbl.double_col);
@@ -4370,6 +4402,14 @@ DOUBLE;
 # dialect: snowflake
 REGR_SLOPE(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
+
+# dialect: databricks
+REGR_SLOPE(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SLOPE(tbl.int_col, tbl.int_col);
+DOUBLE;
 
 # dialect: snowflake
 REGR_VALX(NULL, 2.0);

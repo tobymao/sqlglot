@@ -283,6 +283,36 @@ class AlterSet(Expression):
     }
 
 
+class AlterSchemaSetDbProperties(Expression):
+    arg_types = {"expressions": True, "unset": False}
+
+
+class AlterSchemaOwner(Expression):
+    arg_types = {"this": True}
+
+
+class AlterSchemaSetTags(Expression):
+    arg_types = {"expressions": True, "unset": False}
+
+
+class AlterSchemaPredictiveOptimization(Expression):
+    # this = "ENABLE" | "DISABLE" | "INHERIT"
+    arg_types = {"this": True}
+
+
+class AlterSchemaDefaultCollation(Expression):
+    arg_types = {"this": True}
+
+
+class AlterSchemaManagedLocation(Expression):
+    arg_types = {"this": True}
+
+
+class AlterSchemaRetainDropped(Expression):
+    # this = number, unit = "HOUR" | "HOURS" | "DAY" | "DAYS" | "WEEK" | "WEEKS"
+    arg_types = {"this": True, "unit": True}
+
+
 class RenameColumn(Expression):
     arg_types = {"this": True, "to": True, "exists": False}
 

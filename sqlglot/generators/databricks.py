@@ -112,3 +112,29 @@ class DatabricksGenerator(SparkGenerator):
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
         return f"CLUSTER BY {this}"
+
+    def alterschemasetdbproperties_sql(self, expression: exp.AlterSchemaSetDbProperties) -> str:
+        props = self.expressions(expression, key="expressions", flat=True)
+        return f"SET DBPROPERTIES ({props})"
+
+    def alterschemaowner_sql(self, expression: exp.AlterSchemaOwner) -> str:
+        return f"OWNER TO {self.sql(expression, 'this')}"
+
+    def alterschemasettags_sql(self, expression: exp.AlterSchemaSetTags) -> str:
+        tags = self.expressions(expression, key="expressions", flat=True)
+        verb = "UNSET TAGS" if expression.args.get("unset") else "SET TAGS"
+        return f"{verb} ({tags})"
+
+    def alterschemapredictiveoptimization_sql(
+        self, expression: exp.AlterSchemaPredictiveOptimization
+    ) -> str:
+        return f"{expression.this} PREDICTIVE OPTIMIZATION"
+
+    def alterschemadefaultcollation_sql(self, expression: exp.AlterSchemaDefaultCollation) -> str:
+        return f"DEFAULT COLLATION {self.sql(expression, 'this')}"
+
+    def alterschemamanagedlocation_sql(self, expression: exp.AlterSchemaManagedLocation) -> str:
+        return f"SET MANAGED LOCATION {self.sql(expression, 'this')}"
+
+    def alterschemaretaindropped_sql(self, expression: exp.AlterSchemaRetainDropped) -> str:
+        return f"RETAIN DROPPED TO {self.sql(expression, 'this')} {expression.args['unit']}"

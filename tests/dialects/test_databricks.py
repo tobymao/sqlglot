@@ -546,3 +546,56 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
         self.validate_identity("DECLARE x INT = 1")
         self.validate_identity("DECLARE OR REPLACE x INT = 1")
+
+    def test_alter_schema(self):
+        self.validate_identity(
+            "ALTER SCHEMA mydb SET DBPROPERTIES ('k1'='v1', 'k2'='v2')"
+        )
+        self.validate_identity(
+            "ALTER DATABASE mydb SET DBPROPERTIES ('k1'='v1')"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb OWNER TO `some.user@example.com`"
+        )
+        # SET OWNER TO is also valid (optional SET prefix); normalizes to OWNER TO
+        self.validate_identity(
+            "ALTER SCHEMA mydb SET OWNER TO `alf@melmak.et`",
+            "ALTER SCHEMA mydb OWNER TO `alf@melmak.et`",
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb SET TAGS ('tag1' = 'val1', 'tag2' = 'val2')"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb UNSET TAGS ('tag1', 'tag2')"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb ENABLE PREDICTIVE OPTIMIZATION"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb DISABLE PREDICTIVE OPTIMIZATION"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb INHERIT PREDICTIVE OPTIMIZATION"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA mydb DEFAULT COLLATION UNICODE_CI_AI"
+        )
+        # SET DEFAULT COLLATION is also valid; normalizes to DEFAULT COLLATION
+        self.validate_identity(
+            "ALTER SCHEMA mydb SET DEFAULT COLLATION utf8mb4_0900_ai_ci",
+            "ALTER SCHEMA mydb DEFAULT COLLATION utf8mb4_0900_ai_ci",
+        )
+        self.validate_identity(
+            "ALTER SCHEMA my_catalog.my_schema SET MANAGED LOCATION 's3://my-bucket/schemas/my_schema/'"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA my_catalog.my_schema RETAIN DROPPED TO 14 DAYS"
+        )
+        self.validate_identity(
+            "ALTER SCHEMA my_catalog.my_schema RETAIN DROPPED TO 0 HOURS"
+        )
+        # SET RETAIN DROPPED TO is also valid (optional SET prefix)
+        self.validate_identity(
+            "ALTER SCHEMA my_catalog.my_schema SET RETAIN DROPPED TO 7 DAYS",
+            "ALTER SCHEMA my_catalog.my_schema RETAIN DROPPED TO 7 DAYS",
+        )

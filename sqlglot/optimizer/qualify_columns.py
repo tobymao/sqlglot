@@ -853,9 +853,9 @@ def _expand_stars(
             # so the generated alias isn't folded by dialect normalization
             source_expression = source.expression if isinstance(source, Scope) else None
             quoted_columns = (
-                {s.output_name: _output_identifier_quoted(s) for s in source_expression.selects}
+                {s.output_name for s in source_expression.selects if _output_identifier_quoted(s)}
                 if isinstance(source_expression, exp.Query)
-                else {}
+                else set()
             )
 
             if pivot:
@@ -885,19 +885,13 @@ def _expand_stars(
                     )
                 else:
                     alias_ = renamed_columns.get(name, name)
-                    quoted = quoted_columns.get(name) or (
+                    quoted = name in quoted_columns or (
                         # if it has characters that the dialect would have changed, infer that it was quoted.
                         isinstance(source, exp.Table) and dialect.case_sensitive(name)
                     )
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted
                     )
-                    if (
-                        quoted
-                        and isinstance(selection_expr, exp.Column)
-                        and not selection_expr.this.quoted
-                    ):
-                        selection_expr.this.set("quoted", True)
                     new_selections.append(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name

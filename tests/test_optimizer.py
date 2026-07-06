@@ -2423,7 +2423,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema = {
             "example": {
                 '"source"': {
-                    '"ID"': "text",
+                    "id": "text",
                     '"name"': "text",
                     '"payload"': "text",
                 }

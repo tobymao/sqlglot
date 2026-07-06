@@ -1173,8 +1173,8 @@ LANGUAGE js AS
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
-                "presto": "SHA512(x)",
-                "trino": "SHA512(x)",
+                "presto": "LOWER(TO_HEX(SHA512(x)))",
+                "trino": "LOWER(TO_HEX(SHA512(x)))",
             },
         )
         self.validate_all(

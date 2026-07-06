@@ -710,6 +710,47 @@ class TestPresto(Validator):
             "LOWER(TO_HEX(MD5(TO_UTF8(CONCAT(CAST(x AS VARCHAR), CAST('s' AS VARCHAR))))))",
         )
 
+        self.assertEqual(
+            exp.func("sha2", exp.cast("x", "text"), exp.Literal.number(256)).sql(dialect="presto"),
+            "LOWER(TO_HEX(SHA256(TO_UTF8(CAST(x AS VARCHAR)))))",
+        )
+
+        # native SHA256/SHA512 take and return VARBINARY, so they parse as
+        # SHA2Digest and round-trip untouched, mirroring MD5 -> MD5Digest
+        self.validate_all(
+            "SELECT SHA256(x)",
+            write={
+                "presto": "SELECT SHA256(x)",
+                "trino": "SELECT SHA256(x)",
+                "duckdb": "SELECT UNHEX(SHA256(x))",
+                "bigquery": "SELECT SHA256(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT SHA512(x)",
+            write={
+                "presto": "SELECT SHA512(x)",
+                "trino": "SELECT SHA512(x)",
+                "bigquery": "SELECT SHA512(x)",
+            },
+        )
+
+        # string-semantics SHA2 renders hex output like md5_sql does for MD5
+        self.validate_all(
+            "SELECT SHA2(x, 256)",
+            write={
+                "presto": "SELECT LOWER(TO_HEX(SHA256(x)))",
+                "trino": "SELECT LOWER(TO_HEX(SHA256(x)))",
+            },
+        )
+        self.validate_all(
+            "SELECT SHA2(x, 512)",
+            write={
+                "presto": "SELECT LOWER(TO_HEX(SHA512(x)))",
+                "trino": "SELECT LOWER(TO_HEX(SHA512(x)))",
+            },
+        )
+
         with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT COALESCE(ELEMENT_AT(MAP_FROM_ENTRIES(ARRAY[(51, '1')]), id), quantity) FROM my_table",

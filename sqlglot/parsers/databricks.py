@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.spark import SparkParser
 from sqlglot.tokens import TokenType
 
@@ -72,22 +72,38 @@ class DatabricksParser(SparkParser):
 
     def _parse_alter(self) -> exp.Alter | exp.Command:
         start = self._prev
-        # Peek at the alter kind to decide which parser dict to use
-        saved = self._index
-        self._advance()
-        kind_token = self._prev
-        self._retreat(saved)
+        iceberg = self._match_text_seq("ICEBERG")
+        alter_token = self._match_set(self.ALTERABLES) and self._prev
 
-        if kind_token and kind_token.token_type in (TokenType.SCHEMA, TokenType.DATABASE):
-            # Temporarily replace ALTER_PARSERS with the schema-specific ones
-            orig = self.ALTER_PARSERS
-            self.ALTER_PARSERS = self.SCHEMA_ALTER_PARSERS
-            try:
-                return super()._parse_alter()
-            finally:
-                self.ALTER_PARSERS = orig
+        if not alter_token:
+            return self._parse_as_command(start)
 
-        return super()._parse_alter()
+        if alter_token.token_type not in (TokenType.SCHEMA, TokenType.DATABASE):
+            self._retreat(self._index - (2 if iceberg else 1))
+            return super()._parse_alter()
+
+        exists = self._parse_exists()
+        this = self._parse_table(schema=True, parse_partition=False)
+
+        if self._next:
+            self._advance()
+
+        schema_parser = (
+            self.SCHEMA_ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
+        )
+        if schema_parser:
+            actions = ensure_list(schema_parser(self))
+            if not self._curr and actions:
+                return self.expression(
+                    exp.Alter(
+                        this=this,
+                        kind=alter_token.text.upper(),
+                        exists=exists,
+                        actions=actions,
+                    )
+                )
+
+        return self._parse_as_command(start)
 
     def _parse_alter_schema_default(self) -> exp.Expression:
         self._match_text_seq("COLLATION")

@@ -425,7 +425,15 @@ def to_node(
         elif pivot and pivot.alias_or_name == c.table:
             downstream_columns = []
 
-            column_name = c.name
+            column_this = c.this
+            if isinstance(column_this, (exp.Boolean, exp.Null)):
+                # A column literally named "true", "false" or "null" parses as a keyword
+                # literal instead of an identifier, so recover its identifier form
+                column_this = normalize_identifiers.normalize_identifiers(
+                    exp.to_identifier(column_this.sql().lower()), dialect=dialect
+                )
+
+            column_name = column_this.name
             if column_name in pivot_column_mapping:
                 downstream_columns.extend(pivot_column_mapping[column_name])
             else:
@@ -434,7 +442,7 @@ def to_node(
                 pivot_parent = pivot.parent
                 downstream_columns.append(
                     exp.column(
-                        pivot_renames.get(c.name, c.this),
+                        pivot_renames.get(column_name, column_this),
                         table=pivot_parent.alias_or_name if pivot_parent else None,
                     )
                 )

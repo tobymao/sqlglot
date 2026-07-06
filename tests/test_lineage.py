@@ -685,6 +685,28 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(node.downstream[0].reference_node_name, "t")
         self.assertEqual(node.downstream[0].downstream[0].name, "quarterly_sales.empid")
 
+    def test_pivot_with_implicit_column_named_like_a_literal(self) -> None:
+        sql = """
+        SELECT p.true AS true_count, p.a
+        FROM loans PIVOT (SUM(loan_id) FOR product IN ('a', 'b')) AS p
+        """
+        schema = {"loans": {"loan_id": "int", "product": "varchar", "true": "boolean"}}
+
+        node = lineage("true_count", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["loans.true"])
+
+        node = lineage("true_count", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["LOANS.TRUE"])
+
+        sql = """
+        SELECT p.null AS null_count, p.a
+        FROM loans PIVOT (SUM(loan_id) FOR product IN ('a', 'b')) AS p
+        """
+        schema = {"loans": {"loan_id": "int", "product": "varchar", "null": "boolean"}}
+
+        node = lineage("null_count", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["loans.null"])
+
     def test_unpivot(self) -> None:
         sql = """
         SELECT id, metric_name, score

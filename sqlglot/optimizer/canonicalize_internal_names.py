@@ -59,6 +59,9 @@ def canonicalize_internal_names(expression: E) -> E:
     # Shared across scopes so a Table referenced from multiple scopes (LATERAL/UNNEST) gets consistent column names
     table_columns: dict[int, dict[str, str]] = {}
 
+    # Shared across UDTF sources so chained correlated UNNESTs get consistent names for their alias columns
+    udtf_columns: dict[int, dict[str, str]] = {}
+
     for scope in traverse_scope(expression):
         scope_expr = scope.expression
         is_output_scope = id(scope_expr) in output_scope_exprs
@@ -118,16 +121,19 @@ def canonicalize_internal_names(expression: E) -> E:
                 elif source.is_udtf:
                     alias_holder = src_expr
 
+                # A UDTF (unlike a CTE/subquery) can be a source in multiple scopes, so keep its alias_holder and share its column map across them
+                is_udtf_source = alias_holder is src_expr
+
                 table_key = id(alias_holder) if alias_holder else id(source)
                 canon_t = scope_table.get(table_key, "")
 
                 if not canon_t:
                     canon_t = next_table()
                     scope_table[table_key] = canon_t
-                else:
+                elif not is_udtf_source:
                     alias_holder = None  # already renamed on a previous encounter
 
-                name_map = {}
+                name_map = udtf_columns.setdefault(id(src_expr), {}) if is_udtf_source else {}
             else:
                 continue
 

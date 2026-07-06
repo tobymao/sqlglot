@@ -3243,7 +3243,12 @@ class Generator:
         limit = expression.args.get("limit")
 
         if self.LIMIT_FETCH == "LIMIT" and isinstance(limit, exp.Fetch):
-            limit = exp.Limit(expression=exp.maybe_copy(limit.args.get("count")))
+            count = limit.args.get("count")
+            # "FETCH FIRST ROWS ONLY" without a count means one row per the SQL
+            # standard; emitting a bare "LIMIT" here would produce invalid SQL.
+            limit = exp.Limit(
+                expression=exp.maybe_copy(count) if count is not None else exp.Literal.number(1)
+            )
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 

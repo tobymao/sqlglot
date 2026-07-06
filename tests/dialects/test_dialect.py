@@ -2746,6 +2746,48 @@ class TestDialect(Validator):
             "CAST(x AS DECIMAL) / NULLIF(y, 0)",
         )
 
+    def test_fetch_first_implicit_count(self):
+        # "FETCH FIRST ROWS ONLY" without an explicit count selects one row per
+        # the SQL standard. Dialects that render FETCH as LIMIT previously emitted
+        # a bare "LIMIT", which is invalid SQL and fails to re-parse.
+        self.validate_all(
+            "SELECT * FROM t FETCH FIRST ROWS ONLY",
+            write={
+                "postgres": "SELECT * FROM t FETCH FIRST ROWS ONLY",
+                "presto": "SELECT * FROM t FETCH FIRST ROWS ONLY",
+                "oracle": "SELECT * FROM t FETCH FIRST ROWS ONLY",
+                "mysql": "SELECT * FROM t LIMIT 1",
+                "sqlite": "SELECT * FROM t LIMIT 1",
+                "duckdb": "SELECT * FROM t LIMIT 1",
+                "bigquery": "SELECT * FROM t LIMIT 1",
+                "spark": "SELECT * FROM t LIMIT 1",
+                "hive": "SELECT * FROM t LIMIT 1",
+                "redshift": "SELECT * FROM t LIMIT 1",
+                "starrocks": "SELECT * FROM t LIMIT 1",
+                "doris": "SELECT * FROM t LIMIT 1",
+            },
+        )
+
+        # An explicit count must be preserved, not defaulted to one.
+        self.validate_all(
+            "SELECT * FROM t FETCH FIRST 10 ROWS ONLY",
+            write={
+                "mysql": "SELECT * FROM t LIMIT 10",
+                "oracle": "SELECT * FROM t FETCH FIRST 10 ROWS ONLY",
+            },
+        )
+
+        # The generated SQL must round-trip (be re-parseable and idempotent) in
+        # every LIMIT-based dialect.
+        for dialect in ("mysql", "sqlite", "duckdb", "bigquery", "spark", "redshift"):
+            with self.subTest(dialect=dialect):
+                once = parse_one("SELECT * FROM t FETCH FIRST ROWS ONLY", read=dialect).sql(
+                    dialect=dialect
+                )
+                self.assertEqual(once, "SELECT * FROM t LIMIT 1")
+                twice = parse_one(once, read=dialect).sql(dialect=dialect)
+                self.assertEqual(once, twice)
+
     def test_limit(self):
         self.validate_identity("WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all")
         self.validate_all(

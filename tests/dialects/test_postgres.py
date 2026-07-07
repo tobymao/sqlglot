@@ -22,6 +22,8 @@ class TestPostgres(Validator):
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
 
+        self.validate_identity('WITH t AS (SELECT 1 AS "null") SELECT t.null FROM t')
+        self.validate_identity('WITH t AS (SELECT 1 AS "true") SELECT t.true FROM t')
         self.validate_identity("""CAST('a' AS TEXT COLLATE "de_DE")""")
         self.validate_identity("SELECT '%' SIMILAR TO '^%' ESCAPE '^'")
         self.validate_identity("SELECT GET_BIT(CAST(44 AS BIT(10)), 6)")

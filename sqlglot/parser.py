@@ -6794,7 +6794,15 @@ class Parser:
                 if isinstance(field, exp.Column) and self._match(TokenType.DOT, advance=False):
                     field = self._parse_column_ops(field)
             else:
+                dot = self._is_connected() and self._prev.token_type == TokenType.DOT
                 field = self._parse_field(any_token=True, anonymous_func=True)
+
+                # In t.true, t.null we should produce an Identifier node
+                if dot and isinstance(field, (exp.Null, exp.Boolean)):
+                    field = self.expression(
+                        exp.Identifier(this=self._prev.text),
+                        comments=field.comments,
+                    )
 
             # Function calls can be qualified, e.g., x.y.FOO()
             # This converts the final AST to a series of Dots leading to the function call

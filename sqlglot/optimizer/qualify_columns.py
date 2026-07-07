@@ -989,7 +989,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
                 alias_identifier = exp.to_identifier(f"_col_{i}")
-                if dialect and not (dialect.PRESERVE_ORIGINAL_OUTPUT_NAME_CASE):
+                if dialect:
                     dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
@@ -1001,7 +1001,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             )
             if source_quoted:
                 selection.args["alias"].set("quoted", True)
-            if dialect and not (dialect.PRESERVE_ORIGINAL_OUTPUT_NAME_CASE):
+            if dialect:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))

@@ -14,7 +14,6 @@ class Spark(Spark2):
     SUPPORTS_LIMIT_ALL = True
     SUPPORTS_NULL_TYPE = True
     ARRAY_FUNCS_PROPAGATES_NULLS = True
-    PRESERVE_ORIGINAL_OUTPUT_NAME_CASE = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     class Tokenizer(Spark2.Tokenizer):

@@ -38,12 +38,27 @@ from sqlglot.transforms import (
     move_schema_columns_to_partitioned_by,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.time import format_time
+from sqlglot.trie import new_trie
 
 # These constants are duplicated from the Hive dialect class to avoid circular imports.
 # They must be kept in sync with Hive.TIME_FORMAT, Hive.DATE_FORMAT, Hive.DATEINT_FORMAT.
 HIVE_TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 HIVE_DATE_FORMAT = "'yyyy-MM-dd'"
 HIVE_DATEINT_FORMAT = "'yyyyMMdd'"
+
+# Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
+PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.TsOrDsToDate)
+
+# Rewrites a lenient canonical %m/%d to its non-padded form for strict dialects' parse
+# formats; the identity entries keep the strict %mstrict/%dstrict tokens from partial-matching.
+LENIENT_PARSE_TIME_MAPPING = {
+    "%m": "%-m",
+    "%d": "%-d",
+    "%mstrict": "%mstrict",
+    "%dstrict": "%dstrict",
+}
+LENIENT_PARSE_TIME_TRIE = new_trie(LENIENT_PARSE_TIME_MAPPING)
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {
@@ -365,6 +380,30 @@ class HiveGenerator(generator.Generator):
     TS_OR_DS_EXPRESSIONS = HIVE_TS_OR_DS_EXPRESSIONS
 
     IGNORE_NULLS_FUNCS = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
+
+    def format_time(
+        self,
+        expression: exp.Expr,
+        inverse_time_mapping: dict[str, str] | None = None,
+        inverse_time_trie: dict | None = None,
+    ) -> str | None:
+        if (
+            self.dialect.STRICT_TIME_PARSING
+            and inverse_time_mapping is None
+            and isinstance(expression, PARSE_TIME_EXPRESSIONS)
+        ):
+            # Strict dialects (modern Hive, Spark 3+) reject single-digit MM/dd, so render a
+            # lenient canonical %m/%d as the non-padded M/d to keep single-digit sources
+            # parseable, while the strict %mstrict stays MM (via INVERSE_TIME_MAPPING).
+            fmt = format_time(
+                self.sql(expression, "format"), LENIENT_PARSE_TIME_MAPPING, LENIENT_PARSE_TIME_TRIE
+            )
+            if fmt:
+                return format_time(
+                    fmt, self.dialect.INVERSE_TIME_MAPPING, self.dialect.INVERSE_TIME_TRIE
+                )
+
+        return super().format_time(expression, inverse_time_mapping, inverse_time_trie)
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         this = expression.this

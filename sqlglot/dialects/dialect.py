@@ -242,8 +242,6 @@ class _Dialect(type):
         cls._classes[enum.value if enum is not None else clsname.lower()] = klass
 
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
-        klass.STRICT_TIME_TRIE = new_trie(klass.STRICT_TIME_MAPPING)
-        klass.LENIENT_INVERSE_TIME_TRIE = new_trie(klass.LENIENT_INVERSE_TIME_MAPPING)
         klass.FORMAT_TRIE = (
             new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
         )
@@ -427,18 +425,12 @@ class Dialect(metaclass=_Dialect):
     TIME_MAPPING: dict[str, str] = {}
     """Associates this dialect's time formats with their equivalent Python `strftime` formats."""
 
-    STRICT_TIME_MAPPING: dict[str, str] = {}
+    STRICT_TIME_PARSING = False
     """
-    Variant of `TIME_MAPPING` used when *parsing* a string with a format (e.g. `StrToTime`).
-    Lets dialects with strict parsing (e.g. Spark 3+'s zero-padded `MM`/`dd`) map those to a
-    distinct canonical format, preserving the roundtrip. Empty means `TIME_MAPPING` is used.
-    """
-
-    LENIENT_INVERSE_TIME_MAPPING: dict[str, str] = {}
-    """
-    Inverse mapping used when *generating* a parse format (e.g. `StrToTime`) for dialects that
-    parse leniently (e.g. Spark). Maps the canonical specifiers to their lenient single-letter
-    forms, and the strict tokens back to the padded forms.
+    Whether this dialect parses `MM`/`dd` strictly (e.g. modern Hive, Spark 3+): single-digit
+    months/days don't parse. When set, `TIME_MAPPING` maps `MM`/`dd` to the `%mstrict`/`%dstrict`
+    canonical tokens and the generator renders a lenient `%m` as the non-padded `M` for parse
+    expressions (see `HiveGenerator.format_time`).
     """
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
@@ -799,12 +791,10 @@ class Dialect(metaclass=_Dialect):
 
     # A trie of the time_mapping keys
     TIME_TRIE: dict = {}
-    STRICT_TIME_TRIE: dict = {}
     FORMAT_TRIE: dict = {}
 
     INVERSE_TIME_MAPPING: dict[str, str] = {}
     INVERSE_TIME_TRIE: dict = {}
-    LENIENT_INVERSE_TIME_TRIE: dict = {}
     INVERSE_FORMAT_MAPPING: dict[str, str] = {}
     INVERSE_FORMAT_TRIE: dict = {}
 
@@ -997,23 +987,16 @@ class Dialect(metaclass=_Dialect):
         raise ValueError(f"Invalid dialect type for '{dialect}': '{type(dialect)}'.")
 
     @classmethod
-    def format_time(
-        cls, expression: str | exp.Expr | None, strict: bool = False
-    ) -> exp.Expr | None:
+    def format_time(cls, expression: str | exp.Expr | None) -> exp.Expr | None:
         """Converts a time format in this dialect to its equivalent Python `strftime` format."""
-        if strict and cls.STRICT_TIME_MAPPING:
-            mapping, trie = cls.STRICT_TIME_MAPPING, cls.STRICT_TIME_TRIE
-        else:
-            mapping, trie = cls.TIME_MAPPING, cls.TIME_TRIE
-
         if isinstance(expression, str):
             return exp.Literal.string(
                 # the time formats are quoted
-                format_time(expression[1:-1], mapping, trie)
+                format_time(expression[1:-1], cls.TIME_MAPPING, cls.TIME_TRIE)
             )
 
         if expression and expression.is_string:
-            return exp.Literal.string(format_time(expression.this, mapping, trie))
+            return exp.Literal.string(format_time(expression.this, cls.TIME_MAPPING, cls.TIME_TRIE))
 
         return expression
 
@@ -1582,13 +1565,6 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
     return self.sql(result)
 
 
-# Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
-# Dialects with strict parsing semantics (STRICT_TIME_MAPPING) use it for these on the
-# parser side, and the corresponding generator (e.g. SparkGenerator.format_time) reuses
-# this same set to emit the lenient inverse, which is what preserves the roundtrip.
-STRICT_PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.TsOrDsToDate)
-
-
 def build_formatted_time(
     exp_class: Type[E], dialect_override: str | None = None, default: bool | str | None = None
 ) -> t.Callable[[BuilderArgs, Dialect], E]:
@@ -1614,10 +1590,7 @@ def build_formatted_time(
         if not fmt:
             fmt = target_dialect.TIME_FORMAT if default is True else default or None
 
-        strict = exp_class in STRICT_PARSE_TIME_EXPRESSIONS
-        return exp_class(
-            this=seq_get(args, 0), format=target_dialect.format_time(fmt, strict=strict)
-        )
+        return exp_class(this=seq_get(args, 0), format=target_dialect.format_time(fmt))
 
     return _builder
 

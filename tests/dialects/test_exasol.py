@@ -478,7 +478,7 @@ class TestExasol(Validator):
             write={
                 "exasol": "TO_DATE(x, 'YYYY-MM-DD')",
                 "duckdb": "CAST(x AS DATE)",
-                "hive": "TO_DATE(x)",
+                "hive": "TO_DATE(x, 'yyyy-M-d')",
                 "presto": "CAST(CAST(x AS TIMESTAMP) AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy-M-d')",
                 "snowflake": "TO_DATE(x, 'yyyy-mm-DD')",

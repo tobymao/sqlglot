@@ -4062,6 +4062,15 @@ class Generator:
             self.format_time(expression, STRICT_TIME_FORMATS, STRICT_TIME_TRIE),
         )
 
+    def strtounix_sql(self, expression: exp.StrToUnix) -> str:
+        # As with STR_TO_TIME, keep the canonical strftime format and only strip the internal
+        # "strict" tokens (e.g. Hive's %mstrict from its default TIME_FORMAT).
+        return self.func(
+            "STR_TO_UNIX",
+            expression.this,
+            self.format_time(expression, STRICT_TIME_FORMATS, STRICT_TIME_TRIE),
+        )
+
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:
         zone = self.sql(expression, "this")
         return f"CURRENT_DATE({zone})" if zone else "CURRENT_DATE"

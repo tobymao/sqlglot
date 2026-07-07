@@ -12,6 +12,16 @@ class Spark2(Hive):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # Spark 2.x parses leniently (SimpleDateFormat), unlike strict Hive/Spark 3+, so revert
+    # MM/dd to the lax %m/%d (the padded %m -> MM inverse then auto-derives).
+    STRICT_TIME_PARSING = False
+
+    TIME_MAPPING = {
+        **Hive.TIME_MAPPING,
+        "MM": "%m",
+        "dd": "%d",
+    }
+
     # https://spark.apache.org/docs/latest/api/sql/index.html#initcap
     # https://docs.databricks.com/aws/en/sql/language-manual/functions/initcap
     # https://github.com/apache/spark/blob/master/common/unsafe/src/main/java/org/apache/spark/unsafe/types/UTF8String.java#L859-L905

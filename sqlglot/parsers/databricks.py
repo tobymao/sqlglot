@@ -35,10 +35,6 @@ class DatabricksParser(SparkParser):
         **SparkParser.FUNCTION_PARSERS,
         "REGR_AVGX": lambda self: self._parse_quantile_function(exp.RegrAvgx),
         "REGR_AVGY": lambda self: self._parse_quantile_function(exp.RegrAvgy),
-        "REGR_COUNT": lambda self: self._parse_regr_count(),
-        "REGR_INTERCEPT": lambda self: self._parse_quantile_function(exp.RegrIntercept),
-        "REGR_R2": lambda self: self._parse_quantile_function(exp.RegrR2),
-        "REGR_SLOPE": lambda self: self._parse_quantile_function(exp.RegrSlope),
     }
 
     FACTOR = {
@@ -64,13 +60,6 @@ class DatabricksParser(SparkParser):
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
         return self.expression(exp.CurrentDate())
-
-    def _parse_regr_count(self) -> exp.RegrCount:
-        if self._match(TokenType.DISTINCT):
-            return exp.RegrCount(this=exp.Distinct(expressions=self._parse_function_args()))
-        self._match(TokenType.ALL)
-        args = self._parse_function_args()
-        return self.expression(exp.RegrCount(this=seq_get(args, 0), expression=seq_get(args, 1)))
 
     def _parse_cluster_property(self):
         if self._match_texts(("AUTO", "NONE")):

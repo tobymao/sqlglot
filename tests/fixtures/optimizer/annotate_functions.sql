@@ -1052,6 +1052,10 @@ REGR_AVGX(ALL tbl.double_col, tbl.double_col);
 DOUBLE;
 
 # dialect: databricks
+REGR_AVGX(DISTINCT tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
 REGR_AVGX(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
 DOUBLE;
 
@@ -4246,10 +4250,6 @@ DOUBLE;
 # dialect: snowflake
 REGR_AVGX(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
-
-# dialect: databricks
-REGR_AVGX(DISTINCT tbl.double_col, tbl.double_col);
-DOUBLE;
 
 # dialect: snowflake
 REGR_AVGY(tbl.double_col, tbl.double_col);

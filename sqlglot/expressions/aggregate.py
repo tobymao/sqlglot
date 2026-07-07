@@ -256,19 +256,19 @@ class RegrAvgy(Expression, AggFunc):
 
 
 class RegrCount(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrIntercept(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrR2(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrSlope(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrSxx(Expression, AggFunc):

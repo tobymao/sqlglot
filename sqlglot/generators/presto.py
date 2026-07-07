@@ -24,7 +24,6 @@ from sqlglot.dialects.dialect import (
     unit_to_str,
     sequence_sql,
     explode_to_unnest_sql,
-    sha2_digest_sql,
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.generator import unsupported_args
@@ -32,6 +31,19 @@ from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.transforms import unqualify_columns
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
+
+
+def _sha2_digest_sql(self: PrestoGenerator, expression: exp.SHA2Digest) -> str:
+    length = expression.text("length") or "256"
+    if length not in ("256", "512"):
+        self.unsupported(f"SHA{length} is not supported in Presto")
+
+    this = expression.this
+    if this.is_type(*exp.DataType.TEXT_TYPES):
+        # the native digest takes VARBINARY, so a text-typed argument needs encoding
+        this = exp.Encode(this=this, charset=exp.Literal.string("utf-8"))
+
+    return self.func(f"SHA{length}", this)
 
 
 def _initcap_sql(self: PrestoGenerator, expression: exp.Initcap) -> str:
@@ -384,7 +396,7 @@ class PrestoGenerator(generator.Generator):
         exp.MD5Digest: rename_func("MD5"),
         exp.SHA: rename_func("SHA1"),
         exp.SHA1Digest: rename_func("SHA1"),
-        exp.SHA2Digest: sha2_digest_sql,
+        exp.SHA2Digest: _sha2_digest_sql,
         exp.Substring: rename_func("SUBSTR"),
     }
 

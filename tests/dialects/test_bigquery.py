@@ -27,7 +27,7 @@ class TestBigQuery(Validator):
         # Presto's SHA512 takes VARBINARY, so annotated string args are wrapped in TO_UTF8
         expr = self.parse_one("SELECT SHA512('foo')")
         annotated = annotate_types(expr, dialect="bigquery")
-        self.assertEqual(annotated.sql("presto"), "SELECT LOWER(TO_HEX(SHA512(TO_UTF8('foo'))))")
+        self.assertEqual(annotated.sql("presto"), "SELECT SHA512(TO_UTF8('foo'))")
 
         self.validate_identity(
             "SELECT 'foo' 'bar'",
@@ -1181,8 +1181,8 @@ LANGUAGE js AS
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
-                "presto": "LOWER(TO_HEX(SHA512(x)))",
-                "trino": "LOWER(TO_HEX(SHA512(x)))",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
         )
         self.validate_all(

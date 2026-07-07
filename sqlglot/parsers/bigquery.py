@@ -270,7 +270,9 @@ class BigQueryParser(parser.Parser):
         "SHA256": lambda args: exp.SHA2Digest(
             this=seq_get(args, 0), length=exp.Literal.number(256)
         ),
-        "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+        "SHA512": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(512)
+        ),
         "SIMILARITY": exp.AISimilarity.from_arg_list,
         "SPLIT": lambda args: exp.Split(
             # https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#split

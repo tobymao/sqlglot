@@ -153,7 +153,7 @@ class ExasolParser(parser.Parser):
 
         expression = exp.JSONExtract(expressions=args)
 
-        if self._match_texts("EMITS"):
+        if self._match_text_seq("EMITS"):
             expression.set("emits", self._parse_schema())
 
         return expression

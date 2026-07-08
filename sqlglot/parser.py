@@ -37,6 +37,10 @@ logger = logging.getLogger("sqlglot")
 
 OPTIONS_TYPE = dict[str, Sequence[t.Union[Sequence[str], str]]]
 
+# Excludes bare strings, which are also collections of strings, so that a single keyword
+# can't accidentally be matched with substring semantics (e.g. _match_texts("FOO"))
+TEXTS_TYPE = t.Union[tuple[str, ...], list[str], t.AbstractSet[str], t.Mapping[str, t.Any]]
+
 # Used to detect alphabetical characters and +/- in timestamp literals
 TIME_ZONE_RE: Pattern[str] = re.compile(r":.*?[a-zA-Z\+\-]")
 
@@ -614,6 +618,22 @@ class Parser:
         *Tokenizer.SINGLE_TOKENS.values(),
         TokenType.SELECT,
     } - {TokenType.IDENTIFIER}
+
+    # Tokens whose text is extracted from delimited source text (e.g. quoted identifiers,
+    # string literals), so they must never be treated as keywords when matching by text
+    TEXT_MATCH_EXCLUDED_TOKENS: t.ClassVar[frozenset] = frozenset(
+        {
+            TokenType.BIT_STRING,
+            TokenType.BYTE_STRING,
+            TokenType.HEREDOC_STRING,
+            TokenType.HEX_STRING,
+            TokenType.IDENTIFIER,
+            TokenType.NATIONAL_STRING,
+            TokenType.RAW_STRING,
+            TokenType.STRING,
+            TokenType.UNICODE_STRING,
+        }
+    )
 
     DB_CREATABLES: t.ClassVar = {
         TokenType.DATABASE,
@@ -1955,8 +1975,11 @@ class Parser:
             return True
         return False
 
-    def _match_texts(self, texts: t.Collection[str], advance: bool = True) -> bool:
-        if self._curr.token_type != TokenType.STRING and self._curr.text.upper() in texts:
+    def _match_texts(self, texts: TEXTS_TYPE, advance: bool = True) -> bool:
+        if (
+            self._curr.token_type not in self.TEXT_MATCH_EXCLUDED_TOKENS
+            and self._curr.text.upper() in texts
+        ):
             if advance:
                 self._advance()
             return True
@@ -1964,9 +1987,9 @@ class Parser:
 
     def _match_text_seq(self, *texts: str, advance: bool = True) -> bool:
         index = self._index
-        string_type = TokenType.STRING
+        excluded_tokens = self.TEXT_MATCH_EXCLUDED_TOKENS
         for text in texts:
-            if self._curr.token_type != string_type and self._curr.text.upper() == text:
+            if self._curr.token_type not in excluded_tokens and self._curr.text.upper() == text:
                 self._advance()
             else:
                 self._retreat(index)
@@ -7492,9 +7515,7 @@ class Parser:
 
         return constraints
 
-    def _parse_unnamed_constraint(
-        self, constraints: t.Collection[str] | None = None
-    ) -> exp.Expr | None:
+    def _parse_unnamed_constraint(self, constraints: TEXTS_TYPE | None = None) -> exp.Expr | None:
         index = self._index
 
         if self._match(TokenType.IDENTIFIER, advance=False) or not self._match_texts(
@@ -9067,7 +9088,7 @@ class Parser:
         elif self._match(TokenType.FOR):
             if self._match_text_seq("ALL", "COLUMNS"):
                 this = "FOR ALL COLUMNS"
-            if self._match_texts("COLUMNS"):
+            if self._match_text_seq("COLUMNS"):
                 this = "FOR COLUMNS"
                 expressions = self._parse_csv(self._parse_column_reference)
         elif self._match_text_seq("SAMPLE"):
@@ -9297,7 +9318,9 @@ class Parser:
             return None
 
         option = start.text.upper()
-        continuations = options.get(option)
+        continuations = (
+            None if start.token_type in self.TEXT_MATCH_EXCLUDED_TOKENS else options.get(option)
+        )
 
         index = self._index
         self._advance()

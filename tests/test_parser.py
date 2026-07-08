@@ -109,6 +109,108 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(cast.this, exp.Column)
         self.assertEqual(cast.this.name, "current_user")
 
+    def test_text_match_excludes_delimited_tokens(self):
+        # Tokens whose delimiters are stripped during tokenization (quoted identifiers,
+        # heredoc/national strings, etc.) must not be matched as keywords by text.
+        # Base-dialect roundtrip cases live in identity.sql; these are the dialect-specific
+        # and non-roundtripping ones
+        for dialect, sql, expected in [
+            ("postgres", "SELECT TRIM($$leading$$)", "SELECT TRIM('leading')"),
+            ("tsql", "SELECT TRIM(N'both')", "SELECT TRIM(N'both')"),
+            ("postgres", 'SELECT TRIM("leading" FROM x)', 'SELECT TRIM("leading" FROM x)'),
+            ("mysql", "INSERT `local` (a) VALUES (1)", "INSERT INTO `local` (a) VALUES (1)"),
+            (
+                "mysql",
+                "INSERT `directory` (a) VALUES (1)",
+                "INSERT INTO `directory` (a) VALUES (1)",
+            ),
+            ("mysql", "SELECT `high_priority` FROM t", "SELECT `high_priority` FROM t"),
+            ("postgres", 'SELECT * INTO "unlogged" FROM t', 'SELECT * INTO "unlogged" FROM t'),
+            (
+                "oracle",
+                'SELECT XMLELEMENT("name", x) FROM t',
+                'SELECT XMLELEMENT(NAME "name", x) FROM t',
+            ),
+            (
+                "postgres",
+                'SELECT c::INT "unsigned" FROM t',
+                'SELECT CAST(c AS INT) AS "unsigned" FROM t',
+            ),
+            (
+                "oracle",
+                "SELECT INTERVAL '1' DAY \"to\" FROM t",
+                "SELECT INTERVAL '1' DAY AS \"to\" FROM t",
+            ),
+            (
+                "clickhouse",
+                "CREATE TABLE t (j JSON(`skip` String))",
+                'CREATE TABLE t (j JSON("skip" String))',
+            ),
+            (
+                "clickhouse",
+                'ALTER TABLE t DROP PARTITION "id"',
+                'ALTER TABLE t DROP PARTITION "id"',
+            ),
+            ("databricks", "DECLARE `var` INT", "DECLARE `var` INT"),
+            (
+                "redshift",
+                'ALTER TABLE t ALTER "sortkey" TYPE INT',
+                'ALTER TABLE t ALTER COLUMN "sortkey" TYPE INTEGER',
+            ),
+            (
+                "duckdb",
+                'ALTER TABLE t ADD "columns" INT',
+                'ALTER TABLE t ADD COLUMN "columns" INT',
+            ),
+            (
+                "postgres",
+                'ALTER TABLE "only" ADD COLUMN x INT',
+                'ALTER TABLE "only" ADD COLUMN x INT',
+            ),
+            ("duckdb", 'SELECT MAX("lambda") FROM t', 'SELECT MAX("lambda") FROM t'),
+            ("duckdb", 'CREATE MACRO m() AS "return"', 'CREATE MACRO m() AS "return"'),
+            ("mysql", "ALTER TABLE t RENAME `index`", "ALTER TABLE t RENAME `index`"),
+            (
+                "mysql",
+                "CREATE TABLE t (x TEXT, FULLTEXT `index` (x))",
+                "CREATE TABLE t (x TEXT, FULLTEXT INDEX `index` (x))",
+            ),
+            ("mysql", "SHOW CREATE TABLE `json`", "SHOW CREATE TABLE `json`"),
+            (
+                "snowflake",
+                'WITH "identifier" (c) AS (SELECT 1) SELECT c FROM "identifier"',
+                'WITH "identifier"(c) AS (SELECT 1) SELECT c FROM "identifier"',
+            ),
+            (
+                "snowflake",
+                'SELECT * FROM t AS "identifier"(a, b)',
+                'SELECT * FROM t AS "identifier"(a, b)',
+            ),
+            (
+                "bigquery",
+                "SELECT ML.PREDICT(MODEL m, `table`)",
+                "SELECT ML.PREDICT(MODEL m, TABLE `table`)",
+            ),
+            (
+                "spark",
+                "ALTER TABLE t CHANGE COLUMN a `type` INT",
+                "ALTER TABLE t RENAME COLUMN a TO `type`",
+            ),
+            (
+                "exasol",
+                "SELECT JSON_EXTRACT(x, '$.a') \"emits\" FROM t",
+                "SELECT JSON_EXTRACT(x, '$.a') AS \"emits\" FROM t",
+            ),
+            ("trino", "SELECT U&'abc' \"uescape\"", "SELECT U&'abc' AS \"uescape\""),
+            (
+                "snowflake",
+                'SELECT * FROM t MATCH_RECOGNIZE(MEASURES "final" AS f PATTERN (a) DEFINE a AS TRUE)',
+                'SELECT * FROM t MATCH_RECOGNIZE ( MEASURES "final" AS f PATTERN (a) DEFINE a AS TRUE)',
+            ),
+        ]:
+            with self.subTest(f"{dialect}: {sql}"):
+                self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect), expected)
+
     def test_tuple(self):
         parse_one("(a,)").assert_is(exp.Tuple)
 

@@ -1525,6 +1525,9 @@ class TestSnowflake(Validator):
             },
         )
 
+        # FROM here is the query's FROM clause, not the FROM FIRST | LAST modifier
+        self.validate_identity("SELECT NTH_VALUE(a, 2) FROM t")
+
         # NTH_VALUE FROM FIRST not supported in DuckDB
         self.validate_all(
             "SELECT NTH_VALUE(is_deleted, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY id) AS nth_is_deleted FROM my_table",

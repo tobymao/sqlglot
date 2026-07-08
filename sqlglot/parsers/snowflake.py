@@ -1393,10 +1393,10 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         if isinstance(this, exp.NthValue):
-            if self._match_text_seq("FROM"):
-                if self._match_texts(("FIRST", "LAST")):
-                    from_first = self._prev.text.upper() == "FIRST"
-                    this.set("from_first", from_first)
+            if self._match_text_seq("FROM", "FIRST"):
+                this.set("from_first", True)
+            elif self._match_text_seq("FROM", "LAST"):
+                this.set("from_first", False)
 
         result = super()._parse_window(this, alias)
 

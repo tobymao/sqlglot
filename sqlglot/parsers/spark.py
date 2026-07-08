@@ -123,8 +123,14 @@ class SparkParser(Spark2Parser):
 
     STATEMENT_PARSERS = {
         **Spark2Parser.STATEMENT_PARSERS,
+        TokenType.BEGIN: lambda self: self._parse_scripting_block(),
         TokenType.DECLARE: lambda self: self._parse_declare(),
     }
+
+    def _parse_scripting_block(self) -> exp.Block:
+        block = self._parse_block()
+        block.set("wrapped", True)
+        return block
 
     def _parse_generated_as_identity(
         self,

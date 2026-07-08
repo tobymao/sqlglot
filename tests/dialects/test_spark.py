@@ -9,6 +9,17 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_sql_scripting(self):
+        self.validate_identity(
+            """
+            BEGIN
+              SELECT 1;
+              SELECT 2;
+            END;
+            """,
+            "BEGIN SELECT 1; SELECT 2; END",
+        ).assert_is(exp.Block)
+
     def test_ddl(self):
         self.validate_identity("DAYOFWEEK(TO_DATE(x))")
         self.validate_identity("DAYOFMONTH(TO_DATE(x))")

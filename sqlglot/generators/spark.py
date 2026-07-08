@@ -186,6 +186,10 @@ class SparkGenerator(Spark2Generator):
         parquet_file = expression.expressions[0]
         return f"parquet.`{parquet_file.name}`"
 
+    def block_sql(self, expression: exp.Block) -> str:
+        sql = super().block_sql(expression)
+        return f"BEGIN {sql}" if expression.args.get("wrapped") else sql
+
     def ifblock_sql(self, expression: exp.IfBlock) -> str:
         condition = expression.this
         true_block = expression.args.get("true")

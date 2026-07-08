@@ -640,7 +640,9 @@ class TSQLGenerator(generator.Generator):
         this = self.sql(expression, "this")
         expressions = self.expressions(expression)
         expressions = f" {expressions}" if expressions else ""
-        return f"EXECUTE {this}{expressions}"
+        return_status = self.sql(expression, "return_status")
+        return_status = f"{return_status} = " if return_status else ""
+        return f"EXECUTE {return_status}{this}{expressions}"
 
     def executesql_sql(self, expression: exp.ExecuteSql) -> str:
         return self.execute_sql(expression)

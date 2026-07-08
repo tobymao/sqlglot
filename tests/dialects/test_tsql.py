@@ -33,6 +33,11 @@ class TestTSQL(Validator):
             "EXEC MyProc @id = 7, @name = 'Lochristi'",
             "EXECUTE MyProc @id = 7, @name = 'Lochristi'",
         )
+        self.validate_identity("EXECUTE @return_status = dbo.MyProc @a, @b")
+        self.validate_identity(
+            "EXEC @RC = dbo.MyProc @id = 7",
+            "EXECUTE @RC = dbo.MyProc @id = 7",
+        )
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")

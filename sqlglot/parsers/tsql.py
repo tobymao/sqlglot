@@ -451,10 +451,20 @@ class TSQLParser(parser.Parser):
     }
 
     def _parse_execute(self) -> exp.Execute:
+        return_status = None
+        index = self._index
+        if self._match(TokenType.PARAMETER):
+            param = self._parse_parameter()
+            if self._match(TokenType.EQ):
+                return_status = param
+            else:
+                self._retreat(index)
+
         execute = self.expression(
             exp.Execute(
                 this=self._parse_table(schema=True),
                 expressions=self._parse_csv(self._parse_expression),
+                return_status=return_status,
             )
         )
 

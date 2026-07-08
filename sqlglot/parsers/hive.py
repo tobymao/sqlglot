@@ -63,8 +63,8 @@ class HiveParser(parser.Parser):
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
-        "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
-        "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
+        "PERCENTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
+        "PERCENTILE_APPROX": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
     }
 
     FUNCTIONS = {
@@ -178,18 +178,18 @@ class HiveParser(parser.Parser):
             )
         )
 
-    def _parse_quantile_function(self, func: type[F]) -> F:
-        if self._match(TokenType.DISTINCT):
-            first_arg: exp.Expr | None = self.expression(
-                exp.Distinct(expressions=[self._parse_lambda()])
-            )
-        else:
+    def _parse_distinct_arg_function(self, func: type[F], distinct_index: int = 0) -> F:
+        is_distinct = self._match(TokenType.DISTINCT)
+        if not is_distinct:
             self._match(TokenType.ALL)
-            first_arg = self._parse_lambda()
 
-        args = [first_arg]
+        args = [self._parse_lambda()]
         if self._match(TokenType.COMMA):
             args.extend(self._parse_function_args())
+
+        target = seq_get(args, distinct_index)
+        if is_distinct and target:
+            args[distinct_index] = self.expression(exp.Distinct(expressions=[target]))
 
         return func.from_arg_list(args)
 

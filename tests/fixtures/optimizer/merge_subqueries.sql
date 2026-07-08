@@ -543,3 +543,7 @@ WITH t0 AS (SELECT 5 AS id), t1 AS (SELECT 1 AS id, 'US' AS cid), t2 AS (SELECT 
 # title: Dont replace GROUP and ORDER BY if expression is literal
 WITH t1 AS (SELECT 1 AS col) SELECT a, SUM(b) AS b FROM (SELECT 6 AS a, col AS b FROM t1) AS t GROUP BY a ORDER BY a;
 WITH t1 AS (SELECT 1 AS col) SELECT 6 AS a, SUM(t1.col) AS b FROM t1 AS t1 GROUP BY a ORDER BY a;
+
+# title: Window function is not merged when the outer query filters its input rows
+SELECT s.w FROM (SELECT a, ROW_NUMBER() OVER (ORDER BY a) AS w FROM x) AS s WHERE s.a > 5;
+SELECT s.w AS w FROM (SELECT x.a AS a, ROW_NUMBER() OVER (ORDER BY x.a) AS w FROM x AS x) AS s WHERE s.a > 5;

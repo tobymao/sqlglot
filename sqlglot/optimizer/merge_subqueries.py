@@ -153,6 +153,14 @@ def _mergeable(
             for column in unmergable_window_columns
         )
 
+    def _merge_would_relocate_window():
+        """Merging a window function subquery into an outer WHERE/JOIN alters its row set,
+        causing incorrect results."""
+        if not any(e.find(exp.Window) for e in inner_select.expressions):
+            return False
+        outer = outer_scope.expression
+        return bool(outer.args.get("where")) or bool(outer.args.get("joins"))
+
     def _outer_select_joins_on_inner_select_join():
         """
         All columns from the inner select in the ON clause must be from the first FROM table.
@@ -224,6 +232,7 @@ def _mergeable(
         )
         and not _outer_select_joins_on_inner_select_join()
         and not _is_a_window_expression_in_unmergable_operation()
+        and not _merge_would_relocate_window()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
         and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)

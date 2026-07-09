@@ -35,6 +35,9 @@ class DatabricksParser(SparkParser):
         **SparkParser.FUNCTION_PARSERS,
         "REGR_AVGX": lambda self: self._parse_distinct_arg_function(exp.RegrAvgx, distinct_index=1),
         "REGR_AVGY": lambda self: self._parse_distinct_arg_function(exp.RegrAvgy),
+        "REGR_SXX": lambda self: self._parse_distinct_arg_function(exp.RegrSxx),
+        "REGR_SXY": lambda self: self._parse_distinct_arg_function(exp.RegrSxy),
+        "REGR_SYY": lambda self: self._parse_distinct_arg_function(exp.RegrSyy),
     }
 
     FACTOR = {

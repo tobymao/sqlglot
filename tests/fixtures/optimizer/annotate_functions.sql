@@ -4439,6 +4439,66 @@ DOUBLE;
 REGR_SYY(tbl.decfloat_col, tbl.decfloat_col);
 DECFLOAT;
 
+# dialect: databricks
+REGR_SXX(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXX(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXX(ALL tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXX(DISTINCT tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXX(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXY(ALL tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXY(DISTINCT tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SXY(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
+# dialect: databricks
+REGR_SYY(tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SYY(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SYY(ALL tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SYY(DISTINCT tbl.double_col, tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+REGR_SYY(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
+DOUBLE;
+
 # dialect: snowflake
 REGR_SLOPE(tbl.double_col, tbl.double_col);
 DOUBLE;

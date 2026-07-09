@@ -13,6 +13,9 @@ EXPRESSION_METADATA = {
             exp.RegrIntercept,
             exp.RegrR2,
             exp.RegrSlope,
+            exp.RegrSxx,
+            exp.RegrSxy,
+            exp.RegrSyy,
         }
     },
     **{

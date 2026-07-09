@@ -157,6 +157,13 @@ def _mergeable(
             and column.name in window_aliases
             and column.find_ancestor(exp.Group, exp.Order, exp.Having, exp.AggFunc)
             for column in outer_scope.columns
+            if column.find_ancestor(
+                exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc
+            )
+        ]
+        return any(
+            column.table == inner_select_name and column.name in window_aliases
+            for column in unmergable_window_columns
         )
 
     def _outer_select_joins_on_inner_select_join():

@@ -547,3 +547,7 @@ WITH t1 AS (SELECT 1 AS col) SELECT 6 AS a, SUM(t1.col) AS b FROM t1 AS t1 GROUP
 # title: Window function is not merged when the outer query filters its input rows
 SELECT s.w FROM (SELECT a, ROW_NUMBER() OVER (ORDER BY a) AS w FROM x) AS s WHERE s.a > 5;
 SELECT s.w AS w FROM (SELECT x.a AS a, ROW_NUMBER() OVER (ORDER BY x.a) AS w FROM x AS x) AS s WHERE s.a > 5;
+
+# title: Window function is not merged when the outer query joins, changing its input rows
+SELECT s.w FROM (SELECT b, ROW_NUMBER() OVER (ORDER BY b) AS w FROM x) AS s JOIN y ON s.b = y.b;
+SELECT s.w AS w FROM (SELECT x.b AS b, ROW_NUMBER() OVER (ORDER BY x.b) AS w FROM x AS x) AS s JOIN y AS y ON s.b = y.b;

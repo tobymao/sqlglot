@@ -136,30 +136,28 @@ def _mergeable(
     """
     inner_select = inner_scope.expression.unnest()
 
-    def _is_a_window_expression_in_unmergable_operation():
+    def _window_projection_blocks_merge():
+        """A window function's result depends on the full row set it sees, so merging the
+        subquery into the outer query is unsafe when:
+          - the outer query filters or joins (WHERE/JOIN), which changes that row set, or
+          - a window column is referenced in an operation that isn't pushed down
+            (GROUP BY, ORDER BY, HAVING, aggregate).
+        """
         window_aliases = {s.alias_or_name for s in inner_select.selects if s.find(exp.Window)}
         if not window_aliases:
             return False
-        inner_select_name = from_or_join.alias_or_name
-        unmergable_window_columns = [
-            column
-            for column in outer_scope.columns
-            if column.find_ancestor(
-                exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc
-            )
-        ]
-        return any(
-            column.table == inner_select_name and column.name in window_aliases
-            for column in unmergable_window_columns
-        )
 
-    def _merge_would_relocate_window():
-        """Merging a window function subquery into an outer WHERE/JOIN alters its row set,
-        causing incorrect results."""
-        if not any(e.find(exp.Window) for e in inner_select.expressions):
-            return False
         outer = outer_scope.expression
-        return bool(outer.args.get("where")) or bool(outer.args.get("joins"))
+        if outer.args.get("where") or outer.args.get("joins"):
+            return True
+
+        inner_select_name = from_or_join.alias_or_name
+        return any(
+            column.table == inner_select_name
+            and column.name in window_aliases
+            and column.find_ancestor(exp.Group, exp.Order, exp.Having, exp.AggFunc)
+            for column in outer_scope.columns
+        )
 
     def _outer_select_joins_on_inner_select_join():
         """
@@ -231,8 +229,7 @@ def _mergeable(
             )
         )
         and not _outer_select_joins_on_inner_select_join()
-        and not _is_a_window_expression_in_unmergable_operation()
-        and not _merge_would_relocate_window()
+        and not _window_projection_blocks_merge()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
         and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)

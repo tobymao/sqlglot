@@ -166,6 +166,36 @@ def _mergeable(
             for column in unmergable_window_columns
         )
 
+    def _literal_group_alias_collision():
+        """A numeric-literal projection in the outer GROUP BY merges to a bare `GROUP BY a`
+        that can collide with a same-named FROM column."""
+        group = outer_scope.expression.args.get("group")
+        if not group:
+            return False
+        # Only a bare top-level `GROUP BY <col>` key can hit the literal rewrite.
+        inner_name = from_or_join.alias_or_name
+        grouped = {
+            e.name for e in group.expressions if isinstance(e, exp.Column) and e.table == inner_name
+        }
+        if not grouped:
+            return False
+        literal_grouped = {
+            s.alias_or_name
+            for s in inner_select.selects
+            if s.alias_or_name in grouped and s.unalias().is_number
+        }
+        if not literal_grouped:
+            return False
+        # `GROUP BY a` resolves against the whole merged FROM: inner sources + outer's others.
+        merged_sources = [src for name, src in outer_scope.sources.items() if name != inner_name]
+        merged_sources.extend(inner_scope.sources.values())
+        for source in merged_sources:
+            if isinstance(source, exp.Table):
+                return True
+            if isinstance(source, Scope) and literal_grouped & set(source.expression.named_selects):
+                return True
+        return False
+
     def _outer_select_joins_on_inner_select_join():
         """
         All columns from the inner select in the ON clause must be from the first FROM table.

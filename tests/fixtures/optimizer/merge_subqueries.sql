@@ -552,6 +552,10 @@ SELECT s.a AS a, SUM(s.b) AS b FROM (SELECT 6 AS a, x.b AS b FROM x AS x) AS s G
 WITH c AS (SELECT DISTINCT a, b FROM x) SELECT s.a, SUM(s.b) AS b FROM (SELECT 6 AS a, b FROM c) AS s GROUP BY s.a ORDER BY s.a;
 WITH c AS (SELECT DISTINCT x.a AS a, x.b AS b FROM x AS x) SELECT s.a AS a, SUM(s.b) AS b FROM (SELECT 6 AS a, c.b AS b FROM c AS c) AS s GROUP BY s.a ORDER BY a;
 
+# title: Literal projection colliding with an outer joined table column is not merged into GROUP BY
+WITH c AS (SELECT DISTINCT x.b AS b FROM x) SELECT s.a, SUM(s.b) AS b FROM (SELECT 6 AS a, b FROM c) AS s CROSS JOIN x GROUP BY s.a ORDER BY s.a;
+WITH c AS (SELECT DISTINCT x.b AS b FROM x AS x) SELECT s.a AS a, SUM(s.b) AS b FROM (SELECT 6 AS a, c.b AS b FROM c AS c) AS s CROSS JOIN x AS x GROUP BY s.a ORDER BY a;
+
 # title: Window function is not merged when the outer query filters its input rows
 SELECT s.w FROM (SELECT a, ROW_NUMBER() OVER (ORDER BY a) AS w FROM x) AS s WHERE s.a > 5;
 SELECT s.w AS w FROM (SELECT x.a AS a, ROW_NUMBER() OVER (ORDER BY x.a) AS w FROM x AS x) AS s WHERE s.a > 5;

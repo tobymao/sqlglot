@@ -206,6 +206,21 @@ def _mergeable(
             node = node.parent
         return False
 
+    def _literal_in_order_by():
+        """A numeric-literal projection under a bare ORDER BY key can't merge (would become positional)."""
+        order = outer_scope.expression.args.get("order")
+        if not order:
+            return False
+        inner_name = from_or_join.alias_or_name
+        ordered = {
+            o.this.name
+            for o in order.expressions
+            if isinstance(o.this, exp.Column) and o.this.table == inner_name
+        }
+        return any(
+            s.alias_or_name in ordered and s.unalias().is_number for s in inner_select.selects
+        )
+
     return (
         isinstance(outer_scope.expression, exp.Select)
         and not outer_scope.expression.is_star
@@ -230,6 +245,7 @@ def _mergeable(
         )
         and not _outer_select_joins_on_inner_select_join()
         and not _window_projection_blocks_merge()
+        and not _literal_in_order_by()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
         and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)

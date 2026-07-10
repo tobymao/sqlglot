@@ -109,29 +109,21 @@ class DatabricksGenerator(SparkGenerator):
 
         return self.func("UNIFORM", expression.this, expression.expression, seed)
 
-    def regravgx_sql(self, expression: exp.RegrAvgx) -> str:
+    def _regr_sql(self, expression: exp.RegrAvgx | exp.RegrSxx | exp.RegrSyy) -> str:
+        name = expression.sql_name()
         x = expression.expression
         if isinstance(x, exp.Distinct):
-            return self.func(
-                "REGR_AVGX", exp.Distinct(expressions=[expression.this]), *x.expressions
-            )
-        return self.func("REGR_AVGX", expression.this, x)
+            return self.func(name, exp.Distinct(expressions=[expression.this]), *x.expressions)
+        return self.func(name, expression.this, x)
+
+    def regravgx_sql(self, expression: exp.RegrAvgx) -> str:
+        return self._regr_sql(expression)
 
     def regrsxx_sql(self, expression: exp.RegrSxx) -> str:
-        x = expression.expression
-        if isinstance(x, exp.Distinct):
-            return self.func(
-                "REGR_SXX", exp.Distinct(expressions=[expression.this]), *x.expressions
-            )
-        return self.func("REGR_SXX", expression.this, x)
+        return self._regr_sql(expression)
 
     def regrsyy_sql(self, expression: exp.RegrSyy) -> str:
-        x = expression.expression
-        if isinstance(x, exp.Distinct):
-            return self.func(
-                "REGR_SYY", exp.Distinct(expressions=[expression.this]), *x.expressions
-            )
-        return self.func("REGR_SYY", expression.this, x)
+        return self._regr_sql(expression)
 
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"

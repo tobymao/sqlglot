@@ -157,9 +157,8 @@ def unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
         and len(expression.selects) == 1
     ):
         projection = expression.selects[0]
-        series = projection.unalias()
 
-        if isinstance(series, exp.ExplodingGenerateSeries):
+        if isinstance(series := projection.unalias(), exp.ExplodingGenerateSeries):
             column = projection.output_name or "value"
             table = exp.Table(this=series, alias=exp.TableAlias(this=exp.to_identifier(column)))
             return exp.select(column).from_(table, copy=False)

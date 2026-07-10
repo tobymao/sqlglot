@@ -358,6 +358,7 @@ class BigQueryGenerator(generator.Generator):
         exp.ParseDatetime: lambda self, e: self.func("PARSE_DATETIME", self.format_time(e), e.this),
         exp.Select: transforms.preprocess(
             [
+                transforms.unnest_explode_generate_series,
                 transforms.explode_projection_to_unnest(),
                 transforms.unqualify_unnest,
                 transforms.eliminate_distinct_on,
@@ -379,6 +380,7 @@ class BigQueryGenerator(generator.Generator):
         exp.StrToDate: _str_to_datetime_sql,
         exp.StrToTime: _str_to_datetime_sql,
         exp.SessionUser: lambda *_: "SESSION_USER()",
+        exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
         exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
         exp.TimeFromParts: rename_func("TIME"),
         exp.TimestampFromParts: rename_func("DATETIME"),

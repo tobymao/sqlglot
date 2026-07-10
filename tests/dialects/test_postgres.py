@@ -710,8 +710,15 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT GENERATE_SERIES(1, 5)",
             write={
-                "bigquery": UnsupportedError,
+                "bigquery": "SELECT value FROM UNNEST(GENERATE_ARRAY(1, 5)) AS value",
                 "postgres": "SELECT GENERATE_SERIES(1, 5)",
+            },
+        )
+        self.validate_all(
+            "SELECT GENERATE_SERIES(1, 5) AS x",
+            write={
+                "bigquery": "SELECT x FROM UNNEST(GENERATE_ARRAY(1, 5)) AS x",
+                "postgres": "SELECT GENERATE_SERIES(1, 5) AS x",
             },
         )
         self.validate_all(

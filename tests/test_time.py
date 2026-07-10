@@ -16,6 +16,8 @@ class TestTime(unittest.TestCase):
 
     def test_subsecond_precision(self):
         self.assertEqual(6, subsecond_precision("2023-01-01 12:13:14.123456+00:00"))
+        self.assertEqual(6, subsecond_precision("2023-01-01 12:13:14.000123+00:00"))
+        self.assertEqual(6, subsecond_precision("2023-01-01 12:13:14.000001+00:00"))
         self.assertEqual(3, subsecond_precision("2023-01-01 12:13:14.123+00:00"))
         self.assertEqual(0, subsecond_precision("2023-01-01 12:13:14+00:00"))
         self.assertEqual(0, subsecond_precision("2023-01-01 12:13:14"))

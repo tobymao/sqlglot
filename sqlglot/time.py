@@ -677,7 +677,7 @@ def subsecond_precision(timestamp_literal: str) -> int:
     """
     try:
         parsed = datetime.datetime.fromisoformat(timestamp_literal)
-        subsecond_digit_count = len(str(parsed.microsecond).rstrip("0"))
+        subsecond_digit_count = len(str(parsed.microsecond).zfill(6).rstrip("0"))
         precision = 0
         if subsecond_digit_count > 3:
             precision = 6

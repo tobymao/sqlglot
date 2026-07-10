@@ -117,6 +117,22 @@ class DatabricksGenerator(SparkGenerator):
             )
         return self.func("REGR_AVGX", expression.this, x)
 
+    def regrsxx_sql(self, expression: exp.RegrSxx) -> str:
+        x = expression.expression
+        if isinstance(x, exp.Distinct):
+            return self.func(
+                "REGR_SXX", exp.Distinct(expressions=[expression.this]), *x.expressions
+            )
+        return self.func("REGR_SXX", expression.this, x)
+
+    def regrsyy_sql(self, expression: exp.RegrSyy) -> str:
+        x = expression.expression
+        if isinstance(x, exp.Distinct):
+            return self.func(
+                "REGR_SYY", exp.Distinct(expressions=[expression.this]), *x.expressions
+            )
+        return self.func("REGR_SYY", expression.this, x)
+
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
         return f"CLUSTER BY {this}"

@@ -135,11 +135,16 @@ class NormalizationStrategy(str, AutoName):
 
 
 def _with_strict_time_fallback(inverse_mapping: dict[str, str]) -> dict[str, str]:
-    # Dialects that define a "strict" format (e.g. Spark) keep their own mapping;
-    # everyone else degrades it to the lax counterpart's mapping, so the internal
-    # token never leaks into generated SQL.
     for strict_format, lax_format in STRICT_TIME_FORMATS.items():
-        inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
+        if strict_format in inverse_mapping:
+            # Strict dialects (e.g. modern Hive, Spark 3+) map padded MM/dd to the internal
+            # %mstrict/%dstrict tokens, leaving the lax %m/%d without an inverse of their own;
+            # format them the same padded way (e.g. a foreign %m formats as MM).
+            inverse_mapping.setdefault(lax_format, inverse_mapping[strict_format])
+        else:
+            # Everyone else degrades the internal strict token to the lax counterpart's
+            # mapping, so it never leaks into generated SQL.
+            inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
 
     return inverse_mapping
 

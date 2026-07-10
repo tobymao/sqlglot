@@ -82,10 +82,6 @@ class Hive(Dialect):
         "Z": "%z",
     }
 
-    # MM/dd left the forward map above, so restore the padded formatting inverse (%mstrict -> MM
-    # and %-m -> M auto-derive from TIME_MAPPING).
-    INVERSE_TIME_MAPPING = {"%m": "MM", "%d": "dd"}
-
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"
     TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"

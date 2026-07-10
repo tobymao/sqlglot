@@ -17,8 +17,8 @@ class Spark(Spark2):
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # Spark 3+ parses MM/dd strictly by default (single-digit months/days don't parse),
-    # re-applying the strict tokens that Spark2 reverted. %mstrict roundtrips to MM; the
-    # padded %m -> MM inverse is restored for formatting.
+    # re-applying the strict tokens that Spark2 reverted. The metaclass derives the inverses
+    # from TIME_MAPPING: %mstrict roundtrips to MM, and the padded %m -> MM formatting inverse.
     STRICT_TIME_PARSING = True
 
     TIME_MAPPING = {
@@ -26,8 +26,6 @@ class Spark(Spark2):
         "MM": "%mstrict",
         "dd": "%dstrict",
     }
-
-    INVERSE_TIME_MAPPING = {"%m": "MM", "%d": "dd"}
 
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False

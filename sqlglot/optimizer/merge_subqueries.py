@@ -157,13 +157,6 @@ def _mergeable(
             and column.name in window_aliases
             and column.find_ancestor(exp.Group, exp.Order, exp.Having, exp.AggFunc)
             for column in outer_scope.columns
-            if column.find_ancestor(
-                exp.Where, exp.Group, exp.Order, exp.Join, exp.Having, exp.AggFunc
-            )
-        ]
-        return any(
-            column.table == inner_select_name and column.name in window_aliases
-            for column in unmergable_window_columns
         )
 
     def _literal_group_alias_collision():
@@ -282,6 +275,7 @@ def _mergeable(
         )
         and not _outer_select_joins_on_inner_select_join()
         and not _window_projection_blocks_merge()
+        and not _literal_group_alias_collision()
         and not _literal_in_order_by()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)

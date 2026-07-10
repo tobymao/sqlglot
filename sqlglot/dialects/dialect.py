@@ -134,12 +134,22 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
-def _with_strict_time_fallback(inverse_mapping: dict[str, str]) -> dict[str, str]:
+def _with_strict_time_mapping(time_mapping: dict[str, str], strict: bool) -> dict[str, str]:
+    # A dialect's STRICT_TIME_PARSING flag is the single source of truth for strictness, from
+    # which the internal %mstrict/%dstrict tokens are derived here (never hand-written): strict
+    # dialects (e.g. modern Hive, Spark 3+) canonicalize their zero-padded MM/dd to those tokens
+    # so the strict roundtrip is preserved, while every other dialect strips them back to the
+    # lax %m/%d (needed when a strict base is inherited, e.g. Spark 2 <- Hive).
+    rewrite = {v: k for k, v in STRICT_TIME_FORMATS.items()} if strict else STRICT_TIME_FORMATS
+    return {k: rewrite.get(v, v) for k, v in time_mapping.items()}
+
+
+def _with_strict_time_inverse(inverse_mapping: dict[str, str]) -> dict[str, str]:
     for strict_format, lax_format in STRICT_TIME_FORMATS.items():
         if strict_format in inverse_mapping:
-            # Strict dialects (e.g. modern Hive, Spark 3+) map padded MM/dd to the internal
-            # %mstrict/%dstrict tokens, leaving the lax %m/%d without an inverse of their own;
-            # format them the same padded way (e.g. a foreign %m formats as MM).
+            # Strict dialects map padded MM/dd to the internal %mstrict/%dstrict tokens, leaving
+            # the lax %m/%d without an inverse of their own; format them the same padded way
+            # (e.g. a foreign %m formats as MM).
             inverse_mapping.setdefault(lax_format, inverse_mapping[strict_format])
         else:
             # Everyone else degrades the internal strict token to the lax counterpart's
@@ -246,18 +256,23 @@ class _Dialect(type):
         enum = Dialects.__members__.get(clsname.upper())
         cls._classes[enum.value if enum is not None else clsname.lower()] = klass
 
+        # Derive the internal %mstrict/%dstrict tokens from STRICT_TIME_PARSING (see the helper)
+        # before anything reads TIME_MAPPING, so dialects only declare the flag, not the tokens.
+        klass.TIME_MAPPING = _with_strict_time_mapping(
+            klass.TIME_MAPPING, klass.STRICT_TIME_PARSING
+        )
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
         klass.FORMAT_TRIE = (
             new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
         )
         # Merge class-defined INVERSE_TIME_MAPPING with auto-generated mappings
         # This allows dialects to define custom inverse mappings for roundtrip correctness
-        klass.INVERSE_TIME_MAPPING = _with_strict_time_fallback(
+        klass.INVERSE_TIME_MAPPING = _with_strict_time_inverse(
             {v: k for k, v in klass.TIME_MAPPING.items()}
             | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
-        klass.INVERSE_FORMAT_MAPPING = _with_strict_time_fallback(
+        klass.INVERSE_FORMAT_MAPPING = _with_strict_time_inverse(
             {v: k for k, v in klass.FORMAT_MAPPING.items()}
         )
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)

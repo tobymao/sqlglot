@@ -44,9 +44,10 @@ class Hive(Dialect):
         COERCES_TO[target_type] |= exp.DataType.TEXT_TYPES
 
     # Modern Hive (Hive 3.1.3000+/4) parses MM/dd strictly by default (DateTimeFormatter,
-    # ResolverStyle.STRICT), unlike the lax %m/%d most dialects produce. MM/dd map to a
-    # distinct canonical token so the strict roundtrip is preserved; the generator renders a
-    # lenient %m as the non-padded M for parse expressions (see HiveGenerator.format_time).
+    # ResolverStyle.STRICT), unlike the lax %m/%d most dialects produce. The metaclass promotes
+    # the MM/dd -> %m/%d entries below to distinct canonical tokens so the strict roundtrip is
+    # preserved; the generator renders a lenient %m as the non-padded M for parse expressions
+    # (see HiveGenerator.format_time).
     STRICT_TIME_PARSING = True
 
     TIME_MAPPING = {
@@ -58,9 +59,9 @@ class Hive(Dialect):
         "yy": "%y",
         "MMMM": "%B",
         "MMM": "%b",
-        "MM": "%mstrict",
+        "MM": "%m",
         "M": "%-m",
-        "dd": "%dstrict",
+        "dd": "%d",
         "d": "%-d",
         "HH": "%H",
         "H": "%-H",

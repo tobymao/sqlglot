@@ -6730,6 +6730,19 @@ VARCHAR;
 # dialect: clickhouse
 MD5(tbl.str_col);
 FIXEDSTRING(16);
+
+# dialect: clickhouse
+CORR(tbl.int_col, tbl.int_col);
+DOUBLE;
+
+# dialect: clickhouse
+CORR(tbl.float_col, tbl.float_col);
+DOUBLE;
+
+# dialect: clickhouse
+CORR(tbl.int_col, NULL);
+DOUBLE;
+
 --------------------------------------
 -- IGNORE NULLS / RESPECT NULLS
 --------------------------------------

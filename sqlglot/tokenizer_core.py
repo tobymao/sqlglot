@@ -1175,13 +1175,20 @@ class TokenizerCore:
                 escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars
             )
 
+            # For multi-char delimiters (e.g """), an escaped quote (e.g \") must be
+            # consumed here, otherwise the quote is picked up by the delimiter check
+            # below and terminates the string early
+            peek_is_delimiter = self._peek == delimiter or (
+                delim_size > 1 and self._peek == delimiter[0]
+            )
+
             if (
                 (string_escapes_allowed_in_raw_strings or not raw_string)
                 and self._char in escapes
-                and (self._peek == delimiter or self._peek in escapes or is_valid_custom_escape)
+                and (peek_is_delimiter or self._peek in escapes or is_valid_custom_escape)
                 and (self._char not in quotes or self._char == self._peek)
             ):
-                if self._peek == delimiter:
+                if peek_is_delimiter:
                     text += self._peek
                 elif is_valid_custom_escape and self._char != self._peek:
                     text += self._peek

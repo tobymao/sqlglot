@@ -436,6 +436,14 @@ class TestBigQuery(Validator):
             "x <> ''",
         )
         self.validate_identity(
+            'SELECT """ends with \\"word\\""""',
+            "SELECT 'ends with \"word\"'",
+        )
+        self.validate_identity(
+            "SELECT '''ends with \\'word\\''''",
+            "SELECT 'ends with \\'word\\''",
+        )
+        self.validate_identity(
             "SELECT a overlaps",
             "SELECT a AS overlaps",
         )

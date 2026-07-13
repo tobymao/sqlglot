@@ -797,7 +797,7 @@ class TestDialect(Validator):
             "STR_TO_UNIX('2020-01-01', '%Y-%m-%d')",
             write={
                 "duckdb": "EPOCH(STRPTIME('2020-01-01', '%Y-%m-%d'))",
-                "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
+                "hive": "UNIX_TIMESTAMP('2020-01-01', 'yyyy-M-d')",
                 "presto": "TO_UNIXTIME(COALESCE(TRY(DATE_PARSE(CAST('2020-01-01' AS VARCHAR), '%Y-%m-%d')), PARSE_DATETIME(DATE_FORMAT(CAST('2020-01-01' AS TIMESTAMP), '%Y-%m-%d'), 'yyyy-MM-dd')))",
                 "starrocks": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",
                 "doris": "UNIX_TIMESTAMP('2020-01-01', '%Y-%m-%d')",

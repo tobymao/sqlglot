@@ -46,7 +46,7 @@ HIVE_DATE_FORMAT = "'yyyy-MM-dd'"
 HIVE_DATEINT_FORMAT = "'yyyyMMdd'"
 
 # Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
-PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.TsOrDsToDate)
+PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.StrToUnix, exp.TsOrDsToDate)
 
 # (FuncType, Multiplier)
 DATE_DELTA_INTERVAL = {

@@ -694,6 +694,25 @@ TBLPROPERTIES (
                 "databricks": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
             },
         )
+        # UNIX_TIMESTAMP also *parses* its input, so a lax foreign %m/%d becomes M/d,
+        # while Spark's own strict MM/dd roundtrips.
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
+            read={
+                "": "SELECT STR_TO_UNIX('2016-1-1', '%Y-%m-%d')",
+            },
+            write={
+                "duckdb": "SELECT EPOCH(STRPTIME('2016-1-1', '%Y-%-m-%-d'))",
+                "spark": "SELECT UNIX_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            write={
+                "duckdb": "SELECT EPOCH(STRPTIME('2016-12-31', '%Y-%m-%d'))",
+                "spark": "SELECT UNIX_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={

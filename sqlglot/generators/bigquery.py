@@ -156,8 +156,6 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
                     str, Postgres.DEFAULT_FUNCTIONS_COLUMN_NAMES[exp.ExplodingGenerateSeries]
                 )
 
-                # replace() detaches `projection` (and its series) from the SELECT, leaving a
-                # standalone subtree that's safe to wrap in the table reference
                 projection.replace(exp.column(column_name))
                 table = exp.Table(
                     this=series, alias=exp.TableAlias(this=exp.to_identifier(column_name))

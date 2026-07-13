@@ -872,6 +872,30 @@ class TestOptimizer(unittest.TestCase):
                 dialect="snowflake",
             )
 
+    def test_qualify_columns_struct_star_expansion_types(self):
+        # Struct star expansion annotates a scope and then replaces its projections; the
+        # stale annotation caches must not prevent the new projections from being typed
+        qualified = optimizer.qualify.qualify(
+            parse_one(
+                "WITH cte AS (SELECT t.s.* FROM t UNION ALL SELECT t.s.* FROM t) SELECT cte.x FROM cte",
+                read="bigquery",
+            ),
+            schema={"t": {"s": "STRUCT<x INT64, y STRING>"}},
+            dialect="bigquery",
+        )
+
+        union = qualified.find(exp.Union)
+        assert union
+        self.assertEqual(
+            [s.type.sql("bigquery") if s.type else None for s in union.selects],
+            ["INT64", "STRING"],
+        )
+        self.assertEqual(
+            [s.type.sql("bigquery") if s.type else None for s in union.expression.selects],
+            ["INT64", "STRING"],
+        )
+        self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

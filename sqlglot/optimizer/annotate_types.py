@@ -236,6 +236,20 @@ class TypeAnnotator:
         self._setop_column_types.clear()
         self._scope_source_selects.clear()
 
+    def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
+        """
+        Evicts `expression` (or its subtree, if `deep`) from the annotation caches. This must
+        be called when an already-annotated tree is about to be mutated, both so that a
+        subsequent annotation pass doesn't skip it and so that the ids of any discarded nodes
+        can't be conflated with new nodes allocated at the same addresses.
+        """
+        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
+        for node in nodes:
+            node_id = id(node)
+            self._visited.discard(node_id)
+            self._null_expressions.pop(node_id, None)
+            self._setop_column_types.pop(node_id, None)
+
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
     def _set_type(

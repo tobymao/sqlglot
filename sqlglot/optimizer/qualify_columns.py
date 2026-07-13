@@ -785,9 +785,10 @@ def _expand_stars(
 
     pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
 
-    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
+    annotated_ahead = dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
         isinstance(col, exp.Dot) for col in scope.stars
-    ):
+    )
+    if annotated_ahead:
         # Found struct expansion, annotate scope ahead of time
         annotator.annotate_scope(scope)
 
@@ -812,19 +813,19 @@ def _expand_stars(
                 _add_rename_columns(expression.this, tables, rename_columns)
                 ilike_pattern = _add_ilike_columns(expression.this)
             elif isinstance(expression, exp.Dot):
-                if (
-                    dialect.SUPPORTS_STRUCT_STAR_EXPANSION
-                    and not dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
-                ):
-                    struct_fields = _expand_struct_stars_no_parens(expression)
-                    if struct_fields:
-                        new_selections.extend(struct_fields)
-                        continue
-                elif dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
+                if dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
                     struct_fields = _expand_struct_stars_with_parens(expression)
-                    if struct_fields:
-                        new_selections.extend(struct_fields)
-                        continue
+                elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+                    struct_fields = _expand_struct_stars_no_parens(expression)
+                else:
+                    struct_fields = []
+
+                if struct_fields:
+                    if annotated_ahead:
+                        annotator.uncache(expression)
+
+                    new_selections.extend(struct_fields)
+                    continue
 
         if not tables:
             new_selections.append(expression)
@@ -898,8 +899,16 @@ def _expand_stars(
                         else selection_expr
                     )
 
+        if annotated_ahead:
+            # The star projection was replaced by the expansions above
+            annotator.uncache(expression)
+
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
+        if annotated_ahead:
+            # The mutation below would otherwise be skipped by the final annotation pass
+            annotator.uncache(scope_expression, deep=False)
+
         scope_expression.set("expressions", new_selections)
 
 

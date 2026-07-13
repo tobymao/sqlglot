@@ -7,6 +7,7 @@ from collections import defaultdict
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.schema import Schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -14,7 +15,9 @@ if t.TYPE_CHECKING:
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
+def merge_subqueries(
+    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
+) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -37,11 +40,12 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Args:
         expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
+        schema: database schema used to look up table columns for merge-safety checks.
     Returns:
         sqlglot.Expr: optimized expression
     """
-    expression = merge_ctes(expression, leave_tables_isolated)
-    expression = merge_derived_tables(expression, leave_tables_isolated)
+    expression = merge_ctes(expression, leave_tables_isolated, schema=schema)
+    expression = merge_derived_tables(expression, leave_tables_isolated, schema=schema)
     return expression
 
 
@@ -67,7 +71,9 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
-def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
+def merge_ctes(
+    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
+) -> E:
     scopes = traverse_scope(expression)
 
     # All places where we select from CTEs.
@@ -89,7 +95,7 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
         from_or_join = table.find_ancestor(exp.From, exp.Join)
         if not isinstance(from_or_join, (exp.From, exp.Join)):
             continue
-        if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
+        if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join, schema=schema):
             alias = table.alias_or_name
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(
@@ -105,7 +111,9 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     return expression
 
 
-def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> E:
+def merge_derived_tables(
+    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
+) -> E:
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
@@ -115,7 +123,9 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
             inner_scope = outer_scope.sources[alias]
             if not isinstance(inner_scope, Scope):
                 continue
-            if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
+            if _mergeable(
+                outer_scope, inner_scope, leave_tables_isolated, from_or_join, schema=schema
+            ):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)
@@ -129,7 +139,11 @@ def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> 
 
 
 def _mergeable(
-    outer_scope: Scope, inner_scope: Scope, leave_tables_isolated: bool, from_or_join: FromOrJoin
+    outer_scope: Scope,
+    inner_scope: Scope,
+    leave_tables_isolated: bool,
+    from_or_join: FromOrJoin,
+    schema: Schema | None = None,
 ) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
@@ -165,10 +179,12 @@ def _mergeable(
         group = outer_scope.expression.args.get("group")
         if not group:
             return False
-        # Only a bare top-level `GROUP BY <col>` key can hit the literal rewrite.
         inner_name = from_or_join.alias_or_name
         grouped = {
-            e.name for e in group.expressions if isinstance(e, exp.Column) and e.table == inner_name
+            col.name
+            for e in group.expressions
+            for col in e.find_all(exp.Column)
+            if col.table == inner_name
         }
         if not grouped:
             return False
@@ -180,12 +196,19 @@ def _mergeable(
         if not literal_grouped:
             return False
         # `GROUP BY a` resolves against the whole merged FROM: inner sources + outer's others.
-        merged_sources = [src for name, src in outer_scope.sources.items() if name != inner_name]
-        merged_sources.extend(inner_scope.sources.values())
+        merged_sources = {
+            src for name, (_, src) in outer_scope.selected_sources.items() if name != inner_name
+        }
+        merged_sources.update(src for _, src in inner_scope.selected_sources.values())
         for source in merged_sources:
             if isinstance(source, exp.Table):
-                return True
-            if isinstance(source, Scope) and literal_grouped & set(source.expression.named_selects):
+                if schema is None:
+                    return True
+                if literal_grouped & set(schema.column_names(source)):
+                    return True
+            elif isinstance(source, Scope) and literal_grouped & set(
+                source.expression.named_selects
+            ):
                 return True
         return False
 

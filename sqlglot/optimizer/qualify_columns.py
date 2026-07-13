@@ -7,7 +7,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError, highlight_sql
-from sqlglot.helper import seq_get
+from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
@@ -780,6 +780,23 @@ def _expand_stars(
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
 
+    # Output names already used by this projection. When this scope feeds another
+    # query (a subquery/CTE), star-expanded columns that would collide (e.g. `id`
+    # from two joined tables that share the column) are aliased uniquely, so the
+    # outer query's by-name references address each column instead of collapsing
+    # onto the first. The outermost query keeps duplicate names since nothing
+    # references its output by name.
+    taken_names: set[str] = set()
+    uniquify_names = scope.parent is not None
+
+    def add_star_selection(selection: exp.Expr, output_name: str) -> None:
+        if uniquify_names and output_name and output_name in taken_names:
+            unique_name = find_new_name(taken_names, output_name)
+            selection = alias(selection.unalias(), unique_name, copy=False)
+            output_name = unique_name
+        taken_names.add(output_name)
+        new_selections.append(selection)
+
     coalesced_columns = set()
     dialect = resolver.dialect
 
@@ -825,10 +842,12 @@ def _expand_stars(
                         annotator.uncache(expression)
 
                     new_selections.extend(struct_fields)
+                    taken_names.update(field.output_name for field in struct_fields)
                     continue
 
         if not tables:
             new_selections.append(expression)
+            taken_names.add(expression.output_name)
             continue
 
         for table in tables:
@@ -863,11 +882,14 @@ def _expand_stars(
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
 
                 if pivot_columns:
-                    new_selections.extend(
-                        alias(exp.column(name, table=pivot.alias or None), name, copy=False)
-                        for name in pivot_columns
-                        if name not in columns_to_exclude
-                    )
+                    for name in pivot_columns:
+                        if name not in columns_to_exclude:
+                            add_star_selection(
+                                alias(
+                                    exp.column(name, table=pivot.alias or None), name, copy=False
+                                ),
+                                name,
+                            )
                     continue
 
             for name in columns:
@@ -881,8 +903,8 @@ def _expand_stars(
                     using_tables = using_column_tables[name]
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
-                    new_selections.append(
-                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
+                    add_star_selection(
+                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False), name
                     )
                 else:
                     alias_ = renamed_columns.get(name, name)
@@ -893,10 +915,11 @@ def _expand_stars(
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted
                     )
-                    new_selections.append(
+                    add_star_selection(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name
-                        else selection_expr
+                        else selection_expr,
+                        alias_,
                     )
 
         if annotated_ahead:

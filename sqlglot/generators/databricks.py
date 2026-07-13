@@ -57,6 +57,9 @@ class DatabricksGenerator(SparkGenerator):
             exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG()",
             exp.RegexpLike: None,
             exp.TryCast: None,
+            exp.RegrAvgx: lambda self, e: self._regr_sql(e),
+            exp.RegrSxx: lambda self, e: self._regr_sql(e),
+            exp.RegrSyy: lambda self, e: self._regr_sql(e),
         }.items()
         if v is not None
     }
@@ -115,15 +118,6 @@ class DatabricksGenerator(SparkGenerator):
         if isinstance(x, exp.Distinct):
             return self.func(name, exp.Distinct(expressions=[expression.this]), *x.expressions)
         return self.func(name, expression.this, x)
-
-    def regravgx_sql(self, expression: exp.RegrAvgx) -> str:
-        return self._regr_sql(expression)
-
-    def regrsxx_sql(self, expression: exp.RegrSxx) -> str:
-        return self._regr_sql(expression)
-
-    def regrsyy_sql(self, expression: exp.RegrSyy) -> str:
-        return self._regr_sql(expression)
 
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"

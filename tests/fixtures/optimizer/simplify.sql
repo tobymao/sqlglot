@@ -204,6 +204,12 @@ A OR B;
 A OR ((((NOT A AND B))));
 A OR B;
 
+x NOT LIKE 'a%' OR (y IN (1, 2) AND x LIKE 'a%');
+(x LIKE 'a%' AND y IN (1, 2)) OR x NOT LIKE 'a%';
+
+x NOT ILIKE 'a%' OR (y IN (1, 2) AND x ILIKE 'a%');
+(x ILIKE 'a%' AND y IN (1, 2)) OR x NOT ILIKE 'a%';
+
 (A OR C) AND ((A OR C) OR B);
 A OR C;
 

@@ -1685,7 +1685,7 @@ class Gen:
         self.stack.append(f'"{e.this}"' if e.quoted else e.this)
 
     def ilike_sql(self, e: exp.ILike) -> None:
-        self._binary(e, " ILIKE ")
+        self._binary(e, " NOT ILIKE " if e.args.get("negate") else " ILIKE ")
 
     def in_sql(self, e: exp.In) -> None:
         self.stack.append(")")
@@ -1705,7 +1705,7 @@ class Gen:
         self._binary(e, " IS ")
 
     def like_sql(self, e: exp.Like) -> None:
-        self._binary(e, " Like ")
+        self._binary(e, " NOT Like " if e.args.get("negate") else " Like ")
 
     def literal_sql(self, e: exp.Literal) -> None:
         self.stack.append(f"'{e.this}'" if e.is_string else e.this)

@@ -168,6 +168,10 @@ class Pi(Expression, Func):
     arg_types = {}
 
 
+class Rint(Expression, Func):
+    pass
+
+
 class Round(Expression, Func):
     arg_types = {
         "this": True,

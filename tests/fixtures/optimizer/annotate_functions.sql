@@ -4535,6 +4535,50 @@ DOUBLE;
 REGR_SLOPE(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
 DOUBLE;
 
+# dialect: databricks
+RINT(tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+RINT(tbl.float_col);
+DOUBLE;
+
+# dialect: databricks
+RINT(tbl.int_col);
+DOUBLE;
+
+# dialect: databricks
+RINT(tbl.bigint_col);
+DOUBLE;
+
+# dialect: databricks
+ROUND(tbl.int_col);
+INT;
+
+# dialect: databricks
+ROUND(tbl.int_col, 0);
+INT;
+
+# dialect: databricks
+ROUND(tbl.bigint_col);
+BIGINT;
+
+# dialect: databricks
+ROUND(tbl.double_col);
+DOUBLE;
+
+# dialect: databricks
+ROUND(tbl.float_col);
+FLOAT;
+
+# dialect: databricks
+ROUND(CAST(3.14 AS DECIMAL(10, 2)));
+DECIMAL(10, 2);
+
+# dialect: databricks
+ROUND(CAST(3.14 AS DECIMAL(10, 2)), 1);
+DECIMAL(10, 2);
+
 # dialect: snowflake
 REGR_VALX(NULL, 2.0);
 DOUBLE;

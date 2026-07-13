@@ -710,7 +710,7 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT GENERATE_SERIES(1, 5)",
             write={
-                "bigquery": "SELECT generate_series FROM UNNEST(GENERATE_ARRAY(1, 5)) AS generate_series",
+                "bigquery": "SELECT _gen_series_value FROM UNNEST(GENERATE_ARRAY(1, 5)) AS _gen_series_value",
                 "postgres": "SELECT GENERATE_SERIES(1, 5)",
             },
         )

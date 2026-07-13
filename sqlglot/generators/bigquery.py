@@ -5,8 +5,6 @@ import re
 import typing as t
 
 from sqlglot import exp, generator, transforms
-from sqlglot.dialects.postgres import Postgres
-
 from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
     date_add_interval_sql,
@@ -152,9 +150,7 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
     if isinstance(expression, exp.Select):
         for projection in expression.selects:
             if isinstance(series := projection.unalias(), exp.ExplodingGenerateSeries):
-                column_name = projection.output_name or t.cast(
-                    str, Postgres.DEFAULT_FUNCTIONS_COLUMN_NAMES[exp.ExplodingGenerateSeries]
-                )
+                column_name = projection.output_name or "_gen_series_value"
 
                 projection.replace(exp.column(column_name))
                 table = exp.Table(

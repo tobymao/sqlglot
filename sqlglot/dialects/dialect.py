@@ -272,6 +272,20 @@ class _Dialect(type):
             | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
+        if klass.STRICT_TIME_PARSING:
+            # Parse expressions (e.g. StrToTime) render the lax %m/%d non-padded (M/d), so
+            # single-digit sources stay parseable; %mstrict/%dstrict still render padded.
+            klass.PARSE_INVERSE_TIME_MAPPING = {
+                **klass.INVERSE_TIME_MAPPING,
+                **{
+                    lax: klass.INVERSE_TIME_MAPPING.get(f"%-{lax[1:]}", lax)
+                    for lax in STRICT_TIME_FORMATS.values()
+                },
+            }
+            klass.PARSE_INVERSE_TIME_TRIE = new_trie(klass.PARSE_INVERSE_TIME_MAPPING)
+        else:
+            klass.PARSE_INVERSE_TIME_MAPPING = klass.INVERSE_TIME_MAPPING
+            klass.PARSE_INVERSE_TIME_TRIE = klass.INVERSE_TIME_TRIE
         klass.INVERSE_FORMAT_MAPPING = _with_strict_time_inverse(
             {v: k for k, v in klass.FORMAT_MAPPING.items()}
         )
@@ -817,6 +831,12 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_TRIE: dict = {}
     INVERSE_FORMAT_MAPPING: dict[str, str] = {}
     INVERSE_FORMAT_TRIE: dict = {}
+
+    # Variant of INVERSE_TIME_MAPPING used when generating the format of a *parse* expression
+    # (e.g. StrToTime) for a strict dialect: the lax %m/%d render non-padded (M/d) so
+    # single-digit sources stay parseable. Aliases INVERSE_TIME_MAPPING for lenient dialects.
+    PARSE_INVERSE_TIME_MAPPING: dict[str, str] = {}
+    PARSE_INVERSE_TIME_TRIE: dict = {}
 
     INVERSE_CREATABLE_KIND_MAPPING: dict[str, str] = {}
 

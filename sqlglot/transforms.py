@@ -141,31 +141,6 @@ def unnest_generate_series(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
-    """
-    Rewrites a lone exploding GENERATE_SERIES projection into a table reference, e.g.
-
-        SELECT GENERATE_SERIES(1, 2) AS x -> SELECT x FROM GENERATE_SERIES(1, 2) AS x
-
-    so that dialects which cannot explode in the projection (e.g. BigQuery) can unnest it in
-    the FROM clause. The resulting table reference is expected to be handled downstream (e.g. by
-    `unnest_generate_series`).
-    """
-    if (
-        isinstance(expression, exp.Select)
-        and not expression.args.get("from_")
-        and len(expression.selects) == 1
-    ):
-        projection = expression.selects[0]
-
-        if isinstance(series := projection.unalias(), exp.ExplodingGenerateSeries):
-            column = projection.output_name or "value"
-            table = exp.Table(this=series, alias=exp.TableAlias(this=exp.to_identifier(column)))
-            return exp.select(column).from_(table, copy=False)
-
-    return expression
-
-
 def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
     """
     Convert SELECT DISTINCT ON statements to a subquery with a window function.

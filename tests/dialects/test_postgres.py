@@ -710,7 +710,7 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT GENERATE_SERIES(1, 5)",
             write={
-                "bigquery": "SELECT value FROM UNNEST(GENERATE_ARRAY(1, 5)) AS value",
+                "bigquery": "SELECT generate_series FROM UNNEST(GENERATE_ARRAY(1, 5)) AS generate_series",
                 "postgres": "SELECT GENERATE_SERIES(1, 5)",
             },
         )
@@ -719,6 +719,34 @@ FROM json_data, field_ids""",
             write={
                 "bigquery": "SELECT x FROM UNNEST(GENERATE_ARRAY(1, 5)) AS x",
                 "postgres": "SELECT GENERATE_SERIES(1, 5) AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT GENERATE_SERIES(1, 5) AS x WHERE x > 2 ORDER BY x DESC LIMIT 3",
+            write={
+                "bigquery": "SELECT x FROM UNNEST(GENERATE_ARRAY(1, 5)) AS x WHERE x > 2 ORDER BY x DESC NULLS FIRST LIMIT 3",
+                "postgres": "SELECT GENERATE_SERIES(1, 5) AS x WHERE x > 2 ORDER BY x DESC LIMIT 3",
+            },
+        )
+        self.validate_all(
+            "SELECT y, GENERATE_SERIES(1, 3) AS g FROM t",
+            write={
+                "bigquery": "SELECT y, g FROM t CROSS JOIN UNNEST(GENERATE_ARRAY(1, 3)) AS g",
+                "postgres": "SELECT y, GENERATE_SERIES(1, 3) AS g FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT GENERATE_SERIES(1, 2) AS a, GENERATE_SERIES(11, 13) AS b",
+            write={
+                "bigquery": "SELECT a, b FROM UNNEST(GENERATE_ARRAY(1, 2)) AS a CROSS JOIN UNNEST(GENERATE_ARRAY(11, 13)) AS b",
+                "postgres": "SELECT GENERATE_SERIES(1, 2) AS a, GENERATE_SERIES(11, 13) AS b",
+            },
+        )
+        self.validate_all(
+            "SELECT y, GENERATE_SERIES(1, 2) AS a, GENERATE_SERIES(11, 13) AS b FROM t",
+            write={
+                "bigquery": "SELECT y, a, b FROM t CROSS JOIN UNNEST(GENERATE_ARRAY(1, 2)) AS a CROSS JOIN UNNEST(GENERATE_ARRAY(11, 13)) AS b",
+                "postgres": "SELECT y, GENERATE_SERIES(1, 2) AS a, GENERATE_SERIES(11, 13) AS b FROM t",
             },
         )
         self.validate_all(

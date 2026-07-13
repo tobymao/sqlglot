@@ -436,6 +436,26 @@ class TestBigQuery(Validator):
             "x <> ''",
         )
         self.validate_identity(
+            'SELECT """ends with \\"word\\""""',
+            "SELECT 'ends with \"word\"'",
+        )
+        self.validate_identity(
+            "SELECT '''ends with \\'word\\''''",
+            "SELECT 'ends with \\'word\\''",
+        )
+        self.validate_identity(
+            'SELECT """a\\"b"""',
+            "SELECT 'a\"b'",
+        )
+        self.validate_identity(
+            'SELECT r"""ends with \\""""',
+            "SELECT 'ends with \\\\\"'",
+        )
+        self.validate_identity(
+            'SELECT r"""a\\"b"""',
+            "SELECT 'a\\\\\"b'",
+        )
+        self.validate_identity(
             "SELECT a overlaps",
             "SELECT a AS overlaps",
         )
@@ -1285,8 +1305,9 @@ LANGUAGE js AS
         self.validate_all(
             "r'x\\''",
             write={
-                "bigquery": "'x\\''",
-                "hive": "'x\\''",
+                "bigquery": "'x\\\\\\''",
+                "duckdb": "'x\\'''",
+                "hive": "'x\\\\\\''",
             },
         )
 

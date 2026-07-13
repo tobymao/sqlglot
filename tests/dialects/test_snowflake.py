@@ -1035,6 +1035,14 @@ class TestSnowflake(Validator):
             r"SELECT 'a \' \\ \\t \\x21 z $ '",
         )
         self.validate_identity(
+            r"SELECT $$a\$b$$",
+            r"SELECT 'a\\$b'",
+        )
+        self.validate_identity(
+            r"SELECT $$a\$$",
+            r"SELECT 'a\\'",
+        )
+        self.validate_identity(
             "SELECT {'test': 'best'}::VARIANT",
             "SELECT CAST(OBJECT_CONSTRUCT('test', 'best') AS VARIANT)",
         )

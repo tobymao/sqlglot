@@ -22,6 +22,11 @@ class TestClickhouse(Validator):
             "CAST(CASE WHEN notEmpty(report_task_id) THEN report_task_id ELSE '-1' END AS String)",
         )
 
+        self.validate_identity(
+            r"SELECT $$a\$b$$",
+            r"SELECT 'a\\$b'",
+        )
+
         expr = quote_identifiers(self.parse_one("{start_date:String}"), dialect="clickhouse")
         self.assertEqual(expr.sql("clickhouse"), "{start_date: String}")
 

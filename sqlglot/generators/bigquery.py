@@ -151,7 +151,7 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
     """
     if isinstance(expression, exp.Select):
         for projection in expression.selects:
-            if isinstance(projection.unalias(), exp.ExplodingGenerateSeries):
+            if isinstance(series := projection.unalias(), exp.ExplodingGenerateSeries):
                 column_name = projection.output_name or t.cast(
                     str, Postgres.DEFAULT_FUNCTIONS_COLUMN_NAMES[exp.ExplodingGenerateSeries]
                 )
@@ -160,8 +160,7 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
                 # standalone subtree that's safe to wrap in the table reference
                 projection.replace(exp.column(column_name))
                 table = exp.Table(
-                    this=projection.unalias(),
-                    alias=exp.TableAlias(this=exp.to_identifier(column_name)),
+                    this=series, alias=exp.TableAlias(this=exp.to_identifier(column_name))
                 )
 
                 if expression.args.get("from_"):

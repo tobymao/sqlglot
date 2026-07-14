@@ -202,9 +202,8 @@ def _mergeable(
         merged_sources.update(src for _, src in inner_scope.selected_sources.values())
         for source in merged_sources:
             if isinstance(source, exp.Table):
-                if schema is None:
-                    return True
-                if literal_grouped & set(schema.column_names(source)):
+                columns = schema.column_names(source) if schema else None
+                if not columns or literal_grouped & set(columns):
                     return True
             elif isinstance(source, Scope) and literal_grouped & set(
                 source.expression.named_selects

@@ -63,7 +63,7 @@ def _lenient_parse_format(fmt: str) -> str:
     adjacent fields parse greedily, so e.g. 'yyyyMd' (from '%Y%m%d') can't even parse '20200101'.
 
     The format is decomposed into specifiers (`formats`) and the interleaved literal text (`parts`).
-    Specifier i sits between parts[i] and parts[i + 1]). A %m/%d is changed only when its neighbors
+    Specifier i sits between parts[i] and parts[i + 1]. A %m/%d is changed only when its neighbors
     don't touch a digit run, i.e., neither side is another specifier or a literal digit. At the end,
     the pieces are zipped back together to produce the rewritten canonical format.
     """
@@ -172,7 +172,7 @@ def _unix_to_time_sql(self: HiveGenerator, expression: exp.UnixToTime) -> str:
 def _str_to_date_sql(self: HiveGenerator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format not in HIVE_CAST_TIME_FORMATS:
+    if time_format and time_format not in HIVE_CAST_TIME_FORMATS:
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS DATE)"
 
@@ -180,7 +180,7 @@ def _str_to_date_sql(self: HiveGenerator, expression: exp.StrToDate) -> str:
 def _str_to_time_sql(self: HiveGenerator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format not in HIVE_CAST_TIME_FORMATS:
+    if time_format and time_format not in HIVE_CAST_TIME_FORMATS:
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS TIMESTAMP)"
 

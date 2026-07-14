@@ -827,19 +827,6 @@ def _expand_stars(
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
 
-    # Output names already used by this projection. Star-expanded columns that would
-    # collide are only aliased uniquely if this scope is exposed to another scope
-    taken_names: set[str] = set()
-    uniquify_names = id(scope) in star_referenced_sources
-
-    def add_star_selection(selection: exp.Expr, output_name: str) -> None:
-        if uniquify_names and output_name and output_name in taken_names:
-            unique_name = find_new_name(taken_names, output_name)
-            selection = alias(selection.unalias(), unique_name, copy=False)
-            output_name = unique_name
-        taken_names.add(output_name)
-        new_selections.append(selection)
-
     coalesced_columns = set()
     dialect = resolver.dialect
 
@@ -885,12 +872,10 @@ def _expand_stars(
                         annotator.uncache(expression)
 
                     new_selections.extend(struct_fields)
-                    taken_names.update(field.output_name for field in struct_fields)
                     continue
 
         if not tables:
             new_selections.append(expression)
-            taken_names.add(expression.output_name)
             continue
 
         for table in tables:
@@ -925,14 +910,11 @@ def _expand_stars(
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
 
                 if pivot_columns:
-                    for name in pivot_columns:
-                        if name not in columns_to_exclude:
-                            add_star_selection(
-                                alias(
-                                    exp.column(name, table=pivot.alias or None), name, copy=False
-                                ),
-                                name,
-                            )
+                    new_selections.extend(
+                        alias(exp.column(name, table=pivot.alias or None), name, copy=False)
+                        for name in pivot_columns
+                        if name not in columns_to_exclude
+                    )
                     continue
 
             for name in columns:
@@ -946,8 +928,8 @@ def _expand_stars(
                     using_tables = using_column_tables[name]
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
-                    add_star_selection(
-                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False), name
+                    new_selections.append(
+                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                     )
                 else:
                     alias_ = renamed_columns.get(name, name)
@@ -958,16 +940,20 @@ def _expand_stars(
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted
                     )
-                    add_star_selection(
+                    new_selections.append(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name
-                        else selection_expr,
-                        alias_,
+                        else selection_expr
                     )
 
         if annotated_ahead:
             # The star projection was replaced by the expansions above
             annotator.uncache(expression)
+
+    # If this scope is re-exposed to another scope via a star, colliding output names
+    # must be made unique so the outer star expansion can't collapse them onto one column
+    if id(scope) in star_referenced_sources:
+        _uniquify_output_names(new_selections)
 
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
@@ -976,6 +962,18 @@ def _expand_stars(
             annotator.uncache(scope_expression, deep=False)
 
         scope_expression.set("expressions", new_selections)
+
+
+def _uniquify_output_names(selections: list[exp.Expr]) -> None:
+    """Rename projections whose output name repeats, so a parent scope re-exposing
+    them via a star can't collapse the duplicates onto a single column reference."""
+    taken: set[str] = set()
+    for i, selection in enumerate(selections):
+        name = selection.output_name
+        if name and name in taken:
+            name = find_new_name(taken, name)
+            selections[i] = alias(selection.unalias(), name, copy=False)
+        taken.add(name)
 
 
 def _output_identifier_quoted(selection: exp.Expr) -> bool:

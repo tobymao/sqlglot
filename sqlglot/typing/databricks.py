@@ -19,7 +19,6 @@ EXPRESSION_METADATA = {
             exp.Rint,
         }
     },
-    exp.Round: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     **{
         exp_type: {"returns": exp.DType.INT}
         for exp_type in {

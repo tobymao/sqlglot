@@ -669,6 +669,8 @@ TBLPROPERTIES (
                 "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             },
         )
+        # An explicit non-padded format must not be simplified away as the CAST default
+        self.validate_identity("SELECT TO_DATE(x, 'yyyy-M-d')")
         # The strict MM/dd roundtrips but widens to the lax %m/%d elsewhere
         self.validate_all(
             "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",

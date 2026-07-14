@@ -45,8 +45,8 @@ HIVE_TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 HIVE_DATE_FORMAT = "'yyyy-MM-dd'"
 HIVE_DATEINT_FORMAT = "'yyyyMMdd'"
 
-# CAST accepts all of these, zero-padded or not, so the CAST simplifications stay valid
-HIVE_CAST_TIME_FORMATS = (HIVE_TIME_FORMAT, HIVE_DATE_FORMAT, "'yyyy-M-d HH:mm:ss'", "'yyyy-M-d'")
+# The default formats above, as rendered by the lenient rewrite (non-padded month/day)
+HIVE_NON_PADDED_TIME_FORMATS = ("'yyyy-M-d HH:mm:ss'", "'yyyy-M-d'")
 
 # Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
 PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.StrToUnix, exp.TsOrDsToDate)
@@ -169,10 +169,23 @@ def _unix_to_time_sql(self: HiveGenerator, expression: exp.UnixToTime) -> str:
     return f"FROM_UNIXTIME({timestamp} / POW(10, {scale}))"
 
 
+def _is_cast_time_format(self: HiveGenerator, expression: exp.Expr, time_format: str) -> bool:
+    """Checks whether CAST subsumes the expression's parse format."""
+    if time_format in (HIVE_TIME_FORMAT, HIVE_DATE_FORMAT):
+        return True
+
+    if time_format in HIVE_NON_PADDED_TIME_FORMATS:
+        # The base render skips the lenient rewrite: a lax %m/%d pads back to MM/dd, an explicit %-m/%-d doesn't
+        padded_format = generator.Generator.format_time(self, expression)
+        return padded_format in (HIVE_TIME_FORMAT, HIVE_DATE_FORMAT)
+
+    return False
+
+
 def _str_to_date_sql(self: HiveGenerator, expression: exp.StrToDate) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format and time_format not in HIVE_CAST_TIME_FORMATS:
+    if time_format and not _is_cast_time_format(self, expression, time_format):
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS DATE)"
 
@@ -180,14 +193,14 @@ def _str_to_date_sql(self: HiveGenerator, expression: exp.StrToDate) -> str:
 def _str_to_time_sql(self: HiveGenerator, expression: exp.StrToTime) -> str:
     this = self.sql(expression, "this")
     time_format = self.format_time(expression)
-    if time_format and time_format not in HIVE_CAST_TIME_FORMATS:
+    if time_format and not _is_cast_time_format(self, expression, time_format):
         this = f"FROM_UNIXTIME(UNIX_TIMESTAMP({this}, {time_format}))"
     return f"CAST({this} AS TIMESTAMP)"
 
 
 def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
     time_format = self.format_time(expression)
-    if time_format and time_format not in HIVE_CAST_TIME_FORMATS:
+    if time_format and not _is_cast_time_format(self, expression, time_format):
         return self.func("TO_DATE", expression.this, time_format)
 
     if isinstance(expression.parent, self.TS_OR_DS_EXPRESSIONS):

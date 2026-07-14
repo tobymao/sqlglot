@@ -7,7 +7,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError, highlight_sql
-from sqlglot.helper import seq_get
+from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
@@ -60,7 +60,10 @@ def qualify_columns(
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
-    for scope in traverse_scope(expression):
+    scopes = traverse_scope(expression)
+    star_referenced_sources = _star_referenced_source_ids(scopes)
+
+    for scope in scopes:
         if dialect.PREFER_CTE_ALIAS_COLUMN:
             pushdown_cte_alias_columns(scope)
 
@@ -100,6 +103,7 @@ def qualify_columns(
                     using_column_tables,
                     pseudocolumns,
                     annotator,
+                    star_referenced_sources,
                 )
             qualify_outputs(scope, dialect=dialect)
 
@@ -113,6 +117,29 @@ def qualify_columns(
             annotator.annotate_scope(scope)
 
     return expression
+
+
+def _star_referenced_source_ids(scopes: list[Scope]) -> set[int]:
+    """ids of sources exposed to some other scope via `SELECT *` or `alias.*`."""
+    referenced: set[int] = set()
+
+    for scope in scopes:
+        scope_expression = scope.expression
+        if not isinstance(scope_expression, exp.Select):
+            continue
+
+        for projection in scope_expression.selects:
+            if isinstance(projection, exp.Star):
+                # Bare, unqualified `*` exposes every source in this scope.
+                for _, source in scope.selected_sources.values():
+                    referenced.add(id(source))
+            elif isinstance(projection, exp.Column) and isinstance(projection.this, exp.Star):
+                # Qualified `alias.*` exposes only that one source.
+                qualified_source = scope.sources.get(projection.table)
+                if qualified_source is not None:
+                    referenced.add(id(qualified_source))
+
+    return referenced
 
 
 def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
@@ -790,6 +817,7 @@ def _expand_stars(
     using_column_tables: dict[str, t.Any],
     pseudocolumns: set[str],
     annotator: TypeAnnotator,
+    star_referenced_sources: set[int],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -798,6 +826,19 @@ def _expand_stars(
     replace_columns: dict[int, dict[str, exp.Alias]] = {}
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
+
+    # Output names already used by this projection. Star-expanded columns that would
+    # collide are only aliased uniquely if this scope is exposed to another scope
+    taken_names: set[str] = set()
+    uniquify_names = id(scope) in star_referenced_sources
+
+    def add_star_selection(selection: exp.Expr, output_name: str) -> None:
+        if uniquify_names and output_name and output_name in taken_names:
+            unique_name = find_new_name(taken_names, output_name)
+            selection = alias(selection.unalias(), unique_name, copy=False)
+            output_name = unique_name
+        taken_names.add(output_name)
+        new_selections.append(selection)
 
     coalesced_columns = set()
     dialect = resolver.dialect
@@ -844,10 +885,12 @@ def _expand_stars(
                         annotator.uncache(expression)
 
                     new_selections.extend(struct_fields)
+                    taken_names.update(field.output_name for field in struct_fields)
                     continue
 
         if not tables:
             new_selections.append(expression)
+            taken_names.add(expression.output_name)
             continue
 
         for table in tables:
@@ -882,11 +925,14 @@ def _expand_stars(
                 pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
 
                 if pivot_columns:
-                    new_selections.extend(
-                        alias(exp.column(name, table=pivot.alias or None), name, copy=False)
-                        for name in pivot_columns
-                        if name not in columns_to_exclude
-                    )
+                    for name in pivot_columns:
+                        if name not in columns_to_exclude:
+                            add_star_selection(
+                                alias(
+                                    exp.column(name, table=pivot.alias or None), name, copy=False
+                                ),
+                                name,
+                            )
                     continue
 
             for name in columns:
@@ -900,8 +946,8 @@ def _expand_stars(
                     using_tables = using_column_tables[name]
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
-                    new_selections.append(
-                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
+                    add_star_selection(
+                        alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False), name
                     )
                 else:
                     alias_ = renamed_columns.get(name, name)
@@ -912,10 +958,11 @@ def _expand_stars(
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted
                     )
-                    new_selections.append(
+                    add_star_selection(
                         alias(selection_expr, alias_, copy=False)
                         if alias_ != name
-                        else selection_expr
+                        else selection_expr,
+                        alias_,
                     )
 
         if annotated_ahead:

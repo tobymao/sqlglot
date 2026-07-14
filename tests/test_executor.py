@@ -296,6 +296,53 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
 
+    def test_window_functions(self):
+        table = [
+            {"g": "a", "v": 10, "n": 1},
+            {"g": "a", "v": 20, "n": 2},
+            {"g": "a", "v": 20, "n": 3},
+            {"g": "a", "v": 40, "n": 4},
+            {"g": "b", "v": 5, "n": 5},
+            {"g": "b", "v": 15, "n": 6},
+            {"g": "b", "v": 25, "n": 7},
+        ]
+
+        conn = duckdb.connect()
+        conn.execute("CREATE TABLE t (g VARCHAR, v INT, n INT)")
+        conn.executemany(
+            "INSERT INTO t VALUES (?, ?, ?)", [(r["g"], r["v"], r["n"]) for r in table]
+        )
+
+        for sql in [
+            "SELECT n, ROW_NUMBER() OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, RANK() OVER (PARTITION BY g ORDER BY v) AS w FROM t",
+            "SELECT n, DENSE_RANK() OVER (PARTITION BY g ORDER BY v) AS w FROM t",
+            "SELECT n, NTILE(2) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, LAG(v, 2, -1) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, LEAD(v) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, FIRST_VALUE(v) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, LAST_VALUE(v) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, NTH_VALUE(v, 2) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, SUM(v) OVER (PARTITION BY g) AS w FROM t",
+            "SELECT n, SUM(v) OVER (PARTITION BY g ORDER BY v) AS w FROM t",
+            "SELECT n, AVG(v) OVER (PARTITION BY g ORDER BY n) AS w FROM t",
+            "SELECT n, COUNT(*) OVER (PARTITION BY g ORDER BY v) AS w FROM t",
+            "SELECT n, SUM(v) OVER "
+            "(PARTITION BY g ORDER BY n ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS w FROM t",
+            "SELECT n, LAST_VALUE(v) OVER "
+            "(PARTITION BY g ORDER BY n ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) "
+            "AS w FROM t",
+            "SELECT n, SUM(v) OVER "
+            "(PARTITION BY g ORDER BY v RANGE BETWEEN 10 PRECEDING AND 10 FOLLOWING) AS w FROM t",
+        ]:
+            with self.subTest(sql):
+                expected = conn.execute(transpile(sql, write="duckdb")[0]).fetchall()
+                result = execute(sql, tables={"t": table}).rows
+                self.assertEqual(
+                    sorted(result, key=lambda row: row[0]),
+                    sorted((tuple(row) for row in expected), key=lambda row: row[0]),
+                )
+
     def test_set_operations(self):
         tables = {
             "x": [

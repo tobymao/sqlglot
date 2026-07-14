@@ -1,4 +1,5 @@
 import collections
+import functools
 import itertools
 import math
 
@@ -9,6 +10,15 @@ from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import RowReader, Table
 from sqlglot.generators.python import PythonGenerator
+
+_MISSING = object()
+
+AGG_FUNCS = {
+    exp.Sum: "SUM",
+    exp.Avg: "AVG",
+    exp.Min: "MIN",
+    exp.Max: "MAX",
+}
 
 
 class PythonExecutor:
@@ -39,6 +49,8 @@ class PythonExecutor:
                     contexts[node] = self.aggregate(node, context)
                 elif isinstance(node, planner.Join):
                     contexts[node] = self.join(node, context)
+                elif isinstance(node, planner.Window):
+                    contexts[node] = self.window(node, context)
                 elif isinstance(node, planner.Sort):
                     contexts[node] = self.sort(node, context)
                 elif isinstance(node, planner.SetOperation):
@@ -277,6 +289,220 @@ class PythonExecutor:
         if step.projections or step.condition:
             return self.scan(step, context)
         return context
+
+    def window(self, step, context):
+        table = context.table
+        # Unqualified columns compile to scope[None], so expose the source table
+        # under None while the window values are computed.
+        source = self.context({None: table, **context.tables})
+
+        computed = [
+            (projection.alias, self.compute_window(projection.this, source))
+            for projection in step.windows
+        ]
+
+        for name, values in computed:
+            table.add_columns(name)
+            table.rows = [row + (value,) for row, value in zip(table.rows, values)]
+
+        tables = {None: table, step.name: table}
+        tables.update({name: table for name in context.tables})
+        context = self.context(tables)
+
+        if step.projections or step.condition:
+            return self.scan(step, context)
+        return context
+
+    def compute_window(self, window, context):
+        length = len(context.table.rows)
+        if not length:
+            return []
+
+        partition_codes = self.generate_tuple(window.args.get("partition_by") or [])
+        ordering = window.args.get("order")
+        orderings = ordering.expressions if ordering else []
+        order_codes = self.generate_tuple([o.this for o in orderings])
+        descending = [bool(o.args.get("desc")) for o in orderings]
+
+        partition_keys = self._window_rows(context, partition_codes, length)
+        order_keys = self._window_rows(context, order_codes, length)
+
+        func = window.this
+        arg = (
+            func.this
+            if isinstance(
+                func,
+                (exp.Lag, exp.Lead, exp.FirstValue, exp.LastValue, exp.NthValue, exp.AggFunc),
+            )
+            else None
+        )
+        if isinstance(arg, exp.Star):
+            arg = None
+        arg_values = (
+            [row[0] for row in self._window_rows(context, (self.generate(arg),), length)]
+            if arg is not None
+            else None
+        )
+
+        spec = window.args.get("spec")
+        partitions: dict = collections.OrderedDict()
+        for i in range(length):
+            partitions.setdefault(partition_keys[i], []).append(i)
+
+        result: list = [None] * length
+        for indices in partitions.values():
+            ordered = self._order_partition(indices, order_keys, descending)
+            self._apply_window(func, spec, ordered, order_keys, arg_values, descending, result)
+
+        return result
+
+    def _window_rows(self, context, codes, length):
+        if not codes:
+            return [()] * length
+
+        rows = []
+        for i in range(length):
+            context.set_index(i)
+            rows.append(context.eval_tuple(codes))
+        return rows
+
+    def _order_partition(self, indices, order_keys, descending):
+        if not descending:
+            return list(indices)
+
+        def compare(a, b):
+            for column, desc in enumerate(descending):
+                left = order_keys[a][column]
+                right = order_keys[b][column]
+                if left == right:
+                    continue
+                if left is None:
+                    return -1
+                if right is None:
+                    return 1
+                order = 1 if left > right else -1
+                return -order if desc else order
+            return 0
+
+        return sorted(indices, key=functools.cmp_to_key(compare))
+
+    def _apply_window(self, func, spec, ordered, order_keys, arg_values, descending, result):
+        count = len(ordered)
+
+        if isinstance(func, exp.RowNumber):
+            for position, index in enumerate(ordered):
+                result[index] = position + 1
+        elif isinstance(func, (exp.Rank, exp.DenseRank)):
+            dense = isinstance(func, exp.DenseRank)
+            rank = 0
+            previous = _MISSING
+            for position, index in enumerate(ordered):
+                key = order_keys[index]
+                if key != previous:
+                    rank = rank + 1 if dense else position + 1
+                    previous = key
+                result[index] = rank
+        elif isinstance(func, exp.Ntile):
+            buckets = int(func.this.name)
+            base, remainder = divmod(count, buckets)
+            position = 0
+            for bucket in range(buckets):
+                for _ in range(base + (1 if bucket < remainder else 0)):
+                    if position < count:
+                        result[ordered[position]] = bucket + 1
+                        position += 1
+        elif isinstance(func, (exp.Lag, exp.Lead)):
+            offset_arg = func.args.get("offset")
+            offset = int(offset_arg.name) if offset_arg else 1
+            default = self._window_literal(func.args.get("default"))
+            for position, index in enumerate(ordered):
+                source = position + offset if isinstance(func, exp.Lead) else position - offset
+                result[index] = arg_values[ordered[source]] if 0 <= source < count else default
+        else:
+            # FIRST_VALUE, LAST_VALUE, NTH_VALUE and the aggregates are all
+            # evaluated over the window frame.
+            frames = self._window_frames(spec, ordered, order_keys, descending)
+            for position, index in enumerate(ordered):
+                low, high = frames[position]
+                result[index] = self._frame_value(func, ordered, arg_values, low, high)
+
+    def _window_frames(self, spec, ordered, order_keys, descending):
+        count = len(ordered)
+
+        # Peer groups: rows that share an ORDER BY value.
+        first_peer = list(range(count))
+        last_peer = list(range(count))
+        start = 0
+        while start < count:
+            end = start
+            while end < count and order_keys[ordered[end]] == order_keys[ordered[start]]:
+                end += 1
+            for position in range(start, end):
+                first_peer[position] = start
+                last_peer[position] = end - 1
+            start = end
+
+        if spec is None:
+            if not descending:
+                return [(0, count - 1)] * count
+            # Default frame with an ORDER BY: RANGE UNBOUNDED PRECEDING to CURRENT ROW.
+            return [(0, last_peer[position]) for position in range(count)]
+
+        rows = spec.text("kind") == "ROWS"
+        # A RANGE offset measures distance against the single ordering column.
+        values = [order_keys[ordered[p]][0] for p in range(count)] if descending else []
+        desc = descending[0] if descending else False
+
+        def bound(position, value, side, is_start):
+            if value == "UNBOUNDED":
+                return 0 if side == "PRECEDING" else count - 1
+            if value == "CURRENT ROW":
+                if rows:
+                    return position
+                return first_peer[position] if is_start else last_peer[position]
+            offset = int(value)
+            if rows:
+                return position - offset if side == "PRECEDING" else position + offset
+            current = values[position]
+            if desc:
+                limit = current + offset if side == "PRECEDING" else current - offset
+                if is_start:
+                    return next((q for q in range(count) if values[q] <= limit), count)
+                return next((q for q in reversed(range(count)) if values[q] >= limit), -1)
+            limit = current - offset if side == "PRECEDING" else current + offset
+            if is_start:
+                return next((q for q in range(count) if values[q] >= limit), count)
+            return next((q for q in reversed(range(count)) if values[q] <= limit), -1)
+
+        frames = []
+        for position in range(count):
+            low = bound(position, spec.text("start"), spec.text("start_side"), True)
+            high = bound(position, spec.text("end"), spec.text("end_side"), False)
+            frames.append((max(0, low), min(count - 1, high)))
+        return frames
+
+    def _frame_value(self, func, ordered, arg_values, low, high):
+        if isinstance(func, exp.FirstValue):
+            return arg_values[ordered[low]] if low <= high else None
+        if isinstance(func, exp.LastValue):
+            return arg_values[ordered[high]] if low <= high else None
+        if isinstance(func, exp.NthValue):
+            index = low + int(func.args["offset"].name) - 1
+            return arg_values[ordered[index]] if low <= index <= high else None
+
+        frame = range(low, high + 1) if low <= high else range(0)
+        if isinstance(func, exp.Count):
+            if isinstance(func.this, exp.Star):
+                return len(frame)
+            return sum(1 for position in frame if arg_values[ordered[position]] is not None)
+        return self.env[AGG_FUNCS[type(func)]](
+            [arg_values[ordered[position]] for position in frame]
+        )
+
+    def _window_literal(self, expression):
+        if expression is None:
+            return None
+        return eval(self.generate(expression), {**self.env, "scope": {}})
 
     def sort(self, step, context):
         projections = self.generate_tuple(step.projections)

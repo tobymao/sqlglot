@@ -147,6 +147,19 @@ class Step:
             step.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
             step.aggregations = list(aggregations)
 
+        # Window functions are computed after grouping, so pull them out of the
+        # projections before the aggregate operands are collected. Otherwise an
+        # aggregate nested in an OVER clause (e.g. SUM(x) OVER ()) would be
+        # mistaken for a grouped aggregation.
+        windows: list[exp.Expr] = []
+        next_window_name = name_sequence("_w_")
+
+        for e in expression.expressions:
+            for window in reversed(list(e.find_all(exp.Window))):
+                window_name = next_window_name()
+                windows.append(alias(window.copy(), window_name, quoted=True))
+                window.replace(exp.column(window_name, quoted=True))
+
         for e in expression.expressions:
             if e.find(exp.AggFunc):
                 projections.append(exp.column(e.alias_or_name, step.name, quoted=True))
@@ -203,6 +216,14 @@ class Step:
             step = aggregate
         else:
             aggregate = None
+
+        if windows:
+            window = Window()
+            window.source = step.name
+            window.name = step.name
+            window.windows = windows
+            window.add_dependency(step)
+            step = window
 
         order: exp.Order | None = expression.args.get("order")
 
@@ -388,6 +409,21 @@ class Aggregate(Step):
             lines.append(f"{indent}Operands:")
             for expression in self.operands:
                 lines.append(f"{indent}  - {expression.sql()}")
+
+        return lines
+
+
+class Window(Step):
+    def __init__(self) -> None:
+        super().__init__()
+        self.windows: list[exp.Expr] = []
+        self.source: str | None = None
+
+    def _to_s(self, indent: str) -> list[str]:
+        lines = [f"{indent}Windows:"]
+
+        for expression in self.windows:
+            lines.append(f"{indent}  - {expression.sql()}")
 
         return lines
 

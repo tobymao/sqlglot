@@ -6,13 +6,6 @@ import typing as t
 # https://docs.python.org/3/library/time.html#time.strftime
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
-# "Strict" canonical time formats round-trip in dialects that define them (e.g.
-# Spark 3+'s zero-padded MM/dd, which don't parse single-digit values) and degrade
-# to their lax counterpart elsewhere. These are sqlglot-internal tokens, not valid
-# strftime directives, so they must be normalized away when emitting generic SQL.
-STRICT_TIME_FORMATS = {"%mstrict": "%m", "%dstrict": "%d"}
-STRICT_TIME_TRIE = new_trie(STRICT_TIME_FORMATS)
-
 
 def format_time(
     string: str, mapping: dict[str, str], trie: dict[t.Any, t.Any] | None = None

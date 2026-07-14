@@ -26,7 +26,7 @@ from sqlglot.helper import (
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
-from sqlglot.time import STRICT_TIME_FORMATS, TIMEZONES, format_time, subsecond_precision
+from sqlglot.time import TIMEZONES, format_time, subsecond_precision
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import new_trie
 from sqlglot.typing import EXPRESSION_METADATA
@@ -134,26 +134,18 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
-def _with_strict_time_mapping(time_mapping: dict[str, str], strict: bool) -> dict[str, str]:
-    # A dialect's STRICT_TIME_PARSING flag is the single source of truth for strictness, from
-    # which the internal %mstrict/%dstrict tokens are derived here (never hand-written): strict
-    # dialects (e.g. modern Hive, Spark 3+) canonicalize their zero-padded MM/dd to those tokens
-    # so the strict roundtrip is preserved, while every other dialect strips them back to the
-    # lax %m/%d (needed when a strict base is inherited, e.g. Spark 2 <- Hive).
-    rewrite = {v: k for k, v in STRICT_TIME_FORMATS.items()} if strict else STRICT_TIME_FORMATS
-    return {k: rewrite.get(v, v) for k, v in time_mapping.items()}
+# "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd to these in TIME_MAPPING so they
+# roundtrip, since a lax %m/%d renders non-padded there for parse expressions (see HiveGenerator.format_time).
+STRICT_TIME_FORMATS = {"%mstrict": "%m", "%dstrict": "%d"}
 
 
 def _with_strict_time_inverse(inverse_mapping: dict[str, str]) -> dict[str, str]:
     for strict_format, lax_format in STRICT_TIME_FORMATS.items():
         if strict_format in inverse_mapping:
-            # Strict dialects map padded MM/dd to the internal %mstrict/%dstrict tokens, leaving
-            # the lax %m/%d without an inverse of their own; format them the same padded way
-            # (e.g. a foreign %m formats as MM).
+            # In strict dialects, a foreign lax %m formats the same padded way as %mstrict (MM)
             inverse_mapping.setdefault(lax_format, inverse_mapping[strict_format])
         else:
-            # Everyone else degrades the internal strict token to the lax counterpart's
-            # mapping, so it never leaks into generated SQL.
+            # Elsewhere, the strict format degrades to its lax counterpart so it never leaks
             inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
 
     return inverse_mapping
@@ -256,11 +248,6 @@ class _Dialect(type):
         enum = Dialects.__members__.get(clsname.upper())
         cls._classes[enum.value if enum is not None else clsname.lower()] = klass
 
-        # Derive the internal %mstrict/%dstrict tokens from STRICT_TIME_PARSING (see the helper)
-        # before anything reads TIME_MAPPING, so dialects only declare the flag, not the tokens.
-        klass.TIME_MAPPING = _with_strict_time_mapping(
-            klass.TIME_MAPPING, klass.STRICT_TIME_PARSING
-        )
         klass.TIME_TRIE = new_trie(klass.TIME_MAPPING)
         klass.FORMAT_TRIE = (
             new_trie(klass.FORMAT_MAPPING) if klass.FORMAT_MAPPING else klass.TIME_TRIE
@@ -272,20 +259,6 @@ class _Dialect(type):
             | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
-        if klass.STRICT_TIME_PARSING:
-            # Parse expressions (e.g. StrToTime) render the lax %m/%d non-padded (M/d), so
-            # single-digit sources stay parseable; %mstrict/%dstrict still render padded.
-            klass.PARSE_INVERSE_TIME_MAPPING = {
-                **klass.INVERSE_TIME_MAPPING,
-                **{
-                    lax: klass.INVERSE_TIME_MAPPING.get(f"%-{lax[1:]}", lax)
-                    for lax in STRICT_TIME_FORMATS.values()
-                },
-            }
-            klass.PARSE_INVERSE_TIME_TRIE = new_trie(klass.PARSE_INVERSE_TIME_MAPPING)
-        else:
-            klass.PARSE_INVERSE_TIME_MAPPING = klass.INVERSE_TIME_MAPPING
-            klass.PARSE_INVERSE_TIME_TRIE = klass.INVERSE_TIME_TRIE
         klass.INVERSE_FORMAT_MAPPING = _with_strict_time_inverse(
             {v: k for k, v in klass.FORMAT_MAPPING.items()}
         )
@@ -463,14 +436,6 @@ class Dialect(metaclass=_Dialect):
 
     TIME_MAPPING: dict[str, str] = {}
     """Associates this dialect's time formats with their equivalent Python `strftime` formats."""
-
-    STRICT_TIME_PARSING = False
-    """
-    Whether this dialect parses `MM`/`dd` strictly (e.g. modern Hive, Spark 3+): single-digit
-    months/days don't parse. When set, `TIME_MAPPING` maps `MM`/`dd` to the `%mstrict`/`%dstrict`
-    canonical tokens and the generator renders a lenient `%m` as the non-padded `M` for parse
-    expressions (see `HiveGenerator.format_time`).
-    """
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/format-elements#format_model_rules_date_time
     # https://docs.teradata.com/r/Teradata-Database-SQL-Functions-Operators-Exprs-and-Predicates/March-2017/Data-Type-Conversions/Character-to-DATE-Conversion/Forcing-a-FORMAT-on-CAST-for-Converting-Character-to-DATE
@@ -836,12 +801,6 @@ class Dialect(metaclass=_Dialect):
     INVERSE_TIME_TRIE: dict = {}
     INVERSE_FORMAT_MAPPING: dict[str, str] = {}
     INVERSE_FORMAT_TRIE: dict = {}
-
-    # Variant of INVERSE_TIME_MAPPING used when generating the format of a *parse* expression
-    # (e.g. StrToTime) for a strict dialect: the lax %m/%d render non-padded (M/d) so
-    # single-digit sources stay parseable. Aliases INVERSE_TIME_MAPPING for lenient dialects.
-    PARSE_INVERSE_TIME_MAPPING: dict[str, str] = {}
-    PARSE_INVERSE_TIME_TRIE: dict = {}
 
     INVERSE_CREATABLE_KIND_MAPPING: dict[str, str] = {}
 

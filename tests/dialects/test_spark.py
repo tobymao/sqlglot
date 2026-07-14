@@ -669,33 +669,41 @@ TBLPROPERTIES (
                 "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             },
         )
-        # Spark 3+ parses MM/dd strictly, so the strict parse format roundtrips, but
-        # widens to the lax %m/%d for dialects that parse leniently (e.g. duckdb).
+        # The strict MM/dd roundtrips but widens to the lax %m/%d elsewhere
         self.validate_all(
             "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
             write={
-                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
+                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%mstrict-%dstrict')",
                 "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
                 "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
                 "databricks": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
             },
         )
+        # A lax %m/%d adjacent to another field stays zero-padded ('yyyyMd' can't parse '20200101')
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('20161231', 'yyyyMMdd')",
+            read={
+                "duckdb": "SELECT STRPTIME('20161231', '%Y%m%d')",
+            },
+            write={
+                "duckdb": "SELECT STRPTIME('20161231', '%Y%m%d')",
+                "spark": "SELECT TO_TIMESTAMP('20161231', 'yyyyMMdd')",
+            },
+        )
         # Formatting keeps zero-padded MM/dd, unlike the lenient parsing above.
         self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd')")
-        # The strict canonical token must degrade in BigQuery's FORMAT clause too,
-        # not just INVERSE_TIME_MAPPING (it previously leaked as 'MMstrict/DDstrict').
+        # The strict format must also degrade in BigQuery's FORMAT clause (leaked as 'MMstrict')
         self.validate_all(
             "SELECT TO_DATE(x, 'MM/dd/yyyy')",
             write={
-                "": "SELECT CAST(STR_TO_TIME(x, '%m/%d/%Y') AS DATE)",
+                "": "SELECT CAST(STR_TO_TIME(x, '%mstrict/%dstrict/%Y') AS DATE)",
                 "duckdb": "SELECT CAST(CAST(TRY_STRPTIME(x, '%m/%d/%Y') AS TIMESTAMP) AS DATE)",
                 "bigquery": "SELECT CAST(SAFE_CAST(x AS TIMESTAMP FORMAT 'MM/DD/YYYY') AS DATE)",
                 "spark": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
                 "databricks": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
             },
         )
-        # UNIX_TIMESTAMP also *parses* its input, so a lax foreign %m/%d becomes M/d,
-        # while Spark's own strict MM/dd roundtrips.
+        # UNIX_TIMESTAMP also *parses* its input, so a lax foreign %m/%d becomes M/d
         self.validate_all(
             "SELECT UNIX_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             read={

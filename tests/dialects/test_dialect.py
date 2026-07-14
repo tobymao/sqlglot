@@ -771,7 +771,7 @@ class TestDialect(Validator):
             write={
                 "drill": "TO_TIMESTAMP('2020-01-01', 'yyyy-MM-dd')",
                 "duckdb": "STRPTIME('2020-01-01', '%Y-%m-%d')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP('2020-01-01', 'yyyy-M-d')) AS TIMESTAMP)",
+                "hive": "CAST('2020-01-01' AS TIMESTAMP)",
                 "oracle": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "postgres": "TO_TIMESTAMP('2020-01-01', 'YYYY-MM-DD')",
                 "presto": "DATE_PARSE('2020-01-01', '%Y-%m-%d')",
@@ -1229,7 +1229,7 @@ class TestDialect(Validator):
                 "drill": "CAST(x AS DATE)",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%d')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%d')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-d')) AS DATE)",
+                "hive": "CAST(x AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%d') AS DATE)",
                 "spark": "TO_DATE(x, 'yyyy-M-d')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%d')",

@@ -12,7 +12,7 @@ from sqlglot.expressions import apply_index_offset
 from sqlglot.expressions.core import maybe_parse
 from sqlglot.helper import csv, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
-from sqlglot.time import STRICT_TIME_FORMATS, STRICT_TIME_TRIE, format_time
+from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -4093,24 +4093,7 @@ class Generator:
 
     # Base implementation that excludes safe, zone, and target_type metadata args
     def strtotime_sql(self, expression: exp.StrToTime) -> str:
-        # STR_TO_TIME is sqlglot's canonical form, so the format must stay canonical
-        # strftime - we only strip the internal "strict" tokens (e.g. Spark's %mstrict)
-        # rather than routing through self.format_time(), which would also rewrite every
-        # other specifier into the dialect's INVERSE_TIME_MAPPING.
-        return self.func(
-            "STR_TO_TIME",
-            expression.this,
-            self.format_time(expression, STRICT_TIME_FORMATS, STRICT_TIME_TRIE),
-        )
-
-    def strtounix_sql(self, expression: exp.StrToUnix) -> str:
-        # As with STR_TO_TIME, keep the canonical strftime format and only strip the internal
-        # "strict" tokens (e.g. Hive's %mstrict from its default TIME_FORMAT).
-        return self.func(
-            "STR_TO_UNIX",
-            expression.this,
-            self.format_time(expression, STRICT_TIME_FORMATS, STRICT_TIME_TRIE),
-        )
+        return self.func("STR_TO_TIME", expression.this, expression.args.get("format"))
 
     # Base implementation that excludes the safe and default_year metadata args
     def strtodate_sql(self, expression: exp.StrToDate) -> str:

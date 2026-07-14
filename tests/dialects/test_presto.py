@@ -322,7 +322,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss')) AS TIMESTAMP)",
+                "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss')",
             },
         )
@@ -331,7 +331,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "STRPTIME(x, '%Y-%m-%d')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-d')) AS TIMESTAMP)",
+                "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(x, 'yyyy-M-d')",
             },
         )
@@ -346,7 +346,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')) AS TIMESTAMP)",
+                "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )
@@ -355,7 +355,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')) AS TIMESTAMP)",
+                "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
                 "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )

@@ -749,6 +749,23 @@ SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.
 SELECT a FROM x NATURAL JOIN z;
 SELECT x.a AS a FROM x AS x JOIN z AS z ON x.b = z.b;
 
+-- No common columns: there is no USING list to expand into, so NATURAL is left
+-- in place for the engine to reject or cross join as it sees fit.
+# execute: false
+SELECT a, d FROM x NATURAL LEFT JOIN w;
+SELECT x.a AS a, w.d AS d FROM x AS x NATURAL LEFT JOIN w AS w;
+
+-- An unknown schema on either side makes the common columns unknowable.
+# execute: false
+# validate_qualify_columns: false
+SELECT * FROM x NATURAL JOIN unknown_table;
+SELECT * FROM x AS x NATURAL JOIN unknown_table AS unknown_table;
+
+# execute: false
+# validate_qualify_columns: false
+SELECT * FROM unknown_table NATURAL JOIN x;
+SELECT * FROM unknown_table AS unknown_table NATURAL JOIN x AS x;
+
 SELECT b FROM x JOIN y USING(b);
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 

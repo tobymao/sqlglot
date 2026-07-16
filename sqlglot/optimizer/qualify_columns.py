@@ -231,20 +231,26 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
         join_table = join.alias_or_name
         ordered.append(join_table)
 
+        join_columns = resolver.get_source_columns(join_table)
+
         using = join.args.get("using")
         if using is None and join.method == "NATURAL":
-            # A NATURAL JOIN is equivalent to a USING join over every column
-            # common to the two sides, so expand it into that here.
-            using = [
-                exp.to_identifier(column_name)
-                for column_name in resolver.get_source_columns(join_table)
-                if column_name in columns
-            ]
-            join.set("method", None)
+            # A NATURAL JOIN is a USING join over the columns common to both sides,
+            # which we can only work out when both schemas are known. Without a
+            # USING list to put in its place -- unknown schema, or no common columns
+            # -- NATURAL stays, so the engine keeps deciding what it means (duckdb,
+            # for one, rejects a NATURAL JOIN that has nothing to join on).
+            if columns and "*" not in columns and join_columns and "*" not in join_columns:
+                using = [
+                    exp.to_identifier(column_name)
+                    for column_name in join_columns
+                    if column_name in columns
+                ]
+                if using:
+                    join.set("method", None)
         if not using:
             continue
 
-        join_columns = resolver.get_source_columns(join_table)
         conditions = []
         using_identifier_count = len(using)
         is_semi_or_anti_join = join.is_semi_or_anti_join

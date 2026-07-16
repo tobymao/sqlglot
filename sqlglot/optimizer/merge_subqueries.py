@@ -139,14 +139,13 @@ def _mergeable(
     """
     inner_select = inner_scope.expression.unnest()
 
-    def _window_projection_blocks_merge():
+    def _window_projection_blocks_merge(window_aliases):
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
           - the outer query filters or joins (WHERE/JOIN), which changes that row set, or
           - a window column is referenced in an operation that isn't pushed down
             (GROUP BY, ORDER BY, HAVING, aggregate).
         """
-        window_aliases = {s.alias_or_name for s in inner_select.selects if s.find(exp.Window)}
         if not window_aliases:
             return False
 
@@ -154,15 +153,14 @@ def _mergeable(
         if outer.args.get("where") or outer.args.get("joins"):
             return True
 
-        inner_select_name = from_or_join.alias_or_name
         return any(
-            column.table == inner_select_name
+            column.table == inner_name
             and column.name in window_aliases
             and column.find_ancestor(exp.Group, exp.Order, exp.Having, exp.AggFunc)
             for column in outer_scope.columns
         )
 
-    def _literal_group_unmergeable():
+    def _literal_group_unmergeable(number_literal_aliases):
         """
         A numeric-literal projection referenced in GROUP BY can't be inlined, because a bare
         integer literal is positional. A reference that is itself a top-level GROUP BY item
@@ -174,15 +172,13 @@ def _mergeable(
         if not group:
             return False
 
-        inner_name = from_or_join.alias_or_name
-        literal_names = {s.alias_or_name for s in inner_select.selects if s.unalias().is_number}
-        if not literal_names:
+        if not number_literal_aliases:
             return False
 
         grouped = set()
         top_level_ids = {id(e.unnest()) for e in group.expressions}
         for col in group.find_all(exp.Column):
-            if col.table != inner_name or col.name not in literal_names:
+            if col.table != inner_name or col.name not in number_literal_aliases:
                 continue
             if id(col) not in top_level_ids:
                 return True
@@ -199,7 +195,7 @@ def _mergeable(
 
         return not grouped <= projected
 
-    def _outer_select_joins_on_inner_select_join():
+    def _outer_select_joins_on_inner_select_join(projections):
         """
         All columns from the inner select in the ON clause must be from the first FROM table.
 
@@ -213,21 +209,18 @@ def _mergeable(
         if not isinstance(from_or_join, exp.Join):
             return False
 
-        alias = from_or_join.alias_or_name
-
         on = from_or_join.args.get("on")
         if not on:
             return False
-        selections = [c.name for c in on.find_all(exp.Column) if c.table == alias]
+        selections = [c.name for c in on.find_all(exp.Column) if c.table == inner_name]
         inner_from = inner_scope.expression.args.get("from_")
         if not inner_from:
             return False
         inner_from_table = inner_from.alias_or_name
-        inner_projections = {s.alias_or_name: s for s in inner_scope.expression.selects}
         return any(
             col.table != inner_from_table
             for selection in selections
-            for col in inner_projections[selection].find_all(exp.Column)
+            for col in projections[selection].find_all(exp.Column)
         )
 
     def _is_recursive():
@@ -246,20 +239,17 @@ def _mergeable(
             node = node.parent
         return False
 
-    def _literal_in_order_by():
+    def _literal_in_order_by(number_literal_aliases):
         """A numeric-literal projection under a bare ORDER BY key can't merge (would become positional)."""
         order = outer_scope.expression.args.get("order")
         if not order:
             return False
-        inner_name = from_or_join.alias_or_name
         ordered = {
             key.name
             for o in order.expressions
             if isinstance(key := o.this.unnest(), exp.Column) and key.table == inner_name
         }
-        return any(
-            s.alias_or_name in ordered and s.unalias().is_number for s in inner_select.selects
-        )
+        return bool(number_literal_aliases & ordered)
 
     if not isinstance(outer_scope.expression, exp.Select):
         return False
@@ -273,8 +263,24 @@ def _mergeable(
         return False
     if outer_scope.pivots:
         return False
-    if any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions):
-        return False
+
+    # Single pass over the projections: replaces the separate AggFunc/Select/Explode and
+    # Window tree walks, and precomputes what the checks below need per-projection.
+    window_aliases: set[str] = set()
+    number_literal_aliases: set[str] = set()
+    projections: dict[str, exp.Expr] = {}
+
+    for s in inner_select.selects:
+        name = s.alias_or_name
+        projections[name] = s
+        if s.unalias().is_number:
+            number_literal_aliases.add(name)
+        for node in s.walk():
+            if isinstance(node, (exp.AggFunc, exp.Select, exp.Explode)):
+                return False
+            if isinstance(node, exp.Window):
+                window_aliases.add(name)
+
     if leave_tables_isolated and len(outer_scope.selected_sources) > 1:
         return False
     if isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"):
@@ -291,13 +297,16 @@ def _mergeable(
         and any(j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", []))
     ):
         return False
-    if _outer_select_joins_on_inner_select_join():
+
+    inner_name = from_or_join.alias_or_name
+
+    if _outer_select_joins_on_inner_select_join(projections):
         return False
-    if _window_projection_blocks_merge():
+    if _window_projection_blocks_merge(window_aliases):
         return False
-    if _literal_group_unmergeable():
+    if _literal_group_unmergeable(number_literal_aliases):
         return False
-    if _literal_in_order_by():
+    if _literal_in_order_by(number_literal_aliases):
         return False
     if _is_recursive():
         return False

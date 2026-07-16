@@ -76,6 +76,10 @@ class TestOracle(Validator):
             "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
         )
         self.validate_identity(
+            "SELECT * FROM sales UNPIVOT(q FOR p IN (q1 AS 'Prod1', q2 AS 'Prod2'))"
+        )
+        self.validate_identity("SELECT * FROM sales UNPIVOT(q FOR p IN (q1 AS 1, q2 AS 2))")
+        self.validate_identity(
             "SELECT last_name, employee_id, manager_id, LEVEL FROM employees START WITH employee_id = 100 CONNECT BY PRIOR employee_id = manager_id ORDER SIBLINGS BY last_name"
         )
         self.validate_identity(

@@ -40,8 +40,10 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Returns:
         sqlglot.Expr: optimized expression
     """
-    expression = merge_ctes(expression, leave_tables_isolated)
-    expression = merge_derived_tables(expression, leave_tables_isolated)
+    # Shared across both passes so the scope tree is only built once
+    scopes = traverse_scope(expression)
+    expression = merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+    expression = merge_derived_tables(expression, leave_tables_isolated, scopes=scopes)
     return expression
 
 
@@ -67,8 +69,12 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
-def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
-    scopes = traverse_scope(expression)
+def merge_ctes(
+    expression: E,
+    leave_tables_isolated: bool = False,
+    scopes: list[Scope] | None = None,
+) -> E:
+    scopes = traverse_scope(expression) if scopes is None else scopes
 
     # All places where we select from CTEs.
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
@@ -105,8 +111,12 @@ def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     return expression
 
 
-def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> E:
-    for outer_scope in traverse_scope(expression):
+def merge_derived_tables(
+    expression: E,
+    leave_tables_isolated: bool = False,
+    scopes: list[Scope] | None = None,
+) -> E:
+    for outer_scope in traverse_scope(expression) if scopes is None else scopes:
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
             if not isinstance(from_or_join, (exp.From, exp.Join)):

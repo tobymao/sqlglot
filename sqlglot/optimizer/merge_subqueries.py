@@ -309,7 +309,7 @@ def _mergeable(
         return False
     if _literal_in_order_by(number_literal_aliases):
         return False
-    if _is_recursive():
+    if inner_scope.is_cte and _is_recursive():
         return False
     if inner_select.args.get("order") and outer_scope.is_union:
         return False

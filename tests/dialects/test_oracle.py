@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
+from sqlglot import exp, ErrorLevel, UnsupportedError, ParseError, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.qualify import qualify
 
@@ -633,6 +633,24 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                     self.validate_identity(
                         f"CREATE VIEW view AS SELECT * FROM tbl WITH {restriction}{constraint_name}"
                     )
+
+    def test_unrecognized_query_restriction(self):
+        """An unrecognized WITH must error, not spin in _parse_query_modifiers.
+
+        _parse_query_restrictions returns None when WITH isn't followed by a
+        recognized restriction. Wrapping that in a list literal made it the
+        truthy [None], which passed the modifier loop's `if expression:` guard
+        without ever consuming the WITH token.
+        """
+        for sql in (
+            "SELECT * FROM tbl WITH",
+            "SELECT * FROM tbl WITH READ",
+            "SELECT * FROM tbl WITH GRANT OPTION",
+            "SELECT * FROM t WITH x AS (SELECT 1) SELECT * FROM x",
+        ):
+            with self.subTest(sql):
+                with self.assertRaises(ParseError):
+                    parse_one(sql, read="oracle", error_level=ErrorLevel.RAISE)
 
     def test_multitable_inserts(self):
         self.maxDiff = None

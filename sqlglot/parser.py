@@ -9,6 +9,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 
 from sqlglot import exp
+from sqlglot._typing import F
 from sqlglot.errors import (
     ErrorLevel,
     ParseError,
@@ -1508,10 +1509,12 @@ class Parser:
 
     FUNCTION_PARSERS: t.ClassVar[dict[str, t.Callable]] = {
         **{
-            name: lambda self: self._parse_max_min_by(exp.ArgMax) for name in exp.ArgMax.sql_names()
+            name: lambda self: self._parse_distinct_arg_function(exp.ArgMax)
+            for name in exp.ArgMax.sql_names()
         },
         **{
-            name: lambda self: self._parse_max_min_by(exp.ArgMin) for name in exp.ArgMin.sql_names()
+            name: lambda self: self._parse_distinct_arg_function(exp.ArgMin)
+            for name in exp.ArgMin.sql_names()
         },
         "CAST": lambda self: self._parse_cast(self.STRICT_CAST),
         "CEIL": lambda self: self._parse_ceil_floor(exp.Ceil),
@@ -9853,18 +9856,20 @@ class Parser:
             )
         )
 
-    def _parse_max_min_by(self, expr_type: type[exp.AggFunc]) -> exp.AggFunc:
-        args: list[exp.Expr] = []
+    def _parse_distinct_arg_function(self, func: type[F], distinct_index: int = 0) -> F:
+        is_distinct = self._match(TokenType.DISTINCT)
+        if not is_distinct:
+            self._match(TokenType.ALL)
 
-        if self._match(TokenType.DISTINCT):
-            args.append(self.expression(exp.Distinct(expressions=[self._parse_lambda()])))
-            self._match(TokenType.COMMA)
+        args = [self._parse_lambda()]
+        if self._match(TokenType.COMMA):
+            args.extend(self._parse_function_args())
 
-        args.extend(self._parse_function_args())
+        target = seq_get(args, distinct_index)
+        if is_distinct and target:
+            args[distinct_index] = self.expression(exp.Distinct(expressions=[target]))
 
-        return self.expression(
-            expr_type(this=seq_get(args, 0), expression=seq_get(args, 1), count=seq_get(args, 2))
-        )
+        return func.from_arg_list(args)
 
     def _identifier_expression(
         self, token: Token | None = None, quoted: bool | None = None

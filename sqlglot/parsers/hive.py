@@ -8,7 +8,6 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import F
     from sqlglot.dialects.dialect import Dialect
 
 
@@ -177,21 +176,6 @@ class HiveParser(parser.Parser):
                 record_reader=record_reader,
             )
         )
-
-    def _parse_distinct_arg_function(self, func: type[F], distinct_index: int = 0) -> F:
-        is_distinct = self._match(TokenType.DISTINCT)
-        if not is_distinct:
-            self._match(TokenType.ALL)
-
-        args = [self._parse_lambda()]
-        if self._match(TokenType.COMMA):
-            args.extend(self._parse_function_args())
-
-        target = seq_get(args, distinct_index)
-        if is_distinct and target:
-            args[distinct_index] = self.expression(exp.Distinct(expressions=[target]))
-
-        return func.from_arg_list(args)
 
     def _parse_types(
         self,

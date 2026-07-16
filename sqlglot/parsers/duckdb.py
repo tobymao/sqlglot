@@ -194,6 +194,10 @@ class DuckDBParser(parser.Parser):
         **dict.fromkeys(
             ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
         ),
+        "APPROX_QUANTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
+        "QUANTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
+        "QUANTILE_CONT": lambda self: self._parse_distinct_arg_function(exp.PercentileCont),
+        "QUANTILE_DISC": lambda self: self._parse_distinct_arg_function(exp.PercentileDisc),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

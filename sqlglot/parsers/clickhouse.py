@@ -287,6 +287,7 @@ class ClickHouseParser(parser.Parser):
         "DATE_FORMAT": _build_datetime_format(exp.TimeToStr),
         "DATE_SUB": build_date_delta(exp.DateSub, default_unit=None),
         "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
+        "DATETRUNC": exp.DateTrunc.from_arg_list,
         "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
         "HAS": exp.ArrayContains.from_arg_list,
         "ILIKE": build_like(exp.ILike),

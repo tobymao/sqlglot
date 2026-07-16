@@ -1832,6 +1832,21 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
 
+        # camelCase dateTrunc is emitted by this dialect, so it must parse back
+        self.validate_all(
+            "dateTrunc('MONTH', x)",
+            read={
+                "clickhouse": "dateTrunc('MONTH', x)",
+            },
+            write={
+                "clickhouse": "dateTrunc('MONTH', x)",
+                "databricks": "TRUNC(x, 'MONTH')",
+                "duckdb": "DATE_TRUNC('MONTH', x)",
+                "presto": "DATE_TRUNC('MONTH', x)",
+                "spark": "TRUNC(x, 'MONTH')",
+            },
+        )
+
         self.validate_all(
             "date_trunc('WEEK', today())",
             write={

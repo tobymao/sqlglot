@@ -1913,7 +1913,21 @@ class Generator:
         agg = expression.this
         agg_arg = agg.this
         cond = expression.expression.this
-        agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy()))
+
+        # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
+        # condition has to wrap the values underneath them rather than the whole clause --
+        # `IFF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.
+        if isinstance(agg_arg, exp.Order):
+            agg_arg = agg_arg.this
+
+        if isinstance(agg_arg, exp.Distinct):
+            targets = agg_arg.expressions
+        else:
+            targets = [agg_arg]
+
+        for target in targets:
+            target.replace(exp.If(this=cond.copy(), true=target.copy()))
+
         return self.sql(agg)
 
     def hint_sql(self, expression: exp.Hint) -> str:

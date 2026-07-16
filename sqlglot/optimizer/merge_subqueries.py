@@ -261,36 +261,52 @@ def _mergeable(
             s.alias_or_name in ordered and s.unalias().is_number for s in inner_select.selects
         )
 
-    return (
-        isinstance(outer_scope.expression, exp.Select)
-        and not outer_scope.expression.is_star
-        and isinstance(inner_select, exp.Select)
-        and not any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS)
-        and inner_select.args.get("from_") is not None
-        and not outer_scope.pivots
-        and not any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions)
-        and not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
-        and not (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
-        and not (
-            isinstance(from_or_join, exp.Join)
-            and inner_select.args.get("where")
-            and from_or_join.side in ("FULL", "LEFT", "RIGHT")
-        )
-        and not (
-            isinstance(from_or_join, exp.From)
-            and inner_select.args.get("where")
-            and any(
-                j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", [])
-            )
-        )
-        and not _outer_select_joins_on_inner_select_join()
-        and not _window_projection_blocks_merge()
-        and not _literal_group_unmergeable()
-        and not _literal_in_order_by()
-        and not _is_recursive()
-        and not (inner_select.args.get("order") and outer_scope.is_union)
-        and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
-    )
+    if not isinstance(outer_scope.expression, exp.Select):
+        return False
+    if outer_scope.expression.is_star:
+        return False
+    if not isinstance(inner_select, exp.Select):
+        return False
+    if any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS):
+        return False
+    if inner_select.args.get("from_") is None:
+        return False
+    if outer_scope.pivots:
+        return False
+    if any(e.find(exp.AggFunc, exp.Select, exp.Explode) for e in inner_select.expressions):
+        return False
+    if leave_tables_isolated and len(outer_scope.selected_sources) > 1:
+        return False
+    if isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"):
+        return False
+    if (
+        isinstance(from_or_join, exp.Join)
+        and inner_select.args.get("where")
+        and from_or_join.side in ("FULL", "LEFT", "RIGHT")
+    ):
+        return False
+    if (
+        isinstance(from_or_join, exp.From)
+        and inner_select.args.get("where")
+        and any(j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", []))
+    ):
+        return False
+    if _outer_select_joins_on_inner_select_join():
+        return False
+    if _window_projection_blocks_merge():
+        return False
+    if _literal_group_unmergeable():
+        return False
+    if _literal_in_order_by():
+        return False
+    if _is_recursive():
+        return False
+    if inner_select.args.get("order") and outer_scope.is_union:
+        return False
+    if isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform):
+        return False
+
+    return True
 
 
 def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:

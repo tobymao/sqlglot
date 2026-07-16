@@ -149,8 +149,7 @@ def _mergeable(
         if not window_aliases:
             return False
 
-        outer = outer_scope.expression
-        if outer.args.get("where") or outer.args.get("joins"):
+        if outer_args.get("where") or outer_args.get("joins"):
             return True
 
         return any(
@@ -168,7 +167,7 @@ def _mergeable(
         e.g., ROLLUP / CUBE / GROUPING SETS, tuples, expressions, etc, blocks the merge, since
         ordinals aren't universally supported there, e.g., Presto / Trino only accept columns.
         """
-        group = outer_scope.expression.args.get("group")
+        group = outer_args.get("group")
         if not group:
             return False
 
@@ -231,7 +230,7 @@ def _mergeable(
         #       SELECT * FROM cte  <-- outer scope
         #     )
         cte = inner_scope.expression.parent
-        node = outer_scope.expression.parent
+        node = outer.parent
 
         while node:
             if node is cte:
@@ -241,7 +240,7 @@ def _mergeable(
 
     def _literal_in_order_by(number_literal_aliases):
         """A numeric-literal projection under a bare ORDER BY key can't merge (would become positional)."""
-        order = outer_scope.expression.args.get("order")
+        order = outer_args.get("order")
         if not order:
             return False
         ordered = {
@@ -251,13 +250,14 @@ def _mergeable(
         }
         return bool(number_literal_aliases & ordered)
 
-    if not isinstance(outer_scope.expression, exp.Select):
+    outer = outer_scope.expression
+    if not isinstance(outer, exp.Select):
         return False
-    if outer_scope.expression.is_star:
+    if outer.is_star:
         return False
     if not isinstance(inner_select, exp.Select):
         return False
-    if any(inner_select.args.get(arg) for arg in UNMERGABLE_ARGS):
+    if any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS):
         return False
     if inner_select.args.get("from_") is None:
         return False
@@ -291,10 +291,11 @@ def _mergeable(
         and from_or_join.side in ("FULL", "LEFT", "RIGHT")
     ):
         return False
+    outer_args = outer.args
     if (
         isinstance(from_or_join, exp.From)
         and inner_select.args.get("where")
-        and any(j.side in ("FULL", "RIGHT") for j in outer_scope.expression.args.get("joins", []))
+        and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
     ):
         return False
 

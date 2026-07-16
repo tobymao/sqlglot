@@ -710,9 +710,6 @@ class Simplifier:
             if node is not original:
                 original.replace(node)
 
-            for n in node.iter_expressions(reverse=True):
-                if n.meta_get(FINAL):
-                    raise
             pre_transformation_stack.extend(
                 n for n in node.iter_expressions(reverse=True) if not n.meta_get(FINAL)
             )

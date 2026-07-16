@@ -78,7 +78,7 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
 
 
 def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
-    unit = expression.text("unit").upper()
+    unit = expression.text("unit").upper() or "DAY"
     factor = DATE_DIFF_FACTOR.get(unit)
 
     end = f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"

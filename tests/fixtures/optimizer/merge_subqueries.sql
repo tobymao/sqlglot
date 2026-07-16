@@ -540,9 +540,9 @@ INNER JOIN (
   ON t0.id = t3.id;
 WITH t0 AS (SELECT 5 AS id), t1 AS (SELECT 1 AS id, 'US' AS cid), t2 AS (SELECT 1 AS id, 'US' AS cid) SELECT t0.id AS id, t3.cid AS cid FROM t0 AS t0 INNER JOIN (SELECT t1.id AS id, t2.cid AS cid FROM t1 AS t1 RIGHT JOIN t2 AS t2 ON t1.cid = t2.cid) AS t3 ON t0.id = t3.id;
 
-# title: Dont replace GROUP and ORDER BY if expression is literal
+# title: Numeric-literal GROUP BY becomes a positional ordinal (matching qualify) while ORDER BY keeps the alias
 WITH t1 AS (SELECT 1 AS col) SELECT a, SUM(b) AS b FROM (SELECT 6 AS a, col AS b FROM t1) AS t GROUP BY a ORDER BY a;
-WITH t1 AS (SELECT 1 AS col) SELECT 6 AS a, SUM(t1.col) AS b FROM t1 AS t1 GROUP BY a ORDER BY a;
+WITH t1 AS (SELECT 1 AS col) SELECT 6 AS a, SUM(t1.col) AS b FROM t1 AS t1 GROUP BY 1 ORDER BY a;
 
 # title: Literal projection whose alias collides with a base-table column is not merged into GROUP BY
 SELECT s.a, SUM(s.b) AS b FROM (SELECT 6 AS a, b FROM x) AS s GROUP BY s.a ORDER BY s.a;

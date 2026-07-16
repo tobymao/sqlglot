@@ -384,6 +384,14 @@ def _merge_joins(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoi
         outer_scope.expression.set("joins", outer_joins)
 
 
+def _projection_ordinal(outer_scope: Scope, name: str) -> int | None:
+    """1-based position of the outer projection named `name`, or None if it isn't projected."""
+    for i, projection in enumerate(t.cast(exp.Select, outer_scope.expression).selects, 1):
+        if projection.alias_or_name == name:
+            return i
+    return None
+
+
 def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:
     """
     Merge projections of inner query into outer query.
@@ -414,14 +422,20 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         is_number = expression.is_number
         last = len(columns_to_replace) - 1
 
+        # A numeric-literal projection can't be inlined into GROUP BY (it would become a
+        # positional reference to a projection); canonicalize to the projection's ordinal to
+        # match qualify. All columns here share `projection_name`, so resolve the ordinal once.
+        group_by_ordinal = _projection_ordinal(outer_scope, projection_name) if is_number else None
+
         for i, column in enumerate(columns_to_replace):
             parent = column.parent
 
-            # Ensures that we don't merge literal numbers in GROUP BY as they have positional context
-            # e.g don't trasform `SELECT a FROM (SELECT 6 AS a) GROUP BY a` to `SELECT 6 AS a GROUP BY 6`,
-            # as this would attempt to GROUP BY the 6th projection instead of the column `a`
             if is_number and isinstance(parent, exp.Group):
-                column.replace(exp.to_identifier(column.name))
+                column.replace(
+                    exp.Literal.number(group_by_ordinal)
+                    if group_by_ordinal is not None
+                    else exp.to_identifier(projection_name)
+                )
                 continue
 
             # Ensures we don't alter the intended operator precedence if there's additional

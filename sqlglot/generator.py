@@ -402,9 +402,6 @@ class Generator:
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
 
-    # Whether FILTER (WHERE cond) can be used for conditional aggregation
-    AGGREGATE_FILTER_SUPPORTED = True
-
     # Whether JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
 
@@ -1905,30 +1902,9 @@ class Generator:
         return f"{percent}{rows}{with_ties}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
-        if self.AGGREGATE_FILTER_SUPPORTED:
-            this = self.sql(expression, "this")
-            where = self.sql(expression, "expression").strip()
-            return f"{this} FILTER({where})"
-
-        agg = expression.this
-        agg_arg = agg.this
-        cond = expression.expression.this
-
-        # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
-        # condition has to wrap the values underneath them rather than the whole clause --
-        # `IFF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.
-        if isinstance(agg_arg, exp.Order):
-            agg_arg = agg_arg.this
-
-        if isinstance(agg_arg, exp.Distinct):
-            targets = agg_arg.expressions
-        else:
-            targets = [agg_arg]
-
-        for target in targets:
-            target.replace(exp.If(this=cond.copy(), true=target.copy()))
-
-        return self.sql(agg)
+        this = self.sql(expression, "this")
+        where = self.sql(expression, "expression").strip()
+        return f"{this} FILTER({where})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:

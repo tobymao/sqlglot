@@ -46,6 +46,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT MIN(amount)")
         self.validate_identity("SELECT MODE(x)")
         self.validate_identity("SELECT MODE(status) OVER (PARTITION BY region) FROM orders")
+        self.validate_all(
+            "SELECT MODE(x) FROM t",
+            read={"postgres": "SELECT MODE() WITHIN GROUP (ORDER BY x) FROM t"},
+        )
         self.validate_identity("SELECT TAN(x)")
         self.validate_identity("SELECT COS(x)")
         self.validate_identity("SELECT SINH(1.5)")

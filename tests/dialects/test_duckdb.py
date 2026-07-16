@@ -388,6 +388,24 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY b) FILTER (WHERE a IS NOT NULL) FROM t",
+            write={
+                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY IFF(NOT a IS NULL, b, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY b DESC) FILTER (WHERE b > 0) FROM t",
+            write={
+                "snowflake": "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY IFF(b > 0, b, NULL) DESC NULLS LAST) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MODE() WITHIN GROUP (ORDER BY col) FILTER (WHERE b < 3) FROM t",
+            write={
+                "snowflake": "SELECT MODE(IFF(b < 3, col, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT UNNEST(ARRAY[1, 2, 3]), UNNEST(ARRAY[4, 5]), UNNEST(ARRAY[6])",
             write={
                 "bigquery": "SELECT IF(pos = pos_2, col, NULL) AS col, IF(pos = pos_3, col_2, NULL) AS col_2, IF(pos = pos_4, col_3, NULL) AS col_3 FROM UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH([1, 2, 3]), ARRAY_LENGTH([4, 5]), ARRAY_LENGTH([6])) - 1)) AS pos CROSS JOIN UNNEST([1, 2, 3]) AS col WITH OFFSET AS pos_2 CROSS JOIN UNNEST([4, 5]) AS col_2 WITH OFFSET AS pos_3 CROSS JOIN UNNEST([6]) AS col_3 WITH OFFSET AS pos_4 WHERE ((pos = pos_2 OR (pos > (ARRAY_LENGTH([1, 2, 3]) - 1) AND pos_2 = (ARRAY_LENGTH([1, 2, 3]) - 1))) AND (pos = pos_3 OR (pos > (ARRAY_LENGTH([4, 5]) - 1) AND pos_3 = (ARRAY_LENGTH([4, 5]) - 1)))) AND (pos = pos_4 OR (pos > (ARRAY_LENGTH([6]) - 1) AND pos_4 = (ARRAY_LENGTH([6]) - 1)))",

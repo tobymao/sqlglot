@@ -4071,6 +4071,20 @@ FROM subquery2""",
                 },
             )
 
+    def test_filter_within_group(self):
+        self.validate_all(
+            "SELECT ARRAY_AGG(x) WITHIN GROUP (ORDER BY y) FILTER(WHERE z > 0) FROM t",
+            write={
+                "snowflake": "SELECT ARRAY_AGG(IFF(z > 0, x, NULL)) WITHIN GROUP (ORDER BY y NULLS FIRST) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT FOO(x) WITHIN GROUP (ORDER BY y) FILTER(WHERE z > 0) FROM t",
+            write={
+                "snowflake": UnsupportedError,
+            },
+        )
+
     def test_current_schema(self):
         self.validate_all(
             "CURRENT_SCHEMA()",

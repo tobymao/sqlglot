@@ -739,6 +739,16 @@ SELECT x.a AS a, COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 SELECT * FROM x LEFT JOIN y USING(b);
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
 
+-- A NATURAL JOIN is expanded to a USING join over the common columns.
+SELECT b FROM x NATURAL JOIN y;
+SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT * FROM x NATURAL JOIN y;
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT a FROM x NATURAL JOIN z;
+SELECT x.a AS a FROM x AS x JOIN z AS z ON x.b = z.b;
+
 SELECT b FROM x JOIN y USING(b);
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 

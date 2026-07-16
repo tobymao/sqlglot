@@ -60,10 +60,7 @@ def qualify_columns(
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
-    scopes = traverse_scope(expression)
-    star_referenced_sources = _star_referenced_source_ids(scopes)
-
-    for scope in scopes:
+    for scope in traverse_scope(expression):
         if dialect.PREFER_CTE_ALIAS_COLUMN:
             pushdown_cte_alias_columns(scope)
 
@@ -103,7 +100,6 @@ def qualify_columns(
                     using_column_tables,
                     pseudocolumns,
                     annotator,
-                    star_referenced_sources,
                 )
             qualify_outputs(scope, dialect=dialect)
 
@@ -117,29 +113,6 @@ def qualify_columns(
             annotator.annotate_scope(scope)
 
     return expression
-
-
-def _star_referenced_source_ids(scopes: list[Scope]) -> set[int]:
-    """ids of sources exposed to some other scope via `SELECT *` or `alias.*`."""
-    referenced: set[int] = set()
-
-    for scope in scopes:
-        scope_expression = scope.expression
-        if not isinstance(scope_expression, exp.Select):
-            continue
-
-        for projection in scope_expression.selects:
-            if isinstance(projection, exp.Star):
-                # Bare, unqualified `*` exposes every source in this scope.
-                for _, source in scope.selected_sources.values():
-                    referenced.add(id(source))
-            elif isinstance(projection, exp.Column) and isinstance(projection.this, exp.Star):
-                # Qualified `alias.*` exposes only that one source.
-                qualified_source = scope.sources.get(projection.table)
-                if qualified_source is not None:
-                    referenced.add(id(qualified_source))
-
-    return referenced
 
 
 def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
@@ -817,7 +790,6 @@ def _expand_stars(
     using_column_tables: dict[str, t.Any],
     pseudocolumns: set[str],
     annotator: TypeAnnotator,
-    star_referenced_sources: set[int],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -882,6 +854,12 @@ def _expand_stars(
             source = scope.sources.get(table)
             if source is None:
                 raise OptimizeError(f"Unknown table: {table}")
+
+            # This source is being re-exposed via a star, so uniquify any duplicate output
+            # names (e.g. same-named columns from a join) before it's expanded below,
+            # otherwise the duplicates would collapse onto a single column reference.
+            if isinstance(source, Scope) and isinstance(source.expression, exp.Select):
+                _uniquify_output_names(source.expression)
 
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
@@ -950,11 +928,6 @@ def _expand_stars(
             # The star projection was replaced by the expansions above
             annotator.uncache(expression)
 
-    # If this scope is re-exposed to another scope via a star, colliding output names
-    # must be made unique so the outer star expansion can't collapse them onto one column
-    if id(scope) in star_referenced_sources:
-        _uniquify_output_names(new_selections)
-
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
         if annotated_ahead:
@@ -964,16 +937,24 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _uniquify_output_names(selections: list[exp.Expr]) -> None:
-    """Rename projections whose output name repeats, so a parent scope re-exposing
-    them via a star can't collapse the duplicates onto a single column reference."""
+def _uniquify_output_names(select: exp.Select) -> None:
+    """Rename projections whose output name repeats, so a scope re-exposing them via a
+    star can't collapse the duplicates onto a single column reference."""
     taken: set[str] = set()
-    for i, selection in enumerate(selections):
+    new_selections: list[exp.Expr] = []
+    changed = False
+
+    for selection in select.selects:
         name = selection.output_name
         if name and name in taken:
             name = find_new_name(taken, name)
-            selections[i] = alias(selection.unalias(), name, copy=False)
+            selection = alias(selection.unalias(), name, copy=False)
+            changed = True
         taken.add(name)
+        new_selections.append(selection)
+
+    if changed:
+        select.set("expressions", new_selections)
 
 
 def _output_identifier_quoted(selection: exp.Expr) -> bool:

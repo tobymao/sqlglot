@@ -856,8 +856,6 @@ def _expand_stars(
                 raise OptimizeError(f"Unknown table: {table}")
 
             # This source is being re-exposed via a star, so uniquify any duplicate output
-            # names (e.g. same-named columns from a join) before it's expanded below,
-            # otherwise the duplicates would collapse onto a single column reference.
             if isinstance(source, Scope) and isinstance(source.expression, exp.Select):
                 _uniquify_output_names(source.expression)
 

@@ -4551,6 +4551,34 @@ DOUBLE;
 RINT(tbl.bigint_col);
 DOUBLE;
 
+# dialect: databricks
+RPAD(tbl.str_col, 5);
+STRING;
+
+# dialect: databricks
+RPAD(tbl.bin_col, 5);
+BINARY;
+
+# dialect: databricks
+RTRIM(tbl.str_col);
+STRING;
+
+# dialect: databricks
+RTRIM('x', tbl.str_col);
+STRING;
+
+# dialect: databricks
+SEARCH(tbl.str_col, 'foo');
+BOOLEAN;
+
+# dialect: databricks
+SEARCH((tbl.str_col, tbl.str_col), 'foo');
+BOOLEAN;
+
+# dialect: databricks
+SEARCH(tbl.str_col, 'foo', mode => 'word');
+BOOLEAN;
+
 # dialect: snowflake
 REGR_VALX(NULL, 2.0);
 DOUBLE;

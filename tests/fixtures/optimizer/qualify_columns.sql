@@ -1054,6 +1054,12 @@ SELECT x.a AS a, y.b AS b, z.c AS c FROM x AS x LEFT JOIN (y AS y INNER JOIN z A
 SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
 SELECT _0.a AS a, _0.b AS b, _1.b AS b, _1.c AS c FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _0 INNER JOIN (SELECT y.b AS b, y.c AS c FROM y AS y) AS _1 ON _0.a = _1.c);
 
+# title: outer star over derived table with duplicate output names is left unexpanded
+# execute: false
+SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s;
+SELECT * FROM (SELECT * FROM x AS x CROSS JOIN y AS y) AS s;
+
+
 SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
 SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _0 INNER JOIN y AS y ON _0.a = y.b);
 

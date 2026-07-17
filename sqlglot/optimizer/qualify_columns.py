@@ -7,7 +7,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError, highlight_sql
-from sqlglot.helper import find_new_name, seq_get
+from sqlglot.helper import seq_get
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
@@ -850,14 +850,21 @@ def _expand_stars(
             new_selections.append(expression)
             continue
 
+        star_start = len(new_selections)
+
         for table in tables:
             source = scope.sources.get(table)
             if source is None:
                 raise OptimizeError(f"Unknown table: {table}")
 
-            # This source is being re-exposed via a star, so uniquify any duplicate output
             if isinstance(source, Scope) and isinstance(source.expression, exp.Select):
-                _uniquify_output_names(source.expression)
+                # This source is being re-exposed via a star, check for duplicate output
+                # and restore the star if found.
+                if _has_duplicate_output_names(source.expression):
+                    source.expression.set("expressions", [exp.Star()])
+                    del new_selections[star_start:]
+                    new_selections.append(expression)
+                    break
 
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
@@ -935,24 +942,14 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _uniquify_output_names(select: exp.Select) -> None:
-    """Rename projections whose output name repeats, so a scope re-exposing them via a
-    star can't collapse the duplicates onto a single column reference."""
-    taken: set[str] = set()
-    new_selections: list[exp.Expr] = []
-    changed = False
-
+def _has_duplicate_output_names(select: exp.Select) -> bool:
+    seen: set[str] = set()
     for selection in select.selects:
         name = selection.output_name
-        if name and name in taken:
-            name = find_new_name(taken, name)
-            selection = alias(selection.unalias(), name, copy=False)
-            changed = True
-        taken.add(name)
-        new_selections.append(selection)
-
-    if changed:
-        select.set("expressions", new_selections)
+        if name and name in seen:
+            return True
+        seen.add(name)
+    return False
 
 
 def _output_identifier_quoted(selection: exp.Expr) -> bool:

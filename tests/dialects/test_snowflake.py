@@ -1108,6 +1108,32 @@ class TestSnowflake(Validator):
             "ALTER TABLE foo ADD COLUMN id INT identity(1, 1)",
             "ALTER TABLE foo ADD id INT AUTOINCREMENT START 1 INCREMENT 1",
         )
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT START 10)")
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT INCREMENT 2)")
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT ORDER)")
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT NOORDER)")
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT START 10 NOORDER)")
+        self.validate_identity("CREATE TABLE x (y INT AUTOINCREMENT INCREMENT 2 ORDER)")
+        self.validate_identity(
+            "CREATE TABLE x (y INT AUTOINCREMENT INCREMENT 2 START 10)",
+            "CREATE TABLE x (y INT AUTOINCREMENT START 10 INCREMENT 2)",
+        )
+        self.validate_identity(
+            "CREATE TABLE x (y INT AUTOINCREMENT(0, 1) ORDER)",
+            "CREATE TABLE x (y INT AUTOINCREMENT START 0 INCREMENT 1 ORDER)",
+        )
+        self.validate_all(
+            "CREATE TABLE c (pk BIGINT AUTOINCREMENT START 10)",
+            read={
+                "postgres": "CREATE TABLE c (pk BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 10))"
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE c (pk BIGINT AUTOINCREMENT INCREMENT -1)",
+            read={
+                "postgres": "CREATE TABLE c (pk BIGINT GENERATED ALWAYS AS IDENTITY (INCREMENT BY -1))"
+            },
+        )
         self.validate_identity(
             "SELECT DAYOFWEEK('2016-01-02T23:39:20.123-07:00'::TIMESTAMP)",
             "SELECT DAYOFWEEK(CAST('2016-01-02T23:39:20.123-07:00' AS TIMESTAMP))",

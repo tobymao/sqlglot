@@ -7368,16 +7368,22 @@ class Parser:
             args = self._parse_wrapped_csv(self._parse_bitwise)
             start = seq_get(args, 0)
             increment = seq_get(args, 1)
-        elif self._match_text_seq("START"):
-            start = self._parse_bitwise()
-            self._match_text_seq("INCREMENT")
-            increment = self._parse_bitwise()
-            if self._match_text_seq("ORDER"):
+
+        # The remaining parts form an unordered bag and any of them can be omitted, in which
+        # case the engine falls back to its own default, so they're parsed independently.
+        while True:
+            if self._match_text_seq("START"):
+                start = self._parse_bitwise()
+            elif self._match_text_seq("INCREMENT"):
+                increment = self._parse_bitwise()
+            elif self._match_text_seq("ORDER"):
                 order = True
             elif self._match_text_seq("NOORDER"):
                 order = False
+            else:
+                break
 
-        if start and increment:
+        if start or increment or order is not None:
             return exp.GeneratedAsIdentityColumnConstraint(
                 start=start, increment=increment, this=False, order=order
             )

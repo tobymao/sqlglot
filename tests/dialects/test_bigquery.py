@@ -2103,6 +2103,7 @@ WHERE
             write={
                 "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
                 "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
+                "duckdb": "SELECT FLATTEN(LIST(1))",
             },
         )
         self.validate_all(

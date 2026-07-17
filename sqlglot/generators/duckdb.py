@@ -1624,6 +1624,7 @@ class DuckDBGenerator(generator.Generator):
             exp.ArrayCompact(this=exp.Array(expressions=e.expressions))
         ),
         exp.ArrayConcat: array_concat_sql("LIST_CONCAT"),
+        exp.ArrayConcatAgg: lambda self, e: self.func("FLATTEN", self.func("LIST", e.this)),
         exp.ArrayContains: _array_contains_sql,
         exp.ArrayOverlaps: _array_overlaps_sql,
         exp.ArrayFilter: rename_func("LIST_FILTER"),

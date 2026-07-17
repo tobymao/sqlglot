@@ -3134,6 +3134,19 @@ class DuckDBGenerator(generator.Generator):
 
         return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
 
+    def in_sql(self, expression: exp.In) -> str:
+        unnest = expression.args.get("unnest")
+        if unnest:
+            # BigQuery's `x IN UNNEST(arr)` becomes
+            # COALESCE(ARRAY_CONTAINS(arr, x), FALSE) in DuckDB.
+            # The default `IN (SELECT UNNEST(...))` creates a correlated subquery that
+            # DuckDB rejects inside non-inner joins.
+            # COALESCE handles NULL arrays: ARRAY_CONTAINS(NULL, x) returns NULL in
+            # DuckDB, but BigQuery's IN UNNEST returns FALSE for NULL arrays.
+            contains = self.func("ARRAY_CONTAINS", unnest.expressions[0], expression.this)
+            return f"COALESCE({contains}, FALSE)"
+        return super().in_sql(expression)
+
     def join_sql(self, expression: exp.Join) -> str:
         if (
             not expression.args.get("using")

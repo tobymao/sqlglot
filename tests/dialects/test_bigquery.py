@@ -2106,6 +2106,13 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND a.val IN UNNEST(b.arr)",
+            write={
+                "bigquery": "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND a.val IN UNNEST(b.arr)",
+                "duckdb": "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND COALESCE(ARRAY_CONTAINS(b.arr, a.val), FALSE)",
+            },
+        )
+        self.validate_all(
             "SELECT b'\x61'",
             write={
                 "bigquery": "SELECT b'\x61'",

@@ -415,6 +415,7 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         is_number = expression.is_number
         last = len(columns_to_replace) - 1
 
+        group_ordinal = None
         if is_number and isinstance(outer_scope.expression, exp.Select):
             # Find the ordinal of the outer SELECT that references this inner projection.
             for j, s in enumerate(outer_scope.expression.selects):

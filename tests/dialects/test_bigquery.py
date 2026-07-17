@@ -855,7 +855,9 @@ LANGUAGE js AS
                 "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",
                 "databricks": "SELECT TIMESTAMPDIFF(MINUTE, CAST(FROM_UNIXTIME(0) AS TIMESTAMP), CAST(FROM_UNIXTIME(60) AS TIMESTAMP))",
                 "duckdb": "SELECT DATE_DIFF('MINUTE', TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+                "presto": "SELECT DATE_DIFF('MINUTE', FROM_UNIXTIME(0), FROM_UNIXTIME(60))",
                 "snowflake": "SELECT TIMESTAMPDIFF(MINUTE, TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+                "trino": "SELECT DATE_DIFF('MINUTE', FROM_UNIXTIME(0), FROM_UNIXTIME(60))",
             },
         )
         self.validate_all(
@@ -868,7 +870,9 @@ LANGUAGE js AS
             write={
                 "databricks": "TIMESTAMPDIFF(MONTH, b, a)",
                 "mysql": "TIMESTAMPDIFF(MONTH, b, a)",
+                "presto": "DATE_DIFF('MONTH', b, a)",
                 "snowflake": "TIMESTAMPDIFF(MONTH, b, a)",
+                "trino": "DATE_DIFF('MONTH', b, a)",
             },
         )
 
@@ -947,6 +951,8 @@ LANGUAGE js AS
                     "databricks": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                     "snowflake": "SELECT TIMESTAMPDIFF(MILLISECOND, '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                     "duckdb": "SELECT DATE_DIFF('MILLISECOND', CAST('2023-01-01T05:00:00' AS TIMESTAMP), CAST('2023-01-01T00:00:00' AS TIMESTAMP))",
+                    "presto": "SELECT DATE_DIFF('MILLISECOND', '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
+                    "trino": "SELECT DATE_DIFF('MILLISECOND', '2023-01-01T05:00:00', '2023-01-01T00:00:00')",
                 },
             ),
         )

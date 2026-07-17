@@ -544,6 +544,11 @@ WITH t0 AS (SELECT 5 AS id), t1 AS (SELECT 1 AS id, 'US' AS cid), t2 AS (SELECT 
 WITH t1 AS (SELECT 1 AS col) SELECT a, SUM(b) AS b FROM (SELECT 6 AS a, col AS b FROM t1) AS t GROUP BY a ORDER BY a;
 WITH t1 AS (SELECT 1 AS col) SELECT 6 AS a, SUM(t1.col) AS b FROM t1 AS t1 GROUP BY 1 ORDER BY a;
 
+# title: Literal projection not projected in outer SELECT falls back to bare identifier in GROUP BY
+# execute: false
+SELECT MAX(x.b) AS lit FROM x CROSS JOIN (SELECT 6 AS lit FROM z) AS t GROUP BY t.lit;
+SELECT MAX(x.b) AS lit FROM x AS x CROSS JOIN z AS z GROUP BY lit;
+
 # title: Literal projection whose alias collides with a base-table column is not merged into GROUP BY
 SELECT s.a, SUM(s.b) AS b FROM (SELECT 6 AS a, b FROM x) AS s GROUP BY s.a ORDER BY s.a;
 SELECT s.a AS a, SUM(s.b) AS b FROM (SELECT 6 AS a, x.b AS b FROM x AS x) AS s GROUP BY s.a ORDER BY a;

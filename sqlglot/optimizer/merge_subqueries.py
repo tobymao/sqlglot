@@ -174,8 +174,9 @@ def _mergeable(
         )
 
     def _literal_group_alias_collision():
-        """A numeric-literal projection in the outer GROUP BY merges to a bare `GROUP BY a`
-        that can collide with a same-named FROM column."""
+        """A numeric-literal projection in GROUP BY merges to an ordinal when projected in
+        the outer SELECT (no collision possible), or a bare identifier when not projected
+        (collision with a same-named FROM column is possible). This guard blocks the latter."""
         group = outer_scope.expression.args.get("group")
         if not group:
             return False
@@ -414,18 +415,27 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         is_number = expression.is_number
         last = len(columns_to_replace) - 1
 
+        if is_number and isinstance(outer_scope.expression, exp.Select):
+            # Find the ordinal of the outer SELECT that references this inner projection.
+            for j, s in enumerate(outer_scope.expression.selects):
+                unaliased = s.unalias()
+                if (
+                    isinstance(unaliased, exp.Column)
+                    and unaliased.table == alias
+                    and unaliased.name == projection_name
+                ):
+                    group_ordinal = j + 1
+                    break
+
         for i, column in enumerate(columns_to_replace):
             parent = column.parent
 
             # A numeric-literal projection can't be inlined into GROUP BY, canonicalize
             # to the projection's ordinal to match qualify
             if is_number and isinstance(parent, exp.Group):
-                names = [
-                    s.alias_or_name for s in t.cast(exp.Select, outer_scope.expression).selects
-                ]
                 column.replace(
-                    exp.Literal.number(names.index(projection_name) + 1)
-                    if projection_name in names
+                    exp.Literal.number(group_ordinal)
+                    if group_ordinal is not None
                     else exp.to_identifier(projection_name)
                 )
                 continue

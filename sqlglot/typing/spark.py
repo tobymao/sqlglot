@@ -9,7 +9,9 @@ EXPRESSION_METADATA = {
     **{
         exp_type: {"returns": exp.DType.DOUBLE}
         for exp_type in {
+            exp.Nanvl,
             exp.Sec,
+            exp.Sign,
         }
     },
     **{

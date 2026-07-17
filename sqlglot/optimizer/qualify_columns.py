@@ -406,14 +406,16 @@ def _expand_alias_refs(
         if isinstance(projection, exp.Alias):
             alias_to_expression[projection.alias] = (projection.this, i + 1)
 
+    child_scope: Scope | None = scope
     parent_scope: Scope | None = scope
     on_right_sub_tree = False
     while parent_scope and not parent_scope.is_cte:
+        child_scope = parent_scope
         if parent_scope := parent_scope.parent:
             if isinstance(parent_scope.expression, exp.Union):
                 # Access the arg directly instead of the right property, because set operation
                 # operands aren't guaranteed to be Query nodes, e.g. SELECT 1 UNION ALL VALUES (2)
-                on_right_sub_tree = parent_scope.expression.expression is parent_scope.expression
+                on_right_sub_tree = parent_scope.expression.expression is child_scope.expression
 
     # We shouldn't expand aliases if they match the recursive CTE's columns
     # and we are in the recursive part (right sub tree) of the CTE

@@ -406,6 +406,18 @@ class TestOptimizer(unittest.TestCase):
             'WITH "t" AS (SELECT "_values"."_col_0" AS "a" FROM (VALUES (1)) AS "_values"("_col_0") UNION ALL SELECT 2 AS "a") SELECT "t"."a" AS "a" FROM "t" AS "t"',
         )
 
+        # In the recursive branch of a recursive CTE, an unqualified column that matches one of
+        # the CTE's columns must not be expanded to the projection alias it shadows, e.g. here
+        # `n < 5` refers to t.n, not to `n + 1` (tested in Postgres and DuckDB)
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH RECURSIVE t(n) AS (SELECT 1 AS n UNION ALL SELECT n + 1 AS n FROM t WHERE n < 5) SELECT * FROM t"
+                )
+            ).sql(),
+            'WITH RECURSIVE "t"("n") AS (SELECT 1 AS "n" UNION ALL SELECT "t"."n" + 1 AS "n" FROM "t" AS "t" WHERE "t"."n" < 5) SELECT "t"."n" AS "n" FROM "t" AS "t"',
+        )
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(

@@ -3953,6 +3953,16 @@ class DuckDBGenerator(generator.Generator):
 
         return super().unnest_sql(expression)
 
+    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+        array_agg = self.function_fallback_sql(expression)
+        # The argument inside ARRAY_AGG may be wrapped in Limit, Order, and/or
+        # Distinct nodes.  Unwrap to get the bare column expression so the
+        # FILTER clause is just "WHERE x IS NOT NULL".
+        column_expr = expression.this
+        while isinstance(column_expr, (exp.Limit, exp.Order)):
+            column_expr = column_expr.this
+        return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
+
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         this = expression.this
 
@@ -3960,6 +3970,14 @@ class DuckDBGenerator(generator.Generator):
             # DuckDB should render IGNORE NULLS only for the general-purpose
             # window functions that accept it e.g. FIRST_VALUE(... IGNORE NULLS) OVER (...)
             return super().ignorenulls_sql(expression)
+
+        # For ARRAY_AGG(expr IGNORE NULLS ...), convert IGNORE NULLS to a
+        # FILTER(WHERE expr IS NOT NULL) clause by setting nulls_excluded on
+        # the ArrayAgg.  The existing _add_arrayagg_null_filter method will
+        # emit the FILTER clause during arrayagg_sql / withingroup_sql.
+        if isinstance(this, exp.ArrayAgg):
+            this.set("nulls_excluded", True)
+            return self.sql(this)
 
         if isinstance(this, exp.First):
             this = exp.AnyValue(this=this.this)

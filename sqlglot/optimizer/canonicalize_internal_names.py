@@ -40,9 +40,11 @@ def canonicalize_internal_names(expression: E) -> E:
     while stack:
         node = stack.pop()
         if isinstance(node, exp.SetOperation):
-            stack.append(node.left.unnest())
+            # Access the args directly instead of the left/right properties, because set operation
+            # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
+            stack.append(node.this.unnest())
             if node.args.get("by_name"):
-                stack.append(node.right.unnest())
+                stack.append(node.expression.unnest())
         else:
             output_scope_exprs.add(id(node))
 
@@ -292,8 +294,8 @@ def canonicalize_internal_names(expression: E) -> E:
                 while rename_stack:
                     node = rename_stack.pop()
                     if isinstance(node, exp.SetOperation):
-                        rename_stack.append(node.left)
-                        rename_stack.append(node.right)
+                        rename_stack.append(node.this)
+                        rename_stack.append(node.expression)
                         continue
                     if not isinstance(node, exp.Select):
                         continue

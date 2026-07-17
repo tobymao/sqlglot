@@ -4113,12 +4113,14 @@ class Parser:
 
         values = cte.this
         if isinstance(values, exp.Values):
-            if values.alias:
-                cte.set("this", exp.select("*").from_(values))
-            else:
-                cte.set("this", exp.select("*").from_(exp.alias_(values, "_values", table=True)))
+            cte.set("this", self._values_to_select(values))
 
         return cte
+
+    def _values_to_select(self, values: exp.Values) -> exp.Select:
+        if values.alias:
+            return exp.select("*").from_(values)
+        return exp.select("*").from_(exp.alias_(values, "_values", table=True))
 
     def _parse_table_alias(
         self, alias_tokens: t.Collection[TokenType] | None = None
@@ -5776,6 +5778,13 @@ class Parser:
         expression = self._parse_select(
             nested=True, parse_set_operation=False, consume_pipe=consume_pipe
         )
+
+        # Wrap VALUES operands in selects, both for consistency with the CTE canonicalization
+        # in _parse_cte and so that alias pushdown can reach into set operation branches
+        if isinstance(this, exp.Values):
+            this = self._values_to_select(this)
+        if isinstance(expression, exp.Values):
+            expression = self._values_to_select(expression)
 
         return self.expression(
             operation(

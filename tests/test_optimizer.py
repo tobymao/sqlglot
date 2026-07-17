@@ -396,6 +396,16 @@ class TestOptimizer(unittest.TestCase):
             "SELECT `my_table`.`my_column` AS `my_column` FROM `my_db.my_table` AS `my_table`",
         )
 
+        # Alias pushdown reaches VALUES set operation operands, since the parser wraps them in
+        # selects; the union's output names come from its left branch, so this is required for
+        # the CTE's column list to propagate correctly
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one("WITH t(a) AS (VALUES (1) UNION ALL SELECT 2) SELECT t.a FROM t")
+            ).sql(),
+            'WITH "t" AS (SELECT "_values"."_col_0" AS "a" FROM (VALUES (1)) AS "_values"("_col_0") UNION ALL SELECT 2 AS "a") SELECT "t"."a" AS "a" FROM "t" AS "t"',
+        )
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
@@ -1315,6 +1325,29 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertNotEqual(canon_cte_col_a.sql(), canon_cte_col_b.sql())
 
+        # VALUES as a set operation operand, e.g. in ASTs built programmatically; the compiled
+        # left/right accessors raise a TypeError for such non-Query operands
+        self.assertEqual(
+            qualify_then_canonicalize(exp.select("1").union("VALUES (2)")).sql(),
+            'SELECT 1 AS "1" UNION VALUES (2)',
+        )
+        by_name_union = exp.Union(
+            this=exp.select(exp.alias_("1", "c")),
+            expression=parse_one("VALUES (2)"),
+            distinct=False,
+            by_name=True,
+        )
+        self.assertEqual(
+            qualify_then_canonicalize(by_name_union).sql(),
+            'SELECT 1 AS "c" UNION ALL BY NAME VALUES (2)',
+        )
+
+        # For parsed SQL, VALUES operands are instead wrapped in selects and canonicalized
+        self.assertEqual(
+            qualify_then_canonicalize(parse_one("VALUES (1) UNION ALL SELECT 2")).sql(),
+            'SELECT "_t0"."_c0" AS "_col_0" FROM (VALUES (1)) AS "_t0"("_c0") UNION ALL SELECT 2 AS "_c1"',
+        )
+
         # UNION BY NAME: different column-name sets must produce different canonical forms
         # (two branches share no column name => NULL-padded) vs (both share "a" => unified)
         schema_ux = {"x": {"a": "INT"}, "y": {"a": "INT", "b": "INT"}}
@@ -1592,6 +1625,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+
+        # VALUES as a set operation operand, e.g. in ASTs built programmatically (the parser
+        # wraps such operands in selects); the compiled left/right accessors raise a TypeError
+        # for these non-Query operands
+        expression = exp.select("1").union("VALUES (2)")
+        for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):
+            self.assertEqual(len(scopes), 3)
+            self.assertEqual(scopes[0].expression.sql(), "SELECT 1")
+            self.assertEqual(scopes[1].expression.sql(), "VALUES (2)")
+            self.assertEqual(scopes[2].expression.sql(), "SELECT 1 UNION VALUES (2)")
+
+        self.assertEqual(
+            optimizer.qualify.qualify(exp.select("1").union("VALUES (2)")).sql(),
+            'SELECT 1 AS "1" UNION VALUES (2)',
+        )
 
         sql = "SELECT * FROM t LEFT JOIN UNNEST(a) AS a1 LEFT JOIN UNNEST(a1.a) AS a2"
         scope = build_scope(parse_one(sql, read="bigquery"))

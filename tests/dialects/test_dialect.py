@@ -65,6 +65,12 @@ class Validator(unittest.TestCase):
         )
         return expression
 
+    def validate_transpile(self, sql, write_sql, write_dialect=None):
+        """Validate that `sql`, parsed with self.dialect, generates `write_sql` in `write_dialect`."""
+        expression = self.parse_one(sql)
+        self.assertEqual(write_sql, expression.sql(dialect=write_dialect))
+        return expression
+
     def validate_all(self, sql, read=None, write=None, pretty=False, identify=False):
         """
         Validate that:

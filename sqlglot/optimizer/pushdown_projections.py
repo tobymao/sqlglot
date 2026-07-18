@@ -25,6 +25,16 @@ SELECT_ALL = object()
 SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
 
 
+def _is_self_referencing_cte(scope: Scope) -> bool:
+    cte = scope.expression.parent
+    return (
+        isinstance(cte, exp.CTE)
+        and isinstance(cte.parent, exp.With)
+        and cte.parent.recursive
+        and any(table.name == cte.alias for table in scope.expression.find_all(exp.Table))
+    )
+
+
 # Selection to use if selection list is empty
 def default_selection(is_agg: bool) -> exp.Alias:
     return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_").assert_is(exp.Alias)
@@ -66,6 +76,11 @@ def pushdown_projections(
 
         # We can't remove columns SELECT DISTINCT nor UNION DISTINCT.
         if scope.expression.args.get("distinct"):
+            parent_selections = {SELECT_ALL}
+
+        # A recursive CTE's body reads the CTE's own output, so its projections
+        # can't be pruned based only on what the enclosing query selects.
+        if _is_self_referencing_cte(scope):
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope.expression, exp.SetOperation):

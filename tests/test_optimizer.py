@@ -2490,6 +2490,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(set(scope_t.cte_sources), {"t"})
         self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
 
+    def test_pushdown_projections_keeps_recursive_cte_self_referenced_columns(self):
+        # The recursive term joins on t.link, which the outer query never
+        # selects; pruning it used to corrupt the CTE and crash merge_subqueries
+        optimized = optimizer.optimize(
+            parse_one(
+                """
+                WITH RECURSIVE t AS (
+                  SELECT id, link FROM graph WHERE id = 1
+                  UNION ALL
+                  SELECT g.id, g.link FROM graph AS g, t WHERE g.id = t.link
+                )
+                SELECT id FROM t
+                """,
+                read="postgres",
+            ),
+            schema={"graph": {"id": "INT", "link": "INT"}},
+            dialect="postgres",
+        )
+
+        cte = optimized.find(exp.CTE)
+        self.assertIn("link", {select.alias_or_name for select in cte.this.selects})
+
     def test_schema_with_spaces(self):
         schema = {
             "a": {

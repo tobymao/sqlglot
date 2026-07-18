@@ -1200,6 +1200,11 @@ class SnowflakeGenerator(generator.Generator):
                 self.unsupported("Unable to rewrite FILTER into the aggregate's arguments")
                 return self.sql(agg)
 
+        # `COUNT(*) FILTER (WHERE cond)` counts qualifying rows, but a star can't be an
+        # IFF argument (`IFF(cond, *, NULL)` is invalid), so use Snowflake's native COUNT_IF.
+        if isinstance(agg, exp.Count) and isinstance(agg_arg, exp.Star):
+            return self.sql(exp.CountIf(this=cond.copy()))
+
         # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
         # condition has to wrap the values underneath them rather than the whole clause --
         # `IFF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.

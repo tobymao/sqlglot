@@ -1798,6 +1798,11 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "bigquery": "ROUND(x::DOUBLE, 4)",
             },
         )
+        # ROUND(real, integer) is not permitted in Postgres either, so REAL must be cast too.
+        self.validate_all(
+            "ROUND(CAST(CAST(x AS REAL) AS DECIMAL), 4)",
+            read={"postgres": "ROUND(x::REAL, 4)"},
+        )
         self.validate_all(
             "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )

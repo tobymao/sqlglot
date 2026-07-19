@@ -222,7 +222,7 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
 
     # ROUND(double precision, integer) is not permitted in Postgres
     # so it's necessary to cast to decimal before rounding.
-    if expression.this.is_type(exp.DType.DOUBLE):
+    if expression.this.is_type(*exp.DataType.FLOAT_TYPES):
         decimal_type = exp.DType.DECIMAL.into_expr(expressions=expression.expressions)
         this = self.sql(exp.Cast(this=this, to=decimal_type))
 

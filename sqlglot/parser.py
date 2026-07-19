@@ -82,7 +82,7 @@ def build_logarithm(args: BuilderArgs, dialect: Dialect) -> exp.Func:
     expression = seq_get(args, 1)
 
     if expression:
-        if not dialect.LOG_BASE_FIRST:
+        if dialect.LOG_BASE_FIRST is False:
             this, expression = expression, this
         return exp.Log(this=this, expression=expression)
 

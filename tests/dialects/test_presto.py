@@ -715,6 +715,10 @@ class TestPresto(Validator):
             "LOWER(TO_HEX(SHA256(TO_UTF8(CAST(x AS VARCHAR)))))",
         )
 
+        # Presto LOG(b, x) is log base b of x; the two arguments must not be swapped on round-trip.
+        self.validate_identity("SELECT LOG(x, y)")
+        self.validate_identity("SELECT LOG(3, 9)")
+
         # native SHA256/SHA512 take and return VARBINARY, so they parse as
         # SHA2Digest and round-trip untouched, mirroring MD5 -> MD5Digest
         self.validate_all(

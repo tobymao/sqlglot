@@ -78,6 +78,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.CurrentUserId: lambda *_: "CURRENT_USER_ID",
         exp.DateAdd: date_delta_sql("DATEADD"),
         exp.DateDiff: date_delta_sql("DATEDIFF"),
+        exp.TimestampDiff: date_delta_sql("DATEDIFF"),
         exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),
         exp.DistStyleProperty: lambda self, e: self.naked_property(e),
         exp.Explode: lambda self, e: self.explode_sql(e),

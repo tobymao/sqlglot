@@ -298,6 +298,13 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            # Redshift has no TIMESTAMPDIFF; it must become DATEDIFF(unit, start, end).
+            "DATEDIFF(SECOND, a, b)",
+            read={
+                "mysql": "TIMESTAMPDIFF(SECOND, a, b)",
+            },
+        )
+        self.validate_all(
             "SELECT DATEADD(month, 18, '2008-02-28')",
             write={
                 "bigquery": "SELECT DATE_ADD(CAST('2008-02-28' AS DATETIME), INTERVAL 18 MONTH)",

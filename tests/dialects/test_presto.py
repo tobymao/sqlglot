@@ -797,6 +797,8 @@ class TestPresto(Validator):
         self.validate_identity(
             "SELECT * FROM example.testdb.customer_orders FOR TIMESTAMP AS OF CAST('2022-03-23 09:59:29.803 Europe/Vienna' AS TIMESTAMP)"
         )
+        self.validate_identity("SELECT * FROM t FOR VERSION BETWEEN '1' AND '2'")
+        self.validate_identity("SELECT * FROM t FOR TIMESTAMP FROM '2024-01-01' TO '2024-02-01'")
         self.validate_identity(
             "SELECT origin_state, destination_state, origin_zip, SUM(package_weight) FROM shipping GROUP BY ALL CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip)"
         )

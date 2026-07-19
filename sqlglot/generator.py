@@ -2608,6 +2608,12 @@ class Generator:
         this = f"FOR {expression.name}"
         kind = expression.text("kind")
         expr = self.sql(expression, "expression")
+        if kind in ("FROM", "BETWEEN"):
+            # the two range bounds are stored as a Tuple; render them as
+            # "<start> TO/AND <end>", not as a "(start, end)" tuple literal
+            bounds = expression.args["expression"].expressions
+            sep = "AND" if kind == "BETWEEN" else "TO"
+            expr = f"{self.sql(bounds[0])} {sep} {self.sql(bounds[1])}"
         return f"{this} {kind} {expr}"
 
     def tuple_sql(self, expression: exp.Tuple) -> str:

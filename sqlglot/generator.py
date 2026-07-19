@@ -5668,7 +5668,12 @@ class Generator:
 
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
-        return self._add_arrayagg_null_filter(array_agg, expression, expression.this)
+        # The NULL filter must be built from the column itself, not the ORDER BY
+        # wrapping it (an inline ORDER BY makes ArrayAgg.this an exp.Order).
+        column = expression.this
+        if isinstance(column, exp.Order):
+            column = column.this
+        return self._add_arrayagg_null_filter(array_agg, expression, column)
 
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")

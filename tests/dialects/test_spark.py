@@ -492,6 +492,14 @@ TBLPROPERTIES (
                 "spark": "SELECT COLLECT_LIST(x) FILTER(WHERE x = 5) FROM (SELECT 1 UNION ALL SELECT NULL) AS t(x)",
             },
         )
+        # An inline ORDER BY must not leak into the generated NULL FILTER.
+        self.validate_all(
+            "SELECT ARRAY_AGG(x ORDER BY y) FROM t",
+            write={
+                "presto": "SELECT ARRAY_AGG(x ORDER BY y NULLS FIRST) FILTER(WHERE x IS NOT NULL) FROM t",
+                "postgres": "SELECT ARRAY_AGG(x ORDER BY y NULLS FIRST) FILTER(WHERE x IS NOT NULL) FROM t",
+            },
+        )
         self.validate_all(
             "SELECT ARRAY_AGG(1)",
             write={

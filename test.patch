@@ -1,0 +1,81 @@
+diff --git a/test.sh b/test.sh
+new file mode 100755
+index 00000000..04ef2e49
+--- /dev/null
++++ b/test.sh
+@@ -0,0 +1,37 @@
++#!/usr/bin/env bash
++# Test runner for the Postgres Unicode escape string literal challenge.
++#
++# Usage:
++#   ./test.sh [--output_path <junit.xml>] <base|new>
++#
++#   base  runs the existing Postgres dialect regression suite plus the core
++#         tokenizer/transpile tests, excluding the new challenge test; these
++#         must pass both before and after the solution is applied.
++#   new   runs the new challenge test; fails before the solution, passes after.
++set -uo pipefail
++
++cd "$(dirname "$0")"
++
++OUTPUT_PATH=""
++if [ "${1:-}" = "--output_path" ]; then
++  OUTPUT_PATH="$2"
++  shift 2
++fi
++
++MODE="${1:-new}"
++
++case "$MODE" in
++  base)
++    python -m pytest tests/dialects/test_postgres.py tests/test_transpile.py tests/test_tokens.py \
++      --deselect tests/dialects/test_postgres.py::TestPostgres::test_unicode_string \
++      -v ${OUTPUT_PATH:+--junitxml="$OUTPUT_PATH"}
++    ;;
++  new)
++    python -m pytest tests/dialects/test_postgres.py::TestPostgres::test_unicode_string -v \
++      ${OUTPUT_PATH:+--junitxml="$OUTPUT_PATH"}
++    ;;
++  *)
++    echo "unknown mode: $MODE (expected base or new)" >&2
++    exit 2
++    ;;
++esac
+diff --git a/tests/dialects/test_postgres.py b/tests/dialects/test_postgres.py
+index f30906be..c406ed9b 100644
+--- a/tests/dialects/test_postgres.py
++++ b/tests/dialects/test_postgres.py
+@@ -1602,6 +1602,33 @@ FROM json_data, field_ids""",
+                 "postgres": "VAR_POP(x)",
+             },
+         )
++    
++    def test_unicode_string(self):
++   
++        self.validate_identity(r"SELECT U&'d\0061t\+000061'")
++        self.validate_identity(r"SELECT U&'\+000041'")
++
++        # Doubled escape character represents the escape character itself
++        self.validate_identity(r"SELECT U&'\\'")
++
++        # Custom UESCAPE character must round-trip alongside 4- and 6-digit forms
++        self.validate_identity(r"SELECT U&'d!0061t!+000061' UESCAPE '!'")
++
++        # Lowercase u& prefix is accepted on input, normalized to uppercase on output
++        self.validate_identity(r"SELECT u&'\0061'", r"SELECT U&'\0061'")
++
++        # Embedded in a larger expression - no stray spaces introduced around it
++        self.validate_identity(r"SELECT (U&'\FE01' || 'Test literal') AS label")
++
++        # Parses to the correct expression type
++        expr = self.parse_one(r"SELECT U&'\0061'")
++        expr.expressions[0].assert_is(exp.UnicodeString)
++
++        # Negative case: a space between U and & must remain the bitwise AND
++        # operator, not get swallowed into a unicode string literal
++        self.validate_identity("SELECT U & 'x'")
++        expr = self.parse_one("SELECT U & 'x'")
++        expr.expressions[0].assert_is(exp.BitwiseAnd)
+ 
+     def test_corr(self):
+         self.validate_all(

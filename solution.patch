@@ -1,0 +1,29 @@
+diff --git a/sqlglot/dialects/postgres.py b/sqlglot/dialects/postgres.py
+index 591504e8..7848305a 100644
+--- a/sqlglot/dialects/postgres.py
++++ b/sqlglot/dialects/postgres.py
+@@ -71,6 +71,11 @@ class Postgres(Dialect):
+         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+         BYTE_STRING_ESCAPES = ["'", "\\"]
+         HEREDOC_STRINGS = ["$"]
++        UNICODE_STRINGS = [
++                            (prefix + q, q)
++                            for q in tokens.Tokenizer.QUOTES
++                            for prefix in ("U&", "u&")
++                        ]
+ 
+         HEREDOC_TAG_IS_IDENTIFIER = True
+         HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER
+diff --git a/sqlglot/generators/postgres.py b/sqlglot/generators/postgres.py
+index 37fd98e2..9d46e4e8 100644
+--- a/sqlglot/generators/postgres.py
++++ b/sqlglot/generators/postgres.py
+@@ -232,7 +232,7 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
+ class PostgresGenerator(generator.Generator):
+     SELECT_KINDS: tuple[str, ...] = ()
+     TRY_SUPPORTED = False
+-    SUPPORTS_UESCAPE = False
++    SUPPORTS_UESCAPE = True
+     SUPPORTS_DECODE_CASE = False
+ 
+     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS

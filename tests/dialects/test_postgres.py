@@ -1602,6 +1602,33 @@ FROM json_data, field_ids""",
                 "postgres": "VAR_POP(x)",
             },
         )
+    
+    def test_unicode_string(self):
+   
+        self.validate_identity(r"SELECT U&'d\0061t\+000061'")
+        self.validate_identity(r"SELECT U&'\+000041'")
+
+        # Doubled escape character represents the escape character itself
+        self.validate_identity(r"SELECT U&'\\'")
+
+        # Custom UESCAPE character must round-trip alongside 4- and 6-digit forms
+        self.validate_identity(r"SELECT U&'d!0061t!+000061' UESCAPE '!'")
+
+        # Lowercase u& prefix is accepted on input, normalized to uppercase on output
+        self.validate_identity(r"SELECT u&'\0061'", r"SELECT U&'\0061'")
+
+        # Embedded in a larger expression - no stray spaces introduced around it
+        self.validate_identity(r"SELECT (U&'\FE01' || 'Test literal') AS label")
+
+        # Parses to the correct expression type
+        expr = self.parse_one(r"SELECT U&'\0061'")
+        expr.expressions[0].assert_is(exp.UnicodeString)
+
+        # Negative case: a space between U and & must remain the bitwise AND
+        # operator, not get swallowed into a unicode string literal
+        self.validate_identity("SELECT U & 'x'")
+        expr = self.parse_one("SELECT U & 'x'")
+        expr.expressions[0].assert_is(exp.BitwiseAnd)
 
     def test_corr(self):
         self.validate_all(

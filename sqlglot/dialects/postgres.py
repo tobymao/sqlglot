@@ -71,6 +71,11 @@ class Postgres(Dialect):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]
+        UNICODE_STRINGS = [
+                            (prefix + q, q)
+                            for q in tokens.Tokenizer.QUOTES
+                            for prefix in ("U&", "u&")
+                        ]
 
         HEREDOC_TAG_IS_IDENTIFIER = True
         HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER

@@ -241,6 +241,10 @@ def nodes_for_predicate(
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
                 and not has_window_expression
+                # A LIMIT/OFFSET picks rows before the outer predicate runs, so pushing
+                # the predicate in would filter first and change which rows survive.
+                and not node.args.get("limit")
+                and not node.args.get("offset")
             ):
                 nodes[table] = node
     return nodes

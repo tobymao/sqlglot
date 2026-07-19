@@ -79,3 +79,11 @@ SELECT a.id, b.val, c.name FROM t_a AS a INNER JOIN t_b AS b ON a.id = b.a_id IN
 -- DNF: single-table predicate is pushed to its own JOIN regardless of join order
 SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON b.a_id = a.id WHERE (b.flag = 1 AND b.active = 1) OR (b.flag = 2 AND b.active = 0);
 SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON ((b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1)) AND a.id = b.a_id WHERE (b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1);
+
+-- Predicate is not pushed into a subquery with LIMIT: filtering before the limit changes which rows the limit keeps
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a LIMIT 10) AS s WHERE s.b = 1;
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a LIMIT 10) AS s WHERE s.b = 1;
+
+-- Predicate is not pushed into a subquery with OFFSET: filtering before the offset changes which rows are skipped
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;

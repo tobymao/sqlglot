@@ -2236,7 +2236,7 @@ class TestDialect(Validator):
             write={
                 "bigquery": "LOWER(x) LIKE LOWER('%y')",
                 "clickhouse": "x ILIKE '%y'",
-                "drill": "LOWER(x) LIKE LOWER('%y')",
+                "drill": "`ILIKE`(x, '%y')",
                 "duckdb": "x ILIKE '%y'",
                 "hive": "LOWER(x) LIKE LOWER('%y')",
                 "mysql": "LOWER(x) LIKE LOWER('%y')",
@@ -2257,7 +2257,7 @@ class TestDialect(Validator):
                 "postgres": "x NOT ILIKE '%y'",
             },
             write={
-                "drill": "LOWER(x) NOT LIKE LOWER('%y')",
+                "drill": "NOT `ILIKE`(x, '%y')",
                 "hive": "LOWER(x) NOT LIKE LOWER('%y')",
                 "presto": "LOWER(x) NOT LIKE LOWER('%y')",
                 "postgres": "x NOT ILIKE '%y'",

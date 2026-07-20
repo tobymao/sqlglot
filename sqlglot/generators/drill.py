@@ -4,7 +4,6 @@ from __future__ import annotations
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     datestrtodate_sql,
-    no_ilike_sql,
     no_trycast_sql,
     rename_func,
     strposition_sql,
@@ -13,6 +12,15 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.mysql import date_add_sql
 from sqlglot.transforms import preprocess, move_schema_columns_to_partitioned_by
 from sqlglot.generator import unsupported_args
+
+
+def _ilike_sql(self: DrillGenerator, expression: exp.ILike) -> str:
+    # Drill exposes ILIKE as a (reserved, backtick-quoted) function
+    # ``\`ILIKE\`(str, pattern)``, mirroring how ``exp.If`` is emitted as
+    # ``\`IF\`(...)`` above. The previous ``self.binary`` form produced the
+    # invalid infix ``x \`ILIKE\` '%y'`` and dropped the NOT.
+    ilike = f"`ILIKE`({self.format_args(expression.this, expression.expression)})"
+    return f"NOT {ilike}" if expression.args.get("negate") else ilike
 
 
 def _str_to_date(self: DrillGenerator, expression: exp.StrToDate) -> str:
@@ -77,7 +85,7 @@ class DrillGenerator(generator.Generator):
         exp.If: lambda self, e: (
             f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})"
         ),
-        exp.ILike: no_ilike_sql,
+        exp.ILike: _ilike_sql,
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("LEVENSHTEIN_DISTANCE")
         ),

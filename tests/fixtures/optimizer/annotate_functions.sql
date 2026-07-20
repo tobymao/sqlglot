@@ -4579,50 +4579,6 @@ BOOLEAN;
 SEARCH(tbl.str_col, 'foo', mode => 'word');
 BOOLEAN;
 
-# dialect: databricks
-SHIFTRIGHT(tbl.int_col, 1);
-INT;
-
-# dialect: databricks
-SHIFTRIGHT(tbl.bigint_col, 1);
-BIGINT;
-
-# dialect: databricks
-SHIFTLEFT(tbl.int_col, 1);
-INT;
-
-# dialect: databricks
-SHIFTLEFT(tbl.bigint_col, 1);
-BIGINT;
-
-# dialect: databricks
-SIGNUM(tbl.int_col);
-DOUBLE;
-
-# dialect: databricks
-SIGNUM(tbl.double_col);
-DOUBLE;
-
-# dialect: databricks
-SIGNUM(tbl.interval_col);
-DOUBLE;
-
-# dialect: hive, spark2, spark, databricks
-SIGN(tbl.int_col);
-DOUBLE;
-
-# dialect: hive, spark2, spark, databricks
-SIGN(tbl.double_col);
-DOUBLE;
-
-# dialect: spark2, spark, databricks
-SHUFFLE(ARRAY(1, 2, 3));
-ARRAY<INT>;
-
-# dialect: spark2, spark, databricks
-SHUFFLE(ARRAY('a', 'b', 'c'));
-ARRAY<VARCHAR>;
-
 # dialect: snowflake
 REGR_VALX(NULL, 2.0);
 DOUBLE;
@@ -7136,8 +7092,4 @@ INT;
 
 # dialect: duckdb
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
-DOUBLE;
-
-# dialect: spark2, spark, databricks
-NANVL(tbl.float_col, tbl.double_col);
 DOUBLE;

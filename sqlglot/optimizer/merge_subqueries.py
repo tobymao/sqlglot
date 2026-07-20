@@ -7,7 +7,6 @@ from collections import defaultdict
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.scope import Scope, traverse_scope
-from sqlglot.schema import Schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -15,9 +14,7 @@ if t.TYPE_CHECKING:
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(
-    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
-) -> E:
+def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -40,12 +37,11 @@ def merge_subqueries(
     Args:
         expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
-        schema: database schema used to look up table columns for merge-safety checks.
     Returns:
         sqlglot.Expr: optimized expression
     """
-    expression = merge_ctes(expression, leave_tables_isolated, schema=schema)
-    expression = merge_derived_tables(expression, leave_tables_isolated, schema=schema)
+    expression = merge_ctes(expression, leave_tables_isolated)
+    expression = merge_derived_tables(expression, leave_tables_isolated)
     return expression
 
 
@@ -71,9 +67,7 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
-def merge_ctes(
-    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
-) -> E:
+def merge_ctes(expression: E, leave_tables_isolated: bool = False) -> E:
     scopes = traverse_scope(expression)
 
     # All places where we select from CTEs.
@@ -95,7 +89,7 @@ def merge_ctes(
         from_or_join = table.find_ancestor(exp.From, exp.Join)
         if not isinstance(from_or_join, (exp.From, exp.Join)):
             continue
-        if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join, schema=schema):
+        if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
             alias = table.alias_or_name
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(
@@ -111,9 +105,7 @@ def merge_ctes(
     return expression
 
 
-def merge_derived_tables(
-    expression: E, leave_tables_isolated: bool = False, schema: Schema | None = None
-) -> E:
+def merge_derived_tables(expression: E, leave_tables_isolated: bool = False) -> E:
     for outer_scope in traverse_scope(expression):
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
@@ -123,9 +115,7 @@ def merge_derived_tables(
             inner_scope = outer_scope.sources[alias]
             if not isinstance(inner_scope, Scope):
                 continue
-            if _mergeable(
-                outer_scope, inner_scope, leave_tables_isolated, from_or_join, schema=schema
-            ):
+            if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)
@@ -143,7 +133,6 @@ def _mergeable(
     inner_scope: Scope,
     leave_tables_isolated: bool,
     from_or_join: FromOrJoin,
-    schema: Schema | None = None,
 ) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
@@ -173,44 +162,42 @@ def _mergeable(
             for column in outer_scope.columns
         )
 
-    def _literal_group_alias_collision():
-        """A numeric-literal projection in GROUP BY merges to an ordinal when projected in
-        the outer SELECT (no collision possible), or a bare identifier when not projected
-        (collision with a same-named FROM column is possible). This guard blocks the latter."""
+    def _literal_group_unmergeable():
+        """
+        A numeric-literal projection referenced in GROUP BY can't be inlined, because a bare
+        integer literal is positional. A reference that is itself a top-level GROUP BY item
+        can merge as the ordinal of the outer projection that selects it; any other reference,
+        e.g., ROLLUP / CUBE / GROUPING SETS, tuples, expressions, etc, blocks the merge, since
+        ordinals aren't universally supported there, e.g., Presto / Trino only accept columns.
+        """
         group = outer_scope.expression.args.get("group")
         if not group:
             return False
+
         inner_name = from_or_join.alias_or_name
-        grouped = {
-            col.name
-            for e in group.expressions
-            for col in e.find_all(exp.Column)
-            if col.table == inner_name
-        }
+        literal_names = {s.alias_or_name for s in inner_select.selects if s.unalias().is_number}
+        if not literal_names:
+            return False
+
+        grouped = set()
+        top_level_ids = {id(e.unnest()) for e in group.expressions}
+        for col in group.find_all(exp.Column):
+            if col.table != inner_name or col.name not in literal_names:
+                continue
+            if id(col) not in top_level_ids:
+                return True
+            grouped.add(col.name)
+
         if not grouped:
             return False
-        literal_grouped = {
-            s.alias_or_name
-            for s in inner_select.selects
-            if s.alias_or_name in grouped and s.unalias().is_number
-        }
-        if not literal_grouped:
-            return False
-        # `GROUP BY a` resolves against the whole merged FROM: inner sources + outer's others.
-        merged_sources = {
-            src for name, (_, src) in outer_scope.selected_sources.items() if name != inner_name
-        }
-        merged_sources.update(src for _, src in inner_scope.selected_sources.values())
-        for source in merged_sources:
-            if isinstance(source, exp.Table):
-                columns = schema.column_names(source) if schema else None
-                if not columns or literal_grouped & set(columns):
-                    return True
-            elif isinstance(source, Scope) and literal_grouped & set(
-                source.expression.named_selects
-            ):
-                return True
-        return False
+
+        projected = set()
+        for s in outer_scope.expression.selects:
+            unaliased = s.unalias()
+            if isinstance(unaliased, exp.Column) and unaliased.table == inner_name:
+                projected.add(unaliased.name)
+
+        return not grouped <= projected
 
     def _outer_select_joins_on_inner_select_join():
         """
@@ -266,9 +253,9 @@ def _mergeable(
             return False
         inner_name = from_or_join.alias_or_name
         ordered = {
-            o.this.name
+            key.name
             for o in order.expressions
-            if isinstance(o.this, exp.Column) and o.this.table == inner_name
+            if isinstance(key := o.this.unnest(), exp.Column) and key.table == inner_name
         }
         return any(
             s.alias_or_name in ordered and s.unalias().is_number for s in inner_select.selects
@@ -298,7 +285,7 @@ def _mergeable(
         )
         and not _outer_select_joins_on_inner_select_join()
         and not _window_projection_blocks_merge()
-        and not _literal_group_alias_collision()
+        and not _literal_group_unmergeable()
         and not _literal_in_order_by()
         and not _is_recursive()
         and not (inner_select.args.get("order") and outer_scope.is_union)
@@ -400,6 +387,8 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         if column.table == alias:
             outer_columns[column.name].append(column)
 
+    group = outer_scope.expression.args.get("group")
+
     # Replace columns with the projection expression in the inner query
     for expression in inner_scope.expression.expressions:
         projection_name = expression.alias_or_name
@@ -431,15 +420,14 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         for i, column in enumerate(columns_to_replace):
             parent = column.parent
 
-            # A numeric-literal projection can't be inlined into GROUP BY, canonicalize
-            # to the projection's ordinal to match qualify
-            if is_number and isinstance(parent, exp.Group):
-                column.replace(
-                    exp.Literal.number(group_ordinal)
-                    if group_ordinal is not None
-                    else exp.to_identifier(projection_name)
-                )
-                continue
+            # A numeric-literal projection can't be inlined into a top-level GROUP BY item
+            # (positional context), canonicalize to the projection's ordinal to match
+            # qualify. _mergeable guarantees the ordinal exists.
+            if is_number and group:
+                item = next((e for e in group.expressions if e.unnest() is column), None)
+                if item is not None:
+                    item.replace(exp.Literal.number(group_ordinal))
+                    continue
 
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).

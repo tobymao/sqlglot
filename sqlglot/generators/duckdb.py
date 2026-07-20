@@ -3954,14 +3954,9 @@ class DuckDBGenerator(generator.Generator):
         return super().unnest_sql(expression)
 
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
-        array_agg = self.function_fallback_sql(expression)
-        # The argument inside ARRAY_AGG may be wrapped in Limit, Order, and/or
-        # Distinct nodes.  Unwrap to get the bare column expression so the
-        # FILTER clause is just "WHERE x IS NOT NULL".
-        column_expr = expression.this
-        while isinstance(column_expr, (exp.Limit, exp.Order)):
-            column_expr = column_expr.this
-        return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
+        if isinstance(expression.this, exp.Limit):
+            self.unsupported("LIMIT inside ARRAY_AGG is not supported in DuckDB")
+        return super().arrayagg_sql(expression)
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         this = expression.this

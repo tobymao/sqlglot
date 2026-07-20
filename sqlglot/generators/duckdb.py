@@ -3137,14 +3137,49 @@ class DuckDBGenerator(generator.Generator):
     def in_sql(self, expression: exp.In) -> str:
         unnest = expression.args.get("unnest")
         if unnest:
-            # BigQuery's `x IN UNNEST(arr)` becomes
-            # COALESCE(ARRAY_CONTAINS(arr, x), FALSE) in DuckDB.
-            # The default `IN (SELECT UNNEST(...))` creates a correlated subquery that
-            # DuckDB rejects inside non-inner joins.
-            # COALESCE handles NULL arrays: ARRAY_CONTAINS(NULL, x) returns NULL in
-            # DuckDB, but BigQuery's IN UNNEST returns FALSE for NULL arrays.
-            contains = self.func("ARRAY_CONTAINS", unnest.expressions[0], expression.this)
-            return f"COALESCE({contains}, FALSE)"
+            # BigQuery's `x IN UNNEST(arr)` → DuckDB CASE expression that preserves
+            # NULL semantics. The default `IN (SELECT UNNEST(...))` creates a correlated
+            # subquery that DuckDB rejects inside non-inner joins.
+            #
+            # NULL semantics (matching BigQuery):
+            #   NULL IN UNNEST([1, 2])    → NULL (not FALSE)
+            #   3 IN UNNEST([1, NULL])    → NULL (not FALSE)
+            #   3 IN UNNEST([1, 2])       → FALSE
+            #   2 IN UNNEST([1, 2])       → TRUE
+            #   1 IN UNNEST(NULL)         → FALSE
+            #   1 IN UNNEST([])           → FALSE
+            #
+            # Generated SQL:
+            #   CASE
+            #     WHEN arr IS NULL OR ARRAY_LENGTH(arr) = 0 THEN FALSE
+            #     WHEN ARRAY_CONTAINS(arr, x) THEN TRUE
+            #     WHEN x IS NULL OR ARRAY_LENGTH(arr) <> LIST_COUNT(arr) THEN NULL
+            #     ELSE FALSE
+            #   END
+            arr = unnest.expressions[0]
+            value = expression.this
+
+            arr_is_null = exp.Is(this=arr.copy(), expression=exp.null())
+            arr_is_empty = exp.EQ(
+                this=exp.ArraySize(this=arr.copy()),
+                expression=exp.Literal.number(0),
+            )
+            contains = exp.ArrayContains(this=arr.copy(), expression=value.copy())
+            value_is_null = exp.Is(this=value.copy(), expression=exp.null())
+            arr_has_nulls = exp.NEQ(
+                this=exp.ArraySize(this=arr.copy()),
+                expression=exp.func("LIST_COUNT", arr.copy()),
+            )
+
+            case_expr = (
+                exp.Case()
+                .when(exp.or_(arr_is_null, arr_is_empty, copy=False), exp.false(), copy=False)
+                .when(contains, exp.true(), copy=False)
+                .when(exp.or_(value_is_null, arr_has_nulls, copy=False), exp.null(), copy=False)
+                .else_(exp.false(), copy=False)
+            )
+
+            return self.sql(case_expr)
         return super().in_sql(expression)
 
     def join_sql(self, expression: exp.Join) -> str:

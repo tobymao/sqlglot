@@ -106,7 +106,7 @@ class DatetimeAdd(Expression, Func, IntervalOp):
 
 
 class DatetimeDiff(Expression, Func, TimeUnit):
-    arg_types = {"this": True, "expression": True, "unit": False}
+    arg_types = {"this": True, "expression": True, "unit": False, "date_part_boundary": False}
 
 
 class DatetimeSub(Expression, Func, IntervalOp):

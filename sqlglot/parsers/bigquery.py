@@ -28,19 +28,24 @@ def _build_date(args: list) -> exp.Date | exp.DateFromParts:
     return expr_type.from_arg_list(args)
 
 
-def build_date_diff(args: list) -> exp.Expr:
-    expr = exp.DateDiff(
-        this=seq_get(args, 0),
-        expression=seq_get(args, 1),
-        unit=seq_get(args, 2),
-        date_part_boundary=True,
-    )
+def build_date_diff(
+    expr_type: type[exp.DateDiff | exp.DatetimeDiff],
+) -> t.Callable[[list], exp.Expr]:
+    def _builder(args: list) -> exp.Expr:
+        expr = expr_type(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            unit=seq_get(args, 2),
+            date_part_boundary=True,
+        )
 
-    unit = expr.args.get("unit")
-    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
-        expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+        unit = expr.args.get("unit")
+        if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+            expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
 
-    return expr
+        return expr
+
+    return _builder
 
 
 def _build_datetime(args: list) -> exp.Func:
@@ -222,7 +227,7 @@ class BigQueryParser(parser.Parser):
         "CONTAINS_SUBSTR": _build_contains_substring,
         "DATE": _build_date,
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
-        "DATE_DIFF": build_date_diff,
+        "DATE_DIFF": build_date_diff(exp.DateDiff),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
         "DATE_TRUNC": lambda args: exp.DateTrunc(
             unit=seq_get(args, 1),
@@ -231,6 +236,7 @@ class BigQueryParser(parser.Parser):
         ),
         "DATETIME": _build_datetime,
         "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
+        "DATETIME_DIFF": build_date_diff(exp.DatetimeDiff),
         "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
         "DIV": binary_from_function(exp.IntDiv),
         "EDIT_DISTANCE": _build_levenshtein,

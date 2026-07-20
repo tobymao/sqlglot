@@ -34,6 +34,8 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     unit_to_str,
+    week_unit_to_dow,
+    WEEK_START_DAY_TO_DOW,
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, is_date_unit, seq_get
@@ -66,18 +68,6 @@ WS_CONTROL_CHARS_TO_DUCK = {
     "\u001d": 29,
     "\u001e": 30,
     "\u001f": 31,
-}
-
-# Days of week to ISO 8601 day-of-week numbers
-# ISO 8601 standard: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6, Sunday=7
-WEEK_START_DAY_TO_DOW = {
-    "MONDAY": 1,
-    "TUESDAY": 2,
-    "WEDNESDAY": 3,
-    "THURSDAY": 4,
-    "FRIDAY": 5,
-    "SATURDAY": 6,
-    "SUNDAY": 7,
 }
 
 MAX_BIT_POSITION = exp.Literal.number(32768)
@@ -905,33 +895,6 @@ def _implicit_datetime_cast(
     return arg
 
 
-def _week_unit_to_dow(unit: exp.Expr | None) -> int | None:
-    """
-    Compute the Monday-based day shift to align DATE_DIFF('WEEK', ...) coming
-    from other dialects, e.g BigQuery's WEEK(<day>) or ISOWEEK unit parts.
-
-    Args:
-        unit: The unit expression (Var for ISOWEEK or WeekStart)
-
-    Returns:
-        The ISO 8601 day number (Monday=1, Sunday=7 etc) or None if not a week unit or if day is dynamic (not a constant).
-
-        Examples:
-            "WEEK(SUNDAY)" -> 7
-            "WEEK(MONDAY)" -> 1
-            "ISOWEEK" -> 1
-    """
-    # Handle plain Var expressions for ISOWEEK only
-    if isinstance(unit, exp.Var) and unit.name.upper() in "ISOWEEK":
-        return 1
-
-    # Handle WeekStart expressions with explicit day
-    if isinstance(unit, exp.WeekStart):
-        return WEEK_START_DAY_TO_DOW.get(unit.name.upper())
-
-    return None
-
-
 def _build_week_trunc_expression(
     date_expr: exp.Expr,
     start_dow: int,
@@ -988,7 +951,7 @@ def _date_diff_sql(self: DuckDBGenerator, expression: exp.DateDiff | exp.Datetim
     date_part_boundary = expression.args.get("date_part_boundary")
 
     # Extract week start day; returns None if day is dynamic (column/placeholder)
-    week_start = _week_unit_to_dow(unit)
+    week_start = week_unit_to_dow(unit)
     if date_part_boundary and week_start and this and expr:
         expression.set("unit", exp.Literal.string("WEEK"))
 
@@ -4389,7 +4352,7 @@ class DuckDBGenerator(generator.Generator):
         unit = expression.args.get("unit")
         date = expression.this
 
-        week_start = _week_unit_to_dow(unit)
+        week_start = week_unit_to_dow(unit)
         unit = unit_to_str(expression)
 
         if week_start:

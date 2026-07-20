@@ -954,6 +954,28 @@ LANGUAGE js AS
                 },
             ),
         )
+        # DATETIME_DIFF counts unit boundary crossings, so Presto/Trino's date_diff (which
+        # counts complete units) must truncate its operands: both dates below are 1 day
+        # apart but cross a month boundary
+        self.validate_all(
+            "SELECT DATETIME_DIFF(DATETIME '2021-02-01 00:00:00', DATETIME '2021-01-31 00:00:00', MONTH)",
+            write={
+                "bigquery": "SELECT DATETIME_DIFF(CAST('2021-02-01 00:00:00' AS DATETIME), CAST('2021-01-31 00:00:00' AS DATETIME), MONTH)",
+                "presto": "SELECT DATE_DIFF('MONTH', DATE_TRUNC('MONTH', CAST('2021-01-31 00:00:00' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2021-02-01 00:00:00' AS TIMESTAMP)))",
+                "trino": "SELECT DATE_DIFF('MONTH', DATE_TRUNC('MONTH', CAST('2021-01-31 00:00:00' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2021-02-01 00:00:00' AS TIMESTAMP)))",
+            },
+        )
+        # BigQuery weeks start on Sunday: 2017-10-14 (Saturday) -> 2017-10-15 (Sunday)
+        # crosses a week boundary, so the Monday-based DATE_TRUNC('WEEK') is shifted
+        self.validate_all(
+            "SELECT DATETIME_DIFF(DATETIME '2017-10-15 00:00:00', DATETIME '2017-10-14 00:00:00', WEEK)",
+            write={
+                "bigquery": "SELECT DATETIME_DIFF(CAST('2017-10-15 00:00:00' AS DATETIME), CAST('2017-10-14 00:00:00' AS DATETIME), WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+                "presto": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+                "trino": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+            },
+        )
         (
             self.validate_all(
                 "SELECT DATETIME_ADD('2023-01-01T00:00:00', INTERVAL 1 MILLISECOND)",

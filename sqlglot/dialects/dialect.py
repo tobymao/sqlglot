@@ -2041,6 +2041,45 @@ def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     return exp.Var(this=value) if value else None
 
 
+# Days of week to ISO 8601 day-of-week numbers
+# ISO 8601 standard: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6, Sunday=7
+WEEK_START_DAY_TO_DOW = {
+    "MONDAY": 1,
+    "TUESDAY": 2,
+    "WEDNESDAY": 3,
+    "THURSDAY": 4,
+    "FRIDAY": 5,
+    "SATURDAY": 6,
+    "SUNDAY": 7,
+}
+
+
+def week_unit_to_dow(unit: exp.Expr | None) -> int | None:
+    """
+    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>)
+    or ISOWEEK unit parts.
+
+    Args:
+        unit: The unit expression (Var for WEEK/ISOWEEK or WeekStart)
+
+    Returns:
+        The ISO 8601 day number (Monday=1, Sunday=7 etc) or None if not a week unit or if day is dynamic (not a constant).
+
+        Examples:
+            "WEEK(SUNDAY)" -> 7
+            "WEEK(MONDAY)" -> 1
+            "ISOWEEK" -> 1
+    """
+    if isinstance(unit, exp.Var) and unit.name.upper() in ("WEEK", "ISOWEEK"):
+        return 1
+
+    # Handle WeekStart expressions with explicit day
+    if isinstance(unit, exp.WeekStart):
+        return WEEK_START_DAY_TO_DOW.get(unit.name.upper())
+
+    return None
+
+
 @t.overload
 def map_date_part(part: exp.Expr, dialect: DialectType = Dialect) -> exp.Expr:
     pass

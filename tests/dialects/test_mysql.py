@@ -823,7 +823,7 @@ class TestMySQL(Validator):
                 "exasol": "SELECT DAYS_BETWEEN(x, y)",
                 "mysql": "SELECT DATEDIFF(x, y)",
                 "postgres": "SELECT (CAST(x AS DATE) - CAST(y AS DATE))",
-                "presto": "SELECT DATE_DIFF('DAY', y, x)",
+                "presto": "SELECT DATE_DIFF('DAY', DATE_TRUNC('DAY', y), DATE_TRUNC('DAY', x))",
                 "redshift": "SELECT DATEDIFF(DAY, y, x)",
             },
         )

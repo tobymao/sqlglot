@@ -27,7 +27,6 @@ class TestSQLite(Validator):
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
-        # An INTERVAL amount must have its unit unwrapped, not left inside the quoted modifier.
         self.validate_all(
             "SELECT DATE(d, '1 DAY') FROM t",
             read={

@@ -2099,11 +2099,11 @@ WHERE
         )
 
         self.validate_all(
-            "SELECT ARRAY_CONCAT_AGG(1)",
+            "SELECT ARRAY_CONCAT_AGG(arr) FROM (SELECT [1, 2] AS arr) AS t",
             write={
-                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
-                "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
-                "duckdb": "SELECT FLATTEN(LIST(1))",
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr) FROM (SELECT [1, 2] AS arr) AS t",
+                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(arr)) FROM (SELECT [1, 2] AS arr) AS t",
+                "duckdb": "SELECT FLATTEN(ARRAY_AGG(arr) FILTER(WHERE NOT arr IS NULL)) FROM (SELECT [1, 2] AS arr) AS t",
             },
         )
         self.validate_all(

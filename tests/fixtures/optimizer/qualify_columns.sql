@@ -1055,22 +1055,26 @@ SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
 SELECT _0.a AS a, _0.b AS b, _1.b AS b, _1.c AS c FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _0 INNER JOIN (SELECT y.b AS b, y.c AS c FROM y AS y) AS _1 ON _0.a = _1.c);
 
 # title: outer star over derived table with duplicate output names is left unexpanded
-# execute: false
 SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s;
 SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
 
 # title: qualified outer star over derived table with duplicate output names is left unexpanded
-# execute: false
 SELECT s.* FROM (SELECT * FROM x CROSS JOIN y) AS s;
 SELECT s.* FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
 
+# title: outer star over derived table with distinct output names is expanded normally
+SELECT * FROM (SELECT a, c FROM x CROSS JOIN y) AS s;
+SELECT s.a AS a, s.c AS c FROM (SELECT x.a AS a, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
+
+# title: nested outer stars over duplicate output names are left unexpanded at each level
+SELECT * FROM (SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s) AS t;
+SELECT * FROM (SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s) AS t;
+
 # title: user-authored duplicate aliases in a derived table are preserved, not clobbered
-# execute: false
 SELECT * FROM (SELECT a AS k, a AS k FROM x) AS s;
 SELECT * FROM (SELECT x.a AS k, x.a AS k FROM x AS x) AS s;
 
 # title: mixed star and explicit projection in a derived table with duplicate output names is preserved
-# execute: false
 SELECT * FROM (SELECT *, a AS extra FROM x CROSS JOIN y) AS s;
 SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c, x.a AS extra FROM x AS x CROSS JOIN y AS y) AS s;
 

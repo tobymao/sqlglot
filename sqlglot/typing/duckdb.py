@@ -46,6 +46,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Format,
             exp.Reverse,
+            exp.Decode,
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},

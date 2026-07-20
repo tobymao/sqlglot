@@ -6720,6 +6720,10 @@ FORMAT('Benchmark "{}" took {} seconds', 'CSV', 42);
 VARCHAR;
 
 # dialect: duckdb
+DECODE(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
 QUARTER(tbl.date_col);
 BIGINT;
 

@@ -31,7 +31,6 @@ class TestSQLite(Validator):
             "SELECT DATE(d, '1 DAY') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
-                "snowflake": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
             },
         )
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")

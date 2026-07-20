@@ -4,6 +4,7 @@ from __future__ import annotations
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     datestrtodate_sql,
+    no_ilike_sql,
     no_trycast_sql,
     rename_func,
     strposition_sql,
@@ -76,7 +77,7 @@ class DrillGenerator(generator.Generator):
         exp.If: lambda self, e: (
             f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})"
         ),
-        exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
+        exp.ILike: no_ilike_sql,
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("LEVENSHTEIN_DISTANCE")
         ),

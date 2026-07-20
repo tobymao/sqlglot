@@ -11,7 +11,6 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.Nanvl,
             exp.Sec,
-            exp.Sign,
         }
     },
     **{

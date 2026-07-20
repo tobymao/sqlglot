@@ -4607,9 +4607,21 @@ DOUBLE;
 SIGNUM(tbl.interval_col);
 DOUBLE;
 
-# dialect: databricks
+# dialect: hive, spark2, spark, databricks
+SIGN(tbl.int_col);
+DOUBLE;
+
+# dialect: hive, spark2, spark, databricks
+SIGN(tbl.double_col);
+DOUBLE;
+
+# dialect: spark2, spark, databricks
 SHUFFLE(ARRAY(1, 2, 3));
 ARRAY<INT>;
+
+# dialect: spark2, spark, databricks
+SHUFFLE(ARRAY('a', 'b', 'c'));
+ARRAY<VARCHAR>;
 
 # dialect: snowflake
 REGR_VALX(NULL, 2.0);
@@ -7126,6 +7138,6 @@ INT;
 PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY tbl.double_col);
 DOUBLE;
 
-# dialect: spark, databricks
+# dialect: spark2, spark, databricks
 NANVL(tbl.float_col, tbl.double_col);
 DOUBLE;

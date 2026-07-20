@@ -1057,8 +1057,22 @@ SELECT _0.a AS a, _0.b AS b, _1.b AS b, _1.c AS c FROM ((SELECT x.a AS a, x.b AS
 # title: outer star over derived table with duplicate output names is left unexpanded
 # execute: false
 SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s;
-SELECT * FROM (SELECT * FROM x AS x CROSS JOIN y AS y) AS s;
+SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
 
+# title: qualified outer star over derived table with duplicate output names is left unexpanded
+# execute: false
+SELECT s.* FROM (SELECT * FROM x CROSS JOIN y) AS s;
+SELECT s.* FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
+
+# title: user-authored duplicate aliases in a derived table are preserved, not clobbered
+# execute: false
+SELECT * FROM (SELECT a AS k, a AS k FROM x) AS s;
+SELECT * FROM (SELECT x.a AS k, x.a AS k FROM x AS x) AS s;
+
+# title: mixed star and explicit projection in a derived table with duplicate output names is preserved
+# execute: false
+SELECT * FROM (SELECT *, a AS extra FROM x CROSS JOIN y) AS s;
+SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c, x.a AS extra FROM x AS x CROSS JOIN y AS y) AS s;
 
 SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
 SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _0 INNER JOIN y AS y ON _0.a = y.b);

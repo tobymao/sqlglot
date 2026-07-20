@@ -850,21 +850,10 @@ def _expand_stars(
             new_selections.append(expression)
             continue
 
-        star_start = len(new_selections)
-
         for table in tables:
             source = scope.sources.get(table)
             if source is None:
                 raise OptimizeError(f"Unknown table: {table}")
-
-            if isinstance(source, Scope) and isinstance(source.expression, exp.Select):
-                # This source is being re-exposed via a star, check for duplicate output
-                # and restore the star if found.
-                if _has_duplicate_output_names(source.expression):
-                    source.expression.set("expressions", [exp.Star()])
-                    del new_selections[star_start:]
-                    new_selections.append(expression)
-                    break
 
             columns = resolver.get_source_columns(table, only_visible=True)
             columns = columns or scope.outer_columns
@@ -872,7 +861,10 @@ def _expand_stars(
             if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
                 columns = [name for name in columns if name.upper() not in pseudocolumns]
 
-            if not columns or "*" in columns:
+            # If a source exposes duplicate output names (e.g. a derived table re-exposing
+            # colliding star-expanded columns), expanding this star would produce ambiguous
+            # projections, so we leave it unexpanded.
+            if not columns or "*" in columns or len(columns) != len(set(columns)):
                 return
 
             table_id = id(table)
@@ -940,16 +932,6 @@ def _expand_stars(
             annotator.uncache(scope_expression, deep=False)
 
         scope_expression.set("expressions", new_selections)
-
-
-def _has_duplicate_output_names(select: exp.Select) -> bool:
-    seen: set[str] = set()
-    for selection in select.selects:
-        name = selection.output_name
-        if name and name in seen:
-            return True
-        seen.add(name)
-    return False
 
 
 def _output_identifier_quoted(selection: exp.Expr) -> bool:

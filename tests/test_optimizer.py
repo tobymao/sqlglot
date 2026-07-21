@@ -561,6 +561,18 @@ class TestOptimizer(unittest.TestCase):
             'SELECT t.s."Ff" AS "Ff" FROM t',
         )
 
+        # Same for unquoted identifiers: folding only the derived alias would leave the
+        # outer scope unable to resolve (and qualify) references to the inner output
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one("SELECT Cc FROM (SELECT Cc FROM t) AS s", read="snowflake"),
+                schema={},
+                infer_schema=False,
+                dialect="snowflake",
+            ).sql(dialect="snowflake"),
+            "SELECT s.Cc AS Cc FROM (SELECT Cc AS Cc FROM t) AS s",
+        )
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(

@@ -1033,10 +1033,13 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
                 alias=selection.output_name or f"_col_{i}",
                 copy=False,
             )
-            if isinstance(source_identifier, exp.Identifier) and source_identifier.quoted:
-                # The alias copies the exact spelling of a quoted identifier, so folding it
-                # would desync it from other occurrences of that identifier
-                selection.args["alias"].set("quoted", True)
+            if isinstance(source_identifier, exp.Identifier):
+                # The alias copies the exact spelling of an existing identifier, so folding it
+                # here would desync it from other occurrences of that identifier; its casing
+                # is `normalize_identifiers`' concern, which has already run (or was skipped
+                # deliberately) by this point
+                if source_identifier.quoted:
+                    selection.args["alias"].set("quoted", True)
             else:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:

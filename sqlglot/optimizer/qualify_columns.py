@@ -1027,8 +1027,11 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
                 copy=False,
             )
             if source_quoted:
+                # The alias copies the exact spelling of a quoted identifier, so folding it
+                # would desync it from other occurrences of that identifier
                 selection.args["alias"].set("quoted", True)
-            dialect.normalize_identifier(selection.args["alias"])
+            else:
+                dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
 

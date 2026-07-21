@@ -529,6 +529,19 @@ class TestOptimizer(unittest.TestCase):
             "SELECT y AS y FROM x",
         )
 
+        # Aliases derived from quoted projections keep their exact spelling, even for
+        # dialects that fold quoted identifiers (e.g. Trino), so that running this rule
+        # without `normalize_identifiers` doesn't desync the alias from its source
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one('SELECT "C1" FROM t', read="trino"),
+                schema={},
+                infer_schema=False,
+                dialect="trino",
+            ).sql(dialect="trino"),
+            'SELECT "C1" AS "C1" FROM t',
+        )
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(

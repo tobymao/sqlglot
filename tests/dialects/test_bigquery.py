@@ -2133,6 +2133,27 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+                "duckdb": "SELECT FLATTEN(ARRAY_AGG(arr ORDER BY y NULLS FIRST) FILTER(WHERE NOT arr IS NULL)) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr LIMIT 2) FROM (SELECT [1, 2] AS arr) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr LIMIT 2) FROM (SELECT [1, 2] AS arr) AS t",
+                "duckdb": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y DESC LIMIT 2) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y DESC LIMIT 2) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+                "duckdb": UnsupportedError,
+            },
+        )
+        self.validate_all(
             "SELECT b'\x61'",
             write={
                 "bigquery": "SELECT b'\x61'",

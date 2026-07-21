@@ -5674,14 +5674,10 @@ class Generator:
 
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
-        # The argument inside ARRAY_AGG may be wrapped in Order and/or Limit
-        # nodes.  Unwrap to get the bare column expression so the FILTER
-        # clause is just "WHERE x IS NOT NULL".
         column_expr = expression.this
-        if isinstance(column_expr, exp.Limit):
-            column_expr = column_expr.this
         if isinstance(column_expr, exp.Order):
             column_expr = column_expr.this
+
         return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
 
     def slice_sql(self, expression: exp.Slice) -> str:

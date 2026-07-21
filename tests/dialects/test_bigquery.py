@@ -734,11 +734,26 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 10) AS x",
             write={
-                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 10) AS x",
                 "duckdb": UnsupportedError,
-                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 10) IGNORE NULLS AS x",
+                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY x LIMIT 10) IGNORE NULLS AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(x IGNORE NULLS) AS x",
+            write={
+                "bigquery": "SELECT ARRAY_AGG(x IGNORE NULLS) AS x",
+                "duckdb": "SELECT ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL) AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x) AS x",
+            write={
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY x NULLS FIRST) FILTER(WHERE x IS NOT NULL) AS x",
+                "spark": "SELECT COLLECT_LIST(DISTINCT x) IGNORE NULLS AS x",
             },
         )
         self.validate_all(

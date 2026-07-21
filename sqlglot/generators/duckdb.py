@@ -3937,6 +3937,7 @@ class DuckDBGenerator(generator.Generator):
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         if isinstance(expression.this, exp.Limit):
             self.unsupported("LIMIT inside ARRAY_AGG is not supported in DuckDB")
+
         return super().arrayagg_sql(expression)
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:

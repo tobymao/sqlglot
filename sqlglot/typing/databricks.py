@@ -35,5 +35,4 @@ EXPRESSION_METADATA = {
             e, exp.DataType.from_str("ARRAY<STRING>", dialect="databricks")
         )
     },
-    exp.Shuffle: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

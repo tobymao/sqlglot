@@ -823,14 +823,14 @@ def _expand_stars(
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
             _add_rename_columns(expression, tables, rename_columns)
-            ilike_pattern = _add_ilike_columns(expression)
+            ilike_pattern = _add_ilike_columns(expression, dialect)
         elif expression.is_star:
             if isinstance(expression, exp.Column):
                 tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)
                 _add_rename_columns(expression.this, tables, rename_columns)
-                ilike_pattern = _add_ilike_columns(expression.this)
+                ilike_pattern = _add_ilike_columns(expression.this, dialect)
             elif isinstance(expression, exp.Dot):
                 if dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
                     struct_fields = _expand_struct_stars_with_parens(expression)
@@ -946,13 +946,29 @@ def _output_identifier_quoted(selection: exp.Expr) -> bool:
     return isinstance(identifier, exp.Identifier) and identifier.quoted
 
 
-def _add_ilike_columns(expression: exp.Expr) -> str | None:
+def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
     ilike = expression.args.get("ilike")
 
     if not ilike:
         return None
 
-    return "".join(".*" if c == "%" else "." if c == "_" else re.escape(c) for c in ilike.name)
+    pattern = ilike.name
+    chars = []
+    i = 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "\\" and dialect.STAR_ILIKE_BACKSLASH_ESCAPE and i + 1 < len(pattern):
+            i += 1
+            chars.append(re.escape(pattern[i]))
+        elif c == "%":
+            chars.append(".*")
+        elif c == "_":
+            chars.append(".")
+        else:
+            chars.append(re.escape(c))
+        i += 1
+
+    return "".join(chars)
 
 
 def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, set[str]]) -> None:

@@ -9737,7 +9737,11 @@ class Parser:
                 this.set("unpack", True)
             return this
 
+        index = self._index
         ilike = self._parse_string() if self._match(TokenType.ILIKE) else None
+        if not ilike:
+            # ILIKE without a string pattern is not a star filter, e.g. `* ILIKE (foo)`
+            self._retreat(index)
 
         return self.expression(
             exp.Star(

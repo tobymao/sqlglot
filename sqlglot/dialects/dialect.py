@@ -596,6 +596,13 @@ class Dialect(metaclass=_Dialect):
     This expands to all fields within the struct.
     """
 
+    STAR_ILIKE_BACKSLASH_ESCAPE = False
+    """
+    Whether a backslash in a `SELECT * ILIKE '<pattern>'` filter escapes the following character,
+    so that e.g. `\\_` matches a literal underscore (Snowflake). When False, backslashes in the
+    pattern are matched literally (DuckDB).
+    """
+
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
     """
     Whether pseudocolumns should be excluded from star expansion (SELECT *).

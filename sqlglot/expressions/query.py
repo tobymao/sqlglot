@@ -2105,7 +2105,7 @@ class StoredProcedure(Expression):
 
 
 class Block(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "begin": False}
 
 
 class IfBlock(Expression):
@@ -2118,6 +2118,63 @@ class WhileBlock(Expression):
 
 class EndStatement(Expression):
     arg_types = {}
+
+
+# https://trino.io/docs/current/udf.html
+class FunctionSpecification(Expression):
+    """
+    A SQL user-defined function specification, e.g. an inline UDF declared with
+    `WITH FUNCTION ... SELECT ...` in Trino. `this` is a `UserDefinedFunction`,
+    `properties` holds the `RETURNS` clause and routine characteristics, and
+    `expression` is the routine body (e.g. a `Return` or a `Block`).
+    """
+
+    arg_types = {"this": True, "properties": False, "expression": True}
+
+
+# https://trino.io/docs/current/udf/sql/case.html
+class CaseStatement(Expression):
+    """A procedural `CASE ... END CASE` statement, used in SQL routine bodies."""
+
+    arg_types = {"this": False, "ifs": True, "default": False}
+
+
+# https://trino.io/docs/current/udf/sql/if.html
+class IfStatement(Expression):
+    """A procedural `IF ... THEN ... [ELSEIF ...] [ELSE ...] END IF` statement."""
+
+    arg_types = {"ifs": True, "default": False}
+
+
+# https://trino.io/docs/current/udf/sql/loop.html
+class LoopStatement(Expression):
+    """A procedural `LOOP ... END LOOP` statement; `this` is a `Block`."""
+
+    arg_types = {"this": True, "label": False}
+
+
+# https://trino.io/docs/current/udf/sql/while.html
+class WhileStatement(Expression):
+    """A procedural `WHILE ... DO ... END WHILE` statement; `this` is the condition."""
+
+    arg_types = {"this": True, "body": True, "label": False}
+
+
+# https://trino.io/docs/current/udf/sql/repeat.html
+class RepeatStatement(Expression):
+    """A procedural `REPEAT ... UNTIL ... END REPEAT` statement."""
+
+    arg_types = {"body": True, "until": True, "label": False}
+
+
+# https://trino.io/docs/current/udf/sql/iterate.html
+class Iterate(Expression):
+    """A procedural `ITERATE label` statement, used inside loops."""
+
+
+# https://trino.io/docs/current/udf/sql/leave.html
+class Leave(Expression):
+    """A procedural `LEAVE label` statement, used inside loops."""
 
 
 UNWRAPPED_QUERIES = (Select, SetOperation)

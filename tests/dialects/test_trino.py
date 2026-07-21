@@ -1,3 +1,6 @@
+import sqlglot
+from sqlglot import exp
+from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
 
@@ -176,3 +179,132 @@ class TestTrino(Validator):
     def test_array_first(self):
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b']) FROM tbl")
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b') FROM tbl")
+
+    def test_inline_udf(self):
+        # https://trino.io/docs/current/udf/sql.html
+        self.validate_identity(
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION hello(name VARCHAR) RETURNS VARCHAR RETURN FORMAT('Hello %s!', name), "
+            "FUNCTION bye() RETURNS VARCHAR RETURN 'Bye!' "
+            "SELECT HELLO('Finn') || BYE()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION meaning_of_life() RETURNS TINYINT "
+            "BEGIN "
+            "DECLARE a TINYINT DEFAULT CAST(6 AS TINYINT); "
+            "DECLARE b TINYINT DEFAULT CAST(7 AS TINYINT); "
+            "RETURN a * b; "
+            "END "
+            "SELECT MEANING_OF_LIFE()"
+        )
+
+        # routine characteristics
+        self.validate_identity(
+            "WITH FUNCTION f(x INTEGER) RETURNS INTEGER LANGUAGE SQL DETERMINISTIC "
+            "RETURNS NULL ON NULL INPUT RETURN x SELECT F(1)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f(x INTEGER) RETURNS INTEGER NOT DETERMINISTIC CALLED ON NULL INPUT "
+            "RETURN x SELECT F(1)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY INVOKER COMMENT 'meaning of life' "
+            "RETURN 42 SELECT F()"
+        )
+
+        # control statements
+        self.validate_identity(
+            "WITH FUNCTION simple_case(a BIGINT) RETURNS VARCHAR "
+            "BEGIN "
+            "CASE a WHEN 0 THEN RETURN 'zero'; WHEN 1 THEN RETURN 'one'; ELSE RETURN 'more'; END CASE; "
+            "RETURN NULL; "
+            "END "
+            "SELECT SIMPLE_CASE(x) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION searched_case(a BIGINT) RETURNS VARCHAR "
+            "BEGIN "
+            "CASE WHEN a < 0 THEN RETURN 'negative'; WHEN a = 0 THEN RETURN 'zero'; END CASE; "
+            "RETURN 'positive'; "
+            "END "
+            "SELECT SEARCHED_CASE(x) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION classify(a BIGINT) RETURNS VARCHAR "
+            "BEGIN "
+            "IF (a > 100) THEN RETURN 'big'; ELSEIF a > 0 THEN RETURN 'small'; ELSE RETURN 'negative'; END IF; "
+            "END "
+            "SELECT CLASSIFY(x) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION count_up(a BIGINT) RETURNS VARCHAR "
+            "BEGIN "
+            "WHILE a < 100 DO SET a = a + 1; END WHILE; "
+            "RETURN IF(a = 100, 'hundred', 'other'); "
+            "END "
+            "SELECT COUNT_UP(x) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION with_loops(p INTEGER) RETURNS INTEGER "
+            "BEGIN "
+            "DECLARE r INTEGER DEFAULT 0; "
+            "top: REPEAT SET r = r + 1; ITERATE top; UNTIL r >= p END REPEAT; "
+            "abc: LOOP LEAVE abc; END LOOP; "
+            "RETURN r; "
+            "END "
+            "SELECT WITH_LOOPS(3)"
+        )
+
+        # an inline UDF precedes the query's own WITH clause
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER RETURN x * 2 "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
+        )
+
+        # the example from https://github.com/tobymao/sqlglot/issues/5178
+        self.validate_identity(
+            """WITH FUNCTION f(num int)
+    RETURNS int
+    RETURN num
+SELECT f(1)""",
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)",
+        )
+
+        expression = self.parse_one(
+            "WITH FUNCTION doubleup(x INTEGER) RETURNS INTEGER BEGIN RETURN x * 2; END "
+            "SELECT DOUBLEUP(some_column) FROM some_table"
+        )
+        udfs = list(expression.find_all(exp.FunctionSpecification))
+        self.assertEqual(len(udfs), 1)
+        self.assertIn("some_table", {table.name for table in expression.find_all(exp.Table)})
+
+        # semicolons inside a routine body must not split the surrounding statement
+        statements = sqlglot.parse(
+            "WITH FUNCTION f() RETURNS INTEGER BEGIN RETURN 1; END SELECT F(); SELECT 2",
+            dialect="trino",
+        )
+        self.assertEqual(len(statements), 2)
+        self.assertEqual(statements[1].sql(dialect="trino"), "SELECT 2")
+
+        # a CTE named "function" is still parsed as a regular CTE
+        for sql in (
+            "WITH function AS (SELECT 1 AS x) SELECT x FROM function",
+            "WITH function(x) AS (SELECT 1) SELECT x FROM function",
+        ):
+            cte = self.validate_identity(sql)
+            self.assertFalse(list(cte.find_all(exp.FunctionSpecification)))
+
+        for invalid in (
+            # missing END
+            "WITH FUNCTION f() RETURNS INTEGER BEGIN RETURN 1; SELECT F()",
+            # missing routine body
+            "WITH FUNCTION f() RETURNS INTEGER SELECT F()",
+            # missing END IF
+            "WITH FUNCTION f() RETURNS INTEGER BEGIN IF a THEN RETURN 1; END SELECT 1",
+            # missing RETURN expression
+            "WITH FUNCTION f() RETURNS INTEGER RETURN",
+        ):
+            with self.assertRaises(ParseError):
+                sqlglot.parse(invalid, dialect="trino")

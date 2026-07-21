@@ -972,21 +972,24 @@ def walk_in_scope(
 
         # Only CTEs and Queries can start child scopes; checking that first lets all
         # other nodes (the vast majority) skip the rest of the boundary checks.
-        if (
-            node is not expression
-            and isinstance(node, (exp.CTE, exp.Query))
-            and (
+        if node is not expression and isinstance(
+            node, (exp.CTE, exp.Query, exp.FunctionSpecification)
+        ):
+            if isinstance(node, exp.FunctionSpecification):
+                # Routine bodies (e.g. Trino inline UDFs) are opaque to the outer scope
+                continue
+
+            if (
                 isinstance(node, exp.CTE)
                 or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
                 or isinstance(node.parent, exp.UDTF)
                 or isinstance(node, exp.UNWRAPPED_QUERIES)
-            )
-        ):
-            if isinstance(node, (exp.Subquery, exp.UDTF)):
-                for key in ("joins", "laterals", "pivots"):
-                    for arg in node.args.get(key) or []:
-                        yield from walk_in_scope(arg)
-            continue
+            ):
+                if isinstance(node, (exp.Subquery, exp.UDTF)):
+                    for key in ("joins", "laterals", "pivots"):
+                        for arg in node.args.get(key) or []:
+                            yield from walk_in_scope(arg)
+                continue
 
         if prune and prune(node):
             continue

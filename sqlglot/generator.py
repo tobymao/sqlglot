@@ -207,9 +207,11 @@ class Generator:
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
         exp.JSONBPathExists: lambda self, e: self.binary(e, "@?"),
+        exp.Iterate: lambda self, e: f"ITERATE {self.sql(e, 'this')}",
         exp.JSONObject: lambda self, e: self._jsonobject_sql(e),
         exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e),
         exp.LanguageProperty: lambda self, e: self.naked_property(e),
+        exp.Leave: lambda self, e: f"LEAVE {self.sql(e, 'this')}",
         exp.LocationProperty: lambda self, e: self.naked_property(e),
         exp.LogProperty: lambda _, e: f"{'NO ' if e.args.get('no') else ''}LOG",
         exp.MaskingProperty: lambda *_: "MASKING",
@@ -6211,7 +6213,57 @@ class Generator:
 
     def block_sql(self, expression: exp.Block) -> str:
         expressions = self.expressions(expression, sep="; ", flat=True)
+        if expression.args.get("begin"):
+            return f"BEGIN {expressions}; END" if expressions else "BEGIN END"
         return f"{expressions}" if expressions else ""
+
+    def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
+        properties = expression.args.get("properties")
+        properties_sql = self.properties(properties, sep=" ", wrapped=False) if properties else ""
+        properties_sql = f" {properties_sql}" if properties_sql else ""
+        body = self.sql(expression, "expression")
+        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
+
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
+        whens = " ".join(
+            f"WHEN {self.sql(if_, 'this')} THEN {self.sql(if_, 'true')};"
+            for if_ in expression.args["ifs"]
+        )
+        default = self.sql(expression, "default")
+        default = f" ELSE {default};" if default else ""
+        return f"CASE{this} {whens}{default} END CASE"
+
+    def ifstatement_sql(self, expression: exp.IfStatement) -> str:
+        branches = []
+        for i, if_ in enumerate(expression.args["ifs"]):
+            keyword = "IF" if i == 0 else "ELSEIF"
+            branches.append(f"{keyword} {self.sql(if_, 'this')} THEN {self.sql(if_, 'true')};")
+
+        default = self.sql(expression, "default")
+        if default:
+            branches.append(f"ELSE {default};")
+
+        return f"{' '.join(branches)} END IF"
+
+    def statement_label_sql(self, expression: exp.Expr) -> str:
+        label = self.sql(expression, "label")
+        return f"{label}: " if label else ""
+
+    def loopstatement_sql(self, expression: exp.LoopStatement) -> str:
+        label = self.statement_label_sql(expression)
+        return f"{label}LOOP {self.sql(expression, 'this')}; END LOOP"
+
+    def whilestatement_sql(self, expression: exp.WhileStatement) -> str:
+        label = self.statement_label_sql(expression)
+        body = self.sql(expression, "body")
+        return f"{label}WHILE {self.sql(expression, 'this')} DO {body}; END WHILE"
+
+    def repeatstatement_sql(self, expression: exp.RepeatStatement) -> str:
+        label = self.statement_label_sql(expression)
+        body = self.sql(expression, "body")
+        return f"{label}REPEAT {body}; UNTIL {self.sql(expression, 'until')} END REPEAT"
 
     def storedprocedure_sql(self, expression: exp.StoredProcedure) -> str:
         self.unsupported("Unsupported Stored Procedure syntax")

@@ -4059,7 +4059,7 @@ class Parser:
         expressions = []
         while True:
             cte = self._parse_cte()
-            if isinstance(cte, exp.CTE):
+            if cte:
                 expressions.append(cte)
                 if last_comments:
                     cte.add_comments(last_comments)
@@ -4080,7 +4080,7 @@ class Parser:
             comments=comments,
         )
 
-    def _parse_cte(self) -> exp.CTE | None:
+    def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         index = self._index
 
         alias = self._parse_table_alias(self.ID_VAR_TOKENS)

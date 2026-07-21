@@ -12,8 +12,16 @@ class Spark2(Hive):
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
-    # Spark 2.x parses MM/dd leniently (SimpleDateFormat), unlike strict Hive/Spark 3+
-    TIME_MAPPING = {**Hive.TIME_MAPPING, "MM": "%m", "dd": "%d"}
+    # Spark 2.x parses MM/dd/HH/hh/mm/ss leniently (SimpleDateFormat), unlike strict Hive/Spark 3+
+    TIME_MAPPING = {
+        **Hive.TIME_MAPPING,
+        "MM": "%m",
+        "dd": "%d",
+        "HH": "%H",
+        "hh": "%I",
+        "mm": "%M",
+        "ss": "%S",
+    }
 
     # https://spark.apache.org/docs/latest/api/sql/index.html#initcap
     # https://docs.databricks.com/aws/en/sql/language-manual/functions/initcap

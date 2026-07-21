@@ -45,27 +45,35 @@ HIVE_TIME_FORMAT = "'yyyy-MM-dd HH:mm:ss'"
 HIVE_DATE_FORMAT = "'yyyy-MM-dd'"
 HIVE_DATEINT_FORMAT = "'yyyyMMdd'"
 
-# The default formats above, as rendered by the lenient rewrite (non-padded month/day)
-HIVE_NON_PADDED_TIME_FORMATS = ("'yyyy-M-d HH:mm:ss'", "'yyyy-M-d'")
+# The default formats above, as rendered by the lenient rewrite (non-padded month/day/time)
+HIVE_NON_PADDED_TIME_FORMATS = ("'yyyy-M-d H:m:s'", "'yyyy-M-d'")
 
 # Expressions that parse a string with a format (vs. formatting one, like TimeToStr).
 PARSE_TIME_EXPRESSIONS = (exp.StrToTime, exp.StrToDate, exp.StrToUnix, exp.TsOrDsToDate)
 
-CANONICAL_TIME_FORMAT = re.compile(r"%(?:mstrict|dstrict|[-:].|.)")
+CANONICAL_TIME_FORMAT = re.compile(r"%(?:[mdHIMS]strict|[-:].|.)")
 
-LAX_TO_NON_PADDED_FORMATS = {"%m": "%-m", "%d": "%-d"}
+LAX_TO_NON_PADDED_FORMATS = {
+    "%m": "%-m",
+    "%d": "%-d",
+    "%H": "%-H",
+    "%I": "%-I",
+    "%M": "%-M",
+    "%S": "%-S",
+}
 
 
 def _lenient_parse_format(fmt: str) -> str:
     """
-    Changes the lax %m/%d in a canonical format to the non-padded %-m/%-d, which java.time
-    parses with or without a leading zero. This is only safe for delimited specifiers, because
-    adjacent fields parse greedily, so e.g. 'yyyyMd' (from '%Y%m%d') can't even parse '20200101'.
+    Changes a lax month/day/hour/minute/second in a canonical format to its non-padded form
+    (e.g. %m -> %-m), which java.time parses with or without a leading zero. This is only safe
+    for delimited specifiers, because adjacent fields parse greedily, so e.g. 'yyyyMd' (from
+    '%Y%m%d') can't even parse '20200101'.
 
     The format is decomposed into specifiers (`formats`) and the interleaved literal text (`parts`).
-    Specifier i sits between parts[i] and parts[i + 1]. A %m/%d is changed only when its neighbors
-    don't touch a digit run, i.e., neither side is another specifier or a literal digit. At the end,
-    the pieces are zipped back together to produce the rewritten canonical format.
+    Specifier i sits between parts[i] and parts[i + 1]. A specifier is changed only when its
+    neighbors don't touch a digit run, i.e., neither side is another specifier or a literal digit.
+    At the end, the pieces are zipped back together to produce the rewritten canonical format.
     """
     parts = CANONICAL_TIME_FORMAT.split(fmt)
     formats = CANONICAL_TIME_FORMAT.findall(fmt)
@@ -175,7 +183,8 @@ def _is_cast_time_format(self: HiveGenerator, expression: exp.Expr, time_format:
         return True
 
     if time_format in HIVE_NON_PADDED_TIME_FORMATS:
-        # The base render skips the lenient rewrite: a lax %m/%d pads back to MM/dd, an explicit %-m/%-d doesn't
+        # The base render skips the lenient rewrite: a lax specifier pads back (e.g. %m -> MM),
+        # an explicit non-padded specifier (e.g. %-m) doesn't
         padded_format = generator.Generator.format_time(self, expression)
         return padded_format in (HIVE_TIME_FORMAT, HIVE_DATE_FORMAT)
 

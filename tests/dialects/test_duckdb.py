@@ -2019,8 +2019,8 @@ class TestDuckDB(Validator):
                 "bigquery": "PARSE_TIMESTAMP('%-m/%e/%y %-I:%M %p', x)",
                 "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
                 "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:m a')) AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:m a')",
             },
         )
         self.validate_all(

@@ -1900,7 +1900,7 @@ class TestSnowflake(Validator):
                 "bigquery": "SELECT PARSE_TIMESTAMP('%d-%m-%Y %I:%M:%S', col) FROM t",
                 "duckdb": "SELECT STRPTIME(col, '%d-%m-%Y %I:%M:%S') FROM t",
                 "snowflake": "SELECT TO_TIMESTAMP(col, 'DD-mm-yyyy hh12:mi:ss') FROM t",
-                "spark": "SELECT TO_TIMESTAMP(col, 'd-M-yyyy hh:mm:ss') FROM t",
+                "spark": "SELECT TO_TIMESTAMP(col, 'd-M-yyyy h:m:s') FROM t",
             },
         )
         self.validate_all(
@@ -1965,7 +1965,7 @@ class TestSnowflake(Validator):
             write={
                 "bigquery": "SELECT PARSE_TIMESTAMP('%m/%d/%Y %T', '04/05/2013 01:02:03')",
                 "snowflake": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss')",
-                "spark": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'M/d/yyyy HH:mm:ss')",
+                "spark": "SELECT TO_TIMESTAMP('04/05/2013 01:02:03', 'M/d/yyyy H:m:s')",
             },
         )
         self.validate_all(

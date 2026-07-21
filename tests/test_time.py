@@ -3,10 +3,10 @@ import unittest
 import sys
 
 from sqlglot.dialects.dialect import Dialect, Dialects
-from sqlglot.generators.hive import CANONICAL_TIME_FORMAT
+from sqlglot.generators.hive import CANONICAL_TIME_FORMAT, LAX_TO_NON_PADDED_FORMATS
 from sqlglot.time import format_time, subsecond_precision
 
-KNOWN_CANONICAL_ATOM = re.compile(r"%(?:mstrict|dstrict|[-:].|[\w%])")
+KNOWN_CANONICAL_ATOM = re.compile(r"%(?:[mdHIMS]strict|[-:].|[\w%])")
 
 
 class TestTime(unittest.TestCase):
@@ -38,20 +38,21 @@ class TestTime(unittest.TestCase):
                         "update CANONICAL_TIME_FORMAT in sqlglot/generators/hive.py",
                     )
                 self.assertIsNone(
-                    re.search(r"%[md](?!strict)\w", value),
-                    f"{dialect.value}: %m/%d directly followed by a word character in "
-                    f"{value!r} would be mis-tokenized by CANONICAL_TIME_FORMAT",
+                    re.search(r"%[mdHIMS](?!strict)\w", value),
+                    f"{dialect.value}: a lax %m/%d/%H/%I/%M/%S directly followed by a word "
+                    f"character in {value!r} would be mis-tokenized by CANONICAL_TIME_FORMAT",
                 )
 
             if d.TIME_MAPPING.get("MM") == "%mstrict":
                 # _lenient_parse_format rewrites the format before the inverse trie walk, so
-                # strict dialects must not rely on composite inverse keys containing %m/%d
+                # strict dialects must not rely on composite inverse keys containing a lax specifier
+                lax = set(LAX_TO_NON_PADDED_FORMATS)
                 for key in d.INVERSE_TIME_MAPPING:
                     atoms = CANONICAL_TIME_FORMAT.findall(key)
                     if len(atoms) > 1:
                         self.assertFalse(
-                            {"%m", "%d"} & set(atoms),
-                            f"{dialect.value}: composite inverse key {key!r} contains %m/%d",
+                            lax & set(atoms),
+                            f"{dialect.value}: composite inverse key {key!r} contains a lax specifier",
                         )
 
     def test_subsecond_precision(self):

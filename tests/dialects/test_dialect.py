@@ -765,11 +765,11 @@ class TestDialect(Validator):
             write={
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "duckdb": "STRPTIME(x, '%Y-%m-%dT%H:%M:%S')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-dTHH:mm:ss')) AS TIMESTAMP)",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-dTH:m:s')) AS TIMESTAMP)",
                 "presto": "DATE_PARSE(x, '%Y-%m-%dT%T')",
                 "drill": "TO_TIMESTAMP(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "redshift": "TO_TIMESTAMP(x, 'YYYY-MM-DDTHH24:MI:SS')",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-M-dTHH:mm:ss')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-dTH:m:s')",
             },
         )
         self.validate_all(
@@ -1223,9 +1223,9 @@ class TestDialect(Validator):
                 "drill": "TO_DATE(x, 'yyyy-MM-dd''T''HH:mm:ss')",
                 "mysql": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
                 "starrocks": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-dTHH:mm:ss')) AS DATE)",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'yyyy-M-dTH:m:s')) AS DATE)",
                 "presto": "CAST(DATE_PARSE(x, '%Y-%m-%dT%T') AS DATE)",
-                "spark": "TO_DATE(x, 'yyyy-M-dTHH:mm:ss')",
+                "spark": "TO_DATE(x, 'yyyy-M-dTH:m:s')",
                 "doris": "STR_TO_DATE(x, '%Y-%m-%dT%T')",
             },
         )

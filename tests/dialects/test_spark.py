@@ -723,6 +723,51 @@ TBLPROPERTIES (
                 "spark": "SELECT UNIX_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
             },
         )
+        # Spark 3+ also parses zero-padded HH/hh/mm/ss strictly, so a lax time from another
+        # dialect widens to the non-padded H/h/m/s, exactly like the month/day handling above.
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-1-1 3:4:5', 'yyyy-M-d H:m:s')",
+            read={
+                "duckdb": "SELECT STRPTIME('2016-1-1 3:4:5', '%Y-%m-%d %H:%M:%S')",
+            },
+            write={
+                "": "SELECT STR_TO_TIME('2016-1-1 3:4:5', '%Y-%-m-%-d %-H:%-M:%-S')",
+                "duckdb": "SELECT STRPTIME('2016-1-1 3:4:5', '%Y-%-m-%-d %-H:%-M:%-S')",
+                "spark": "SELECT TO_TIMESTAMP('2016-1-1 3:4:5', 'yyyy-M-d H:m:s')",
+            },
+        )
+        # The strict HH:mm:ss roundtrips but widens to the lax %H:%M:%S for lenient dialects
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+            write={
+                "": "SELECT STR_TO_TIME('2016-12-31 03:04:05', '%Y-%mstrict-%dstrict %Hstrict:%Mstrict:%Sstrict')",
+                "duckdb": "SELECT STRPTIME('2016-12-31 03:04:05', '%Y-%m-%d %H:%M:%S')",
+                "spark": "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+                "databricks": "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+            },
+        )
+        # A lax time adjacent to another field stays zero-padded (a digit run can't be split)
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('20161231030405', 'yyyyMMddHHmmss')",
+            read={
+                "duckdb": "SELECT STRPTIME('20161231030405', '%Y%m%d%H%M%S')",
+            },
+            write={
+                "duckdb": "SELECT STRPTIME('20161231030405', '%Y%m%d%H%M%S')",
+                "spark": "SELECT TO_TIMESTAMP('20161231030405', 'yyyyMMddHHmmss')",
+            },
+        )
+        # The 12-hour hh widens too; formatting (below) still keeps zero-padded HH:mm:ss
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('3:4:5 PM', 'h:m:s a')",
+            read={
+                "duckdb": "SELECT STRPTIME('3:4:5 PM', '%I:%M:%S %p')",
+            },
+            write={
+                "spark": "SELECT TO_TIMESTAMP('3:4:5 PM', 'h:m:s a')",
+            },
+        )
+        self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')")
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={

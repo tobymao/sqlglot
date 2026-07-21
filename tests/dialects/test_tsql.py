@@ -1754,21 +1754,21 @@ WHERE
         self.validate_all(
             "CONVERT(DATE, x, 121)",
             write={
-                "spark": "TO_DATE(x, 'yyyy-M-d HH:mm:ss.SSSSSS')",
+                "spark": "TO_DATE(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATE, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME, x, 121)",
             write={
-                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss.SSSSSS')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATETIME, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME2, x, 121)",
             write={
-                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss.SSSSSS')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATETIME2, x, 121)",
             },
         )

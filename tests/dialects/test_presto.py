@@ -323,7 +323,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
                 "hive": "CAST(x AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d HH:mm:ss')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s')",
             },
         )
         self.validate_all(

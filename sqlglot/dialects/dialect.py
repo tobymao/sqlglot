@@ -135,9 +135,17 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
-# "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd to these in TIME_MAPPING so they
-# roundtrip, since a lax %m/%d renders non-padded there for parse expressions (see HiveGenerator.format_time).
-STRICT_TIME_FORMATS = {"%mstrict": "%m", "%dstrict": "%d"}
+# "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
+# TIME_MAPPING so they roundtrip, since a lax %m/%d renders non-padded there for parse expressions
+# (see HiveGenerator.format_time).
+STRICT_TIME_FORMATS = {
+    "%mstrict": "%m",
+    "%dstrict": "%d",
+    "%Hstrict": "%H",
+    "%Istrict": "%I",
+    "%Mstrict": "%M",
+    "%Sstrict": "%S",
+}
 
 
 def _with_strict_time_inverse(inverse_mapping: dict[str, str]) -> dict[str, str]:

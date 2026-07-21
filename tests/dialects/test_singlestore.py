@@ -125,7 +125,7 @@ class TestSingleStore(Validator):
         )
 
         self.validate_all(
-            "SELECT FROM_UNIXTIME(1234567890, '%Y-%m-%d %T')",
+            "SELECT FROM_UNIXTIME(1234567890, '%Y-%m-%d %H:%i:%s')",
             read={"hive": "SELECT FROM_UNIXTIME(1234567890)"},
         )
         self.validate_all(

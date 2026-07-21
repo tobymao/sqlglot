@@ -819,6 +819,12 @@ def _expand_stars(
     for expression in scope_expression.selects:
         tables: list[str] = []
         if isinstance(expression, exp.Star):
+            # Only a string literal ILIKE pattern can filter the expansion at optimization time
+            ilike = expression.args.get("ilike")
+            if ilike and not ilike.is_string:
+                new_selections.append(expression)
+                continue
+
             tables.extend(scope.selected_sources)
             _add_except_columns(expression, tables, except_columns)
             _add_replace_columns(expression, tables, replace_columns)
@@ -826,6 +832,11 @@ def _expand_stars(
             ilike_pattern = _add_ilike_columns(expression, dialect)
         elif expression.is_star:
             if isinstance(expression, exp.Column):
+                ilike = expression.this.args.get("ilike")
+                if ilike and not ilike.is_string:
+                    new_selections.append(expression)
+                    continue
+
                 tables.append(expression.table)
                 _add_except_columns(expression.this, tables, except_columns)
                 _add_replace_columns(expression.this, tables, replace_columns)

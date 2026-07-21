@@ -1020,13 +1020,20 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
-            source_quoted = isinstance(selection, exp.Column) and selection.this.quoted
+            unwrapped = selection.unnest()
+            if isinstance(unwrapped, exp.Column):
+                source_identifier = unwrapped.this
+            elif isinstance(unwrapped, exp.Dot):
+                source_identifier = unwrapped.expression
+            else:
+                source_identifier = None
+
             selection = alias(
                 selection,
                 alias=selection.output_name or f"_col_{i}",
                 copy=False,
             )
-            if source_quoted:
+            if isinstance(source_identifier, exp.Identifier) and source_identifier.quoted:
                 # The alias copies the exact spelling of a quoted identifier, so folding it
                 # would desync it from other occurrences of that identifier
                 selection.args["alias"].set("quoted", True)

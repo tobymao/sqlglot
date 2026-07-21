@@ -543,6 +543,25 @@ class TestOptimizer(unittest.TestCase):
         )
 
         self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one('SELECT ("C1") FROM t', read="trino"),
+                schema={},
+                infer_schema=False,
+                dialect="trino",
+            ).sql(dialect="trino"),
+            'SELECT ("C1") AS "C1" FROM t',
+        )
+
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one('SELECT t.s."Ff" FROM t', read="duckdb"),
+                schema={"t": {"s": 'STRUCT("Ff" INT)'}},
+                dialect="duckdb",
+            ).sql(dialect="duckdb"),
+            'SELECT t.s."Ff" AS "Ff" FROM t',
+        )
+
+        self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one(
                     "WITH X AS (SELECT Y.A FROM DB.y CROSS JOIN a.b.INFORMATION_SCHEMA.COLUMNS) SELECT `A` FROM X",

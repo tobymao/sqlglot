@@ -3463,18 +3463,12 @@ class DuckDBGenerator(generator.Generator):
     def arrayconcatagg_sql(self, expression: exp.ArrayConcatAgg) -> str:
         this = expression.this
 
-        # BigQuery allows a trailing LIMIT and ORDER BY inside the aggregate call, both of
-        # which wrap the aggregated column: ARRAY_CONCAT_AGG(x [ORDER BY ...] [LIMIT n]).
-        # LIMIT has no direct DuckDB equivalent and its LIMIT 0 -> NULL semantics can't be
-        # matched by a plain slice, so it's dropped with a warning.
         if isinstance(this, exp.Limit):
             self.unsupported("LIMIT in ARRAY_CONCAT_AGG cannot be transpiled to DuckDB")
             this = this.this
 
-        # The FILTER predicate references only the aggregated column, so unwrap ORDER BY.
         inner = this.this if isinstance(this, exp.Order) else this
 
-        # FILTER matches BigQuery's NULL semantics (all-NULL / no rows -> NULL).
         return self.func(
             "FLATTEN",
             exp.Filter(

@@ -176,6 +176,14 @@ SELECT `_t0`.`a` AS `a`, `_t0`.`b` AS `b` FROM `c`.`db`.`x` AS `_t0` QUALIFY ROW
 SELECT x.a, (SELECT MAX(y.c) FROM y) AS m FROM x;
 SELECT "_t1"."a" AS "a", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "m" FROM "c"."db"."x" AS "_t1";
 
+# title: unaliased scalar subquery in a non-first UNION ALL branch is canonicalized like any other internal column, not left as qualify's default _col_N
+SELECT a, (SELECT MAX(y.c) FROM y) FROM x UNION ALL SELECT a, (SELECT MAX(y.c) FROM y) FROM x;
+SELECT "_t1"."a" AS "a", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "_col_1" FROM "c"."db"."x" AS "_t1" UNION ALL SELECT "_t3"."a" AS "_c2", (SELECT MAX("_t2"."c") AS "_c1" FROM "c"."db"."y" AS "_t2") AS "_c3" FROM "c"."db"."x" AS "_t3";
+
+# title: unaliased scalar subquery column inside a CTE (non-output scope) is canonicalized like any other internal column
+WITH t AS (SELECT a, (SELECT MAX(y.c) FROM y) FROM x) SELECT a FROM t;
+WITH "_t2" AS (SELECT "_t1"."a" AS "_c1", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "_c2" FROM "c"."db"."x" AS "_t1") SELECT "_t2"."_c1" AS "a" FROM "_t2" AS "_t2";
+
 # title: distinct on
 # dialect: postgres
 SELECT DISTINCT ON (a) a, b FROM x;

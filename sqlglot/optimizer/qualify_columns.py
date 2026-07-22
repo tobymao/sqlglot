@@ -963,12 +963,15 @@ def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
     if not ilike:
         return None
 
-    pattern = ilike.name
-    chars = []
     i = 0
-    while i < len(pattern):
+    chars = []
+    pattern = ilike.name
+    len_pattern = len(pattern)
+
+    while i < len_pattern:
         c = pattern[i]
-        if c == "\\" and dialect.STAR_ILIKE_BACKSLASH_ESCAPE and i + 1 < len(pattern):
+
+        if c == "\\" and dialect.STAR_ILIKE_BACKSLASH_ESCAPE and i + 1 < len_pattern:
             i += 1
             chars.append(re.escape(pattern[i]))
         elif c == "%":
@@ -977,6 +980,7 @@ def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
             chars.append(".")
         else:
             chars.append(re.escape(c))
+
         i += 1
 
     return "".join(chars)

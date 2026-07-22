@@ -245,7 +245,8 @@ def canonicalize_internal_names(expression: E) -> E:
         output_map: dict[str, str] = {}
         if isinstance(scope_expr, exp.Select):
             for sel in scope_expr.selects:
-                if isinstance(sel, exp.Alias):
+                # Sets default name for subquery projections, both aliased and unaliased
+                if isinstance(sel, (exp.Alias, exp.Subquery)) and sel.alias:
                     old_alias = sel.alias
                     if is_output_scope:
                         new_name = old_alias

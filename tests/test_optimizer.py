@@ -1190,18 +1190,265 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
-    def test_pushdown_predicates_right_join_preserved_side(self):
-        sql = """
-        SELECT x.id AS xid, y.id AS yid, y.flag AS yflag
-        FROM x AS x
-        RIGHT JOIN y AS y ON x.id = y.id
-        WHERE y.flag = 1
-        """
-        optimized = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
-        self.assertEqual(
-            optimized.sql(),
-            "SELECT x.id AS xid, y.id AS yid, y.flag AS yflag FROM x AS x RIGHT JOIN y AS y ON x.id = y.id WHERE y.flag = 1",
+    def test_pushdown_predicates_right_join_preserved_side_where(self):
+        self.conn.execute(
+            """
+            CREATE OR REPLACE TEMP TABLE optimizer_right_x (id INT, flag INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_right_y (id INT, flag INT);
+            INSERT INTO optimizer_right_x VALUES (1, 0), (2, 1);
+            INSERT INTO optimizer_right_y
+            VALUES (1, 1), (1, 0), (2, 0), (99, 1), (100, 0), (101, NULL);
+            """
         )
+        schema = {
+            "optimizer_right_x": {"id": "INT", "flag": "INT"},
+            "optimizer_right_y": {"id": "INT", "flag": "INT"},
+        }
+        sql = """
+            SELECT x.id AS xid, y.id AS yid, y.flag AS yflag
+            FROM optimizer_right_x AS x
+            RIGHT JOIN optimizer_right_y AS y ON x.id = y.id
+            WHERE y.flag = 1
+            ORDER BY yid
+        """
+        expected = self.conn.sql(sql).fetchall()
+        self.assertEqual([(1, 1, 1), (None, 99, 1)], expected)
+
+        direct = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+        self.assertIsNotNone(direct.args.get("where"))
+        self.assertNotIn("flag", direct.find(exp.Join).args["on"].sql())
+        self.assertEqual(expected, self.conn.sql(direct.sql(dialect="duckdb")).fetchall())
+
+        unisolated = optimizer.optimize(sql, schema=schema, isolate_tables=False)
+        self.assertIsNotNone(unisolated.args.get("where"))
+        self.assertEqual(expected, self.conn.sql(unisolated.sql(dialect="duckdb")).fetchall())
+
+        isolated = optimizer.optimize(sql, schema=schema)
+        self.assertIsNone(isolated.args.get("where"))
+        self.assertIsNotNone(isolated.find(exp.Where))
+        self.assertEqual(expected, self.conn.sql(isolated.sql(dialect="duckdb")).fetchall())
+
+        inner_sql = sql.replace("RIGHT JOIN", "INNER JOIN")
+        inner = optimizer.pushdown_predicates.pushdown_predicates(parse_one(inner_sql))
+        self.assertTrue(isinstance(inner.args["where"].this, exp.Boolean))
+        self.assertIn("y.flag = 1", inner.find(exp.Join).args["on"].sql())
+        self.assertEqual(
+            self.conn.sql(inner_sql).fetchall(),
+            self.conn.sql(inner.sql(dialect="duckdb")).fetchall(),
+        )
+
+        for condition in (
+            "y.flag = 1 AND x.flag = 1",
+            "y.flag = x.flag",
+            "y.flag = 1 OR y.id = 99",
+            "y.flag IS NULL",
+        ):
+            shape_sql = f"""
+                SELECT x.id AS xid, y.id AS yid, y.flag AS yflag
+                FROM optimizer_right_x AS x
+                RIGHT JOIN optimizer_right_y AS y ON x.id = y.id
+                WHERE {condition}
+                ORDER BY yid
+            """
+            with self.subTest(condition):
+                pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(shape_sql))
+                self.assertNotIsInstance(pushed.args["where"].this, exp.Boolean)
+                self.assertNotIn("flag", pushed.find(exp.Join).args["on"].sql())
+                self.assertEqual(
+                    self.conn.sql(shape_sql).fetchall(),
+                    self.conn.sql(pushed.sql(dialect="duckdb")).fetchall(),
+                )
+
+    def test_pushdown_predicates_right_join_unqualified_where(self):
+        self.conn.execute(
+            """
+            CREATE OR REPLACE TEMP TABLE optimizer_unqualified_x (id INT, x_filter INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_unqualified_y (id INT);
+            INSERT INTO optimizer_unqualified_x VALUES (1, 1), (2, 0);
+            INSERT INTO optimizer_unqualified_y VALUES (1), (2), (99);
+            """
+        )
+        sql = """
+            SELECT x.id AS xid, r.id AS rid
+            FROM optimizer_unqualified_x AS x
+            RIGHT JOIN (SELECT id FROM optimizer_unqualified_y) AS r ON x.id = r.id
+            WHERE r.id = x_filter
+        """
+        expected = self.conn.sql(sql).fetchall()
+        pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+
+        self.assertEqual([(1, 1)], expected)
+        self.assertNotIsInstance(pushed.args["where"].this, exp.Boolean)
+        self.assertEqual(expected, self.conn.sql(pushed.sql(dialect="duckdb")).fetchall())
+
+    def test_pushdown_predicates_right_join_volatile_where(self):
+        self.conn.execute(
+            """
+            CREATE OR REPLACE TEMP TABLE optimizer_volatile_x (id INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_volatile_y (id INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_mixed_x (id INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_mixed_y (id INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_on_x (v INT);
+            CREATE OR REPLACE TEMP TABLE optimizer_on_y (id INT, flag INT);
+            INSERT INTO optimizer_volatile_x VALUES (1), (1);
+            INSERT INTO optimizer_volatile_y VALUES (1);
+            INSERT INTO optimizer_mixed_x VALUES (0), (1);
+            INSERT INTO optimizer_mixed_y VALUES (0), (1);
+            INSERT INTO optimizer_on_x VALUES (7);
+            INSERT INTO optimizer_on_y VALUES (1, 0), (2, 1);
+            """
+        )
+        sql = """
+            SELECT x.id AS xid, r.id AS rid
+            FROM optimizer_volatile_x AS x
+            RIGHT JOIN (SELECT id FROM optimizer_volatile_y) AS r ON x.id = r.id
+            WHERE NEXTVAL('optimizer_right_sequence') + 0 * r.id <= 1
+        """
+        mixed_sql = """
+            SELECT x.id AS xid, r.id AS rid
+            FROM optimizer_mixed_x AS x
+            RIGHT JOIN (SELECT id FROM optimizer_mixed_y) AS r ON x.id = r.id
+            WHERE NEXTVAL('optimizer_right_sequence') <= 1 AND r.id = 1
+        """
+        volatile_on_sql = """
+            SELECT x.v, r.id, r.flag
+            FROM optimizer_on_x AS x
+            RIGHT JOIN (SELECT id, flag FROM optimizer_on_y) AS r
+                ON NEXTVAL('optimizer_right_sequence') + 0 * x.v = r.id
+            WHERE r.flag = 1
+        """
+
+        self.conn.execute("PRAGMA disable_optimizer")
+        try:
+            for source_sql, expected in (
+                (sql, [(1, 1)]),
+                (mixed_sql, []),
+                (volatile_on_sql, [(None, 2, 1)]),
+            ):
+                pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(source_sql))
+                self.assertNotIsInstance(pushed.args["where"].this, exp.Boolean)
+
+                results = []
+                for query in (source_sql, pushed.sql(dialect="duckdb")):
+                    self.conn.execute("DROP SEQUENCE IF EXISTS optimizer_right_sequence")
+                    self.conn.execute("CREATE TEMP SEQUENCE optimizer_right_sequence START 1")
+                    results.append(self.conn.sql(query).fetchall())
+
+                self.assertEqual([expected, expected], results)
+        finally:
+            self.conn.execute("PRAGMA enable_optimizer")
+
+    def test_pushdown_predicates_right_join_derived_sources(self):
+        def predicate_nodes(sql: str) -> dict[str, exp.Expr]:
+            expression = parse_one(sql)
+            scope = build_scope(expression)
+            return optimizer.pushdown_predicates.nodes_for_predicate(
+                expression.args["where"].this,
+                scope.selected_sources,
+                scope.ref_count(),
+            )
+
+        raw_sql = """
+            SELECT x.id, y.flag FROM x
+            RIGHT JOIN y ON x.id = y.id
+            WHERE y.flag = 1
+        """
+        safe_sql = """
+            SELECT x.id, r.flag
+            FROM x
+            RIGHT JOIN (
+                SELECT y.id AS id, y.flag AS flag
+                FROM y AS y
+            ) AS r ON x.id = r.id
+            WHERE r.flag = 1
+        """
+        values_sql = """
+            SELECT x.id, r.flag FROM x
+            RIGHT JOIN (VALUES (1, 1)) AS r(id, flag) ON x.id = r.id
+            WHERE r.flag = 1
+        """
+        unnest_sql = """
+            SELECT x.id, r.flag FROM x
+            RIGHT JOIN UNNEST(ARRAY(1, 2)) AS r(flag) ON x.id = r.flag
+            WHERE r.flag = 1
+        """
+        self.assertEqual({}, predicate_nodes(raw_sql))
+        self.assertIsInstance(predicate_nodes(safe_sql)["r"], exp.Select)
+        self.assertEqual({}, predicate_nodes(values_sql))
+        self.assertEqual({}, predicate_nodes(unnest_sql))
+
+        pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(safe_sql))
+        self.assertIsInstance(pushed.args["where"].this, exp.Boolean)
+        inner_select = next(
+            select for select in pushed.find_all(exp.Select) if select is not pushed
+        )
+        self.assertEqual("WHERE y.flag = 1", inner_select.args["where"].sql())
+
+        unsafe_sqls = (
+            "SELECT x.id, r.flag FROM x RIGHT JOIN (SELECT * FROM y) r ON x.id = r.id WHERE r.flag = 1",
+            "SELECT x.id, r.y FROM x RIGHT JOIN (SELECT id, flag FROM y) r(x, y) ON x.id = r.x WHERE r.y = 1",
+            "SELECT x.id, r.flag FROM x RIGHT JOIN (SELECT id, flag FROM y LIMIT 2) r ON x.id = r.id WHERE r.flag = 1",
+            "SELECT x.id, r.flag FROM x RIGHT JOIN (SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS flag FROM y) r ON x.id = r.id WHERE r.flag = 1",
+            "SELECT x.id, r.n FROM x RIGHT JOIN (SELECT id, RAND() AS n FROM y) r ON x.id = r.id WHERE r.n > 0.5",
+            "WITH r(x, y) AS (SELECT id, flag FROM y) SELECT x.id, r.y FROM x RIGHT JOIN r ON x.id = r.x WHERE r.y = 1",
+            "WITH r AS (SELECT id, flag FROM y) SELECT x.id, q.y FROM x RIGHT JOIN r AS q(x, y) ON x.id = q.x WHERE q.y = 1",
+        )
+
+        for sql in unsafe_sqls:
+            with self.subTest(sql=sql):
+                pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+                self.assertNotIsInstance(pushed.args["where"].this, exp.Boolean)
+
+    def test_pushdown_predicates_right_join_join_tree(self):
+        unsafe_sqls = (
+            "SELECT x.id, r.flag, z.id FROM x RIGHT JOIN (SELECT id, flag FROM y) r ON x.id = r.id FULL JOIN z ON r.id = z.id WHERE r.flag = 1",
+            "SELECT x.id, r.flag, z.id FROM x RIGHT JOIN (SELECT id, flag FROM y) r ON x.id = r.id RIGHT JOIN z ON r.id = z.id WHERE r.flag = 1",
+            "SELECT x.id, r.flag, z.id FROM x RIGHT JOIN (SELECT id, flag FROM y) r ON x.id = r.id JOIN z ON RAND() > 0.5 WHERE r.flag = 1",
+            "SELECT x.id, y.id, z.id FROM (x RIGHT JOIN y ON x.id = y.id) RIGHT JOIN z ON y.id = z.id WHERE y.flag = 1",
+        )
+
+        for sql in unsafe_sqls:
+            with self.subTest(sql=sql):
+                pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+                self.assertNotIsInstance(pushed.args["where"].this, exp.Boolean)
+
+        positional = parse_one(
+            """
+            SELECT x.id, r.flag, z.id FROM x
+            RIGHT JOIN (SELECT id, flag FROM y) AS r ON x.id = r.id
+            POSITIONAL JOIN z
+            WHERE r.flag = 1
+            """,
+            dialect="duckdb",
+        )
+        positional = optimizer.pushdown_predicates.pushdown_predicates(positional)
+        self.assertNotIsInstance(positional.args["where"].this, exp.Boolean)
+
+        safe_sql = """
+            SELECT x.id, r.flag FROM x
+            LEFT JOIN z ON x.id = z.id
+            RIGHT JOIN (SELECT id, flag FROM y) AS r ON x.id = r.id
+            WHERE r.flag = 1
+        """
+        pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(safe_sql))
+        self.assertIsInstance(pushed.args["where"].this, exp.Boolean)
+        inner_select = next(
+            select for select in pushed.find_all(exp.Select) if select is not pushed
+        )
+        self.assertEqual("WHERE flag = 1", inner_select.args["where"].sql())
+
+    def test_pushdown_predicates_outer_join_controls(self):
+        cases = (
+            ("SELECT x.id FROM x LEFT JOIN y ON x.id = y.id WHERE y.flag = 1", False),
+            ("SELECT x.id FROM x FULL JOIN y ON x.id = y.id WHERE y.flag = 1", False),
+            ("SELECT x.id FROM x RIGHT JOIN y ON x.id = y.id WHERE x.flag = 1", False),
+            ("SELECT x.id FROM x INNER JOIN y ON x.id = y.id WHERE y.flag = 1", True),
+        )
+
+        for sql, pushed_to_join in cases:
+            with self.subTest(sql=sql):
+                pushed = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+                self.assertEqual(pushed_to_join, isinstance(pushed.args["where"].this, exp.Boolean))
 
     def test_expand_alias_refs(self):
         # check negative integer literal as group by column

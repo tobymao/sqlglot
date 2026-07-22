@@ -204,7 +204,7 @@ def nodes_for_predicate(
 ) -> dict[str, exp.Expr]:
     nodes: dict[str, exp.Expr] = {}
     tables = exp.column_table_names(predicate)
-    where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
+    predicate_parent = predicate.find_ancestor(exp.Join, exp.Where)
 
     for table in sorted(tables):
         node: exp.Expr | None
@@ -212,8 +212,35 @@ def nodes_for_predicate(
 
         # if the predicate is in a where statement we can try to push it down
         # we want to find the root join or from statement
-        if node and where_condition:
-            node = node.find_ancestor(exp.Join, exp.From)
+        if node and isinstance(predicate_parent, exp.Where):
+            from_or_join = node.find_ancestor(exp.Join, exp.From)
+            if isinstance(from_or_join, exp.Join) and from_or_join.side == "RIGHT":
+                select = from_or_join.find_ancestor(exp.Select)
+                joins = select.args.get("joins") if select else None
+                if (
+                    not isinstance(source, Scope)
+                    or not _is_safe_right_join_source(source, predicate_parent.this, table)
+                    or not joins
+                    or from_or_join not in joins
+                ):
+                    return {}
+
+                parent_index = joins.index(from_or_join)
+                later_joins = joins[parent_index + 1 :]
+                if any(
+                    join.side in ("RIGHT", "FULL") or join.method == "POSITIONAL"
+                    for join in later_joins
+                ) or _has_nonrepeatable_expression(from_or_join.args.get("on")):
+                    return {}
+
+                if (select and select.args.get("laterals")) or any(
+                    _has_nonrepeatable_expression(join) for join in later_joins
+                ):
+                    return {}
+
+                node = source.expression
+            else:
+                node = from_or_join
 
         # a node can reference a CTE which should be pushed down
 
@@ -227,11 +254,6 @@ def nodes_for_predicate(
             node = source.expression
 
         if isinstance(node, exp.Join):
-            # A predicate from WHERE on the preserved side of a RIGHT JOIN
-            # must remain a post-join filter. Moving it into ON changes an
-            # unmatched preserved row into a result row.
-            if where_condition and node.side == "RIGHT":
-                return {}
             if node.side and node.side != "RIGHT":
                 return {}
             nodes[table] = node
@@ -253,6 +275,61 @@ def nodes_for_predicate(
             ):
                 nodes[table] = node
     return nodes
+
+
+def _has_nonrepeatable_expression(expression: exp.Expr | None) -> bool:
+    if expression is None:
+        return False
+
+    return any(
+        isinstance(node, (exp.Func, exp.Query, exp.PropertyEQ)) for node in expression.walk()
+    )
+
+
+def _is_safe_right_join_source(source: Scope, predicate: exp.Expr, source_name: str) -> bool:
+    # Match the simple wrapper produced by isolate_table_selects. More general
+    # derived sources can change cardinality or predicate evaluation semantics.
+    select = source.expression
+    if not isinstance(select, exp.Select) or source.is_correlated_subquery:
+        return False
+
+    if _has_nonrepeatable_expression(predicate):
+        return False
+
+    if any(value for key, value in select.args.items() if key not in ("expressions", "from_")):
+        return False
+
+    from_ = select.args.get("from_")
+    if not from_ or not isinstance(from_.this, exp.Table):
+        return False
+
+    parent = select.parent
+    if not isinstance(parent, exp.Subquery):
+        return False
+
+    if any(value for key, value in parent.args.items() if key not in ("this", "alias")):
+        return False
+
+    alias = parent.args.get("alias")
+    if alias and alias.args.get("columns"):
+        return False
+
+    projections = [
+        projection.this if isinstance(projection, exp.Alias) else projection
+        for projection in select.selects
+    ]
+    output_names = [projection.alias_or_name for projection in select.selects]
+    predicate_columns = list(predicate.find_all(exp.Column))
+    return (
+        all(isinstance(projection, exp.Column) for projection in projections)
+        and all(output_names)
+        and len(output_names) == len(set(output_names))
+        and bool(predicate_columns)
+        and all(
+            column.table == source_name and column.name in output_names
+            for column in predicate_columns
+        )
+    )
 
 
 def replace_aliases(source: exp.Select, predicate: exp.Expr) -> exp.Expr:

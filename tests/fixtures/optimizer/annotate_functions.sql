@@ -6740,6 +6740,10 @@ ENCODE(tbl.str_col);
 VARBINARY;
 
 # dialect: duckdb
+UNHEX(tbl.str_col);
+VARBINARY;
+
+# dialect: duckdb
 QUARTER(tbl.date_col);
 BIGINT;
 

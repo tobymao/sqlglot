@@ -53,6 +53,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.VARBINARY}
         for expr_type in {
             exp.Encode,
+            exp.Unhex,
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},

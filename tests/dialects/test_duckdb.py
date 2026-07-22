@@ -28,6 +28,7 @@ class TestDuckDB(Validator):
             "PIVOT duckdb_functions() ON schema_name USING AVG(LENGTH(function_name))::INTEGER GROUP BY schema_name",
             "PIVOT DUCKDB_FUNCTIONS() ON schema_name USING CAST(AVG(LENGTH(function_name)) AS INT) GROUP BY schema_name",
         )
+        self.validate_identity("FROM_HEX('AA')", "UNHEX('AA')")
         self.validate_identity("SELECT str[0:1]")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT MODE(category)")

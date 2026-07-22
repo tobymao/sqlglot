@@ -6744,6 +6744,10 @@ UNHEX(tbl.str_col);
 VARBINARY;
 
 # dialect: duckdb
+FROM_HEX(tbl.str_col);
+VARBINARY;
+
+# dialect: duckdb
 QUARTER(tbl.date_col);
 BIGINT;
 

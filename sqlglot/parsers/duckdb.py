@@ -129,6 +129,7 @@ class DuckDBParser(parser.Parser):
         ),
         "EPOCH": exp.TimeToUnix.from_arg_list,
         "EPOCH_MS": lambda args: exp.UnixToTime(this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS),
+        "FROM_HEX": exp.Unhex.from_arg_list,
         "GENERATE_SERIES": _build_generate_series(),
         "GET_CURRENT_TIME": exp.CurrentTime.from_arg_list,
         "GET_BIT": lambda args: exp.Getbit(

@@ -448,6 +448,49 @@ class TestExecutor(unittest.TestCase):
             [(1, 2), (1, 3), (2, 3)],
         )
 
+    def test_correlated_exists_with_negated_comparison(self):
+        tables = {
+            "x": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "y": [{"id": 1}, {"id": 2}],
+        }
+
+        for sql, expected in (
+            (
+                "SELECT x.id FROM x AS x "
+                "WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT (y.id = x.id))",
+                [(1,), (2,), (3,)],
+            ),
+            (
+                "SELECT x.id FROM x AS x WHERE EXISTS (SELECT 1 FROM y AS y WHERE y.id = x.id)",
+                [(1,), (2,)],
+            ),
+            (
+                "SELECT x.id FROM x AS x "
+                "WHERE NOT EXISTS (SELECT 1 FROM y AS y WHERE NOT (y.id = x.id))",
+                [],
+            ),
+            (
+                "SELECT x.id FROM x AS x WHERE NOT EXISTS (SELECT 1 FROM y AS y WHERE y.id = x.id)",
+                [(3,)],
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, expected)
+
+        negated_sql = (
+            "SELECT x.id FROM x AS x WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT (y.id = x.id))"
+        )
+        nullable_tables = {
+            "x": [{"id": 1}, {"id": None}],
+            "y": [{"id": 1}, {"id": None}, {"id": 2}],
+        }
+        self.assertEqual(execute(negated_sql, tables=nullable_tables).rows, [(1,)])
+        self.assertEqual(
+            execute(negated_sql, tables={"x": [{"id": 1}], "y": [{"id": None}]}).rows,
+            [],
+        )
+        self.assertEqual(execute(negated_sql, tables={"x": [{"id": 1}], "y": []}).rows, [])
+
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {

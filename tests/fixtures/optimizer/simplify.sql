@@ -193,16 +193,16 @@ A AND TRUE;
 A AND TRUE;
 
 A AND (NOT A OR B);
-A AND B;
+A AND (B OR NOT A);
 
 (NOT A OR B) AND A;
-A AND B;
+A AND (B OR NOT A);
 
 A OR (NOT A AND B);
-A OR B;
+A OR (B AND NOT A);
 
 A OR ((((NOT A AND B))));
-A OR B;
+A OR (B AND NOT A);
 
 x NOT LIKE 'a%' OR (y IN (1, 2) AND x LIKE 'a%');
 (x LIKE 'a%' AND y IN (1, 2)) OR x NOT LIKE 'a%';
@@ -229,46 +229,46 @@ A AND TRUE;
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (NOT A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A AND NOT B) OR (A AND B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (NOT A AND B) OR (A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A OR B) AND (A OR NOT B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (A OR B) AND (NOT A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (A OR NOT B) AND (A OR B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (NOT A OR B) AND (A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (NOT A OR NOT B) AND (NOT A OR B);
-NOT A;
+(B OR NOT A) AND (NOT A OR NOT B);
 
 (NOT A OR NOT B) AND (NOT A OR NOT NOT B);
-NOT A;
+(NOT A OR NOT B) AND (NOT A OR NOT NOT B);
 
 E OR (A AND B) OR C OR D OR (A AND NOT B);
-A OR C OR D OR E;
+(A AND B) OR (A AND NOT B) OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 SELECT t_bool.a OR t_bool.a FROM t_bool;
 SELECT t_bool.a FROM t_bool;
@@ -961,10 +961,10 @@ COALESCE(x, 1) IS NULL;
 FALSE;
 
 COALESCE(ROW() OVER (), 1) = 1;
-ROW() OVER () = 1 OR ROW() OVER () IS NULL;
+(NOT ROW() OVER () IS NULL AND ROW() OVER () = 1) OR ROW() OVER () IS NULL;
 
 a AND b AND COALESCE(ROW() OVER (), 1) = 1;
-(ROW() OVER () = 1 OR ROW() OVER () IS NULL) AND a AND b;
+((NOT ROW() OVER () IS NULL AND ROW() OVER () = 1) OR ROW() OVER () IS NULL) AND a AND b;
 
 COALESCE(1, 2);
 1;

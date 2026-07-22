@@ -227,6 +227,206 @@ def _is_nonnull_constant(expression: exp.Expr) -> bool:
     return isinstance(expression, exp.NONNULL_CONSTANTS) or _is_date_literal(expression)
 
 
+class _BooleanComplementProver:
+    def __init__(self) -> None:
+        self.clear()
+
+    def clear(self, allow_unresolved_columns: bool = False) -> None:
+        self.allow_unresolved_columns = allow_unresolved_columns
+        self._null_padding: dict[int, tuple[exp.Select, bool]] = {}
+        self._column_sources: dict[int, tuple[exp.Column, tuple[exp.Select, exp.Expr] | None]] = {}
+        self._select_sources: dict[int, tuple[exp.Select, dict[str, exp.Expr]]] = {}
+        self._cte_sources: dict[tuple[int, int], tuple[exp.Table, exp.Select, bool]] = {}
+
+    def _has_null_padding_risk(self, select: exp.Select) -> bool:
+        key = id(select)
+        cached = self._null_padding.get(key)
+        if cached and cached[0] is select:
+            return cached[1]
+
+        risk = (
+            any(column.args.get("join_mark") for column in find_all_in_scope(select, exp.Column))
+            or bool(select.args.get("laterals"))
+            or bool(select.args.get("match"))
+        )
+
+        group = select.args.get("group")
+        risk = risk or bool(
+            group
+            and any(group.args.get(key) for key in ("rollup", "cube", "grouping_sets", "totals"))
+        )
+        risk = risk or bool(
+            not group
+            and any(
+                not isinstance(function, (exp.Connector, exp.Not, exp.Is))
+                for function in find_all_in_scope(select, exp.Func)
+            )
+        )
+
+        if not risk:
+            risk = any(
+                join.side
+                or join.method
+                or join.kind not in ("", "INNER", "CROSS")
+                or isinstance(join.this, exp.Lateral)
+                for join in find_all_in_scope(select, exp.Join)
+            )
+
+        self._null_padding[key] = (select, risk)
+        return risk
+
+    def _get_select_sources(self, select: exp.Select) -> dict[str, exp.Expr]:
+        key = id(select)
+        cached = self._select_sources.get(key)
+        if cached and cached[0] is select:
+            return cached[1]
+
+        from_ = select.args.get("from_")
+        source_expressions = ([from_.this] if from_ else []) + [
+            join.this for join in find_all_in_scope(select, exp.Join)
+        ]
+        sources = {
+            source.alias_or_name: source for source in source_expressions if source.alias_or_name
+        }
+        self._select_sources[key] = (select, sources)
+        return sources
+
+    def _is_cte_source(self, table: exp.Table, select: exp.Select) -> bool:
+        key = (id(table), id(select))
+        cached = self._cte_sources.get(key)
+        if cached and cached[0] is table and cached[1] is select:
+            return cached[2]
+
+        result = False
+        if not table.args.get("catalog") and not table.args.get("db"):
+            table_name = table.name.casefold()
+            ancestor: exp.Expr | None = select
+
+            while ancestor:
+                with_ = ancestor.args.get("with_")
+                if with_ and any(
+                    cte.alias_or_name.casefold() == table_name for cte in with_.expressions
+                ):
+                    result = True
+                    break
+                ancestor = ancestor.parent
+
+        self._cte_sources[key] = (table, select, result)
+        return result
+
+    def _find_column_source(self, column: exp.Column) -> tuple[exp.Select, exp.Expr] | None:
+        key = id(column)
+        cached = self._column_sources.get(key)
+        if cached and cached[0] is column:
+            return cached[1]
+
+        result = None
+        table = column.table
+        select = column.find_ancestor(exp.Select)
+
+        while table and select:
+            source = self._get_select_sources(select).get(table)
+            if source:
+                result = (select, source)
+                break
+            select = select.find_ancestor(exp.Select)
+
+        self._column_sources[key] = (column, result)
+        return result
+
+    def _is_proven_nonnull_column(self, column: exp.Column) -> bool:
+        if column.meta_get("nonnull") is not True:
+            return False
+
+        source = self._find_column_source(column)
+        if not source:
+            return False
+
+        # Schema nullability does not account for joins and grouping operations that pad rows
+        # with NULL. Until that provenance is tracked, only trust direct physical table columns
+        # in scopes that cannot add NULLs.
+        select, source_expression = source
+        return (
+            isinstance(source_expression, exp.Table)
+            and isinstance(source_expression.this, exp.Identifier)
+            and not any(
+                source_expression.args.get(key)
+                for key in (
+                    "pivots",
+                    "system_time",
+                    "version",
+                    "when",
+                    "changes",
+                    "rows_from",
+                    "pattern",
+                )
+            )
+            and not self._is_cte_source(source_expression, select)
+            and not self._has_null_padding_risk(select)
+        )
+
+    def is_proven_nonnull(self, expression: exp.Expr) -> bool:
+        if isinstance(expression, exp.Is):
+            return True
+        if isinstance(expression, exp.Column):
+            return self._is_proven_nonnull_column(expression)
+        if _is_nonnull_constant(expression):
+            return True
+        if expression.meta_get("nonnull") is not True:
+            return False
+        if isinstance(expression, exp.Not):
+            return self.is_proven_nonnull(expression.this)
+        if isinstance(expression, exp.Binary) and issubclass(
+            type(expression), (exp.Connector, exp.Predicate)
+        ):
+            return self.is_proven_nonnull(expression.left) and self.is_proven_nonnull(
+                expression.right
+            )
+        return False
+
+    def is_safe_to_repeat(self, expression: exp.Expr) -> bool:
+        if isinstance(expression, exp.Column):
+            return self._find_column_source(expression) is not None or (
+                self.allow_unresolved_columns and not expression.table
+            )
+        if isinstance(expression, exp.CONSTANTS):
+            return True
+        if isinstance(expression, (exp.Not, exp.Paren)):
+            return self.is_safe_to_repeat(expression.this)
+        if isinstance(expression, exp.Binary) and issubclass(
+            type(expression),
+            (
+                exp.Connector,
+                exp.EQ,
+                exp.GT,
+                exp.GTE,
+                exp.Is,
+                exp.LT,
+                exp.LTE,
+                exp.NEQ,
+                exp.NullSafeEQ,
+                exp.NullSafeNEQ,
+            ),
+        ):
+            return self.is_safe_to_repeat(expression.left) and self.is_safe_to_repeat(
+                expression.right
+            )
+        return False
+
+    def is_safe_to_eliminate(self, expression: exp.Expr) -> bool:
+        if isinstance(expression, (exp.Column, exp.CONSTANTS)):
+            return self.is_safe_to_repeat(expression)
+        if isinstance(expression, (exp.Not, exp.Paren)):
+            return self.is_safe_to_eliminate(expression.this)
+        if isinstance(expression, exp.Binary) and issubclass(
+            type(expression), (exp.Connector, exp.Is)
+        ):
+            return self.is_safe_to_eliminate(expression.left) and self.is_safe_to_eliminate(
+                expression.right
+            )
+        return False
+
+
 def _is_constant(expression: exp.Expr) -> bool:
     expr = expression.this if isinstance(expression, exp.Neg) else expression
     return isinstance(expr, exp.CONSTANTS) or _is_date_literal(expr)
@@ -513,6 +713,7 @@ class Simplifier:
     def __init__(self, dialect: DialectType = None, annotate_new_expressions: bool = True):
         self.dialect = Dialect.get_or_raise(dialect)
         self.annotate_new_expressions = annotate_new_expressions
+        self._boolean_complement_prover = _BooleanComplementProver()
 
         self._annotator: TypeAnnotator = TypeAnnotator(
             schema=ensure_schema(None, dialect=self.dialect), overwrite_types=False
@@ -616,6 +817,7 @@ class Simplifier:
         constant_propagation: bool = False,
         coalesce_simplification: bool = False,
     ) -> exp.Expr:
+        self._boolean_complement_prover.clear()
         wheres: list[exp.Where] = []
         joins: list[exp.Join] = []
 
@@ -649,9 +851,19 @@ class Simplifier:
                             break
 
             if isinstance(node, exp.Condition):
-                simplified = while_changing(
-                    node, lambda e: self._simplify(e, constant_propagation, coalesce_simplification)
+                allow_unresolved_columns = self._boolean_complement_prover.allow_unresolved_columns
+                self._boolean_complement_prover.allow_unresolved_columns = (
+                    node.find_ancestor(exp.Query) is None
                 )
+                try:
+                    simplified = while_changing(
+                        node,
+                        lambda e: self._simplify(e, constant_propagation, coalesce_simplification),
+                    )
+                finally:
+                    self._boolean_complement_prover.allow_unresolved_columns = (
+                        allow_unresolved_columns
+                    )
 
                 if node is expression:
                     expression = simplified
@@ -692,7 +904,15 @@ class Simplifier:
 
             if not isinstance(node, SIMPLIFIABLE):
                 if isinstance(node, exp.Query):
-                    self.simplify(node, constant_propagation, coalesce_simplification)
+                    allow_unresolved_columns = (
+                        self._boolean_complement_prover.allow_unresolved_columns
+                    )
+                    try:
+                        self.simplify(node, constant_propagation, coalesce_simplification)
+                    finally:
+                        self._boolean_complement_prover.allow_unresolved_columns = (
+                            allow_unresolved_columns
+                        )
                 continue
 
             parent = node.parent
@@ -965,7 +1185,9 @@ class Simplifier:
             ops = set(expression.flatten())
             for op in ops:
                 if isinstance(op, exp.Not) and op.this in ops:
-                    if expression.meta_get("nonnull") is True:
+                    if self._boolean_complement_prover.is_proven_nonnull(
+                        op.this
+                    ) and self._boolean_complement_prover.is_safe_to_eliminate(op.this):
                         return exp.false() if isinstance(expression, exp.And) else exp.true()
 
         return expression
@@ -1013,11 +1235,11 @@ class Simplifier:
         absorption:
             A AND (A OR B) -> A
             A OR (A AND B) -> A
-            A AND (NOT A OR B) -> A AND B
-            A OR (NOT A AND B) -> A OR B
+            A AND (NOT A OR B) -> A AND B (only for non-NULL A)
+            A OR (NOT A AND B) -> A OR B (only for non-NULL A)
         elimination:
-            (A AND B) OR (A AND NOT B) -> A
-            (A OR B) AND (A OR NOT B) -> A
+            (A AND B) OR (A AND NOT B) -> A (only for non-NULL B)
+            (A OR B) AND (A OR NOT B) -> A (only for non-NULL B)
         """
         if isinstance(expression, self.AND_OR) and (root or not expression.same_parent):
             kind = exp.Or if isinstance(expression, exp.And) else exp.And
@@ -1050,9 +1272,9 @@ class Simplifier:
 
                 a, b = op.unnest_operands()
                 if isinstance(a, exp.Not):
-                    pairs[frozenset((a.this, b))].append((op, b))
+                    pairs[frozenset((a.this, b))].append((op, b, a.this))
                 if isinstance(b, exp.Not):
-                    pairs[frozenset((a, b.this))].append((op, a))
+                    pairs[frozenset((a, b.this))].append((op, a, b.this))
 
             for op in ops:
                 if not isinstance(op, kind):
@@ -1061,10 +1283,20 @@ class Simplifier:
                 a, b = op.unnest_operands()
 
                 # Absorb
-                if isinstance(a, exp.Not) and a.this in op_set:
+                if (
+                    isinstance(a, exp.Not)
+                    and a.this in op_set
+                    and self._boolean_complement_prover.is_proven_nonnull(a.this)
+                    and self._boolean_complement_prover.is_safe_to_repeat(a.this)
+                ):
                     a.replace(exp.true() if kind == exp.And else exp.false())
                     continue
-                if isinstance(b, exp.Not) and b.this in op_set:
+                if (
+                    isinstance(b, exp.Not)
+                    and b.this in op_set
+                    and self._boolean_complement_prover.is_proven_nonnull(b.this)
+                    and self._boolean_complement_prover.is_safe_to_repeat(b.this)
+                ):
                     b.replace(exp.true() if kind == exp.And else exp.false())
                     continue
                 superset = set(op.flatten())
@@ -1073,9 +1305,14 @@ class Simplifier:
                     continue
 
                 # Eliminate
-                for other, complement in pairs[frozenset((a, b))]:
-                    op.replace(complement)
-                    other.replace(complement)
+                for other, complement, complemented in pairs[frozenset((a, b))]:
+                    if (
+                        self._boolean_complement_prover.is_proven_nonnull(complemented)
+                        and self._boolean_complement_prover.is_safe_to_eliminate(complemented)
+                        and self._boolean_complement_prover.is_safe_to_repeat(complement)
+                    ):
+                        op.replace(complement)
+                        other.replace(complement)
 
         return expression
 

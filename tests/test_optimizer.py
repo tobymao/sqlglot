@@ -1,3 +1,4 @@
+import sqlite3
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -1186,6 +1187,515 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
+
+    def test_simplify_preserves_nullable_boolean_complements(self):
+        for sql in (
+            "SELECT a AND (NOT a OR b) AS x FROM (VALUES (NULL, FALSE)) AS policy(a, b)",
+            "SELECT NOT (a AND (NOT a OR b)) AS x FROM (VALUES (NULL, FALSE)) AS policy(a, b)",
+            "SELECT a OR (NOT a AND b) AS x FROM (VALUES (NULL, TRUE)) AS policy(a, b)",
+            "SELECT (a AND b) OR (a AND NOT b) AS x FROM (VALUES (TRUE, NULL)) AS policy(a, b)",
+            "SELECT (a OR b) AND (a OR NOT b) AS x FROM (VALUES (FALSE, NULL)) AS policy(a, b)",
+            "SELECT (SELECT a AND (NOT a OR b) "
+            "FROM (VALUES (NULL, FALSE)) AS policy(a, b)) IS NULL AS x",
+            "SELECT 1 AS x FROM (VALUES (NULL, TRUE)) AS policy(a, b) WHERE a OR (NOT a AND b)",
+            "SELECT 1 AS x FROM (VALUES (TRUE, NULL)) AS policy(a, b) "
+            "WHERE (a AND b) OR (a AND NOT b)",
+        ):
+            with self.subTest(sql):
+                simplified = simplify(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    self.conn.sql(sql).fetchall(),
+                    self.conn.sql(simplified.sql(dialect="duckdb")).fetchall(),
+                )
+
+        schema = {"policy": {"id": "INT", "a": "BOOLEAN", "b": "BOOLEAN"}}
+
+        for observer in ("IS FALSE", "IS NULL"):
+            with self.subTest(observer):
+                optimized = optimizer.optimize(
+                    parse_one(f"SELECT id FROM policy WHERE (a AND (NOT a OR b)) {observer}"),
+                    schema=schema,
+                )
+                self.assertIn(
+                    f'("policy"."a" AND ("policy"."b" OR NOT "policy"."a")) {observer}',
+                    optimized.sql(),
+                )
+
+    def test_simplify_boolean_complements_with_nonnull_operands(self):
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        nonnull_integer = exp.DataType.build("INT")
+        nonnull_integer.set("nullable", False)
+
+        for sql, schema, expected in (
+            (
+                "SELECT a AND (NOT a OR b) AS x FROM policy",
+                {"policy": {"a": nonnull_boolean, "b": "BOOLEAN"}},
+                'SELECT "policy"."a" AND "policy"."b" AS "x" FROM "policy" AS "policy"',
+            ),
+            (
+                "SELECT (a AND b) OR (a AND NOT b) AS x FROM policy",
+                {"policy": {"a": "BOOLEAN", "b": nonnull_boolean}},
+                'SELECT "policy"."a" AS "x" FROM "policy" AS "policy"',
+            ),
+            (
+                "SELECT a OR (NOT a AND b) AS x FROM policy",
+                {"policy": {"a": nonnull_boolean, "b": "BOOLEAN"}},
+                'SELECT "policy"."a" OR "policy"."b" AS "x" FROM "policy" AS "policy"',
+            ),
+            (
+                "SELECT (a OR b) AND (a OR NOT b) AS x FROM policy",
+                {"policy": {"a": "BOOLEAN", "b": nonnull_boolean}},
+                'SELECT "policy"."a" AS "x" FROM "policy" AS "policy"',
+            ),
+            (
+                "SELECT a OR NOT a AS x FROM policy",
+                {"policy": {"a": nonnull_boolean}},
+                'SELECT TRUE AS "x" FROM "policy" AS "policy"',
+            ),
+            (
+                "SELECT (a > 0 AND b) OR (a > 0 AND NOT b) AS x FROM policy",
+                {"policy": {"a": nonnull_integer, "b": nonnull_boolean}},
+                'SELECT "policy"."a" > 0 AS "x" FROM "policy" AS "policy"',
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = optimizer.qualify.qualify(parse_one(sql), schema=schema)
+                self.assertEqual(expected, simplify(qualified, schema=schema).sql())
+
+    def test_simplify_boolean_complements_after_outer_join(self):
+        self.conn.execute(
+            """
+            CREATE OR REPLACE TEMP TABLE optimizer_nonnull_left (a BOOLEAN NOT NULL);
+            CREATE OR REPLACE TEMP TABLE optimizer_nonnull_right (a BOOLEAN NOT NULL);
+            CREATE OR REPLACE TEMP TABLE optimizer_nonnull_empty (a BOOLEAN NOT NULL);
+            CREATE OR REPLACE TEMP TABLE optimizer_nonnull_output (x BOOLEAN NOT NULL);
+            INSERT INTO optimizer_nonnull_left VALUES (TRUE);
+            INSERT INTO optimizer_nonnull_right VALUES (TRUE);
+            """
+        )
+
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        schema = {
+            "optimizer_nonnull_left": {"a": nonnull_boolean},
+            "optimizer_nonnull_right": {"a": nonnull_boolean},
+            "optimizer_nonnull_empty": {"a": nonnull_boolean},
+            "optimizer_nonnull_output": {"x": nonnull_boolean},
+        }
+
+        def assert_preserved(sql, dialect="duckdb"):
+            qualified = optimizer.qualify.qualify(
+                parse_one(sql, read=dialect), schema=schema, dialect=dialect
+            )
+            simplified = simplify(qualified, schema=schema, dialect=dialect)
+            self.assertEqual(
+                self.conn.sql(sql).fetchall(),
+                self.conn.sql(simplified.sql(dialect="duckdb")).fetchall(),
+            )
+            self.assertIsNotNone(simplified.find(exp.Not))
+
+        for sql in (
+            """
+            SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT (r.a OR (NOT r.a AND TRUE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT ((TRUE AND r.a) OR (TRUE AND NOT r.a)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT ((FALSE OR r.a) AND (FALSE OR NOT r.a)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT (l.a AND (NOT l.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            RIGHT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            FULL JOIN optimizer_nonnull_right AS r ON FALSE
+            ORDER BY x
+            """,
+            """
+            SELECT (SELECT r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT (l.a AND (NOT l.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            JOIN optimizer_nonnull_right AS m ON TRUE
+            RIGHT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+            """
+            SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            JOIN optimizer_nonnull_right AS r
+            RIGHT JOIN optimizer_nonnull_left AS e ON FALSE
+            ON TRUE
+            """,
+            """
+            SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN (SELECT a FROM optimizer_nonnull_right) AS r ON FALSE
+            """,
+            """
+            SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            POSITIONAL JOIN optimizer_nonnull_empty AS r
+            """,
+            """
+            SELECT (r.a OR NOT r.a) IS NULL AS x
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+            """,
+        ):
+            with self.subTest(sql):
+                assert_preserved(sql)
+
+        complement_laws = (
+            "d.a AND (NOT d.a OR FALSE)",
+            "d.a OR (NOT d.a AND TRUE)",
+            "(TRUE AND d.a) OR (TRUE AND NOT d.a)",
+            "(FALSE OR d.a) AND (FALSE OR NOT d.a)",
+        )
+        source = """
+            SELECT r.a
+            FROM optimizer_nonnull_left AS l
+            LEFT JOIN optimizer_nonnull_right AS r ON FALSE
+        """
+
+        for law in complement_laws:
+            for sql in (
+                f"SELECT ({law}) IS NULL AS x FROM ({source}) AS d",
+                f"WITH d AS ({source}) SELECT ({law}) IS NULL AS x FROM d",
+            ):
+                with self.subTest(sql):
+                    assert_preserved(sql)
+
+        insert_sql = f"""
+            WITH d AS ({source})
+            INSERT INTO optimizer_nonnull_output
+            SELECT (d.a OR NOT d.a) IS NULL FROM d
+        """
+        qualified = optimizer.qualify.qualify(
+            parse_one(insert_sql, read="duckdb"), schema=schema, dialect="duckdb"
+        )
+        simplified = simplify(qualified, schema=schema, dialect="duckdb")
+        self.assertIsNotNone(simplified.find(exp.Not))
+
+        self.conn.execute("DELETE FROM optimizer_nonnull_output")
+        self.conn.execute(insert_sql)
+        original = self.conn.sql("SELECT * FROM optimizer_nonnull_output").fetchall()
+        self.conn.execute("DELETE FROM optimizer_nonnull_output")
+        self.conn.execute(simplified.sql(dialect="duckdb"))
+        self.assertEqual(
+            original,
+            self.conn.sql("SELECT * FROM optimizer_nonnull_output").fetchall(),
+        )
+
+        for sql, dialect in (
+            (
+                """
+                SELECT (l.a AND (NOT l.a OR FALSE)) IS NULL AS x
+                FROM optimizer_nonnull_left AS l
+                OUTER APPLY (SELECT 1 AS x) AS r
+                """,
+                "tsql",
+            ),
+            (
+                """
+                SELECT (r.a AND (NOT r.a OR FALSE)) IS NULL AS x
+                FROM optimizer_nonnull_left AS l, optimizer_nonnull_right AS r
+                WHERE l.a = r.a (+)
+                """,
+                "oracle",
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = optimizer.qualify.qualify(
+                    parse_one(sql, read=dialect), schema=schema, dialect=dialect
+                )
+                simplified = simplify(qualified, schema=schema, dialect=dialect)
+                self.assertIsNotNone(simplified.find(exp.Not))
+
+        for law in (
+            "r.a AND (NOT r.a OR FALSE)",
+            "r.a OR (NOT r.a AND TRUE)",
+            "(TRUE AND r.a) OR (TRUE AND NOT r.a)",
+            "(FALSE OR r.a) AND (FALSE OR NOT r.a)",
+            "r.a OR NOT r.a",
+        ):
+            sql = f"""
+                SELECT ({law}) IS NULL AS x
+                FROM optimizer_nonnull_left AS l
+                JOIN optimizer_nonnull_right AS r ON TRUE
+            """
+            with self.subTest(sql):
+                qualified = optimizer.qualify.qualify(parse_one(sql), schema=schema)
+                simplified = simplify(qualified, schema=schema)
+                self.assertEqual(
+                    self.conn.sql(sql).fetchall(),
+                    self.conn.sql(simplified.sql()).fetchall(),
+                )
+                self.assertIsNone(simplified.find(exp.Not))
+
+    def test_simplify_boolean_complements_after_grouping_extension(self):
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        schema = {"optimizer_grouping": {"a": nonnull_boolean}}
+        self.conn.execute(
+            """
+            CREATE OR REPLACE TEMP TABLE optimizer_grouping (a BOOLEAN NOT NULL);
+            INSERT INTO optimizer_grouping VALUES (TRUE);
+            """
+        )
+
+        for group_by in ("ROLLUP(a)", "CUBE(a)", "GROUPING SETS ((a), ())"):
+            sql = f"""
+                SELECT a, (a AND (NOT a OR FALSE)) IS NULL AS x
+                FROM optimizer_grouping
+                GROUP BY {group_by}
+                ORDER BY a NULLS LAST
+            """
+            with self.subTest(group_by):
+                qualified = optimizer.qualify.qualify(
+                    parse_one(sql, read="duckdb"), schema=schema, dialect="duckdb"
+                )
+                simplified = simplify(qualified, schema=schema, dialect="duckdb")
+                self.assertEqual(
+                    self.conn.sql(sql).fetchall(),
+                    self.conn.sql(simplified.sql(dialect="duckdb")).fetchall(),
+                )
+                self.assertIsNotNone(simplified.find(exp.Not))
+
+        totals_sql = """
+            SELECT a, (a AND (NOT a OR FALSE)) IS NULL AS x
+            FROM optimizer_grouping
+            GROUP BY a WITH TOTALS
+        """
+        qualified = optimizer.qualify.qualify(
+            parse_one(totals_sql, read="clickhouse"), schema=schema, dialect="clickhouse"
+        )
+        simplified = simplify(qualified, schema=schema, dialect="clickhouse")
+        self.assertIsNotNone(simplified.find(exp.Not))
+
+        match_sql = """
+            SELECT (src.a OR NOT src.a) IS NULL AS x
+            FROM src
+            MATCH_RECOGNIZE (
+                MEASURES FIRST(B.a) AS a
+                ONE ROW PER MATCH
+                PATTERN (A B?)
+                DEFINE A AS TRUE, B AS TRUE
+            ) src
+        """
+        qualified = optimizer.qualify.qualify(
+            parse_one(match_sql, read="trino"),
+            schema={"src": {"a": nonnull_boolean}},
+            dialect="trino",
+            validate_qualify_columns=False,
+        )
+        simplified = simplify(qualified, schema={"src": {"a": nonnull_boolean}}, dialect="trino")
+        self.assertIsNotNone(simplified.find(exp.Not))
+
+    def test_simplify_boolean_complements_with_historical_table_sources(self):
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        schema = {"policy": {"a": nonnull_boolean}}
+
+        for dialect, source in (
+            (
+                "bigquery",
+                "policy AS p FOR SYSTEM_TIME AS OF TIMESTAMP('2020-01-01')",
+            ),
+            ("spark", "policy VERSION AS OF 1 AS p"),
+            ("snowflake", "policy AT (TIMESTAMP => '2020-01-01') AS p"),
+        ):
+            sql = f"SELECT (p.a OR NOT p.a) IS NULL AS x FROM {source}"
+            with self.subTest(dialect):
+                qualified = optimizer.qualify.qualify(
+                    parse_one(sql, read=dialect), schema=schema, dialect=dialect
+                )
+                simplified = simplify(qualified, schema=schema, dialect=dialect)
+                self.assertIsNotNone(simplified.find(exp.Not))
+
+    def test_simplify_boolean_complements_with_volatile_operands(self):
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        schema = {"policy": {"a": nonnull_boolean, "b": nonnull_boolean}}
+
+        for sql, volatile_type in (
+            (
+                """
+                SELECT (RAND() > 0.5) AND (NOT (RAND() > 0.5) OR a) AS x
+                FROM policy
+                """,
+                exp.Rand,
+            ),
+            (
+                """
+                SELECT ((RAND() > 0.5) AND b) OR ((RAND() > 0.5) AND NOT b) AS x
+                FROM policy
+                """,
+                exp.Rand,
+            ),
+            (
+                """
+                SELECT (RAND() > 0.5) OR NOT (RAND() > 0.5) AS x
+                FROM policy
+                """,
+                exp.Rand,
+            ),
+            (
+                """
+                SELECT (VOLATILE_UDF() AND b) OR (VOLATILE_UDF() AND NOT b) AS x
+                FROM policy
+                """,
+                exp.Anonymous,
+            ),
+            (
+                """
+                SELECT (VOLATILE_WINDOW() OVER () IS NULL)
+                    OR NOT (VOLATILE_WINDOW() OVER () IS NULL) AS x
+                FROM policy
+                """,
+                exp.Anonymous,
+            ),
+            (
+                """
+                SELECT ((SEQ4() % 2 = 0) IS TRUE)
+                    AND (NOT ((SEQ4() % 2 = 0) IS TRUE) OR b) AS x
+                FROM policy
+                """,
+                exp.Seq4,
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = optimizer.qualify.qualify(parse_one(sql), schema=schema)
+                simplified = simplify(qualified, schema=schema)
+                self.assertEqual(2, len(list(simplified.find_all(volatile_type))))
+
+        sequence_sql = """
+            SELECT (seq.NEXTVAL > 0 AND b) OR (seq.NEXTVAL > 0 AND NOT b) AS x
+            FROM policy
+        """
+        qualified = optimizer.qualify.qualify(
+            parse_one(sequence_sql, read="snowflake"),
+            schema=schema,
+            dialect="snowflake",
+            validate_qualify_columns=False,
+        )
+        simplified = simplify(qualified, schema=schema, dialect="snowflake")
+        sequence_columns = [
+            column for column in simplified.find_all(exp.Column) if column.name.upper() == "NEXTVAL"
+        ]
+        self.assertEqual(2, len(sequence_columns))
+
+        alias_projection = """
+            SELECT
+                VOLATILE_BOOL() AS r,
+                VOLATILE_NULLABLE() AS p,
+                (r AND (p IS NULL)) OR (r AND NOT (p IS NULL)) AS x
+        """
+        for alias_sql in (
+            alias_projection,
+            f"INSERT INTO dst {alias_projection}",
+            f"CREATE TABLE dst AS {alias_projection}",
+            f"WITH cte AS (SELECT 1) INSERT INTO dst {alias_projection}",
+        ):
+            with self.subTest(alias_sql):
+                simplified = simplify(parse_one(alias_sql, read="snowflake"), dialect="snowflake")
+                alias_references = [
+                    column
+                    for column in simplified.find_all(exp.Column)
+                    if not column.table and column.name in ("r", "p")
+                ]
+                self.assertEqual(4, len(alias_references))
+
+    def test_simplify_boolean_complements_with_runtime_nulls_and_errors(self):
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+
+        for sql in (
+            "SELECT (1 % 0 OR NOT 1 % 0) IS NULL AS x",
+            "SELECT (1 % 0 AND NOT 1 % 0) IS NULL AS x",
+            "SELECT (1 % 0 AND (NOT 1 % 0 OR FALSE)) IS NULL AS x",
+        ):
+            with self.subTest(sql):
+                simplified = simplify(parse_one(sql, read="sqlite"), dialect="sqlite")
+                self.assertEqual(
+                    connection.execute(sql).fetchall(),
+                    connection.execute(simplified.sql(dialect="sqlite")).fetchall(),
+                )
+                self.assertIsNotNone(simplified.find(exp.Not))
+
+        connection.execute("CREATE TABLE optimizer_aggregate (a BOOLEAN NOT NULL)")
+        connection.create_aggregate(
+            "MY_COUNT",
+            1,
+            type("MyCount", (), {"step": lambda *_: None, "finalize": lambda *_: 0}),
+        )
+        connection.create_aggregate(
+            "ABS",
+            1,
+            type("AbsAggregate", (), {"step": lambda *_: None, "finalize": lambda *_: 0}),
+        )
+        connection.create_aggregate(
+            "POWER",
+            2,
+            type("PowerAggregate", (), {"step": lambda *_: None, "finalize": lambda *_: 0}),
+        )
+        nonnull_boolean = exp.DataType.build("BOOLEAN")
+        nonnull_boolean.set("nullable", False)
+        schema = {"optimizer_aggregate": {"a": nonnull_boolean}}
+        for aggregate in ("COUNT(*)", "MY_COUNT(a)", "ABS(a)", "POWER(a, 2)"):
+            aggregate_sql = f"""
+                SELECT (a OR NOT a) IS NULL AS x, {aggregate} AS n
+                FROM optimizer_aggregate
+            """
+            with self.subTest(aggregate):
+                qualified = optimizer.qualify.qualify(
+                    parse_one(aggregate_sql, read="sqlite"), schema=schema, dialect="sqlite"
+                )
+                simplified = simplify(qualified, schema=schema, dialect="sqlite")
+                self.assertEqual(
+                    connection.execute(aggregate_sql).fetchall(),
+                    connection.execute(simplified.sql(dialect="sqlite")).fetchall(),
+                )
+                self.assertIsNotNone(simplified.find(exp.Not))
+
+        division_sql = "SELECT 1 / 0 IS NULL OR NOT 1 / 0 IS NULL AS x"
+        simplified = simplify(parse_one(division_sql, read="postgres"), dialect="postgres")
+        self.assertEqual(2, len(list(simplified.find_all(exp.Div))))
+
+        assignment_sql = """
+            SELECT (@x := @x + 1) IS NULL OR NOT (@x := @x + 1) IS NULL AS x
+        """
+        simplified = simplify(parse_one(assignment_sql, read="mysql"), dialect="mysql")
+        self.assertEqual(2, len(list(simplified.find_all(exp.PropertyEQ))))
+
+        invalid_pattern_sql = "SELECT ('x' SIMILAR TO '[') OR NOT ('x' SIMILAR TO '[') AS x"
+        simplified = simplify(
+            annotate_types(parse_one(invalid_pattern_sql, read="duckdb"), dialect="duckdb"),
+            dialect="duckdb",
+        )
+        self.assertEqual(2, len(list(simplified.find_all(exp.SimilarTo))))
+        for sql in (invalid_pattern_sql, simplified.sql(dialect="duckdb")):
+            with self.subTest(sql):
+                with self.assertRaises(duckdb.InvalidInputException):
+                    self.conn.sql(sql).fetchall()
 
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)

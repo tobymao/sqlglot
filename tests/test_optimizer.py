@@ -1190,6 +1190,19 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
+    def test_pushdown_predicates_right_join_preserved_side(self):
+        sql = """
+        SELECT x.id AS xid, y.id AS yid, y.flag AS yflag
+        FROM x AS x
+        RIGHT JOIN y AS y ON x.id = y.id
+        WHERE y.flag = 1
+        """
+        optimized = optimizer.pushdown_predicates.pushdown_predicates(parse_one(sql))
+        self.assertEqual(
+            optimized.sql(),
+            "SELECT x.id AS xid, y.id AS yid, y.flag AS yflag FROM x AS x RIGHT JOIN y AS y ON x.id = y.id WHERE y.flag = 1",
+        )
+
     def test_expand_alias_refs(self):
         # check negative integer literal as group by column
         self.assertEqual(

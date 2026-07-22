@@ -227,6 +227,11 @@ def nodes_for_predicate(
             node = source.expression
 
         if isinstance(node, exp.Join):
+            # A predicate from WHERE on the preserved side of a RIGHT JOIN
+            # must remain a post-join filter. Moving it into ON changes an
+            # unmatched preserved row into a result row.
+            if where_condition and node.side == "RIGHT":
+                return {}
             if node.side and node.side != "RIGHT":
                 return {}
             nodes[table] = node

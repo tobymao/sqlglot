@@ -120,6 +120,14 @@ class TestMySQL(Validator):
             "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE x.id = 1"
         )
         self.validate_identity(
+            "INSERT INTO `test_table` SET `test_col_1` = 123, `test_col_2` = '456'",
+            "INSERT INTO `test_table` (`test_col_1`, `test_col_2`) VALUES (123, '456')",
+        )
+        self.validate_identity(
+            "INSERT INTO t SET a = DEFAULT, b = 2 AS new ON DUPLICATE KEY UPDATE a = new.a + 1",
+            "INSERT INTO t (a, b) VALUES (DEFAULT, 2) AS new ON DUPLICATE KEY UPDATE a = new.a + 1",
+        )
+        self.validate_identity(
             "CREATE OR REPLACE VIEW my_view AS SELECT column1 AS `boo`, column2 AS `foo` FROM my_table WHERE column3 = 'some_value' UNION SELECT q.* FROM fruits_table, JSON_TABLE(Fruits, '$[*]' COLUMNS(id VARCHAR(255) PATH '$.$id', value VARCHAR(255) PATH '$.value')) AS q",
         )
         self.validate_identity(

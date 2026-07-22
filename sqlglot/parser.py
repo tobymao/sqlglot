@@ -3542,6 +3542,38 @@ class Parser:
 
             this = self._parse_function() if is_function else self._parse_insert_table()
 
+        # MySQL's INSERT ... SET is normalized into the INSERT ... (cols) VALUES (vals) variant
+        set_values = None
+        if self._match(TokenType.SET):
+            columns = []
+            values = []
+
+            def _parse_set_assignment() -> exp.Expr | None:
+                target = self._parse_column()
+                if isinstance(target, exp.Column) and self._match(TokenType.EQ):
+                    if self.dialect.SUPPORTS_VALUES_DEFAULT and self._match(TokenType.DEFAULT):
+                        value: exp.Expr | None = exp.var(self._prev.text.upper())
+                    else:
+                        value = self._parse_disjunction()
+
+                    if value:
+                        columns.append(target.this)
+                        values.append(value)
+                        return value
+
+                self.raise_error("Expected column assignment in INSERT ... SET")
+                return None
+
+            self._parse_csv(_parse_set_assignment)
+
+            this = self.expression(exp.Schema(this=this, expressions=columns))
+            set_values = self.expression(
+                exp.Values(
+                    expressions=[exp.Tuple(expressions=values)],
+                    alias=self._parse_table_alias(),
+                )
+            )
+
         returning = self._parse_returning()  # TSQL allows RETURNING before source
 
         return self.expression(
@@ -3557,7 +3589,9 @@ class Parser:
                 partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
                 settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
                 default=self._match_text_seq("DEFAULT", "VALUES"),
-                expression=self._parse_derived_table_values() or self._parse_ddl_select(),
+                expression=set_values
+                or self._parse_derived_table_values()
+                or self._parse_ddl_select(),
                 conflict=self._parse_on_conflict(),
                 returning=returning or self._parse_returning(),
                 overwrite=overwrite,

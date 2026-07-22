@@ -5,6 +5,16 @@ from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 from sqlglot._typing import E
 
 
+NEGATED_COMPARISONS = {
+    exp.EQ: exp.NEQ,
+    exp.NEQ: exp.EQ,
+    exp.LT: exp.GTE,
+    exp.LTE: exp.GT,
+    exp.GT: exp.LTE,
+    exp.GTE: exp.LT,
+}
+
+
 def unnest_subqueries(expression: E) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
@@ -153,6 +163,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     table_alias = next_alias_name()
     keys = []
+    has_negated_correlation = False
 
     # for all external columns in the where statement, find the relevant predicate
     # keys to convert it into a join
@@ -165,6 +176,17 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if not predicate or predicate.find_ancestor(exp.Where) is not where:
             return
 
+        negation = predicate.find_ancestor(exp.Not)
+        if negation and negation.find_ancestor(exp.Where) is where:
+            comparison_type = NEGATED_COMPARISONS.get(type(predicate))
+            if not comparison_type or negation.this.unnest() is not predicate:
+                return
+
+            predicate = negation.replace(
+                comparison_type(this=predicate.this, expression=predicate.expression)
+            )
+            has_negated_correlation = True
+
         if isinstance(predicate, exp.Binary):
             key = (
                 predicate.right
@@ -176,7 +198,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         keys.append((key, column, predicate))
 
-    if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
+    if not has_negated_correlation and not any(
+        isinstance(predicate, exp.EQ) for *_, predicate in keys
+    ):
         return
 
     is_subquery_projection = any(
@@ -305,9 +329,10 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"({parent_predicate} AND ARRAY_ANY({nested}, _x -> {predicate}))",
             )
 
+    join_predicates = [predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)]
     parent_select.join(
         select.group_by(*group_by, copy=False),
-        on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
+        on=join_predicates or exp.true(),
         join_type="LEFT",
         join_alias=table_alias,
         copy=False,

@@ -1187,6 +1187,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_subqueries_preserves_negated_correlations(self):
+        sql = "SELECT x.id FROM x AS x WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT (y.id = x.id))"
+
+        optimized = optimizer.unnest_subqueries.unnest_subqueries(parse_one(sql))
+
+        self.assertEqual(
+            optimized.sql(),
+            "SELECT x.id FROM x AS x "
+            "LEFT JOIN (SELECT ARRAY_AGG(y.id) AS _u_1 FROM y AS y WHERE TRUE) "
+            "AS _u_0 ON TRUE "
+            "WHERE (NOT _u_0._u_1 IS NULL "
+            "AND ARRAY_ANY(_u_0._u_1, _x -> _x <> x.id))",
+        )
+
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 

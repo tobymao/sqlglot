@@ -276,6 +276,20 @@ def _mergeable(
         or any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS)
         or inner_select.args.get("from_") is None
         or outer_scope.pivots
+        or (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
+        or (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
+        or (
+            isinstance(from_or_join, exp.Join)
+            and inner_select.args.get("where")
+            and from_or_join.side in ("FULL", "LEFT", "RIGHT")
+        )
+        or (
+            isinstance(from_or_join, exp.From)
+            and inner_select.args.get("where")
+            and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
+        )
+        or (inner_select.args.get("order") and outer_scope.is_union)
+        or isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
     ):
         return False
 
@@ -297,25 +311,11 @@ def _mergeable(
                 window_aliases.add(name)
 
     return (
-        not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
-        and not (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
-        and not (
-            isinstance(from_or_join, exp.Join)
-            and inner_select.args.get("where")
-            and from_or_join.side in ("FULL", "LEFT", "RIGHT")
-        )
-        and not (
-            isinstance(from_or_join, exp.From)
-            and inner_select.args.get("where")
-            and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
-        )
-        and not _outer_select_joins_on_inner_select_join(projections)
+        not _outer_select_joins_on_inner_select_join(projections)
         and not _window_projection_blocks_merge(window_aliases)
         and not _literal_group_unmergeable(number_literal_aliases)
         and not _literal_in_order_by(number_literal_aliases)
         and not (inner_scope.is_cte and _is_recursive())
-        and not (inner_select.args.get("order") and outer_scope.is_union)
-        and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
     )
 
 

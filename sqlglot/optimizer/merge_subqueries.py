@@ -44,9 +44,11 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     # doesn't mutate the AST; if it does, the scopes it was given are no longer valid, so the
     # scope tree needs to be rebuilt before merge_derived_tables runs.
     scopes = traverse_scope(expression)
-    expression, merged_ctes = _merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+    expression, merged_ctes = merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+
     if merged_ctes:
         scopes = traverse_scope(expression)
+
     expression = merge_derived_tables(expression, leave_tables_isolated, scopes=scopes)
     return expression
 
@@ -77,21 +79,11 @@ def merge_ctes(
     expression: E,
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
-) -> E:
-    return _merge_ctes(expression, leave_tables_isolated, scopes)[0]
-
-
-def _merge_ctes(
-    expression: E,
-    leave_tables_isolated: bool = False,
-    scopes: list[Scope] | None = None,
 ) -> tuple[E, bool]:
-    scopes = traverse_scope(expression) if scopes is None else scopes
-
     # All places where we select from CTEs.
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
     cte_selections = defaultdict(list)
-    for outer_scope in scopes:
+    for outer_scope in traverse_scope(expression) if scopes is None else scopes:
         for table, inner_scope in outer_scope.selected_sources.values():
             if isinstance(inner_scope, Scope) and inner_scope.is_cte:
                 cte_selections[id(inner_scope)].append(

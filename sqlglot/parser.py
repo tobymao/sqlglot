@@ -742,6 +742,7 @@ class Parser:
         TokenType.OFFSET,
         TokenType.OPERATOR,
         TokenType.ORDINALITY,
+        TokenType.OUT,
         TokenType.OVER,
         TokenType.OVERLAPS,
         TokenType.OVERWRITE,

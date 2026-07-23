@@ -466,6 +466,7 @@ SELECT a.* EXCEPT (a, b), b.* REPLACE (a AS b, b AS C) FROM x
 SELECT A.* EXCEPT (A.COL_1) FROM TABLE_1 AS A
 SELECT zoo, animals FROM (VALUES ('oakland', ARRAY('a', 'b')), ('sf', ARRAY('b', 'c'))) AS t(zoo, animals)
 SELECT zoo, animals FROM UNNEST(ARRAY(STRUCT('oakland' AS zoo, ARRAY('a', 'b') AS animals), STRUCT('sf' AS zoo, ARRAY('b', 'c') AS animals))) AS t(zoo, animals)
+WITH out AS (SELECT 1 AS c) SELECT * FROM out
 WITH a AS (SELECT 1) SELECT 1 UNION ALL SELECT 2
 WITH a AS (SELECT 1) SELECT 1 UNION SELECT 2
 WITH a AS (SELECT 1) SELECT 1 INTERSECT SELECT 2

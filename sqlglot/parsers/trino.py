@@ -61,3 +61,44 @@ class TrinoParser(PrestoParser):
                 on_condition=self._parse_on_condition(),
             )
         )
+
+    def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
+        # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
+        # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a
+        # CTE that happens to be named "function", e.g. `WITH function AS (SELECT 1)`
+        if (
+            self._match(TokenType.FUNCTION, advance=False)
+            and self._next.token_type in self.ID_VAR_TOKENS
+        ):
+            self._advance()
+            return self._parse_function_specification()
+
+        return super()._parse_cte()
+
+    def _parse_function_specification(self) -> exp.FunctionSpecification:
+        return self.expression(
+            exp.FunctionSpecification(
+                this=self._parse_user_defined_function(kind=TokenType.FUNCTION),
+                properties=self._parse_routine_characteristics(),
+                expression=self._parse_routine_statement(),
+            )
+        )
+
+    def _parse_routine_characteristics(self) -> exp.Properties | None:
+        # The mandatory `RETURNS` clause. Further routine characteristics (LANGUAGE,
+        # DETERMINISTIC, SECURITY, ...) are added in a follow-up:
+        # https://trino.io/docs/current/udf/function.html
+        if not self._match_text_seq("RETURNS"):
+            return None
+
+        returns = self.PROPERTY_PARSERS["RETURNS"](self)
+        return self.expression(exp.Properties(expressions=[returns]))
+
+    def _parse_routine_statement(self) -> exp.Expr | None:
+        # https://trino.io/docs/current/udf/sql.html -- only RETURN is supported so far;
+        # BEGIN...END blocks and other control statements are added in follow-ups.
+        if self._match_text_seq("RETURN"):
+            return self.expression(exp.Return(this=self._parse_disjunction()))
+
+        self.raise_error("Expected routine statement")
+        return None

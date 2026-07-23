@@ -654,9 +654,9 @@ class ClickHouseParser(parser.Parser):
         return super()._parse_position(haystack_first=True)
 
     # https://clickhouse.com/docs/en/sql-reference/statements/select/with/
-    def _parse_cte(self) -> exp.CTE | None:
+    def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # WITH <identifier> AS <subquery expression>
-        cte: exp.CTE | None = self._try_parse(super()._parse_cte)
+        cte: exp.CTE | exp.FunctionSpecification | None = self._try_parse(super()._parse_cte)
 
         if not cte:
             # WITH <expression> AS <identifier>

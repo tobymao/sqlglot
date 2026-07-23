@@ -618,3 +618,7 @@ SELECT x.a AS a FROM x AS x JOIN y AS y ON x.a = y.b WHERE x.b > 1;
 # title: Window function nested inside a merged CTE is still blocked from merging into a join
 WITH c AS (SELECT rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY a) AS rn FROM x) AS q) SELECT c.rn FROM c JOIN y ON c.rn = y.b;
 SELECT q.rn AS rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY x.a) AS rn FROM x AS x) AS q JOIN y AS y ON q.rn = y.b;
+
+# title: A CTE merge that reintroduces a name colliding with the outer join still renames correctly
+WITH c AS (SELECT q.a FROM (SELECT x.a FROM x AS x) AS q) SELECT c.a FROM c JOIN x ON c.a = x.a;
+SELECT x_2.a AS a FROM x AS x_2 JOIN x AS x ON x_2.a = x.a;

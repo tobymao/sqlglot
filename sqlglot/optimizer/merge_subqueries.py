@@ -40,9 +40,13 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Returns:
         sqlglot.Expr: optimized expression
     """
-    # Shared across both passes so the scope tree is only built once
+    # Shared across both passes so the scope tree is only built once, as long as merge_ctes
+    # doesn't mutate the AST; if it does, the scopes it was given are no longer valid, so the
+    # scope tree needs to be rebuilt before merge_derived_tables runs.
     scopes = traverse_scope(expression)
-    expression = merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+    expression, merged_ctes = _merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+    if merged_ctes:
+        scopes = traverse_scope(expression)
     expression = merge_derived_tables(expression, leave_tables_isolated, scopes=scopes)
     return expression
 
@@ -74,6 +78,14 @@ def merge_ctes(
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
 ) -> E:
+    return _merge_ctes(expression, leave_tables_isolated, scopes)[0]
+
+
+def _merge_ctes(
+    expression: E,
+    leave_tables_isolated: bool = False,
+    scopes: list[Scope] | None = None,
+) -> tuple[E, bool]:
     scopes = traverse_scope(expression) if scopes is None else scopes
 
     # All places where we select from CTEs.
@@ -90,6 +102,7 @@ def merge_ctes(
                     )
                 )
 
+    merged = False
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
         from_or_join = table.find_ancestor(exp.From, exp.Join)
@@ -108,7 +121,8 @@ def merge_ctes(
             _merge_hints(outer_scope, inner_scope)
             _pop_cte(inner_scope)
             outer_scope.clear_cache()
-    return expression
+            merged = True
+    return expression, merged
 
 
 def merge_derived_tables(
@@ -148,8 +162,11 @@ def _mergeable(
     Return True if `inner_select` can be merged into outer query.
     """
     inner_select = inner_scope.expression.unnest()
+    outer = outer_scope.expression
+    outer_args = outer.args
+    inner_name = from_or_join.alias_or_name
 
-    def _window_projection_blocks_merge(window_aliases):
+    def _window_projection_blocks_merge(window_aliases: set[str]) -> bool:
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
           - the outer query filters or joins (WHERE/JOIN), which changes that row set, or
@@ -169,7 +186,7 @@ def _mergeable(
             for column in outer_scope.columns
         )
 
-    def _literal_group_unmergeable(number_literal_aliases):
+    def _literal_group_unmergeable(number_literal_aliases: set[str]) -> bool:
         """
         A numeric-literal projection referenced in GROUP BY can't be inlined, because a bare
         integer literal is positional. A reference that is itself a top-level GROUP BY item
@@ -197,14 +214,14 @@ def _mergeable(
             return False
 
         projected = set()
-        for s in outer_scope.expression.selects:
+        for s in t.cast(exp.Select, outer).selects:
             unaliased = s.unalias()
             if isinstance(unaliased, exp.Column) and unaliased.table == inner_name:
                 projected.add(unaliased.name)
 
         return not grouped <= projected
 
-    def _outer_select_joins_on_inner_select_join(projections):
+    def _outer_select_joins_on_inner_select_join(projections: dict[str, exp.Expr]) -> bool:
         """
         All columns from the inner select in the ON clause must be from the first FROM table.
 
@@ -232,7 +249,7 @@ def _mergeable(
             for col in projections[selection].find_all(exp.Column)
         )
 
-    def _is_recursive():
+    def _is_recursive() -> bool:
         # Recursive CTEs look like this:
         #     WITH RECURSIVE cte AS (
         #       SELECT * FROM x  <-- inner scope
@@ -248,7 +265,7 @@ def _mergeable(
             node = node.parent
         return False
 
-    def _literal_in_order_by(number_literal_aliases):
+    def _literal_in_order_by(number_literal_aliases: set[str]) -> bool:
         """A numeric-literal projection under a bare ORDER BY key can't merge (would become positional)."""
         order = outer_args.get("order")
         if not order:
@@ -260,18 +277,14 @@ def _mergeable(
         }
         return bool(number_literal_aliases & ordered)
 
-    outer = outer_scope.expression
-    if not isinstance(outer, exp.Select):
-        return False
-    if outer.is_star:
-        return False
-    if not isinstance(inner_select, exp.Select):
-        return False
-    if any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS):
-        return False
-    if inner_select.args.get("from_") is None:
-        return False
-    if outer_scope.pivots:
+    if (
+        not isinstance(outer, exp.Select)
+        or outer.is_star
+        or not isinstance(inner_select, exp.Select)
+        or any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS)
+        or inner_select.args.get("from_") is None
+        or outer_scope.pivots
+    ):
         return False
 
     # Single pass over the projections: replaces the separate AggFunc/Select/Explode and
@@ -291,42 +304,27 @@ def _mergeable(
             if isinstance(node, exp.Window):
                 window_aliases.add(name)
 
-    if leave_tables_isolated and len(outer_scope.selected_sources) > 1:
-        return False
-    if isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"):
-        return False
-    if (
-        isinstance(from_or_join, exp.Join)
-        and inner_select.args.get("where")
-        and from_or_join.side in ("FULL", "LEFT", "RIGHT")
-    ):
-        return False
-    outer_args = outer.args
-    if (
-        isinstance(from_or_join, exp.From)
-        and inner_select.args.get("where")
-        and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
-    ):
-        return False
-
-    inner_name = from_or_join.alias_or_name
-
-    if _outer_select_joins_on_inner_select_join(projections):
-        return False
-    if _window_projection_blocks_merge(window_aliases):
-        return False
-    if _literal_group_unmergeable(number_literal_aliases):
-        return False
-    if _literal_in_order_by(number_literal_aliases):
-        return False
-    if inner_scope.is_cte and _is_recursive():
-        return False
-    if inner_select.args.get("order") and outer_scope.is_union:
-        return False
-    if isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform):
-        return False
-
-    return True
+    return (
+        not (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
+        and not (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
+        and not (
+            isinstance(from_or_join, exp.Join)
+            and inner_select.args.get("where")
+            and from_or_join.side in ("FULL", "LEFT", "RIGHT")
+        )
+        and not (
+            isinstance(from_or_join, exp.From)
+            and inner_select.args.get("where")
+            and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
+        )
+        and not _outer_select_joins_on_inner_select_join(projections)
+        and not _window_projection_blocks_merge(window_aliases)
+        and not _literal_group_unmergeable(number_literal_aliases)
+        and not _literal_in_order_by(number_literal_aliases)
+        and not (inner_scope.is_cte and _is_recursive())
+        and not (inner_select.args.get("order") and outer_scope.is_union)
+        and not isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
+    )
 
 
 def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:

@@ -610,3 +610,11 @@ SELECT s.b AS b FROM (SELECT 6 AS a, x.b AS b FROM x AS x) AS s ORDER BY s.a;
 # execute: false
 WITH c AS (SELECT DISTINCT b FROM x) SELECT s.b FROM (SELECT 6 AS a, b FROM c) AS s CROSS JOIN x ORDER BY s.a;
 WITH c AS (SELECT DISTINCT x.b AS b FROM x AS x) SELECT s.b AS b FROM (SELECT 6 AS a, c.b AS b FROM c AS c) AS s CROSS JOIN x AS x ORDER BY s.a;
+
+# title: A single-use CTE merge must not leave a stale scope for the later derived-table pass
+WITH c AS (SELECT a FROM (SELECT a, b FROM x) AS q WHERE q.b > 1) SELECT c.a FROM c JOIN y ON c.a = y.b;
+SELECT x.a AS a FROM x AS x JOIN y AS y ON x.a = y.b WHERE x.b > 1;
+
+# title: Window function nested inside a merged CTE is still blocked from merging into a join
+WITH c AS (SELECT rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY a) AS rn FROM x) AS q) SELECT c.rn FROM c JOIN y ON c.rn = y.b;
+SELECT q.rn AS rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY x.a) AS rn FROM x AS x) AS q JOIN y AS y ON q.rn = y.b;

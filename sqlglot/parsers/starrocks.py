@@ -2,7 +2,11 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
+from sqlglot.dialects.dialect import (
+    build_date_delta_with_interval,
+    build_like,
+    build_timestamp_trunc,
+)
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
@@ -20,14 +24,26 @@ class StarRocksParser(MySQLParser):
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": build_timestamp_trunc,
+        # DATEDIFF counts crossed day boundaries, unlike DATE_DIFF which counts whole days
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/datediff/
         "DATEDIFF": lambda args: exp.DateDiff(
-            this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            unit=exp.var("DAY"),
+            date_part_boundary=True,
         ),
         "DATE_DIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
         ),
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
+        # StarRocks' LIKE(expr, pattern) takes its arguments in the natural order,
+        # unlike the base builder which reverses them
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/like-predicate-functions/like/
+        "LIKE": build_like(exp.Like),
         "REGEXP": exp.RegexpLike.from_arg_list,
+        # StarRocks supports TO_DAYS natively, so it doesn't need MySQL's rewrite
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/to_days/
+        "TO_DAYS": exp.ToDays.from_arg_list,
         # StarRocks' MAP() is a variadic constructor: MAP(k1, v1, k2, v2, ...)
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/
         "MAP": parser.build_var_map,

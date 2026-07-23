@@ -152,6 +152,9 @@ class MySQLParser(parser.Parser):
         ),
         "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        # VARIANCE is a synonym of VAR_POP, not of VAR_SAMP
+        # https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+        "VARIANCE": exp.VariancePop.from_arg_list,
     }
 
     FUNCTION_PARSERS = {

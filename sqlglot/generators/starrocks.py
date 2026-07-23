@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     inline_array_sql,
     property_sql,
     var_map_sql,
+    week_unit_to_dow,
 )
 from sqlglot.generators.mysql import MySQLGenerator
 
@@ -89,8 +90,11 @@ class StarRocksGenerator(MySQLGenerator):
     TRANSFORMS = {
         # StarRocks uses the native TRIM(str, chars)/LTRIM/RTRIM function form, not
         # MySQL's TRIM(chars FROM str) syntax, so it falls back to the base generator.
+        # DateDiff falls back to datediff_sql, which picks between DATEDIFF and DATE_DIFF.
         **{
-            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
+            k: v
+            for k, v in MySQLGenerator.TRANSFORMS.items()
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Trim)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -103,7 +107,6 @@ class StarRocksGenerator(MySQLGenerator):
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
-        exp.DateDiff: lambda self, e: self.func("DATE_DIFF", unit_to_str(e), e.this, e.expression),
         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
@@ -286,6 +289,58 @@ class StarRocksGenerator(MySQLGenerator):
         "where",
         "with",
     }
+
+    # Units both DATE_DIFF and DATE_TRUNC support, so a boundary-crossing diff over them
+    # can be lowered by truncating the operands. MILLISECOND is deliberately absent: the
+    # analyzer rejects sub-second DATE_TRUNC over DATETIME-typed arguments (despite the
+    # docs advertising support since 3.1.7), and for second-precision values whole-unit
+    # and boundary counting coincide anyway, so that diff is emitted untruncated.
+    DATE_DIFF_TRUNC_UNITS = {"YEAR", "QUARTER", "MONTH", "HOUR", "MINUTE", "SECOND"}
+
+    def datediff_sql(self, expression: exp.DateDiff) -> str:
+        this = expression.this
+        expr = expression.expression
+        unit = expression.args.get("unit")
+        unit_str = unit_to_str(expression)
+
+        if expression.args.get("date_part_boundary"):
+            # DATEDIFF(a, b) natively counts crossed day boundaries, and a missing unit
+            # is MySQL's DATEDIFF, which also means DAY
+            # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/datediff/
+            if not unit or (
+                isinstance(unit, (exp.Var, exp.Literal)) and unit.name.upper() == "DAY"
+            ):
+                return self.func("DATEDIFF", this, expr)
+
+            # DATE_DIFF counts whole units, so the operands are truncated down to the
+            # unit to make it count boundary crossings, mirroring the Presto generator
+            dow = week_unit_to_dow(unit)
+            if dow is not None:
+                unit_str = exp.Literal.string("WEEK")
+
+                # DATE_TRUNC('WEEK', ...) is Monday-based; shifting both operands by the
+                # same delta realigns it to the requested week start
+                shift_days = 1 if dow == 7 else 1 - dow
+                if shift_days:
+                    delta = exp.Interval(
+                        this=exp.Literal.string(str(shift_days)), unit=exp.var("DAY")
+                    )
+                    this = exp.Add(this=this, expression=delta)
+                    expr = exp.Add(this=expr, expression=delta.copy())
+
+            if unit_str is not None and (
+                dow is not None
+                or (
+                    isinstance(unit, (exp.Var, exp.Literal))
+                    and unit.name.upper() in self.DATE_DIFF_TRUNC_UNITS
+                )
+            ):
+                this = exp.TimestampTrunc(this=this, unit=unit_str.copy())
+                expr = exp.TimestampTrunc(this=expr, unit=unit_str.copy())
+            # units DATE_TRUNC can't handle, e.g. ISOYEAR, stay untruncated: they fail
+            # loudly on the server rather than silently returning whole-unit counts
+
+        return self.func("DATE_DIFF", unit_str, this, expr)
 
     def create_sql(self, expression: exp.Create) -> str:
         # Starrocks' primary key is defined outside of the schema, so we need to move it there

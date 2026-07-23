@@ -1660,7 +1660,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), DAY)",
                 "mysql": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
-                "starrocks": "DATE_DIFF('DAY', CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
             },
         )
         self.validate_all(
@@ -1674,7 +1674,7 @@ LANGUAGE js AS
             "DATE_DIFF(DATE '2010-07-07', DATE '2008-12-25', MINUTE)",
             write={
                 "bigquery": "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), MINUTE)",
-                "starrocks": "DATE_DIFF('MINUTE', CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATE_DIFF('MINUTE', DATE_TRUNC('MINUTE', CAST('2010-07-07' AS DATE)), DATE_TRUNC('MINUTE', CAST('2008-12-25' AS DATE)))",
             },
         )
         self.validate_all(

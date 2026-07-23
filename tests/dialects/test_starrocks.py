@@ -251,6 +251,116 @@ class TestStarrocks(Validator):
             "SELECT DATE_DIFF('MINUTE', '2010-11-30 23:59:59', '2010-11-30 20:58:59')"
         )
 
+    def test_datediff(self):
+        # DATEDIFF counts crossed day boundaries while DATE_DIFF counts whole days,
+        # so the two must not be rewritten into each other
+        self.validate_identity("SELECT DATEDIFF(a, b)")
+        self.validate_identity("SELECT DATE_DIFF('DAY', a, b)")
+        self.validate_identity("SELECT DATE_DIFF('MINUTE', a, b)")
+
+        # dialects whose day diff counts boundary crossings map onto DATEDIFF
+        self.validate_all(
+            "SELECT DATEDIFF(a, b)",
+            read={
+                "bigquery": "SELECT DATE_DIFF(a, b, DAY)",
+                "mysql": "SELECT DATEDIFF(a, b)",
+            },
+            write={
+                "bigquery": "SELECT DATE_DIFF(a, b, DAY)",
+                "mysql": "SELECT DATEDIFF(a, b)",
+                "postgres": "SELECT (CAST(a AS DATE) - CAST(b AS DATE))",
+                "starrocks": "SELECT DATEDIFF(a, b)",
+            },
+        )
+        # units from dialects sqlglot doesn't flag as boundary-crossing keep DATE_DIFF
+        self.validate_all(
+            "SELECT DATE_DIFF('DAY', b, a)",
+            read={
+                "duckdb": "SELECT DATE_DIFF('day', a, b)",
+            },
+        )
+
+        # a boundary-crossing diff over a non-DAY unit truncates the operands down to
+        # the unit, turning StarRocks' whole-unit counting into boundary counting
+        self.validate_all(
+            "SELECT DATE_DIFF('MONTH', DATE_TRUNC('MONTH', a), DATE_TRUNC('MONTH', b))",
+            read={
+                "bigquery": "SELECT DATE_DIFF(a, b, MONTH)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('HOUR', DATE_TRUNC('HOUR', b), DATE_TRUNC('HOUR', a))",
+            read={
+                "snowflake": "SELECT DATEDIFF(hour, a, b)",
+            },
+        )
+        # DATE_TRUNC('WEEK', ...) is Monday-based, so week units shift both operands to
+        # realign the requested week start
+        self.validate_all(
+            "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', a + INTERVAL '1' DAY), DATE_TRUNC('WEEK', b + INTERVAL '1' DAY))",
+            read={
+                "bigquery": "SELECT DATE_DIFF(a, b, WEEK)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', a), DATE_TRUNC('WEEK', b))",
+            read={
+                "bigquery": "SELECT DATE_DIFF(a, b, ISOWEEK)",
+            },
+        )
+        # units DATE_TRUNC can't handle stay untruncated and fail loudly on the server
+        # rather than silently returning whole-unit counts
+        self.validate_all(
+            "SELECT DATE_DIFF('ISOYEAR', a, b)",
+            read={
+                "bigquery": "SELECT DATE_DIFF(a, b, ISOYEAR)",
+            },
+        )
+
+    def test_to_days(self):
+        # StarRocks has a native TO_DAYS, unlike MySQL it must not be expanded
+        self.validate_identity("SELECT TO_DAYS(a)")
+        self.validate_all(
+            "SELECT TO_DAYS(a)",
+            write={
+                "mysql": "SELECT TO_DAYS(a)",
+                "starrocks": "SELECT TO_DAYS(a)",
+            },
+        )
+
+    def test_like(self):
+        # LIKE(expr, pattern) takes its arguments in the natural order
+        self.validate_identity("SELECT LIKE(a, 'x%')", "SELECT a LIKE 'x%'")
+        self.validate_all(
+            "SELECT a LIKE 'x%'",
+            read={
+                "starrocks": "SELECT LIKE(a, 'x%')",
+            },
+            write={
+                "starrocks": "SELECT a LIKE 'x%'",
+            },
+        )
+
+    def test_variance(self):
+        # VARIANCE / VAR_POP / VARIANCE_POP are the population variance,
+        # VAR_SAMP / VARIANCE_SAMP the sample one
+        self.validate_identity("SELECT VAR_SAMP(a)")
+        self.validate_identity("SELECT VARIANCE_SAMP(a)", "SELECT VAR_SAMP(a)")
+        self.validate_identity("SELECT VAR_POP(a)")
+        self.validate_identity("SELECT VARIANCE(a)", "SELECT VAR_POP(a)")
+        self.validate_identity("SELECT VARIANCE_POP(a)", "SELECT VAR_POP(a)")
+        self.validate_all(
+            "SELECT VAR_SAMP(a), VAR_POP(a)",
+            read={
+                "starrocks": "SELECT VAR_SAMP(a), VARIANCE(a)",
+            },
+            write={
+                "duckdb": "SELECT VARIANCE(a), VAR_POP(a)",
+                "mysql": "SELECT VAR_SAMP(a), VAR_POP(a)",
+                "starrocks": "SELECT VAR_SAMP(a), VAR_POP(a)",
+            },
+        )
+
     def test_date_add_sub(self):
         # Standard INTERVAL form
         self.validate_identity("SELECT DATE_ADD(x, INTERVAL '3' DAY)")

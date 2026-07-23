@@ -487,6 +487,23 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT WEEK_OF_YEAR('2023-01-01')", "SELECT WEEKOFYEAR('2023-01-01')"
         )
+        # VARIANCE is a synonym of VAR_POP, and MySQL has no VARIANCE_POP
+        # https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+        self.validate_identity("SELECT VARIANCE(a)", "SELECT VAR_POP(a)")
+        self.validate_identity("SELECT VAR_POP(a)")
+        self.validate_identity("SELECT VAR_SAMP(a)")
+        self.validate_all(
+            "SELECT VAR_POP(a), VAR_SAMP(a)",
+            read={
+                "mysql": "SELECT VARIANCE(a), VAR_SAMP(a)",
+            },
+            write={
+                "doris": "SELECT VAR_POP(a), VAR_SAMP(a)",
+                "duckdb": "SELECT VAR_POP(a), VARIANCE(a)",
+                "mysql": "SELECT VAR_POP(a), VAR_SAMP(a)",
+                "postgres": "SELECT VAR_POP(a), VAR_SAMP(a)",
+            },
+        )
         self.validate_all(
             "CHAR(10)",
             write={

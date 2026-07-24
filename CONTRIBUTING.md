@@ -92,6 +92,14 @@ We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 of the code. If you want to propose a new feature, this is the right place to do it. Just start a discussion, and
 let us know why you think this feature would be a good addition to SQLGlot (by possibly including some usage examples).
 
+## Deployment (maintainers only)
+
+To deploy a new SQLGlot version, follow these steps:
+
+1. Run `git pull` to make sure the local git repo is at the head of the main branch
+2. Do a `git tag` operation to bump the SQLGlot version, e.g. `git tag v28.5.0`
+3. Run `git push && git push --tags` to deploy the new version
+
 ## [License](https://github.com/tobymao/sqlglot/blob/main/LICENSE)
 
 By contributing, you agree that your contributions will be licensed under its MIT License.

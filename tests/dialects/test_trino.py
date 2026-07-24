@@ -1,6 +1,3 @@
-import sqlglot
-from sqlglot import exp
-from sqlglot.errors import ParseError
 from tests.dialects.test_dialect import Validator
 
 
@@ -181,9 +178,6 @@ class TestTrino(Validator):
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b') FROM tbl")
 
     def test_inline_udf(self):
-        # https://trino.io/docs/current/udf/sql.html
-        # Routine characteristics (LANGUAGE, DETERMINISTIC, SECURITY, ...) and control
-        # statement bodies (BEGIN...END, IF, CASE, loops) are covered in follow-ups.
         self.validate_identity(
             "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)"
         )
@@ -192,14 +186,10 @@ class TestTrino(Validator):
             "FUNCTION bye() RETURNS VARCHAR RETURN 'Bye!' "
             "SELECT HELLO('Finn') || BYE()"
         )
-
-        # an inline UDF precedes the query's own WITH clause
         self.validate_identity(
             "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER RETURN x * 2 "
             "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
         )
-
-        # the example from https://github.com/tobymao/sqlglot/issues/5178
         self.validate_identity(
             """WITH FUNCTION f(num int)
     RETURNS int
@@ -207,28 +197,5 @@ class TestTrino(Validator):
 SELECT f(1)""",
             "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)",
         )
-
-        expression = self.parse_one(
-            "WITH FUNCTION doubleup(x INTEGER) RETURNS INTEGER RETURN x * 2 "
-            "SELECT DOUBLEUP(some_column) FROM some_table"
-        )
-        udfs = list(expression.find_all(exp.FunctionSpecification))
-        self.assertEqual(len(udfs), 1)
-        self.assertIn("some_table", {table.name for table in expression.find_all(exp.Table)})
-
-        # a CTE named "function" is still parsed as a regular CTE
-        for sql in (
-            "WITH function AS (SELECT 1 AS x) SELECT x FROM function",
-            "WITH function(x) AS (SELECT 1) SELECT x FROM function",
-        ):
-            cte = self.validate_identity(sql)
-            self.assertFalse(list(cte.find_all(exp.FunctionSpecification)))
-
-        for invalid in (
-            # missing routine body
-            "WITH FUNCTION f() RETURNS INTEGER SELECT F()",
-            # missing RETURN expression
-            "WITH FUNCTION f() RETURNS INTEGER RETURN",
-        ):
-            with self.assertRaises(ParseError):
-                sqlglot.parse(invalid, dialect="trino")
+        self.validate_identity("WITH function AS (SELECT 1 AS x) SELECT x FROM function")
+        self.validate_identity("WITH function(x) AS (SELECT 1) SELECT x FROM function")

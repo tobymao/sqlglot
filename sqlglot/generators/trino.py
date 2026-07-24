@@ -57,16 +57,15 @@ class TrinoGenerator(PrestoGenerator):
 
         functions_sql = self.expressions(sqls=functions, flat=True)
 
-        ctes = [e for e in expression.expressions if not isinstance(e, exp.FunctionSpecification)]
-        if not ctes:
+        if len(functions) == len(expression.expressions):
             return f"WITH {functions_sql}"
 
-        recursive = "RECURSIVE " if expression.args.get("recursive") else ""
-        search = self.sql(expression, "search")
-        search = f" {search}" if search else ""
-        ctes_sql = self.expressions(sqls=ctes, flat=True)
+        expression.set(
+            "expressions",
+            [e for e in expression.expressions if not isinstance(e, exp.FunctionSpecification)],
+        )
 
-        return f"WITH {functions_sql} WITH {recursive}{ctes_sql}{search}"
+        return f"WITH {functions_sql} {super().with_sql(expression)}"
 
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):

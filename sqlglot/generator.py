@@ -6215,8 +6215,9 @@ class Generator:
 
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
         properties = expression.args.get("properties")
-        properties_sql = self.properties(properties, sep=" ", wrapped=False) if properties else ""
-        properties_sql = f" {properties_sql}" if properties_sql else ""
+        properties_sql = (
+            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
+        )
         body = self.sql(expression, "expression")
         return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
 

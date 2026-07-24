@@ -79,20 +79,10 @@ class TrinoParser(PrestoParser):
         return self.expression(
             exp.FunctionSpecification(
                 this=self._parse_user_defined_function(kind=TokenType.FUNCTION),
-                properties=self._parse_routine_characteristics(),
+                properties=self._parse_properties(),
                 expression=self._parse_routine_statement(),
             )
         )
-
-    def _parse_routine_characteristics(self) -> exp.Properties | None:
-        # The mandatory `RETURNS` clause. Further routine characteristics (LANGUAGE,
-        # DETERMINISTIC, SECURITY, ...) are added in a follow-up:
-        # https://trino.io/docs/current/udf/function.html
-        if not self._match_text_seq("RETURNS"):
-            return None
-
-        returns = self.PROPERTY_PARSERS["RETURNS"](self)
-        return self.expression(exp.Properties(expressions=[returns]))
 
     def _parse_routine_statement(self) -> exp.Expr | None:
         # https://trino.io/docs/current/udf/sql.html -- only RETURN is supported so far;

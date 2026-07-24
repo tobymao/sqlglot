@@ -2184,7 +2184,7 @@ class IntDiv(Expression, Binary):
 
 
 class Is(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "negate": False}
 
 
 class Like(Expression, Binary, Predicate):

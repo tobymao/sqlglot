@@ -381,7 +381,7 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted NOTNULL",
-            "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted IS NULL",
+            "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE deleted IS NOT NULL",
         )
         self.validate_identity(
             "SELECT id, email, CAST(deleted AS TEXT) FROM users WHERE NOT deleted ISNULL",
@@ -2005,3 +2005,15 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
 
     def test_postgis_distance_3d(self):
         self.validate_identity("SELECT a <<->> b")
+
+    def test_preserve_is_not_null(self):
+        self.validate_identity("SELECT r IS NOT NULL FROM t")
+        self.validate_identity("SELECT NOT r IS NULL FROM t")
+        self.validate_identity("SELECT NOT r IS NOT NULL FROM t")
+        self.validate_identity("SELECT r NOTNULL FROM t", "SELECT r IS NOT NULL FROM t")
+        self.validate_identity("SELECT r ISNULL FROM t", "SELECT r IS NULL FROM t")
+
+        is_not_null = self.parse_one("r IS NOT NULL")
+        is_not_null.assert_is(exp.Is)
+        self.assertTrue(is_not_null.args.get("negate"))
+        self.parse_one("NOT r IS NULL").assert_is(exp.Not)

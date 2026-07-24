@@ -5025,11 +5025,16 @@ FROM subquery2""",
                 "": "x IS NOT UNKNOWN",
                 "bigquery": "x IS NOT UNKNOWN",
                 "mysql": "x IS NOT UNKNOWN",
-                "postgres": "x IS NOT UNKNOWN",
                 "redshift": "x IS NOT UNKNOWN",
                 "duckdb": "x IS NOT UNKNOWN",
                 "spark": "x IS NOT UNKNOWN",
                 "databricks": "x IS NOT UNKNOWN",
+            },
+        )
+        self.validate_all(
+            "x IS NOT NULL",
+            read={
+                "postgres": "x IS NOT UNKNOWN",
             },
         )
 
@@ -5049,6 +5054,12 @@ FROM subquery2""",
                 "": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
                 "duckdb": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
                 "redshift": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(col IS NOT NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
+            read={
+                # Postgres preserves `IS NOT NULL` instead of normalizing to `NOT ... IS NULL`
                 "postgres": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
             },
         )

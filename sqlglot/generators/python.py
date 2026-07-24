@@ -93,7 +93,9 @@ class PythonGenerator(generator.Generator):
         exp.In: lambda self, e: f"{self.sql(e, 'this')} in {{{self.expressions(e, flat=True)}}}",
         exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",
         exp.Is: lambda self, e: (
-            self.binary(e, "==") if isinstance(e.this, exp.Literal) else self.binary(e, "is")
+            self.binary(e, "!=" if e.args.get("negate") else "==")
+            if isinstance(e.this, exp.Literal)
+            else self.binary(e, "is not" if e.args.get("negate") else "is")
         ),
         exp.JSONExtract: lambda self, e: self.func(e.key, e.this, e.expression, *e.expressions),
         exp.JSONPath: lambda self, e: f"[{','.join(self.sql(p) for p in e.expressions[1:])}]",

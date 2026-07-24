@@ -11,6 +11,7 @@ from sqlglot.typing.postgres import EXPRESSION_METADATA
 class Postgres(Dialect):
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
+    SAFE_TO_NORMALIZE_IS_NOT_NULL = False
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True

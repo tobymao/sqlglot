@@ -7,6 +7,8 @@ from sqlglot.tokens import TokenType
 
 
 class RisingWave(Postgres):
+    SAFE_TO_NORMALIZE_IS_NOT_NULL = True
+
     REQUIRES_PARENTHESIZED_STRUCT_ACCESS = True
     SUPPORTS_STRUCT_STAR_EXPANSION = True
 

@@ -62,6 +62,42 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_with(self, skip_with_token: bool = False) -> exp.With | None:
+        # RECURSIVE can appear on a second, later WITH clause, e.g.
+        # `WITH FUNCTION f(...) ... WITH RECURSIVE t AS (...) SELECT ...`, but the base
+        # implementation only checks for it once, right after the first WITH token
+        if not skip_with_token and not self._match(TokenType.WITH):
+            return None
+
+        comments = self._prev_comments
+        recursive = self._match(TokenType.RECURSIVE)
+
+        last_comments = None
+        expressions = []
+        while True:
+            cte = self._parse_cte()
+            if cte:
+                expressions.append(cte)
+                if last_comments:
+                    cte.add_comments(last_comments)
+
+            if not self._match(TokenType.COMMA) and not self._match(TokenType.WITH):
+                break
+            else:
+                self._match(TokenType.WITH)
+                recursive = recursive or self._match(TokenType.RECURSIVE)
+
+            last_comments = self._prev_comments
+
+        return self.expression(
+            exp.With(
+                expressions=expressions,
+                recursive=recursive or None,
+                search=self._parse_recursive_with_search(),
+            ),
+            comments=comments,
+        )
+
     def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
         # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a

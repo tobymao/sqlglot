@@ -191,6 +191,10 @@ class TestTrino(Validator):
             "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
         )
         self.validate_identity(
+            "WITH FUNCTION f(x INTEGER) RETURNS INTEGER RETURN x "
+            "WITH RECURSIVE t(n) AS (SELECT 1 AS n) SELECT F(n) FROM t"
+        )
+        self.validate_identity(
             """WITH FUNCTION f(num int)
     RETURNS int
     RETURN num

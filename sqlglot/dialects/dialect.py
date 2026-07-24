@@ -753,8 +753,7 @@ class Dialect(metaclass=_Dialect):
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
 
     # Whether `x IS NOT NULL` can be normalized to `NOT x IS NULL`
-    # Not safe with Postgres due to row values, e.g. ROW(1, NULL) IS NOT NULL is false
-    SAFE_TO_NORMALIZE_IS_NOT_NULL = True
+    NORMALIZE_NOT_NULL = True
 
     # Whether the INITCAP function supports custom delimiter characters as the second argument
     # Default delimiter characters for INITCAP function: whitespace and non-alphanumeric characters

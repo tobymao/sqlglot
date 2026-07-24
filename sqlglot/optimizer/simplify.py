@@ -894,6 +894,9 @@ class Simplifier:
         self, expression: exp.Expr, left: exp.Expr, right: exp.Expr, or_: bool = False
     ) -> exp.Expr | None:
         if isinstance(left, self.COMPARISONS) and isinstance(right, self.COMPARISONS):
+            if any(isinstance(e, exp.Is) and e.args.get("negate") for e in (left, right)):
+                return None
+
             ll, lr = left.this, left.expression
             rl, rr = right.this, right.expression
 

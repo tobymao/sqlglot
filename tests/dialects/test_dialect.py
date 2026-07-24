@@ -5059,7 +5059,6 @@ FROM subquery2""",
         self.validate_all(
             "SELECT CAST(col IS NOT NULL AS BOOLEAN) FROM (SELECT 1 AS col) AS t",
             read={
-                # Postgres preserves `IS NOT NULL` instead of normalizing to `NOT ... IS NULL`
                 "postgres": "SELECT col IS NOT NULL::BOOLEAN FROM (SELECT 1 AS col) AS t",
             },
         )

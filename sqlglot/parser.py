@@ -5946,7 +5946,7 @@ class Parser:
             elif self._match(TokenType.NOTNULL):
                 # Postgres supports ISNULL and NOTNULL for conditions.
                 # https://blog.andreiavram.ro/postgresql-null-composite-type/
-                if self.dialect.SAFE_TO_NORMALIZE_IS_NOT_NULL:
+                if self.dialect.NORMALIZE_NOT_NULL:
                     this = self.expression(exp.Is(this=this, expression=exp.Null()))
                     this = self.expression(exp.Not(this=this))
                 else:
@@ -6006,11 +6006,7 @@ class Parser:
                 self._retreat(index)
                 return None
 
-        if (
-            negate
-            and isinstance(expression, exp.Null)
-            and not self.dialect.SAFE_TO_NORMALIZE_IS_NOT_NULL
-        ):
+        if negate and isinstance(expression, exp.Null) and not self.dialect.NORMALIZE_NOT_NULL:
             this = self.expression(exp.Is(this=this, expression=expression, negate=True))
         else:
             this = self.expression(exp.Is(this=this, expression=expression))

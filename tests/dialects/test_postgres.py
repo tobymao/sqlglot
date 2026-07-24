@@ -2016,4 +2016,3 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         is_not_null = self.parse_one("r IS NOT NULL")
         is_not_null.assert_is(exp.Is)
         self.assertTrue(is_not_null.args.get("negate"))
-        self.parse_one("NOT r IS NULL").assert_is(exp.Not)

@@ -6,7 +6,7 @@ from sqlglot.parsers.materialize import MaterializeParser
 
 
 class Materialize(Postgres):
-    SAFE_TO_NORMALIZE_IS_NOT_NULL = True
+    NORMALIZE_NOT_NULL = True
 
     Parser = MaterializeParser
 

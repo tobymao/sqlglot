@@ -6651,6 +6651,22 @@ LONGTEXT;
 REGEXP_REPLACE(tbl.str_col, tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col,  tbl.str_col);
 LONGTEXT;
 
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.str_col);
+LONGBLOB;
+
 
 --------------------------------------
 -- DuckDB

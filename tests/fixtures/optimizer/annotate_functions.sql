@@ -6587,6 +6587,10 @@ VARCHAR;
 SHA256(tbl.str_col);
 VARCHAR;
 
+# dialect: duckdb
+REGEXP_EXTRACT(tbl.str_col, tbl.str_col, tbl.str_col);
+VARCHAR;
+
 # dialect: duckdb 
 GET_BIT(tbl.str_col, tbl.int_col);
 INT;

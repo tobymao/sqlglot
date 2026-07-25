@@ -56,6 +56,14 @@ EXPRESSION_METADATA = {
             exp.Unhex,
         }
     },
+    **{
+        expr_type: {"returns": exp.DType.VARCHAR}
+        for expr_type in {
+            exp.RegexpExtract,
+        }
+    },
+
+
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.PercentileDisc: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},

@@ -47,6 +47,17 @@ class TestJsonpath(unittest.TestCase):
             with self.subTest(f"{selector} -> {expected}"):
                 self.assertEqual(parse(selector).sql(), f"'{expected}'")
 
+    def test_union_preserves_falsey_members(self):
+        for selector, expected in (
+            ("$[1,0]", exp.JSONPathUnion(expressions=[1, 0])),
+            ('$["a",""]', exp.JSONPathUnion(expressions=["a", ""])),
+            ('$["",1]', exp.JSONPathUnion(expressions=["", 1])),
+        ):
+            with self.subTest(selector):
+                self.assertEqual(parse(selector).expressions[-1], expected)
+
+        self.assertEqual(parse("$[0]").expressions[-1], exp.JSONPathSubscript(this=0))
+
     def test_cts_file(self):
         with open(os.path.join(FIXTURES_DIR, "jsonpath", "cts.json"), encoding="utf-8") as file:
             tests = json.load(file)["tests"]

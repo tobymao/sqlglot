@@ -135,14 +135,14 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
             while _match(TokenType.COMMA):
                 literal = _parse_slice()
 
-                if literal:
+                if isinstance(literal, str) or literal is not False:
                     indexes.append(literal)
 
             if len(indexes) == 1:
-                if isinstance(literal, str):
+                if isinstance(indexes[0], str):
                     node: exp.JSONPathPart = exp.JSONPathKey(this=indexes[0])
-                elif isinstance(literal, exp.JSONPathPart) and isinstance(
-                    literal, (exp.JSONPathScript, exp.JSONPathFilter)
+                elif isinstance(indexes[0], exp.JSONPathPart) and isinstance(
+                    indexes[0], (exp.JSONPathScript, exp.JSONPathFilter)
                 ):
                     node = exp.JSONPathSelector(this=indexes[0])
                 else:

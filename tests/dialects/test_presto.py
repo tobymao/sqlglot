@@ -1276,6 +1276,12 @@ class TestPresto(Validator):
         )
 
     def test_json(self):
+        # Presto executes JSONPath bracket unions; falsey members (0, "") must survive round-trips
+        self.validate_identity("SELECT JSON_EXTRACT(x, '$[1,0]')")
+        self.validate_identity("SELECT JSON_EXTRACT_SCALAR(x, '$[1,0]')")
+        self.validate_identity("""SELECT JSON_EXTRACT(x, '$["a",""]')""")
+        self.validate_identity("""SELECT JSON_EXTRACT(x, '$[""]')""")
+
         with self.assertLogs(helper_logger):
             self.validate_all(
                 """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",

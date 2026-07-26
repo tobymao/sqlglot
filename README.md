@@ -1,6 +1,6 @@
 ![SQLGlot logo](sqlglot.png)
 
-SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [31 different dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
+SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine. It can be used to format SQL or translate between [over 30 dialects](https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/__init__.py) like [DuckDB](https://duckdb.org/), [Presto](https://prestodb.io/) / [Trino](https://trino.io/), [Spark](https://spark.apache.org/) / [Databricks](https://www.databricks.com/), [Snowflake](https://www.snowflake.com/en/), and [BigQuery](https://cloud.google.com/bigquery/). It aims to read a wide variety of SQL inputs and output syntactically and semantically correct SQL in the targeted dialects.
 
 It is a very comprehensive generic SQL parser with a robust [test suite](https://github.com/tobymao/sqlglot/blob/main/tests/). It is also quite [performant](#benchmarks), while being written purely in Python.
 
@@ -32,7 +32,6 @@ Contributions are very welcome in SQLGlot; read the [contribution guide](https:/
 * [Used By](#used-by)
 * [Documentation](#documentation)
 * [Run Tests and Lint](#run-tests-and-lint)
-* [Deployment](#deployment)
 * [Benchmarks](#benchmarks)
 * [Optional Dependencies](#optional-dependencies)
 * [Supported Dialects](#supported-dialects)
@@ -66,11 +65,11 @@ make install-dev
 
 ## Versioning
 
-Given a version number `MAJOR`.`MINOR`.`PATCH`, SQLGlot uses the following versioning strategy:
+Given a version number `MAJOR`.`MINOR`.`PATCH`:
 
-- The `PATCH` version is incremented when there are backwards-compatible fixes or feature additions.
-- The `MINOR` version is incremented when there are backwards-incompatible fixes or feature additions.
-- The `MAJOR` version is incremented when there are significant backwards-incompatible fixes or feature additions.
+- `PATCH` is incremented for backwards-compatible changes.
+- `MINOR` is incremented for backwards-incompatible changes.
+- `MAJOR` is incremented for significant backwards-incompatible changes.
 
 ## Get in Touch
 
@@ -78,17 +77,29 @@ We'd love to hear from you. Join our community [Slack channel](https://tobikodat
 
 ## FAQ
 
-I tried to parse SQL that should be valid but it failed, why did that happen?
+**I tried to parse SQL that should be valid, but it failed. Why?**
 
-* Most of the time, issues like this occur because the "source" dialect is omitted during parsing. For example, this is how to correctly parse a SQL query written in Spark SQL: `parse_one(sql, dialect="spark")` (alternatively: `read="spark"`). If no dialect is specified, `parse_one` will attempt to parse the query according to the "SQLGlot dialect", which is designed to be a superset of all supported dialects. If you tried specifying the dialect and it still doesn't work, please file an issue.
+You probably didn't specify the source dialect. Without it, `parse_one` assumes the "SQLGlot dialect", which is designed to be a superset of all supported dialects. Always pass the dialect when you know it, e.g. `parse_one(sql, dialect="spark")`. If parsing still fails, please file an issue.
 
-I tried to output SQL but it's not in the correct dialect!
+**The generated SQL is not in the correct dialect!**
 
-* Like parsing, generating SQL also requires the target dialect to be specified, otherwise the SQLGlot dialect will be used by default. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")` (alternatively: `transpile(sql, read="spark", write="duckdb")`).
+The target dialect must also be specified explicitly. For example, to transpile a query from Spark SQL to DuckDB, do `parse_one(sql, dialect="spark").sql(dialect="duckdb")`, or `transpile(sql, read="spark", write="duckdb")`.
 
-What happened to sqlglot.dataframe?
+**Why does SQLGlot parse my invalid SQL without complaining?**
 
-* The PySpark dataframe api was moved to a standalone library called [SQLFrame](https://github.com/eakmanrq/sqlframe) in v24. It now allows you to run queries as opposed to just generate SQL.
+The parser is intentionally lenient, so it can accept queries that a real engine would reject. SQLGlot is a transpiler, not a validator. A query that parses successfully may still fail at execution time.
+
+**Why doesn't the output preserve my formatting, casing or quoting?**
+
+SQLGlot parses queries into an AST and generates SQL back from it, so it preserves the meaning of a query rather than its exact text. Cosmetic details can change in the process. Use `pretty=True` for formatted output and `identify=True` to quote all identifiers. Comments are preserved on a best-effort basis.
+
+**How can I make parsing faster?**
+
+Install the version compiled with mypyc: `pip3 install "sqlglot[c]"`. It is roughly 3-5x faster than the pure Python version (see [Benchmarks](#benchmarks)).
+
+**My dialect isn't supported. What are my options?**
+
+You can subclass an existing dialect ([Custom Dialects](#custom-dialects)), or ship one as a separate package ([Creating a Dialect Plugin](#creating-a-dialect-plugin)). Keep in mind that subclassing may not work properly with `sqlglot[c]` installed, so custom dialects may require the pure Python version.
 
 ## Examples
 
@@ -177,7 +188,7 @@ print(sqlglot.transpile(sql, read='mysql', pretty=True)[0])
 */
 SELECT
   tbl.cola /* comment 1 */ + tbl.colb /* comment 2 */,
-  CAST(x AS INT), /* comment 3 */
+  CAST(x AS SIGNED), /* comment 3 */
   y /* comment 4 */
 FROM bar /* comment 5 */, tbl /*          comment 6 */
 ```
@@ -253,7 +264,7 @@ sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", writ
 ```
 
 ```sql
-APPROX_COUNT_DISTINCT does not support accuracy
+Argument 'accuracy' is not supported for expression 'ApproxDistinct' when targeting Hive.
 'SELECT APPROX_COUNT_DISTINCT(a) FROM foo'
 ```
 
@@ -265,12 +276,12 @@ sqlglot.transpile("SELECT APPROX_DISTINCT(a, 0.1) FROM foo", read="presto", writ
 ```
 
 ```
-sqlglot.errors.UnsupportedError: APPROX_COUNT_DISTINCT does not support accuracy
+sqlglot.errors.UnsupportedError: Argument 'accuracy' is not supported for expression 'ApproxDistinct' when targeting Hive.
 ```
 
-There are queries that require additional information to be accurately transpiled, such as the schemas of the tables referenced in them. This is because certain transformations are type-sensitive, meaning that type inference is needed in order to understand their semantics. Even though the `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can help with this, they are not used by default because they add significant overhead and complexity.
+Some queries need additional information to be transpiled accurately, such as the schemas of the referenced tables. This is because certain transformations are type-sensitive and depend on type inference. The `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can provide this information, but they are not used by default because they add overhead and complexity.
 
-Transpilation is generally a hard problem, so SQLGlot employs an "incremental" approach to solving it. This means that there may be dialect pairs that currently lack support for some inputs, but this is expected to improve over time. We highly appreciate well-documented and tested issues or PRs, so feel free to [reach out](#get-in-touch) if you need guidance!
+Transpilation is a hard problem, so SQLGlot solves it incrementally. Some dialect pairs may lack support for certain inputs, but coverage improves over time. We highly appreciate well-documented and tested issues or PRs, so feel free to [reach out](#get-in-touch) if you need guidance!
 
 ### Build and Modify SQL
 
@@ -399,6 +410,8 @@ diff(parse_one("SELECT a + b, c, d"), parse_one("SELECT c, a - b, d"))
 ]
 ```
 
+The sequence consists of `Insert`, `Remove`, `Move`, `Update` and `Keep` actions. The order of the matched (`Keep` / `Move`) actions may vary between runs.
+
 See also: [Semantic Diff for SQL](https://github.com/tobymao/sqlglot/blob/main/posts/sql_diff.md).
 
 ### Custom Dialects
@@ -444,6 +457,8 @@ print(Dialect["custom"])
 ```
 <class '__main__.Custom'>
 ```
+
+Note: when `sqlglot[c]` is installed, subclassing may not work properly, because runtime subclassing of the mypyc-compiled classes has been disabled for performance reasons. Use the pure Python version if you need custom dialects.
 
 ### SQL Execution
 
@@ -532,14 +547,6 @@ make check   # Full test suite & linter checks
 make clean   # Remove compiled C artifacts (.so files, build dirs)
 ```
 
-## Deployment
-
-To deploy a new SQLGlot version, follow these steps:
-
-1. Run `git pull` to make sure the local git repo is at the head of the main branch
-2. Do a `git tag` operation to bump the SQLGlot version, e.g. `git tag v28.5.0`
-3. Run `git push && git push --tags` to deploy the new version
-
 ## Benchmarks
 
 [Benchmarks](https://github.com/tobymao/sqlglot/blob/main/benchmarks/parse.py) run on Python 3.14.3 in seconds.
@@ -592,6 +599,7 @@ x + interval '1' month
 | Drill | Community |
 | Druid | Community |
 | DuckDB | Official |
+| Dune | Community |
 | Exasol | Community |
 | Fabric | Community |
 | Hive | Official |

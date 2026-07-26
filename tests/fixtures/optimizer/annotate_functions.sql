@@ -6783,6 +6783,10 @@ REVERSE(tbl.str_col);
 VARCHAR;
 
 # dialect: duckdb
+REGEXP_EXTRACT(tbl.str_col, tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
 RANDOM();
 DOUBLE;
 

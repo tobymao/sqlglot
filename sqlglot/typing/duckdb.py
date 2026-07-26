@@ -47,6 +47,7 @@ EXPRESSION_METADATA = {
             exp.Format,
             exp.Reverse,
             exp.Decode,
+            exp.RegexpExtract,
         }
     },
     **{

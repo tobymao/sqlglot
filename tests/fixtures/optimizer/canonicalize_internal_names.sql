@@ -227,6 +227,16 @@ SELECT `_c0` AS `n`, `_c1` AS `off` FROM UNNEST([10, 20, 30]) AS `_c0` WITH OFFS
 SELECT t.id, u FROM t CROSS JOIN UNNEST(t.arr) AS u;
 SELECT `_t0`.`id` AS `id`, `_c0` AS `u` FROM `c`.`db`.`t` AS `_t0` CROSS JOIN UNNEST(`_t0`.`arr`) AS `_c0`;
 
+# title: bigquery unnest of a struct array literal preserves field names (physical columns, not internal handles)
+# dialect: bigquery
+SELECT su.k, p.sid FROM su JOIN (SELECT sid FROM UNNEST([STRUCT('a' AS sid), STRUCT('b')])) AS p ON su.k = p.sid;
+SELECT `_t1`.`k` AS `k`, `_t2`.`_c0` AS `sid` FROM `c`.`db`.`su` AS `_t1` JOIN (SELECT `sid` AS `_c0` FROM UNNEST([STRUCT('a' AS `sid`), STRUCT('b')])) AS `_t2` ON `_t1`.`k` = `_t2`.`_c0`;
+
+# title: bigquery unnest of a schema-typed ARRAY<STRUCT> column preserves field names too
+# dialect: bigquery
+SELECT su.k, v.f FROM su CROSS JOIN UNNEST(su.sarr) AS v;
+SELECT `_t0`.`k` AS `k`, `v`.`f` AS `f` FROM `c`.`db`.`su` AS `_t0` CROSS JOIN UNNEST(`_t0`.`sarr`) AS `v`;
+
 # title: bigquery whole-row struct selection — TableColumn follows the table's canonical name, output alias preserves the row-struct's contract name
 # dialect: bigquery
 SELECT t FROM t;

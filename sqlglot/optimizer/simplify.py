@@ -1018,11 +1018,11 @@ class Simplifier:
         absorption:
             A AND (A OR B) -> A
             A OR (A AND B) -> A
-            A AND (NOT A OR B) -> A AND B
-            A OR (NOT A AND B) -> A OR B
+            A AND (NOT A OR B) -> A AND B (only for non-NULL A)
+            A OR (NOT A AND B) -> A OR B (only for non-NULL A)
         elimination:
-            (A AND B) OR (A AND NOT B) -> A
-            (A OR B) AND (A OR NOT B) -> A
+            (A AND B) OR (A AND NOT B) -> A (only for non-NULL B)
+            (A OR B) AND (A OR NOT B) -> A (only for non-NULL B)
         """
         if isinstance(expression, self.AND_OR) and (root or not expression.same_parent):
             kind = exp.Or if isinstance(expression, exp.And) else exp.And
@@ -1054,9 +1054,10 @@ class Simplifier:
                     subops[i].append(subset)
 
                 a, b = op.unnest_operands()
-                if isinstance(a, exp.Not):
+
+                if isinstance(a, exp.Not) and a.this.meta_get("nonnull") is True:
                     pairs[frozenset((a.this, b))].append((op, b))
-                if isinstance(b, exp.Not):
+                if isinstance(b, exp.Not) and b.this.meta_get("nonnull") is True:
                     pairs[frozenset((a, b.this))].append((op, a))
 
             for op in ops:
@@ -1066,10 +1067,18 @@ class Simplifier:
                 a, b = op.unnest_operands()
 
                 # Absorb
-                if isinstance(a, exp.Not) and a.this in op_set:
+                if (
+                    isinstance(a, exp.Not)
+                    and a.this in op_set
+                    and a.this.meta_get("nonnull") is True
+                ):
                     a.replace(exp.true() if kind == exp.And else exp.false())
                     continue
-                if isinstance(b, exp.Not) and b.this in op_set:
+                if (
+                    isinstance(b, exp.Not)
+                    and b.this in op_set
+                    and b.this.meta_get("nonnull") is True
+                ):
                     b.replace(exp.true() if kind == exp.And else exp.false())
                     continue
                 superset = set(op.flatten())

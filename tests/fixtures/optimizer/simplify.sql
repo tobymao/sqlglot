@@ -193,16 +193,22 @@ A AND TRUE;
 A AND TRUE;
 
 A AND (NOT A OR B);
-A AND B;
+A AND (B OR NOT A);
 
 (NOT A OR B) AND A;
-A AND B;
+A AND (B OR NOT A);
 
 A OR (NOT A AND B);
-A OR B;
+A OR (B AND NOT A);
 
 A OR ((((NOT A AND B))));
-A OR B;
+A OR (B AND NOT A);
+
+x IS NULL AND (NOT (x IS NULL) OR B);
+B AND x IS NULL;
+
+x IS NULL OR (NOT (x IS NULL) AND B);
+B OR x IS NULL;
 
 x NOT LIKE 'a%' OR (y IN (1, 2) AND x LIKE 'a%');
 (x LIKE 'a%' AND y IN (1, 2)) OR x NOT LIKE 'a%';
@@ -225,50 +231,60 @@ A AND TRUE;
 (A OR B) AND (A OR C) AND (A OR B OR C);
 (A OR B) AND (A OR C);
 
+# dialect: clickhouse
+SELECT t_bool.a AND (NOT t_bool.a OR t_bool.b) FROM t_bool;
+SELECT t_bool.a AND t_bool.b FROM t_bool;
+
 --------------------------------------
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (NOT A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A AND NOT B) OR (A AND B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (NOT A AND B) OR (A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A OR B) AND (A OR NOT B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (A OR B) AND (NOT A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (A OR NOT B) AND (A OR B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (NOT A OR B) AND (A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (NOT A OR NOT B) AND (NOT A OR B);
-NOT A;
+(B OR NOT A) AND (NOT A OR NOT B);
 
 (NOT A OR NOT B) AND (NOT A OR NOT NOT B);
-NOT A;
+(NOT A OR NOT B) AND (NOT A OR NOT NOT B);
 
 E OR (A AND B) OR C OR D OR (A AND NOT B);
-A OR C OR D OR E;
+(A AND B) OR (A AND NOT B) OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
+
+(B AND x IS NULL) OR (B AND NOT (x IS NULL));
+B AND TRUE;
+
+(B OR x IS NULL) AND (B OR NOT (x IS NULL));
+B AND TRUE;
 
 SELECT t_bool.a OR t_bool.a FROM t_bool;
 SELECT t_bool.a FROM t_bool;
@@ -281,6 +297,10 @@ SELECT SUM(t.x AND TRUE) FROM t;
 
 SELECT SUM(t.x AND t.x) FROM t;
 SELECT SUM(t.x AND TRUE) FROM t;
+
+# dialect: clickhouse
+SELECT (t_bool.a AND t_bool.b) OR (t_bool.a AND NOT t_bool.b) FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
 --------------------------------------
 -- Associativity

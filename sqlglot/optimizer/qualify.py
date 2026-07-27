@@ -32,7 +32,7 @@ def qualify(
     quote_identifiers: bool = True,
     identify: bool = True,
     canonicalize_table_aliases: bool = False,
-    on_qualify: t.Callable[[exp.Expr], None] | None = None,
+    on_qualify: t.Callable[[exp.Table], None] | None = None,
     sql: str | None = None,
 ) -> E:
     """

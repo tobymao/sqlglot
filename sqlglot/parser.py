@@ -4102,6 +4102,7 @@ class Parser:
                 break
             else:
                 self._match(TokenType.WITH)
+                recursive = self._match(TokenType.RECURSIVE) or recursive
 
             last_comments = self._prev_comments
 

@@ -141,6 +141,23 @@ SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
 SELECT COALESCE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
 SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE(x.a);
 
+# title: Aggregate alias must not be expanded into a GROUP BY (would nest the aggregate)
+# execute: false
+# validate_qualify_columns: false
+SELECT SUM(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY UPPER(d);
+SELECT SUM(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY UPPER(d);
+
+# title: Standalone aggregate alias reference in GROUP BY must not be expanded
+# execute: false
+# validate_qualify_columns: false
+SELECT SUM(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
+SELECT SUM(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY d;
+
+# title: Aggregate alias colliding with a base column resolves the GROUP BY ref to the column
+# execute: false
+SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY UPPER(c);
+SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY UPPER(y.c);
+
 SELECT a + 1 AS d FROM x WHERE d > 1;
 SELECT x.a + 1 AS d FROM x AS x WHERE (x.a + 1) > 1;
 

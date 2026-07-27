@@ -356,10 +356,18 @@ def _expand_alias_refs(
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
+                # An aggregate alias must not be expanded into a GROUP BY or another (non-window) aggregate.
                 skip_replace = bool(
                     alias_expr.find(exp.AggFunc)
-                    and column.find_ancestor(exp.AggFunc)
-                    and not isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
+                    and (
+                        is_group_by
+                        or (
+                            column.find_ancestor(exp.AggFunc)
+                            and not isinstance(
+                                column.find_ancestor(exp.Window, exp.Select), exp.Window
+                            )
+                        )
+                    )
                 )
 
                 # BigQuery's having clause gets confused if an alias matches a source.

@@ -447,6 +447,7 @@ class TestExecutor(unittest.TestCase):
             execute("SELECT x.id, y.id FROM x JOIN y ON x.id < y.id", tables=tables).rows,
             [(1, 2), (1, 3), (2, 3)],
         )
+
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {

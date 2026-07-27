@@ -403,6 +403,27 @@ class TestExecutor(unittest.TestCase):
                         execute(sql, schema=schema, tables=tables)
                     self.assertIsInstance(ctx.exception.__cause__, rows)
 
+        duplicate_tables = {
+            "x": [{"a": 1}, {"a": 1}, {"a": 1}, {"a": 2}],
+            "y": [{"a": 1}, {"a": 1}, {"a": 3}],
+        }
+        self.assertEqual(
+            execute("SELECT a FROM x INTERSECT ALL SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,), (1,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x EXCEPT ALL SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,), (2,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x INTERSECT SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x EXCEPT SELECT a FROM y", tables=duplicate_tables).rows,
+            [(2,)],
+        )
+
     def test_outer_joins_preserve_unmatched_rows(self):
         tables = {
             "x": [{"id": 1}, {"id": 2}],
@@ -426,7 +447,6 @@ class TestExecutor(unittest.TestCase):
             execute("SELECT x.id, y.id FROM x JOIN y ON x.id < y.id", tables=tables).rows,
             [(1, 2), (1, 3), (2, 3)],
         )
-
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {

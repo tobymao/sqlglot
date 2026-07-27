@@ -374,9 +374,23 @@ class PythonExecutor:
         sink = self.table(left.columns)
 
         if issubclass(step.op, exp.Intersect):
-            sink.rows = list(set(left.rows).intersection(set(right.rows)))
+            right_counts = collections.Counter(right.rows)
+            seen = set()
+            for row in left.rows:
+                if right_counts[row] and (not step.distinct or row not in seen):
+                    sink.append(row)
+                    seen.add(row)
+                    if not step.distinct:
+                        right_counts[row] -= 1
         elif issubclass(step.op, exp.Except):
-            sink.rows = list(set(left.rows).difference(set(right.rows)))
+            right_counts = collections.Counter(right.rows)
+            seen = set()
+            for row in left.rows:
+                if right_counts[row] and not step.distinct:
+                    right_counts[row] -= 1
+                elif not right_counts[row] and (not step.distinct or row not in seen):
+                    sink.append(row)
+                    seen.add(row)
         elif issubclass(step.op, exp.Union) and step.distinct:
             sink.rows = list(set(left.rows).union(set(right.rows)))
         else:

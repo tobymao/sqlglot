@@ -46,7 +46,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
         for scope in reversed(list(root.traverse())):
             select = scope.expression
             where: exp.Expr | None = select.args.get("where")
-            joins: list[exp.Expr] = select.args.get("joins") or []
+            joins: list[exp.Join] = select.args.get("joins") or []
             if where:
                 selected_sources: Sources = scope.selected_sources
                 join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
@@ -71,6 +71,10 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
             # so we limit the selected sources to only itself
             for join in joins:
                 name = join.alias_or_name
+
+                if join.side in ("RIGHT", "FULL"):
+                    continue
+
                 if name in scope.selected_sources:
                     pushdown(
                         join.args.get("on"),
@@ -227,10 +231,20 @@ def nodes_for_predicate(
             node = source.expression
 
         if isinstance(node, exp.Join):
-            if node.side and node.side != "RIGHT":
-                return {}
-            nodes[table] = node
-        elif isinstance(node, exp.Select) and len(tables) == 1:
+            if node.side and (node.side != "RIGHT" or where_condition):
+                # A right join preserves its own source, so a WHERE predicate on it can only be
+                # pushed into that source, never into the match-only ON clause.
+                pushable_source = (
+                    source if node.side == "RIGHT" and not isinstance(source, exp.Table) else None
+                )
+                if not pushable_source:
+                    return {}
+
+                node = pushable_source.expression
+            else:
+                nodes[table] = node
+
+        if isinstance(node, exp.Select) and len(tables) == 1:
             # We can't push down window expressions
             has_window_expression = any(
                 select for select in node.selects if select.find(exp.Window)

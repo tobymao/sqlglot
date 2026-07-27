@@ -91,3 +91,19 @@ SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;
 -- Predicate is not pushed into a subquery with QUALIFY: filtering before the window filter changes its results
 SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
 SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
+
+-- The RHS of a RIGHT JOIN is preserved, so a WHERE predicate on it can't become a match-only ON predicate
+SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;
+
+-- A WHERE predicate on the preserved RHS of a RIGHT JOIN can still be pushed into an isolated source
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y WHERE b = 3) AS y ON x.a = y.b WHERE TRUE;
+
+-- A RIGHT JOIN preserves its own source, so an ON predicate can't be pushed into it as a filter
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+
+-- A FULL JOIN preserves its own source, so an ON predicate can't be pushed into it as a filter
+SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;

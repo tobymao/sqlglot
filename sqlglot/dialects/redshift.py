@@ -12,6 +12,8 @@ class Redshift(Postgres):
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    NORMALIZE_NOT_NULL = True
+
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     SUPPORTS_USER_DEFINED_TYPES = False
     INDEX_OFFSET = 0

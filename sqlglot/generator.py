@@ -4440,11 +4440,11 @@ class Generator:
         return self.binary(expression, ">=")
 
     def is_sql(self, expression: exp.Is) -> str:
+        negate = expression.args.get("negate")
         if not self.IS_BOOL_ALLOWED and isinstance(expression.expression, exp.Boolean):
-            return self.sql(
-                expression.this if expression.expression.this else exp.not_(expression.this)
-            )
-        return self.binary(expression, "IS")
+            positive = bool(expression.expression.this) != bool(negate)
+            return self.sql(expression.this if positive else exp.not_(expression.this))
+        return self.binary(expression, "IS NOT" if negate else "IS")
 
     def _like_sql(
         self,

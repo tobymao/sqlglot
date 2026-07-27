@@ -696,6 +696,8 @@ def normalize_name(
 ) -> exp.Identifier:
     if isinstance(identifier, str):
         identifier = exp.parse_identifier(identifier, dialect=dialect)
+    elif normalize:
+        identifier = identifier.copy()
 
     if not normalize:
         return identifier

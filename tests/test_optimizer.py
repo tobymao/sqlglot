@@ -63,7 +63,7 @@ def simplify(expression, **kwargs):
     dialect = kwargs.get("dialect")
     schema = kwargs.get("schema")
 
-    expression = annotate_types(expression, schema=schema)
+    expression = annotate_types(expression, schema=schema, dialect=dialect)
     return optimizer.simplify.simplify(
         expression, constant_propagation=True, coalesce_simplification=True, dialect=dialect
     )
@@ -148,6 +148,7 @@ class TestOptimizer(unittest.TestCase):
             },
             "t_bool": {
                 "a": "BOOLEAN",
+                "b": "BOOLEAN",
             },
         }
 

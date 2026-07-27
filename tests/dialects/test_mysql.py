@@ -1511,7 +1511,7 @@ COMMENT='客户账户表'"""
                 "bigquery": "a / NULLIF(b, 0)",
                 "clickhouse": "a / b",
                 "databricks": "a / NULLIF(b, 0)",
-                "duckdb": "a / b",
+                "duckdb": "a / NULLIF(b, 0)",
                 "hive": "a / b",
                 "mysql": "a / b",
                 "oracle": "a / NULLIF(b, 0)",

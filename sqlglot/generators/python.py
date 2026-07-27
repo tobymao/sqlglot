@@ -79,7 +79,7 @@ class PythonGenerator(generator.Generator):
         exp.Case: _case_sql,
         exp.Alias: lambda self, e: self.sql(e.this),
         exp.Array: inline_array_sql,
-        exp.And: lambda self, e: self.binary(e, "and"),
+        exp.And: lambda self, e: f"AND(lambda: {self.sql(e.left)}, lambda: {self.sql(e.right)})",
         exp.Between: _rename,
         exp.Boolean: lambda self, e: "True" if e.this else "False",
         exp.Cast: lambda self, e: f"CAST({self.sql(e.this)}, exp.DType.{e.args['to']})",
@@ -90,7 +90,7 @@ class PythonGenerator(generator.Generator):
         exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
         exp.Div: _div_sql,
         exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
-        exp.In: lambda self, e: f"{self.sql(e, 'this')} in {{{self.expressions(e, flat=True)}}}",
+        exp.In: lambda self, e: self.func("IN", e.this, *e.expressions),
         exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",
         exp.Is: lambda self, e: (
             self.binary(e, "!=" if e.args.get("negate") else "==")
@@ -102,9 +102,9 @@ class PythonGenerator(generator.Generator):
         exp.JSONPathKey: lambda self, e: f"'{self.sql(e.this)}'",
         exp.JSONPathSubscript: lambda self, e: f"'{e.this}'",
         exp.Lambda: _lambda_sql,
-        exp.Not: lambda self, e: f"not {self.sql(e.this)}",
+        exp.Not: lambda self, e: self.func("NOT", e.this),
         exp.Null: lambda *_: "None",
-        exp.Or: lambda self, e: self.binary(e, "or"),
+        exp.Or: lambda self, e: f"OR(lambda: {self.sql(e.left)}, lambda: {self.sql(e.right)})",
         exp.Ordered: _ordered_py,
         exp.Star: lambda *_: "1",
     }

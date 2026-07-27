@@ -34,6 +34,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseAndAgg,
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
+            exp.Left,
             exp.Overlay,
         }
     },

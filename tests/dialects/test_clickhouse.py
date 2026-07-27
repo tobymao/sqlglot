@@ -652,6 +652,16 @@ class TestClickhouse(Validator):
         self.validate_identity("DELETE FROM tbl ON CLUSTER test_cluster WHERE date = '2019-01-01'")
         self.validate_identity("DELETE FROM tbl ON CLUSTER '{cluster}' WHERE date = '2019-01-01'")
 
+        # ClickHouse changes a column's type with ALTER COLUMN ... TYPE, not the
+        # ANSI ALTER COLUMN ... SET DATA TYPE
+        self.validate_all(
+            "ALTER TABLE t ALTER COLUMN c TYPE Nullable(Int64)",
+            read={
+                "clickhouse": "ALTER TABLE t ALTER COLUMN c TYPE Nullable(Int64)",
+                "postgres": "ALTER TABLE t ALTER COLUMN c TYPE BIGINT",
+            },
+        )
+
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )

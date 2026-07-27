@@ -174,6 +174,7 @@ class ClickHouseGenerator(generator.Generator):
     QUERY_HINTS = False
     STRUCT_DELIMITER = ("(", ")")
     NVL2_SUPPORTED = False
+    ALTER_SET_TYPE = "TYPE"
     TABLESAMPLE_REQUIRES_PARENS = False
     TABLESAMPLE_SIZE_IS_ROWS = False
     TABLESAMPLE_KEYWORDS = "SAMPLE"

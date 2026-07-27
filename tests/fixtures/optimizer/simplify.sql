@@ -548,6 +548,30 @@ FALSE;
 1 IS NOT NULL;
 TRUE;
 
+# dialect: postgres
+# title: postgres preserves IS NOT NULL, constant folding respects the negation
+NULL IS NOT NULL;
+FALSE;
+
+# dialect: postgres
+'a' IS NOT NULL;
+TRUE;
+
+# dialect: postgres
+# title: IS NULL and IS NOT NULL are distinct predicates, complement law must not fold them
+r IS NULL OR r IS NOT NULL;
+r IS NOT NULL OR r IS NULL;
+
+# dialect: postgres
+# title: IS NULL and IS NOT NULL are not deduplicated
+r IS NULL AND r IS NOT NULL;
+r IS NOT NULL AND r IS NULL;
+
+# dialect: postgres
+# title: IS NOT NULL next to a comparison must not crash the range simplifier
+r IS NOT NULL AND r > 5;
+r > 5 AND r IS NOT NULL;
+
 date '1998-12-01' - interval x day;
 CAST('1998-12-01' AS DATE) - INTERVAL x DAY;
 

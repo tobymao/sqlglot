@@ -378,9 +378,10 @@ class TSQLGenerator(generator.Generator):
         return "(1 = 1)" if expression.this else "(1 = 0)"
 
     def is_sql(self, expression: exp.Is) -> str:
+        negate = expression.args.get("negate")
         if isinstance(expression.expression, exp.Boolean):
-            return self.binary(expression, "=")
-        return self.binary(expression, "IS")
+            return self.binary(expression, "<>" if negate else "=")
+        return self.binary(expression, "IS NOT" if negate else "IS")
 
     def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         sql = self.sql(expression, "this")

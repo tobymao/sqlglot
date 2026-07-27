@@ -6,6 +6,8 @@ from sqlglot.parsers.materialize import MaterializeParser
 
 
 class Materialize(Postgres):
+    NORMALIZE_NOT_NULL = True
+
     Parser = MaterializeParser
 
     Generator = MaterializeGenerator

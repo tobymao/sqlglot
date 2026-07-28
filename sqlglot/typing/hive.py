@@ -65,6 +65,7 @@ EXPRESSION_METADATA = {
             exp.ArrayExcept,
             exp.First,
             exp.Last,
+            exp.Negative,
             exp.Reverse,
         }
     },

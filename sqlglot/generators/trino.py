@@ -48,22 +48,13 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathSubscript,
     }
 
-    def with_sql(self, expression: exp.With) -> str:
-        functions = [e for e in expression.expressions if isinstance(e, exp.FunctionSpecification)]
-        if not functions:
-            return super().with_sql(expression)
-
-        functions_sql = self.expressions(sqls=functions, flat=True)
-
-        if len(functions) == len(expression.expressions):
-            return f"WITH {functions_sql}"
-
-        expression.set(
-            "expressions",
-            [e for e in expression.expressions if not isinstance(e, exp.FunctionSpecification)],
+    def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
+        properties = expression.args.get("properties")
+        properties_sql = (
+            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
         )
-
-        return f"WITH {functions_sql} {super().with_sql(expression)}"
+        body = self.sql(expression, "expression")
+        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
 
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):

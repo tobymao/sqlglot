@@ -752,6 +752,19 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT []")
 
+    def test_safe_div(self):
+        # ClickHouse never returns NULL on division by zero: `/` follows IEEE 754
+        # (`a / 0` yields inf/nan) and DECIMAL division raises, so the divisor must
+        # not be wrapped to emulate NULL-safe division when ClickHouse is the source.
+        self.validate_all(
+            "a / b",
+            write={
+                "clickhouse": "a / b",
+                "mysql": "a / b",
+                "postgres": "CAST(a AS DOUBLE PRECISION) / b",
+            },
+        )
+
     def test_clickhouse_values(self):
         ast = self.parse_one("SELECT * FROM VALUES (1, 2, 3)")
         self.assertEqual(len(list(ast.find_all(exp.Tuple))), 4)

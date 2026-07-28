@@ -38,6 +38,9 @@ class TrinoGenerator(PrestoGenerator):
                 amend_exploded_column_table,
             ]
         ),
+        exp.StabilityProperty: lambda self, e: (
+            "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
+        ),
         exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
         exp.Trim: trim_sql,
     }

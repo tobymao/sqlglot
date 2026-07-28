@@ -15,7 +15,9 @@ class Trino(Presto):
         KEYWORDS = {
             **Presto.Tokenizer.KEYWORDS,
             "REFRESH": TokenType.REFRESH,
+            "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
+        KEYWORDS.pop("SQL SECURITY")
 
     Parser = TrinoParser
 

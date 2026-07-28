@@ -203,3 +203,29 @@ SELECT f(1)""",
         )
         self.validate_identity("WITH function AS (SELECT 1 AS x) SELECT x FROM function")
         self.validate_identity("WITH function(x) AS (SELECT 1) SELECT x FROM function")
+
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL RETURN 1 SELECT F()")
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER NOT DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER CALLED ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER RETURNS NULL ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY DEFINER RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY INVOKER RETURN 1 SELECT F()"
+        )
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
+        self.validate_identity(
+            "WITH FUNCTION custom_sqrt(a INTEGER) RETURNS DOUBLE COMMENT 'Custom sqrt function' "
+            "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
+            "RETURN a SELECT CUSTOM_SQRT(4)"
+        )

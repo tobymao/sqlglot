@@ -12,6 +12,13 @@ class TrinoParser(PrestoParser):
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
     }
 
+    PROPERTY_PARSERS = {
+        **PrestoParser.PROPERTY_PARSERS,
+        "NOT DETERMINISTIC": lambda self: self.expression(
+            exp.StabilityProperty(this=exp.Literal.string("VOLATILE"))
+        ),
+    }
+
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,

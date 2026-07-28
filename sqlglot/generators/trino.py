@@ -48,6 +48,25 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathSubscript,
     }
 
+    def with_sql(self, expression: exp.With) -> str:
+        # Inline UDFs are declared in their own `WITH` clause, which precedes the (optional)
+        # `WITH` clause of the query: https://trino.io/docs/current/udf/sql.html
+        functions = [e for e in expression.expressions if isinstance(e, exp.FunctionSpecification)]
+        if not functions:
+            return super().with_sql(expression)
+
+        functions_sql = self.expressions(sqls=functions, flat=True)
+
+        if len(functions) == len(expression.expressions):
+            return f"WITH {functions_sql}"
+
+        expression.set(
+            "expressions",
+            [e for e in expression.expressions if not isinstance(e, exp.FunctionSpecification)],
+        )
+
+        return f"WITH {functions_sql} {super().with_sql(expression)}"
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

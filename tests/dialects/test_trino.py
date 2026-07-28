@@ -176,3 +176,30 @@ class TestTrino(Validator):
     def test_array_first(self):
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b']) FROM tbl")
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b') FROM tbl")
+
+    def test_inline_udf(self):
+        self.validate_identity(
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION hello(name VARCHAR) RETURNS VARCHAR RETURN FORMAT('Hello %s!', name), "
+            "FUNCTION bye() RETURNS VARCHAR RETURN 'Bye!' "
+            "SELECT HELLO('Finn') || BYE()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER RETURN x * 2 "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f(x INTEGER) RETURNS INTEGER RETURN x "
+            "WITH RECURSIVE t(n) AS (SELECT 1 AS n) SELECT F(n) FROM t"
+        )
+        self.validate_identity(
+            """WITH FUNCTION f(num int)
+    RETURNS int
+    RETURN num
+SELECT f(1)""",
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)",
+        )
+        self.validate_identity("WITH function AS (SELECT 1 AS x) SELECT x FROM function")
+        self.validate_identity("WITH function(x) AS (SELECT 1) SELECT x FROM function")

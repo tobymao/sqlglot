@@ -12,6 +12,9 @@ NEGATED_COMPARISONS = {
     exp.LTE: exp.GT,
     exp.GT: exp.LTE,
     exp.GTE: exp.LT,
+    exp.Is: exp.NullSafeNEQ,
+    exp.NullSafeEQ: exp.NullSafeNEQ,
+    exp.NullSafeNEQ: exp.NullSafeEQ,
 }
 
 
@@ -176,13 +179,27 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if not predicate or predicate.find_ancestor(exp.Where) is not where:
             return
 
+        negations = []
+        negated_expression = predicate
         negation = predicate.find_ancestor(exp.Not)
-        if negation and negation.find_ancestor(exp.Where) is where:
-            comparison_type = NEGATED_COMPARISONS.get(type(predicate))
-            if not comparison_type or negation.this.unnest() is not predicate:
+        while negation and negation.find_ancestor(exp.Where) is where:
+            if negation.this.unnest() is not negated_expression:
                 return
 
-            predicate = negation.replace(
+            negations.append(negation)
+            negated_expression = negation
+            negation = negation.find_ancestor(exp.Not)
+
+        if negations:
+            comparison_type = (
+                type(predicate)
+                if len(negations) % 2 == 0
+                else NEGATED_COMPARISONS.get(type(predicate))
+            )
+            if not comparison_type:
+                return
+
+            predicate = negations[-1].replace(
                 comparison_type(this=predicate.this, expression=predicate.expression)
             )
             has_negated_correlation = True
@@ -198,6 +215,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         keys.append((key, column, predicate))
 
+    # The no-equality-key path is sound because this branch handles a single correlation.
     if not has_negated_correlation and not any(
         isinstance(predicate, exp.EQ) for *_, predicate in keys
     ):

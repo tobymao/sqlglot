@@ -491,6 +491,57 @@ class TestExecutor(unittest.TestCase):
         )
         self.assertEqual(execute(negated_sql, tables={"x": [{"id": 1}], "y": []}).rows, [])
 
+        comparison_tables = {
+            "x": [{"id": 0}, {"id": 1}, {"id": 2}, {"id": 3}],
+            "y": [{"id": 1}, {"id": 2}],
+        }
+        for comparison, expected in (
+            ("=", [(0,), (1,), (2,), (3,)]),
+            ("<>", [(1,), (2,)]),
+            ("<", [(0,), (1,), (2,)]),
+            ("<=", [(0,), (1,)]),
+            (">", [(1,), (2,), (3,)]),
+            (">=", [(2,), (3,)]),
+        ):
+            sql = (
+                "SELECT x.id FROM x AS x "
+                f"WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT (y.id {comparison} x.id))"
+            )
+            with self.subTest(comparison):
+                self.assertEqual(execute(sql, tables=comparison_tables).rows, expected)
+
+        null_safe_tables = {
+            "x": [{"id": 1}, {"id": 2}, {"id": None}],
+            "y": [{"id": 1}],
+        }
+        for predicate, expected in (
+            ("y.id IS NOT DISTINCT FROM x.id", [(2,), (None,)]),
+            ("y.id IS DISTINCT FROM x.id", [(1,)]),
+            ("x.id IS NULL", [(1,), (2,)]),
+            ("x.id IS NOT NULL", [(None,)]),
+        ):
+            sql = (
+                "SELECT x.id FROM x AS x "
+                f"WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT ({predicate}))"
+            )
+            with self.subTest(predicate):
+                self.assertEqual(execute(sql, tables=null_safe_tables).rows, expected)
+
+        null_only_tables = {
+            "x": [{"id": 1}, {"id": None}],
+            "y": [{"id": None}],
+        }
+        for predicate, expected in (
+            ("y.id IS NOT DISTINCT FROM x.id", [(1,)]),
+            ("y.id IS DISTINCT FROM x.id", [(None,)]),
+        ):
+            sql = (
+                "SELECT x.id FROM x AS x "
+                f"WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT ({predicate}))"
+            )
+            with self.subTest(predicate):
+                self.assertEqual(execute(sql, tables=null_only_tables).rows, expected)
+
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {

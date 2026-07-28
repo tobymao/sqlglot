@@ -265,6 +265,8 @@ ENV = {
     "MOD": null_if_any(lambda e, this: e % this),
     "MUL": null_if_any(lambda e, this: e * this),
     "NEQ": null_if_any(lambda this, e: this != e),
+    "NULLSAFEEQ": lambda this, e: this == e,
+    "NULLSAFENEQ": lambda this, e: this != e,
     "ORD": null_if_any(ord),
     "NOT": sql_not,
     "OR": sql_or,

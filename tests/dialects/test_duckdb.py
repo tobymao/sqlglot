@@ -2938,6 +2938,19 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_safe_div(self):
+        # DuckDB follows IEEE 754 for float division, so `a / 0` yields inf
+        # and not NULL, and the divisor must not be wrapped to emulate
+        # NULL-safe division when DuckDB is the source dialect.
+        self.validate_all(
+            "a / b",
+            write={
+                "duckdb": "a / b",
+                "mysql": "a / b",
+                "postgres": "CAST(a AS DOUBLE PRECISION) / b",
+            },
+        )
+
     def test_map_insert(self):
         self.validate_all(
             "SELECT MAP_CONCAT(CAST({'a': 1, 'b': 2} AS MAP(TEXT, DECIMAL(38, 0))), MAP {'c': CAST(3 AS DECIMAL(38, 0))})",

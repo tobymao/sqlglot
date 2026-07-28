@@ -49,8 +49,6 @@ class TrinoGenerator(PrestoGenerator):
     }
 
     def with_sql(self, expression: exp.With) -> str:
-        # Inline UDFs are declared in their own `WITH` clause, which precedes the (optional)
-        # `WITH` clause of the query: https://trino.io/docs/current/udf/sql.html
         functions = [e for e in expression.expressions if isinstance(e, exp.FunctionSpecification)]
         if not functions:
             return super().with_sql(expression)

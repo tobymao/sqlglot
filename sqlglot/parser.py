@@ -4095,10 +4095,15 @@ class Parser:
 
         last_comments = None
         expressions = []
+        udfs = []
         while True:
             cte = self._parse_cte()
             if cte:
-                expressions.append(cte)
+                if isinstance(cte, exp.FunctionSpecification):
+                    udfs.append(cte)
+                else:
+                    expressions.append(cte)
+
                 if last_comments:
                     cte.add_comments(last_comments)
 
@@ -4115,6 +4120,7 @@ class Parser:
                 expressions=expressions,
                 recursive=recursive or None,
                 search=self._parse_recursive_with_search(),
+                udfs=udfs or None,
             ),
             comments=comments,
         )

@@ -587,13 +587,7 @@ def add_recursive_cte_column_names(expression: exp.Expr) -> exp.Expr:
         next_name = name_sequence("_c_")
 
         for cte in expression.expressions:
-            alias = cte.args.get("alias")
-            if not alias:
-                # Non-CTE entries (e.g. a Trino inline UDF's FunctionSpecification) don't
-                # have output columns to derive names from, so leave them untouched
-                continue
-
-            if not alias.columns:
+            if not cte.args["alias"].columns:
                 query = cte.this
                 if isinstance(query, exp.SetOperation):
                     query = query.this

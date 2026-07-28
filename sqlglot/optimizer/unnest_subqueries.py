@@ -215,10 +215,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         keys.append((key, column, predicate))
 
-    # The no-equality-key path is sound because this branch handles a single correlation.
-    if not has_negated_correlation and not any(
-        isinstance(predicate, exp.EQ) for *_, predicate in keys
-    ):
+    # The no-equality-key path is only sound for a single correlated predicate.
+    has_equality_key = any(isinstance(predicate, exp.EQ) for *_, predicate in keys)
+    if not has_equality_key and (len(keys) != 1 or not has_negated_correlation):
         return
 
     is_subquery_projection = any(

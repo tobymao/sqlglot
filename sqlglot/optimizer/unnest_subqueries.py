@@ -191,7 +191,7 @@ def _decorrelate_single_comparison_exists(
     if not isinstance(parent_clause, exp.Where):
         return False
 
-    # That WHERE must belong to the expected parent SELECT.
+    # The parent WHERE clause must belong to the expected parent SELECT.
     if parent_clause.parent_select is not parent_select:
         return False
 
@@ -304,8 +304,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
         return
-    # Handle a lone inequality before the generic equality-key decorrelator can discard
-    # its negation. Returning here prevents the same subquery from being rewritten twice.
+
+    # The generic decorrelator below requires a non-negated equality predicate it can
+    # use for the join; this path handles single-comparison EXISTS predicates without one.
     if _decorrelate_single_comparison_exists(
         select, parent_select, external_columns, next_alias_name
     ):
@@ -320,9 +321,10 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if column.find_ancestor(exp.Where) is not where:
             return
 
-        # A generic join key may be a top-level conjunct wrapped in parentheses, but it
-        # must not sit beneath NOT or another semantic operator. Walking directly to WHERE
-        # used to hide that distinction and allowed NOT (inner = outer) to collapse.
+        # Above, _decorrelate_single_comparison_exists handles only certain single-comparison cases.
+        # Here, the generic path replaces each extracted predicate with TRUE. This is only safe when
+        # the path to WHERE exclusively passes through `And` and `Paren` nodes; reject wrappers such
+        # as `Not`.
         predicate = column.find_ancestor(exp.Predicate)
         ancestor = predicate.parent if predicate else None
         while isinstance(ancestor, (exp.And, exp.Paren)):

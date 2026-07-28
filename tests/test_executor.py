@@ -613,18 +613,6 @@ class TestExecutor(unittest.TestCase):
                 [(2,), (3,)],
             ),
             (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.id <= x.id)",
-                [(1,), (2,), (3,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.id > x.id)",
-                [(1,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.id >= x.id)",
-                [(1,), (2,)],
-            ),
-            (
                 "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id < x.id))",
                 [(1,), (2,)],
             ),

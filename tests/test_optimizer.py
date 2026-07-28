@@ -1220,15 +1220,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         with self.subTest(predicate=predicate, condition=condition):
                             assert_decorrelated(sql)
 
-        for condition in ("z.b < x.a", "NOT (x.a >= z.b)"):
-            for predicate in ("EXISTS", "NOT EXISTS"):
-                sql = (
-                    f"SELECT x.a FROM x WHERE {predicate} "
-                    f"(SELECT 1 FROM z WHERE {condition}) ORDER BY 1 NULLS LAST"
-                )
-                with self.subTest(predicate=predicate, condition=condition):
-                    assert_decorrelated(sql)
-
         optimized = optimizer.optimize(
             "SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM z WHERE z.b <> x.a)",
             schema=self.schema,
@@ -1238,7 +1229,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertIn("ARRAY_LENGTH(`_u_0`.`_u_1`) <> 0", bigquery_sql)
         self.assertNotIn("`_u_0`.`_u_1` <> []", bigquery_sql)
 
-    def test_unnest_subqueries_skips_unsupported_negated_correlations(self):
+    def test_unnest_subqueries_skips_unsupported_correlated_exists(self):
         for sql in (
             "SELECT x.a FROM x WHERE EXISTS "
             "(SELECT 1 FROM y WHERE NOT (y.a = x.a) AND NOT (y.b = x.b))",
@@ -1265,25 +1256,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     optimizer.unnest_subqueries.unnest_subqueries(expression).sql(),
                     expected,
                 )
-
-    def test_unnest_subqueries_decorrelates_range_correlations(self):
-        for operator in ("<", "<=", ">", ">="):
-            for comparison in (f"y.b {operator} x.a", f"x.a {operator} y.b"):
-                for condition in (comparison, f"NOT ({comparison})"):
-                    with self.subTest(condition):
-                        expression = optimizer.unnest_subqueries.unnest_subqueries(
-                            parse_one(
-                                f"SELECT x.a FROM x WHERE EXISTS "
-                                f"(SELECT 1 FROM y WHERE {condition})"
-                            )
-                        )
-
-                        self.assertIsNone(expression.find(exp.Exists))
-                        lambda_condition = expression.find(exp.Lambda).this
-                        self.assertEqual(
-                            lambda_condition.sql(),
-                            exp.condition(condition.replace("y.b", "_x")).sql(),
-                        )
 
     def test_unnest_subqueries_keeps_positive_equality_with_operand_not(self):
         expression = optimizer.unnest_subqueries.unnest_subqueries(

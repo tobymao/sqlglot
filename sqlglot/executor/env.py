@@ -229,6 +229,7 @@ ENV = {
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
     "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
+    "ARRAYSIZE": null_if_any(len),
     "ARRAYTOSTRING": arraytostring,
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),

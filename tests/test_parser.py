@@ -412,6 +412,13 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT A[:")
 
+        # Truncated input must produce a ParseError, not an AttributeError
+        with self.assertRaises(ParseError):
+            parse_one("SELECT * FROM t MATCH_RECOGNIZE(AFTER MATCH SKIP TO FIRST", read="snowflake")
+
+        with self.assertRaises(ParseError):
+            parse_one("SELECT * FROM t MATCH_RECOGNIZE(AFTER MATCH SKIP TO LAST", read="snowflake")
+
         self.assertEqual(parse_one("as as", error_level=ErrorLevel.IGNORE).sql(), "AS as")
 
     def test_space(self):

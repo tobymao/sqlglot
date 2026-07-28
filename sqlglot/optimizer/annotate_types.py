@@ -741,7 +741,8 @@ class TypeAnnotator:
             self._set_type(expression, None)
             return expression
 
-        left_type, right_type = left.type.this, right.type.this  # type: ignore
+        left_type = left.type.this if left.type else exp.DType.UNKNOWN
+        right_type = right.type.this if right.type else exp.DType.UNKNOWN
 
         # TODO (mypyc): should be isinstance(expression, (exp.Connector, exp.Predicate)) but
         # mypyc narrows the variable to the first type in a tuple/or isinstance check when
@@ -803,7 +804,7 @@ class TypeAnnotator:
             for expr in ensure_list(expressions):
                 expr_type = expr.type
 
-                if expr_type.is_type(exp.DType.UNKNOWN):
+                if expr_type is None or expr_type.is_type(exp.DType.UNKNOWN):
                     self._set_type(expression, exp.DType.UNKNOWN)
                     return expression
 
@@ -840,18 +841,19 @@ class TypeAnnotator:
                     and non_literal_this_type in exp.DataType.REAL_TYPES
                 ):
                     result_type = non_literal_type
+
+            if result_type is None:
+                result_type = self._maybe_coerce(non_literal_type, literal_type)
         else:
             result_type = literal_type or non_literal_type or exp.DType.UNKNOWN
 
-        self._set_type(
-            expression,
-            result_type or self._maybe_coerce(non_literal_type, literal_type),  # type: ignore
-        )
+        self._set_type(expression, result_type)
 
         if promote:
-            if expression.type.this in exp.DataType.INTEGER_TYPES:  # type: ignore
+            this_type = result_type.this if isinstance(result_type, exp.DataType) else result_type
+            if this_type in exp.DataType.INTEGER_TYPES:
                 self._set_type(expression, exp.DType.BIGINT)
-            elif expression.type.this in exp.DataType.FLOAT_TYPES:  # type: ignore
+            elif this_type in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DType.DOUBLE)
 
         if array:
@@ -893,7 +895,9 @@ class TypeAnnotator:
         return expression
 
     def _annotate_div(self, expression: exp.Div) -> exp.Div:
-        left_type, right_type = expression.left.type.this, expression.right.type.this  # type: ignore
+        left, right = expression.left, expression.right
+        left_type = left.type.this if left.type else exp.DType.UNKNOWN
+        right_type = right.type.this if right.type else exp.DType.UNKNOWN
 
         if (
             expression.args.get("typed")

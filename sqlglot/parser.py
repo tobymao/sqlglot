@@ -4394,10 +4394,14 @@ class Parser:
                 text += " PAST LAST ROW"
             elif self._match_text_seq("TO", "NEXT", "ROW"):
                 text += " TO NEXT ROW"
-            elif self._match_text_seq("TO", "FIRST"):
-                text += f" TO FIRST {self._advance_any().text}"  # type: ignore
-            elif self._match_text_seq("TO", "LAST"):
-                text += f" TO LAST {self._advance_any().text}"  # type: ignore
+            elif self._match_text_seq("TO", "FIRST") or self._match_text_seq("TO", "LAST"):
+                direction = self._prev.text.upper()
+                pattern_var = self._advance_any()
+                if not pattern_var:
+                    self.raise_error(
+                        f"Expecting pattern variable after AFTER MATCH SKIP TO {direction}"
+                    )
+                text += f" TO {direction} {pattern_var.text if pattern_var else ''}"
             after = exp.var(text)
         else:
             after = None

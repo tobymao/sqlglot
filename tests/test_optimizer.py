@@ -9,7 +9,7 @@ from pandas.testing import assert_frame_equal
 import sqlglot
 from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
-from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.annotate_types import TypeAnnotator, annotate_types
 from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
@@ -1774,6 +1774,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Programmatic set operations with VALUES operands must not crash the Query-typed
         # left/right accessors in compiled builds
         annotate_types(exp.select("*").from_(exp.select("1").union("VALUES (2)").subquery("s")))
+
+    def test_annotate_untyped_binary_operands(self):
+        # Operands that escaped annotation have type None; treat them as UNKNOWN instead
+        # of crashing on `.type.this`
+        annotator = TypeAnnotator(MappingSchema())
+
+        binary = parse_one("a + b")
+        self.assertTrue(annotator._annotate_binary(binary).is_type(exp.DataType.Type.UNKNOWN))
+
+        div = parse_one("a / b")
+        self.assertTrue(annotator._annotate_div(div).is_type(exp.DataType.Type.UNKNOWN))
 
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})

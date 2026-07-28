@@ -518,6 +518,7 @@ class TestHive(Validator):
     def test_hive(self):
         self.validate_identity("TO_DATE(TO_DATE(x))")
         self.validate_identity("DAY(TO_DATE(x))")
+        self.validate_identity("NEGATIVE(x)").assert_is(exp.Negative)
         self.validate_identity("SELECT * FROM t WHERE col IN ('stream')")
         self.validate_identity("SET hiveconf:some_var = 5", check_command_warning=True)
         self.validate_identity("(VALUES (1 AS a, 2 AS b, 3))")

@@ -98,7 +98,6 @@ class HiveParser(parser.Parser):
         "MAP": parser.build_var_map,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate.from_arg_list(args)),
         "NAMED_STRUCT": _build_named_struct,
-        "NEGATIVE": lambda args: exp.Negative(this=seq_get(args, 0)),
         "REGEXP_EXTRACT": build_regexp_extract(exp.RegexpExtract),
         "REGEXP_EXTRACT_ALL": build_regexp_extract(exp.RegexpExtractAll),
         "SEQUENCE": exp.GenerateSeries.from_arg_list,

@@ -582,14 +582,14 @@ class TypeAnnotator:
         we assume type1 does not coerce into type2, so we also return it in this case.
         """
         if isinstance(type1, exp.DataType):
-            if type1.expressions:
+            if type1.expressions or not isinstance(type1.this, exp.DType):
                 return type1
             type1_value = type1.this
         else:
             type1_value = type1
 
         if isinstance(type2, exp.DataType):
-            if type2.expressions:
+            if type2.expressions or not isinstance(type2.this, exp.DType):
                 return type2
             type2_value = type2.this
         else:
@@ -927,7 +927,11 @@ class TypeAnnotator:
         return expression
 
     def _annotate_explode(self, expression: exp.Explode) -> exp.Explode:
-        self._set_type(expression, seq_get(expression.this.type.expressions, 0))
+        input_type = expression.this.type
+        if input_type and input_type.is_type(exp.DType.ARRAY):
+            self._set_type(expression, seq_get(input_type.expressions, 0))
+        else:
+            self._set_type(expression, None)
         return expression
 
     def _annotate_unnest(self, expression: exp.Unnest) -> exp.Unnest:

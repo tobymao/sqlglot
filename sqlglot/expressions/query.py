@@ -444,7 +444,7 @@ class RecursiveWithSearch(Expression):
 
 
 class With(Expression):
-    arg_types = {"expressions": True, "recursive": False, "search": False}
+    arg_types = {"expressions": False, "recursive": False, "search": False, "udfs": False}
 
     @property
     def recursive(self) -> bool:

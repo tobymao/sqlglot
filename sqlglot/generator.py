@@ -1518,7 +1518,11 @@ class Generator:
         return sql
 
     def with_sql(self, expression: exp.With) -> str:
+        udfs = self.expressions(expression, key="udfs", flat=True)
+        udfs = f"WITH {udfs}" if udfs else ""
+
         sql = self.expressions(expression, flat=True)
+
         recursive = (
             "RECURSIVE "
             if self.CTE_RECURSIVE_KEYWORD_REQUIRED and expression.args.get("recursive")
@@ -1527,7 +1531,8 @@ class Generator:
         search = self.sql(expression, "search")
         search = f" {search}" if search else ""
 
-        return f"WITH {recursive}{sql}{search}"
+        sql = f"WITH {recursive}{sql}{search}" if sql else ""
+        return f"{udfs} {sql}" if udfs and sql else f"{udfs}{sql}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
         alias = expression.args.get("alias")
@@ -6214,12 +6219,8 @@ class Generator:
         return f"{expressions}" if expressions else ""
 
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
-        properties = expression.args.get("properties")
-        properties_sql = (
-            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
-        )
-        body = self.sql(expression, "expression")
-        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
+        self.unsupported("Unsupported Inline UDFs syntax")
+        return ""
 
     def storedprocedure_sql(self, expression: exp.StoredProcedure) -> str:
         self.unsupported("Unsupported Stored Procedure syntax")

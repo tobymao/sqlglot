@@ -68,6 +68,7 @@ class TrinoParser(PrestoParser):
         # CTE that happens to be named "function", e.g. `WITH function AS (SELECT 1)`
         if (
             self._match(TokenType.FUNCTION, advance=False)
+            and self._next
             and self._next.token_type in self.ID_VAR_TOKENS
         ):
             self._advance()

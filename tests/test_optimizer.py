@@ -1259,6 +1259,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "AND ARRAY_ANY(_u_0._u_1, _x -> x.id IS _x))",
         )
 
+        sql = (
+            "SELECT x.a, x.b FROM x AS x "
+            "WHERE EXISTS (SELECT 1 FROM y AS y "
+            "WHERE NOT (y.a > x.a) AND NOT (y.b > x.b))"
+        )
+        optimized = optimizer.unnest_subqueries.unnest_subqueries(parse_one(sql))
+        self.assertIsNotNone(optimized.find(exp.Exists))
+        self.assertIsNone(optimized.find(exp.Join))
+
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 

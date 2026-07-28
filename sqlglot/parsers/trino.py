@@ -85,8 +85,6 @@ class TrinoParser(PrestoParser):
         )
 
     def _parse_routine_statement(self) -> exp.Expr | None:
-        # https://trino.io/docs/current/udf/sql.html -- only RETURN is supported so far;
-        # BEGIN...END blocks and other control statements are added in follow-ups.
         if self._match_text_seq("RETURN"):
             return self.expression(exp.Return(this=self._parse_disjunction()))
 

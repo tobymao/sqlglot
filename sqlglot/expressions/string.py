@@ -141,6 +141,10 @@ class SearchIp(Expression, Func):
     arg_types = {"this": True, "expression": True}
 
 
+class Secret(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Soundex(Expression, Func):
     pass
 

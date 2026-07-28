@@ -29,6 +29,7 @@ EXPRESSION_METADATA = {
     exp.RegexpSubstr: {"returns": exp.DType.VARCHAR},
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
+    exp.Secret: {"returns": exp.DType.VARCHAR},
     exp.Trim: {"returns": exp.DType.VARCHAR},
     exp.RegexpExtractAll: {
         "annotator": lambda self, e: self._set_type(

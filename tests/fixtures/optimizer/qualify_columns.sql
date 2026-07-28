@@ -158,6 +158,11 @@ SELECT SUM(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY d;
 SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY UPPER(c);
 SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY UPPER(y.c);
 
+# title: Aggregate in a subquery scope does not block expanding an alias into GROUP BY
+# execute: false
+SELECT (SELECT MAX(t.a) FROM x AS t) + x.b AS f FROM x GROUP BY f;
+SELECT (SELECT MAX(t.a) AS _col_0 FROM x AS t) + x.b AS f FROM x AS x GROUP BY (SELECT MAX(t.a) AS _col_0 FROM x AS t) + x.b;
+
 SELECT a + 1 AS d FROM x WHERE d > 1;
 SELECT x.a + 1 AS d FROM x AS x WHERE (x.a + 1) > 1;
 

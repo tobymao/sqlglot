@@ -2120,6 +2120,18 @@ class EndStatement(Expression):
     arg_types = {}
 
 
+# https://trino.io/docs/current/udf.html
+class FunctionSpecification(Expression):
+    """
+    A SQL user-defined function specification, e.g. an inline UDF declared with
+    `WITH FUNCTION ... SELECT ...` in Trino. `this` is a `UserDefinedFunction`,
+    `properties` holds the `RETURNS` clause and routine characteristics, and
+    `expression` is the routine body (e.g. a `Return`).
+    """
+
+    arg_types = {"this": True, "properties": False, "expression": True}
+
+
 UNWRAPPED_QUERIES = (Select, SetOperation)
 
 

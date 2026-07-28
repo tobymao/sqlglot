@@ -6213,6 +6213,14 @@ class Generator:
         expressions = self.expressions(expression, sep="; ", flat=True)
         return f"{expressions}" if expressions else ""
 
+    def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
+        properties = expression.args.get("properties")
+        properties_sql = (
+            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
+        )
+        body = self.sql(expression, "expression")
+        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
+
     def storedprocedure_sql(self, expression: exp.StoredProcedure) -> str:
         self.unsupported("Unsupported Stored Procedure syntax")
         return ""

@@ -151,8 +151,11 @@ def canonicalize_internal_names(expression: E) -> E:
 
             # preserve UNNEST struct fields (which canonicalize can't rewrite)
             src = source.expression
-            if isinstance(src, exp.Unnest) and (
-                element_type := seq_get(src.expressions[0].type.expressions, 0)
+            if (
+                isinstance(src, exp.Unnest)
+                and src.expressions
+                and src.expressions[0].type
+                and (element_type := seq_get(src.expressions[0].type.expressions, 0))
             ):
                 preserve_names = preserve_names or element_type.is_type(exp.DataType.Type.STRUCT)
 

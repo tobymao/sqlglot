@@ -1549,9 +1549,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(len(set(outer_table_aliases)), 3, outer_table_aliases)
         self.assertEqual(len(canon_triple_scope.selected_sources), 3)
 
-        # UNNEST whose element type is unresolved after qualify (DuckDB leaves the arg
-        # untyped) must not crash: the struct-preservation heuristic reads the element
-        # type and has to tolerate a missing one.
+        # test UNNEST whose element type is unresolved after qualify must not crash:
+        # the heuristic reads the element type and has to tolerate a missing one.
         canon_unnest = qualify_then_canonicalize(
             parse_one("SELECT v FROM t, UNNEST(t.arr) AS v(v)", dialect="duckdb"),
             schema={"t": {"arr": "ARRAY<INT>"}},

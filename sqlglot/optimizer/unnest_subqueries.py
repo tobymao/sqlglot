@@ -191,17 +191,19 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             negation = negation.find_ancestor(exp.Not)
 
         if negations:
-            comparison_type = (
-                type(predicate)
-                if len(negations) % 2 == 0
-                else NEGATED_COMPARISONS.get(type(predicate))
-            )
-            if not comparison_type:
-                return
+            if len(negations) % 2 == 0:
+                comparison = type(predicate)(**predicate.args)
+            elif isinstance(predicate, exp.Is) and predicate.args.get("negate"):
+                comparison = exp.Is(**predicate.args)
+                comparison.set("negate", False)
+            else:
+                comparison_type = NEGATED_COMPARISONS.get(type(predicate))
+                if not comparison_type:
+                    return
 
-            predicate = negations[-1].replace(
-                comparison_type(this=predicate.this, expression=predicate.expression)
-            )
+                comparison = comparison_type(this=predicate.this, expression=predicate.expression)
+
+            predicate = negations[-1].replace(comparison)
             has_negated_correlation = True
 
         if isinstance(predicate, exp.Binary):

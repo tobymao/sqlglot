@@ -1243,6 +1243,22 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     f"AND ARRAY_ANY(_u_0._u_1, _x -> x.id {complement} _x))",
                 )
 
+        sql = (
+            "SELECT x.id FROM x AS x "
+            "WHERE EXISTS (SELECT 1 FROM y AS y WHERE NOT (x.id IS NOT NULL))"
+        )
+        optimized = optimizer.unnest_subqueries.unnest_subqueries(
+            parse_one(sql, dialect="postgres")
+        )
+        self.assertEqual(
+            optimized.sql(),
+            "SELECT x.id FROM x AS x "
+            "LEFT JOIN (SELECT ARRAY_AGG(NULL) AS _u_1 FROM y AS y WHERE TRUE) "
+            "AS _u_0 ON TRUE "
+            "WHERE (NOT _u_0._u_1 IS NULL "
+            "AND ARRAY_ANY(_u_0._u_1, _x -> x.id IS _x))",
+        )
+
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 

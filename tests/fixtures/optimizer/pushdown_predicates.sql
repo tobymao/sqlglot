@@ -107,3 +107,7 @@ SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 
 -- A FULL JOIN preserves its own source, so an ON predicate can't be pushed into it as a filter
 SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
 SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+
+-- A FULL JOIN preserves both sides, so a WHERE predicate on either of them can't be pushed down
+SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;

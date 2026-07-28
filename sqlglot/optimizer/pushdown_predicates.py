@@ -231,7 +231,7 @@ def nodes_for_predicate(
             node = source.expression
 
         if isinstance(node, exp.Join):
-            if node.side and (node.side != "RIGHT" or where_condition):
+            if node.side:
                 # A right join preserves its own source, so a WHERE predicate on it can only be
                 # pushed into that source, never into the match-only ON clause.
                 pushable_source = (

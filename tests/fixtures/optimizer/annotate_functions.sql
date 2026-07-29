@@ -4484,6 +4484,14 @@ REGR_SYY(tbl.double_col, tbl.double_col);
 DOUBLE;
 
 # dialect: databricks
+BIT_OR(tbl.int_col);
+INT;
+
+# dialect: databricks
+BIT_OR(tbl.bigint_col);
+BIGINT;
+
+# dialect: databricks
 REGR_SYY(tbl.int_col, tbl.int_col);
 DOUBLE;
 

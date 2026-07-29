@@ -156,6 +156,7 @@ AGG_FUNCTIONS = {
     "quantile",
     "quantiles",
     "quantileExact",
+    "quantileExactInclusive",
     "quantilesExact",
     "quantilesExactExclusive",
     "quantileExactLow",

@@ -4491,6 +4491,14 @@ INT;
 BIT_OR(tbl.bigint_col);
 BIGINT;
 
+# dialect: spark
+BIT_OR(tbl.int_col);
+INT;
+
+# dialect: spark
+BIT_OR(tbl.bigint_col);
+BIGINT;
+
 # dialect: databricks
 REGR_SYY(tbl.int_col, tbl.int_col);
 DOUBLE;

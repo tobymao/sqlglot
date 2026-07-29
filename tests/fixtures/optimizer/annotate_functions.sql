@@ -4567,7 +4567,7 @@ STRING;
 RPAD(tbl.bin_col, 5);
 BINARY;
 
-# dialect: databricks
+# dialect: spark, databricks
 BITMAP_CONSTRUCT_AGG(tbl.int_col);
 BINARY;
 

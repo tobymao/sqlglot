@@ -25,10 +25,7 @@ def _annotate_truncate(self: TypeAnnotator, expression: exp.Trunc) -> exp.Expr:
     return self._annotate_by_args(expression, "this")
 
 
-def _annotate_regexp_replace(
-    self: TypeAnnotator,
-    expression: exp.RegexpReplace,
-) -> exp.Expr:
+def _annotate_regexp_replace(self: TypeAnnotator, expression: exp.RegexpReplace) -> exp.Expr:
     args = (
         expression.this,
         expression.args.get("expression"),

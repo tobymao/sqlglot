@@ -4560,6 +4560,10 @@ RPAD(tbl.bin_col, 5);
 BINARY;
 
 # dialect: databricks
+BITMAP_CONSTRUCT_AGG(tbl.int_col);
+BINARY;
+
+# dialect: databricks
 RTRIM(tbl.str_col);
 STRING;
 

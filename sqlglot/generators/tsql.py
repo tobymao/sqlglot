@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
 from sqlglot.time import format_time
 from collections import defaultdict
@@ -48,7 +49,7 @@ def _format_sql(self: TSQLGenerator, expression: exp.NumberToStr | exp.TimeToStr
 
 def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     this = expression.this
-    distinct = expression.find(exp.Distinct)
+    distinct = find_in_scope(expression, exp.Distinct)
     if distinct:
         # exp.Distinct can appear below an exp.Order or an exp.GroupConcat expression
         self.unsupported("T-SQL STRING_AGG doesn't support DISTINCT.")

@@ -20,6 +20,7 @@ from sqlglot.errors import (
 )
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import ensure_list, i64, seq_get
+from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
 from sqlglot.trie import TrieResult, in_trie, new_trie
@@ -8486,7 +8487,7 @@ class Parser:
         #   and Snowflake chose to do the same for familiarity
         #   https://docs.snowflake.com/en/sql-reference/functions/first_value.html#usage-notes
         if isinstance(this, exp.AggFunc):
-            ignore_respect = this.find(exp.IgnoreNulls, exp.RespectNulls)
+            ignore_respect = find_in_scope(this, exp.IgnoreNulls, exp.RespectNulls)
 
             if ignore_respect and ignore_respect is not this:
                 ignore_respect.replace(ignore_respect.this)

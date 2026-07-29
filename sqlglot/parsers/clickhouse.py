@@ -72,6 +72,18 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     )
 
 
+def _build_cast(name: str, dtype: exp.DType) -> t.Callable[[list], exp.Cast | exp.Anonymous]:
+    def _builder(args: list) -> exp.Cast | exp.Anonymous:
+        if len(args) == 1:
+            return exp.cast(
+                args[0],
+                exp.DataType(this=dtype, nested=False, nullable=False),
+            )
+        return exp.Anonymous(this=name, expressions=args)
+
+    return _builder
+
+
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
 # uses an extra mode argument to specify the first day of the week
 TIMESTAMP_TRUNC_UNITS = {
@@ -318,6 +330,22 @@ class ClickHouseParser(parser.Parser):
         "SPLITBYSTRING": _build_split(exp.Split),
         "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,
         "TOTYPENAME": exp.Typeof.from_arg_list,
+        **{
+            key: _build_cast(name, dtype)
+            for key, name, dtype in (
+                ("TOINT8", "toInt8", exp.DType.TINYINT),
+                ("TOINT16", "toInt16", exp.DType.SMALLINT),
+                ("TOINT32", "toInt32", exp.DType.INT),
+                ("TOINT64", "toInt64", exp.DType.BIGINT),
+                ("TOUINT8", "toUInt8", exp.DType.UTINYINT),
+                ("TOUINT16", "toUInt16", exp.DType.USMALLINT),
+                ("TOUINT32", "toUInt32", exp.DType.UINT),
+                ("TOUINT64", "toUInt64", exp.DType.UBIGINT),
+                ("TOFLOAT32", "toFloat32", exp.DType.FLOAT),
+                ("TOFLOAT64", "toFloat64", exp.DType.DOUBLE),
+                ("TOSTRING", "toString", exp.DType.TEXT),
+            )
+        },
         "EDITDISTANCE": exp.Levenshtein.from_arg_list,
         "JAROWINKLERSIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
         "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,

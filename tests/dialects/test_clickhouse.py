@@ -59,7 +59,22 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT json.a.b[][]", 'SELECT json.a.b.:"Array(Array(JSON))"')
         self.validate_identity("WITH arrayJoin([(1, [2, 3])]) AS arr SELECT arr")
         self.validate_identity("CAST(1 AS Bool)")
-        self.validate_identity("SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))")
+        self.validate_identity(
+            "SELECT toString(CHAR(104.1, 101, 108.9, 108.9, 111, 32))",
+            "SELECT CAST(CHAR(104.1, 101, 108.9, 108.9, 111, 32) AS String)",
+        )
+        self.validate_identity("SELECT toInt32(x)", "SELECT CAST(x AS Int32)").selects[0].assert_is(
+            exp.Cast
+        )
+        self.validate_identity("SELECT toUInt32(x)", "SELECT CAST(x AS UInt32)").selects[
+            0
+        ].assert_is(exp.Cast)
+        self.validate_identity("SELECT toFloat64(x)", "SELECT CAST(x AS Float64)").selects[
+            0
+        ].assert_is(exp.Cast)
+        self.validate_identity("SELECT toString(x)", "SELECT CAST(x AS String)").selects[
+            0
+        ].assert_is(exp.Cast)
         self.validate_identity("@macro").assert_is(exp.Parameter).this.assert_is(exp.Var)
         self.validate_identity("SELECT toFloat(like)")
         self.validate_identity("SELECT like")
@@ -166,16 +181,19 @@ class TestClickhouse(Validator):
             "ATTACH DATABASE DEFAULT ENGINE = ORDINARY", check_command_warning=True
         )
         self.validate_identity(
-            "SELECT n, source FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL"
+            "SELECT n, source FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL",
+            "SELECT n, source FROM (SELECT CAST(number % 10 AS Float32) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL",
         )
         self.validate_identity(
-            "SELECT n, source FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5"
+            "SELECT n, source FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5",
+            "SELECT n, source FROM (SELECT CAST(number % 10 AS Float32) AS n, 'original' AS source FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5",
         )
         self.validate_identity(
             "SELECT toDate((number * 10) * 86400) AS d1, toDate(number * 86400) AS d2, 'original' AS source FROM numbers(10) WHERE (number % 3) = 1 ORDER BY d2 WITH FILL, d1 WITH FILL STEP 5"
         )
         self.validate_identity(
-            "SELECT n, source, inter FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source, number AS inter FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5 INTERPOLATE (inter AS inter + 1)"
+            "SELECT n, source, inter FROM (SELECT toFloat32(number % 10) AS n, 'original' AS source, number AS inter FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5 INTERPOLATE (inter AS inter + 1)",
+            "SELECT n, source, inter FROM (SELECT CAST(number % 10 AS Float32) AS n, 'original' AS source, number AS inter FROM numbers(10) WHERE number % 3 = 1) ORDER BY n WITH FILL FROM 0 TO 5.51 STEP 0.5 INTERPOLATE (inter AS inter + 1)",
         )
         self.validate_identity(
             "SELECT SUM(1) AS impressions, arrayJoin(cities) AS city, arrayJoin(browsers) AS browser FROM (SELECT ['Istanbul', 'Berlin', 'Bobruisk'] AS cities, ['Firefox', 'Chrome', 'Chrome'] AS browsers) GROUP BY 2, 3"
@@ -245,7 +263,7 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             "SELECT (toUInt8('1') + toUInt8('2')) IS NOT NULL",
-            "SELECT NOT ((toUInt8('1') + toUInt8('2')) IS NULL)",
+            "SELECT NOT ((CAST('1' AS UInt8) + CAST('2' AS UInt8)) IS NULL)",
         )
         self.validate_identity(
             "SELECT $1$foo$1$",
@@ -688,7 +706,8 @@ class TestClickhouse(Validator):
         )
         self.validate_identity("SELECT * APPLY(sum), COLUMNS('col') APPLY(sum) APPLY(avg) FROM t")
         self.validate_identity(
-            "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(toUInt64(field))))"
+            "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(toUInt64(field))))",
+            "SELECT * FROM ABC WHERE hasAny(COLUMNS('.*field') APPLY(toUInt64) APPLY(to), (SELECT groupUniqArray(CAST(field AS UInt64))))",
         )
         self.validate_identity("SELECT col apply", "SELECT col AS apply")
         self.validate_identity(
@@ -1561,7 +1580,9 @@ LIFETIME(MIN 0 MAX 0)""",
         sum_merge_if_merge = (
             self.validate_identity(
                 "SELECT sumMergeIfMerge(s) FROM (SELECT sumMergeIfState(agg, 1 = 1) AS s "
-                "FROM (SELECT sumState(toFloat64(number)) AS agg FROM numbers(10)))"
+                "FROM (SELECT sumState(toFloat64(number)) AS agg FROM numbers(10)))",
+                "SELECT sumMergeIfMerge(s) FROM (SELECT sumMergeIfState(agg, 1 = 1) AS s "
+                "FROM (SELECT sumState(CAST(number AS Float64)) AS agg FROM numbers(10)))",
             )
             .selects[0]
             .assert_is(exp.CombinedAggFunc)

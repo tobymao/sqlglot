@@ -140,6 +140,8 @@ class Spark2Generator(HiveGenerator):
         "COSINE_SIMILARITY",
         "HAMMING_DISTANCE",
         "HUMAN_READABLE_SECONDS",
+        "JSON_SIZE",
+        "PARSE_DURATION",
         "WITH_TIMEZONE",
         "WORD_STEM",
     }

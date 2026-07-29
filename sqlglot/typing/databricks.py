@@ -27,13 +27,15 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        exp.BitmapConstructAgg: {"returns": exp.DType.BINARY},
+        exp_type: {"returns": exp.DType.VARCHAR}
+        for exp_type in {
+            exp.RegexpSubstr,
+            exp.Secret,
+            exp.Trim,
+        }
     },
-    exp.RegexpSubstr: {"returns": exp.DType.VARCHAR},
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
-    exp.Secret: {"returns": exp.DType.VARCHAR},
-    exp.Trim: {"returns": exp.DType.VARCHAR},
     exp.RegexpExtractAll: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.from_str("ARRAY<STRING>", dialect="databricks")

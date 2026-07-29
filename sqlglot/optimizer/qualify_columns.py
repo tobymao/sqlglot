@@ -10,7 +10,7 @@ from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
-from sqlglot.optimizer.scope import Scope, build_scope, traverse_scope, walk_in_scope
+from sqlglot.optimizer.scope import Scope, build_scope, find_in_scope, traverse_scope, walk_in_scope
 from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
 
@@ -356,10 +356,18 @@ def _expand_alias_refs(
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
+                # An aggregate alias must not be expanded into a GROUP BY or another (non-window) aggregate.
                 skip_replace = bool(
-                    alias_expr.find(exp.AggFunc)
-                    and column.find_ancestor(exp.AggFunc)
-                    and not isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
+                    find_in_scope(alias_expr, exp.AggFunc)
+                    and (
+                        is_group_by
+                        or (
+                            column.find_ancestor(exp.AggFunc)
+                            and not isinstance(
+                                column.find_ancestor(exp.Window, exp.Select), exp.Window
+                            )
+                        )
+                    )
                 )
 
                 # BigQuery's having clause gets confused if an alias matches a source.

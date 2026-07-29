@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
+from sqlglot.helper import ensure_list
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
@@ -84,10 +85,35 @@ class TrinoParser(PrestoParser):
         return super()._parse_cte()
 
     def _parse_function_specification(self) -> exp.FunctionSpecification:
+        this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
+
+        # The routine characteristics (LANGUAGE, DETERMINISTIC, SECURITY, ...) and the
+        # optional trailing `WITH (property_name = expression, ...)` clause can't share
+        # one _parse_properties() loop: WITH's entries are arbitrary key/value pairs,
+        # not one of the fixed PROPERTY_PARSERS keywords the rest of the loop matches on.
+        characteristics = []
+        properties = []
+
+        while True:
+            if self._match(TokenType.WITH):
+                properties.extend(self._parse_wrapped_csv(self._parse_key_value_property))
+                continue
+
+            characteristic = self._parse_property()
+            if not characteristic:
+                break
+
+            characteristics.extend(ensure_list(characteristic))
+
         return self.expression(
             exp.FunctionSpecification(
-                this=self._parse_user_defined_function(kind=TokenType.FUNCTION),
-                properties=self._parse_properties(),
+                this=this,
+                characteristics=self.expression(exp.Properties(expressions=characteristics))
+                if characteristics
+                else None,
+                properties=self.expression(exp.Properties(expressions=properties))
+                if properties
+                else None,
                 expression=self._parse_routine_statement(),
             )
         )

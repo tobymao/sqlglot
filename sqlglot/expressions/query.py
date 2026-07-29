@@ -2122,7 +2122,12 @@ class EndStatement(Expression):
 
 # https://trino.io/docs/current/udf.html
 class FunctionSpecification(Expression):
-    arg_types = {"this": True, "properties": False, "expression": True}
+    arg_types = {
+        "this": True,
+        "characteristics": False,
+        "properties": False,
+        "expression": True,
+    }
 
 
 UNWRAPPED_QUERIES = (Select, SetOperation)

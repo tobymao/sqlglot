@@ -52,12 +52,18 @@ class TrinoGenerator(PrestoGenerator):
     }
 
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
-        properties = expression.args.get("properties")
-        properties_sql = (
-            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
+        characteristics = expression.args.get("characteristics")
+        characteristics_sql = (
+            self.properties(characteristics, prefix=" ", sep=" ", wrapped=False)
+            if characteristics
+            else ""
         )
+        properties = expression.args.get("properties")
+        # WITH (...) always renders last; it can't retain a pre-WITH position in the
+        # original source, but that doesn't change the UDF's semantics.
+        with_sql = f" {self.with_properties(properties)}" if properties else ""
         body = self.sql(expression, "expression")
-        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
+        return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"
 
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):

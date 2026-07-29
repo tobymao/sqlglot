@@ -225,7 +225,14 @@ SELECT f(1)""",
         )
         self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
         self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER WITH (weight=42) RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL WITH (weight=42, cost='low') "
+            "RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
             "WITH FUNCTION custom_sqrt(a INTEGER) RETURNS DOUBLE COMMENT 'Custom sqrt function' "
             "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
-            "RETURN a SELECT CUSTOM_SQRT(4)"
+            "WITH (weight=42, cost='low') RETURN a SELECT CUSTOM_SQRT(4)"
         )

@@ -2052,6 +2052,11 @@ WHERE
             write={"spark": r"SELECT '\'test\''"},
         )
 
+    def test_day_month_year(self):
+        self.validate_identity("SELECT DAY(x)", "SELECT DAY(CAST(x AS DATE))")
+        self.validate_identity("SELECT MONTH(x)", "SELECT MONTH(CAST(x AS DATE))")
+        self.validate_identity("SELECT YEAR(x)", "SELECT YEAR(CAST(x AS DATE))")
+
     def test_eomonth(self):
         self.validate_all(
             "EOMONTH(GETDATE())",

@@ -77,17 +77,15 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
     return func
 
 
-def _extract_sql(part: str) -> t.Callable[[PostgresGenerator, exp.Func], str]:
-    def func(self: PostgresGenerator, expression: exp.Func) -> str:
-        this = expression.this
-        if this.is_type(*exp.DataType.INTEGER_TYPES):
-            self.unsupported(f"Cannot transpile {part} of an integer value to Postgres")
-        if not this.is_type(exp.DType.DATE):
-            this = exp.cast(this, exp.DType.DATE)
+def _day_month_year_sql(self: PostgresGenerator, expression: exp.Day | exp.Month | exp.Year) -> str:
+    this = expression.this
+    value = this.this if isinstance(this, exp.TsOrDsToDate) else this
+    if value.is_type(*exp.DataType.INTEGER_TYPES):
+        self.unsupported(
+            f"Cannot transpile {expression.sql_name()} of an integer value to Postgres"
+        )
 
-        return self.sql(exp.Extract(this=exp.var(part), expression=this))
-
-    return func
+    return self.sql(exp.Extract(this=exp.var(expression.sql_name()), expression=this))
 
 
 def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
@@ -319,9 +317,9 @@ class PostgresGenerator(generator.Generator):
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
-        exp.Day: _extract_sql("DAY"),
-        exp.Month: _extract_sql("MONTH"),
-        exp.Year: _extract_sql("YEAR"),
+        exp.Day: _day_month_year_sql,
+        exp.Month: _day_month_year_sql,
+        exp.Year: _day_month_year_sql,
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),

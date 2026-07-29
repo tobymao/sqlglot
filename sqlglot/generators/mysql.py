@@ -103,10 +103,10 @@ def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) ->
 
 
 def _remove_ts_or_ds_to_date(
-    to_sql: t.Callable[[MySQLGenerator, exp.Expr], str] | None = None,
+    to_sql: t.Callable[[generator.Generator, exp.Expr], str] | None = None,
     args: tuple[str, ...] = ("this",),
-) -> t.Callable[[MySQLGenerator, exp.Func], str]:
-    def func(self: MySQLGenerator, expression: exp.Func) -> str:
+) -> t.Callable[[generator.Generator, exp.Func], str]:
+    def func(self: generator.Generator, expression: exp.Func) -> str:
         for arg_key in args:
             arg = expression.args.get(arg_key)
             if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(

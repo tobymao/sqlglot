@@ -1,6 +1,7 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
 
@@ -1783,9 +1784,15 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
 
         # Integer arguments rely on T-SQL's 1900-01-01 epoch and aren't supported yet
         with self.assertRaises(UnsupportedError):
-            annotate_types(parse_one("SELECT DAY(0)", read="tsql")).sql(
-                "postgres", unsupported_level=ErrorLevel.RAISE
+            transpile(
+                "SELECT DAY(0)", read="tsql", write="postgres", unsupported_level=ErrorLevel.RAISE
             )
+        with self.assertRaises(UnsupportedError):
+            annotate_types(
+                qualify(
+                    parse_one("WITH t AS (SELECT 1 AS col) SELECT YEAR(col) FROM t", read="tsql")
+                )
+            ).sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
     def test_datatype(self):
         self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")

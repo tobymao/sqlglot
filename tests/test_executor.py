@@ -589,74 +589,20 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(executed.rows, [])
         self.assertEqual(executed.columns, ("id_alias", "sub_type"))
 
-    def test_correlated_exists_with_single_comparison(self):
+    def test_unsupported_subqueries(self):
         tables = {
             "x": [{"id": 1}, {"id": 2}, {"id": 3}],
             "y": [{"id": 1}, {"id": 2}],
         }
 
-        for sql, expected in (
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
-                [(1,), (2,), (3,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (x.id = y.id))",
-                [(1,), (2,), (3,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.id <> x.id)",
-                [(1,), (2,), (3,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.id < x.id)",
-                [(2,), (3,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id < x.id))",
-                [(1,), (2,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE y.id < x.id)",
-                [(1,)],
-            ),
-            (
-                "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
-                [],
-            ),
+        for sql in (
+            "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id, (SELECT MAX(y.id) FROM y) AS max_id FROM x",
         ):
             with self.subTest(sql):
-                self.assertEqual(execute(sql, tables=tables).rows, expected)
-
-        sql = "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))"
-        self.assertEqual(
-            execute(
-                sql,
-                tables={
-                    "x": [{"id": 1}, {"id": None}],
-                    "y": [{"id": 1}, {"id": None}, {"id": 2}],
-                },
-            ).rows,
-            [(1,)],
-        )
-        self.assertEqual(
-            execute(
-                sql,
-                tables={"x": [{"id": 1}], "y": [{"id": None}]},
-            ).rows,
-            [],
-        )
-        self.assertEqual(
-            execute(sql, tables={"x": [{"id": 1}], "y": []}).rows,
-            [],
-        )
-        self.assertEqual(
-            execute(
-                "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
-                tables={"x": [{"id": 1}], "y": []},
-            ).rows,
-            [(1,)],
-        )
+                with self.assertRaises(ExecuteError):
+                    execute(sql, tables=tables)
 
     def test_correlated_count(self):
         tables = {

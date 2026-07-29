@@ -31,12 +31,6 @@ SELECT * FROM x LEFT JOIN (SELECT SUM(y.a) AS a, y.a AS _u_1, ARRAY_AGG(y.b) AS 
 SELECT * FROM x WHERE EXISTS (SELECT y.a AS a, y.b AS b FROM y WHERE x.a = y.a);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL;
 
-SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.b = x.a));
-SELECT x.a FROM x LEFT JOIN (SELECT ARRAY_AGG(y.b) AS _u_1 FROM y WHERE TRUE) AS _u_0 ON TRUE WHERE COALESCE(ARRAY_LENGTH(_u_0._u_1) <> 0 AND ARRAY_ANY(_u_0._u_1, _x -> NOT (_x = x.a)), FALSE);
-
-SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (x.a >= y.b));
-SELECT x.a FROM x LEFT JOIN (SELECT ARRAY_AGG(y.b) AS _u_1 FROM y WHERE TRUE) AS _u_0 ON TRUE WHERE COALESCE(ARRAY_LENGTH(_u_0._u_1) <> 0 AND ARRAY_ANY(_u_0._u_1, _x -> NOT (x.a >= _x)), FALSE);
-
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
 
@@ -131,3 +125,15 @@ SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y);
 # title: NOT IN with UNION ALL subquery is not unnested
 SELECT * FROM x WHERE x.a NOT IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);
 SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);
+
+# title: correlated EXISTS with negated equality is not unnested
+SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id));
+SELECT x.id FROM x WHERE EXISTS(SELECT 1 FROM y WHERE NOT (y.id = x.id));
+
+# title: correlated NOT EXISTS with negated equality is not unnested
+SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id));
+SELECT x.id FROM x WHERE NOT EXISTS(SELECT 1 FROM y WHERE NOT (y.id = x.id));
+
+# title: positive equality with NOT operand is unnested
+SELECT x.flag FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.flag = (NOT x.flag));
+SELECT x.flag FROM x LEFT JOIN (SELECT y.flag AS _u_1 FROM y WHERE TRUE GROUP BY y.flag) AS _u_0 ON _u_0._u_1 = (NOT x.flag) WHERE NOT _u_0._u_1 IS NULL;

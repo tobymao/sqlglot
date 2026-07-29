@@ -145,171 +145,10 @@ def unnest(select, parent_select, next_alias_name):
     )
 
 
-def _decorrelate_single_comparison_exists(
-    select, parent_select: exp.Select, external_columns, next_alias_name
-) -> bool:
-    # Only decorrelate an inner SELECT that is the query of an EXISTS predicate
-    # (possibly wrapped in NOT) in the parent SELECT's WHERE. Require all correlated
-    # references to occur in the inner WHERE, and reject grouping, aggregation,
-    # row-shaping, or ordering clauses.
-    #
-    #   SELECT x.id                     -- parent_select
-    #   FROM x AS x
-    #   WHERE                           -- parent_clause
-    #     EXISTS (                      -- parent_predicate; potentially wrapped in NOT
-    #       SELECT 1                    -- inner SELECT
-    #       FROM y AS y
-    #       WHERE NOT (y.id = x.id)     -- inner WHERE / condition
-    #     )
-
-    # The inner SELECT must not have clauses that alter grouping, row shape, or ordering.
-    if any(
-        select.args.get(arg) for arg in ("group", "having", "qualify", "order", "distinct")
-    ) or find_in_scope(select, exp.AggFunc):
-        return False
-
-    # The inner SELECT must have a WHERE clause.
-    where = select.args.get("where")
-    if not where:
-        return False
-
-    # Every correlated column reference must occur in this inner WHERE.
-    if any(column.find_ancestor(exp.Where) is not where for column in external_columns):
-        return False
-
-    # The inner SELECT must belong to an EXISTS predicate.
-    parent_predicate = select.find_ancestor(exp.Predicate)
-    if not isinstance(parent_predicate, exp.Exists):
-        return False
-
-    # The EXISTS must resolve directly to this inner SELECT after removing wrappers.
-    if parent_predicate.this.unnest() is not select:
-        return False
-
-    # The EXISTS must occur in a WHERE clause.
-    parent_clause = parent_predicate.find_ancestor(exp.Where, exp.Having, exp.Join)
-    if not isinstance(parent_clause, exp.Where):
-        return False
-
-    # The parent WHERE clause must belong to the expected parent SELECT.
-    if parent_clause.parent_select is not parent_select:
-        return False
-
-    # The parent SELECT must not group or aggregate its output.
-    if parent_select.args.get("group") or any(
-        find_in_scope(projection, exp.AggFunc) for projection in parent_select.selects
-    ):
-        return False
-
-    # The inner condition must be a supported bare or negated comparison.
-    condition = where.this.unnest()
-    if isinstance(condition, exp.Not):
-        comparison = condition.this.unnest()
-        if not isinstance(comparison, (exp.EQ, exp.LT, exp.LTE, exp.GT, exp.GTE)):
-            return False
-    elif isinstance(condition, (exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE)):
-        comparison = condition
-    else:
-        return False
-
-    # Determine which side of the comparison contains outer-scope column references.
-    external_ids = {id(column) for column in external_columns}
-    left_is_external = any(id(node) in external_ids for node in comparison.left.walk())
-    right_is_external = any(id(node) in external_ids for node in comparison.right.walk())
-
-    # Exactly one comparison operand must depend on the outer scope.
-    if left_is_external == right_is_external:
-        return False
-
-    # Inner operand must depend on an inner column (and not be a constant-only expression).
-    inner_key = comparison.right if left_is_external else comparison.left
-    if not inner_key.find(exp.Column):
-        return False
-
-    # The outer operand must not contain inner-scope columns because they are unavailable
-    # after the inner query is aggregated.
-    outer_operand = comparison.left if left_is_external else comparison.right
-    if any(
-        isinstance(node, exp.Column) and id(node) not in external_ids
-        for node in outer_operand.walk()
-    ):
-        return False
-
-    # The lambda parameter name must not shadow an outer identifier.
-    lambda_parameter_name = "_x"
-    if any(
-        identifier.name.lower() == lambda_parameter_name
-        for identifier in outer_operand.find_all(exp.Identifier)
-    ):
-        return False
-
-    # Replace only the copied inner operand with the lambda parameter.
-    lambda_condition = condition.copy()
-    copied_comparison = (
-        lambda_condition.this.unnest()
-        if isinstance(lambda_condition, exp.Not)
-        else lambda_condition
-    )
-    copied_inner_operand = copied_comparison.right if left_is_external else copied_comparison.left
-    copied_inner_operand.replace(exp.to_identifier(lambda_parameter_name))
-
-    # The aggregate subquery alias names the one-row aggregate subquery; the inner keys
-    # alias names its array.
-    aggregate_subquery_alias = next_alias_name()
-    inner_keys_alias = next_alias_name()
-    inner_keys_column = exp.column(inner_keys_alias, aggregate_subquery_alias)
-
-    # Evaluate the inner relation once, collecting every candidate key into a single array.
-    select.set(
-        "expressions",
-        [exp.alias_(exp.ArrayAgg(this=inner_key.copy()), inner_keys_alias, quoted=False)],
-    )
-
-    # Remove the correlation by setting the WHERE clause to TRUE.
-    where.set("this", exp.true())
-
-    # Replace EXISTS with a per-outer-row array predicate: require a nonempty array
-    # with at least one value satisfying the original condition. Map NULL/UNKNOWN to FALSE.
-    parent_predicate.replace(
-        exp.Coalesce(
-            this=exp.and_(
-                exp.ArraySize(this=inner_keys_column.copy()).neq(0),
-                exp.ArrayAny(
-                    this=inner_keys_column,
-                    expression=exp.Lambda(
-                        this=lambda_condition,
-                        expressions=[exp.to_identifier(lambda_parameter_name)],
-                    ),
-                ),
-                copy=False,
-            ),
-            expressions=[exp.false()],
-        )
-    )
-
-    # Attach the aggregated inner-key array to each outer row without expanding x × y.
-    # LEFT JOIN preserves outer rows when that array is absent or NULL.
-    parent_select.join(
-        select,
-        on=exp.true(),
-        join_type="LEFT",
-        join_alias=aggregate_subquery_alias,
-        copy=False,
-    )
-    return True
-
-
 def decorrelate(select, parent_select, external_columns, next_alias_name):
     where = select.args.get("where")
 
     if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
-        return
-
-    # The generic decorrelator below requires a non-negated equality predicate it can
-    # use for the join; this path handles single-comparison EXISTS predicates without one.
-    if _decorrelate_single_comparison_exists(
-        select, parent_select, external_columns, next_alias_name
-    ):
         return
 
     table_alias = next_alias_name()
@@ -321,10 +160,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if column.find_ancestor(exp.Where) is not where:
             return
 
-        # Above, _decorrelate_single_comparison_exists handles only certain single-comparison cases.
-        # Here, the generic path replaces each extracted predicate with TRUE. This is only safe when
-        # the path to WHERE exclusively passes through `And` and `Paren` nodes; reject wrappers such
-        # as `Not`.
+        # The predicate is replaced with TRUE below, which is only sound if its result flows
+        # into the WHERE through conjunctions; wrappers like NOT would invert that TRUE.
         predicate = column.find_ancestor(exp.Predicate)
         ancestor = predicate.parent if predicate else None
         while isinstance(ancestor, (exp.And, exp.Paren)):

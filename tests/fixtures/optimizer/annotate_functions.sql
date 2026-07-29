@@ -6667,6 +6667,22 @@ UNKNOWN;
 REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.str_col);
 UNKNOWN;
 
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col);
+LONGBLOB;
+
+# dialect: mysql
+REGEXP_REPLACE(tbl.bin_col, tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.str_col);
+LONGBLOB;
+
 
 --------------------------------------
 -- DuckDB

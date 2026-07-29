@@ -224,6 +224,15 @@ class DataType(Expression):
         DType.NAME,
     }
 
+    BINARY_TYPES: t.ClassVar[set[DType]] = {
+        DType.BINARY,
+        DType.VARBINARY,
+        DType.TINYBLOB,
+        DType.BLOB,
+        DType.MEDIUMBLOB,
+        DType.LONGBLOB,
+    }
+
     SIGNED_INTEGER_TYPES: t.ClassVar[set[DType]] = {
         DType.BIGINT,
         DType.INT,

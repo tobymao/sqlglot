@@ -17,6 +17,8 @@ class Trino(Presto):
             "REFRESH": TokenType.REFRESH,
             "NOT DETERMINISTIC": TokenType.VOLATILE,
         }
+        # Trino has no `SQL SECURITY` clause, only bare `SECURITY DEFINER`/`INVOKER`;
+        # the merged base keyword otherwise eats the `SQL` in `LANGUAGE SQL SECURITY DEFINER`.
         KEYWORDS.pop("SQL SECURITY")
 
     Parser = TrinoParser

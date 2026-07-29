@@ -390,6 +390,7 @@ class ClickHouseParser(parser.Parser):
     PROPERTY_PARSERS = {
         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "DYNAMIC"},
         "ENGINE": lambda self: self._parse_engine_property(),
+        "REFRESH": lambda self: self._parse_auto_refresh_property(),
         "UUID": lambda self: self.expression(exp.UuidProperty(this=self._parse_string())),
     }
 
@@ -814,6 +815,57 @@ class ClickHouseParser(parser.Parser):
             else:
                 self._retreat(index)
         return None
+
+    def _parse_auto_refresh_property(self) -> exp.AutoRefreshProperty | None:
+        index = self._index - 1
+        cadence = self._prev.text.upper() if self._match_texts(("EVERY", "AFTER")) else None
+        interval = self._parse_interval(require_interval=False) if cadence else None
+
+        if cadence and not interval:
+            self._retreat(index)
+            return None
+
+        if self._match_text_seq("OFFSET"):
+            offset = self._parse_interval(require_interval=False)
+            if not offset:
+                self._retreat(index)
+                return None
+        else:
+            offset = None
+
+        if self._match_text_seq("RANDOMIZE", "FOR"):
+            randomize = self._parse_interval(require_interval=False)
+            if not randomize:
+                self._retreat(index)
+                return None
+        else:
+            randomize = None
+
+        if self._match_text_seq("DEPENDS", "ON"):
+            dependencies = self._parse_csv(self._parse_table_parts)
+            if not dependencies:
+                self._retreat(index)
+                return None
+        else:
+            dependencies = None
+
+        if not cadence and not dependencies:
+            self._retreat(index)
+            return None
+
+        settings = self._parse_settings_property() if self._match_text_seq("SETTINGS") else None
+
+        return self.expression(
+            exp.AutoRefreshProperty(
+                this=interval,
+                cadence=cadence,
+                offset=offset,
+                randomize=randomize,
+                expressions=dependencies,
+                settings=settings,
+                append=self._match_text_seq("APPEND"),
+            )
+        )
 
     def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         # INDEX name1 expr TYPE type1(args) GRANULARITY value

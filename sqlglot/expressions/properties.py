@@ -42,7 +42,15 @@ class AutoIncrementProperty(Property):
 
 
 class AutoRefreshProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {
+        "this": False,
+        "cadence": False,
+        "offset": False,
+        "randomize": False,
+        "expressions": False,
+        "settings": False,
+        "append": False,
+    }
 
 
 class BackupProperty(Property):

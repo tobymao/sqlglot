@@ -3918,6 +3918,9 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
+        return self._interval_sql(expression)
+
+    def _interval_sql(self, expression: exp.Interval, include_keyword: bool = True) -> str:
         unit_expression = expression.args.get("unit")
         unit = self.sql(unit_expression) if unit_expression else ""
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
@@ -3928,16 +3931,21 @@ class Generator:
             this = expression.this.name if expression.this else ""
             if this:
                 if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
-                    return f"INTERVAL '{this}'{unit}"
-                return f"INTERVAL '{this}{unit}'"
-            return f"INTERVAL{unit}"
+                    return f"{'INTERVAL ' if include_keyword else ''}'{this}'{unit}"
+                return f"{'INTERVAL ' if include_keyword else ''}'{this}{unit}'"
+            return f"{'INTERVAL' if include_keyword else ''}{unit}"
 
         this = self.sql(expression, "this")
         if this:
+            if not include_keyword and expression.this.is_string:
+                this = expression.this.name
             unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
-            this = f" {this}" if unwrapped else f" ({this})"
+            if include_keyword:
+                this = f" {this}" if unwrapped else f" ({this})"
+            elif not unwrapped:
+                this = f"({this})"
 
-        return f"INTERVAL{this}{unit}"
+        return f"{'INTERVAL' if include_keyword else ''}{this}{unit}"
 
     def return_sql(self, expression: exp.Return) -> str:
         return f"RETURN {self.sql(expression, 'this')}"

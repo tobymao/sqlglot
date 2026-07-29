@@ -836,6 +836,11 @@ class Generator:
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = ()
 
+    # Function names (uppercase) that have no equivalent in this dialect. Rendering an
+    # anonymous function whose name is in this set triggers self.unsupported(), which
+    # warns or raises depending on unsupported_level.
+    UNSUPPORTED_FUNCTIONS: t.ClassVar[set[str]] = set()
+
     SAFE_JSON_PATH_KEY_RE: t.ClassVar = exp.SAFE_IDENTIFIER_RE
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -3954,6 +3959,11 @@ class Generator:
         # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
         parent = expression.parent
         is_qualified = isinstance(parent, exp.Dot) and expression is parent.expression
+
+        if self.UNSUPPORTED_FUNCTIONS and expression.name.upper() in self.UNSUPPORTED_FUNCTIONS:
+            self.unsupported(
+                f"{expression.name.upper()} is not supported in the {self.dialect.__class__.__name__} dialect"
+            )
 
         return self.func(
             self.sql(expression, "this"), *expression.expressions, normalize=not is_qualified

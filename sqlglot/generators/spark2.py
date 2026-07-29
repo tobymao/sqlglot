@@ -131,6 +131,10 @@ class Spark2Generator(HiveGenerator):
     ALTER_SET_TYPE = "TYPE"
     PARSE_JSON_NAME: str | None = None
 
+    # Functions with no Spark equivalent that would otherwise pass through unchanged
+    # and fail at execution time (e.g. Presto's WORD_STEM has no built-in in Spark).
+    UNSUPPORTED_FUNCTIONS = {"WORD_STEM"}
+
     PROPERTIES_LOCATION = {
         **HiveGenerator.PROPERTIES_LOCATION,
         exp.EngineProperty: exp.Properties.Location.UNSUPPORTED,

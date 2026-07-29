@@ -27,7 +27,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        exp.BitmapConstructAgg: {"returns": exp.DType.BINARY},   
+        exp.BitmapConstructAgg: {"returns": exp.DType.BINARY},
     },
     exp.RegexpSubstr: {"returns": exp.DType.VARCHAR},
     exp.RegrCount: {"returns": exp.DType.BIGINT},

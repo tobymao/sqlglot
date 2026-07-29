@@ -273,11 +273,22 @@ TBLPROPERTIES (
     def test_unsupported_functions(self):
         # Presto functions with no Spark equivalent must not silently pass through:
         # rendering them raises when unsupported_level is RAISE (and warns otherwise).
-        self.validate_all(
-            "SELECT WORD_STEM('running')",
-            read={"presto": "SELECT word_stem('running')"},
-            write={"spark": UnsupportedError},
-        )
+        for func in (
+            "AT_TIMEZONE",
+            "CHECKSUM",
+            "COMBINATIONS",
+            "COSINE_SIMILARITY",
+            "HAMMING_DISTANCE",
+            "HUMAN_READABLE_SECONDS",
+            "WITH_TIMEZONE",
+            "WORD_STEM",
+        ):
+            with self.subTest(func):
+                self.validate_all(
+                    f"SELECT {func}(x)",
+                    read={"presto": f"SELECT {func.lower()}(x)"},
+                    write={"spark": UnsupportedError},
+                )
 
     def test_spark(self):
         # COLLATE on CHAR/VARCHAR should be preserved when the type is rewritten to STRING

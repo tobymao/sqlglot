@@ -133,7 +133,16 @@ class Spark2Generator(HiveGenerator):
 
     # Functions with no Spark equivalent that would otherwise pass through unchanged
     # and fail at execution time (e.g. Presto's WORD_STEM has no built-in in Spark).
-    UNSUPPORTED_FUNCTIONS = {"WORD_STEM"}
+    UNSUPPORTED_FUNCTIONS = {
+        "AT_TIMEZONE",
+        "CHECKSUM",
+        "COMBINATIONS",
+        "COSINE_SIMILARITY",
+        "HAMMING_DISTANCE",
+        "HUMAN_READABLE_SECONDS",
+        "WITH_TIMEZONE",
+        "WORD_STEM",
+    }
 
     PROPERTIES_LOCATION = {
         **HiveGenerator.PROPERTIES_LOCATION,

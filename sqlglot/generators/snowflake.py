@@ -27,7 +27,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, seq_get
-from sqlglot.optimizer.scope import build_scope, find_all_in_scope, find_in_scope
+from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
     TIMESTAMP_TYPES,
@@ -684,7 +684,7 @@ class SnowflakeGenerator(generator.Generator):
         return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
-        if find_in_scope(expression, *self.UNSUPPORTED_VALUES_EXPRESSIONS):
+        if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):
             values_as_table = False
 
         return super().values_sql(expression, values_as_table=values_as_table)

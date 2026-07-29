@@ -26,12 +26,13 @@ EXPRESSION_METADATA = {
             exp.RegexpInstr,
         }
     },
-    **{
-        exp_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
-        for exp_type in {
-            exp.BitwiseOrAgg,
-        }
-    },
+   **{
+       exp_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+       for exp_type in {
+        exp.BitwiseOrAgg,
+       }
+   },
+    exp.BitmapConstructAgg: {"returns": exp.DType.BINARY},
     exp.RegexpSubstr: {"returns": exp.DType.VARCHAR},
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},

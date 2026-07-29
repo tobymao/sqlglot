@@ -1465,6 +1465,10 @@ LIFETIME(MIN 0 MAX 0)""",
         def extract_agg_func(query):
             return parse_one(query, read="clickhouse").selects[0].this
 
+        self.validate_identity(
+            "SELECT quantileExactInclusive(0.25)(number) AS x FROM numbers(5)"
+        ).selects[0].this.assert_is(exp.ParameterizedAgg)
+
         self.assertIsInstance(
             extract_agg_func("select quantileGK(100, 0.95) OVER (PARTITION BY id) FROM table"),
             exp.AnonymousAggFunc,

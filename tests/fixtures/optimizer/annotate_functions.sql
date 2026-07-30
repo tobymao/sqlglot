@@ -6727,6 +6727,18 @@ BIGINT;
 REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.str_col);
 BIGINT;
 
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database');
+DOUBLE;
+
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database' IN BOOLEAN MODE);
+DOUBLE;
+
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database' WITH QUERY EXPANSION);
+DOUBLE;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -358,6 +358,7 @@ class Drop(Expression):
         "concurrently": False,
         "sync": False,
         "iceberg": False,
+        "force": False,
     }
 
     @property

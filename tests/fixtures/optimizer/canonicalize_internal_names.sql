@@ -277,3 +277,23 @@ WITH "_t1" AS (SELECT "_t0"."a" + 1 AS "_c0" FROM "c"."db"."x" AS "_t0") SELECT 
 # title: ORDER BY reference to a CTE-level alias follows the alias's _cN canonicalization
 WITH t AS (SELECT a + 1 AS total FROM x ORDER BY total) SELECT total FROM t;
 WITH "_t1" AS (SELECT "_t0"."a" + 1 AS "_c0" FROM "c"."db"."x" AS "_t0" ORDER BY "_c0") SELECT "_t1"."_c0" AS "total" FROM "_t1" AS "_t1";
+
+# title: GROUP BY ordinal is expanded even when a projection alias shadows the pre-canonicalization source name, so the form is stable once the source is renamed to _t0
+# dialect: bigquery
+SELECT a AS foo, b AS x FROM x GROUP BY 1;
+SELECT `_t0`.`a` AS `foo`, `_t0`.`b` AS `x` FROM `c`.`db`.`x` AS `_t0` GROUP BY `_t0`.`a`;
+
+# title: GROUP BY ordinal is expanded when an aggregate projection alias shadows the source name
+# dialect: bigquery
+SELECT a AS foo, SUM(b) AS x FROM x GROUP BY 1;
+SELECT `_t0`.`a` AS `foo`, SUM(`_t0`.`b`) AS `x` FROM `c`.`db`.`x` AS `_t0` GROUP BY `_t0`.`a`;
+
+# title: GROUP BY ordinal is expanded inside a CTE scope where a projection alias shadows the source name
+# dialect: bigquery
+WITH t AS (SELECT a AS foo, b AS x FROM x GROUP BY 1) SELECT * FROM t;
+WITH `_t1` AS (SELECT `_t0`.`a` AS `_c0`, `_t0`.`b` AS `_c1` FROM `c`.`db`.`x` AS `_t0` GROUP BY `_t0`.`a`) SELECT `_t1`.`_c0` AS `foo`, `_t1`.`_c1` AS `x` FROM `_t1` AS `_t1`;
+
+# title: GROUP BY ordinals both expand once a self-join alias that shadowed a projection alias is renamed
+# dialect: bigquery
+SELECT x.a AS c, y.a AS d, SUM(x.b) AS y FROM x AS x JOIN x AS y ON x.a = y.a GROUP BY 1, 2;
+SELECT `_t0`.`a` AS `c`, `_t1`.`a` AS `d`, SUM(`_t0`.`b`) AS `y` FROM `c`.`db`.`x` AS `_t0` JOIN `c`.`db`.`x` AS `_t1` ON `_t0`.`a` = `_t1`.`a` GROUP BY `_t0`.`a`, `_t1`.`a`;

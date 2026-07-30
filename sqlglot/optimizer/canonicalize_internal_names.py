@@ -287,6 +287,9 @@ def canonicalize_internal_names(expression: E) -> E:
             if not col.table and col.name in output_map:
                 _canon(col.this, output_map[col.name])
 
+        # Expand positional GROUP BYs (excluded in qualify) now that the source is renamed
+        _expand_group_by(scope)
+
         # UBN matches branches by original alias. When both branches are internal
         # and aliased to distinct _cN, matching originals land on different slots
         # and UBN splits them into disjoint output columns, dropping data. Align

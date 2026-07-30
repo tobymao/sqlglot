@@ -6711,6 +6711,22 @@ BIGINT;
 REGEXP_INSTR(tbl.bin_col, tbl.bin_col);
 BIGINT;
 
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.str_col);
+BIGINT;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

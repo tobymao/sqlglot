@@ -140,6 +140,11 @@ class TestStarrocks(Validator):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
+        self.validate_identity("DROP TABLE my_table")
+        self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
+        self.validate_identity("DROP TABLE my_table FORCE")
+        self.validate_identity("DROP TEMPORARY TABLE my_table FORCE")
+
         ddl_sqls = [
             "PARTITION BY (col1, col2)",
             "PARTITION BY DATE_TRUNC('DAY', col2), col1",

@@ -2378,6 +2378,7 @@ class Parser:
                 concurrently=concurrently,
                 sync=self._match_text_seq("SYNC"),
                 iceberg=iceberg,
+                force=self._match_text_seq("FORCE"),
             )
         )
 

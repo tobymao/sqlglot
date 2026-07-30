@@ -2246,6 +2246,7 @@ WHERE
                 "": "SELECT x FROM a WITH (NOLOCK)",
             },
         )
+        self.validate_identity("SELECT x FROM start WITH (NOLOCK)")
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")
 
     def test_openjson(self):

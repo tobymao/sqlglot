@@ -819,35 +819,36 @@ class ClickHouseParser(parser.Parser):
     def _parse_auto_refresh_property(self) -> exp.AutoRefreshProperty | None:
         index = self._index - 1
         cadence = self._prev.text.upper() if self._match_texts(("EVERY", "AFTER")) else None
-        interval = self._parse_interval(require_interval=False) if cadence else None
+        interval = (
+            self._parse_interval(require_interval=False, parse_unit_precision=False)
+            if cadence
+            else None
+        )
 
         if cadence and not interval:
             self._retreat(index)
             return None
 
+        offset = None
         if self._match_text_seq("OFFSET"):
-            offset = self._parse_interval(require_interval=False)
+            offset = self._parse_interval(require_interval=False, parse_unit_precision=False)
             if not offset:
                 self._retreat(index)
                 return None
-        else:
-            offset = None
 
+        randomize = None
         if self._match_text_seq("RANDOMIZE", "FOR"):
-            randomize = self._parse_interval(require_interval=False)
+            randomize = self._parse_interval(require_interval=False, parse_unit_precision=False)
             if not randomize:
                 self._retreat(index)
                 return None
-        else:
-            randomize = None
 
+        dependencies = None
         if self._match_text_seq("DEPENDS", "ON"):
-            dependencies = self._parse_csv(self._parse_table_parts)
+            dependencies = self._parse_csv(lambda: self._parse_table_parts(schema=True))
             if not dependencies:
                 self._retreat(index)
                 return None
-        else:
-            dependencies = None
 
         if not cadence and not dependencies:
             self._retreat(index)

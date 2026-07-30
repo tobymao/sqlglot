@@ -6073,7 +6073,9 @@ class Parser:
             exp.Escape(this=this, expression=self._parse_string() or self._parse_null())
         )
 
-    def _parse_interval_span(self, this: exp.Expr) -> exp.Interval:
+    def _parse_interval_span(
+        self, this: exp.Expr, parse_unit_precision: bool = True
+    ) -> exp.Interval:
         # handle day-time format interval span with omitted units:
         #   INTERVAL '<number days> hh[:][mm[:ss[.ff]]]' <maybe `unit TO unit`>
         interval_span_units_omitted = None
@@ -6098,7 +6100,7 @@ class Parser:
         if interval_span_units_omitted:
             unit = None
         else:
-            unit = self._parse_function()
+            unit = self._parse_function() if parse_unit_precision else None
             if not unit and (
                 self._curr.token_type == TokenType.VAR
                 or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
@@ -6131,7 +6133,9 @@ class Parser:
 
         return self.expression(exp.Interval(this=this, unit=unit))
 
-    def _parse_interval(self, require_interval: bool = True) -> exp.Add | exp.Interval | None:
+    def _parse_interval(
+        self, require_interval: bool = True, parse_unit_precision: bool = True
+    ) -> exp.Add | exp.Interval | None:
         index = self._index
 
         if not self._match(TokenType.INTERVAL) and require_interval:
@@ -6152,14 +6156,21 @@ class Parser:
             self._retreat(index)
             return None
 
-        interval = self._parse_interval_span(this)
+        interval = self._parse_interval_span(this, parse_unit_precision=parse_unit_precision)
 
         index = self._index
         self._match(TokenType.PLUS)
 
         # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
         if self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False):
-            return self.expression(exp.Add(this=interval, expression=self._parse_interval(False)))
+            return self.expression(
+                exp.Add(
+                    this=interval,
+                    expression=self._parse_interval(
+                        False, parse_unit_precision=parse_unit_precision
+                    ),
+                )
+            )
 
         self._retreat(index)
         return interval

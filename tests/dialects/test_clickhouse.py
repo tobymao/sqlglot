@@ -1933,3 +1933,24 @@ LIFETIME(MIN 0 MAX 0)""",
         for stmt in stmts:
             with self.subTest(stmt):
                 self.validate_identity(stmt)
+
+    def test_refreshable_materialized_view(self):
+        statements = [
+            "CREATE MATERIALIZED VIEW v REFRESH EVERY 30 SECOND AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v REFRESH AFTER 5 MINUTE AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v REFRESH DEPENDS ON db.x, db.y APPEND TO db.t AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v ON CLUSTER '{cluster}' REFRESH EVERY 1 MONTH OFFSET 5 DAY 2 HOUR RANDOMIZE FOR 1 HOUR DEPENDS ON db.x, db.y SETTINGS refresh_retries = 5 APPEND TO db.t AS SELECT 1",
+            "CREATE MATERIALIZED VIEW v REFRESH EVERY 1 HOUR (id UInt64) AS SELECT 1 AS id",
+            "CREATE MATERIALIZED VIEW v REFRESH DEPENDS ON dep (id UInt64) AS SELECT 1",
+        ]
+
+        for statement in statements:
+            with self.subTest(statement):
+                self.validate_identity(statement).assert_is(exp.Create)
+
+        self.validate_identity("CREATE MATERIALIZED VIEW v TO db.t AS SELECT 1").assert_is(
+            exp.Create
+        )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW v REFRESH AS SELECT 1", check_command_warning=True
+        ).assert_is(exp.Command)

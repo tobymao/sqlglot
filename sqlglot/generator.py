@@ -334,6 +334,10 @@ class Generator:
     # Whether the plural form of date parts like day (i.e. "days") is supported in INTERVALs
     INTERVAL_ALLOWS_PLURAL_FORM = True
 
+    # Whether intervals in a REFRESH schedule (AutoRefreshProperty) are generated without the
+    # INTERVAL keyword, e.g. ClickHouse's REFRESH EVERY 30 SECOND
+    AUTO_REFRESH_BARE_INTERVALS = False
+
     # Whether limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -3919,6 +3923,11 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
+        include_keyword = not self.AUTO_REFRESH_BARE_INTERVALS or not isinstance(
+            expression.find_ancestor(exp.AutoRefreshProperty, exp.Select),
+            exp.AutoRefreshProperty,
+        )
+        interval_keyword = "INTERVAL" if include_keyword else ""
         unit_expression = expression.args.get("unit")
         unit = self.sql(unit_expression) if unit_expression else ""
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
@@ -3928,17 +3937,22 @@ class Generator:
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
             if this:
+                interval_keyword = f"{interval_keyword} " if interval_keyword else ""
                 if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
-                    return f"INTERVAL '{this}'{unit}"
-                return f"INTERVAL '{this}{unit}'"
-            return f"INTERVAL{unit}"
+                    return f"{interval_keyword}'{this}'{unit}"
+                return f"{interval_keyword}'{this}{unit}'"
+            return f"{interval_keyword}{unit}"
 
         this = self.sql(expression, "this")
         if this:
-            unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
-            this = f" {this}" if unwrapped else f" ({this})"
+            if not include_keyword and expression.this.is_string:
+                this = expression.this.name
+            if not isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES):
+                this = f"({this})"
+            if include_keyword:
+                this = f" {this}"
 
-        return f"INTERVAL{this}{unit}"
+        return f"{interval_keyword}{this}{unit}"
 
     def return_sql(self, expression: exp.Return) -> str:
         return f"RETURN {self.sql(expression, 'this')}"

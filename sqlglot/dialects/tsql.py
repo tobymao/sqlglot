@@ -160,7 +160,6 @@ class TSQL(Dialect):
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,
             "DECLARE": TokenType.DECLARE,
             "EXEC": TokenType.EXECUTE,
-            "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "GO": TokenType.COMMAND,
             "IMAGE": TokenType.IMAGE,
             "MONEY": TokenType.MONEY,

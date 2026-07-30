@@ -5025,13 +5025,12 @@ class Parser:
 
     def _parse_version(self) -> exp.Version | None:
         if (
-            self._match(TokenType.TIMESTAMP_SNAPSHOT)
-            or self._match_text_seq("FOR", "SYSTEM_TIME")
+            self._match_text_seq("FOR", "SYSTEM_TIME")
             or self._match_text_seq("FOR", "SYSTEM", "TIME")
             or self._match_text_seq("FOR", "TIMESTAMP")
         ):
             this = "TIMESTAMP"
-        elif self._match(TokenType.VERSION_SNAPSHOT) or self._match_text_seq("FOR", "VERSION"):
+        elif self._match_text_seq("FOR", "VERSION"):
             this = "VERSION"
         elif self._match_text_seq("TIMESTAMP", "AS", "OF", advance=False):
             self._advance()
@@ -7737,7 +7736,7 @@ class Parser:
         return self._parse_field()
 
     def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint | None:
-        if not self._match(TokenType.TIMESTAMP_SNAPSHOT):
+        if not self._match_text_seq("FOR", "SYSTEM_TIME"):
             self._retreat(self._index - 1)
             return None
 

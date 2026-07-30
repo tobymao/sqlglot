@@ -160,9 +160,14 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if column.find_ancestor(exp.Where) is not where:
             return
 
+        # The predicate is replaced with TRUE below, which is only sound if its result flows
+        # into the WHERE through conjunctions; wrappers like NOT would invert that TRUE.
         predicate = column.find_ancestor(exp.Predicate)
+        ancestor = predicate.parent if predicate else None
+        while isinstance(ancestor, (exp.And, exp.Paren)):
+            ancestor = ancestor.parent
 
-        if not predicate or predicate.find_ancestor(exp.Where) is not where:
+        if ancestor is not where:
             return
 
         if isinstance(predicate, exp.Binary):

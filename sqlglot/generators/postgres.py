@@ -81,9 +81,8 @@ def _day_month_year_sql(self: PostgresGenerator, expression: exp.Day | exp.Month
     this = expression.this
     value = this.this if isinstance(this, exp.TsOrDsToDate) else this
     if value.is_int or value.is_type(*exp.DataType.INTEGER_TYPES):
-        self.unsupported(
-            f"Cannot transpile {expression.sql_name()} of an integer value to Postgres"
-        )
+        # T-SQL interprets integers as days since its 1900-01-01 epoch
+        this = exp.cast(exp.Literal.string("1900-01-01"), exp.DType.DATE) + value
 
     return self.sql(exp.Extract(this=exp.var(expression.sql_name()), expression=this))
 

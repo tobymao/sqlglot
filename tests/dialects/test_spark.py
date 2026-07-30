@@ -1168,6 +1168,8 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
             },
         )
+        self.validate_identity("SELECT timestamp AS of FROM t")
+        self.validate_identity("SELECT version AS of FROM t")
 
         self.validate_all(
             "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",

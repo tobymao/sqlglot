@@ -512,8 +512,6 @@ class Tokenizer(_TokenizerBase):
         "PREPARE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
-        "FOR VERSION": TokenType.VERSION_SNAPSHOT,
-        "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
     }
 
     COMMANDS = {

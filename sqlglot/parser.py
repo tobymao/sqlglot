@@ -5024,9 +5024,20 @@ class Parser:
         return this
 
     def _parse_version(self) -> exp.Version | None:
-        if self._match(TokenType.TIMESTAMP_SNAPSHOT):
+        if (
+            self._match(TokenType.TIMESTAMP_SNAPSHOT)
+            or self._match_text_seq("FOR", "SYSTEM_TIME")
+            or self._match_text_seq("FOR", "SYSTEM", "TIME")
+            or self._match_text_seq("FOR", "TIMESTAMP")
+        ):
             this = "TIMESTAMP"
-        elif self._match(TokenType.VERSION_SNAPSHOT):
+        elif self._match(TokenType.VERSION_SNAPSHOT) or self._match_text_seq("FOR", "VERSION"):
+            this = "VERSION"
+        elif self._match_text_seq("TIMESTAMP", "AS", "OF", advance=False):
+            self._advance()
+            this = "TIMESTAMP"
+        elif self._match_text_seq("VERSION", "AS", "OF", advance=False):
+            self._advance()
             this = "VERSION"
         else:
             return None

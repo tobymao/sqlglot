@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
+from sqlglot.helper import ensure_list
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
@@ -62,6 +63,15 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        # Handled here instead of via a tokenizer keyword merge (as e.g. BigQuery does)
+        # so a bare `NOT` stays a normal boolean operator everywhere else; a merged
+        # "NOT DETERMINISTIC" token would misparse `SELECT NOT deterministic FROM t`.
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
+
     def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
         # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a
@@ -77,10 +87,34 @@ class TrinoParser(PrestoParser):
         return super()._parse_cte()
 
     def _parse_function_specification(self) -> exp.FunctionSpecification:
+        this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
+
+        # Collected separately (rather than one _parse_properties() call) so the
+        # generator can place `WITH (...)` in its own bracketed clause at the end,
+        # instead of it blending into the bare characteristics list.
+        characteristics = []
+        properties = []
+
+        while True:
+            if self._match(TokenType.WITH):
+                properties.extend(self._parse_wrapped_csv(self._parse_key_value_property))
+                continue
+
+            characteristic = self._parse_property()
+            if not characteristic:
+                break
+
+            characteristics.extend(ensure_list(characteristic))
+
         return self.expression(
             exp.FunctionSpecification(
-                this=self._parse_user_defined_function(kind=TokenType.FUNCTION),
-                properties=self._parse_properties(),
+                this=this,
+                characteristics=self.expression(exp.Properties(expressions=characteristics))
+                if characteristics
+                else None,
+                properties=self.expression(exp.Properties(expressions=properties))
+                if properties
+                else None,
                 expression=self._parse_routine_statement(),
             )
         )

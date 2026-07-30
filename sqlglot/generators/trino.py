@@ -38,6 +38,9 @@ class TrinoGenerator(PrestoGenerator):
                 amend_exploded_column_table,
             ]
         ),
+        exp.StabilityProperty: lambda self, e: (
+            "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
+        ),
         exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
         exp.Trim: trim_sql,
     }
@@ -49,12 +52,16 @@ class TrinoGenerator(PrestoGenerator):
     }
 
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
-        properties = expression.args.get("properties")
-        properties_sql = (
-            self.properties(properties, prefix=" ", sep=" ", wrapped=False) if properties else ""
+        characteristics = expression.args.get("characteristics")
+        characteristics_sql = (
+            self.properties(characteristics, prefix=" ", sep=" ", wrapped=False)
+            if characteristics
+            else ""
         )
+        properties = expression.args.get("properties")
+        with_sql = f" {self.with_properties(properties)}" if properties else ""
         body = self.sql(expression, "expression")
-        return f"FUNCTION {self.sql(expression, 'this')}{properties_sql} {body}"
+        return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"
 
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):

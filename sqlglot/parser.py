@@ -8816,7 +8816,9 @@ class Parser:
         return self.expression(exp.Commit(chain=chain))
 
     def _parse_refresh(self) -> exp.Refresh | exp.Command:
-        if self._match(TokenType.TABLE):
+        if self._match_text_seq("EXTERNAL", "TABLE"):
+            kind = "EXTERNAL TABLE"
+        elif self._match(TokenType.TABLE):
             kind = "TABLE"
         elif self._match_text_seq("MATERIALIZED", "VIEW"):
             kind = "MATERIALIZED VIEW"

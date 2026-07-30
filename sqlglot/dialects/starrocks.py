@@ -14,6 +14,7 @@ class StarRocks(MySQL):
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
             "LARGEINT": TokenType.INT128,
+            "REFRESH": TokenType.REFRESH,
         }
 
     Parser = StarRocksParser

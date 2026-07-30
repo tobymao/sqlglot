@@ -217,7 +217,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
     agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg
-    if not find_in_scope(value, exp.AggFunc) and value.this not in group_by:
+    if (
+        not isinstance(value, exp.Subquery)
+        and not find_in_scope(value, exp.AggFunc)
+        and value.this not in group_by
+    ):
         select.select(
             exp.alias_(agg_func(this=value.this), value.alias, quoted=False),
             append=False,

@@ -6687,6 +6687,30 @@ LONGBLOB;
 REGEXP_REPLACE(tbl.unknown_col, tbl.str_col, tbl.str_col);
 UNKNOWN;
 
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.str_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col);
+BIGINT;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -59,8 +59,6 @@ class TrinoGenerator(PrestoGenerator):
             else ""
         )
         properties = expression.args.get("properties")
-        # WITH (...) always renders last; it can't retain a pre-WITH position in the
-        # original source, but that doesn't change the UDF's semantics.
         with_sql = f" {self.with_properties(properties)}" if properties else ""
         body = self.sql(expression, "expression")
         return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"

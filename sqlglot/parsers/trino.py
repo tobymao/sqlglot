@@ -13,13 +13,6 @@ class TrinoParser(PrestoParser):
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
     }
 
-    PROPERTY_PARSERS = {
-        **PrestoParser.PROPERTY_PARSERS,
-        "NOT DETERMINISTIC": lambda self: self.expression(
-            exp.StabilityProperty(this=exp.Literal.string("VOLATILE"))
-        ),
-    }
-
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,
@@ -70,6 +63,15 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        # Handled here instead of via a tokenizer keyword merge (as e.g. BigQuery does)
+        # so a bare `NOT` stays a normal boolean operator everywhere else; a merged
+        # "NOT DETERMINISTIC" token would misparse `SELECT NOT deterministic FROM t`.
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
+
     def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
         # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a
@@ -87,10 +89,9 @@ class TrinoParser(PrestoParser):
     def _parse_function_specification(self) -> exp.FunctionSpecification:
         this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
 
-        # The routine characteristics (LANGUAGE, DETERMINISTIC, SECURITY, ...) and the
-        # optional trailing `WITH (property_name = expression, ...)` clause can't share
-        # one _parse_properties() loop: WITH's entries are arbitrary key/value pairs,
-        # not one of the fixed PROPERTY_PARSERS keywords the rest of the loop matches on.
+        # Collected separately (rather than one _parse_properties() call) so the
+        # generator can place `WITH (...)` in its own bracketed clause at the end,
+        # instead of it blending into the bare characteristics list.
         characteristics = []
         properties = []
 

@@ -217,13 +217,20 @@ SELECT f(1)""",
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER RETURNS NULL ON NULL INPUT RETURN 1 SELECT F()"
         )
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
+
+        # SECURITY and WITH (...) are part of Trino's documented function-specification
+        # grammar, but real Trino rejects both for LANGUAGE SQL inline functions
+        # specifically ("Security mode not supported for inline functions", "Function
+        # language 'SQL' does not support properties"). These assert round-trip
+        # correctness for that shared grammar, not that this exact combination executes
+        # on an inline SQL UDF.
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER SECURITY DEFINER RETURN 1 SELECT F()"
         )
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER SECURITY INVOKER RETURN 1 SELECT F()"
         )
-        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER WITH (weight=42) RETURN 1 SELECT F()"
         )

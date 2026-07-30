@@ -6687,7 +6687,6 @@ LONGBLOB;
 REGEXP_REPLACE(tbl.unknown_col, tbl.str_col, tbl.str_col);
 UNKNOWN;
 
-
 --------------------------------------
 -- DuckDB
 --------------------------------------

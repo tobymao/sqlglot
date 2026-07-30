@@ -426,6 +426,7 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT 'foo' NOT SOUNDS LIKE 'bar'", "SELECT NOT SOUNDEX('foo') = SOUNDEX('bar')"
         )
+        self.validate_identity("SELECT * FROM t WHERE sounds LIKE 'a%'")
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")

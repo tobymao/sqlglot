@@ -10,12 +10,12 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
+    remove_ts_or_ds_to_date,
     rename_func,
     strposition_sql,
     timestrtotime_sql,
     trim_sql,
 )
-from sqlglot.generators.mysql import _remove_ts_or_ds_to_date
 from sqlglot.helper import seq_get
 from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
 from sqlglot.time import format_time
@@ -201,7 +201,7 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestamp: rename_func("GETDATE"),
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
-        exp.Day: _remove_ts_or_ds_to_date(),
+        exp.Day: remove_ts_or_ds_to_date(),
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,
         exp.If: rename_func("IIF"),
@@ -212,7 +212,7 @@ class TSQLGenerator(generator.Generator):
         exp.Max: max_or_greatest,
         exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
         exp.Min: min_or_least,
-        exp.Month: _remove_ts_or_ds_to_date(),
+        exp.Month: remove_ts_or_ds_to_date(),
         exp.NumberToStr: _format_sql,
         exp.Repeat: rename_func("REPLICATE"),
         exp.CurrentSchema: rename_func("SCHEMA_NAME"),
@@ -249,7 +249,7 @@ class TSQLGenerator(generator.Generator):
             exp.Literal.number(1),
         ),
         exp.Uuid: lambda *_: "NEWID()",
-        exp.Year: _remove_ts_or_ds_to_date(),
+        exp.Year: remove_ts_or_ds_to_date(),
         exp.DateFromParts: rename_func("DATEFROMPARTS"),
     }
 

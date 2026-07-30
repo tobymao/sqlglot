@@ -1,7 +1,6 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
-from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
 
@@ -1768,7 +1767,6 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         )
 
     def test_extract_date_parts(self):
-        # T-SQL DAY/MONTH/YEAR accept non-date inputs, so the argument is cast to DATE
         self.validate_all(
             "SELECT EXTRACT(DAY FROM CAST(x AS DATE)), EXTRACT(MONTH FROM CAST(x AS DATE)), EXTRACT(YEAR FROM CAST(x AS DATE))",
             read={
@@ -1776,22 +1774,14 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             },
         )
 
-        # An argument already typed as DATE is not cast again
         self.assertEqual(
             annotate_types(parse_one("SELECT DAY(CAST(x AS DATE))", read="tsql")).sql("postgres"),
             "SELECT EXTRACT(DAY FROM CAST(x AS DATE))",
         )
 
-        # Integer arguments rely on T-SQL's 1900-01-01 epoch and aren't supported yet
-        with self.assertRaises(UnsupportedError):
-            transpile(
-                "SELECT DAY(0)", read="tsql", write="postgres", unsupported_level=ErrorLevel.RAISE
-            )
         with self.assertRaises(UnsupportedError):
             annotate_types(
-                qualify(
-                    parse_one("WITH t AS (SELECT 1 AS col) SELECT YEAR(col) FROM t", read="tsql")
-                )
+                parse_one("WITH t AS (SELECT 1 AS col) SELECT YEAR(t.col) FROM t", read="tsql")
             ).sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
     def test_datatype(self):

@@ -481,6 +481,9 @@ class Dialect(metaclass=_Dialect):
     For example, such columns may be excluded from `SELECT *` queries.
     """
 
+    SUPPORTS_POSITIONAL_COLUMN_REFS = False
+    """Whether qualified `$N` references the Nth column of their source."""
+
     PREFER_CTE_ALIAS_COLUMN = False
     """
     Some dialects, such as Snowflake, allow you to reference a CTE column alias in the

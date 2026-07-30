@@ -1106,6 +1106,154 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
 
+    def test_qualify_snowflake_positional_columns(self):
+        expression = parse_one(
+            """
+            WITH t AS (
+                SELECT PARSE_JSON('{"id": 1}') AS data, 'file' AS filepath
+            )
+            SELECT t.$1:"id"::INT AS id, t.$2 AS filename
+            FROM t
+            """,
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(expression, dialect="snowflake").sql("snowflake"),
+            """WITH "T" AS (SELECT PARSE_JSON('{"id": 1}') AS "DATA", 'file' AS "FILEPATH") """
+            """SELECT CAST(GET_PATH("T"."DATA", 'id') AS INT) AS "ID", """
+            """"T"."FILEPATH" AS "FILENAME" FROM "T" AS "T\"""",
+        )
+
+    def test_qualify_snowflake_positional_columns_preserve_quoted_identifiers(self):
+        expression = parse_one(
+            'WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t',
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
+        )
+
+    def test_qualify_snowflake_positional_columns_after_unpivot(self):
+        expression = parse_one(
+            """
+            WITH t AS (SELECT 1 AS passthrough, 2 AS a, 3 AS b)
+            SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))
+            """,
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            "WITH T AS (SELECT 1 AS PASSTHROUGH, 2 AS A, 3 AS B) "
+            "SELECT T.PASSTHROUGH AS PASSTHROUGH FROM T AS T "
+            "UNPIVOT(V FOR K IN (A, B)) AS T",
+        )
+
+    def test_qualify_snowflake_positional_columns_after_chained_unpivots(self):
+        expression = parse_one(
+            """
+            WITH t AS (
+                SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south
+            )
+            SELECT t.$2
+            FROM t
+            UNPIVOT(revenue FOR month IN (jan, feb))
+            UNPIVOT(headcount FOR region IN (north, south))
+            """,
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            "WITH T AS (SELECT 1 AS ID, 100 AS JAN, 200 AS FEB, 7 AS NORTH, 8 AS SOUTH) "
+            "SELECT T.MONTH AS MONTH FROM T AS T "
+            "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) "
+            "UNPIVOT(HEADCOUNT FOR REGION IN (NORTH, SOUTH)) AS T",
+        )
+
+    def test_qualify_snowflake_positional_columns_exclude_invisible_columns(self):
+        expression = parse_one("SELECT t.$1 FROM t", dialect="snowflake")
+        schema = MappingSchema(
+            {"t": {"hidden": "INT", "shown": "INT"}},
+            visible={"T": {"SHOWN"}},
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                schema=schema,
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            "SELECT T.SHOWN AS SHOWN FROM T AS T",
+        )
+
+    def test_qualify_snowflake_positional_columns_with_unknown_sources(self):
+        for sql, expected in (
+            (
+                "SELECT t.$1 FROM source AS t",
+                "SELECT T.$1 AS _COL_0 FROM SOURCE AS T",
+            ),
+            (
+                "WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t",
+                "WITH T AS (SELECT * FROM SOURCE AS SOURCE) SELECT T.$1 AS _COL_0 FROM T AS T",
+            ),
+            (
+                "SELECT t.$1 FROM source AS t UNPIVOT(v FOR k IN (a, b))",
+                "SELECT T.$1 AS _COL_0 FROM SOURCE AS T UNPIVOT(V FOR K IN (A, B)) AS T",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    qualify(
+                        parse_one(sql, dialect="snowflake"),
+                        dialect="snowflake",
+                        quote_identifiers=False,
+                    ).sql("snowflake"),
+                    expected,
+                )
+
+    def test_qualify_positional_columns_is_snowflake_only(self):
+        expression = parse_one(
+            "WITH t AS (SELECT 1 AS a) SELECT t.$1 FROM t",
+            dialect="postgres",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="postgres",
+                allow_partial_qualification=True,
+                quote_identifiers=False,
+            ).sql("postgres"),
+            "WITH t AS (SELECT 1 AS a) SELECT t.$1 AS _col_0 FROM t AS t",
+        )
+
+    def test_qualify_snowflake_positional_column_out_of_range(self):
+        with self.assertRaisesRegex(
+            OptimizeError, r"Positional reference \$2 is out of range for source 'T'"
+        ):
+            qualify(
+                parse_one("WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t", dialect="snowflake"),
+                dialect="snowflake",
+            )
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

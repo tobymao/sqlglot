@@ -655,12 +655,48 @@ def _qualify_columns(
             column_source = scope.sources[column_table]
             source_columns = resolver.get_source_columns(column_table)
             # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
-            if isinstance(column_source, exp.Table) and (
-                pivots := column_source.args.get("pivots")
-            ):
+            pivots = (
+                column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
+            )
+            if source_columns and pivots:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
                     source_columns = pivot.output_columns(source_columns)
+
+            if (
+                resolver.dialect.SUPPORTS_POSITIONAL_COLUMN_REFS
+                and isinstance(column.this, exp.Parameter)
+                and isinstance(position := column.this.this, exp.Literal)
+                and position.is_int
+                and source_columns
+                and "*" not in source_columns
+            ):
+                positional_columns = resolver.get_source_columns(column_table, only_visible=True)
+                for pivot in pivots:
+                    positional_columns = pivot.output_columns(positional_columns)
+
+                position_value = int(position.to_py())
+                if not 1 <= position_value <= len(positional_columns):
+                    raise OptimizeError(
+                        f"Positional reference ${position_value} is out of range for source '{column_table}'"
+                    )
+
+                positional_name = list(positional_columns)[position_value - 1]
+                source_expression = (
+                    column_source.expression if isinstance(column_source, Scope) else None
+                )
+                quoted = (
+                    any(
+                        selection.output_name == positional_name
+                        and _output_identifier_quoted(selection)
+                        for selection in source_expression.selects
+                    )
+                    if isinstance(source_expression, exp.Query)
+                    else isinstance(column_source, exp.Table)
+                    and resolver.dialect.case_sensitive(positional_name)
+                )
+                column.set("this", exp.to_identifier(positional_name, quoted=quoted))
+                column_name = column.name
             if (
                 not allow_partial_qualification
                 and source_columns

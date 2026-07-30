@@ -147,8 +147,6 @@ def canonicalize_internal_names(expression: E) -> E:
 
             table_map[source_name] = (canon_t, ref_alias)
 
-            preserve_names = is_base_source
-
             # UNNEST struct fields are physical columns (preserve); the element alias is not
             struct_field_names: set[str] = set()
             src = source.expression
@@ -169,7 +167,7 @@ def canonicalize_internal_names(expression: E) -> E:
                     continue
 
                 old_name = src_col.name
-                preserve_col = preserve_names or old_name in struct_field_names
+                preserve_col = is_base_source or old_name in struct_field_names
                 canon_col = name_map.get(old_name)
 
                 if canon_col is None:

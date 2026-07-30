@@ -13,11 +13,12 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     date_add_interval_sql,
     timestampdiff_sql,
+    remove_ts_or_ds_to_date,
 )
 from sqlglot.expressions import DataType
 from sqlglot import generator
 from sqlglot.generator import unsupported_args
-from sqlglot.generators.mysql import MySQLGenerator, _remove_ts_or_ds_to_date, date_add_sql
+from sqlglot.generators.mysql import MySQLGenerator, date_add_sql
 
 
 def _unicode_substitute(m: re.Match[str]) -> str:
@@ -121,7 +122,7 @@ class SingleStoreGenerator(MySQLGenerator):
             f"(DATE_FORMAT({self.sql(e, 'this')}, {self.dialect.DATEINT_FORMAT}) :> INT)"
         ),
         exp.Time: unsupported_args("zone")(lambda self, e: f"{self.sql(e, 'this')} :> TIME"),
-        exp.DatetimeAdd: _remove_ts_or_ds_to_date(date_add_sql("ADD")),
+        exp.DatetimeAdd: remove_ts_or_ds_to_date(date_add_sql("ADD")),
         exp.DatetimeTrunc: unsupported_args("zone")(timestamptrunc_sql()),
         exp.DatetimeSub: date_add_interval_sql("DATE", "SUB"),
         exp.DatetimeDiff: timestampdiff_sql,

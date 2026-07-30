@@ -1993,6 +1993,23 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     return expression
 
 
+def remove_ts_or_ds_to_date(
+    to_sql: t.Callable[[Generator, exp.Expr], str] | None = None,
+    args: tuple[str, ...] = ("this",),
+) -> t.Callable[[Generator, exp.Func], str]:
+    def func(self: Generator, expression: exp.Func) -> str:
+        for arg_key in args:
+            arg = expression.args.get(arg_key)
+            if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(
+                "format"
+            ):
+                expression.set(arg_key, arg.this)
+
+        return to_sql(self, expression) if to_sql else self.function_fallback_sql(expression)
+
+    return func
+
+
 def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
     def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
         if cast and isinstance(expression, exp.TsOrDsAdd):

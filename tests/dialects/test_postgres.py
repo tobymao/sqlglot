@@ -1,5 +1,6 @@
-from sqlglot import ParseError, UnsupportedError, exp, transpile
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
@@ -1819,6 +1820,24 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_all(
             "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )
+
+    def test_extract_date_parts(self):
+        self.validate_all(
+            "SELECT EXTRACT(DAY FROM CAST(x AS DATE)), EXTRACT(MONTH FROM CAST(x AS DATE)), EXTRACT(YEAR FROM CAST(x AS DATE))",
+            read={
+                "tsql": "SELECT DAY(x), MONTH(x), YEAR(x)",
+            },
+        )
+
+        self.assertEqual(
+            annotate_types(parse_one("SELECT DAY(CAST(x AS DATE))", read="tsql")).sql("postgres"),
+            "SELECT EXTRACT(DAY FROM CAST(x AS DATE))",
+        )
+
+        with self.assertRaises(UnsupportedError):
+            annotate_types(
+                parse_one("WITH t AS (SELECT 1 AS col) SELECT YEAR(t.col) FROM t", read="tsql")
+            ).sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
     def test_datatype(self):
         self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")

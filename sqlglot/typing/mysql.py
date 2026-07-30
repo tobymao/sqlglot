@@ -25,6 +25,25 @@ def _annotate_truncate(self: TypeAnnotator, expression: exp.Trunc) -> exp.Expr:
     return self._annotate_by_args(expression, "this")
 
 
+def _annotate_regexp_replace(
+    self: TypeAnnotator,
+    expression: exp.RegexpReplace,
+) -> exp.Expr:
+    args = (
+        expression.this,
+        expression.args.get("expression"),
+        expression.args.get("replacement"),
+    )
+
+    if any(arg.is_type(exp.DType.UNKNOWN) for arg in args if arg is not None):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+
+    if any(arg.is_type(*exp.DataType.BINARY_TYPES) for arg in args if arg is not None):
+        return self._set_type(expression, exp.DType.LONGBLOB)
+
+    return self._set_type(expression, exp.DType.LONGTEXT)
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -93,4 +112,5 @@ EXPRESSION_METADATA = {
     },
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.Trunc: {"annotator": _annotate_truncate},
+    exp.RegexpReplace: {"annotator": _annotate_regexp_replace},
 }

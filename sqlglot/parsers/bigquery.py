@@ -345,9 +345,6 @@ class BigQueryParser(parser.Parser):
 
     PROPERTY_PARSERS: t.ClassVar = {
         **parser.Parser.PROPERTY_PARSERS,
-        "NOT DETERMINISTIC": lambda self: self.expression(
-            exp.StabilityProperty(this=exp.Literal.string("VOLATILE"))
-        ),
         "OPTIONS": lambda self: self._parse_with_property(),
     }
 
@@ -534,6 +531,12 @@ class BigQueryParser(parser.Parser):
                 expressions=self._parse_csv(self._parse_column),
             )
         )
+
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
 
     @t.overload
     def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...

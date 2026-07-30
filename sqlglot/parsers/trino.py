@@ -64,9 +64,6 @@ class TrinoParser(PrestoParser):
         )
 
     def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
-        # Handled here instead of via a tokenizer keyword merge (as e.g. BigQuery does)
-        # so a bare `NOT` stays a normal boolean operator everywhere else; a merged
-        # "NOT DETERMINISTIC" token would misparse `SELECT NOT deterministic FROM t`.
         if self._match_text_seq("NOT", "DETERMINISTIC"):
             return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
 

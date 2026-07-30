@@ -197,7 +197,6 @@ class BigQuery(Dialect):
             "FOR SYSTEM_TIME": TokenType.TIMESTAMP_SNAPSHOT,
             "LOOP": TokenType.COMMAND,
             "MODEL": TokenType.MODEL,
-            "NOT DETERMINISTIC": TokenType.VOLATILE,
             "RECORD": TokenType.STRUCT,
             "REPEAT": TokenType.COMMAND,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,

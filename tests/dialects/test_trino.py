@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -210,6 +211,9 @@ SELECT f(1)""",
         )
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER NOT DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.assertIsInstance(
+            self.validate_identity("SELECT NOT deterministic FROM t").selects[0], exp.Not
         )
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER CALLED ON NULL INPUT RETURN 1 SELECT F()"

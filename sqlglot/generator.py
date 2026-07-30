@@ -1820,7 +1820,8 @@ class Generator:
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}"
+        force = " FORCE" if expression.args.get("force") else ""
+        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}{force}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)

@@ -140,11 +140,15 @@ class TestStarrocks(Validator):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
 
+        self.validate_identity("DROP TABLE my_table")
+        self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
+        self.validate_identity("DROP TABLE my_table FORCE")
+        self.validate_identity("DROP TEMPORARY TABLE my_table FORCE")
+
         self.validate_identity("REFRESH EXTERNAL TABLE hive1")
         self.validate_identity("REFRESH EXTERNAL TABLE hive_catalog.hive_db.hive_table")
         self.validate_identity(
-            "REFRESH EXTERNAL TABLE hudi1 PARTITION ('date=2022-12-20', 'date=2022-12-21')",
-            "REFRESH EXTERNAL TABLE hudi1 PARTITION('date=2022-12-20', 'date=2022-12-21')",
+            "REFRESH EXTERNAL TABLE hudi1 PARTITION('date=2022-12-20', 'date=2022-12-21')"
         )
 
         ddl_sqls = [

@@ -84,6 +84,12 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DType.BIGINT}
+        for expr_type in {
+            exp.RegexpInstr,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DType.TIME}
         for expr_type in {
             exp.TimeFromParts,

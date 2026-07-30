@@ -149,15 +149,17 @@ def canonicalize_internal_names(expression: E) -> E:
 
             preserve_names = is_base_source
 
-            # preserve UNNEST struct fields (which canonicalize can't rewrite)
+            # UNNEST struct fields are physical columns (preserve); the element alias is not
+            struct_field_names: set[str] = set()
             src = source.expression
             if (
                 isinstance(src, exp.Unnest)
                 and src.expressions
                 and src.expressions[0].type
                 and (element_type := seq_get(src.expressions[0].type.expressions, 0))
+                and element_type.is_type(exp.DataType.Type.STRUCT)
             ):
-                preserve_names = preserve_names or element_type.is_type(exp.DataType.Type.STRUCT)
+                struct_field_names = {cd.name for cd in element_type.expressions}
 
             for src_col in source_cols:
                 # BigQuery whole-row struct ref (`SELECT t FROM t`): the identifier
@@ -167,10 +169,11 @@ def canonicalize_internal_names(expression: E) -> E:
                     continue
 
                 old_name = src_col.name
+                preserve_col = preserve_names or old_name in struct_field_names
                 canon_col = name_map.get(old_name)
 
                 if canon_col is None:
-                    if preserve_names:
+                    if preserve_col:
                         canon_col = old_name
                     else:
                         canon_col = child_output.get(old_name) or next_column()
@@ -180,7 +183,7 @@ def canonicalize_internal_names(expression: E) -> E:
                 # Base-table and UNNEST struct-field column refs name physical columns => preserve
                 # verbatim (including quote state). Scope-sourced refs are internal handles pointing
                 # at CTE/subquery aliases (injected unquoted via exp.to_identifier), so _canon them.
-                if not preserve_names:
+                if not preserve_col:
                     _canon(src_col.this, canon_col)
 
                 table_id = src_col.args.get("table")

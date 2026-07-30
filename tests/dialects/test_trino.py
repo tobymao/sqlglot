@@ -272,14 +272,16 @@ SELECT f(1)""",
             "SELECT F()"
         )
 
-        # BEGIN can nest
+        # BEGIN can nest; confirmed against a real Trino instance (returns 2)
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER "
             "BEGIN DECLARE x INTEGER DEFAULT 1; BEGIN SET x = x + 1; END; RETURN x; END "
             "SELECT F()"
         )
 
-        # Combines with routine characteristics and with a real CTE following the UDF
+        # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration
+        # on a body it can tell is trivially deterministic (same class of issue as the
+        # SECURITY/WITH (...) note above), so this asserts round-trip grammar only.
         self.validate_identity(
             "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL NOT DETERMINISTIC "
             "BEGIN DECLARE x INTEGER DEFAULT 1; RETURN x; END "

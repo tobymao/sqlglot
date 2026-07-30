@@ -220,6 +220,9 @@ class DataType(Expression):
         DType.NCHAR,
         DType.NVARCHAR,
         DType.TEXT,
+        DType.TINYTEXT,
+        DType.MEDIUMTEXT,
+        DType.LONGTEXT,
         DType.VARCHAR,
         DType.NAME,
     }

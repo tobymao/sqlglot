@@ -35,13 +35,13 @@ def _annotate_regexp_replace(
         expression.args.get("replacement"),
     )
 
-    if all(arg.is_type(*exp.DataType.BINARY_TYPES) for arg in args if arg is not None):
+    if any(arg.is_type(exp.DType.UNKNOWN) for arg in args if arg is not None):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+
+    if any(arg.is_type(*exp.DataType.BINARY_TYPES) for arg in args if arg is not None):
         return self._set_type(expression, exp.DType.LONGBLOB)
 
-    if all(arg.is_type(*exp.DataType.TEXT_TYPES) for arg in args if arg is not None):
-        return self._set_type(expression, exp.DType.LONGTEXT)
-
-    return self._set_type(expression, exp.DType.UNKNOWN)
+    return self._set_type(expression, exp.DType.LONGTEXT)
 
 
 EXPRESSION_METADATA = {

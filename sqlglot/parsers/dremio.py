@@ -111,15 +111,11 @@ class DremioParser(parser.Parser):
         "DATETYPE": datetype_handler,
     }
 
-    def _parse_version(self) -> exp.Version | None:
-        if self._match_text_seq("AT", "TIMESTAMP"):
-            this = "TIMESTAMP"
-        elif self._match_text_seq("AT", "SNAPSHOT"):
-            this = "VERSION"
-        else:
-            return super()._parse_version()
-
-        return self.expression(exp.Version(this=this, kind="AS OF", expression=self._parse_type()))
+    VERSION_PHRASES = {
+        **parser.Parser.VERSION_PHRASES,
+        ("AT", "TIMESTAMP"): "TIMESTAMP",
+        ("AT", "SNAPSHOT"): "VERSION",
+    }
 
     def _parse_current_date_utc(self) -> exp.Cast:
         if self._match(TokenType.L_PAREN):

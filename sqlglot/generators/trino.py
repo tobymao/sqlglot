@@ -13,6 +13,7 @@ from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_tab
 
 class TrinoGenerator(PrestoGenerator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
+    DECLARE_DEFAULT_ASSIGNMENT = "DEFAULT"
     PROPERTIES_LOCATION = {
         **PrestoGenerator.PROPERTIES_LOCATION,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
@@ -62,6 +63,12 @@ class TrinoGenerator(PrestoGenerator):
         with_sql = f" {self.with_properties(properties)}" if properties else ""
         body = self.sql(expression, "expression")
         return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"
+
+    def block_sql(self, expression: exp.Block) -> str:
+        # Every exp.Block in Trino's grammar is a BEGIN...END block (nested ones
+        # included), so this wraps unconditionally rather than relying on callers
+        # to prefix BEGIN themselves.
+        return f"BEGIN {super().block_sql(expression)}"
 
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):

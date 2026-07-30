@@ -13,6 +13,11 @@ class TrinoParser(PrestoParser):
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
     }
 
+    STATEMENT_PARSERS = {
+        **PrestoParser.STATEMENT_PARSERS,
+        TokenType.DECLARE: lambda self: self._parse_declare(),
+    }
+
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,
@@ -116,9 +121,55 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_routine_block(self) -> exp.Block:
+        # _parse_block() assumes its END is the last token of the whole remaining
+        # statement (true for e.g. `CREATE PROCEDURE ... AS BEGIN ... END`), so it
+        # only recognizes END when nothing follows it. Trino's grammar always has
+        # a query after the UDF's END (`... END SELECT f(1)`), so END has to close
+        # the block regardless of what comes after it; this loop still reuses the
+        # same chunk-advancing primitives (_chunks/_advance_chunk) that
+        # _parse_block() relies on to thread a body across the semicolon-delimited
+        # chunks _parse() splits the whole script into.
+        self._match(TokenType.BEGIN)
+        statements: list[exp.Expr] = []
+
+        while True:
+            if not self._curr:
+                if self._chunk_index >= len(self._chunks):
+                    self.raise_error("Unexpected end of routine body")
+                    break
+
+                self._advance_chunk()
+                continue
+
+            if self._match(TokenType.SEMICOLON):
+                continue
+
+            if self._match(TokenType.END):
+                statements.append(exp.EndStatement())
+                break
+
+            statement = self._parse_routine_statement()
+            if not statement:
+                break
+
+            statements.append(statement)
+
+        return self.expression(exp.Block(expressions=statements))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
+        if self._match(TokenType.BEGIN, advance=False):
+            return self._parse_routine_block()
+
         if self._match_text_seq("RETURN"):
             return self.expression(exp.Return(this=self._parse_disjunction()))
+
+        # SET/DECLARE are dispatched through the same STATEMENT_PARSERS entries
+        # _parse_statement() uses, but going through _parse_statement() itself would
+        # also enable its generic expression/SELECT fallback, silently swallowing
+        # whatever follows this routine's END as if it were the routine's own body.
+        if self._match_set(self.STATEMENT_PARSERS):
+            return self.STATEMENT_PARSERS[self._prev.token_type](self)
 
         self.raise_error("Expected routine statement")
         return None

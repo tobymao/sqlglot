@@ -247,3 +247,45 @@ SELECT f(1)""",
             "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
             "WITH (weight=42, cost='low') RETURN a SELECT CUSTOM_SQRT(4)"
         )
+
+    def test_inline_udf_begin_end(self):
+        # https://trino.io/docs/current/udf/sql/begin.html
+        self.validate_identity(
+            "WITH FUNCTION meaning_of_life() RETURNS INTEGER "
+            "BEGIN DECLARE a INTEGER DEFAULT 6; DECLARE b INTEGER DEFAULT 7; RETURN a * b; END "
+            "SELECT MEANING_OF_LIFE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/set.html
+        self.validate_identity(
+            "WITH FUNCTION one() RETURNS INTEGER "
+            "BEGIN DECLARE counter INTEGER DEFAULT 1; SET counter = 0; "
+            "SET counter = counter + 2; SET counter = counter / counter; RETURN counter; END "
+            "SELECT ONE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/declare.html - multiple identifiers can
+        # share one DECLARE and type
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE first_name, last_name, middle_name VARCHAR(25); RETURN 1; END "
+            "SELECT F()"
+        )
+
+        # BEGIN can nest
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; BEGIN SET x = x + 1; END; RETURN x; END "
+            "SELECT F()"
+        )
+
+        # Combines with routine characteristics and with a real CTE following the UDF
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL NOT DETERMINISTIC "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; RETURN x; END "
+            "SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER BEGIN RETURN x * 2; END "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
+        )

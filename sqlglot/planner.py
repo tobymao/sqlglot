@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.eliminate_joins import join_condition
+from sqlglot.optimizer.scope import find_all_in_scope, find_in_scope
 from collections.abc import Iterator, Sequence, Iterable
 
 
@@ -128,7 +129,7 @@ class Step:
         next_operand_name = name_sequence("_a_")
 
         def extract_agg_operands(expression: exp.Expr) -> bool:
-            agg_funcs = tuple(expression.find_all(exp.AggFunc))
+            agg_funcs = tuple(find_all_in_scope(expression, exp.AggFunc))
             if agg_funcs:
                 aggregations[expression] = None
 
@@ -148,7 +149,7 @@ class Step:
             step.aggregations = list(aggregations)
 
         for e in expression.expressions:
-            if e.find(exp.AggFunc):
+            if find_in_scope(e, exp.AggFunc):
                 projections.append(exp.column(e.alias_or_name, step.name, quoted=True))
                 extract_agg_operands(e)
             else:

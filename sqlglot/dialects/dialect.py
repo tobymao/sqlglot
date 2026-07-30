@@ -24,6 +24,7 @@ from sqlglot.helper import (
     ensure_list,
 )
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
+from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -2164,7 +2165,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         then: exp.Insert | exp.Update | None = when.args.get("then")
         if then:
             if isinstance(then, exp.Update):
-                for equals in then.find_all(exp.EQ):
+                for equals in find_all_in_scope(then, exp.EQ):
                     equal_lhs = equals.this
                     if (
                         isinstance(equal_lhs, exp.Column)

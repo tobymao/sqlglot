@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from sqlglot import alias, exp
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -174,7 +174,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
         if select_all or name in parent_selections or name in order_refs or alias_count > 0:
             new_selections.append(selection)
             alias_count -= 1
-        elif selection.find(*SET_RETURNING_FUNCTIONS):
+        elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
             # A set-returning function multiplies the rows of the whole query, so this
             # projection affects the cardinality of every output column and must be kept
             # even though it is otherwise unreferenced. It is not a positional alias slot,
@@ -185,7 +185,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
                 star = True
             removed = True
 
-        if not is_agg and selection.find(exp.AggFunc):
+        if not is_agg and find_in_scope(selection, exp.AggFunc):
             is_agg = True
 
     if star:

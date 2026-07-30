@@ -247,7 +247,7 @@ def nodes_for_predicate(
         if isinstance(node, exp.Select) and len(tables) == 1:
             # We can't push down window expressions
             has_window_expression = any(
-                select for select in node.selects if select.find(exp.Window)
+                select for select in node.selects if find_in_scope(select, exp.Window)
             )
             # we can't push down predicates to select statements if they are referenced in
             # multiple places.

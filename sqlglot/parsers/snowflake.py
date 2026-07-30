@@ -900,6 +900,12 @@ class SnowflakeParser(parser.Parser):
         TokenType.VOLUME,
     }
 
+    MULTI_WORD_CREATABLES = {
+        "FILE FORMAT": TokenType.FILE_FORMAT,
+        "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
+        "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
+    }
+
     LAMBDAS = {
         **parser.Parser.LAMBDAS,
         TokenType.ARROW: lambda self, expressions: self.expression(
@@ -932,7 +938,8 @@ class SnowflakeParser(parser.Parser):
             qualifier = self.DESCRIBE_QUALIFIER_PARSERS[self._prev.text.upper()](self)
 
             if qualifier:
-                kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+                kind_token = self._match_creatable(self.CREATABLES)
+                kind = kind_token.text.upper() if kind_token else None
 
                 if kind:
                     this = self._parse_table(schema=True)
@@ -1217,8 +1224,8 @@ class SnowflakeParser(parser.Parser):
                 if self._match_text_seq("PACKAGE"):
                     scope_kind += " PACKAGE"
                 scope = self._parse_table_parts()
-            elif self._match_set(self.DB_CREATABLES):
-                scope_kind = self._prev.text.upper()
+            elif creatable := self._match_creatable(self.DB_CREATABLES):
+                scope_kind = creatable.text.upper()
                 if self._curr:
                     scope = self._parse_table_parts()
             elif self._curr:

@@ -683,6 +683,11 @@ class Parser:
         TokenType.SESSION,
     }
 
+    # Multi-word creatable kinds (e.g. Snowflake's FILE FORMAT), mapped to their token type.
+    # These are matched as token sequences instead of tokenizer keyword merges, so that their
+    # words can still appear as plain identifiers elsewhere
+    MULTI_WORD_CREATABLES: t.ClassVar[dict[str, TokenType]] = {}
+
     # Tokens that can represent identifiers
     ID_VAR_TOKENS: t.ClassVar[set] = {
         TokenType.ALL,
@@ -2221,6 +2226,16 @@ class Parser:
             comments=comments,
         )
 
+    def _match_creatable(self, tokens: t.Collection[TokenType]) -> Token | None:
+        if self._match_set(tokens):
+            return self._prev
+
+        for phrase, token_type in self.MULTI_WORD_CREATABLES.items():
+            if token_type in tokens and self._match_text_seq(*phrase.split(" ")):
+                return Token(token_type, phrase)
+
+        return None
+
     def _parse_comment(self, allow_exists: bool = True) -> exp.Expr:
         start = self._prev
         exists = self._parse_exists() if allow_exists else None
@@ -2228,7 +2243,7 @@ class Parser:
         self._match(TokenType.ON)
 
         materialized = self._match_text_seq("MATERIALIZED")
-        kind = self._match_set(self.CREATABLES) and self._prev
+        kind = self._match_creatable(self.CREATABLES)
         if not kind:
             return self._parse_as_command(start)
 
@@ -2342,7 +2357,8 @@ class Parser:
         materialized = self._match_text_seq("MATERIALIZED")
         iceberg = self._match_text_seq("ICEBERG")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+        kind_token = self._match_creatable(self.CREATABLES)
+        kind = kind_token.text.upper() if kind_token else None
         if not kind or (iceberg and kind and kind != "TABLE"):
             return self._parse_as_command(start)
 
@@ -2416,12 +2432,12 @@ class Parser:
             self._advance()
 
         properties = None
-        create_token = self._match_set(self.CREATABLES) and self._prev
+        create_token = self._match_creatable(self.CREATABLES)
 
         if not create_token:
             # exp.Properties.Location.POST_CREATE
             properties = self._parse_properties()
-            create_token = self._match_set(self.CREATABLES) and self._prev
+            create_token = self._match_creatable(self.CREATABLES)
 
             if not properties or not create_token:
                 return self._parse_as_command(start)
@@ -3447,7 +3463,8 @@ class Parser:
         return self.expression(exp.ReturnsProperty(this=value, is_table=is_table, null=null))
 
     def _parse_describe(self) -> exp.Describe:
-        kind = self._prev.text if self._match_set(self.CREATABLES) else None
+        kind_token = self._match_creatable(self.CREATABLES)
+        kind = kind_token.text if kind_token else None
         style: str | None = (
             self._prev.text.upper() if self._match_texts(self.DESCRIBE_STYLES) else None
         )
@@ -9854,7 +9871,8 @@ class Parser:
         privileges = self._parse_csv(self._parse_grant_privilege)
 
         self._match(TokenType.ON)
-        kind = self._prev.text.upper() if self._match_set(self.CREATABLES) else None
+        kind_token = self._match_creatable(self.CREATABLES)
+        kind = kind_token.text.upper() if kind_token else None
 
         # Attempt to parse the securable e.g. MySQL allows names
         # such as "foo.*", "*.*" which are not easily parseable yet

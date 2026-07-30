@@ -28,6 +28,11 @@ class TestSnowflake(Validator):
         )
 
         self.validate_identity("SELECT session")
+        self.validate_identity("SELECT file format FROM t", "SELECT file AS format FROM t")
+        self.validate_identity(
+            "SELECT storage integration FROM t", "SELECT storage AS integration FROM t"
+        )
+        self.validate_identity("SELECT semantic view FROM t", "SELECT semantic AS view FROM t")
         self.validate_identity("x::nvarchar()", "CAST(x AS VARCHAR)")
 
         ast = self.parse_one("DATEADD(DAY, n, d)")

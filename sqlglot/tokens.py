@@ -244,7 +244,6 @@ class Tokenizer(_TokenizerBase):
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
-        "CHARACTER SET": TokenType.CHARACTER_SET,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,

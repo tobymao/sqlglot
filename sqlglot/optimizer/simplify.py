@@ -486,7 +486,7 @@ def datetime_floor(d: date, unit: str, dialect: Dialect) -> date:
         result = d.replace(month=d.month, day=1)
     elif unit == "week":
         # Assuming week starts on Monday (0) and ends on Sunday (6)
-        result = d - timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
+        result = d - timedelta(days=(d.weekday() - dialect.WEEK_OFFSET) % 7)
     elif unit == "day":
         result = d
     else:

@@ -286,7 +286,7 @@ def _datetrunc_neq(
     if not drange:
         return None
 
-    return exp.and_(
+    return exp.or_(
         left < date_literal(drange[0], target_type),
         left >= date_literal(drange[1], target_type),
         copy=False,

@@ -286,11 +286,26 @@ def _datetrunc_neq(
     if not drange:
         return None
 
-    return exp.and_(
+    return exp.or_(
         left < date_literal(drange[0], target_type),
         left >= date_literal(drange[1], target_type),
         copy=False,
     )
+
+
+def _parenthesize_nested_connector(expression: exp.Expr, parent: exp.Expr | None) -> exp.Expr:
+    """
+    The generator flattens nested connectors and relies on Paren nodes for grouping.
+    Operator precedence varies across dialects, so wrap unless the parent is the same
+    connector type, in which case flattening is safe by associativity.
+    """
+    if isinstance(expression, exp.Connector) and (
+        isinstance(parent, exp.Not)
+        or (isinstance(parent, exp.Connector) and type(parent) is not type(expression))
+    ):
+        return exp.paren(expression, copy=False)
+
+    return expression
 
 
 def always_true(expression: object) -> bool:
@@ -485,8 +500,8 @@ def datetime_floor(d: date, unit: str, dialect: Dialect) -> date:
     elif unit == "month":
         result = d.replace(month=d.month, day=1)
     elif unit == "week":
-        # Assuming week starts on Monday (0) and ends on Sunday (6)
-        result = d - timedelta(days=d.weekday() - dialect.WEEK_OFFSET)
+        # Week truncation respects dialect.WEEK_OFFSET (0=Monday, -1=Sunday)
+        result = d - timedelta(days=(d.weekday() - dialect.WEEK_OFFSET) % 7)
     elif unit == "day":
         result = d
     else:
@@ -1455,12 +1470,13 @@ class Simplifier:
             if not date:
                 return expression
 
-            return (
-                self.DATETRUNC_BINARY_COMPARISONS[comparison](
-                    trunc_arg, date, unit, self.dialect, extract_type(r)
-                )
-                or expression
+            simplified = self.DATETRUNC_BINARY_COMPARISONS[comparison](
+                trunc_arg, date, unit, self.dialect, extract_type(r)
             )
+            if simplified is None:
+                return expression
+
+            return _parenthesize_nested_connector(simplified, expression.parent)
 
         if isinstance(expression, exp.In):
             l = expression.this
@@ -1488,10 +1504,11 @@ class Simplifier:
                 ranges = merge_ranges(ranges)
                 target_type = extract_type(*rs)
 
-                return exp.or_(
+                simplified = exp.or_(
                     *[_datetrunc_eq_expression(l, drange, target_type) for drange in ranges],
                     copy=False,
                 )
+                return _parenthesize_nested_connector(simplified, expression.parent)
 
         return expression
 

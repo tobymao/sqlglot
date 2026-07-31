@@ -1164,6 +1164,23 @@ DATE_TRUNC('QUARTER', x) = CAST('2021-01-02' AS DATE);
 DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
 x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
 
+-- the resulting connector must be parenthesized under a different connector or NOT
+DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE) AND y = 1;
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND y = 1;
+
+DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE) OR y = 1;
+(x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR y = 1;
+
+NOT DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
+
+NOT DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE) AND y = 1;
+(x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE)) AND y = 1;
+
 -- Always true, except for nulls
 DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
 DATE_TRUNC('YEAR', x) <> CAST('2021-01-02' AS DATE);
@@ -1227,6 +1244,13 @@ x < CAST('2023-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 -- one of the values will always be false
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-02' AS DATE));
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+-- the resulting OR must be parenthesized under a tighter-binding parent
+DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE)) AND y = 1;
+((x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR (x < CAST('2024-01-01' AS DATE) AND x >= CAST('2023-01-01' AS DATE))) AND y = 1;
+
+NOT DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE));
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND (x < CAST('2023-01-01' AS DATE) OR x >= CAST('2024-01-01' AS DATE));
 
 TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
 x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);

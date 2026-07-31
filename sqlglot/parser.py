@@ -4181,9 +4181,8 @@ class Parser:
         if self._can_parse_limit_or_offset():
             return None
 
-        # `START` is never treated as an implicit alias when followed by `WITH`, since that
-        # would swallow the beginning of a `START WITH ... CONNECT BY` clause (an explicit
-        # alias can be used instead)
+        # START is never treated as an implicit alias when followed by WITH, since that
+        # would swallow the beginning of a START WITH ... CONNECT BY clause
         if self._curr.text.upper() == "START" and self._next.text.upper() == "WITH":
             return None
 

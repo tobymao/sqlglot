@@ -84,7 +84,7 @@ def _day_month_year_sql(self: PostgresGenerator, expression: exp.Day | exp.Month
     if value.is_type(*exp.DataType.INTEGER_TYPES) and (
         default_date := this.args.get("default_date")
     ):
-        this = exp.cast(default_date.copy(), exp.DType.DATE) + value
+        this = exp.cast(default_date, exp.DType.DATE) + value
 
     return self.sql(exp.Extract(this=exp.var(expression.sql_name()), expression=this))
 

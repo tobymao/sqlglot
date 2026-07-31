@@ -686,7 +686,7 @@ class Parser:
     # Multi-word creatable kinds (e.g. Snowflake's FILE FORMAT), mapped to their token type.
     # These are matched as token sequences instead of tokenizer keyword merges, so that their
     # words can still appear as plain identifiers elsewhere
-    MULTI_WORD_CREATABLES: t.ClassVar[dict[str, TokenType]] = {}
+    MULTI_WORD_CREATABLES: t.ClassVar[dict[tuple[str, ...], TokenType]] = {}
 
     # Tokens that can represent identifiers
     ID_VAR_TOKENS: t.ClassVar[set] = {
@@ -2230,9 +2230,9 @@ class Parser:
         if self._match_set(tokens):
             return self._prev
 
-        for phrase, token_type in self.MULTI_WORD_CREATABLES.items():
-            if token_type in tokens and self._match_text_seq(*phrase.split(" ")):
-                return Token(token_type, phrase)
+        for words, token_type in self.MULTI_WORD_CREATABLES.items():
+            if token_type in tokens and self._match_text_seq(*words):
+                return Token(token_type, " ".join(words))
 
         return None
 

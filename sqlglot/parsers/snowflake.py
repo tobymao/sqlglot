@@ -901,9 +901,9 @@ class SnowflakeParser(parser.Parser):
     }
 
     MULTI_WORD_CREATABLES = {
-        "FILE FORMAT": TokenType.FILE_FORMAT,
-        "SEMANTIC VIEW": TokenType.SEMANTIC_VIEW,
-        "STORAGE INTEGRATION": TokenType.STORAGE_INTEGRATION,
+        ("FILE", "FORMAT"): TokenType.FILE_FORMAT,
+        ("SEMANTIC", "VIEW"): TokenType.SEMANTIC_VIEW,
+        ("STORAGE", "INTEGRATION"): TokenType.STORAGE_INTEGRATION,
     }
 
     LAMBDAS = {

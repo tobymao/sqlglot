@@ -4367,6 +4367,9 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "CREATE TEMPORARY FILE FORMAT fileformat1 TYPE=PARQUET COMPRESSION=auto"
         ).this.assert_is(exp.Table)
+        self.validate_identity("DROP FILE FORMAT IF EXISTS my_file_format")
+        self.validate_identity("DROP STORAGE INTEGRATION my_integration")
+        self.validate_identity("DROP SEMANTIC VIEW my_semantic_view")
         self.validate_identity(
             "CREATE DYNAMIC TABLE product (pre_tax_profit, taxes, after_tax_profit) TARGET_LAG='20 minutes' WAREHOUSE=mywh AS SELECT revenue - cost, (revenue - cost) * tax_rate, (revenue - cost) * (1.0 - tax_rate) FROM staging_table"
         )

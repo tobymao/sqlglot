@@ -983,7 +983,8 @@ class ClickHouseParser(parser.Parser):
         return self.expression(exp.PartitionedByProperty(this=self._parse_assignment()))
 
     def _parse_detach(self) -> exp.Detach:
-        kind = self._match_set(self.DB_CREATABLES) and self._prev.text.upper()
+        creatable = self._match_creatable(self.DB_CREATABLES)
+        kind = creatable and creatable.text.upper()
         exists = self._parse_exists()
         this = self._parse_table_parts()
 

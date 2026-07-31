@@ -2794,6 +2794,8 @@ class Parser:
         return self.expression(exp.TriggerExecute(this=func_call))
 
     def _parse_property_before(self) -> exp.Expr | list[exp.Expr] | None:
+        index = self._index
+
         # only used for teradata currently
         self._match(TokenType.COMMA)
 
@@ -2816,6 +2818,8 @@ class Parser:
             except TypeError:
                 self.raise_error(f"Cannot parse property '{self._prev.text}'")
 
+        # Restore any consumed prefix keywords (e.g. DEFAULT) so `_parse_property` can parse them
+        self._retreat(index)
         return None
 
     def _parse_wrapped_properties(self) -> list[exp.Expr | list[exp.Expr]]:

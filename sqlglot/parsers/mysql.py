@@ -303,9 +303,6 @@ class MySQLParser(parser.Parser):
     def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
         this = this or self._parse_bitwise()
 
-        index = self._index
-        negate = self._match(TokenType.NOT)
-
         if self._match_text_seq("SOUNDS", "LIKE"):
             this = self.expression(
                 exp.EQ(
@@ -313,10 +310,6 @@ class MySQLParser(parser.Parser):
                     expression=self.expression(exp.Soundex(this=self._parse_term())),
                 )
             )
-            if negate:
-                this = self._negate_range(this)
-        else:
-            self._retreat(index)
 
         return super()._parse_range(this)
 

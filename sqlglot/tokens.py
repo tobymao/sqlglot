@@ -370,7 +370,6 @@ class Tokenizer(_TokenizerBase):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "SQL SECURITY": TokenType.SQL_SECURITY,
-        "START WITH": TokenType.START_WITH,
         "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,

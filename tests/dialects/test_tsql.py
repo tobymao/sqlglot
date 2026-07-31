@@ -1121,6 +1121,8 @@ FOR JSON
         for view_attr in ("ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"):
             self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
 
+        self.validate_identity("CREATE VIEW start WITH SCHEMABINDING AS SELECT a FROM x")
+
         self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
             exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
@@ -2246,6 +2248,10 @@ WHERE
                 "": "SELECT x FROM a WITH (NOLOCK)",
             },
         )
+        self.validate_identity("SELECT x FROM start WITH (NOLOCK)")
+        self.validate_identity("SELECT * FROM t AS start WITH (NOLOCK)")
+        self.validate_identity("UPDATE start WITH (ROWLOCK) SET a = 1")
+        self.validate_identity("DELETE FROM start WITH (ROWLOCK)")
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")
 
     def test_openjson(self):

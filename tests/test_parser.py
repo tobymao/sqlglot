@@ -1185,6 +1185,13 @@ class TestParser(unittest.TestCase):
             "SELECT * FROM a WHERE c = 'false'",
         )
 
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(
+                "SELECT id FROM t START WITH a = 1 CONNECT BY PRIOR id = pid START WITH b = 2 CONNECT BY PRIOR id = pid"
+            )
+
+        self.assertIn("Found multiple 'START WITH' clauses. Line 1, Col: 65.", str(ctx.exception))
+
     def test_window_clause_without_from(self):
         # https://github.com/tobymao/sqlglot/issues/7438
         for dialect in (None, "sqlite", "postgres", "mysql", "duckdb", "bigquery"):

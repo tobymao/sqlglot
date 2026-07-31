@@ -1571,7 +1571,6 @@ class Parser:
         ),
         TokenType.SORT_BY: lambda self: ("sort", self._parse_sort(exp.Sort, TokenType.SORT_BY)),
         TokenType.CONNECT_BY: lambda self: ("connect", self._parse_connect(skip_start_token=True)),
-        TokenType.START_WITH: lambda self: ("connect", self._parse_connect()),
     }
     QUERY_MODIFIER_TOKENS: t.ClassVar = set(QUERY_MODIFIER_PARSERS)
 
@@ -2698,7 +2697,8 @@ class Parser:
                 seq.set("minvalue", self._parse_term())
             elif self._match_text_seq("MAXVALUE"):
                 seq.set("maxvalue", self._parse_term())
-            elif self._match(TokenType.START_WITH) or self._match_text_seq("START"):
+            elif self._match_text_seq("START"):
+                self._match_text_seq("WITH")
                 self._match_text_seq("=")
                 seq.set("start", self._parse_term())
             elif self._match_text_seq("CACHE"):
@@ -4197,6 +4197,11 @@ class Parser:
         if self._can_parse_limit_or_offset():
             return None
 
+        # START is never treated as an implicit alias when followed by WITH, since that
+        # would swallow the beginning of a START WITH ... CONNECT BY clause
+        if self._curr.text.upper() == "START" and self._next.text.upper() == "WITH":
+            return None
+
         any_token = self._match(TokenType.ALIAS)
         alias = (
             self._parse_id_var(any_token=any_token, tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
@@ -4301,6 +4306,18 @@ class Parser:
                                 limit_by_expressions = expression.expressions
                                 expression.set("expressions", None)
                                 offset.set("expressions", limit_by_expressions)
+                        continue
+
+                if self._curr.text.upper() == "START":
+                    modifier_token = self._curr
+                    connect = self._parse_connect()
+                    if connect:
+                        if this.args.get("connect"):
+                            self.raise_error(
+                                "Found multiple 'START WITH' clauses", token=modifier_token
+                            )
+
+                        this.set("connect", connect)
                         continue
                 break
 
@@ -5540,7 +5557,7 @@ class Parser:
     def _parse_connect(self, skip_start_token: bool = False) -> exp.Connect | None:
         if skip_start_token:
             start = None
-        elif self._match(TokenType.START_WITH):
+        elif self._match_text_seq("START", "WITH"):
             start = self._parse_disjunction()
         else:
             return None
@@ -5549,7 +5566,7 @@ class Parser:
         nocycle = self._match_text_seq("NOCYCLE")
         connect = self._parse_connect_with_prior()
 
-        if not start and self._match(TokenType.START_WITH):
+        if not start and self._match_text_seq("START", "WITH"):
             start = self._parse_disjunction()
 
         return self.expression(exp.Connect(start=start, connect=connect, nocycle=nocycle))
@@ -7542,7 +7559,7 @@ class Parser:
         identity = self._match_text_seq("IDENTITY")
 
         if self._match(TokenType.L_PAREN):
-            if self._match(TokenType.START_WITH):
+            if self._match_text_seq("START", "WITH"):
                 this.set("start", self._parse_bitwise())
             if self._match_text_seq("INCREMENT", "BY"):
                 this.set("increment", self._parse_bitwise())

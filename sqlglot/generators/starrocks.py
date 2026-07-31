@@ -6,7 +6,7 @@ from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
     rename_func,
-    unit_to_str,
+    weekstart_unit_to_str,
     inline_array_sql,
     property_sql,
     var_map_sql,
@@ -103,7 +103,9 @@ class StarRocksGenerator(MySQLGenerator):
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
-        exp.DateDiff: lambda self, e: self.func("DATE_DIFF", unit_to_str(e), e.this, e.expression),
+        exp.DateDiff: lambda self, e: self.func(
+            "DATE_DIFF", weekstart_unit_to_str(self, e), e.this, e.expression
+        ),
         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
@@ -125,7 +127,9 @@ class StarRocksGenerator(MySQLGenerator):
         exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
         exp.StDistance: st_distance_sphere,
         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
-        exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+        exp.TimestampTrunc: lambda self, e: self.func(
+            "DATE_TRUNC", weekstart_unit_to_str(self, e), e.this
+        ),
         exp.TimeStrToDate: rename_func("TO_DATE"),
         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
         exp.UnixToTime: rename_func("FROM_UNIXTIME"),

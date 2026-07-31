@@ -580,6 +580,13 @@ class BigQueryGenerator(generator.Generator):
         "within",
     }
 
+    def weekstart_sql(self, expression: exp.WeekStart) -> str:
+        if expression.this.name.upper() == "SUNDAY":
+            # BigQuery specific optimization since WEEK(SUNDAY) == WEEK
+            return "WEEK"
+
+        return self.func("WEEK", expression.this)
+
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit
         unit_sql = unit.name if unit.is_string else self.sql(unit)

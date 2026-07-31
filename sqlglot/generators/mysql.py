@@ -30,7 +30,12 @@ from collections import defaultdict
 
 def _date_trunc_sql(self: MySQLGenerator, expression: exp.DateTrunc) -> str:
     expr = self.sql(expression, "this")
-    unit = expression.text("unit").upper()
+    unit_expr = expression.args.get("unit")
+    unit = (
+        self.weekstart_name(unit_expr)
+        if isinstance(unit_expr, exp.WeekStart)
+        else expression.text("unit").upper()
+    )
 
     if unit == "WEEK":
         concat = f"CONCAT(YEAR({expr}), ' ', WEEK({expr}, 1), ' 1')"
@@ -759,6 +764,8 @@ class MySQLGenerator(generator.Generator):
 
     def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
         unit = expression.args.get("unit")
+        if isinstance(unit, exp.WeekStart):
+            unit = exp.var(self.weekstart_name(unit))
 
         # Pick an old-enough date to avoid negative timestamp diffs
         start_ts = "'0000-01-01 00:00:00'"

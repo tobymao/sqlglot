@@ -1701,7 +1701,7 @@ def timestamptrunc_sql(
     func: str = "DATE_TRUNC", zone: bool = False
 ) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
     def _timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
-        args = [unit_to_str(expression), expression.this]
+        args = [weekstart_unit_to_str(self, expression), expression.this]
         if zone:
             args.append(expression.args.get("zone"))
         return self.func(func, *args)
@@ -2061,10 +2061,26 @@ def unit_to_str(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     if not unit:
         return exp.Literal.string(default) if default else None
 
+    if isinstance(unit, exp.WeekStart):
+        # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit. Unlike
+        # Generator.weekstart_name, this can't warn about a changed week start (no generator
+        # access here) - callers that need the warning should use weekstart_unit_to_str
+        return exp.Literal.string("WEEK")
+
     if isinstance(unit, exp.Placeholder) or type(unit) not in (exp.Var, exp.Literal):
         return unit
 
     return exp.Literal.string(unit.name)
+
+
+def weekstart_unit_to_str(
+    self: Generator, expression: exp.Expr, default: str = "DAY"
+) -> exp.Expr | None:
+    unit = expression.args.get("unit")
+    if isinstance(unit, exp.WeekStart):
+        return exp.Literal.string(self.weekstart_name(unit))
+
+    return unit_to_str(expression, default)
 
 
 def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
@@ -2088,6 +2104,11 @@ WEEK_START_DAY_TO_DOW = {
     "SATURDAY": 6,
     "SUNDAY": 7,
 }
+
+
+def week_offset_to_dow(offset: int) -> int:
+    """Convert a dialect's WEEK_OFFSET (days relative to Monday) to the ISO day number of its week start."""
+    return offset % 7 + 1
 
 
 def week_unit_to_dow(unit: exp.Expr | None) -> int | None:

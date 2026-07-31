@@ -103,7 +103,7 @@ def qualify_columns(
                 )
             qualify_outputs(scope, dialect=dialect)
 
-        _expand_group_by(scope, dialect)
+        expand_group_by(scope, dialect)
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
@@ -450,7 +450,7 @@ def _expand_alias_refs(
         scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: Dialect | None = None) -> None:
+def expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
@@ -508,7 +508,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 def _expand_positional_references(
     scope: Scope,
     expressions: Iterable[exp.Expr],
-    dialect: Dialect | None = None,
+    dialect: Dialect,
     alias: bool = False,
 ) -> list[exp.Expr]:
     new_nodes: list[exp.Expr] = []
@@ -529,7 +529,7 @@ def _expand_positional_references(
                 # TODO (mypyc): use a separate variable to avoid reusing `select` (Alias) with a different type
                 select_expr: exp.Expr = select.this
 
-                if dialect and dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+                if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
                     if ambiguous_projections is None:
                         # When a projection name is also a source name and it is referenced in the
                         # GROUP BY clause, BQ can't understand what the identifier corresponds to

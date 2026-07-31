@@ -3,11 +3,18 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import name_sequence, seq_get
+from sqlglot.dialects.dialect import Dialect
+from sqlglot.helper import name_sequence
+from sqlglot.optimizer.qualify_columns import expand_group_by
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
+
+# canonicalize_internal_names is dialect-agnostic: the source has already been
+# renamed so dialect specific rules (e.g. PROJECTION_ALIASES_SHADOW_SOURCE_NAMES) no
+# longer apply.
+_DEFAULT_DIALECT = Dialect()
 
 
 def canonicalize_internal_names(expression: E) -> E:
@@ -288,7 +295,7 @@ def canonicalize_internal_names(expression: E) -> E:
                 _canon(col.this, output_map[col.name])
 
         # Expand positional GROUP BYs (excluded in qualify) now that the source is renamed
-        _expand_group_by(scope)
+        expand_group_by(scope, _DEFAULT_DIALECT)
 
         # UBN matches branches by original alias. When both branches are internal
         # and aliased to distinct _cN, matching originals land on different slots

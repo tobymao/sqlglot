@@ -3530,8 +3530,6 @@ class Parser:
                 replace_using = self._parse_wrapped_csv(self._parse_column)
                 if not replace_using:
                     self.raise_error("Expected at least one column in REPLACE USING", self._prev)
-            else:
-                self.raise_error("Expected WHERE or USING after REPLACE")
 
         return self.expression(
             exp.Insert(

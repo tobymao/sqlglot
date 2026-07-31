@@ -1176,7 +1176,9 @@ FROM json_data, field_ids""",
 
         self.validate_identity("CREATE TYPE mood AS ENUM ()").assert_is(exp.Create)
 
-        self.validate_identity("CREATE VIEW v AS SELECT * FROM start WITH CHECK OPTION")
+        self.validate_identity(
+            "CREATE VIEW v AS SELECT * FROM start WITH CHECK OPTION", check_command_warning=True
+        )
         self.validate_identity("CREATE VIEW start WITH (security_barrier=TRUE) AS SELECT 1")
 
         create_type = self.validate_identity(

@@ -4181,31 +4181,11 @@ class Parser:
         if self._can_parse_limit_or_offset():
             return None
 
-        # `START` could be mistakenly consumed as an implicit alias when it actually begins a
-        # `START WITH ... CONNECT BY` clause. For `START WITH (`, we scan past the balanced
-        # parentheses: if `CONNECT BY` follows, it's a `START WITH` clause, otherwise it's a
-        # table aliased `start` followed by T-SQL style `WITH (...)` hints
+        # `START` is never treated as an implicit alias when followed by `WITH`, since that
+        # would swallow the beginning of a `START WITH ... CONNECT BY` clause (an explicit
+        # alias can be used instead)
         if self._curr.text.upper() == "START" and self._next.text.upper() == "WITH":
-            index = self._index + 2
-            if index >= len(self._tokens) or self._tokens[index].token_type != TokenType.L_PAREN:
-                return None
-
-            depth = 0
-            while index < len(self._tokens):
-                token_type = self._tokens[index].token_type
-                if token_type == TokenType.L_PAREN:
-                    depth += 1
-                elif token_type == TokenType.R_PAREN:
-                    depth -= 1
-                    if depth == 0:
-                        break
-                index += 1
-
-            if (
-                index + 1 < len(self._tokens)
-                and self._tokens[index + 1].token_type == TokenType.CONNECT_BY
-            ):
-                return None
+            return None
 
         any_token = self._match(TokenType.ALIAS)
         alias = (

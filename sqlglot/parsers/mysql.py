@@ -88,12 +88,6 @@ class MySQLParser(parser.Parser):
 
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
-        TokenType.SOUNDS_LIKE: lambda self, this: self.expression(
-            exp.EQ(
-                this=self.expression(exp.Soundex(this=this)),
-                expression=self.expression(exp.Soundex(this=self._parse_term())),
-            )
-        ),
         TokenType.MEMBER_OF: lambda self, this: self.expression(
             exp.JSONArrayContains(this=this, expression=self._parse_wrapped(self._parse_expression))
         ),
@@ -305,6 +299,19 @@ class MySQLParser(parser.Parser):
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
+
+    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+        this = this or self._parse_bitwise()
+
+        if self._match_text_seq("SOUNDS", "LIKE"):
+            this = self.expression(
+                exp.EQ(
+                    this=self.expression(exp.Soundex(this=this)),
+                    expression=self.expression(exp.Soundex(this=self._parse_term())),
+                )
+            )
+
+        return super()._parse_range(this)
 
     def _parse_alter_table_rename(self):
         if self._match_texts(("INDEX", "KEY")):

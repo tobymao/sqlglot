@@ -6687,6 +6687,58 @@ LONGBLOB;
 REGEXP_REPLACE(tbl.unknown_col, tbl.str_col, tbl.str_col);
 UNKNOWN;
 
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.str_col, tbl.str_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.str_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+REGEXP_INSTR(tbl.bin_col, tbl.bin_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.str_col);
+BIGINT;
+
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database');
+DOUBLE;
+
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database' IN BOOLEAN MODE);
+DOUBLE;
+
+# dialect: mysql
+MATCH(tbl.str_col) AGAINST ('database' WITH QUERY EXPANSION);
+DOUBLE;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

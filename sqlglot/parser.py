@@ -1264,7 +1264,6 @@ class Parser:
         "BLOCKCOMPRESSION": lambda self: self._parse_blockcompression(),
         "CALLED": lambda self: self._parse_called_on_null_input_property(),
         "CHARSET": lambda self, **kwargs: self._parse_character_set(**kwargs),
-        "CHARACTER SET": lambda self, **kwargs: self._parse_character_set(**kwargs),
         "CHECKSUM": lambda self: self._parse_checksum(),
         "CLUSTER BY": lambda self: self._parse_cluster_property(),
         "CLUSTERED": lambda self: self._parse_clustered_by(),
@@ -1371,9 +1370,6 @@ class Parser:
         "AUTOINCREMENT": lambda self: self._parse_auto_increment(),
         "AUTO_INCREMENT": lambda self: self._parse_auto_increment(),
         "CASESPECIFIC": lambda self: self.expression(exp.CaseSpecificColumnConstraint(not_=False)),
-        "CHARACTER SET": lambda self: self.expression(
-            exp.CharacterSetColumnConstraint(this=self._parse_var_or_string())
-        ),
         "CHECK": lambda self: self._parse_check_constraint(),
         "COLLATE": lambda self: self.expression(
             exp.CollateColumnConstraint(this=self._parse_identifier() or self._parse_column())
@@ -1691,6 +1687,16 @@ class Parser:
     INSERT_ALTERNATIVES: t.ClassVar = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS: t.ClassVar = {"CLONE", "COPY"}
+    # Time travel clause prefixes, mapped to whether they pin a timestamp or a version
+    VERSION_PHRASES: t.ClassVar[dict[tuple[str, ...], str]] = {
+        ("FOR", "SYSTEM_TIME"): "TIMESTAMP",
+        ("FOR", "SYSTEM", "TIME"): "TIMESTAMP",
+        ("FOR", "TIMESTAMP"): "TIMESTAMP",
+        ("FOR", "VERSION"): "VERSION",
+        ("TIMESTAMP", "AS", "OF"): "TIMESTAMP",
+        ("VERSION", "AS", "OF"): "VERSION",
+    }
+
     HISTORICAL_DATA_PREFIX: t.ClassVar = {"AT", "BEFORE", "END"}
     HISTORICAL_DATA_KIND: t.ClassVar = {"OFFSET", "STATEMENT", "STREAM", "TIMESTAMP", "VERSION"}
 
@@ -2820,6 +2826,9 @@ class Parser:
             except TypeError:
                 self.raise_error(f"Cannot parse property '{self._prev.text}'")
 
+        if self._match_text_seq("CHARACTER", "SET"):
+            return self._parse_character_set(default=bool(kwargs["default"]))
+
         return None
 
     def _parse_wrapped_properties(self) -> list[exp.Expr | list[exp.Expr]]:
@@ -2829,8 +2838,15 @@ class Parser:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
-        if self._match(TokenType.DEFAULT) and self._match_texts(self.PROPERTY_PARSERS):
-            return self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
+        if self._match_text_seq("CHARACTER", "SET"):
+            return self._parse_character_set()
+
+        if self._match(TokenType.DEFAULT):
+            if self._match_texts(self.PROPERTY_PARSERS):
+                return self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
+
+            if self._match_text_seq("CHARACTER", "SET"):
+                return self._parse_character_set(default=True)
 
         if self._match_text_seq("COMPOUND", "SORTKEY"):
             return self._parse_sortkey(compound=True)
@@ -5041,10 +5057,9 @@ class Parser:
         return this
 
     def _parse_version(self) -> exp.Version | None:
-        if self._match(TokenType.TIMESTAMP_SNAPSHOT):
-            this = "TIMESTAMP"
-        elif self._match(TokenType.VERSION_SNAPSHOT):
-            this = "VERSION"
+        for phrase, this in self.VERSION_PHRASES.items():
+            if self._match_text_seq(*phrase):
+                break
         else:
             return None
 
@@ -7602,6 +7617,16 @@ class Parser:
 
             return self.expression(exp.ColumnConstraint(this=this, kind=constraint))
 
+        if self._match_text_seq("CHARACTER", "SET"):
+            return self.expression(
+                exp.ColumnConstraint(
+                    this=this,
+                    kind=self.expression(
+                        exp.CharacterSetColumnConstraint(this=self._parse_var_or_string())
+                    ),
+                )
+            )
+
         return this
 
     def _parse_constraint(self) -> exp.Expr | None:
@@ -7743,7 +7768,7 @@ class Parser:
         return self._parse_field()
 
     def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint | None:
-        if not self._match(TokenType.TIMESTAMP_SNAPSHOT):
+        if not self._match_text_seq("FOR", "SYSTEM_TIME"):
             self._retreat(self._index - 1)
             return None
 
@@ -8038,7 +8063,9 @@ class Parser:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.from_str(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DType.CHAR and self._match(TokenType.CHARACTER_SET):
+        elif to.this == exp.DType.CHAR and (
+            self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET")
+        ):
             to = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_var_or_string())
 
         return self.build_cast(

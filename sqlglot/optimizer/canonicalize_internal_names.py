@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import name_sequence
+from sqlglot.helper import name_sequence, seq_get
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -147,6 +147,18 @@ def canonicalize_internal_names(expression: E) -> E:
 
             table_map[source_name] = (canon_t, ref_alias)
 
+            # UNNEST struct fields are physical columns (preserve); the element alias is not
+            struct_field_names: set[str] = set()
+            src = source.expression
+            if (
+                isinstance(src, exp.Unnest)
+                and src.expressions
+                and src.expressions[0].type
+                and (element_type := seq_get(src.expressions[0].type.expressions, 0))
+                and element_type.is_type(exp.DataType.Type.STRUCT)
+            ):
+                struct_field_names = {cd.name for cd in element_type.expressions}
+
             for src_col in source_cols:
                 # BigQuery whole-row struct ref (`SELECT t FROM t`): the identifier
                 # IS the table alias, so rename it to this reference's alias.
@@ -155,20 +167,21 @@ def canonicalize_internal_names(expression: E) -> E:
                     continue
 
                 old_name = src_col.name
+                preserve_col = is_base_source or old_name in struct_field_names
                 canon_col = name_map.get(old_name)
 
                 if canon_col is None:
-                    if is_base_source:
+                    if preserve_col:
                         canon_col = old_name
                     else:
                         canon_col = child_output.get(old_name) or next_column()
 
                     name_map[old_name] = canon_col
 
-                # Base-table column refs are part of the data contract => preserve verbatim (including quote state).
-                # Scope-sourced column refs are internal handles pointing at CTE/subquery aliases (injected unquoted
-                # via exp.to_identifier); they must match, so _canon
-                if not is_base_source:
+                # Base-table and UNNEST struct-field column refs name physical columns => preserve
+                # verbatim (including quote state). Scope-sourced refs are internal handles pointing
+                # at CTE/subquery aliases (injected unquoted via exp.to_identifier), so _canon them.
+                if not preserve_col:
                     _canon(src_col.this, canon_col)
 
                 table_id = src_col.args.get("table")

@@ -67,12 +67,6 @@ class Dremio(Dialect):
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "//", ("/*", "*/")]
 
-        KEYWORDS = {
-            **tokens.Tokenizer.KEYWORDS,
-            "AT SNAPSHOT": tokens.TokenType.VERSION_SNAPSHOT,
-            "AT TIMESTAMP": tokens.TokenType.TIMESTAMP_SNAPSHOT,
-        }
-
     Parser = DremioParser
 
     Generator = DremioGenerator

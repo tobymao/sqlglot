@@ -44,6 +44,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {
             exp.Atan2,
+            exp.MatchAgainst,
         }
     },
     **{
@@ -81,6 +82,12 @@ EXPRESSION_METADATA = {
             exp.Second,
             exp.Week,
             exp.Minute,
+        }
+    },
+    **{
+        expr_type: {"returns": exp.DType.BIGINT}
+        for expr_type in {
+            exp.RegexpInstr,
         }
     },
     **{

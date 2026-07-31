@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -22,6 +22,8 @@ class TestPostgres(Validator):
         sql = "ARRAY[x" + ",x" * 27 + "]"
         expected_sql = "ARRAY[\n  x" + (",\n  x" * 27) + "\n]"
         self.validate_identity(sql, expected_sql, pretty=True)
+
+        self.validate_identity("UPDATE character SET x = 1")
 
         self.validate_identity('WITH t AS (SELECT 1 AS "null") SELECT t.null FROM t')
         self.validate_identity('WITH t AS (SELECT 1 AS "true") SELECT t.true FROM t')
@@ -1832,15 +1834,30 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             },
         )
 
-        self.assertEqual(
-            annotate_types(parse_one("SELECT DAY(CAST(x AS DATE))", read="tsql")).sql("postgres"),
-            "SELECT EXTRACT(DAY FROM CAST(x AS DATE))",
-        )
+        for part in ("DAY", "MONTH", "YEAR"):
+            with self.subTest(f"Testing {part} of date input"):
+                self.assertEqual(
+                    annotate_types(parse_one(f"SELECT {part}(CAST(x AS DATE))", read="tsql")).sql(
+                        "postgres"
+                    ),
+                    f"SELECT EXTRACT({part} FROM CAST(x AS DATE))",
+                )
 
-        with self.assertRaises(UnsupportedError):
+            with self.subTest(f"Testing {part} of integer input"):
+                self.assertEqual(
+                    annotate_types(
+                        parse_one(f"SELECT {part}(t.col) FROM t", read="tsql"),
+                        schema={"t": {"col": "int"}},
+                    ).sql("postgres"),
+                    f"SELECT EXTRACT({part} FROM CAST('1900-01-01' AS DATE) + t.col) FROM t",
+                )
+
+        self.assertEqual(
             annotate_types(
                 parse_one("WITH t AS (SELECT 1 AS col) SELECT YEAR(t.col) FROM t", read="tsql")
-            ).sql("postgres", unsupported_level=ErrorLevel.RAISE)
+            ).sql("postgres"),
+            "WITH t AS (SELECT 1 AS col) SELECT EXTRACT(YEAR FROM CAST('1900-01-01' AS DATE) + t.col) FROM t",
+        )
 
     def test_datatype(self):
         self.assertEqual(exp.DataType.build("XML", dialect="postgres").sql("postgres"), "XML")

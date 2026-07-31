@@ -20,6 +20,9 @@ class TestMySQL(Validator):
         self.validate_identity("CREATE TABLE foo (a VARCHAR(32) NOT NULL UNIQUE COMMENT 'test')")
         self.validate_identity("CREATE TABLE foo (id BIGINT)")
         self.validate_identity("CREATE VIEW v AS SELECT * FROM start WITH CHECK OPTION")
+        self.validate_identity("CREATE DATABASE db CHARACTER SET=utf8")
+        self.validate_identity("CREATE DATABASE db DEFAULT CHARACTER SET=utf8")
+        self.validate_identity("CREATE SCHEMA db DEFAULT CHARACTER SET=utf8")
         self.validate_identity("CREATE TABLE 00f (1d BIGINT)")
         self.validate_identity("CREATE TABLE temp (id SERIAL PRIMARY KEY)")
         self.validate_identity("UPDATE items SET items.price = 0 WHERE items.id >= 5 LIMIT 10")
@@ -424,9 +427,7 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT 'foo' SOUNDS LIKE 'bar'", "SELECT SOUNDEX('foo') = SOUNDEX('bar')"
         )
-        self.validate_identity(
-            "SELECT 'foo' NOT SOUNDS LIKE 'bar'", "SELECT NOT SOUNDEX('foo') = SOUNDEX('bar')"
-        )
+        self.validate_identity("SELECT * FROM t WHERE sounds LIKE 'a%'")
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")

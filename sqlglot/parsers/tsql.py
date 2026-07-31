@@ -363,7 +363,11 @@ class TSQLParser(parser.Parser):
         ),
         "DATENAME": _build_formatted_time(exp.TimeToStr, full_format_mapping=True),
         "DATETIMEFROMPARTS": _build_datetimefromparts,
-        "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        "DAY": lambda args: exp.Day(
+            this=exp.TsOrDsToDate(
+                this=seq_get(args, 0), default_date=exp.Literal.string("1900-01-01")
+            )
+        ),
         "EOMONTH": _build_eomonth,
         "FORMAT": _build_format,
         "GETDATE": exp.CurrentTimestamp.from_arg_list,
@@ -373,7 +377,11 @@ class TSQLParser(parser.Parser):
         "JSON_VALUE": parser.build_extract_json_with_path(exp.JSONExtractScalar),
         "LEN": _build_with_arg_as_text(exp.Length),
         "LEFT": _build_with_arg_as_text(exp.Left),
-        "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        "MONTH": lambda args: exp.Month(
+            this=exp.TsOrDsToDate(
+                this=seq_get(args, 0), default_date=exp.Literal.string("1900-01-01")
+            )
+        ),
         "NEWID": exp.Uuid.from_arg_list,
         "RIGHT": _build_with_arg_as_text(exp.Right),
         "PARSENAME": _build_parsename,
@@ -387,7 +395,11 @@ class TSQLParser(parser.Parser):
         "SYSTEM_USER": exp.CurrentUser.from_arg_list,
         "TIMEFROMPARTS": _build_timefromparts,
         "DATETRUNC": _build_datetrunc,
-        "YEAR": lambda args: exp.Year(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        "YEAR": lambda args: exp.Year(
+            this=exp.TsOrDsToDate(
+                this=seq_get(args, 0), default_date=exp.Literal.string("1900-01-01")
+            )
+        ),
     }
 
     JOIN_HINTS = {"LOOP", "HASH", "MERGE", "REMOTE"}

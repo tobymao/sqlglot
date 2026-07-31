@@ -1829,17 +1829,23 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             },
         )
 
-        self.assertEqual(
-            annotate_types(parse_one("SELECT DAY(CAST(x AS DATE))", read="tsql")).sql("postgres"),
-            "SELECT EXTRACT(DAY FROM CAST(x AS DATE))",
-        )
+        for part in ("DAY", "MONTH", "YEAR"):
+            with self.subTest(f"Testing {part} of date input"):
+                self.assertEqual(
+                    annotate_types(parse_one(f"SELECT {part}(CAST(x AS DATE))", read="tsql")).sql(
+                        "postgres"
+                    ),
+                    f"SELECT EXTRACT({part} FROM CAST(x AS DATE))",
+                )
 
-        self.validate_all(
-            "SELECT EXTRACT(DAY FROM CAST('1900-01-01' AS DATE) + 0), EXTRACT(MONTH FROM CAST('1900-01-01' AS DATE) + -1), EXTRACT(YEAR FROM CAST('1900-01-01' AS DATE) + 43831)",
-            read={
-                "tsql": "SELECT DAY(0), MONTH(-1), YEAR(43831)",
-            },
-        )
+            with self.subTest(f"Testing {part} of integer input"):
+                self.assertEqual(
+                    annotate_types(
+                        parse_one(f"SELECT {part}(t.col) FROM t", read="tsql"),
+                        schema={"t": {"col": "int"}},
+                    ).sql("postgres"),
+                    f"SELECT EXTRACT({part} FROM CAST('1900-01-01' AS DATE) + t.col) FROM t",
+                )
 
         self.assertEqual(
             annotate_types(

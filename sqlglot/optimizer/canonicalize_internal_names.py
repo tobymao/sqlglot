@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
-from sqlglot.helper import name_sequence
+from sqlglot.helper import name_sequence, seq_get
 from sqlglot.optimizer.qualify_columns import expand_group_by
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 

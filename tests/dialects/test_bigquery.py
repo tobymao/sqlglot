@@ -809,6 +809,19 @@ LANGUAGE js AS
                 "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), QUARTER)",
             },
         )
+        # WEEK(<weekday>) has no DuckDB equivalent and its last day depends on
+        # the week start day, so it must be surfaced (and preserved) as
+        # unsupported rather than silently emitting a plain LAST_DAY. GH #8011.
+        self.validate_all(
+            "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK(MONDAY))",
+            read={
+                "bigquery": "SELECT LAST_DAY(DATE '2008-11-10', WEEK(MONDAY))",
+            },
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK(MONDAY))",
+                "duckdb": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK(MONDAY))",
+            },
+        )
         self.validate_all(
             "CAST(x AS DATETIME)",
             read={

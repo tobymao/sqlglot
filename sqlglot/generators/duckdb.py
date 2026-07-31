@@ -160,7 +160,19 @@ def _last_day_sql(self: DuckDBGenerator, expression: exp.LastDay) -> str:
     For other date parts (year, quarter, week), we need to implement equivalent logic.
     """
     date_expr = expression.this
+    unit_expr = expression.args.get("unit")
     unit = expression.text("unit")
+
+    # WEEK(<weekday>) parses to a WeekStart node whose ``text`` is empty, so it
+    # must be handled before the ``not unit`` default below. DuckDB has no
+    # weekday-anchored week, and the last day differs by start day
+    # (WEEK(SUNDAY) != WEEK(MONDAY)), so surface it as unsupported instead of
+    # silently returning the last day of the month.
+    if isinstance(unit_expr, exp.WeekStart):
+        self.unsupported(
+            f"Unsupported date part '{unit_expr.sql(dialect='bigquery')}' in LAST_DAY function"
+        )
+        return self.function_fallback_sql(expression)
 
     if not unit or unit.upper() == "MONTH":
         # Default behavior - use DuckDB's native LAST_DAY

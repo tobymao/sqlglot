@@ -18,6 +18,11 @@ class TrinoParser(PrestoParser):
         TokenType.DECLARE: lambda self: self._parse_declare(),
     }
 
+    # DECLARE isn't reserved in Trino, so unlike the tokenizer keyword itself,
+    # it must still parse as a plain identifier/alias everywhere else.
+    ID_VAR_TOKENS = {*PrestoParser.ID_VAR_TOKENS, TokenType.DECLARE}
+    TABLE_ALIAS_TOKENS = {*PrestoParser.TABLE_ALIAS_TOKENS, TokenType.DECLARE}
+
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "VERSION": exp.CurrentVersion.from_arg_list,
@@ -153,7 +158,7 @@ class TrinoParser(PrestoParser):
 
             statements.append(statement)
 
-        return self.expression(exp.Block(expressions=statements))
+        return self.expression(exp.Block(expressions=statements, begin=True))
 
     def _parse_routine_statement(self) -> exp.Expr | None:
         if self._match(TokenType.BEGIN, advance=False):

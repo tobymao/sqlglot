@@ -64,12 +64,6 @@ class TrinoGenerator(PrestoGenerator):
         body = self.sql(expression, "expression")
         return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"
 
-    def block_sql(self, expression: exp.Block) -> str:
-        # Every exp.Block in Trino's grammar is a BEGIN...END block (nested ones
-        # included), so this wraps unconditionally rather than relying on callers
-        # to prefix BEGIN themselves.
-        return f"BEGIN {super().block_sql(expression)}"
-
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

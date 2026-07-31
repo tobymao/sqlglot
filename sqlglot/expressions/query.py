@@ -2105,7 +2105,7 @@ class StoredProcedure(Expression):
 
 
 class Block(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "begin": False}
 
 
 class IfBlock(Expression):

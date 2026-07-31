@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -277,6 +277,16 @@ SELECT f(1)""",
             "WITH FUNCTION f() RETURNS INTEGER "
             "BEGIN DECLARE x INTEGER DEFAULT 1; BEGIN SET x = x + 1; END; RETURN x; END "
             "SELECT F()"
+        )
+
+        # DECLARE isn't reserved in Trino, so it must still work as a plain identifier
+        self.validate_identity("SELECT declare FROM (VALUES (1), (2)) AS t(declare)")
+
+        # A Block from another dialect's own parsing (not built by
+        # _parse_routine_block) must not get an extra synthesized BEGIN
+        self.assertEqual(
+            parse_one("BEGIN SELECT 1; SELECT 2; END", dialect="bigquery").sql(dialect="trino"),
+            "BEGIN SELECT 1; SELECT 2; END",
         )
 
         # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration

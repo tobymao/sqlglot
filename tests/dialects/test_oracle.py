@@ -152,6 +152,10 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
+        self.validate_identity(
+            "SELECT id FROM t START WITH (parent_id IS NULL) CONNECT BY PRIOR id = parent_id"
+        )
+        self.validate_identity("SELECT id FROM t START WITH (x) CONNECT BY PRIOR id = parent_id")
 
         self.validate_all(
             "SELECT DBMS_RANDOM.VALUE()",

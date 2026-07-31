@@ -1468,6 +1468,10 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT CASE WHEN UPPER(CAST('T' AS TEXT)) = 'ON' THEN TRUE WHEN UPPER(CAST('T' AS TEXT)) = 'OFF' THEN FALSE WHEN ISNAN(TRY_CAST('T' AS REAL)) OR ISINF(TRY_CAST('T' AS REAL)) THEN ERROR('TO_BOOLEAN: Non-numeric values NaN and INF are not supported') ELSE CAST('T' AS BOOLEAN) END",
             },
         )
+        self.validate_identity(
+            "SELECT id FROM t START WITH (parent_id IS NULL) CONNECT BY PRIOR id = parent_id"
+        )
+        self.validate_identity("SELECT id FROM t START WITH (x) CONNECT BY PRIOR id = parent_id")
         self.validate_all(
             "SELECT * FROM x START WITH a = b CONNECT BY c = PRIOR d",
             read={

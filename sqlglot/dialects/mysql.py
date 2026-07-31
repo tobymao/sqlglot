@@ -96,7 +96,6 @@ class MySQL(Dialect):
             "SERIAL": TokenType.SERIAL,
             "SIGNED": TokenType.BIGINT,
             "SIGNED INTEGER": TokenType.BIGINT,
-            "SOUNDS LIKE": TokenType.SOUNDS_LIKE,
             "START": TokenType.BEGIN,
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "TINYBLOB": TokenType.TINYBLOB,

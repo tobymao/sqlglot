@@ -454,8 +454,6 @@ class TokenType(IntEnum):
     UTC_DATE = auto()
     UTC_TIME = auto()
     UTC_TIMESTAMP = auto()
-    VERSION_SNAPSHOT = auto()
-    TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
     SINK = auto()
     SOURCE = auto()

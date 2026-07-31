@@ -1692,6 +1692,16 @@ class Parser:
     INSERT_ALTERNATIVES: t.ClassVar = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
 
     CLONE_KEYWORDS: t.ClassVar = {"CLONE", "COPY"}
+    # Time travel clause prefixes, mapped to whether they pin a timestamp or a version
+    VERSION_PHRASES: t.ClassVar[dict[tuple[str, ...], str]] = {
+        ("FOR", "SYSTEM_TIME"): "TIMESTAMP",
+        ("FOR", "SYSTEM", "TIME"): "TIMESTAMP",
+        ("FOR", "TIMESTAMP"): "TIMESTAMP",
+        ("FOR", "VERSION"): "VERSION",
+        ("TIMESTAMP", "AS", "OF"): "TIMESTAMP",
+        ("VERSION", "AS", "OF"): "VERSION",
+    }
+
     HISTORICAL_DATA_PREFIX: t.ClassVar = {"AT", "BEFORE", "END"}
     HISTORICAL_DATA_KIND: t.ClassVar = {"OFFSET", "STATEMENT", "STREAM", "TIMESTAMP", "VERSION"}
 
@@ -5024,10 +5034,9 @@ class Parser:
         return this
 
     def _parse_version(self) -> exp.Version | None:
-        if self._match(TokenType.TIMESTAMP_SNAPSHOT):
-            this = "TIMESTAMP"
-        elif self._match(TokenType.VERSION_SNAPSHOT):
-            this = "VERSION"
+        for phrase, this in self.VERSION_PHRASES.items():
+            if self._match_text_seq(*phrase):
+                break
         else:
             return None
 
@@ -7726,7 +7735,7 @@ class Parser:
         return self._parse_field()
 
     def _parse_period_for_system_time(self) -> exp.PeriodForSystemTimeConstraint | None:
-        if not self._match(TokenType.TIMESTAMP_SNAPSHOT):
+        if not self._match_text_seq("FOR", "SYSTEM_TIME"):
             self._retreat(self._index - 1)
             return None
 

@@ -336,6 +336,8 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
         )
+        self.validate_identity("FOR system_time IN (SELECT 1 AS x) DO SELECT system_time.x")
+        self.validate_identity("FOR timestamp IN (SELECT 1 AS x) DO SELECT timestamp.x")
         self.validate_identity(
             "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
         )

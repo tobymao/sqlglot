@@ -3527,7 +3527,7 @@ class Parser:
             if self._match(TokenType.WHERE):
                 replace_where = self._parse_disjunction()
             elif self._match(TokenType.USING):
-                replace_using = self._parse_wrapped_csv(self._parse_column)
+                replace_using = self._parse_using_identifiers()
                 if not replace_using:
                     self.raise_error("Expected at least one column in REPLACE USING", self._prev)
 

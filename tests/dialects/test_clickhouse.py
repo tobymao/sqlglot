@@ -662,6 +662,17 @@ class TestClickhouse(Validator):
             },
         )
 
+        # Native ClickHouse MODIFY COLUMN form (type / default / codec / position)
+        modify = self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64").assert_is(exp.Alter)
+        self.assertIsInstance(modify.args["actions"][0], exp.ModifyColumn)
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64 DEFAULT 0")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN IF EXISTS c Int64")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c DEFAULT 0")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c CODEC(ZSTD)")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64 FIRST")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64 AFTER b")
+        self.validate_identity("ALTER TABLE t MODIFY COLUMN c String MATERIALIZED toString(x)")
+
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )

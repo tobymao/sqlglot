@@ -911,7 +911,29 @@ class ClickHouseParser(parser.Parser):
     def _parse_alter_table_modify(self) -> exp.Expr | None:
         if properties := self._parse_properties():
             return self.expression(exp.AlterModifySqlSecurity(expressions=properties.expressions))
-        return None
+
+        # https://clickhouse.com/docs/sql-reference/statements/alter/column#modify-column
+        if not self._match(TokenType.COLUMN):
+            return None
+
+        exists = self._parse_exists()
+        column = self._parse_field(any_token=True)
+        if column is None:
+            return None
+
+        # REMOVE / MODIFY SETTING / RESET SETTING / ADD ENUM VALUES stay as Command
+        if (
+            self._match_texts(("REMOVE", "RESET"), advance=False)
+            or self._match_text_seq("MODIFY", "SETTING", advance=False)
+            or self._match_text_seq("ADD", "ENUM", advance=False)
+        ):
+            return None
+
+        column_def = self._parse_column_def(column)
+        if not isinstance(column_def, exp.ColumnDef):
+            return None
+
+        return self.expression(exp.ModifyColumn(this=column_def, exists=exists or None))
 
     def _parse_definer(self) -> exp.DefinerProperty | None:
         self._match(TokenType.EQ)

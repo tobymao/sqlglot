@@ -254,7 +254,7 @@ class AlterColumn(Expression):
 
 
 class ModifyColumn(Expression):
-    arg_types = {"this": True, "rename_from": False}
+    arg_types = {"this": True, "rename_from": False, "exists": False}
 
 
 class AlterIndex(Expression):

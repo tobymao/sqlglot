@@ -6739,6 +6739,10 @@ DOUBLE;
 MATCH(tbl.str_col) AGAINST ('database' WITH QUERY EXPANSION);
 DOUBLE;
 
+# dialect: mysql
+COMPRESS(tbl.str_col);
+VARBINARY;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

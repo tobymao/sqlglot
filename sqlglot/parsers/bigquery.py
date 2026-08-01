@@ -31,7 +31,7 @@ def _build_date(args: list) -> exp.Date | exp.DateFromParts:
 def _normalize_bare_week(expr: E) -> E:
     # In BigQuery, a bare WEEK date part is equivalent to WEEK(SUNDAY)
     unit = expr.args.get("unit")
-    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+    if isinstance(unit, (exp.Literal, exp.Var)) and unit.name.upper() == "WEEK":
         expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
 
     return expr
@@ -234,15 +234,18 @@ class BigQueryParser(parser.Parser):
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
         "DATE_DIFF": build_date_diff(exp.DateDiff),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
-        "DATE_TRUNC": lambda args: exp.DateTrunc(
-            unit=seq_get(args, 1),
-            this=seq_get(args, 0),
-            zone=seq_get(args, 2),
+        "DATE_TRUNC": lambda args: _normalize_bare_week(
+            exp.DateTrunc(
+                unit=seq_get(args, 1),
+                this=seq_get(args, 0),
+                zone=seq_get(args, 2),
+            )
         ),
         "DATETIME": _build_datetime,
         "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
         "DATETIME_DIFF": build_date_diff(exp.DatetimeDiff),
         "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
+        "DATETIME_TRUNC": lambda args: _normalize_bare_week(exp.DatetimeTrunc.from_arg_list(args)),
         "DIV": binary_from_function(exp.IntDiv),
         "EDIT_DISTANCE": _build_levenshtein,
         "EMBED": exp.AIEmbed.from_arg_list,
@@ -305,6 +308,9 @@ class BigQueryParser(parser.Parser):
             this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
         ),
         "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
+        "TIMESTAMP_TRUNC": lambda args: _normalize_bare_week(
+            exp.TimestampTrunc.from_arg_list(args)
+        ),
         "TO_JSON": lambda args: exp.JSONFormat(
             this=seq_get(args, 0), options=seq_get(args, 1), to_json=True
         ),

@@ -513,6 +513,17 @@ def datetime_floor(d: date, unit: str, dialect: Dialect) -> date:
     return result
 
 
+def _trunc_unit(unit: exp.Expr, dialect: Dialect) -> str:
+    if isinstance(unit, exp.WeekStart):
+        from sqlglot.dialects.dialect import WEEK_START_DAY_TO_DOW, week_offset_to_dow
+
+        if WEEK_START_DAY_TO_DOW.get(unit.name.upper()) != week_offset_to_dow(dialect.WEEK_OFFSET):
+            raise UnsupportedUnit(f"Unsupported unit: {unit}")
+        return "week"
+
+    return unit.name.lower()
+
+
 def date_ceil(d: date, unit: str, dialect: Dialect) -> date:
     floor = datetime_floor(d, unit, dialect)
 
@@ -1453,7 +1464,7 @@ class Simplifier:
             date = extract_date(this)
             if date and expression.unit:
                 return date_literal(
-                    datetime_floor(date, expression.unit.name.lower(), self.dialect),
+                    datetime_floor(date, _trunc_unit(expression.unit, self.dialect), self.dialect),
                     trunc_type,
                 )
         elif comparison not in self.DATETRUNC_COMPARISONS:
@@ -1468,7 +1479,7 @@ class Simplifier:
                 return expression
 
             trunc_arg = l.this
-            unit = l.args["unit"].name.lower()
+            unit = _trunc_unit(l.args["unit"], self.dialect)
             date = extract_date(r)
 
             if not date:
@@ -1491,7 +1502,7 @@ class Simplifier:
                 and all(self._is_datetrunc_predicate(l, r) for r in rs)
                 and isinstance(l, (exp.DateTrunc, exp.TimestampTrunc))
             ):
-                unit = l.args["unit"].name.lower()
+                unit = _trunc_unit(l.args["unit"], self.dialect)
 
                 ranges = []
                 for r in rs:

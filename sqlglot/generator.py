@@ -4223,13 +4223,13 @@ class Generator:
     def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
         this = self.sql(expression, "this")
         rename_from = self.sql(expression, "rename_from")
-        exists = " IF EXISTS" if expression.args.get("exists") else ""
         if rename_from:
             if not self.SUPPORTS_CHANGE_COLUMN:
                 self.unsupported("CHANGE COLUMN is not supported in this dialect")
-            return f"CHANGE COLUMN{exists} {rename_from} {this}"
+            return f"CHANGE COLUMN {rename_from} {this}"
         if not self.SUPPORTS_MODIFY_COLUMN:
             self.unsupported("MODIFY COLUMN is not supported in this dialect")
+        exists = " IF EXISTS" if expression.args.get("exists") else ""
         return f"MODIFY COLUMN{exists} {this}"
 
     def alterindex_sql(self, expression: exp.AlterIndex) -> str:

@@ -672,6 +672,14 @@ class TestClickhouse(Validator):
         self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64 FIRST")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN c Int64 AFTER b")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN c String MATERIALIZED toString(x)")
+        self.assertIsInstance(
+            parse_one(
+                "ALTER TABLE t MODIFY COLUMN c REMOVE DEFAULT",
+                read="clickhouse",
+                error_level=ErrorLevel.IGNORE,
+            ),
+            exp.Command,
+        )
 
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType

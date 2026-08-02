@@ -1,6 +1,5 @@
 from sqlglot import exp, transpile, parse_one
 from sqlglot.errors import ParseError
-from sqlglot.parsers.databricks import DatabricksParser
 from tests.dialects.test_dialect import Validator
 
 

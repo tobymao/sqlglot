@@ -3662,12 +3662,8 @@ class Parser:
                 replace_where = self._parse_disjunction()
             elif self._match(TokenType.USING):
                 replace_using = self._parse_using_identifiers()
-                if not replace_using:
-                    self.raise_error("Expected at least one column in REPLACE USING", self._prev)
             elif self._match(TokenType.ON):
                 replace_on = self._parse_insert_replace_on()
-                if replace_on is None:
-                    self.raise_error("Expected a condition after REPLACE ON")
 
         return self.expression(
             exp.Insert(

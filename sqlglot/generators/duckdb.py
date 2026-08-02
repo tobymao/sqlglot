@@ -4413,15 +4413,20 @@ class DuckDBGenerator(generator.Generator):
         unit = expression.args.get("unit")
         date = expression.this
 
-        week_start = week_unit_to_dow(unit)
-        unit = unit_to_str(expression)
-
-        if week_start:
-            result = self.sql(
-                _build_week_trunc_expression(date, week_start, preserve_start_day=True)
-            )
+        # BigQuery parses bare ISOWEEK in DATE_TRUNC(date, ISOWEEK) as a string literal,
+        # while DuckDB's DATE_TRUNC already uses ISO/Monday WEEK semantics.
+        if isinstance(unit, exp.Literal) and unit.is_string and unit.name.upper() == "ISOWEEK":
+            result = self.func("DATE_TRUNC", exp.Literal.string("WEEK"), date)
         else:
-            result = self.func("DATE_TRUNC", unit, date)
+            week_start = week_unit_to_dow(unit)
+            unit = unit_to_str(expression)
+
+            if week_start:
+                result = self.sql(
+                    _build_week_trunc_expression(date, week_start, preserve_start_day=True)
+                )
+            else:
+                result = self.func("DATE_TRUNC", unit, date)
 
         if (
             expression.args.get("input_type_preserved")

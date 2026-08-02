@@ -3567,6 +3567,15 @@ OPTIONS (
             "LAST_DAY(DATETIME '2008-11-10 15:30:00', WEEK(SUNDAY))",
             "LAST_DAY(CAST('2008-11-10 15:30:00' AS DATETIME), WEEK)",
         )
+
+        # Regression test: ensure ISOWEEK used with DATE_TRUNC in BigQuery maps to WEEK for DuckDB
+        self.validate_all(
+            "SELECT DATE_TRUNC(DATE '2008-11-10', ISOWEEK)",
+            write={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2008-11-10' AS DATE), ISOWEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST('2008-11-10' AS DATE))",
+            },
+        )
         self.validate_identity("DATE_DIFF('2017-12-18', '2017-12-17', WEEK(SATURDAY))")
         self.validate_identity("DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))")
         self.validate_identity(

@@ -2282,6 +2282,8 @@ class Generator:
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
         using = self.expressions(expression, key="using", flat=True)
         using = f"{self.sep()}REPLACE USING ({using})" if using else ""
+        on = self.sql(expression, "on")
+        on = f"{self.sep()}REPLACE ON {on}" if on else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         on_conflict = self.sql(expression, "conflict")
         on_conflict = f" {on_conflict}" if on_conflict else ""
@@ -2302,7 +2304,7 @@ class Generator:
         source = self.sql(expression, "source")
         source = f"TABLE {source}" if source else ""
 
-        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{using}{expression_sql}{source}"
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{using}{on}{expression_sql}{source}"
         return self.prepend_ctes(expression, sql)
 
     def introducer_sql(self, expression: exp.Introducer) -> str:

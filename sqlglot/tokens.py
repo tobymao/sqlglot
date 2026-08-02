@@ -1,26 +1,11 @@
 from __future__ import annotations
 
-import threading
 import typing as t
 
 from sqlglot import tokenizer_core
 from sqlglot.trie import new_trie
 
 from sqlglot.tokenizer_core import Token, TokenizerCore, TokenType
-
-T = t.TypeVar("T")
-
-
-class ThreadLocalCache(threading.local):
-    """Per-thread cache. Each thread sees its own dict; safe for caching stateful objects."""
-
-    def __init__(self) -> None:
-        self.cache: dict[type, t.Any] = {}
-
-    def get_or_build(self, key: type, build: t.Callable[[], T]) -> T:
-        if not (obj := self.cache.get(key)):
-            self.cache[key] = obj = build()
-        return obj
 
 
 # The sqlglotc distribution ships no importable `sqlglotc` module; it overlays
@@ -259,7 +244,6 @@ class Tokenizer(_TokenizerBase):
         "CACHE": TokenType.CACHE,
         "UNCACHE": TokenType.UNCACHE,
         "CASE": TokenType.CASE,
-        "CHARACTER SET": TokenType.CHARACTER_SET,
         "CLUSTER BY": TokenType.CLUSTER_BY,
         "COLLATE": TokenType.COLLATE,
         "COLUMN": TokenType.COLUMN,
@@ -386,7 +370,6 @@ class Tokenizer(_TokenizerBase):
         "SOME": TokenType.SOME,
         "SORT BY": TokenType.SORT_BY,
         "SQL SECURITY": TokenType.SQL_SECURITY,
-        "START WITH": TokenType.START_WITH,
         "STRAIGHT_JOIN": TokenType.STRAIGHT_JOIN,
         "TABLE": TokenType.TABLE,
         "TABLESAMPLE": TokenType.TABLE_SAMPLE,
@@ -527,8 +510,6 @@ class Tokenizer(_TokenizerBase):
         "PREPARE": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
-        "FOR VERSION": TokenType.VERSION_SNAPSHOT,
-        "FOR TIMESTAMP": TokenType.TIMESTAMP_SNAPSHOT,
     }
 
     COMMANDS = {
@@ -549,8 +530,6 @@ class Tokenizer(_TokenizerBase):
 
     COMMENTS = ["--", ("/*", "*/")]
 
-    _core_cache: t.ClassVar[ThreadLocalCache] = ThreadLocalCache()
-
     __slots__ = (
         "dialect",
         "_core",
@@ -560,7 +539,7 @@ class Tokenizer(_TokenizerBase):
         from sqlglot.dialects.dialect import Dialect
 
         self.dialect = Dialect.get_or_raise(dialect)
-        self._core = self._core_cache.get_or_build(type(self), self._init_core)
+        self._core = self._init_core()
 
     def _init_core(self) -> TokenizerCore:
         return TokenizerCore(

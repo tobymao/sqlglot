@@ -10,12 +10,14 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
+    remove_ts_or_ds_to_date,
     rename_func,
     strposition_sql,
     timestrtotime_sql,
     trim_sql,
 )
 from sqlglot.helper import seq_get
+from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
 from sqlglot.time import format_time
 from collections import defaultdict
@@ -48,7 +50,7 @@ def _format_sql(self: TSQLGenerator, expression: exp.NumberToStr | exp.TimeToStr
 
 def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     this = expression.this
-    distinct = expression.find(exp.Distinct)
+    distinct = find_in_scope(expression, exp.Distinct)
     if distinct:
         # exp.Distinct can appear below an exp.Order or an exp.GroupConcat expression
         self.unsupported("T-SQL STRING_AGG doesn't support DISTINCT.")
@@ -74,6 +76,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         and isinstance(alias, exp.TableAlias)
         and not alias.columns
     ):
+        from sqlglot.dialects.tsql import TSQL
         from sqlglot.optimizer.qualify_columns import qualify_outputs
 
         # We keep track of the unaliased column projection indexes instead of the expressions
@@ -84,7 +87,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
 
-        qualify_outputs(query)
+        qualify_outputs(query, dialect=TSQL())
 
         # Preserve the quoting information of columns for newly added Alias nodes
         query_selects = query.selects
@@ -200,6 +203,7 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestamp: rename_func("GETDATE"),
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
+        exp.Day: remove_ts_or_ds_to_date(),
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,
         exp.If: rename_func("IIF"),
@@ -210,6 +214,7 @@ class TSQLGenerator(generator.Generator):
         exp.Max: max_or_greatest,
         exp.MD5: lambda self, e: self.func("HASHBYTES", exp.Literal.string("MD5"), e.this),
         exp.Min: min_or_least,
+        exp.Month: remove_ts_or_ds_to_date(),
         exp.NumberToStr: _format_sql,
         exp.Repeat: rename_func("REPLICATE"),
         exp.CurrentSchema: rename_func("SCHEMA_NAME"),
@@ -246,6 +251,7 @@ class TSQLGenerator(generator.Generator):
             exp.Literal.number(1),
         ),
         exp.Uuid: lambda *_: "NEWID()",
+        exp.Year: remove_ts_or_ds_to_date(),
         exp.DateFromParts: rename_func("DATEFROMPARTS"),
     }
 
@@ -377,9 +383,10 @@ class TSQLGenerator(generator.Generator):
         return "(1 = 1)" if expression.this else "(1 = 0)"
 
     def is_sql(self, expression: exp.Is) -> str:
+        negate = expression.args.get("negate")
         if isinstance(expression.expression, exp.Boolean):
-            return self.binary(expression, "=")
-        return self.binary(expression, "IS")
+            return self.binary(expression, "<>" if negate else "=")
+        return self.binary(expression, "IS NOT" if negate else "IS")
 
     def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         sql = self.sql(expression, "this")
@@ -639,7 +646,9 @@ class TSQLGenerator(generator.Generator):
         this = self.sql(expression, "this")
         expressions = self.expressions(expression)
         expressions = f" {expressions}" if expressions else ""
-        return f"EXECUTE {this}{expressions}"
+        return_status = self.sql(expression, "return_status")
+        return_status = f"{return_status} = " if return_status else ""
+        return f"EXECUTE {return_status}{this}{expressions}"
 
     def executesql_sql(self, expression: exp.ExecuteSql) -> str:
         return self.execute_sql(expression)

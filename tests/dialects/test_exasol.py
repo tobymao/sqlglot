@@ -910,6 +910,10 @@ class TestExasol(Validator):
         self.validate_identity(
             """SELECT JSON_EXTRACT('{"firstname" : "Ann", "surname" : "Smith", "age" : 29}', '$.firstname', '$.surname', '$.age') EMITS (firstname VARCHAR(100), surname VARCHAR(100), age INT)"""
         )
+        self.validate_identity(
+            "SELECT JSON_EXTRACT(x, '$.a') s FROM t",
+            "SELECT JSON_EXTRACT(x, '$.a') AS s FROM t",
+        )
 
     def test_group_by_all(self):
         self.validate_all(

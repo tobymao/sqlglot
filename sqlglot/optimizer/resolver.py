@@ -116,8 +116,8 @@ class Resolver:
             kind = set_op.kind
 
             # Visit the children UNIONs (if any) in a post-order traversal
-            left = self.get_source_columns_from_set_op(set_op.left)
-            right = self.get_source_columns_from_set_op(set_op.right)
+            left = self.get_source_columns_from_set_op(set_op.this)
+            right = self.get_source_columns_from_set_op(set_op.expression)
 
             # We use dict.fromkeys to deduplicate keys and maintain insertion order
             if side == "LEFT":

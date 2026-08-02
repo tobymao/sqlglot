@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.tokens import TokenType
 
 
@@ -230,8 +231,13 @@ class SQLiteGenerator(generator.Generator):
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:
         modifier = expression.expression
-        modifier = modifier.name if modifier.is_string else self.sql(modifier)
         unit = expression.args.get("unit")
+        # An INTERVAL amount carries its own unit, e.g. DATE_ADD(d, INTERVAL 1 DAY);
+        # unwrap it so the unit is not left inside the quoted modifier string.
+        if isinstance(modifier, exp.Interval):
+            unit = unit or modifier.unit
+            modifier = modifier.this
+        modifier = modifier.name if modifier.is_string else self.sql(modifier)
         modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
         return self.func("DATE", expression.this, modifier)
 
@@ -294,7 +300,7 @@ class SQLiteGenerator(generator.Generator):
     # https://www.sqlite.org/lang_aggfunc.html#group_concat
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this
-        distinct = expression.find(exp.Distinct)
+        distinct = find_in_scope(expression, exp.Distinct)
 
         if distinct:
             this = distinct.expressions[0]

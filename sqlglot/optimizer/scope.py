@@ -723,7 +723,9 @@ def _traverse_union(scope: Scope) -> Iterator[Scope]:
 
     set_op = scope.expression
     assert isinstance(set_op, exp.SetOperation)
-    expression_stack: list[exp.Expr] = [set_op.right, set_op.left]
+    # Access the args directly instead of the left/right properties, because set operation
+    # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
+    expression_stack: list[exp.Expr] = [set_op.expression, set_op.this]
 
     while expression_stack:
         expression = expression_stack.pop()
@@ -739,7 +741,7 @@ def _traverse_union(scope: Scope) -> Iterator[Scope]:
             yield from _traverse_ctes(new_scope)
 
             union_scope_stack.append(new_scope)
-            expression_stack.extend([expression.right, expression.left])
+            expression_stack.extend([expression.expression, expression.this])
             continue
 
         for scope in _traverse_scope(new_scope):

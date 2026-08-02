@@ -129,6 +129,7 @@ class DuckDBParser(parser.Parser):
         ),
         "EPOCH": exp.TimeToUnix.from_arg_list,
         "EPOCH_MS": lambda args: exp.UnixToTime(this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS),
+        "FROM_HEX": exp.Unhex.from_arg_list,
         "GENERATE_SERIES": _build_generate_series(),
         "GET_CURRENT_TIME": exp.CurrentTime.from_arg_list,
         "GET_BIT": lambda args: exp.Getbit(
@@ -194,6 +195,10 @@ class DuckDBParser(parser.Parser):
         **dict.fromkeys(
             ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
         ),
+        "APPROX_QUANTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
+        "QUANTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
+        "QUANTILE_CONT": lambda self: self._parse_distinct_arg_function(exp.PercentileCont),
+        "QUANTILE_DISC": lambda self: self._parse_distinct_arg_function(exp.PercentileDisc),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

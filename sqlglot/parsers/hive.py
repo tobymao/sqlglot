@@ -8,7 +8,6 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import F
     from sqlglot.dialects.dialect import Dialect
 
 
@@ -63,8 +62,8 @@ class HiveParser(parser.Parser):
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
-        "PERCENTILE": lambda self: self._parse_quantile_function(exp.Quantile),
-        "PERCENTILE_APPROX": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
+        "PERCENTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
+        "PERCENTILE_APPROX": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
     }
 
     FUNCTIONS = {
@@ -177,21 +176,6 @@ class HiveParser(parser.Parser):
                 record_reader=record_reader,
             )
         )
-
-    def _parse_quantile_function(self, func: type[F]) -> F:
-        if self._match(TokenType.DISTINCT):
-            first_arg: exp.Expr | None = self.expression(
-                exp.Distinct(expressions=[self._parse_lambda()])
-            )
-        else:
-            self._match(TokenType.ALL)
-            first_arg = self._parse_lambda()
-
-        args = [first_arg]
-        if self._match(TokenType.COMMA):
-            args.extend(self._parse_function_args())
-
-        return func.from_arg_list(args)
 
     def _parse_types(
         self,

@@ -323,7 +323,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%d %H:%M:%S')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d %T')",
                 "hive": "CAST(x AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s')",
             },
         )
         self.validate_all(
@@ -332,7 +332,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(x, '%Y-%m-%d')",
                 "presto": "DATE_PARSE(x, '%Y-%m-%d')",
                 "hive": "CAST(x AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -347,7 +347,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -356,7 +356,7 @@ class TestPresto(Validator):
                 "duckdb": "STRPTIME(SUBSTRING(x, 1, 10), '%Y-%m-%d')",
                 "presto": "DATE_PARSE(SUBSTR(x, 1, 10), '%Y-%m-%d')",
                 "hive": "CAST(SUBSTRING(x, 1, 10) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-MM-dd')",
+                "spark": "TO_TIMESTAMP(SUBSTRING(x, 1, 10), 'yyyy-M-d')",
             },
         )
         self.validate_all(
@@ -1112,8 +1112,8 @@ class TestPresto(Validator):
         self.validate_all(
             "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 100 ) SELECT SUM(n) FROM t",
             write={
-                "presto": "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
-                "spark": "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
+                "presto": "WITH RECURSIVE t(n) AS (SELECT * FROM (VALUES (1)) AS _values UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
+                "spark": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
             },
         )
 
@@ -1276,6 +1276,12 @@ class TestPresto(Validator):
         )
 
     def test_json(self):
+        # Presto executes JSONPath bracket unions; falsey members (0, "") must survive round-trips
+        self.validate_identity("SELECT JSON_EXTRACT(x, '$[1,0]')")
+        self.validate_identity("SELECT JSON_EXTRACT_SCALAR(x, '$[1,0]')")
+        self.validate_identity("""SELECT JSON_EXTRACT(x, '$["a",""]')""")
+        self.validate_identity("""SELECT JSON_EXTRACT(x, '$[""]')""")
+
         with self.assertLogs(helper_logger):
             self.validate_all(
                 """SELECT JSON_EXTRACT_SCALAR(TRY(FILTER(CAST(JSON_EXTRACT('{"k1": [{"k2": "{\\"k3\\": 1}", "k4": "v"}]}', '$.k1') AS ARRAY(MAP(VARCHAR, VARCHAR))), x -> x['k4'] = 'v')[1]['k2']), '$.k3')""",

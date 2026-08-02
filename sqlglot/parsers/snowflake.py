@@ -498,6 +498,7 @@ class SnowflakeParser(parser.Parser):
             expression=seq_get(args, 1),
             null_on_zero_variance=True,
         ),
+        "COUNT_IF": lambda args: exp.CountIf(this=seq_get(args, 0), zero_on_all_null=True),
         "DATE": _build_datetime("DATE", exp.DType.DATE),
         "DATEFROMPARTS": _build_date_from_parts,
         "DATE_FROM_PARTS": _build_date_from_parts,
@@ -1392,10 +1393,10 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         if isinstance(this, exp.NthValue):
-            if self._match_text_seq("FROM"):
-                if self._match_texts(("FIRST", "LAST")):
-                    from_first = self._prev.text.upper() == "FIRST"
-                    this.set("from_first", from_first)
+            if self._match_text_seq("FROM", "FIRST"):
+                this.set("from_first", True)
+            elif self._match_text_seq("FROM", "LAST"):
+                this.set("from_first", False)
 
         result = super()._parse_window(this, alias)
 

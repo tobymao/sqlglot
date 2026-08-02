@@ -77,8 +77,27 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
     return func
 
 
+def _day_month_year_sql(self: PostgresGenerator, expression: exp.Day | exp.Month | exp.Year) -> str:
+    this = expression.this
+    value = this.this if isinstance(this, exp.TsOrDsToDate) else this
+
+    if value.is_type(*exp.DataType.INTEGER_TYPES) and (
+        default_date := this.args.get("default_date")
+    ):
+        this = exp.cast(default_date, exp.DType.DATE) + value
+
+    return self.sql(exp.Extract(this=exp.var(expression.sql_name()), expression=this))
+
+
 def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
-    unit = expression.text("unit").upper()
+    unit = expression.text("unit").upper() or "DAY"
+
+    # Dialects like MySQL count crossed day boundaries, which maps to DATE subtraction
+    if unit == "DAY" and expression.args.get("date_part_boundary"):
+        this = exp.cast(expression.this, exp.DType.DATE)
+        expr = exp.cast(expression.expression, exp.DType.DATE)
+        return self.sql(exp.paren(this - expr))
+
     factor = DATE_DIFF_FACTOR.get(unit)
 
     end = f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
@@ -225,7 +244,6 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
 class PostgresGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
-    SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
@@ -306,6 +324,7 @@ class PostgresGenerator(generator.Generator):
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
+        exp.Day: _day_month_year_sql,
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),
@@ -335,6 +354,7 @@ class PostgresGenerator(generator.Generator):
         exp.MapFromEntries: no_map_from_entries_sql,
         exp.Min: min_or_least,
         exp.Merge: merge_without_target_sql,
+        exp.Month: _day_month_year_sql,
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
         exp.PercentileDisc: transforms.preprocess([transforms.add_within_group_for_percentiles]),
@@ -383,6 +403,7 @@ class PostgresGenerator(generator.Generator):
         exp.VariancePop: rename_func("VAR_POP"),
         exp.Variance: rename_func("VAR_SAMP"),
         exp.Xor: bool_xor_sql,
+        exp.Year: _day_month_year_sql,
         exp.Unicode: rename_func("ASCII"),
         exp.UnixToTime: _unix_to_time_sql,
         exp.Levenshtein: _levenshtein_sql,

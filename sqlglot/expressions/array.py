@@ -90,6 +90,10 @@ class ArraySort(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
+class Shuffle(Expression, Func):
+    pass
+
+
 class SortArray(Expression, Func):
     arg_types = {"this": True, "asc": False, "nulls_first": False}
 

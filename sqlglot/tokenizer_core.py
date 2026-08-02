@@ -383,6 +383,7 @@ class TokenType(IntEnum):
     PRIMARY_KEY = auto()
     PROCEDURE = auto()
     PROPERTIES = auto()
+    PROJECTION = auto()
     PSEUDO_TYPE = auto()
     PUT = auto()
     QUALIFY = auto()
@@ -453,8 +454,6 @@ class TokenType(IntEnum):
     UTC_DATE = auto()
     UTC_TIME = auto()
     UTC_TIMESTAMP = auto()
-    VERSION_SNAPSHOT = auto()
-    TIMESTAMP_SNAPSHOT = auto()
     OPTION = auto()
     SINK = auto()
     SOURCE = auto()
@@ -1174,14 +1173,22 @@ class TokenizerCore:
                 escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars
             )
 
+            # An escaped quote before the closing delimiter (e.g. \" in """a\"""") must be
+            # consumed here, otherwise it'd be picked up by the delimiter check below and
+            # terminate the string early. This is only relevant for multi-char delimiters
+            # made up of quote chars, e.g. it shouldn't apply to Snowflake's $$ strings
+            escaped_delimiter = self._peek == delimiter or (
+                delim_size > 1 and self._peek == delimiter[0] and self._peek in quotes
+            )
+
             if (
                 (string_escapes_allowed_in_raw_strings or not raw_string)
                 and self._char in escapes
-                and (self._peek == delimiter or self._peek in escapes or is_valid_custom_escape)
+                and (escaped_delimiter or self._peek in escapes or is_valid_custom_escape)
                 and (self._char not in quotes or self._char == self._peek)
             ):
-                if self._peek == delimiter:
-                    text += self._peek
+                if escaped_delimiter:
+                    text += self._peek if not raw_string else self._char + self._peek
                 elif is_valid_custom_escape and self._char != self._peek:
                     text += self._peek
                 else:

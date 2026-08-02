@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
+from sqlglot.helper import ensure_list
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
@@ -61,3 +62,63 @@ class TrinoParser(PrestoParser):
                 on_condition=self._parse_on_condition(),
             )
         )
+
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
+
+    def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
+        # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
+        # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a
+        # CTE that happens to be named "function", e.g. `WITH function AS (SELECT 1)`
+        if (
+            self._match(TokenType.FUNCTION, advance=False)
+            and self._next
+            and self._next.token_type in self.ID_VAR_TOKENS
+        ):
+            self._advance()
+            return self._parse_function_specification()
+
+        return super()._parse_cte()
+
+    def _parse_function_specification(self) -> exp.FunctionSpecification:
+        this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
+
+        # Collected separately (rather than one _parse_properties() call) so the
+        # generator can place `WITH (...)` in its own bracketed clause at the end,
+        # instead of it blending into the bare characteristics list.
+        characteristics = []
+        properties = []
+
+        while True:
+            if self._match(TokenType.WITH):
+                properties.extend(self._parse_wrapped_csv(self._parse_key_value_property))
+                continue
+
+            characteristic = self._parse_property()
+            if not characteristic:
+                break
+
+            characteristics.extend(ensure_list(characteristic))
+
+        return self.expression(
+            exp.FunctionSpecification(
+                this=this,
+                characteristics=self.expression(exp.Properties(expressions=characteristics))
+                if characteristics
+                else None,
+                properties=self.expression(exp.Properties(expressions=properties))
+                if properties
+                else None,
+                expression=self._parse_routine_statement(),
+            )
+        )
+
+    def _parse_routine_statement(self) -> exp.Expr | None:
+        if self._match_text_seq("RETURN"):
+            return self.expression(exp.Return(this=self._parse_disjunction()))
+
+        self.raise_error("Expected routine statement")
+        return None

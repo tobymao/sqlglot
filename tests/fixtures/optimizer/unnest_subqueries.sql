@@ -125,3 +125,15 @@ SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y);
 # title: NOT IN with UNION ALL subquery is not unnested
 SELECT * FROM x WHERE x.a NOT IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);
 SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);
+
+# title: correlated EXISTS with negated equality is not unnested
+SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id));
+SELECT x.id FROM x WHERE EXISTS(SELECT 1 FROM y WHERE NOT (y.id = x.id));
+
+# title: correlated NOT EXISTS with negated equality is not unnested
+SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id));
+SELECT x.id FROM x WHERE NOT EXISTS(SELECT 1 FROM y WHERE NOT (y.id = x.id));
+
+# title: positive equality with NOT operand is unnested
+SELECT x.flag FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.flag = (NOT x.flag));
+SELECT x.flag FROM x LEFT JOIN (SELECT y.flag AS _u_1 FROM y WHERE TRUE GROUP BY y.flag) AS _u_0 ON _u_0._u_1 = (NOT x.flag) WHERE NOT _u_0._u_1 IS NULL;

@@ -31,6 +31,15 @@ class DatabricksParser(SparkParser):
         "CURDATE": lambda self: self._parse_curdate(),
     }
 
+    FUNCTION_PARSERS = {
+        **SparkParser.FUNCTION_PARSERS,
+        "REGR_AVGX": lambda self: self._parse_distinct_arg_function(exp.RegrAvgx, distinct_index=1),
+        "REGR_AVGY": lambda self: self._parse_distinct_arg_function(exp.RegrAvgy),
+        "REGR_SXX": lambda self: self._parse_distinct_arg_function(exp.RegrSxx, distinct_index=1),
+        "REGR_SXY": lambda self: self._parse_distinct_arg_function(exp.RegrSxy),
+        "REGR_SYY": lambda self: self._parse_distinct_arg_function(exp.RegrSyy, distinct_index=1),
+    }
+
     FACTOR = {
         **SparkParser.FACTOR,
         TokenType.COLON: exp.JSONExtract,
@@ -54,6 +63,12 @@ class DatabricksParser(SparkParser):
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
         return self.expression(exp.CurrentDate())
+
+    def _parse_primary_key_part(self) -> exp.Expr | None:
+        this = super()._parse_primary_key_part()
+        if this and self._match_text_seq("TIMESERIES"):
+            return self.expression(exp.TimeseriesKey(this=this))
+        return this
 
     def _parse_cluster_property(self):
         if self._match_texts(("AUTO", "NONE")):

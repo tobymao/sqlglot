@@ -444,7 +444,7 @@ class RecursiveWithSearch(Expression):
 
 
 class With(Expression):
-    arg_types = {"expressions": True, "recursive": False, "search": False}
+    arg_types = {"expressions": False, "recursive": False, "search": False, "udfs": False}
 
     @property
     def recursive(self) -> bool:
@@ -2118,6 +2118,16 @@ class WhileBlock(Expression):
 
 class EndStatement(Expression):
     arg_types = {}
+
+
+# https://trino.io/docs/current/udf.html
+class FunctionSpecification(Expression):
+    arg_types = {
+        "this": True,
+        "characteristics": False,
+        "properties": False,
+        "expression": True,
+    }
 
 
 UNWRAPPED_QUERIES = (Select, SetOperation)

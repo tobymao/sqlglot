@@ -90,6 +90,13 @@ def _source_paths():
 
 
 class build_ext(_build_ext):
+    def finalize_options(self):
+        super().finalize_options()
+        # Compile in parallel by default; builds driven by pip (wheel/sdist installs)
+        # have no way to pass -j. An explicit -j on the command line still wins.
+        if self.parallel is None:
+            self.parallel = os.cpu_count() or 1
+
     def copy_extensions_to_source(self):
         """For editable installs, put sqlglot.* .so files in the sqlglot source dir."""
         for ext in self.extensions:

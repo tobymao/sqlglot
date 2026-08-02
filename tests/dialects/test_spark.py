@@ -659,16 +659,115 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             read={
-                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%m-%d')",
             },
             write={
-                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%m-%d')",
-                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
-                "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+                "": "SELECT STR_TO_TIME('2016-1-1', '%Y-%-m-%-d')",
+                "duckdb": "SELECT STRPTIME('2016-1-1', '%Y-%-m-%-d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
             },
         )
+        # An explicit non-padded format must not be simplified away as the CAST default
+        self.validate_identity("SELECT TO_DATE(x, 'yyyy-M-d')")
+        # The strict MM/dd roundtrips but widens to the lax %m/%d elsewhere
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            write={
+                "": "SELECT STR_TO_TIME('2016-12-31', '%Y-%mstrict-%dstrict')",
+                "duckdb": "SELECT STRPTIME('2016-12-31', '%Y-%m-%d')",
+                "spark": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+                "databricks": "SELECT TO_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
+        # A lax %m/%d adjacent to another field stays zero-padded ('yyyyMd' can't parse '20200101')
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('20161231', 'yyyyMMdd')",
+            read={
+                "duckdb": "SELECT STRPTIME('20161231', '%Y%m%d')",
+            },
+            write={
+                "duckdb": "SELECT STRPTIME('20161231', '%Y%m%d')",
+                "spark": "SELECT TO_TIMESTAMP('20161231', 'yyyyMMdd')",
+            },
+        )
+        # Formatting keeps zero-padded MM/dd, unlike the lenient parsing above.
+        self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd')")
+        # The strict format must also degrade in BigQuery's FORMAT clause (leaked as 'MMstrict')
+        self.validate_all(
+            "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+            write={
+                "": "SELECT CAST(STR_TO_TIME(x, '%mstrict/%dstrict/%Y') AS DATE)",
+                "duckdb": "SELECT CAST(CAST(TRY_STRPTIME(x, '%m/%d/%Y') AS TIMESTAMP) AS DATE)",
+                "bigquery": "SELECT CAST(SAFE_CAST(x AS TIMESTAMP FORMAT 'MM/DD/YYYY') AS DATE)",
+                "spark": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+                "databricks": "SELECT TO_DATE(x, 'MM/dd/yyyy')",
+            },
+        )
+        # UNIX_TIMESTAMP also *parses* its input, so a lax foreign %m/%d becomes M/d
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
+            read={
+                "": "SELECT STR_TO_UNIX('2016-1-1', '%Y-%m-%d')",
+            },
+            write={
+                "duckdb": "SELECT EPOCH(STRPTIME('2016-1-1', '%Y-%-m-%-d'))",
+                "spark": "SELECT UNIX_TIMESTAMP('2016-1-1', 'yyyy-M-d')",
+            },
+        )
+        self.validate_all(
+            "SELECT UNIX_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            write={
+                "duckdb": "SELECT EPOCH(STRPTIME('2016-12-31', '%Y-%m-%d'))",
+                "spark": "SELECT UNIX_TIMESTAMP('2016-12-31', 'yyyy-MM-dd')",
+            },
+        )
+        # Spark 3+ also parses zero-padded HH/hh/mm/ss strictly, so a lax time from another
+        # dialect widens to the non-padded H/h/m/s, exactly like the month/day handling above.
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-1-1 3:4:5', 'yyyy-M-d H:m:s')",
+            read={
+                "duckdb": "SELECT STRPTIME('2016-1-1 3:4:5', '%Y-%m-%d %H:%M:%S')",
+            },
+            write={
+                "": "SELECT STR_TO_TIME('2016-1-1 3:4:5', '%Y-%-m-%-d %-H:%-M:%-S')",
+                "duckdb": "SELECT STRPTIME('2016-1-1 3:4:5', '%Y-%-m-%-d %-H:%-M:%-S')",
+                "spark": "SELECT TO_TIMESTAMP('2016-1-1 3:4:5', 'yyyy-M-d H:m:s')",
+            },
+        )
+        # The strict HH:mm:ss roundtrips but widens to the lax %H:%M:%S for lenient dialects
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+            write={
+                "": "SELECT STR_TO_TIME('2016-12-31 03:04:05', '%Y-%mstrict-%dstrict %Hstrict:%Mstrict:%Sstrict')",
+                "duckdb": "SELECT STRPTIME('2016-12-31 03:04:05', '%Y-%m-%d %H:%M:%S')",
+                "spark": "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+                "databricks": "SELECT TO_TIMESTAMP('2016-12-31 03:04:05', 'yyyy-MM-dd HH:mm:ss')",
+            },
+        )
+        # A lax time adjacent to another field stays zero-padded (a digit run can't be split)
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('20161231030405', 'yyyyMMddHHmmss')",
+            read={
+                "duckdb": "SELECT STRPTIME('20161231030405', '%Y%m%d%H%M%S')",
+            },
+            write={
+                "duckdb": "SELECT STRPTIME('20161231030405', '%Y%m%d%H%M%S')",
+                "spark": "SELECT TO_TIMESTAMP('20161231030405', 'yyyyMMddHHmmss')",
+            },
+        )
+        # The 12-hour hh widens too; formatting (below) still keeps zero-padded HH:mm:ss
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('3:4:5 PM', 'h:m:s a')",
+            read={
+                "duckdb": "SELECT STRPTIME('3:4:5 PM', '%I:%M:%S %p')",
+            },
+            write={
+                "spark": "SELECT TO_TIMESTAMP('3:4:5 PM', 'h:m:s a')",
+            },
+        )
+        self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')")
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={
@@ -1069,6 +1168,8 @@ TBLPROPERTIES (
                 "databricks": "SELECT * FROM foo TIMESTAMP AS OF '2020-01-01 00:00:00' AS bar",
             },
         )
+        self.validate_identity("SELECT timestamp AS of FROM t")
+        self.validate_identity("SELECT version AS of FROM t")
 
         self.validate_all(
             "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",

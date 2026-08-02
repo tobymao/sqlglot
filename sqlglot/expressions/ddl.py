@@ -358,6 +358,7 @@ class Drop(Expression):
         "concurrently": False,
         "sync": False,
         "iceberg": False,
+        "force": False,
     }
 
     @property
@@ -432,7 +433,7 @@ class NextValueFor(Expression, Func):
 
 
 class Execute(Expression):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "return_status": False}
 
     @property
     def name(self) -> str:

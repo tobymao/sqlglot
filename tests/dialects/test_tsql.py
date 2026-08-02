@@ -33,6 +33,11 @@ class TestTSQL(Validator):
             "EXEC MyProc @id = 7, @name = 'Lochristi'",
             "EXECUTE MyProc @id = 7, @name = 'Lochristi'",
         )
+        self.validate_identity("EXECUTE @return_status = dbo.MyProc @a, @b")
+        self.validate_identity(
+            "EXEC @RC = dbo.MyProc @id = 7",
+            "EXECUTE @RC = dbo.MyProc @id = 7",
+        )
         self.validate_identity("SELECT TRIM('     test    ') AS Result")
         self.validate_identity("SELECT TRIM('.,! ' FROM '     #     test    .') AS Result")
         self.validate_identity("SELECT * FROM t TABLESAMPLE (10 PERCENT)")
@@ -1116,6 +1121,8 @@ FOR JSON
         for view_attr in ("ENCRYPTION", "SCHEMABINDING", "VIEW_METADATA"):
             self.validate_identity(f"CREATE VIEW a.b WITH {view_attr} AS SELECT * FROM x")
 
+        self.validate_identity("CREATE VIEW start WITH SCHEMABINDING AS SELECT a FROM x")
+
         self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
             exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
@@ -1749,21 +1756,21 @@ WHERE
         self.validate_all(
             "CONVERT(DATE, x, 121)",
             write={
-                "spark": "TO_DATE(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "TO_DATE(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATE, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME, x, 121)",
             write={
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATETIME, x, 121)",
             },
         )
         self.validate_all(
             "CONVERT(DATETIME2, x, 121)",
             write={
-                "spark": "TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+                "spark": "TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSSSSS')",
                 "tsql": "CONVERT(DATETIME2, x, 121)",
             },
         )
@@ -2052,6 +2059,12 @@ WHERE
             write={"spark": r"SELECT '\'test\''"},
         )
 
+    def test_day_month_year(self):
+        self.validate_all("DAY(x)", write={"tsql": "DAY(x)", "": "DAY(CAST(x AS DATE))"})
+        self.validate_all("MONTH(x)", write={"tsql": "MONTH(x)", "": "MONTH(CAST(x AS DATE))"})
+        self.validate_all("YEAR(x)", write={"tsql": "YEAR(x)", "": "YEAR(CAST(x AS DATE))"})
+        self.validate_identity("WITH t AS (SELECT 0 AS col) SELECT YEAR(col) FROM t")
+
     def test_eomonth(self):
         self.validate_all(
             "EOMONTH(GETDATE())",
@@ -2235,6 +2248,10 @@ WHERE
                 "": "SELECT x FROM a WITH (NOLOCK)",
             },
         )
+        self.validate_identity("SELECT x FROM start WITH (NOLOCK)")
+        self.validate_identity("SELECT * FROM t AS start WITH (NOLOCK)")
+        self.validate_identity("UPDATE start WITH (ROWLOCK) SET a = 1")
+        self.validate_identity("DELETE FROM start WITH (ROWLOCK)")
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")
 
     def test_openjson(self):

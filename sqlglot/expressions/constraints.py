@@ -220,6 +220,11 @@ class PrimaryKey(Expression):
     arg_types = {"this": False, "expressions": True, "options": False, "include": False}
 
 
+# https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-constraint
+class TimeseriesKey(Expression):
+    pass
+
+
 class IndexParameters(Expression):
     arg_types = {
         "using": False,

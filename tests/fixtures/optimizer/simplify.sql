@@ -193,16 +193,28 @@ A AND TRUE;
 A AND TRUE;
 
 A AND (NOT A OR B);
-A AND B;
+A AND (B OR NOT A);
 
 (NOT A OR B) AND A;
-A AND B;
+A AND (B OR NOT A);
 
 A OR (NOT A AND B);
-A OR B;
+A OR (B AND NOT A);
 
 A OR ((((NOT A AND B))));
-A OR B;
+A OR (B AND NOT A);
+
+x IS NULL AND (NOT (x IS NULL) OR B);
+B AND x IS NULL;
+
+x IS NULL OR (NOT (x IS NULL) AND B);
+B OR x IS NULL;
+
+x NOT LIKE 'a%' OR (y IN (1, 2) AND x LIKE 'a%');
+(x LIKE 'a%' AND y IN (1, 2)) OR x NOT LIKE 'a%';
+
+x NOT ILIKE 'a%' OR (y IN (1, 2) AND x ILIKE 'a%');
+(x ILIKE 'a%' AND y IN (1, 2)) OR x NOT ILIKE 'a%';
 
 (A OR C) AND ((A OR C) OR B);
 A OR C;
@@ -219,50 +231,60 @@ A AND TRUE;
 (A OR B) AND (A OR C) AND (A OR B OR C);
 (A OR B) AND (A OR C);
 
+# dialect: clickhouse
+SELECT t_bool.a AND (NOT t_bool.a OR t_bool.b) FROM t_bool;
+SELECT t_bool.a AND t_bool.b FROM t_bool;
+
 --------------------------------------
 -- Elimination
 --------------------------------------
 (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (NOT A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A AND NOT B) OR (A AND B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (NOT A AND B) OR (A AND B);
-B AND TRUE;
+(A AND B) OR (B AND NOT A);
 
 (A OR B) AND (A OR NOT B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (A OR B) AND (NOT A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (A OR NOT B) AND (A OR B);
-A AND TRUE;
+(A OR B) AND (A OR NOT B);
 
 (NOT A OR B) AND (A OR B);
-B AND TRUE;
+(A OR B) AND (B OR NOT A);
 
 (NOT A OR NOT B) AND (NOT A OR B);
-NOT A;
+(B OR NOT A) AND (NOT A OR NOT B);
 
 (NOT A OR NOT B) AND (NOT A OR NOT NOT B);
-NOT A;
+(NOT A OR NOT B) AND (NOT A OR NOT NOT B);
 
 E OR (A AND B) OR C OR D OR (A AND NOT B);
-A OR C OR D OR E;
+(A AND B) OR (A AND NOT B) OR C OR D OR E;
 
 (A AND B) OR (A AND NOT B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
 
 (A AND B) OR (A AND NOT B) OR (A AND B) OR (A AND NOT B);
-A AND TRUE;
+(A AND B) OR (A AND NOT B);
+
+(B AND x IS NULL) OR (B AND NOT (x IS NULL));
+B AND TRUE;
+
+(B OR x IS NULL) AND (B OR NOT (x IS NULL));
+B AND TRUE;
 
 SELECT t_bool.a OR t_bool.a FROM t_bool;
 SELECT t_bool.a FROM t_bool;
@@ -275,6 +297,10 @@ SELECT SUM(t.x AND TRUE) FROM t;
 
 SELECT SUM(t.x AND t.x) FROM t;
 SELECT SUM(t.x AND TRUE) FROM t;
+
+# dialect: clickhouse
+SELECT (t_bool.a AND t_bool.b) OR (t_bool.a AND NOT t_bool.b) FROM t_bool;
+SELECT t_bool.a FROM t_bool;
 
 --------------------------------------
 -- Associativity
@@ -541,6 +567,30 @@ FALSE;
 
 1 IS NOT NULL;
 TRUE;
+
+# dialect: postgres
+# title: postgres preserves IS NOT NULL, constant folding respects the negation
+NULL IS NOT NULL;
+FALSE;
+
+# dialect: postgres
+'a' IS NOT NULL;
+TRUE;
+
+# dialect: postgres
+# title: IS NULL and IS NOT NULL are distinct predicates, complement law must not fold them
+r IS NULL OR r IS NOT NULL;
+r IS NOT NULL OR r IS NULL;
+
+# dialect: postgres
+# title: IS NULL and IS NOT NULL are not deduplicated
+r IS NULL AND r IS NOT NULL;
+r IS NOT NULL AND r IS NULL;
+
+# dialect: postgres
+# title: IS NOT NULL next to a comparison must not crash the range simplifier
+r IS NOT NULL AND r > 5;
+r > 5 AND r IS NOT NULL;
 
 date '1998-12-01' - interval x day;
 CAST('1998-12-01' AS DATE) - INTERVAL x DAY;
@@ -1032,6 +1082,15 @@ CAST('2023-12-11' AS DATE);
 DATE_TRUNC('week', CAST('2023-12-16' AS DATE));
 CAST('2023-12-11' AS DATE);
 
+DATE_TRUNC('week', CAST('2023-12-11' AS DATE));
+CAST('2023-12-11' AS DATE);
+
+DATE_TRUNC('week', x) > CAST('2023-12-11' AS DATE);
+x >= CAST('2023-12-18' AS DATE);
+
+DATE_TRUNC('week', x) = CAST('2023-12-11' AS DATE);
+x < CAST('2023-12-18' AS DATE) AND x >= CAST('2023-12-11' AS DATE);
+
 # dialect: bigquery
 DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK);
 CAST('2023-12-10' AS DATE);
@@ -1043,6 +1102,22 @@ CAST('2023-10-01 00:00:00' AS TIMESTAMP);
 # dialect: bigquery
 DATE_TRUNC(CAST('2023-12-16' AS DATE), WEEK);
 CAST('2023-12-10' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(CAST('2023-12-10' AS DATE), WEEK);
+CAST('2023-12-10' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) > CAST('2008-11-09' AS DATE);
+x >= CAST('2008-11-16' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) = CAST('2008-11-09' AS DATE);
+x < CAST('2008-11-16' AS DATE) AND x >= CAST('2008-11-09' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE);
+x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE);
 
 DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
@@ -1087,7 +1162,24 @@ DATE_TRUNC('quarter', x) = CAST('2021-01-02' AS DATE);
 DATE_TRUNC('QUARTER', x) = CAST('2021-01-02' AS DATE);
 
 DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
-FALSE;
+x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
+
+-- the resulting connector must be parenthesized under a different connector or NOT
+DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE) AND y = 1;
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND y = 1;
+
+DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE) OR y = 1;
+(x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR y = 1;
+
+NOT DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
+x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
+
+NOT DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE) AND y = 1;
+(x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE)) AND y = 1;
 
 -- Always true, except for nulls
 DATE_TRUNC('year', x) <> CAST('2021-01-02' AS DATE);
@@ -1152,6 +1244,13 @@ x < CAST('2023-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 -- one of the values will always be false
 DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2022-01-02' AS DATE));
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+-- the resulting OR must be parenthesized under a tighter-binding parent
+DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE)) AND y = 1;
+((x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE)) OR (x < CAST('2024-01-01' AS DATE) AND x >= CAST('2023-01-01' AS DATE))) AND y = 1;
+
+NOT DATE_TRUNC('year', x) IN (CAST('2021-01-01' AS DATE), CAST('2023-01-01' AS DATE));
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND (x < CAST('2023-01-01' AS DATE) OR x >= CAST('2024-01-01' AS DATE));
 
 TIMESTAMP_TRUNC(x, YEAR) = CAST('2021-01-01' AS DATETIME);
 x < CAST('2022-01-01 00:00:00' AS DATETIME) AND x >= CAST('2021-01-01 00:00:00' AS DATETIME);

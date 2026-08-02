@@ -58,6 +58,9 @@ class DatabricksGenerator(SparkGenerator):
             exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.RegexpLike: None,
             exp.TryCast: None,
+            exp.RegrAvgx: lambda self, e: self._regr_sql(e),
+            exp.RegrSxx: lambda self, e: self._regr_sql(e),
+            exp.RegrSyy: lambda self, e: self._regr_sql(e),
         }.items()
         if v is not None
     }
@@ -91,6 +94,9 @@ class DatabricksGenerator(SparkGenerator):
 
         return super().columndef_sql(expression, sep)
 
+    def timeserieskey_sql(self, expression: exp.TimeseriesKey) -> str:
+        return f"{self.sql(expression, 'this')} TIMESERIES"
+
     def jsonpath_sql(self, expression: exp.JSONPath) -> str:
         expression.set("escape", None)
         path = super().jsonpath_sql(expression)
@@ -109,6 +115,13 @@ class DatabricksGenerator(SparkGenerator):
             seed = gen.this
 
         return self.func("UNIFORM", expression.this, expression.expression, seed)
+
+    def _regr_sql(self, expression: exp.RegrAvgx | exp.RegrSxx | exp.RegrSyy) -> str:
+        name = expression.sql_name()
+        x = expression.expression
+        if isinstance(x, exp.Distinct):
+            return self.func(name, exp.Distinct(expressions=[expression.this]), *x.expressions)
+        return self.func(name, expression.this, x)
 
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"

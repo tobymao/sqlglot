@@ -74,6 +74,16 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES (a.b=15)")
         self.validate_identity("CREATE TABLE my_table TBLPROPERTIES ('a.b'=15)")
         self.validate_identity("CREATE TABLE table1 CLUSTER BY AUTO")
+        self.validate_identity(
+            "CREATE TABLE t (customer_id INT NOT NULL, ts TIMESTAMP NOT NULL, CONSTRAINT customer_features_pk PRIMARY KEY (customer_id, ts TIMESERIES))"
+        )
+        self.validate_all(
+            "CREATE TABLE t (a INT, b TIMESTAMP, PRIMARY KEY (a, b TIMESERIES))",
+            write={
+                "databricks": "CREATE TABLE t (a INT, b TIMESTAMP, PRIMARY KEY (a, b TIMESERIES))",
+                "duckdb": "CREATE TABLE t (a INT, b TIMESTAMPTZ, PRIMARY KEY (a, b))",
+            },
+        )
         self.validate_identity("ALTER TABLE t CLUSTER BY NONE")
         self.validate_identity("CREATE TABLE t CLUSTER BY (col1)")
         self.validate_identity("CREATE TABLE t CLUSTER BY (col1, col2)")
@@ -199,7 +209,7 @@ class TestDatabricks(Validator):
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
                 "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
-                "tsql": "CREATE TABLE foo (x AS YEAR(CAST(y AS DATE)))",
+                "tsql": "CREATE TABLE foo (x AS YEAR(y))",
             },
         )
         self.validate_all(

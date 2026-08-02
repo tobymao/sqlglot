@@ -1,4 +1,4 @@
-from sqlglot import exp, UnsupportedError, ParseError, parse, parse_one
+from sqlglot import exp, ErrorLevel, UnsupportedError, ParseError, parse, parse_one
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.qualify import qualify
 
@@ -76,6 +76,10 @@ class TestOracle(Validator):
             "SELECT * FROM test UNPIVOT INCLUDE NULLS (value FOR Description IN (col AS 'PREFIX ' || CHR(38) || ' SUFFIX'))"
         )
         self.validate_identity(
+            "SELECT * FROM sales UNPIVOT(q FOR p IN (q1 AS 'Prod1', q2 AS 'Prod2'))"
+        )
+        self.validate_identity("SELECT * FROM sales UNPIVOT(q FOR p IN (q1 AS 1, q2 AS 2))")
+        self.validate_identity(
             "SELECT last_name, employee_id, manager_id, LEVEL FROM employees START WITH employee_id = 100 CONNECT BY PRIOR employee_id = manager_id ORDER SIBLINGS BY last_name"
         )
         self.validate_identity(
@@ -148,6 +152,10 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
+        self.validate_identity(
+            "SELECT id FROM t START WITH (parent_id IS NULL) CONNECT BY PRIOR id = parent_id"
+        )
+        self.validate_identity("SELECT id FROM t START WITH (x) CONNECT BY PRIOR id = parent_id")
 
         self.validate_all(
             "SELECT DBMS_RANDOM.VALUE()",
@@ -629,6 +637,24 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                     self.validate_identity(
                         f"CREATE VIEW view AS SELECT * FROM tbl WITH {restriction}{constraint_name}"
                     )
+
+    def test_unrecognized_query_restriction(self):
+        """An unrecognized WITH must error, not spin in _parse_query_modifiers.
+
+        _parse_query_restrictions returns None when WITH isn't followed by a
+        recognized restriction. Wrapping that in a list literal made it the
+        truthy [None], which passed the modifier loop's `if expression:` guard
+        without ever consuming the WITH token.
+        """
+        for sql in (
+            "SELECT * FROM tbl WITH",
+            "SELECT * FROM tbl WITH READ",
+            "SELECT * FROM tbl WITH GRANT OPTION",
+            "SELECT * FROM t WITH x AS (SELECT 1) SELECT * FROM x",
+        ):
+            with self.subTest(sql):
+                with self.assertRaises(ParseError):
+                    parse_one(sql, read="oracle", error_level=ErrorLevel.RAISE)
 
     def test_multitable_inserts(self):
         self.maxDiff = None

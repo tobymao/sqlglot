@@ -176,6 +176,14 @@ SELECT `_t0`.`a` AS `a`, `_t0`.`b` AS `b` FROM `c`.`db`.`x` AS `_t0` QUALIFY ROW
 SELECT x.a, (SELECT MAX(y.c) FROM y) AS m FROM x;
 SELECT "_t1"."a" AS "a", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "m" FROM "c"."db"."x" AS "_t1";
 
+# title: unaliased scalar subquery in a non-first UNION ALL branch is canonicalized like any other internal column, not left as qualify's default _col_N
+SELECT a, (SELECT MAX(y.c) FROM y) FROM x UNION ALL SELECT a, (SELECT MAX(y.c) FROM y) FROM x;
+SELECT "_t1"."a" AS "a", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "_col_1" FROM "c"."db"."x" AS "_t1" UNION ALL SELECT "_t3"."a" AS "_c2", (SELECT MAX("_t2"."c") AS "_c1" FROM "c"."db"."y" AS "_t2") AS "_c3" FROM "c"."db"."x" AS "_t3";
+
+# title: unaliased scalar subquery column inside a CTE (non-output scope) is canonicalized like any other internal column
+WITH t AS (SELECT a, (SELECT MAX(y.c) FROM y) FROM x) SELECT a FROM t;
+WITH "_t2" AS (SELECT "_t1"."a" AS "_c1", (SELECT MAX("_t0"."c") AS "_c0" FROM "c"."db"."y" AS "_t0") AS "_c2" FROM "c"."db"."x" AS "_t1") SELECT "_t2"."_c1" AS "a" FROM "_t2" AS "_t2";
+
 # title: distinct on
 # dialect: postgres
 SELECT DISTINCT ON (a) a, b FROM x;
@@ -218,6 +226,26 @@ SELECT `_c0` AS `n`, `_c1` AS `off` FROM UNNEST([10, 20, 30]) AS `_c0` WITH OFFS
 # dialect: bigquery
 SELECT t.id, u FROM t CROSS JOIN UNNEST(t.arr) AS u;
 SELECT `_t0`.`id` AS `id`, `_c0` AS `u` FROM `c`.`db`.`t` AS `_t0` CROSS JOIN UNNEST(`_t0`.`arr`) AS `_c0`;
+
+# title: bigquery unnest of a struct array literal preserves field names (physical columns, not internal handles)
+# dialect: bigquery
+SELECT x.a, p.sid FROM x JOIN (SELECT sid FROM UNNEST([STRUCT('a' AS sid), STRUCT('b')])) AS p ON x.a = p.sid;
+SELECT `_t1`.`a` AS `a`, `_t2`.`_c0` AS `sid` FROM `c`.`db`.`x` AS `_t1` JOIN (SELECT `sid` AS `_c0` FROM UNNEST([STRUCT('a' AS `sid`), STRUCT('b')])) AS `_t2` ON `_t1`.`a` = `_t2`.`_c0`;
+
+# title: bigquery unnest of an ARRAY<STRUCT> column preserves field names but canonicalizes the element alias
+# dialect: bigquery
+WITH cte AS (SELECT [STRUCT('a' AS sid)] AS arr) SELECT v.sid FROM cte, UNNEST(cte.arr) AS v;
+WITH `_t0` AS (SELECT [STRUCT('a' AS `sid`)] AS `_c0`) SELECT `_c1`.`sid` AS `sid` FROM `_t0` AS `_t0` CROSS JOIN UNNEST(`_t0`.`_c0`) AS `_c1`;
+
+# title: bigquery unnest element alias is an internal handle, so equivalent queries share one canonical form
+# dialect: bigquery
+SELECT s.sid FROM UNNEST([STRUCT('a' AS sid)]) AS s;
+SELECT `_c0`.`sid` AS `sid` FROM UNNEST([STRUCT('a' AS `sid`)]) AS `_c0`;
+
+# title: bigquery unnest element alias doubling as a top-level output column
+# dialect: bigquery
+SELECT s FROM UNNEST([STRUCT('a' AS sid)]) AS s;
+SELECT `_c0` AS `s` FROM UNNEST([STRUCT('a' AS `sid`)]) AS `_c0`;
 
 # title: bigquery whole-row struct selection — TableColumn follows the table's canonical name, output alias preserves the row-struct's contract name
 # dialect: bigquery

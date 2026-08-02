@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.errors import UnsupportedError
 from sqlglot.generator import unsupported_args
-from sqlglot.optimizer.scope import build_scope
+from sqlglot.optimizer.scope import build_scope, find_in_scope
 from sqlglot.parsers.exasol import DATE_UNITS
 
 
@@ -245,7 +245,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
         return expression
 
     if expression.is_star:
-        if any(proj.find(exp.AggFunc) for proj in expression.expressions):
+        if any(find_in_scope(proj, exp.AggFunc) for proj in expression.expressions):
             raise UnsupportedError(
                 "GROUP BY ALL with star projection and aggregates is not supported by Exasol"
             )
@@ -256,7 +256,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
     group_positions = [
         exp.Literal.number(i)
         for i, proj in enumerate(expression.expressions, start=1)
-        if not proj.find(exp.AggFunc)
+        if not find_in_scope(proj, exp.AggFunc)
     ]
 
     if not group_positions:

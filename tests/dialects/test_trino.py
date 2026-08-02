@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -176,3 +177,73 @@ class TestTrino(Validator):
     def test_array_first(self):
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b']) FROM tbl")
         self.validate_identity("SELECT ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b') FROM tbl")
+
+    def test_inline_udf(self):
+        self.validate_identity(
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION hello(name VARCHAR) RETURNS VARCHAR RETURN FORMAT('Hello %s!', name), "
+            "FUNCTION bye() RETURNS VARCHAR RETURN 'Bye!' "
+            "SELECT HELLO('Finn') || BYE()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER RETURN x * 2 "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f(x INTEGER) RETURNS INTEGER RETURN x "
+            "WITH RECURSIVE t(n) AS (SELECT 1 AS n) SELECT F(n) FROM t"
+        )
+        self.validate_identity(
+            """WITH FUNCTION f(num int)
+    RETURNS int
+    RETURN num
+SELECT f(1)""",
+            "WITH FUNCTION f(num INTEGER) RETURNS INTEGER RETURN num SELECT F(1)",
+        )
+        self.validate_identity("WITH function AS (SELECT 1 AS x) SELECT x FROM function")
+        self.validate_identity("WITH function(x) AS (SELECT 1) SELECT x FROM function")
+
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL RETURN 1 SELECT F()")
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER NOT DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.assertIsInstance(
+            self.validate_identity("SELECT NOT deterministic FROM t").selects[0], exp.Not
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER CALLED ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER RETURNS NULL ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
+
+        # SECURITY and WITH (...) are part of Trino's documented function-specification
+        # grammar, but real Trino rejects both for LANGUAGE SQL inline functions
+        # specifically ("Security mode not supported for inline functions", "Function
+        # language 'SQL' does not support properties"). These assert round-trip
+        # correctness for that shared grammar, not that this exact combination executes
+        # on an inline SQL UDF.
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY DEFINER RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY INVOKER RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER WITH (weight=42) RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL WITH (weight=42, cost='low') "
+            "RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION custom_sqrt(a INTEGER) RETURNS DOUBLE COMMENT 'Custom sqrt function' "
+            "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
+            "WITH (weight=42, cost='low') RETURN a SELECT CUSTOM_SQRT(4)"
+        )

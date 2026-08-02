@@ -24,6 +24,7 @@ from sqlglot.helper import (
     ensure_list,
 )
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
+from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -86,6 +87,7 @@ class Dialects(str, Enum):
     BIGQUERY = "bigquery"
     CLICKHOUSE = "clickhouse"
     DATABRICKS = "databricks"
+    DAX = "dax"
     DORIS = "doris"
     DREMIO = "dremio"
     DRILL = "drill"
@@ -132,6 +134,31 @@ class NormalizationStrategy(str, AutoName):
 
     CASE_INSENSITIVE_UPPERCASE = auto()
     """Always case-insensitive (uppercase), regardless of quotes."""
+
+
+# "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
+# TIME_MAPPING so they roundtrip, since a lax %m/%d renders non-padded there for parse expressions
+# (see HiveGenerator.format_time).
+STRICT_TIME_FORMATS = {
+    "%mstrict": "%m",
+    "%dstrict": "%d",
+    "%Hstrict": "%H",
+    "%Istrict": "%I",
+    "%Mstrict": "%M",
+    "%Sstrict": "%S",
+}
+
+
+def _with_strict_time_inverse(inverse_mapping: dict[str, str]) -> dict[str, str]:
+    for strict_format, lax_format in STRICT_TIME_FORMATS.items():
+        if strict_format in inverse_mapping:
+            # In strict dialects, a foreign lax %m formats the same padded way as %mstrict (MM)
+            inverse_mapping.setdefault(lax_format, inverse_mapping[strict_format])
+        else:
+            # Elsewhere, the strict format degrades to its lax counterpart so it never leaks
+            inverse_mapping.setdefault(strict_format, inverse_mapping.get(lax_format, lax_format))
+
+    return inverse_mapping
 
 
 class _Dialect(type):
@@ -237,11 +264,14 @@ class _Dialect(type):
         )
         # Merge class-defined INVERSE_TIME_MAPPING with auto-generated mappings
         # This allows dialects to define custom inverse mappings for roundtrip correctness
-        klass.INVERSE_TIME_MAPPING = {v: k for k, v in klass.TIME_MAPPING.items()} | (
-            klass.__dict__.get("INVERSE_TIME_MAPPING") or {}
+        klass.INVERSE_TIME_MAPPING = _with_strict_time_inverse(
+            {v: k for k, v in klass.TIME_MAPPING.items()}
+            | (klass.__dict__.get("INVERSE_TIME_MAPPING") or {})
         )
         klass.INVERSE_TIME_TRIE = new_trie(klass.INVERSE_TIME_MAPPING)
-        klass.INVERSE_FORMAT_MAPPING = {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        klass.INVERSE_FORMAT_MAPPING = _with_strict_time_inverse(
+            {v: k for k, v in klass.FORMAT_MAPPING.items()}
+        )
         klass.INVERSE_FORMAT_TRIE = new_trie(klass.INVERSE_FORMAT_MAPPING)
 
         klass.INVERSE_CREATABLE_KIND_MAPPING = {
@@ -575,6 +605,13 @@ class Dialect(metaclass=_Dialect):
     This expands to all fields within the struct.
     """
 
+    STAR_ILIKE_BACKSLASH_ESCAPE = False
+    """
+    Whether a backslash in a `SELECT * ILIKE '<pattern>'` filter escapes the following character,
+    so that e.g. `\\_` matches a literal underscore (Snowflake). When False, backslashes in the
+    pattern are matched literally (DuckDB).
+    """
+
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
     """
     Whether pseudocolumns should be excluded from star expansion (SELECT *).
@@ -715,6 +752,9 @@ class Dialect(metaclass=_Dialect):
     # Whether the double negation can be applied
     # Not safe with MySQL and SQLite due to type coercion (may not return boolean)
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = True
+
+    # Whether `x IS NOT NULL` can be normalized to `NOT x IS NULL`
+    NORMALIZE_NOT_NULL = True
 
     # Whether the INITCAP function supports custom delimiter characters as the second argument
     # Default delimiter characters for INITCAP function: whitespace and non-alphanumeric characters
@@ -1954,6 +1994,23 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     return expression
 
 
+def remove_ts_or_ds_to_date(
+    to_sql: t.Callable[[Generator, exp.Expr], str] | None = None,
+    args: tuple[str, ...] = ("this",),
+) -> t.Callable[[Generator, exp.Func], str]:
+    def func(self: Generator, expression: exp.Func) -> str:
+        for arg_key in args:
+            arg = expression.args.get(arg_key)
+            if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(
+                "format"
+            ):
+                expression.set(arg_key, arg.this)
+
+        return to_sql(self, expression) if to_sql else self.function_fallback_sql(expression)
+
+    return func
+
+
 def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
     def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
         if cast and isinstance(expression, exp.TsOrDsAdd):
@@ -2020,6 +2077,45 @@ def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     return exp.Var(this=value) if value else None
 
 
+# Days of week to ISO 8601 day-of-week numbers
+# ISO 8601 standard: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6, Sunday=7
+WEEK_START_DAY_TO_DOW = {
+    "MONDAY": 1,
+    "TUESDAY": 2,
+    "WEDNESDAY": 3,
+    "THURSDAY": 4,
+    "FRIDAY": 5,
+    "SATURDAY": 6,
+    "SUNDAY": 7,
+}
+
+
+def week_unit_to_dow(unit: exp.Expr | None) -> int | None:
+    """
+    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>)
+    or ISOWEEK unit parts.
+
+    Args:
+        unit: The unit expression (Var for WEEK/ISOWEEK or WeekStart)
+
+    Returns:
+        The ISO 8601 day number (Monday=1, Sunday=7 etc) or None if not a week unit or if day is dynamic (not a constant).
+
+        Examples:
+            "WEEK(SUNDAY)" -> 7
+            "WEEK(MONDAY)" -> 1
+            "ISOWEEK" -> 1
+    """
+    if isinstance(unit, exp.Var) and unit.name.upper() in ("WEEK", "ISOWEEK"):
+        return 1
+
+    # Handle WeekStart expressions with explicit day
+    if isinstance(unit, exp.WeekStart):
+        return WEEK_START_DAY_TO_DOW.get(unit.name.upper())
+
+    return None
+
+
 @t.overload
 def map_date_part(part: exp.Expr, dialect: DialectType = Dialect) -> exp.Expr:
     pass
@@ -2069,7 +2165,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         then: exp.Insert | exp.Update | None = when.args.get("then")
         if then:
             if isinstance(then, exp.Update):
-                for equals in then.find_all(exp.EQ):
+                for equals in find_all_in_scope(then, exp.EQ):
                     equal_lhs = equals.this
                     if (
                         isinstance(equal_lhs, exp.Column)

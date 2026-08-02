@@ -233,9 +233,9 @@ class TestTeradata(Validator):
             write={
                 "teradata": "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",
                 "bigquery": "PARSE_DATE('%Y-%d', '1992-01')",
-                "databricks": "TO_DATE('1992-01', 'yyyy-dd')",
+                "databricks": "TO_DATE('1992-01', 'yyyy-d')",
                 "mysql": "STR_TO_DATE('1992-01', '%Y-%d')",
-                "spark": "TO_DATE('1992-01', 'yyyy-dd')",
+                "spark": "TO_DATE('1992-01', 'yyyy-d')",
                 "": "STR_TO_DATE('1992-01', '%Y-%d')",
             },
         )

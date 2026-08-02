@@ -13,7 +13,7 @@ from pandas.testing import assert_frame_equal
 from sqlglot import exp, find_tables, parse_one, transpile
 from sqlglot.errors import ExecuteError
 from sqlglot.executor import execute
-from sqlglot.executor.python import Python
+from sqlglot.executor.python import Python, PythonExecutor
 from sqlglot.executor.table import Table, ensure_tables
 from sqlglot.optimizer import optimize
 from sqlglot.planner import Plan
@@ -403,6 +403,51 @@ class TestExecutor(unittest.TestCase):
                         execute(sql, schema=schema, tables=tables)
                     self.assertIsInstance(ctx.exception.__cause__, rows)
 
+        duplicate_tables = {
+            "x": [{"a": 1}, {"a": 1}, {"a": 1}, {"a": 2}],
+            "y": [{"a": 1}, {"a": 1}, {"a": 3}],
+        }
+        self.assertEqual(
+            execute("SELECT a FROM x INTERSECT ALL SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,), (1,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x EXCEPT ALL SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,), (2,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x INTERSECT SELECT a FROM y", tables=duplicate_tables).rows,
+            [(1,)],
+        )
+        self.assertEqual(
+            execute("SELECT a FROM x EXCEPT SELECT a FROM y", tables=duplicate_tables).rows,
+            [(2,)],
+        )
+
+    def test_outer_joins_preserve_unmatched_rows(self):
+        tables = {
+            "x": [{"id": 1}, {"id": 2}],
+            "y": [{"id": 2}, {"id": 3}],
+        }
+
+        self.assertEqual(
+            set(execute("SELECT x.id, y.id FROM x FULL JOIN y ON x.id = y.id", tables=tables).rows),
+            {(1, None), (2, 2), (None, 3)},
+        )
+        self.assertEqual(
+            set(
+                execute(
+                    "SELECT x.id, y.id FROM x LEFT JOIN y ON x.id = y.id AND y.id > 2",
+                    tables=tables,
+                ).rows
+            ),
+            {(1, None), (2, None)},
+        )
+        self.assertEqual(
+            execute("SELECT x.id, y.id FROM x JOIN y ON x.id < y.id", tables=tables).rows,
+            [(1, 2), (1, 3), (2, 3)],
+        )
+
     def test_execute_catalog_db_table(self):
         tables = {
             "catalog": {
@@ -543,6 +588,21 @@ class TestExecutor(unittest.TestCase):
 
         self.assertEqual(executed.rows, [])
         self.assertEqual(executed.columns, ("id_alias", "sub_type"))
+
+    def test_unsupported_subqueries(self):
+        tables = {
+            "x": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "y": [{"id": 1}, {"id": 2}],
+        }
+
+        for sql in (
+            "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id, (SELECT MAX(y.id) FROM y) AS max_id FROM x",
+        ):
+            with self.subTest(sql):
+                with self.assertRaises(ExecuteError):
+                    execute(sql, tables=tables)
 
     def test_correlated_count(self):
         tables = {
@@ -773,6 +833,92 @@ class TestExecutor(unittest.TestCase):
             dialect="oracle",
         )
         self.assertEqual(result.rows, [("a",)])
+
+    def test_sql_three_valued_boolean_logic(self):
+        for sql, expected in [
+            ("NOT TRUE", False),
+            ("NOT FALSE", True),
+            ("NOT NULL", None),
+            ("TRUE AND NULL", None),
+            ("FALSE AND NULL", False),
+            ("TRUE OR NULL", True),
+            ("FALSE OR NULL", None),
+            ("NULL IN (1, 2)", None),
+            ("3 NOT IN (1, 2, NULL)", None),
+            ("3 NOT IN (1, 2)", True),
+        ]:
+            with self.subTest(sql):
+                self.assertEqual(execute(f"SELECT {sql}").rows, [(expected,)])
+
+        tables = {
+            "policy": [
+                {"id": 1, "flag": True},
+                {"id": 2, "flag": False},
+                {"id": 3, "flag": None},
+            ]
+        }
+        schema = {"policy": {"id": "INT", "flag": "BOOLEAN"}}
+        self.assertEqual(
+            execute("SELECT id FROM policy WHERE NOT flag", tables=tables, schema=schema).rows,
+            [(2,)],
+        )
+
+    def test_sql_boolean_logic_with_numpy_scalars(self):
+        tables = {
+            "policy": [
+                {"id": 1, "left_flag": np.bool_(True), "right_flag": np.bool_(True)},
+                {"id": 2, "left_flag": np.bool_(False), "right_flag": np.bool_(True)},
+                {"id": 3, "left_flag": None, "right_flag": np.bool_(True)},
+            ]
+        }
+        schema = {
+            "policy": {
+                "id": "INT",
+                "left_flag": "BOOLEAN",
+                "right_flag": "BOOLEAN",
+            }
+        }
+
+        self.assertEqual(
+            execute("SELECT id FROM policy WHERE left_flag", tables=tables, schema=schema).rows,
+            [(1,)],
+        )
+        self.assertEqual(
+            execute(
+                "SELECT id FROM policy WHERE left_flag AND right_flag",
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [(1,)],
+        )
+        self.assertEqual(
+            execute(
+                "SELECT id FROM policy WHERE left_flag OR right_flag",
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [(1,), (2,), (3,)],
+        )
+
+    def test_sql_boolean_logic_preserves_short_circuiting(self):
+        evaluations = []
+
+        def record_evaluation():
+            evaluations.append(True)
+            return True
+
+        executor = PythonExecutor(env={"RECORD_EVALUATION": record_evaluation})
+        context = executor.context({})
+
+        for sql, expected in [
+            ("FALSE AND RECORD_EVALUATION()", False),
+            ("TRUE OR RECORD_EVALUATION()", True),
+        ]:
+            with self.subTest(sql):
+                expression = parse_one(sql)
+                self.assertEqual(context.eval(executor.generate(expression)), expected)
+
+        self.assertEqual(evaluations, [])
 
     def test_case_sensitivity(self):
         result = execute("SELECT A AS A FROM X", tables={"x": [{"a": 1}]})

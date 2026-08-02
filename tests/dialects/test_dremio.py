@@ -74,6 +74,39 @@ class TestDremio(Validator):
             "SELECT * FROM t ORDER BY a DESC NULLS FIRST",
         )
 
+    def test_time_travel(self):
+        self.validate_identity("SELECT * FROM t AT SNAPSHOT '4132119532727284872'")
+        self.validate_identity("SELECT * FROM t AT TIMESTAMP '2024-01-01 12:00:00.000'")
+        self.validate_identity("SELECT * FROM t AT SNAPSHOT '4132119532727284872' AS a")
+
+        self.validate_all(
+            "SELECT * FROM t AT SNAPSHOT '123'",
+            read={
+                "spark": "SELECT * FROM t VERSION AS OF '123'",
+                "trino": "SELECT * FROM t FOR VERSION AS OF '123'",
+            },
+            write={
+                "spark": "SELECT * FROM t VERSION AS OF '123'",
+                "trino": "SELECT * FROM t FOR VERSION AS OF '123'",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t AT TIMESTAMP '2024-01-01'",
+            read={
+                "spark": "SELECT * FROM t TIMESTAMP AS OF '2024-01-01'",
+            },
+            write={
+                "spark": "SELECT * FROM t TIMESTAMP AS OF '2024-01-01'",
+            },
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT * FROM t FOR VERSION BETWEEN '1' AND '2'",
+                write="dremio",
+                unsupported_level=ErrorLevel.IMMEDIATE,
+            )
+
     def test_convert_timezone(self):
         self.validate_all(
             "SELECT CONVERT_TIMEZONE('America/Chicago', DateColumn)",

@@ -137,6 +137,34 @@ def _pushdown_cte_column_names(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
+    """
+    Rewrites exploding GENERATE_SERIES projections into table references, e.g.
+
+        SELECT GENERATE_SERIES(1, 2) AS x           -> SELECT x FROM GENERATE_SERIES(1, 2) AS x
+        SELECT y, GENERATE_SERIES(1, 2) AS x FROM t -> SELECT y, x FROM t CROSS JOIN GENERATE_SERIES(1, 2) AS x
+
+    since BigQuery can't explode in the projection and must unnest it in the FROM clause instead.
+    The resulting table reference is unnested downstream by `transforms.unnest_generate_series`.
+    """
+    if isinstance(expression, exp.Select):
+        for projection in expression.selects:
+            if isinstance(series := projection.unalias(), exp.ExplodingGenerateSeries):
+                column_name = projection.output_name or "_gen_series_value"
+
+                projection.replace(exp.column(column_name))
+                table = exp.Table(
+                    this=series, alias=exp.TableAlias(this=exp.to_identifier(column_name))
+                )
+
+                if expression.args.get("from_"):
+                    expression.join(table, copy=False, join_type="CROSS")
+                else:
+                    expression.set("from_", exp.From(this=table))
+
+    return expression
+
+
 def _array_contains_sql(self: BigQueryGenerator, expression: exp.ArrayContains) -> str:
     return self.sql(
         exp.Exists(
@@ -358,6 +386,7 @@ class BigQueryGenerator(generator.Generator):
         exp.ParseDatetime: lambda self, e: self.func("PARSE_DATETIME", self.format_time(e), e.this),
         exp.Select: transforms.preprocess(
             [
+                _unnest_explode_generate_series,
                 transforms.explode_projection_to_unnest(),
                 transforms.unqualify_unnest,
                 transforms.eliminate_distinct_on,
@@ -379,6 +408,7 @@ class BigQueryGenerator(generator.Generator):
         exp.StrToDate: _str_to_datetime_sql,
         exp.StrToTime: _str_to_datetime_sql,
         exp.SessionUser: lambda *_: "SESSION_USER()",
+        exp.Table: transforms.preprocess([transforms.unnest_generate_series]),
         exp.TimeAdd: date_add_interval_sql("TIME", "ADD"),
         exp.TimeFromParts: rename_func("TIME"),
         exp.TimestampFromParts: rename_func("DATETIME"),

@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from sqlglot import alias, exp
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -23,6 +23,19 @@ SELECT_ALL = object()
 # even when the projection itself is otherwise unreferenced. Posexplode and the *Outer
 # variants are subclasses of Explode, so matching Explode covers them too.
 SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
+
+
+def _is_self_referencing_cte(scope: Scope) -> bool:
+    cte = scope.expression.parent
+    return (
+        isinstance(cte, exp.CTE)
+        and isinstance(cte.parent, exp.With)
+        and cte.parent.recursive
+        and any(
+            not table.db and table.name == cte.alias
+            for table in scope.expression.find_all(exp.Table)
+        )
+    )
 
 
 # Selection to use if selection list is empty
@@ -66,6 +79,11 @@ def pushdown_projections(
 
         # We can't remove columns SELECT DISTINCT nor UNION DISTINCT.
         if scope.expression.args.get("distinct"):
+            parent_selections = {SELECT_ALL}
+
+        # A recursive CTE's body reads the CTE's own output, so its projections
+        # can't be pruned based only on what the enclosing query selects.
+        if _is_self_referencing_cte(scope):
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope.expression, exp.SetOperation):
@@ -156,7 +174,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
         if select_all or name in parent_selections or name in order_refs or alias_count > 0:
             new_selections.append(selection)
             alias_count -= 1
-        elif selection.find(*SET_RETURNING_FUNCTIONS):
+        elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
             # A set-returning function multiplies the rows of the whole query, so this
             # projection affects the cardinality of every output column and must be kept
             # even though it is otherwise unreferenced. It is not a positional alias slot,
@@ -167,7 +185,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count):
                 star = True
             removed = True
 
-        if not is_agg and selection.find(exp.AggFunc):
+        if not is_agg and find_in_scope(selection, exp.AggFunc):
             is_agg = True
 
     if star:

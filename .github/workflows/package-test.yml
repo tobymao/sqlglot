@@ -19,6 +19,30 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
+    # Extract sqlglot-mypy pin so the build cache busts whenever it bumps. mypyc's
+    # separate=True build cache is layout-sensitive across sqlglot-mypy versions, so a
+    # cache produced by one version cannot be safely reused by another.
+    - name: Extract sqlglot-mypy pin
+      if: matrix.python-version != '3.9'
+      id: mypy-pin
+      run: |
+        PIN=$(grep -oE '"sqlglot-mypy[^"]*"' sqlglotc/pyproject.toml \
+              | head -1 | tr -d '"' | tr -s ' ' | tr ' ' '-')
+        echo "pin=${PIN:-unpinned}" >> $GITHUB_OUTPUT
+        echo "Resolved pin: ${PIN:-unpinned}"
+    # Cache the sqlglotc mypyc build state (generated C, object files, mypy incremental
+    # cache) per Python version so `make check` recompiles only changed modules instead
+    # of all ~40 from scratch on every run. Keyed OPT=0/in-place to match install-devc.
+    - name: Cache sqlglotc build
+      if: matrix.python-version != '3.9'
+      uses: actions/cache@v4
+      with:
+        path: |
+          sqlglotc/build
+          sqlglotc/.mypy_cache
+        key: sqlglotc-inplace-opt0-${{ runner.os }}-py${{ matrix.python-version }}-${{ steps.mypy-pin.outputs.pin }}-${{ github.sha }}
+        restore-keys: |
+          sqlglotc-inplace-opt0-${{ runner.os }}-py${{ matrix.python-version }}-${{ steps.mypy-pin.outputs.pin }}-
     - name: Create a virtual environment
       run: |
         python -m venv .venv

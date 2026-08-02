@@ -72,6 +72,14 @@ class DremioGenerator(generator.Generator):
         exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),
     }
 
+    def version_sql(self, expression: exp.Version) -> str:
+        if expression.text("kind") == "AS OF":
+            this = "SNAPSHOT" if expression.name == "VERSION" else expression.name
+            return f"AT {this} {self.sql(expression, 'expression')}"
+
+        self.unsupported("Range time travel is not supported in Dremio")
+        return super().version_sql(expression)
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         """
         Reject time-zone-aware TIMESTAMPs, which Dremio does not accept

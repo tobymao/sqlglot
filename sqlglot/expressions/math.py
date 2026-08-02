@@ -164,8 +164,20 @@ class Log(Expression, Func):
     arg_types = {"this": True, "expression": False}
 
 
+class Negative(Expression, Func):
+    pass
+
+
+class Nanvl(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class Pi(Expression, Func):
     arg_types = {}
+
+
+class Rint(Expression, Func):
+    pass
 
 
 class Round(Expression, Func):

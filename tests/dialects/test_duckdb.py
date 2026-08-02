@@ -28,6 +28,7 @@ class TestDuckDB(Validator):
             "PIVOT duckdb_functions() ON schema_name USING AVG(LENGTH(function_name))::INTEGER GROUP BY schema_name",
             "PIVOT DUCKDB_FUNCTIONS() ON schema_name USING CAST(AVG(LENGTH(function_name)) AS INT) GROUP BY schema_name",
         )
+        self.validate_identity("FROM_HEX('AA')", "UNHEX('AA')")
         self.validate_identity("SELECT str[0:1]")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity("SELECT MODE(category)")
@@ -367,6 +368,66 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT COUNT(*) FILTER (WHERE b > 0) FROM t",
+            write={
+                "duckdb": "SELECT COUNT(*) FILTER(WHERE b > 0) FROM t",
+                "snowflake": "SELECT COUNT_IF(b > 0) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT c, COUNT(*) FILTER (WHERE b > 0) OVER (PARTITION BY c) FROM t",
+            write={
+                "duckdb": "SELECT c, COUNT(*) FILTER(WHERE b > 0) OVER (PARTITION BY c) FROM t",
+                "snowflake": "SELECT c, COUNT_IF(b > 0) OVER (PARTITION BY c) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT(t.*) FILTER (WHERE b > 0) FROM t",
+            write={
+                "duckdb": "SELECT COUNT(t.*) FILTER(WHERE b > 0) FROM t",
+                "snowflake": "SELECT COUNT_IF(b > 0) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT(DISTINCT a) FILTER (WHERE b > 0) FROM t",
+            write={
+                "duckdb": "SELECT COUNT(DISTINCT a) FILTER(WHERE b > 0) FROM t",
+                "snowflake": "SELECT COUNT(DISTINCT IFF(b > 0, a, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT a) FILTER (WHERE a IS NOT NULL)",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT a) FILTER(WHERE NOT a IS NULL)",
+                "snowflake": "SELECT ARRAY_AGG(DISTINCT IFF(NOT a IS NULL, a, NULL))",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(col ORDER BY sort_col) FILTER (WHERE col IS NOT NULL)",
+            write={
+                "duckdb": "SELECT ARRAY_AGG(col ORDER BY sort_col) FILTER(WHERE NOT col IS NULL)",
+                "snowflake": "SELECT ARRAY_AGG(IFF(NOT col IS NULL, col, NULL)) WITHIN GROUP (ORDER BY sort_col)",
+            },
+        )
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY b) FILTER (WHERE a IS NOT NULL) FROM t",
+            write={
+                "snowflake": "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY IFF(NOT a IS NULL, b, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY b DESC) FILTER (WHERE b > 0) FROM t",
+            write={
+                "snowflake": "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY IFF(b > 0, b, NULL) DESC NULLS LAST) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT MODE() WITHIN GROUP (ORDER BY col) FILTER (WHERE b < 3) FROM t",
+            write={
+                "snowflake": "SELECT MODE(IFF(b < 3, col, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT UNNEST(ARRAY[1, 2, 3]), UNNEST(ARRAY[4, 5]), UNNEST(ARRAY[6])",
             write={
                 "bigquery": "SELECT IF(pos = pos_2, col, NULL) AS col, IF(pos = pos_3, col_2, NULL) AS col_2, IF(pos = pos_4, col_3, NULL) AS col_3 FROM UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH([1, 2, 3]), ARRAY_LENGTH([4, 5]), ARRAY_LENGTH([6])) - 1)) AS pos CROSS JOIN UNNEST([1, 2, 3]) AS col WITH OFFSET AS pos_2 CROSS JOIN UNNEST([4, 5]) AS col_2 WITH OFFSET AS pos_3 CROSS JOIN UNNEST([6]) AS col_3 WITH OFFSET AS pos_4 WHERE ((pos = pos_2 OR (pos > (ARRAY_LENGTH([1, 2, 3]) - 1) AND pos_2 = (ARRAY_LENGTH([1, 2, 3]) - 1))) AND (pos = pos_3 OR (pos > (ARRAY_LENGTH([4, 5]) - 1) AND pos_3 = (ARRAY_LENGTH([4, 5]) - 1)))) AND (pos = pos_4 OR (pos > (ARRAY_LENGTH([6]) - 1) AND pos_4 = (ARRAY_LENGTH([6]) - 1)))",
@@ -448,6 +509,15 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x : COALESCE(x, 0) + 1)")
         self.validate_identity("SELECT LIST_TRANSFORM(nbr, LAMBDA x : x + 1) FROM article AS a")
         self.validate_identity("SELECT * FROM my_ducklake.demo AT (VERSION => 2)")
+        self.validate_identity(
+            "SELECT * FROM t1 AS a AT (VERSION => 3) JOIN t2 AS b AT (TIMESTAMP => NOW() - INTERVAL '1' WEEK) ON a.id = b.id"
+        )
+        self.validate_all(
+            "SELECT * FROM t1 AS a AT (TIMESTAMP => CAST('2024-01-01' AS TIMESTAMP))",
+            read={
+                "snowflake": "SELECT * FROM t1 AT (TIMESTAMP => '2024-01-01'::TIMESTAMP) AS a",
+            },
+        )
         self.validate_identity("SELECT TO_BINARY('test')")
         self.validate_identity("SELECT UUIDV7()")
         self.validate_identity("SELECT TRY(LOG(0))")
@@ -1950,8 +2020,8 @@ class TestDuckDB(Validator):
                 "bigquery": "PARSE_TIMESTAMP('%-m/%e/%y %-I:%M %p', x)",
                 "duckdb": "STRPTIME(x, '%-m/%-d/%y %-I:%M %p')",
                 "presto": "DATE_PARSE(x, '%c/%e/%y %l:%i %p')",
-                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:mm a')) AS TIMESTAMP)",
-                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:mm a')",
+                "hive": "CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(x, 'M/d/yy h:m a')) AS TIMESTAMP)",
+                "spark": "TO_TIMESTAMP(x, 'M/d/yy h:m a')",
             },
         )
         self.validate_all(
@@ -2865,6 +2935,19 @@ class TestDuckDB(Validator):
             },
             write={
                 "duckdb": "SELECT ['a', 'b'] AS result",
+            },
+        )
+
+    def test_safe_div(self):
+        # DuckDB follows IEEE 754 for float division, so `a / 0` yields inf
+        # and not NULL, and the divisor must not be wrapped to emulate
+        # NULL-safe division when DuckDB is the source dialect.
+        self.validate_all(
+            "a / b",
+            write={
+                "duckdb": "a / b",
+                "mysql": "a / b",
+                "postgres": "CAST(a AS DOUBLE PRECISION) / b",
             },
         )
 

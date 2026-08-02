@@ -334,6 +334,10 @@ class Generator:
     # Whether the plural form of date parts like day (i.e. "days") is supported in INTERVALs
     INTERVAL_ALLOWS_PLURAL_FORM = True
 
+    # Whether intervals in a REFRESH schedule (AutoRefreshProperty) are generated without the
+    # INTERVAL keyword, e.g. ClickHouse's REFRESH EVERY 30 SECOND
+    AUTO_REFRESH_BARE_INTERVALS = False
+
     # Whether limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
@@ -402,9 +406,6 @@ class Generator:
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
 
-    # Whether FILTER (WHERE cond) can be used for conditional aggregation
-    AGGREGATE_FILTER_SUPPORTED = True
-
     # Whether JOIN sides (LEFT, RIGHT) are supported in conjunction with SEMI/ANTI join kinds
     SEMI_ANTI_JOIN_WITH_SIDE = True
 
@@ -428,6 +429,9 @@ class Generator:
 
     # The keyword to use when specifying the seed of a sample clause
     TABLESAMPLE_SEED_KEYWORD = "SEED"
+
+    # Whether the historical data clause (AT ... / BEFORE ...) is generated after the table alias
+    HISTORICAL_DATA_POST_ALIAS = False
 
     # Whether COLLATE is a function instead of a binary operator
     COLLATE_IS_FUNC = False
@@ -1518,7 +1522,11 @@ class Generator:
         return sql
 
     def with_sql(self, expression: exp.With) -> str:
+        udfs = self.expressions(expression, key="udfs", flat=True)
+        udfs = f"WITH {udfs}" if udfs else ""
+
         sql = self.expressions(expression, flat=True)
+
         recursive = (
             "RECURSIVE "
             if self.CTE_RECURSIVE_KEYWORD_REQUIRED and expression.args.get("recursive")
@@ -1527,7 +1535,8 @@ class Generator:
         search = self.sql(expression, "search")
         search = f" {search}" if search else ""
 
-        return f"WITH {recursive}{sql}{search}"
+        sql = f"WITH {recursive}{sql}{search}" if sql else ""
+        return f"{udfs} {sql}" if udfs and sql else f"{udfs}{sql}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
         alias = expression.args.get("alias")
@@ -1815,7 +1824,8 @@ class Generator:
         constraints = " CONSTRAINTS" if expression.args.get("constraints") else ""
         purge = " PURGE" if expression.args.get("purge") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
-        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}"
+        force = " FORCE" if expression.args.get("force") else ""
+        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}{force}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)
@@ -1905,16 +1915,9 @@ class Generator:
         return f"{percent}{rows}{with_ties}"
 
     def filter_sql(self, expression: exp.Filter) -> str:
-        if self.AGGREGATE_FILTER_SUPPORTED:
-            this = self.sql(expression, "this")
-            where = self.sql(expression, "expression").strip()
-            return f"{this} FILTER({where})"
-
-        agg = expression.this
-        agg_arg = agg.this
-        cond = expression.expression.this
-        agg_arg.replace(exp.If(this=cond.copy(), true=agg_arg.copy()))
-        return self.sql(agg)
+        this = self.sql(expression, "this")
+        where = self.sql(expression, "expression").strip()
+        return f"{this} FILTER({where})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:
@@ -2437,7 +2440,10 @@ class Generator:
 
         when = self.sql(expression, "when")
         if when:
-            table = f"{table} {when}"
+            if self.HISTORICAL_DATA_POST_ALIAS:
+                alias = f"{alias} {when}"
+            else:
+                table = f"{table} {when}"
 
         changes = self.sql(expression, "changes")
         changes = f" {changes}" if changes else ""
@@ -3732,6 +3738,10 @@ class Generator:
         options = f" {options}" if options else ""
         return f"PRIMARY KEY{this} ({expressions}){include}{options}"
 
+    def timeserieskey_sql(self, expression: exp.TimeseriesKey) -> str:
+        self.unsupported("TIMESERIES primary key columns are not supported")
+        return self.sql(expression, "this")
+
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 
@@ -3917,6 +3927,11 @@ class Generator:
         return f"(SELECT {self.sql(unnest)})"
 
     def interval_sql(self, expression: exp.Interval) -> str:
+        include_keyword = not self.AUTO_REFRESH_BARE_INTERVALS or not isinstance(
+            expression.find_ancestor(exp.AutoRefreshProperty, exp.Select),
+            exp.AutoRefreshProperty,
+        )
+        interval_keyword = "INTERVAL" if include_keyword else ""
         unit_expression = expression.args.get("unit")
         unit = self.sql(unit_expression) if unit_expression else ""
         if not self.INTERVAL_ALLOWS_PLURAL_FORM:
@@ -3926,17 +3941,22 @@ class Generator:
         if self.SINGLE_STRING_INTERVAL:
             this = expression.this.name if expression.this else ""
             if this:
+                interval_keyword = f"{interval_keyword} " if interval_keyword else ""
                 if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
-                    return f"INTERVAL '{this}'{unit}"
-                return f"INTERVAL '{this}{unit}'"
-            return f"INTERVAL{unit}"
+                    return f"{interval_keyword}'{this}'{unit}"
+                return f"{interval_keyword}'{this}{unit}'"
+            return f"{interval_keyword}{unit}"
 
         this = self.sql(expression, "this")
         if this:
-            unwrapped = isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES)
-            this = f" {this}" if unwrapped else f" ({this})"
+            if not include_keyword and expression.this.is_string:
+                this = expression.this.name
+            if not isinstance(expression.this, self.UNWRAPPED_INTERVAL_VALUES):
+                this = f"({this})"
+            if include_keyword:
+                this = f" {this}"
 
-        return f"INTERVAL{this}{unit}"
+        return f"{interval_keyword}{this}{unit}"
 
     def return_sql(self, expression: exp.Return) -> str:
         return f"RETURN {self.sql(expression, 'this')}"
@@ -4039,13 +4059,11 @@ class Generator:
         stack: list[str | exp.Expr] | None = None,
     ) -> str:
         if stack is not None:
-            if expression.expressions:
-                stack.append(self.expressions(expression, sep=f" {op} "))
-            else:
-                stack.append(expression.right)
-                if expression.comments and self.comments:
-                    op = self.maybe_comment(op, comments=expression.comments)
-                stack.extend((op, expression.left))
+            stack.append(expression.right)
+            if expression.comments and self.comments:
+                op = self.maybe_comment(op, comments=expression.comments)
+
+            stack.extend((op, expression.left))
             return op
 
         stack = [expression]
@@ -4444,11 +4462,11 @@ class Generator:
         return self.binary(expression, ">=")
 
     def is_sql(self, expression: exp.Is) -> str:
+        negate = expression.args.get("negate")
         if not self.IS_BOOL_ALLOWED and isinstance(expression.expression, exp.Boolean):
-            return self.sql(
-                expression.this if expression.expression.this else exp.not_(expression.this)
-            )
-        return self.binary(expression, "IS")
+            positive = bool(expression.expression.this) != bool(negate)
+            return self.sql(expression.this if positive else exp.not_(expression.this))
+        return self.binary(expression, "IS NOT" if negate else "IS")
 
     def _like_sql(
         self,
@@ -5678,7 +5696,11 @@ class Generator:
 
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
-        return self._add_arrayagg_null_filter(array_agg, expression, expression.this)
+        column_expr = expression.this
+        if isinstance(column_expr, exp.Order):
+            column_expr = column_expr.this
+
+        return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
 
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")
@@ -6212,6 +6234,10 @@ class Generator:
     def block_sql(self, expression: exp.Block) -> str:
         expressions = self.expressions(expression, sep="; ", flat=True)
         return f"{expressions}" if expressions else ""
+
+    def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
+        self.unsupported("Unsupported Inline UDFs syntax")
+        return ""
 
     def storedprocedure_sql(self, expression: exp.StoredProcedure) -> str:
         self.unsupported("Unsupported Stored Procedure syntax")

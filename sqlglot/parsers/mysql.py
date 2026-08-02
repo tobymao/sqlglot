@@ -88,12 +88,6 @@ class MySQLParser(parser.Parser):
 
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
-        TokenType.SOUNDS_LIKE: lambda self, this: self.expression(
-            exp.EQ(
-                this=self.expression(exp.Soundex(this=this)),
-                expression=self.expression(exp.Soundex(this=self._parse_term())),
-            )
-        ),
         TokenType.MEMBER_OF: lambda self, this: self.expression(
             exp.JSONArrayContains(this=this, expression=self._parse_wrapped(self._parse_expression))
         ),
@@ -111,6 +105,9 @@ class MySQLParser(parser.Parser):
         "CURDATE": exp.CurrentDate.from_arg_list,
         "CURTIME": exp.CurrentTime.from_arg_list,
         "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
+        "DATEDIFF": lambda args: exp.DateDiff(
+            this=seq_get(args, 0), expression=seq_get(args, 1), date_part_boundary=True
+        ),
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
         "DATE_FORMAT": lambda args: exp.TimeToStr(
             this=exp.TsOrDsToTimestamp(this=seq_get(args, 0)),
@@ -302,6 +299,19 @@ class MySQLParser(parser.Parser):
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
+
+    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+        this = this or self._parse_bitwise()
+
+        if self._match_text_seq("SOUNDS", "LIKE"):
+            this = self.expression(
+                exp.EQ(
+                    this=self.expression(exp.Soundex(this=this)),
+                    expression=self.expression(exp.Soundex(this=self._parse_term())),
+                )
+            )
+
+        return super()._parse_range(this)
 
     def _parse_alter_table_rename(self):
         if self._match_texts(("INDEX", "KEY")):

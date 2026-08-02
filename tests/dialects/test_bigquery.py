@@ -27,7 +27,7 @@ class TestBigQuery(Validator):
         # Presto's SHA512 takes VARBINARY, so annotated string args are wrapped in TO_UTF8
         expr = self.parse_one("SELECT SHA512('foo')")
         annotated = annotate_types(expr, dialect="bigquery")
-        self.assertEqual(annotated.sql("presto"), "SELECT LOWER(TO_HEX(SHA512(TO_UTF8('foo'))))")
+        self.assertEqual(annotated.sql("presto"), "SELECT SHA512(TO_UTF8('foo'))")
 
         self.validate_identity(
             "SELECT 'foo' 'bar'",
@@ -336,6 +336,8 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "FOR record IN (SELECT word, word_count FROM bigquery-public-data.samples.shakespeare LIMIT 5) DO SELECT record.word, record.word_count"
         )
+        self.validate_identity("FOR system_time IN (SELECT 1 AS x) DO SELECT system_time.x")
+        self.validate_identity("FOR timestamp IN (SELECT 1 AS x) DO SELECT timestamp.x")
         self.validate_identity(
             "DATE(CAST('2016-12-25 05:30:00+07' AS DATETIME), 'America/Los_Angeles')"
         )
@@ -434,6 +436,26 @@ class TestBigQuery(Validator):
         self.validate_identity(
             "x <> ''''''",
             "x <> ''",
+        )
+        self.validate_identity(
+            'SELECT """ends with \\"word\\""""',
+            "SELECT 'ends with \"word\"'",
+        )
+        self.validate_identity(
+            "SELECT '''ends with \\'word\\''''",
+            "SELECT 'ends with \\'word\\''",
+        )
+        self.validate_identity(
+            'SELECT """a\\"b"""',
+            "SELECT 'a\"b'",
+        )
+        self.validate_identity(
+            'SELECT r"""ends with \\""""',
+            "SELECT 'ends with \\\\\"'",
+        )
+        self.validate_identity(
+            'SELECT r"""a\\"b"""',
+            "SELECT 'a\\\\\"b'",
         )
         self.validate_identity(
             "SELECT a overlaps",
@@ -714,19 +736,26 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 10) AS x",
             write={
-                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 10) AS x",
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 10) AS x",
-                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 10) IGNORE NULLS AS x",
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x LIMIT 10) AS x",
+                "duckdb": UnsupportedError,
+                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY x LIMIT 10) IGNORE NULLS AS x",
             },
         )
         self.validate_all(
-            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
+            "SELECT ARRAY_AGG(x IGNORE NULLS) AS x",
             write={
-                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY a, b DESC LIMIT 1, 10) AS x",
-                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY a NULLS FIRST, b DESC LIMIT 1, 10) AS x",
-                "spark": "SELECT COLLECT_LIST(DISTINCT x ORDER BY a, b DESC LIMIT 1, 10) IGNORE NULLS AS x",
+                "bigquery": "SELECT ARRAY_AGG(x IGNORE NULLS) AS x",
+                "duckdb": "SELECT ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL) AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x) AS x",
+            write={
+                "bigquery": "SELECT ARRAY_AGG(DISTINCT x IGNORE NULLS ORDER BY x) AS x",
+                "duckdb": "SELECT ARRAY_AGG(DISTINCT x ORDER BY x NULLS FIRST) FILTER(WHERE x IS NOT NULL) AS x",
+                "spark": "SELECT COLLECT_LIST(DISTINCT x) IGNORE NULLS AS x",
             },
         )
         self.validate_all(
@@ -835,7 +864,9 @@ LANGUAGE js AS
                 "bigquery": "SELECT TIMESTAMP_DIFF(TIMESTAMP_SECONDS(60), TIMESTAMP_SECONDS(0), MINUTE)",
                 "databricks": "SELECT TIMESTAMPDIFF(MINUTE, CAST(FROM_UNIXTIME(0) AS TIMESTAMP), CAST(FROM_UNIXTIME(60) AS TIMESTAMP))",
                 "duckdb": "SELECT DATE_DIFF('MINUTE', TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+                "presto": "SELECT DATE_DIFF('MINUTE', FROM_UNIXTIME(0), FROM_UNIXTIME(60))",
                 "snowflake": "SELECT TIMESTAMPDIFF(MINUTE, TO_TIMESTAMP(0), TO_TIMESTAMP(60))",
+                "trino": "SELECT DATE_DIFF('MINUTE', FROM_UNIXTIME(0), FROM_UNIXTIME(60))",
             },
         )
         self.validate_all(
@@ -848,7 +879,9 @@ LANGUAGE js AS
             write={
                 "databricks": "TIMESTAMPDIFF(MONTH, b, a)",
                 "mysql": "TIMESTAMPDIFF(MONTH, b, a)",
+                "presto": "DATE_DIFF('MONTH', b, a)",
                 "snowflake": "TIMESTAMPDIFF(MONTH, b, a)",
+                "trino": "DATE_DIFF('MONTH', b, a)",
             },
         )
 
@@ -929,6 +962,28 @@ LANGUAGE js AS
                     "duckdb": "SELECT DATE_DIFF('MILLISECOND', CAST('2023-01-01T05:00:00' AS TIMESTAMP), CAST('2023-01-01T00:00:00' AS TIMESTAMP))",
                 },
             ),
+        )
+        # DATETIME_DIFF counts unit boundary crossings, so Presto/Trino's date_diff (which
+        # counts complete units) must truncate its operands: both dates below are 1 day
+        # apart but cross a month boundary
+        self.validate_all(
+            "SELECT DATETIME_DIFF(DATETIME '2021-02-01 00:00:00', DATETIME '2021-01-31 00:00:00', MONTH)",
+            write={
+                "bigquery": "SELECT DATETIME_DIFF(CAST('2021-02-01 00:00:00' AS DATETIME), CAST('2021-01-31 00:00:00' AS DATETIME), MONTH)",
+                "presto": "SELECT DATE_DIFF('MONTH', DATE_TRUNC('MONTH', CAST('2021-01-31 00:00:00' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2021-02-01 00:00:00' AS TIMESTAMP)))",
+                "trino": "SELECT DATE_DIFF('MONTH', DATE_TRUNC('MONTH', CAST('2021-01-31 00:00:00' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2021-02-01 00:00:00' AS TIMESTAMP)))",
+            },
+        )
+        # BigQuery weeks start on Sunday: 2017-10-14 (Saturday) -> 2017-10-15 (Sunday)
+        # crosses a week boundary, so the Monday-based DATE_TRUNC('WEEK') is shifted
+        self.validate_all(
+            "SELECT DATETIME_DIFF(DATETIME '2017-10-15 00:00:00', DATETIME '2017-10-14 00:00:00', WEEK)",
+            write={
+                "bigquery": "SELECT DATETIME_DIFF(CAST('2017-10-15 00:00:00' AS DATETIME), CAST('2017-10-14 00:00:00' AS DATETIME), WEEK)",
+                "duckdb": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+                "presto": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+                "trino": "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2017-10-14 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2017-10-15 00:00:00' AS TIMESTAMP) + INTERVAL '1' DAY))",
+            },
         )
         (
             self.validate_all(
@@ -1181,8 +1236,8 @@ LANGUAGE js AS
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
-                "presto": "LOWER(TO_HEX(SHA512(x)))",
-                "trino": "LOWER(TO_HEX(SHA512(x)))",
+                "presto": "SHA512(x)",
+                "trino": "SHA512(x)",
             },
         )
         self.validate_all(
@@ -1285,8 +1340,9 @@ LANGUAGE js AS
         self.validate_all(
             "r'x\\''",
             write={
-                "bigquery": "'x\\''",
-                "hive": "'x\\''",
+                "bigquery": "'x\\\\\\''",
+                "duckdb": "'x\\'''",
+                "hive": "'x\\\\\\''",
             },
         )
 
@@ -1577,9 +1633,17 @@ LANGUAGE js AS
             "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
             write={
                 "bigquery": "SELECT * FROM a WHERE b IN UNNEST([1, 2, 3])",
+                "duckdb": "SELECT * FROM a WHERE CASE WHEN [1, 2, 3] IS NULL OR ARRAY_LENGTH([1, 2, 3]) = 0 THEN FALSE WHEN ARRAY_CONTAINS([1, 2, 3], b) THEN TRUE WHEN b IS NULL OR ARRAY_LENGTH([1, 2, 3]) <> LIST_COUNT([1, 2, 3]) THEN NULL ELSE FALSE END",
                 "presto": "SELECT * FROM a WHERE b IN (SELECT UNNEST(ARRAY[1, 2, 3]))",
                 "hive": "SELECT * FROM a WHERE b IN (SELECT EXPLODE(ARRAY(1, 2, 3)))",
                 "spark": "SELECT * FROM a WHERE b IN (SELECT EXPLODE(ARRAY(1, 2, 3)))",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a WHERE b NOT IN UNNEST([1, 2, 3])",
+            write={
+                "bigquery": "SELECT * FROM a WHERE NOT b IN UNNEST([1, 2, 3])",
+                "duckdb": "SELECT * FROM a WHERE NOT CASE WHEN [1, 2, 3] IS NULL OR ARRAY_LENGTH([1, 2, 3]) = 0 THEN FALSE WHEN ARRAY_CONTAINS([1, 2, 3], b) THEN TRUE WHEN b IS NULL OR ARRAY_LENGTH([1, 2, 3]) <> LIST_COUNT([1, 2, 3]) THEN NULL ELSE FALSE END",
             },
         )
         self.validate_all(
@@ -2078,10 +2142,39 @@ WHERE
         )
 
         self.validate_all(
-            "SELECT ARRAY_CONCAT_AGG(1)",
+            "SELECT ARRAY_CONCAT_AGG(arr) FROM (SELECT [1, 2] AS arr) AS t",
             write={
-                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(1))",
-                "bigquery": "SELECT ARRAY_CONCAT_AGG(1)",
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr) FROM (SELECT [1, 2] AS arr) AS t",
+                "snowflake": "SELECT ARRAY_FLATTEN(ARRAY_AGG(arr)) FROM (SELECT [1, 2] AS arr) AS t",
+                "duckdb": "SELECT FLATTEN(ARRAY_AGG(arr) FILTER(WHERE NOT arr IS NULL)) FROM (SELECT [1, 2] AS arr) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+                "duckdb": "SELECT FLATTEN(ARRAY_AGG(arr ORDER BY y NULLS FIRST) FILTER(WHERE NOT arr IS NULL)) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr LIMIT 2) FROM (SELECT [1, 2] AS arr) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr LIMIT 2) FROM (SELECT [1, 2] AS arr) AS t",
+                "duckdb": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y DESC LIMIT 2) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+            write={
+                "bigquery": "SELECT ARRAY_CONCAT_AGG(arr ORDER BY y DESC LIMIT 2) FROM (SELECT [1, 2] AS arr, 1 AS y) AS t",
+                "duckdb": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND a.val IN UNNEST(b.arr)",
+            write={
+                "bigquery": "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND a.val IN UNNEST(b.arr)",
+                "duckdb": "SELECT * FROM a LEFT JOIN b ON a.key = b.key AND CASE WHEN b.arr IS NULL OR ARRAY_LENGTH(b.arr) = 0 THEN FALSE WHEN ARRAY_CONTAINS(b.arr, a.val) THEN TRUE WHEN a.val IS NULL OR ARRAY_LENGTH(b.arr) <> LIST_COUNT(b.arr) THEN NULL ELSE FALSE END",
             },
         )
         self.validate_all(
@@ -2385,6 +2478,9 @@ WHERE
     def test_user_defined_functions(self):
         self.validate_identity(
             "CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js AS 'return x*y;'"
+        )
+        self.assertIsInstance(
+            self.validate_identity("SELECT NOT deterministic FROM t").selects[0], exp.Not
         )
         self.validate_identity("CREATE TEMPORARY FUNCTION udf(x ANY TYPE) AS (x)")
         self.validate_identity("CREATE TEMPORARY FUNCTION a(x FLOAT64, y FLOAT64) AS ((x + 4) / y)")

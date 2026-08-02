@@ -17,6 +17,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Corr,
             exp.MonthsBetween,
+            exp.Sign,
         }
     },
     **{
@@ -64,6 +65,7 @@ EXPRESSION_METADATA = {
             exp.ArrayExcept,
             exp.First,
             exp.Last,
+            exp.Negative,
             exp.Reverse,
         }
     },

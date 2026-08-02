@@ -79,3 +79,35 @@ SELECT a.id, b.val, c.name FROM t_a AS a INNER JOIN t_b AS b ON a.id = b.a_id IN
 -- DNF: single-table predicate is pushed to its own JOIN regardless of join order
 SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON b.a_id = a.id WHERE (b.flag = 1 AND b.active = 1) OR (b.flag = 2 AND b.active = 0);
 SELECT a.id, b.val FROM t_a AS a INNER JOIN t_b AS b ON ((b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1)) AND a.id = b.a_id WHERE (b.active = 0 AND b.flag = 2) OR (b.active = 1 AND b.flag = 1);
+
+-- Predicate is not pushed into a subquery with LIMIT: filtering before the limit changes which rows the limit keeps
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a LIMIT 10) AS s WHERE s.b = 1;
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a LIMIT 10) AS s WHERE s.b = 1;
+
+-- Predicate is not pushed into a subquery with OFFSET: filtering before the offset changes which rows are skipped
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;
+SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;
+
+-- Predicate is not pushed into a subquery with QUALIFY: filtering before the window filter changes its results
+SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
+SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
+
+-- The RHS of a RIGHT JOIN is preserved, so a WHERE predicate on it can't become a match-only ON predicate
+SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;
+
+-- A WHERE predicate on the preserved RHS of a RIGHT JOIN can still be pushed into an isolated source
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y WHERE b = 3) AS y ON x.a = y.b WHERE TRUE;
+
+-- A RIGHT JOIN preserves its own source, so an ON predicate can't be pushed into it as a filter
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+SELECT x.a, y.b FROM x RIGHT JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+
+-- A FULL JOIN preserves its own source, so an ON predicate can't be pushed into it as a filter
+SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3;
+
+-- A FULL JOIN preserves both sides, so a WHERE predicate on either of them can't be pushed down
+SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
+SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;

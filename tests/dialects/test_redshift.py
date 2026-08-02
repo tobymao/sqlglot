@@ -58,6 +58,12 @@ class TestRedshift(Validator):
             },
         )
         self.validate_all(
+            "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY y) FILTER (WHERE z > 0) FROM t",
+            write={
+                "snowflake": "SELECT LISTAGG(IFF(z > 0, x, NULL), ',') WITHIN GROUP (ORDER BY y) FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT APPROXIMATE COUNT(DISTINCT y)",
             read={
                 "spark": "SELECT APPROX_COUNT_DISTINCT(y)",

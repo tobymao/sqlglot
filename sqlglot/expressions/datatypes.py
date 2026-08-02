@@ -220,8 +220,20 @@ class DataType(Expression):
         DType.NCHAR,
         DType.NVARCHAR,
         DType.TEXT,
+        DType.TINYTEXT,
+        DType.MEDIUMTEXT,
+        DType.LONGTEXT,
         DType.VARCHAR,
         DType.NAME,
+    }
+
+    BINARY_TYPES: t.ClassVar[set[DType]] = {
+        DType.BINARY,
+        DType.VARBINARY,
+        DType.TINYBLOB,
+        DType.BLOB,
+        DType.MEDIUMBLOB,
+        DType.LONGBLOB,
     }
 
     SIGNED_INTEGER_TYPES: t.ClassVar[set[DType]] = {

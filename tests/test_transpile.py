@@ -806,6 +806,22 @@ WHERE
             read="presto",
         )
         self.validate(
+            "SELECT 1 UNION ALL VALUES (2)",
+            "SELECT 1 UNION ALL SELECT * FROM (VALUES (2)) AS _values",
+        )
+        self.validate(
+            "VALUES (1) AS v(a) UNION ALL SELECT 2",
+            "SELECT * FROM (VALUES (1)) AS v(a) UNION ALL SELECT 2",
+        )
+        self.validate(
+            "VALUES (1) UNION SELECT * FROM x",
+            "SELECT * FROM (VALUES (1)) AS _values UNION SELECT * FROM x",
+        )
+        self.validate(
+            "WITH RECURSIVE T(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
+            "WITH RECURSIVE T(n) AS (SELECT * FROM (VALUES (1)) AS _values UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
+        )
+        self.validate(
             "SELECT BOOL_OR(a > 10) FROM (VALUES 1, 2, 15) AS T(a)",
             "SELECT BOOL_OR(a > 10) FROM (VALUES (1), (2), (15)) AS T(a)",
             read="presto",

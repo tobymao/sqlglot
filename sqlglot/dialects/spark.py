@@ -16,6 +16,17 @@ class Spark(Spark2):
     ARRAY_FUNCS_PROPAGATES_NULLS = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # Spark 3+ parses MM/dd/HH/hh/mm/ss strictly, unlike Spark 2 (SimpleDateFormat)
+    TIME_MAPPING = {
+        **Spark2.TIME_MAPPING,
+        "MM": "%mstrict",
+        "dd": "%dstrict",
+        "HH": "%Hstrict",
+        "hh": "%Istrict",
+        "mm": "%Mstrict",
+        "ss": "%Sstrict",
+    }
+
     class Tokenizer(Spark2.Tokenizer):
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
 

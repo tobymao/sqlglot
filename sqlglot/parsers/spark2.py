@@ -80,7 +80,7 @@ class Spark2Parser(HiveParser):
 
     FUNCTION_PARSERS = {
         **HiveParser.FUNCTION_PARSERS,
-        "APPROX_PERCENTILE": lambda self: self._parse_quantile_function(exp.ApproxQuantile),
+        "APPROX_PERCENTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
         "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
         "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
         "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),

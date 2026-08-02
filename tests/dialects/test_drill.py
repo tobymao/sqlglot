@@ -20,6 +20,46 @@ class TestDrill(Validator):
             },
         )
 
+    def test_ilike(self):
+        self.validate_all(
+            "SELECT ILIKE(x, '%y')",
+            write={
+                "drill": "SELECT ILIKE(x, '%y')",
+                "duckdb": "SELECT x ILIKE '%y'",
+                "postgres": "SELECT x ILIKE '%y'",
+            },
+        )
+        self.validate_all(
+            "SELECT NOT ILIKE(x, '%y')",
+            write={
+                "drill": "SELECT NOT ILIKE(x, '%y')",
+                "postgres": "SELECT NOT x ILIKE '%y'",
+            },
+        )
+        self.validate_all(
+            "SELECT ILIKE(x, '%y', '#')",
+            write={
+                "drill": "SELECT ILIKE(x, '%y', '#')",
+                "postgres": "SELECT x ILIKE '%y' ESCAPE '#'",
+            },
+        )
+        self.validate_all(
+            "NOT ILIKE(x, '%y', '#')",
+            read={"postgres": "x NOT ILIKE '%y' ESCAPE '#'"},
+        )
+        self.validate_all(
+            "ILIKE(x, 'a') OR ILIKE(x, 'b')",
+            read={"snowflake": "x ILIKE ANY ('a', 'b')"},
+        )
+        self.validate_all(
+            "ILIKE(x, 'a', '#') OR ILIKE(x, 'b', '#')",
+            read={"snowflake": "x ILIKE ANY ('a', 'b') ESCAPE '#'"},
+        )
+        self.validate_all(
+            "x LIKE 'a' OR x LIKE 'b'",
+            read={"snowflake": "x LIKE ANY ('a', 'b')"},
+        )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS")
         self.validate_identity("ANALYZE TABLE tbl COMPUTE STATISTICS SAMPLE 5 PERCENT")

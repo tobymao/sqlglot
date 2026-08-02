@@ -29,6 +29,7 @@ class DrillGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_LIKE_QUANTIFIERS = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -76,7 +77,6 @@ class DrillGenerator(generator.Generator):
         exp.If: lambda self, e: (
             f"`IF`({self.format_args(e.this, e.args.get('true'), e.args.get('false'))})"
         ),
-        exp.ILike: lambda self, e: self.binary(e, "`ILIKE`"),
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("LEVENSHTEIN_DISTANCE")
         ),
@@ -103,6 +103,22 @@ class DrillGenerator(generator.Generator):
             f"CAST(SUBSTR(REPLACE(CAST({self.sql(e, 'this')} AS VARCHAR), '-', ''), 1, 8) AS INT)"
         ),
     }
+
+    def ilike_sql(self, expression: exp.ILike) -> str:
+        if isinstance(expression.expression, (exp.All, exp.Any)):
+            return super().ilike_sql(expression)
+        return self._ilike_func_sql(expression)
+
+    def escape_sql(self, expression: exp.Escape) -> str:
+        # Drill takes the escape character as ILIKE's third argument instead of an ESCAPE clause
+        this = expression.this
+        if isinstance(this, exp.ILike) and not isinstance(this.expression, (exp.All, exp.Any)):
+            return self._ilike_func_sql(this, expression.expression)
+        return super().escape_sql(expression)
+
+    def _ilike_func_sql(self, expression: exp.ILike, escape: exp.Expr | None = None) -> str:
+        ilike = self.func("ILIKE", expression.this, expression.expression, escape)
+        return f"NOT {ilike}" if expression.args.get("negate") else ilike
 
 
 def _drill_dateint_format() -> str:

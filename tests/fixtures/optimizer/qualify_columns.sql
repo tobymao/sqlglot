@@ -5,7 +5,7 @@ SELECT a FROM x;
 SELECT x.a AS a FROM x AS x;
 
 SELECT "a" FROM x;
-SELECT x."a" AS a FROM x AS x;
+SELECT x."a" AS "a" FROM x AS x;
 
 # execute: false
 SELECT a FROM zz GROUP BY a ORDER BY a;
@@ -110,7 +110,7 @@ SELECT T."col" AS "col" FROM TBL T;
 # execute: false
 # dialect: oracle
 WITH base AS (SELECT x.dummy AS COL_1 FROM dual x) SELECT b."COL_1" FROM base b;
-WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B."COL_1" AS COL_1 FROM BASE B;
+WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B."COL_1" AS "COL_1" FROM BASE B;
 
 # execute: false
 -- this query seems to be invalid in postgres and duckdb but valid in bigquery
@@ -140,6 +140,28 @@ SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY y.c;
 
 SELECT COALESCE(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
 SELECT COALESCE(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY COALESCE(x.a);
+
+# title: Aggregate alias must not be expanded into a GROUP BY (would nest the aggregate)
+# execute: false
+# validate_qualify_columns: false
+SELECT SUM(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY UPPER(d);
+SELECT SUM(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY UPPER(d);
+
+# title: Standalone aggregate alias reference in GROUP BY must not be expanded
+# execute: false
+# validate_qualify_columns: false
+SELECT SUM(x.a) AS d FROM x JOIN y ON x.b = y.b GROUP BY d;
+SELECT SUM(x.a) AS d FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY d;
+
+# title: Aggregate alias colliding with a base column resolves the GROUP BY ref to the column
+# execute: false
+SELECT SUM(x.a) AS c FROM x JOIN y ON x.b = y.b GROUP BY UPPER(c);
+SELECT SUM(x.a) AS c FROM x AS x JOIN y AS y ON x.b = y.b GROUP BY UPPER(y.c);
+
+# title: Aggregate in a subquery scope does not block expanding an alias into GROUP BY
+# dialect: duckdb
+WITH x AS (SELECT * FROM (VALUES (1, 10), (2, 10), (3, 20)) AS v(a, b)) SELECT (SELECT MAX(t.a) FROM x AS t) + x.b AS f FROM x GROUP BY f ORDER BY f;
+WITH x AS (SELECT v.a AS a, v.b AS b FROM (VALUES (1, 10), (2, 10), (3, 20)) AS v(a, b)) SELECT (SELECT MAX(t.a) AS _col_0 FROM x AS t) + x.b AS f FROM x AS x GROUP BY (SELECT MAX(t.a) AS _col_0 FROM x AS t) + x.b ORDER BY f;
 
 SELECT a + 1 AS d FROM x WHERE d > 1;
 SELECT x.a + 1 AS d FROM x AS x WHERE (x.a + 1) > 1;
@@ -793,6 +815,41 @@ WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(id AS col) AS 
 WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(COALESCE(t1.id, t2.id) AS col) AS my_field FROM t1 AS t1 JOIN t2 AS t2 ON t1.id = t2.id;
 
 --------------------------------------
+-- Natural join
+--------------------------------------
+-- A NATURAL JOIN is expanded to a USING join over the common columns.
+SELECT b FROM x NATURAL JOIN y;
+SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT * FROM x NATURAL JOIN y;
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT a FROM x NATURAL JOIN z;
+SELECT x.a AS a FROM x AS x JOIN z AS z ON x.b = z.b;
+
+-- Chained NATURAL JOINs intersect against all columns accumulated so far, so the
+-- second join's common columns include those contributed by y.
+SELECT b FROM x NATURAL JOIN y NATURAL JOIN z;
+SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON COALESCE(x.b, y.b) = z.b AND y.c = z.c;
+
+-- No common columns: there is no USING list to expand into, so NATURAL is left
+-- in place for the engine to reject or cross join as it sees fit.
+# execute: false
+SELECT a, d FROM x NATURAL LEFT JOIN w;
+SELECT x.a AS a, w.d AS d FROM x AS x NATURAL LEFT JOIN w AS w;
+
+-- An unknown schema on either side makes the common columns unknowable.
+# execute: false
+# validate_qualify_columns: false
+SELECT * FROM x NATURAL JOIN unknown_table;
+SELECT * FROM x AS x NATURAL JOIN unknown_table AS unknown_table;
+
+# execute: false
+# validate_qualify_columns: false
+SELECT * FROM unknown_table NATURAL JOIN x;
+SELECT * FROM unknown_table AS unknown_table NATURAL JOIN x AS x;
+
+--------------------------------------
 -- Hint with table reference
 --------------------------------------
 # dialect: spark
@@ -1018,6 +1075,30 @@ SELECT x.a AS a, y.b AS b, z.c AS c FROM x AS x LEFT JOIN (y AS y INNER JOIN z A
 
 SELECT * FROM ((SELECT * FROM x) INNER JOIN (SELECT * FROM y) ON a = c);
 SELECT _0.a AS a, _0.b AS b, _1.b AS b, _1.c AS c FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _0 INNER JOIN (SELECT y.b AS b, y.c AS c FROM y AS y) AS _1 ON _0.a = _1.c);
+
+# title: outer star over derived table with duplicate output names is left unexpanded
+SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s;
+SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
+
+# title: qualified outer star over derived table with duplicate output names is left unexpanded
+SELECT s.* FROM (SELECT * FROM x CROSS JOIN y) AS s;
+SELECT s.* FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
+
+# title: outer star over derived table with distinct output names is expanded normally
+SELECT * FROM (SELECT a, c FROM x CROSS JOIN y) AS s;
+SELECT s.a AS a, s.c AS c FROM (SELECT x.a AS a, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s;
+
+# title: nested outer stars over duplicate output names are left unexpanded at each level
+SELECT * FROM (SELECT * FROM (SELECT * FROM x CROSS JOIN y) AS s) AS t;
+SELECT * FROM (SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x CROSS JOIN y AS y) AS s) AS t;
+
+# title: user-authored duplicate aliases in a derived table are preserved, not clobbered
+SELECT * FROM (SELECT a AS k, a AS k FROM x) AS s;
+SELECT * FROM (SELECT x.a AS k, x.a AS k FROM x AS x) AS s;
+
+# title: mixed star and explicit projection in a derived table with duplicate output names is preserved
+SELECT * FROM (SELECT *, a AS extra FROM x CROSS JOIN y) AS s;
+SELECT * FROM (SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c, x.a AS extra FROM x AS x CROSS JOIN y AS y) AS s;
 
 SELECT b FROM ((SELECT a FROM x) INNER JOIN y ON a = b);
 SELECT y.b AS b FROM ((SELECT x.a AS a FROM x AS x) AS _0 INNER JOIN y AS y ON _0.a = y.b);

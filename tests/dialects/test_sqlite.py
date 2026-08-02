@@ -27,6 +27,12 @@ class TestSQLite(Validator):
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
+        self.validate_all(
+            "SELECT DATE(d, '1 DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
+            },
+        )
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")
         self.validate_identity("SELECT DATETIME(1092941466, 'auto')")
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch', 'localtime')")

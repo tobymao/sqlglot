@@ -17,7 +17,6 @@ class ClickHouse(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = False
-    SAFE_DIVISION = True
     LOG_BASE_FIRST: bool | None = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
     PRESERVE_ORIGINAL_NAMES = True
@@ -108,6 +107,7 @@ class ClickHouse(Dialect):
             "IPV4": TokenType.IPV4,
             "IPV6": TokenType.IPV6,
             "POINT": TokenType.POINT,
+            "PROJECTION": TokenType.PROJECTION,
             "RING": TokenType.RING,
             "LINESTRING": TokenType.LINESTRING,
             "MULTILINESTRING": TokenType.MULTILINESTRING,

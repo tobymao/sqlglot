@@ -102,6 +102,7 @@ class Count(Expression, AggFunc):
 
 class CountIf(Expression, AggFunc):
     _sql_names = ["COUNT_IF", "COUNTIF"]
+    arg_types = {"this": True, "zero_on_all_null": False}
 
 
 class CovarPop(Expression, AggFunc):
@@ -255,19 +256,19 @@ class RegrAvgy(Expression, AggFunc):
 
 
 class RegrCount(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrIntercept(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrR2(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrSlope(Expression, AggFunc):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": False}
 
 
 class RegrSxx(Expression, AggFunc):

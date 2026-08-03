@@ -38,23 +38,7 @@ def _annotate_regexp_replace(self: TypeAnnotator, expression: exp.RegexpReplace)
     return self._set_type(expression, exp.DType.LONGBLOB if has_binary else exp.DType.LONGTEXT)
 
 
-COMPRESS_LONGBLOB_TYPES = {
-    exp.DType.TEXT,
-    exp.DType.MEDIUMTEXT,
-    exp.DType.LONGTEXT,
-    exp.DType.BLOB,
-    exp.DType.MEDIUMBLOB,
-    exp.DType.LONGBLOB,
-    exp.DType.JSON,
-}
-
-COMPRESS_BLOB_TYPES = {
-    exp.DType.TINYTEXT,
-}
-
 COMPRESS_VARBINARY_TYPES = {
-    exp.DType.CHAR,
-    exp.DType.VARCHAR,
     exp.DType.BINARY,
     exp.DType.VARBINARY,
     exp.DType.TINYBLOB,
@@ -71,14 +55,33 @@ COMPRESS_VARBINARY_TYPES = {
 def _annotate_compress(self: TypeAnnotator, expression: exp.Compress) -> exp.Expr:
     this = expression.this
 
-    if this.is_type(*COMPRESS_LONGBLOB_TYPES):
-        return self._set_type(expression, exp.DType.LONGBLOB)
-
-    if this.is_type(*COMPRESS_BLOB_TYPES):
+    if this.is_type(exp.DType.TINYTEXT):
         return self._set_type(expression, exp.DType.BLOB)
+
+    if this.is_type(*exp.DataType.TEXT_TYPES):
+        return self._set_type(
+            expression,
+            exp.DType.VARBINARY
+            if this.is_type(
+                exp.DType.CHAR,
+                exp.DType.NCHAR,
+                exp.DType.VARCHAR,
+                exp.DType.NVARCHAR,
+                exp.DType.NAME,
+            )
+            else exp.DType.LONGBLOB,
+        )
 
     if this.is_type(*COMPRESS_VARBINARY_TYPES):
         return self._set_type(expression, exp.DType.VARBINARY)
+
+    if this.is_type(
+        exp.DType.BLOB,
+        exp.DType.MEDIUMBLOB,
+        exp.DType.LONGBLOB,
+        exp.DType.JSON,
+    ):
+        return self._set_type(expression, exp.DType.LONGBLOB)
 
     return self._set_type(expression, exp.DType.UNKNOWN)
 

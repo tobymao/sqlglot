@@ -3611,6 +3611,7 @@ OPTIONS (
             "SELECT DATE_TRUNC(d, WEEK(SUNDAY))",
             write={
                 "bigquery": "SELECT DATE_TRUNC(d, WEEK)",
+                "exasol": "SELECT DATE_TRUNC('WEEK', d)",
                 "mysql": "SELECT STR_TO_DATE(CONCAT(YEAR(d), ' ', WEEK(d, 1), ' 1'), '%Y %u %w')",
                 "snowflake": "SELECT DATE_TRUNC('WEEK', d)",
                 "spark": "SELECT TRUNC(d, 'WEEK')",
@@ -3621,7 +3622,16 @@ OPTIONS (
             write={
                 "bigquery": "SELECT TIMESTAMP_TRUNC(ts, WEEK)",
                 "clickhouse": "SELECT dateTrunc('WEEK', ts)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', ts)",
+                "mysql": "SELECT DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF(WEEK, '0000-01-01 00:00:00', ts)) WEEK)",
                 "snowflake": "SELECT DATE_TRUNC('WEEK', ts)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME_TRUNC(dt, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATETIME_TRUNC(dt, WEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST(dt AS TIMESTAMP))",
             },
         )
         self.validate_all(
@@ -3634,6 +3644,7 @@ OPTIONS (
             "SELECT TIMESTAMP_TRUNC(ts, WEEK(SUNDAY))",
             write={
                 "clickhouse": UnsupportedError,
+                "duckdb": UnsupportedError,
                 "snowflake": UnsupportedError,
                 "spark": UnsupportedError,
             },
@@ -3657,7 +3668,15 @@ OPTIONS (
             "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
             write={
                 "bigquery": "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
+                "hive": "SELECT EXTRACT(WEEK FROM d)",
                 "snowflake": "SELECT DATE_PART(WEEK, d)",
+                "spark": "SELECT EXTRACT(WEEK FROM d)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
+            write={
+                "spark": UnsupportedError,
             },
         )
         self.validate_identity(

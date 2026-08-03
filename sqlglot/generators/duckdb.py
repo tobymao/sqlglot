@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_str,
     week_unit_to_dow,
+    weekstart_unit_to_str,
     WEEK_START_DAY_TO_DOW,
 )
 from sqlglot.generator import unsupported_args
@@ -1779,7 +1780,7 @@ class DuckDBGenerator(generator.Generator):
             "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
         ),
         exp.DatetimeTrunc: lambda self, e: self.func(
-            "DATE_TRUNC", unit_to_str(e), exp.cast(e.this, exp.DType.DATETIME)
+            "DATE_TRUNC", weekstart_unit_to_str(self, e), exp.cast(e.this, exp.DType.DATETIME)
         ),
         exp.UnixToTime: _unix_to_time_sql,
         exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
@@ -4437,7 +4438,7 @@ class DuckDBGenerator(generator.Generator):
         return result
 
     def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
-        unit = unit_to_str(expression)
+        unit = weekstart_unit_to_str(self, expression)
         zone = expression.args.get("zone")
         timestamp = expression.this
         date_unit = is_date_unit(unit)

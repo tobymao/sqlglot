@@ -127,12 +127,9 @@ class TrinoParser(PrestoParser):
         )
 
     def _parse_routine_block(self) -> exp.Block:
-        # _parse_block() only recognizes its closing END when nothing follows it,
-        # which doesn't fit Trino's grammar (the UDF's END is always immediately
-        # followed by the enclosing query: `... END SELECT f(1)`). This reuses the
-        # same chunk-advancing primitives (_chunks/_advance_chunk) _parse_block()
-        # relies on to thread a body across semicolon-delimited chunks, but closes
-        # on END unconditionally, leaving what follows it for the caller.
+        # The body spans semicolon-delimited chunks like _parse_block(), but unlike it,
+        # closes on END even when tokens follow; Trino's enclosing query always does
+        # and is left for the caller (`... END SELECT f(1)`).
         self._match(TokenType.BEGIN)
         statements: list[exp.Expr] = []
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
+from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.scope import Scope, build_scope
 
 
@@ -9,7 +10,7 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def eliminate_ctes(expression: E) -> E:
+def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
     """
     Remove unused CTEs from an expression.
 
@@ -39,10 +40,14 @@ def eliminate_ctes(expression: E) -> E:
                     if not cte_node:
                         continue
                     with_node = cte_node.parent
+                    if journal is not None and with_node:
+                        record(journal, with_node, "expressions")
                     cte_node.pop()
 
                     # Pop the entire WITH clause if this is the last CTE
                     if with_node and len(with_node.expressions) <= 0:
+                        if journal is not None and with_node.parent:
+                            record(journal, with_node.parent, "with_")
                         with_node.pop()
 
                     # Decrement the ref count for all sources this CTE selects from

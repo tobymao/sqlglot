@@ -87,6 +87,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Atan2,
             exp.MatchAgainst,
+            exp.StDistance,
         }
     },
     **{

@@ -6832,6 +6832,12 @@ COLLATION(tbl.date_col);
 VARCHAR;
 
 
+ST_Distance(tbl.geom_col, tbl.geom_col2);
+DOUBLE;
+
+# dialect: mysql
+ST_Distance(tbl.geom_col, tbl.geom_col2, 'metre');
+DOUBLE;
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -1074,6 +1074,86 @@ class TestOptimizer(unittest.TestCase):
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
+    def test_optimize_scrubs_stale_group_by_ordinals_after_prune(self):
+        # After projection prune, out-of-range bare GROUP BY ordinals must be removed.
+        # In-range bare ordinals (e.g. constants kept at qualify time) may remain.
+        # Non-constant keys stay expanded as expressions even when pruned from SELECT.
+        sql = """
+        WITH x AS (
+          SELECT
+            t.a AS a,
+            u.b AS b,
+            0 AS c,
+            SUM(t.d) AS s
+          FROM t
+          LEFT JOIN u ON t.e = u.e
+          GROUP BY 1, 2, 3
+        ),
+        y AS (
+          SELECT a, s FROM x
+        )
+        SELECT CAST(a AS DATE) AS e, SUM(s) AS m
+        FROM y
+        GROUP BY CAST(a AS DATE)
+        """
+        optimized = optimizer.optimize(
+            parse_one(sql, dialect="presto"),
+            dialect="presto",
+            validate_qualify_columns=False,
+        )
+
+        cte = optimized.find(exp.CTE)
+        group = cte.this.args.get("group")
+        self.assertIsNotNone(group)
+        group_sql = group.sql(dialect="presto")
+        self.assertIn("b", group_sql)
+
+        n_selects = len(cte.this.selects)
+        for node in group.expressions:
+            if node.is_int and isinstance(node, exp.Literal):
+                pos = int(node.this)
+                self.assertGreaterEqual(pos, 1)
+                self.assertLessEqual(
+                    pos,
+                    n_selects,
+                    f"out-of-range GROUP BY ordinal remained: {node.sql()}",
+                )
+
+        # Constant ordinal 3 is scrubbed after prune; a/b stay as expressions.
+        # In-range bare 1 may remain if a constant/number select still occupies that slot.
+        pruned = optimizer.optimize(
+            parse_one(
+                """
+                WITH x AS (
+                  SELECT a, b, 0 AS c, SUM(d) AS s
+                  FROM t
+                  GROUP BY 1, 2, 3
+                )
+                SELECT a, s FROM x
+                """,
+                dialect="presto",
+            ),
+            dialect="presto",
+            validate_qualify_columns=False,
+        )
+        cte = pruned.find(exp.CTE)
+        self.assertEqual(
+            [s.alias_or_name for s in cte.this.selects],
+            ["a", "s"],
+        )
+        group = cte.this.args["group"]
+        group_exprs = [e.sql(dialect="presto") for e in group.expressions]
+        self.assertIn('"t"."a"', group_exprs)
+        self.assertIn('"t"."b"', group_exprs)
+        self.assertNotIn("3", group_exprs)
+
+        # Second optimize must not fail on a stale out-of-range ordinal
+        optimizer.optimize(
+            parse_one(optimized.sql(dialect="presto"), dialect="presto"),
+            dialect="presto",
+            validate_qualify_columns=False,
+        )
+
     def test_simplify(self):
         self.check_file("simplify", simplify, schema=self.schema)
 

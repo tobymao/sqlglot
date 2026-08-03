@@ -210,4 +210,38 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     scope.expression.select(*new_selections, append=False, copy=False)
 
     if removed:
+        _scrub_stale_group_by_ordinals(scope.expression)
         scope.clear_cache()
+
+
+def _scrub_stale_group_by_ordinals(select: exp.Select) -> None:
+    """Remove bare GROUP BY integer ordinals that are invalid after SELECT prune.
+
+    Positional GROUP BY keys that still point at a real non-aggregate projection are kept;
+    out-of-range ordinals and those pointing at aggregates are dropped.
+    """
+    group = select.args.get("group")
+    if not group:
+        return
+
+    selects = select.selects
+    n = len(selects)
+    kept: list[exp.Expr] = []
+
+    for node in group.expressions:
+        if node.is_int and isinstance(node, exp.Literal):
+            pos = int(node.this)
+            if pos < 1 or pos > n:
+                continue
+            if find_in_scope(selects[pos - 1], exp.AggFunc):
+                continue
+        kept.append(node)
+
+    if kept:
+        group.set("expressions", kept)
+    elif not (
+        group.args.get("grouping_sets") or group.args.get("cube") or group.args.get("rollup")
+    ):
+        select.set("group", None)
+    else:
+        group.set("expressions", None)

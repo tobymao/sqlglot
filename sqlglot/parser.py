@@ -1790,6 +1790,8 @@ class Parser:
 
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = False
     IDENTIFY_PIVOT_STRINGS: t.ClassVar = False
+    # Whether an UNPIVOT outputs its value column(s) before the name column
+    UNPIVOT_VALUE_COLUMNS_FIRST: t.ClassVar = False
     # Controls when an aggregation's name is included in a pivoted column's name:
     # "agg_name_if_aliased" - only for aggregations that carry an explicit alias
     # "agg_name_if_aliased_or_multiple" - if aliased, or whenever there are multiple aggregations
@@ -5405,6 +5407,8 @@ class Parser:
             for pivot_field in pivot.fields:
                 if isinstance(pivot_field, exp.In):
                     pivot_field.set("this", _unpivot_target(pivot_field.this))
+
+            pivot.set("value_columns_first", self.UNPIVOT_VALUE_COLUMNS_FIRST)
 
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())

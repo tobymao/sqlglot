@@ -6740,9 +6740,80 @@ MATCH(tbl.str_col) AGAINST ('database' WITH QUERY EXPANSION);
 DOUBLE;
 
 # dialect: mysql
-COMPRESS(tbl.str_col);
+COMPRESS(CAST('test' AS TEXT));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS MEDIUMTEXT));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS LONGTEXT));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS BLOB));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS MEDIUMBLOB));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS LONGBLOB));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('{}' AS JSON));
+LONGBLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS TINYTEXT));
+BLOB;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS CHAR));
 VARBINARY;
 
+# dialect: mysql
+COMPRESS(CAST('test' AS VARCHAR));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS BINARY));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS VARBINARY));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST('test' AS TINYBLOB));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST(1 AS INT));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST(1 AS BIGINT));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST(1.5 AS DECIMAL));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST(1.5 AS DOUBLE));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST('2024-01-01' AS DATE));
+VARBINARY;
+
+# dialect: mysql
+COMPRESS(CAST('2024-01-01 12:00:00' AS DATETIME));
+VARBINARY;
 --------------------------------------
 -- DuckDB
 --------------------------------------

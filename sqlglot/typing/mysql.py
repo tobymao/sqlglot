@@ -38,6 +38,51 @@ def _annotate_regexp_replace(self: TypeAnnotator, expression: exp.RegexpReplace)
     return self._set_type(expression, exp.DType.LONGBLOB if has_binary else exp.DType.LONGTEXT)
 
 
+COMPRESS_LONGBLOB_TYPES = {
+    exp.DType.TEXT,
+    exp.DType.MEDIUMTEXT,
+    exp.DType.LONGTEXT,
+    exp.DType.BLOB,
+    exp.DType.MEDIUMBLOB,
+    exp.DType.LONGBLOB,
+    exp.DType.JSON,
+}
+
+COMPRESS_BLOB_TYPES = {
+    exp.DType.TINYTEXT,
+}
+
+COMPRESS_VARBINARY_TYPES = {
+    exp.DType.CHAR,
+    exp.DType.VARCHAR,
+    exp.DType.BINARY,
+    exp.DType.VARBINARY,
+    exp.DType.TINYBLOB,
+    exp.DType.ENUM,
+    exp.DType.INT,
+    exp.DType.BIGINT,
+    exp.DType.DECIMAL,
+    exp.DType.DOUBLE,
+    exp.DType.DATE,
+    exp.DType.DATETIME,
+}
+
+
+def _annotate_compress(self: TypeAnnotator, expression: exp.Compress) -> exp.Expr:
+    this = expression.this
+
+    if this.is_type(*COMPRESS_LONGBLOB_TYPES):
+        return self._set_type(expression, exp.DType.LONGBLOB)
+
+    if this.is_type(*COMPRESS_BLOB_TYPES):
+        return self._set_type(expression, exp.DType.BLOB)
+
+    if this.is_type(*COMPRESS_VARBINARY_TYPES):
+        return self._set_type(expression, exp.DType.VARBINARY)
+
+    return self._set_type(expression, exp.DType.UNKNOWN)
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -101,7 +146,6 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.VARBINARY}
         for expr_type in {
             exp.Unhex,
-            exp.Compress,
         }
     },
     **{
@@ -115,4 +159,5 @@ EXPRESSION_METADATA = {
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.Trunc: {"annotator": _annotate_truncate},
     exp.RegexpReplace: {"annotator": _annotate_regexp_replace},
+    exp.Compress: {"annotator": _annotate_compress},
 }

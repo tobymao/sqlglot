@@ -11,6 +11,7 @@ from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import TypeAnnotator, annotate_types
 from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
+from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
@@ -1271,6 +1272,66 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.eliminate_ctes.eliminate_ctes,
             pretty=True,
         )
+
+    def test_journal(self):
+        journal = []
+
+        expression = parse_one("SELECT a, b FROM x")
+        record(journal, expression, "expressions")
+        expression.set("expressions", [expression.expressions[0]])
+        self.assertEqual(expression.sql(), "SELECT a FROM x")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), "SELECT a, b FROM x")
+        self.assertEqual(journal, [])
+
+        for i, selection in enumerate(expression.expressions):
+            self.assertIs(selection.parent, expression)
+            self.assertEqual(selection.arg_key, "expressions")
+            self.assertEqual(selection.index, i)
+
+        # Removing the last CTE pops the entire WITH clause
+        sql = "WITH y AS (SELECT a FROM x) SELECT a FROM z"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "SELECT a FROM z")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        # The WITH clause survives when other CTEs remain
+        sql = "WITH y AS (SELECT a FROM x), z AS (SELECT b FROM x) SELECT b FROM z"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "WITH z AS (SELECT b FROM x) SELECT b FROM z")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        # Chained removals record the same WITH clause multiple times
+        sql = "WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y) SELECT 1 AS c"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "SELECT 1 AS c")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        expression = optimizer.qualify.qualify(
+            parse_one("SELECT a FROM (SELECT a, b FROM x) AS t"),
+            schema=self.schema,
+            identify=False,
+        )
+        sql = expression.sql()
+        optimizer.pushdown_projections.pushdown_projections(
+            expression, schema=self.schema, journal=journal
+        )
+        self.assertEqual(
+            expression.sql(), "SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x) AS t"
+        )
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
 
     @patch("sqlglot.generator.logger")
     def test_merge_subqueries(self, logger):

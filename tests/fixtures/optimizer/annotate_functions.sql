@@ -6814,6 +6814,24 @@ VARBINARY;
 # dialect: mysql
 COMPRESS(CAST('2024-01-01 12:00:00' AS DATETIME));
 VARBINARY;
+
+# dialect: mysql
+COLLATION(tbl.str_col);
+VARCHAR;
+
+# dialect: mysql
+COLLATION(tbl.bin_col);
+VARCHAR;
+
+# dialect: mysql
+COLLATION(tbl.int_col);
+VARCHAR;
+
+# dialect: mysql
+COLLATION(tbl.date_col);
+VARCHAR;
+
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -115,6 +115,7 @@ EXPRESSION_METADATA = {
             exp.Stuff,  # insert function
             exp.SubstringIndex,
             exp.RegexpSubstr,
+            exp.Collation,
         }
     },
     **{

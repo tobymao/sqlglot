@@ -290,6 +290,15 @@ class TestDatabricks(Validator):
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
         ).selects[0].expression.assert_is(exp.JSONPath)
 
+        self.validate_identity("INSERT INTO t REPLACE WHERE a = 1 SELECT * FROM src")
+        self.validate_identity("INSERT INTO t REPLACE WHERE a = 2 (SELECT * FROM src)")
+        self.validate_identity(
+            "WITH s AS (SELECT * FROM src) INSERT INTO t REPLACE WHERE a = 1 SELECT * FROM s"
+        )
+        self.validate_identity(
+            "WITH s AS (SELECT * FROM src) INSERT INTO t REPLACE USING (a) SELECT * FROM s"
+        )
+
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")

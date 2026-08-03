@@ -28,22 +28,27 @@ def _build_date(args: list) -> exp.Date | exp.DateFromParts:
     return expr_type.from_arg_list(args)
 
 
+def _normalize_bare_week(expr: E) -> E:
+    # In BigQuery, a bare WEEK date part is equivalent to WEEK(SUNDAY)
+    unit = expr.args.get("unit")
+    if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
+        expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+
+    return expr
+
+
 def build_date_diff(
     expr_type: type[exp.DateDiff | exp.DatetimeDiff],
 ) -> t.Callable[[list], exp.Expr]:
     def _builder(args: list) -> exp.Expr:
-        expr = expr_type(
-            this=seq_get(args, 0),
-            expression=seq_get(args, 1),
-            unit=seq_get(args, 2),
-            date_part_boundary=True,
+        return _normalize_bare_week(
+            expr_type(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 2),
+                date_part_boundary=True,
+            )
         )
-
-        unit = expr.args.get("unit")
-        if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
-            expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
-
-        return expr
 
     return _builder
 
@@ -253,6 +258,7 @@ class BigQueryParser(parser.Parser):
         "JSON_STRIP_NULLS": _build_json_strip_nulls,
         "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
         "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
+        "LAST_DAY": lambda args: _normalize_bare_week(exp.LastDay.from_arg_list(args)),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "MD5": exp.MD5Digest.from_arg_list,
         "SHA1": exp.SHA1Digest.from_arg_list,

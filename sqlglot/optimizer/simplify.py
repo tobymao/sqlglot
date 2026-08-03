@@ -800,7 +800,9 @@ class Simplifier:
         if isinstance(expression, exp.Not):
             this = expression.this
             if is_null(this):
-                return exp.and_(exp.null(), exp.true(), copy=False)
+                return _parenthesize_nested_connector(
+                    exp.and_(exp.null(), exp.true(), copy=False), expression.parent
+                )
             if this.__class__ in self.COMPLEMENT_COMPARISONS:
                 right = this.expression
                 complement_subquery_predicate = self.COMPLEMENT_SUBQUERY_PREDICATES.get(
@@ -831,7 +833,9 @@ class Simplifier:
                         copy=False,
                     )
                 if is_null(condition):
-                    return exp.and_(exp.null(), exp.true(), copy=False)
+                    return _parenthesize_nested_connector(
+                        exp.and_(exp.null(), exp.true(), copy=False), expression.parent
+                    )
             if always_true(this):
                 return exp.false()
             if is_false(this):
@@ -1384,7 +1388,7 @@ class Simplifier:
         if concat_type is exp.ConcatWs:
             new_args = [sep_expr] + new_args
         elif isinstance(expression, exp.DPipe):
-            return reduce(lambda x, y: exp.DPipe(this=x, expression=y), new_args)
+            return reduce(lambda x, y: exp.DPipe(this=x, expression=y, safe=args["safe"]), new_args)
 
         return concat_type(expressions=new_args, **args)
 

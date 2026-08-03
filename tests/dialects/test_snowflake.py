@@ -3,6 +3,7 @@ from unittest import mock
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
@@ -3434,6 +3435,21 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT 1 WHERE ('he%lo' LIKE 'he#%lo' ESCAPE '#' AND 'he%lo' LIKE 'he#%lo2' ESCAPE '#') OR x = 1",
             },
         )
+
+    def test_pivot_output_column_names(self):
+        # Snowflake names a bare IN-list column after the literal, quotes included, but an
+        # explicit `<value> AS <alias>` names it after the alias. Both verified in-engine.
+        for pivot, expected in (
+            ("IN ('a', 'b')", ["ID", "'a'", "'b'"]),
+            ("IN ('a' AS a, 'b' AS b)", ["ID", "A", "B"]),
+        ):
+            with self.subTest(pivot):
+                expression = qualify(
+                    self.parse_one(f"SELECT * FROM t PIVOT(SUM(val) FOR cat {pivot})"),
+                    schema={"t": {"id": "int", "cat": "text", "val": "int"}},
+                    dialect="snowflake",
+                )
+                self.assertEqual([s.alias_or_name for s in expression.selects], expected)
 
     def test_null_treatment(self):
         self.validate_all(

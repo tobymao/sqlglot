@@ -1115,6 +1115,18 @@ class TestOptimizer(unittest.TestCase):
             "CONCAT_WS(' ', a, NULL, 'b c')", simplified_concat_ws.sql(dialect="duckdb")
         )
 
+        # DuckDB's || coerces its args to strings, so the "safe" flag must survive simplification
+        # for the transpiled CONCAT to keep coercing in stricter dialects like Presto
+        dpipe = parse_one("x || 'a' || 'b'", read="duckdb")
+        simplified_dpipe = optimizer.simplify.simplify(dpipe)
+
+        self.assertEqual(simplified_dpipe.args["safe"], True)
+        self.assertEqual("x || 'ab'", simplified_dpipe.sql(dialect="duckdb"))
+        self.assertEqual(
+            "CONCAT(CAST(x AS VARCHAR), CAST('ab' AS VARCHAR))",
+            simplified_dpipe.sql(dialect="presto"),
+        )
+
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS(x,y)")
 

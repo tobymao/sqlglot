@@ -160,6 +160,24 @@ def _last_day_sql(self: DuckDBGenerator, expression: exp.LastDay) -> str:
     For other date parts (year, quarter, week), we need to implement equivalent logic.
     """
     date_expr = expression.this
+    unit_expr = expression.args.get("unit")
+
+    week_start = week_unit_to_dow(unit_expr)
+    if week_start:
+        # The week's last day precedes its start day; DuckDB DAYOFWEEK: Sunday=0, ..., Saturday=6
+        last_dow = week_start - 1
+        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
+
+        # Days to the last day of week: (last_dow + 7 - dayofweek) % 7
+        days_to_last_expr = exp.Mod(
+            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(last_dow + 7), expression=dow)),
+            expression=exp.Literal.number(7),
+        )
+        interval_expr = exp.Interval(this=days_to_last_expr, unit=exp.var("DAY"))
+        add_expr = exp.Add(this=date_expr, expression=interval_expr)
+
+        return self.sql(exp.cast(add_expr, exp.DType.DATE))
+
     unit = expression.text("unit")
 
     if not unit or unit.upper() == "MONTH":
@@ -188,20 +206,6 @@ def _last_day_sql(self: DuckDBGenerator, expression: exp.LastDay) -> str:
         # Last day of the last month of the quarter
         last_day_expr = exp.func("LAST_DAY", first_day_last_month_expr)
         return self.sql(last_day_expr)
-
-    if unit.upper() == "WEEK":
-        # DuckDB DAYOFWEEK: Sunday=0, Monday=1, ..., Saturday=6
-        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
-        # Days to the last day of week: (7 - dayofweek) % 7, assuming the last day of week is Sunday (Snowflake)
-        # Wrap in parentheses to ensure correct precedence
-        days_to_sunday_expr = exp.Mod(
-            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(7), expression=dow)),
-            expression=exp.Literal.number(7),
-        )
-        interval_expr = exp.Interval(this=days_to_sunday_expr, unit=exp.var("DAY"))
-        add_expr = exp.Add(this=date_expr, expression=interval_expr)
-        cast_expr = exp.cast(add_expr, exp.DType.DATE)
-        return self.sql(cast_expr)
 
     self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
     return self.function_fallback_sql(expression)

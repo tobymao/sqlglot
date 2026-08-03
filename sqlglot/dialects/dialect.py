@@ -2092,8 +2092,7 @@ WEEK_START_DAY_TO_DOW = {
 
 def week_unit_to_dow(unit: exp.Expr | None) -> int | None:
     """
-    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>)
-    or ISOWEEK unit parts.
+    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>) or ISOWEEK unit parts.
 
     Args:
         unit: The unit expression (Var for WEEK/ISOWEEK or WeekStart)

@@ -1790,6 +1790,8 @@ class Parser:
 
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = False
     IDENTIFY_PIVOT_STRINGS: t.ClassVar = False
+    # Whether an UNPIVOT outputs its value column(s) before the name column
+    UNPIVOT_VALUE_COLUMNS_FIRST: t.ClassVar = False
     # Controls when an aggregation's name is included in a pivoted column's name:
     # "agg_name_if_aliased" - only for aggregations that carry an explicit alias
     # "agg_name_if_aliased_or_multiple" - if aliased, or whenever there are multiple aggregations
@@ -3598,16 +3600,28 @@ class Parser:
 
         returning = self._parse_returning()  # TSQL allows RETURNING before source
 
+        stored = self._match_text_seq("STORED") and self._parse_stored()
+        by_name = self._match_text_seq("BY", "NAME")
+        exists = self._parse_exists()
+        replace_where = None
+        replace_using = None
+
+        if self._match(TokenType.REPLACE):
+            if self._match(TokenType.WHERE):
+                replace_where = self._parse_disjunction()
+            elif self._match(TokenType.USING):
+                replace_using = self._parse_using_identifiers()
+
         return self.expression(
             exp.Insert(
                 hint=hint,
                 is_function=is_function,
                 this=this,
-                stored=self._match_text_seq("STORED") and self._parse_stored(),
-                by_name=self._match_text_seq("BY", "NAME"),
-                exists=self._parse_exists(),
-                where=self._match_pair(TokenType.REPLACE, TokenType.WHERE)
-                and self._parse_disjunction(),
+                stored=stored,
+                by_name=by_name,
+                exists=exists,
+                where=replace_where,
+                using=replace_using,
                 partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
                 settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
                 default=self._match_text_seq("DEFAULT", "VALUES"),
@@ -5394,6 +5408,8 @@ class Parser:
                 if isinstance(pivot_field, exp.In):
                     pivot_field.set("this", _unpivot_target(pivot_field.this))
 
+            pivot.set("value_columns_first", self.UNPIVOT_VALUE_COLUMNS_FIRST)
+
         if not self._match_set((TokenType.PIVOT, TokenType.UNPIVOT), advance=False):
             pivot.set("alias", self._parse_table_alias())
 
@@ -5411,7 +5427,11 @@ class Parser:
 
                 all_fields.append(
                     [
-                        fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                        # An explicit `<field> AS <alias>` names the output column directly,
+                        # so it wins over the dialect's string-identifying convention
+                        fld.sql()
+                        if self.IDENTIFY_PIVOT_STRINGS and not isinstance(fld, exp.PivotAlias)
+                        else fld.alias_or_name
                         for fld in pivot_field_expressions
                     ]
                 )

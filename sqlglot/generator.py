@@ -460,6 +460,9 @@ class Generator:
     # Whether UNPIVOT aliases are Identifiers (False means they're Literals)
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = True
 
+    # Whether a (UN)PIVOT's alias is introduced with AS (Oracle rejects it, ORA-03048)
+    PIVOT_ALIAS_WITH_AS = True
+
     # What delimiter to use for separating JSON key/value pairs
     JSON_KEY_VALUE_PAIR_SEP = ":"
 
@@ -2283,6 +2286,8 @@ class Generator:
         exists = " IF EXISTS" if expression.args.get("exists") else ""
         where = self.sql(expression, "where")
         where = f"{self.sep()}REPLACE WHERE {where}" if where else ""
+        using = self.expressions(expression, key="using", flat=True)
+        using = f"{self.sep()}REPLACE USING ({using})" if using else ""
         expression_sql = f"{self.sep()}{self.sql(expression, 'expression')}"
         on_conflict = self.sql(expression, "conflict")
         on_conflict = f" {on_conflict}" if on_conflict else ""
@@ -2303,7 +2308,7 @@ class Generator:
         source = self.sql(expression, "source")
         source = f"TABLE {source}" if source else ""
 
-        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{expression_sql}{source}"
+        sql = f"INSERT{hint}{alternative}{ignore}{this}{stored}{by_name}{exists}{partition_by}{settings}{where}{using}{expression_sql}{source}"
         return self.prepend_ctes(expression, sql)
 
     def introducer_sql(self, expression: exp.Introducer) -> str:
@@ -2597,7 +2602,8 @@ class Generator:
                 expression.fields[0].set("expressions", new_field_exprs)
 
         alias = self.sql(expression, "alias")
-        alias = f" AS {alias}" if alias else ""
+        if alias:
+            alias = f" AS {alias}" if self.PIVOT_ALIAS_WITH_AS else f" {alias}"
 
         fields = self.expressions(
             expression,
@@ -5179,8 +5185,8 @@ class Generator:
         if self.LAST_DAY_SUPPORTS_DATE_PART:
             return self.function_fallback_sql(expression)
 
-        unit = expression.text("unit")
-        if unit and unit != "MONTH":
+        unit = expression.args.get("unit")
+        if unit and unit.name.upper() != "MONTH":
             self.unsupported("Date parts are not supported in LAST_DAY.")
 
         return self.func("LAST_DAY", expression.this)

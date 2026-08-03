@@ -3569,6 +3569,35 @@ OPTIONS (
         )
         self.validate_identity("DATE_DIFF('2017-12-18', '2017-12-17', WEEK(SATURDAY))")
         self.validate_identity("DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))")
+
+        self.validate_all(
+            "SELECT LAST_DAY(DATE '2008-11-10', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK)",
+                "duckdb": "SELECT CAST(CAST('2008-11-10' AS DATE) + INTERVAL ((13 - EXTRACT(DAYOFWEEK FROM CAST('2008-11-10' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT LAST_DAY(DATE '2008-11-10', WEEK)",
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK)",
+                "duckdb": "SELECT CAST(CAST('2008-11-10' AS DATE) + INTERVAL ((13 - EXTRACT(DAYOFWEEK FROM CAST('2008-11-10' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT LAST_DAY(DATE '2008-11-10', WEEK(MONDAY))",
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK(MONDAY))",
+                "duckdb": "SELECT CAST(CAST('2008-11-10' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2008-11-10' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT LAST_DAY(DATE '2008-11-10', ISOWEEK)",
+            write={
+                "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), ISOWEEK)",
+                "duckdb": "SELECT CAST(CAST('2008-11-10' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2008-11-10' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
         self.validate_identity(
             "EXTRACT(WEEK(THURSDAY) FROM DATE '2013-12-25')",
             "EXTRACT(WEEK(THURSDAY) FROM CAST('2013-12-25' AS DATE))",

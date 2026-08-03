@@ -39,6 +39,7 @@ class OracleGenerator(generator.Generator):
     QUERY_HINT_SEP = " "
     SUPPORTS_DECODE_CASE = True
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
+    PIVOT_ALIAS_WITH_AS = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -65,6 +66,7 @@ class OracleGenerator(generator.Generator):
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
+        exp.Pivot: transforms.preprocess([transforms.unqualify_pivot_fields]),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         exp.DateStrToDate: lambda self, e: self.func(
             "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")

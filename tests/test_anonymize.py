@@ -105,7 +105,7 @@ class TestAnonymize(unittest.TestCase):
                 (TokenType.SELECT, "SELECT"),
                 (TokenType.VAR, "aaa"),  # foo
                 (TokenType.COMMA, ","),
-                (TokenType.UNKNOWN, "............"),
+                (TokenType.UNKNOWN, "'s.........."),  # 'secret tail, delimiter kept
             ],
         )
 
@@ -203,7 +203,7 @@ ORDER  BY inv1.w_warehouse_sk,
                        AND aaaaaaaaaaaaaaap = aaaaaaaaaaaaac
                        AND aaaaaaaaaaq = aaaaaaaar
                        AND aaaaas = 1019
-                GROUP BY aaaaaaaaaaaaaaab,
+                GROUP  BY aaaaaaaaaaaaaaab,
                           aaaaaaaaaaaaac,
                           aaaaaaaad,
                           aaaae) aau
@@ -227,7 +227,7 @@ WHERE  aaaw.aaaaaaaad = aaax.aaaaaaaad
        AND aaaw.aaaaaaaaaaaaac = aaax.aaaaaaaaaaaaac
        AND aaaw.aaaae = 4
        AND aaax.aaaae = 4 + 4
-ORDER BY aaaw.aaaaaaaaaaaaac,
+ORDER  BY aaaw.aaaaaaaaaaaaac,
           aaaw.aaaaaaaad,
           aaaw.aaaae,
           aaaw.aaag,
@@ -236,6 +236,7 @@ ORDER BY aaaw.aaaaaaaaaaaaac,
           aaax.aaag,
           aaax.aai;"""
         self.assertEqual(render(sql, anonymize(sql)), expected)
+        self.assertEqual(len(expected), len(sql))
 
     def test_functions_anonymized(self):
         self.assert_anonymized(
@@ -345,6 +346,134 @@ ORDER BY aaaw.aaaaaaaaaaaaac,
             ],
         )
 
+    def test_quotes_preserved(self):
+        # the alias is fitted between the quotes of the source span, so a literal stays a
+        # literal of the same kind and width instead of collapsing to a bare word
+        cases = [
+            ("SELECT 'hello' AS x", "SELECT 'aaaaa' AS b", None),
+            ("SELECT 'a''b'", "SELECT 'aaaa'", None),  # the escape is content, so it's masked
+            ("SELECT ''", "SELECT ''", None),
+            ("SELECT N'nat', x'4141'", "SELECT N'aaa', x'aaab'", "snowflake"),
+            ('SELECT "my table"', 'SELECT "aa aaaaa"', None),
+            ("SELECT `back tick`", "SELECT `aaaa aaaa`", "mysql"),
+            ("SELECT [brack et]", "SELECT [aaaaa aa]", "tsql"),
+            ("SELECT $$her$$, $tag$body$tag$", "SELECT $$aaa$$, $tag$aaab$tag$", "postgres"),
+        ]
+
+        for sql, expected, dialect in cases:
+            rendered = render(sql, anonymize(sql, dialect), dialect)
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_source_spelling_preserved(self):
+        # tokens that aren't anonymized are rendered over their own span, so the spelling
+        # the tokenizer normalized away (GROUP  BY -> GROUP BY) survives
+        cases = [
+            ("SELECT a FROM t GROUP  BY a", "SELECT a FROM b GROUP  BY a"),
+            ("SELECT a ORDER   BY a", "SELECT a ORDER   BY a"),
+            ("select * from window, OUT", "select * from window, OUT"),
+        ]
+
+        for sql, expected in cases:
+            rendered = render(sql, anonymize(sql))
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_numbers_keep_their_shape(self):
+        sql = "SELECT 1e, 1.e, 1e10, .5, 2002, 1e-5, 1E+2"
+        rendered = render(sql, anonymize(sql))
+        self.assertEqual(rendered, "SELECT 1e, 2.e, 3e10, .4, 1004, 6e-1, 7E+1")
+        self.assertEqual(len(rendered), len(sql))
+
+    def test_hints_anonymized(self):
+        # a hint's text is the whole /*+ ... */ comment, whether the tokenizer emits it as a
+        # HINT token (only in hint position) or leaves it in the gap as a plain comment
+        cases = [
+            (
+                "SELECT /*+ INDEX(customers ssn_idx) */ a FROM t",
+                "SELECT /*+ ............... ........ */ a FROM b",
+                None,
+            ),
+            (
+                "SELECT /*+ BROADCAST(`y`) */ x FROM y",
+                "SELECT /*+ .............. */ a FROM b",
+                "spark",
+            ),
+            (
+                "INSERT /*+ APPEND */ INTO t VALUES (1)",
+                "INSERT /*+ ...... */ INTO a VALUES (2)",
+                "oracle",
+            ),
+            ("SELECT a /*+ INDEX(secret) */ b", "SELECT a /*+ ............. */ b", None),
+            (
+                "SELECT /*+ INDEX(customers)\n           MORE(ssn) */ a FROM t",
+                "SELECT /*+ ................\n           ......... */ a FROM b",
+                None,
+            ),
+        ]
+
+        for sql, expected, dialect in cases:
+            rendered = render(sql, anonymize(sql, dialect), dialect)
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_hint_does_not_desync_following_comments(self):
+        # a hint's body is recorded in Token.comments but its marker isn't left in a gap, so
+        # pairing gap markers with recorded bodies drifts and copies the source through
+        sql = "SELECT /*+ x */ a -- password is hunter2\nFROM t"
+        self.assertEqual(
+            render(sql, anonymize(sql)), "SELECT /*+ . */ a -- ........ .. .......\nFROM b"
+        )
+
+    def test_comments_without_tokens(self):
+        # nothing for the tokenizer to attach the comment to
+        cases = [
+            ("-- top secret", "-- ... ......"),
+            ("/* COMMENT */", "/* ....... */"),
+            ("/*", "/*"),
+        ]
+
+        for sql, expected in cases:
+            rendered = render(sql, anonymize(sql))
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_tokenize_error_keeps_delimiter(self):
+        # the two leading characters survive so the delimiter the tokenizer choked on is
+        # still identifiable - an unterminated string reads differently to a comment
+        cases = [
+            ("SELECT a, 'unterminated string", "SELECT a, 'u..................", None),
+            ("SELECT a, /* unterminated comment", "SELECT a, /*.....................", None),
+            ('SELECT a, "unterminated ident', 'SELECT a, "u.................', None),
+            ("SELECT a, $$unterminated heredoc", "SELECT a, $$....................", "postgres"),
+            ("SELECT a, `unterminated backtick", "SELECT a, `u....................", "mysql"),
+            ("'unterminated secret", "'u..................", None),  # nothing tokenized at all
+            ("SELECT a, '", "SELECT a, '", None),  # remainder shorter than the delimiter
+        ]
+
+        for sql, expected, dialect in cases:
+            rendered = render(sql, anonymize(sql, dialect), dialect)
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_comment_bodies_fully_blanked(self):
+        # markers inside a comment body are body, not structure, so they're blanked too
+        cases = [
+            ("SELECT a /* x /* nested */ y */ b", "SELECT a /* . .. ...... .. . */ b"),
+            ("SELECT a -- /* not a real block\nFROM t", "SELECT a -- .. ... . .... .....\nFROM b"),
+        ]
+
+        for sql, expected in cases:
+            rendered = render(sql, anonymize(sql))
+            self.assertEqual(rendered, expected)
+            self.assertEqual(len(rendered), len(sql))
+
+    def test_render_without_dialect_still_redacts(self):
+        # an unrecognized marker costs readability, never redaction
+        sql = "SELECT a # secret"
+        self.assertEqual(render(sql, anonymize(sql, "mysql"), "mysql"), "SELECT a # ......")
+        self.assertEqual(render(sql, anonymize(sql, "mysql")), "SELECT a . ......")
+
     def test_render(self):
         cases = [
             ("", "", None),
@@ -360,7 +489,7 @@ ORDER BY aaaw.aaaaaaaaaaaaac,
                 "SELECT aaa /* ..... */ /* ...... */ FROM aab",
                 None,
             ),
-            ("SELECT foo, 'secret tail", "SELECT aaa, ............", None),
+            ("SELECT foo, 'secret tail", "SELECT aaa, 's..........", None),
             ("SELECT foo // secret", "SELECT aaa // ......", "snowflake"),
             ("SELECT foo # secret", "SELECT aaa # ......", "mysql"),
         ]

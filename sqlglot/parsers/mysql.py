@@ -307,9 +307,12 @@ class MySQLParser(parser.Parser):
             this = self.expression(
                 exp.EQ(
                     this=self.expression(exp.Soundex(this=this)),
-                    expression=self.expression(exp.Soundex(this=self._parse_term())),
+                    expression=self.expression(exp.Soundex(this=self._parse_bitwise())),
                 )
             )
+            # MySQL evaluates = and IS left to right because they have the same precedence.
+            if self._match(TokenType.IS, advance=False):
+                this = self.expression(exp.Paren(this=this))
 
         return super()._parse_range(this)
 

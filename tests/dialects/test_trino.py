@@ -282,11 +282,13 @@ SELECT f(1)""",
         # DECLARE isn't reserved in Trino, so it must still work as a plain identifier
         self.validate_identity("SELECT declare FROM (VALUES (1), (2)) AS t(declare)")
 
-        # A Block from another dialect's own parsing (not built by
-        # _parse_routine_block) must not get an extra synthesized BEGIN
+        # A Block built without begin=True (i.e. not by _parse_routine_block) must
+        # not get a synthesized BEGIN
         self.assertEqual(
-            parse_one("BEGIN SELECT 1; SELECT 2; END", dialect="bigquery").sql(dialect="trino"),
-            "BEGIN SELECT 1; SELECT 2; END",
+            exp.Block(
+                expressions=[parse_one("SELECT 1"), parse_one("SELECT 2"), exp.EndStatement()]
+            ).sql(dialect="trino"),
+            "SELECT 1; SELECT 2; END",
         )
 
         # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration

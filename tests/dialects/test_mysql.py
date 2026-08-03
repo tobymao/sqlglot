@@ -429,6 +429,11 @@ class TestMySQL(Validator):
         self.validate_identity(
             "SELECT 'foo' SOUNDS LIKE 'bar'", "SELECT SOUNDEX('foo') = SOUNDEX('bar')"
         )
+        self.validate_identity("SELECT a SOUNDS LIKE b | c", "SELECT SOUNDEX(a) = SOUNDEX(b | c)")
+        self.validate_identity(
+            "SELECT a SOUNDS LIKE b IS NULL",
+            "SELECT (SOUNDEX(a) = SOUNDEX(b)) IS NULL",
+        )
         self.validate_identity("SELECT * FROM t WHERE sounds LIKE 'a%'")
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")

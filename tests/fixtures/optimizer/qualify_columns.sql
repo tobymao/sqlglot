@@ -1156,3 +1156,39 @@ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y A
 # title: ANTI + normal joins reinclude the table on scope
 SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
 SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
+
+# title: chained UNPIVOT, source is a CTE
+# dialect: duckdb
+WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) SELECT * FROM t UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south));
+WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) SELECT t.id AS id, t.month AS month, t.revenue AS revenue, t.region AS region, t.headcount AS headcount FROM t AS t UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS t;
+
+# title: chained UNPIVOT, source columns come from the schema
+# dialect: duckdb
+SELECT * FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south));
+SELECT unpivotable.id AS id, unpivotable.month AS month, unpivotable.revenue AS revenue, unpivotable.region AS region, unpivotable.headcount AS headcount FROM unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS unpivotable;
+
+# title: chained UNPIVOT, explicit columns under the chain's alias
+# dialect: duckdb
+WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) SELECT u.month, u.headcount FROM t UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;
+WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) SELECT u.month AS month, u.headcount AS headcount FROM t AS t UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;
+
+# title: chained PIVOT, the second groups by what the first produced
+# dialect: duckdb
+SELECT * FROM pivotable PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y));
+SELECT _0.id AS id, _0.a AS a, _0.b AS b, _0.x AS x, _0.y AS y FROM pivotable AS pivotable PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y)) AS _0;
+
+# title: PIVOT then UNPIVOT of the columns it produced
+# dialect: duckdb
+SELECT * FROM pivotable PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) UNPIVOT(v FOR c IN (a, b));
+SELECT pivotable.id AS id, pivotable.kind AS kind, pivotable.amt AS amt, pivotable.c AS c, pivotable.v AS v FROM pivotable AS pivotable PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) UNPIVOT(v FOR c IN (a, b)) AS pivotable;
+
+# title: a source joined next to a pivoted one is not expanded through its operators
+# dialect: duckdb
+SELECT * FROM x JOIN unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u ON x.a = u.id;
+SELECT x.a AS a, x.b AS b, u.id AS id, u.north AS north, u.south AS south, u.month AS month, u.revenue AS revenue FROM x AS x JOIN unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u ON x.a = u.id;
+
+# title: chained UNPIVOT keeps quoted identifiers case-sensitive, unlike the names it produces
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS "Id", 2 AS "Jan", 3 AS "Feb", 4 AS "Nor", 5 AS "Sou") SELECT * FROM t UNPIVOT(v1 FOR n1 IN ("Jan", "Feb")) UNPIVOT(v2 FOR n2 IN ("Nor", "Sou"));
+WITH T AS (SELECT 1 AS "Id", 2 AS "Jan", 3 AS "Feb", 4 AS "Nor", 5 AS "Sou") SELECT T."Id" AS "Id", T.N1 AS N1, T.V1 AS V1, T.N2 AS N2, T.V2 AS V2 FROM T AS T UNPIVOT(V1 FOR N1 IN ("Jan", "Feb")) UNPIVOT(V2 FOR N2 IN ("Nor", "Sou")) AS T;

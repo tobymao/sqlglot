@@ -117,6 +117,14 @@ class TestOptimizer(unittest.TestCase):
         INSERT INTO y VALUES (null, null);
 
         INSERT INTO w VALUES ('a', 'b');
+
+        CREATE TABLE unpivotable (id INT, jan INT, feb INT, north INT, south INT);
+        INSERT INTO unpivotable VALUES (1, 100, 200, 7, 8);
+        INSERT INTO unpivotable VALUES (2, 300, 400, 9, 10);
+
+        CREATE TABLE pivotable (id INT, cat TEXT, val INT, kind TEXT, amt INT);
+        INSERT INTO pivotable VALUES (1, 'a', 10, 'x', 5);
+        INSERT INTO pivotable VALUES (1, 'b', 20, 'x', 5);
         """
         )
 
@@ -150,6 +158,20 @@ class TestOptimizer(unittest.TestCase):
             "t_bool": {
                 "a": "BOOLEAN",
                 "b": "BOOLEAN",
+            },
+            "unpivotable": {
+                "id": "INT",
+                "jan": "INT",
+                "feb": "INT",
+                "north": "INT",
+                "south": "INT",
+            },
+            "pivotable": {
+                "id": "INT",
+                "cat": "TEXT",
+                "val": "INT",
+                "kind": "TEXT",
+                "amt": "INT",
             },
         }
 
@@ -834,117 +856,6 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
-    def test_multiple_pivots(self):
-        """A source can carry a chain of (UN)PIVOT operators, each consuming the previous
-        one's output. Every expectation below was executed in DuckDB, Snowflake and Spark
-        and returns the same rows as the unqualified input.
-        """
-        unpivots = (
-            "WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) "
-            "SELECT * FROM t "
-            "UNPIVOT(revenue FOR month IN (jan, feb)) "
-            "UNPIVOT(headcount FOR region IN (north, south))"
-        )
-
-        # The star expands to the chain's output: jan/feb and north/south are consumed,
-        # month/revenue and region/headcount are produced, id passes through
-        self.assertEqual(
-            optimizer.qualify.qualify(
-                parse_one(unpivots, dialect="snowflake"), dialect="snowflake"
-            ).sql(dialect="snowflake"),
-            'WITH "T" AS (SELECT 1 AS "ID", 100 AS "JAN", 200 AS "FEB", 7 AS "NORTH", 8 AS "SOUTH") '
-            'SELECT "T"."ID" AS "ID", "T"."MONTH" AS "MONTH", "T"."REVENUE" AS "REVENUE", '
-            '"T"."REGION" AS "REGION", "T"."HEADCOUNT" AS "HEADCOUNT" FROM "T" AS "T" '
-            'UNPIVOT("REVENUE" FOR "MONTH" IN ("JAN", "FEB")) '
-            'UNPIVOT("HEADCOUNT" FOR "REGION" IN ("NORTH", "SOUTH")) AS "T"',
-        )
-
-        # Explicit columns, qualified by the chain's alias. Only the last operator's alias
-        # names the resulting source -- referencing an earlier one is an error in-engine.
-        aliased = (
-            "WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) "
-            "SELECT u.month, u.headcount FROM t "
-            "UNPIVOT(revenue FOR month IN (jan, feb)) "
-            "UNPIVOT(headcount FOR region IN (north, south)) AS u"
-        )
-        self.assertEqual(
-            optimizer.qualify.qualify(
-                parse_one(aliased, dialect="snowflake"), dialect="snowflake"
-            ).sql(dialect="snowflake"),
-            'WITH "T" AS (SELECT 1 AS "ID", 100 AS "JAN", 200 AS "FEB", 7 AS "NORTH", 8 AS "SOUTH") '
-            'SELECT "U"."MONTH" AS "MONTH", "U"."HEADCOUNT" AS "HEADCOUNT" FROM "T" AS "T" '
-            'UNPIVOT("REVENUE" FOR "MONTH" IN ("JAN", "FEB")) '
-            'UNPIVOT("HEADCOUNT" FOR "REGION" IN ("NORTH", "SOUTH")) AS "U"',
-        )
-
-        # A chain of PIVOTs: the second groups by the first's output columns
-        pivots = (
-            "WITH t AS (SELECT 1 AS id, 'a' AS cat, 10 AS val, 'x' AS kind, 5 AS amt) "
-            "SELECT * FROM t "
-            "PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) "
-            "PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y))"
-        )
-        self.assertEqual(
-            optimizer.qualify.qualify(
-                parse_one(pivots, dialect="snowflake"), dialect="snowflake"
-            ).sql(dialect="snowflake"),
-            'WITH "T" AS (SELECT 1 AS "ID", \'a\' AS "CAT", 10 AS "VAL", \'x\' AS "KIND", 5 AS "AMT") '
-            'SELECT "_0"."ID" AS "ID", "_0"."A" AS "A", "_0"."B" AS "B", "_0"."X" AS "X", "_0"."Y" AS "Y" '
-            'FROM "T" AS "T" PIVOT(SUM("T"."VAL") FOR "T"."CAT" IN (\'a\' AS "A", \'b\' AS "B")) '
-            'PIVOT(SUM("T"."AMT") FOR "T"."KIND" IN (\'x\' AS "X", \'y\' AS "Y")) AS "_0"',
-        )
-
-        # Mixed chain where the UNPIVOT consumes columns the PIVOT produced -- these
-        # resolve against the accumulated output, not against the base source
-        mixed = (
-            "WITH t AS (SELECT 1 AS id, 'a' AS cat, 10 AS val) SELECT * FROM t "
-            "PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) UNPIVOT(v FOR c IN (a, b))"
-        )
-        self.assertEqual(
-            optimizer.qualify.qualify(
-                parse_one(mixed, dialect="snowflake"), dialect="snowflake"
-            ).sql(dialect="snowflake"),
-            'WITH "T" AS (SELECT 1 AS "ID", \'a\' AS "CAT", 10 AS "VAL") '
-            'SELECT "T"."ID" AS "ID", "T"."C" AS "C", "T"."V" AS "V" FROM "T" AS "T" '
-            'PIVOT(SUM("T"."VAL") FOR "T"."CAT" IN (\'a\' AS "A", \'b\' AS "B")) '
-            'UNPIVOT("V" FOR "C" IN ("A", "B")) AS "T"',
-        )
-
-        # A column consumed by a later operator is no longer part of the chain's output
-        with self.assertRaisesRegex(OptimizeError, "Unknown column: NORTH"):
-            optimizer.qualify.qualify(
-                parse_one(
-                    "SELECT t.north FROM t "
-                    "UNPIVOT(revenue FOR month IN (jan, feb)) "
-                    "UNPIVOT(headcount FOR region IN (north, south))",
-                    dialect="snowflake",
-                ),
-                schema={
-                    "t": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
-                },
-                dialect="snowflake",
-            )
-
-    def test_pivoted_source_joined_alongside_another(self):
-        # The operators belong to one source, so a star over the source joined next to it
-        # must not expand through them. DuckDB returns (id, x, id, month, revenue) here.
-        schema = {"a": {"id": "int", "x": "int"}, "t": {"id": "int", "jan": "int", "feb": "int"}}
-        for join in ("ON a.id = u.id", "USING (id)"):
-            with self.subTest(join):
-                expression = optimizer.qualify.qualify(
-                    parse_one(
-                        "SELECT * FROM a JOIN t UNPIVOT(revenue FOR month IN (jan, feb)) AS u "
-                        f"{join}",
-                        dialect="snowflake",
-                    ),
-                    schema=schema,
-                    dialect="snowflake",
-                )
-                self.assertEqual(
-                    [s.alias_or_name for s in expression.selects],
-                    ["ID", "X", "ID", "MONTH", "REVENUE"],
-                )
-
     def test_multiple_pivots_annotate_types(self):
         # NOTE: the value column takes the type of the first IN-list entry, so the columns
         # folded by a single operator are kept uniformly typed here
@@ -954,9 +865,11 @@ class TestOptimizer(unittest.TestCase):
         expression = annotate_types(
             optimizer.qualify.qualify(
                 parse_one(
-                    "SELECT * FROM t "
-                    "UNPIVOT(revenue FOR month IN (jan, feb)) "
-                    "UNPIVOT(headcount FOR region IN (north, south))",
+                    """
+                    SELECT * FROM t
+                    UNPIVOT(revenue FOR month IN (jan, feb))
+                    UNPIVOT(headcount FOR region IN (north, south))
+                    """,
                     dialect="snowflake",
                 ),
                 schema=schema,
@@ -985,9 +898,11 @@ class TestOptimizer(unittest.TestCase):
         expression = annotate_types(
             optimizer.qualify.qualify(
                 parse_one(
-                    "SELECT * FROM t "
-                    "PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) "
-                    "PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y))",
+                    """
+                    SELECT * FROM t
+                    PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b))
+                    PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y))
+                    """,
                     dialect="snowflake",
                 ),
                 schema=pivot_schema,

@@ -82,6 +82,16 @@ TRUE;
 NOT NULL;
 NULL AND TRUE;
 
+-- the NULL-condition rewrite must be parenthesized under NOT or a different connector
+NOT NOT NULL;
+NULL AND TRUE;
+
+x = 1 OR NOT NOT NULL;
+NULL OR x = 1;
+
+x = 1 AND NOT NOT NULL;
+NULL AND x = 1;
+
 NULL = NULL;
 NULL = NULL;
 
@@ -1118,6 +1128,23 @@ x < CAST('2008-11-16' AS DATE) AND x >= CAST('2008-11-09' AS DATE);
 # dialect: bigquery
 DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE);
 x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE);
+
+-- T-SQL week truncation follows @@DATEFIRST, which defaults to 7 (Sunday)
+# dialect: tsql
+DATETRUNC(WEEK, CAST('2021-12-08' AS DATETIME2));
+CAST('2021-12-05 00:00:00' AS DATETIME2);
+
+# dialect: tsql
+DATETRUNC(WEEK, CAST('2023-12-10' AS DATE));
+CAST('2023-12-10' AS DATE);
+
+# dialect: tsql
+DATETRUNC(WEEK, x) = CAST('2023-12-10' AS DATE);
+x < CAST('2023-12-17' AS DATE) AND x >= CAST('2023-12-10' AS DATE);
+
+# dialect: tsql
+DATETRUNC(WEEK, x) > CAST('2023-12-10' AS DATE);
+x >= CAST('2023-12-17' AS DATE);
 
 DATE_TRUNC('year', x) = CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);

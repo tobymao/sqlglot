@@ -6,6 +6,11 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_insert_replace_using(self):
+        self.validate_identity(
+            "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
+        )
+
     def test_databricks(self):
         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")

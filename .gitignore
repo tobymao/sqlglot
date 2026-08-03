@@ -148,3 +148,9 @@ sqlglot/_version.py
 
 # UV lock file
 uv.lock
+
+# pi (dev. assistant / worktrees)
+.worktrees/
+.pi/
+.pi-subagents/
+.pi-loop.json.lock

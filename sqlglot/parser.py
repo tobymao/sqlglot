@@ -5423,7 +5423,11 @@ class Parser:
 
                 all_fields.append(
                     [
-                        fld.sql() if self.IDENTIFY_PIVOT_STRINGS else fld.alias_or_name
+                        # An explicit `<field> AS <alias>` names the output column directly,
+                        # so it wins over the dialect's string-identifying convention
+                        fld.sql()
+                        if self.IDENTIFY_PIVOT_STRINGS and not isinstance(fld, exp.PivotAlias)
+                        else fld.alias_or_name
                         for fld in pivot_field_expressions
                     ]
                 )

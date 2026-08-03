@@ -55,7 +55,6 @@ class DatabricksGenerator(SparkGenerator):
                 else self.function_fallback_sql(e)
             ),
             exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG()",
-            exp.NullSafeEQ: lambda self, e: self.binary(e, "<=>"),
             exp.RegexpLike: None,
             exp.TryCast: None,
             exp.RegrAvgx: lambda self, e: self._regr_sql(e),

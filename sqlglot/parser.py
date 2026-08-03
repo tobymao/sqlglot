@@ -2072,27 +2072,6 @@ class Parser:
 
         return this
 
-    def _parse_with_token_barrier(
-        self,
-        parse_method: t.Callable[..., T],
-        barrier_index: i64,
-        *args: t.Any,
-        **kwargs: t.Any,
-    ) -> T:
-        tokens_size = self._tokens_size
-        prev_comments = self._prev_comments
-        self._tokens_size = barrier_index
-        self._advance(0)
-        self._prev_comments = prev_comments
-
-        try:
-            return parse_method(*args, **kwargs)
-        finally:
-            prev_comments = self._prev_comments
-            self._tokens_size = tokens_size
-            self._advance(0)
-            self._prev_comments = prev_comments
-
     def parse(self, raw_tokens: list[Token], sql: str) -> list[exp.Expr | None]:
         """
         Parses a list of tokens and returns a list of syntax trees, one tree
@@ -3553,37 +3532,6 @@ class Parser:
             comments=comments,
         )
 
-    def _parse_insert_replace_on(self) -> exp.Expr | None:
-        source_index = None
-        depth = 0
-        tokens = self._tokens
-        tokens_size = self._tokens_size
-
-        source_token_types = self.SUBQUERY_TOKENS | {TokenType.VALUES}
-        for index in range(self._index, tokens_size):
-            token_type = tokens[index].token_type
-            if depth == 0:
-                if token_type in source_token_types and (
-                    index == self._index or tokens[index - 1].token_type != TokenType.DOT
-                ):
-                    source_index = index
-                    break
-                if (
-                    token_type == TokenType.L_PAREN
-                    and index + 1 < tokens_size
-                    and tokens[index + 1].token_type in source_token_types
-                ):
-                    source_index = index
-            if token_type == TokenType.L_PAREN:
-                depth += 1
-            elif token_type == TokenType.R_PAREN:
-                depth -= 1
-
-        if source_index is not None:
-            return self._parse_with_token_barrier(self._parse_disjunction, source_index)
-
-        return self._parse_disjunction()
-
     def _parse_insert(self) -> exp.Insert | exp.MultitableInserts:
         comments: list[str] = []
         hint = self._parse_hint()
@@ -3654,7 +3602,6 @@ class Parser:
         by_name = self._match_text_seq("BY", "NAME")
         exists = self._parse_exists()
         replace_where = None
-        replace_on = None
         replace_using = None
 
         if self._match(TokenType.REPLACE):
@@ -3662,8 +3609,6 @@ class Parser:
                 replace_where = self._parse_disjunction()
             elif self._match(TokenType.USING):
                 replace_using = self._parse_using_identifiers()
-            elif self._match(TokenType.ON):
-                replace_on = self._parse_insert_replace_on()
 
         return self.expression(
             exp.Insert(
@@ -3674,14 +3619,13 @@ class Parser:
                 by_name=by_name,
                 exists=exists,
                 where=replace_where,
-                on=replace_on,
                 using=replace_using,
                 partition=self._match(TokenType.PARTITION_BY) and self._parse_partitioned_by(),
                 settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
                 default=self._match_text_seq("DEFAULT", "VALUES"),
                 expression=set_values
                 or self._parse_derived_table_values()
-                or self._parse_ddl_select(parse_subquery_alias=replace_on is not None),
+                or self._parse_ddl_select(),
                 conflict=self._parse_on_conflict(),
                 returning=returning or self._parse_returning(),
                 overwrite=overwrite,
@@ -8892,14 +8836,9 @@ class Parser:
             or self._parse_select()
         )
 
-    def _parse_ddl_select(self, parse_subquery_alias: bool = False) -> exp.Expr | None:
+    def _parse_ddl_select(self) -> exp.Expr | None:
         return self._parse_query_modifiers(
-            self._parse_set_operations(
-                self._parse_select(
-                    nested=True,
-                    parse_subquery_alias=parse_subquery_alias,
-                )
-            )
+            self._parse_set_operations(self._parse_select(nested=True, parse_subquery_alias=False))
         )
 
     def _parse_transaction(self) -> exp.Transaction | exp.Command:

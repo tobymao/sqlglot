@@ -11,37 +11,6 @@ class TestDatabricks(Validator):
             "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
         )
 
-    def test_insert_replace_on(self):
-        self.validate_identity(
-            "INSERT INTO students AS t REPLACE ON t.name <=> s.name (SELECT * FROM people) AS s"
-        )
-        self.validate_identity(
-            "INSERT INTO students AS t REPLACE ON t.name <=> s.name (SELECT * FROM people) s",
-            write_sql=(
-                "INSERT INTO students AS t REPLACE ON t.name <=> s.name (SELECT * FROM people) AS s"
-            ),
-        )
-        self.validate_identity(
-            "INSERT INTO students AS t REPLACE ON "
-            "COALESCE(t.name, '') <=> s.name "
-            "AND EXISTS(SELECT 1 FROM matches WHERE matches.name <=> t.name) "
-            "(SELECT * FROM people) AS s"
-        )
-        self.validate_identity("INSERT INTO t REPLACE ON x = (SELECT 1) VALUES (1)")
-        self.validate_identity(
-            "INSERT INTO students AS t REPLACE ON t.name <=> s.name /* condition */ "
-            "(SELECT * FROM people) AS s",
-        )
-        self.validate_identity(
-            "INSERT INTO target AS t REPLACE ON t.values = s.values VALUES (1) AS s(values)"
-        )
-        self.validate_identity(
-            "INSERT INTO target AS t REPLACE ON t.from = s.from (SELECT `from` FROM source) AS s"
-        )
-        self.validate_identity(
-            "INSERT INTO target AS t REPLACE ON t.with = s.with (SELECT `with` FROM source) AS s"
-        )
-
     def test_databricks(self):
         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")

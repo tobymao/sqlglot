@@ -738,6 +738,23 @@ def unqualify_columns(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def unqualify_pivot_fields(expression: exp.Expr) -> exp.Expr:
+    """
+    Some dialects only accept simple column names in a (UN)PIVOT's FOR clause and IN-list
+    (Oracle raises ORA-01748), even though the aggregate itself may stay qualified.
+
+    Example:
+        >>> from sqlglot import parse_one
+        >>> expr = parse_one("SELECT * FROM tbl PIVOT (SUM(tbl.sales) FOR tbl.quarter IN ('Q1', 'Q2'))")
+        >>> print(unqualify_pivot_fields(expr).sql(dialect="spark"))
+        SELECT * FROM tbl PIVOT(SUM(tbl.sales) FOR quarter IN ('Q1', 'Q2'))
+    """
+    if isinstance(expression, exp.Pivot):
+        expression.set("fields", [unqualify_columns(field) for field in expression.fields])
+
+    return expression
+
+
 def remove_unique_constraints(expression: exp.Expr) -> exp.Expr:
     assert isinstance(expression, exp.Create)
     for constraint in expression.find_all(exp.UniqueColumnConstraint):

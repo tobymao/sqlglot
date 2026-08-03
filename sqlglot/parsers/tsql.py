@@ -323,6 +323,7 @@ class TSQLParser(parser.Parser):
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     NO_PAREN_IF_COMMANDS = False
+    UNPIVOT_VALUE_COLUMNS_FIRST = True
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,

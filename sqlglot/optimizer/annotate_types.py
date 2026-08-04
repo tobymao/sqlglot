@@ -359,31 +359,30 @@ class TypeAnnotator:
                 pivots = (
                     source.args.get("pivots", []) if isinstance(source, exp.Table) else scope.pivots
                 )
-                for pivot in pivots:
-                    if pivot.alias_or_name == source_name:
-                        parent = pivot.parent
-                        parent_source = scope.sources.get(parent.alias_or_name) if parent else None
+                # Only the last operator in a chain carries the alias that names the
+                # resulting source, so match on it and fold the whole chain in order
+                if pivots and pivots[-1].alias_or_name == source_name:
+                    parent = pivots[-1].parent
+                    parent_source = scope.sources.get(parent.alias_or_name) if parent else None
 
-                        if parent and isinstance(parent_source, Scope):
-                            src_types = self._get_scope_source_selects(scope, parent.alias_or_name)
-                        elif isinstance(parent, exp.Table) and isinstance(
-                            self.schema, MappingSchema
-                        ):
-                            src_types = (
-                                self.schema.find(
-                                    parent, raise_on_missing=False, ensure_data_types=True
-                                )
-                                or {}
-                            )
-                        else:
-                            src_types = {}
+                    if parent and isinstance(parent_source, Scope):
+                        src_types = self._get_scope_source_selects(scope, parent.alias_or_name)
+                    elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
+                        src_types = (
+                            self.schema.find(parent, raise_on_missing=False, ensure_data_types=True)
+                            or {}
+                        )
+                    else:
+                        src_types = {}
 
-                        selects = (
+                    for pivot in pivots:
+                        src_types = (
                             self._get_unpivot_column_types(pivot, src_types)
                             if pivot.unpivot
                             else self._get_pivot_column_types(pivot, src_types)
                         )
-                        break
+
+                    selects = src_types
 
             self._scope_source_selects[key] = selects
 
@@ -689,7 +688,12 @@ class TypeAnnotator:
             val_expr = seq_get(pivot.expressions, 0)
             val_cols = val_expr.expressions if isinstance(val_expr, exp.Tuple) else [val_expr]
             for val_col, in_col in zip(val_cols, in_cols):
-                new_types[val_col.output_name] = in_col.type
+                # A chained operator's IN-list may name columns an earlier operator
+                # produced, which carry no annotation of their own
+                in_type = in_col.type
+                if not in_type or in_type.is_type(exp.DType.UNKNOWN):
+                    in_type = src_types.get(in_col.output_name) or in_type
+                new_types[val_col.output_name] = in_type
 
         return {
             name: type_

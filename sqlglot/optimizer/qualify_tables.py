@@ -131,7 +131,7 @@ def qualify_tables(
                 derived_table.this.set("joins", joins)
 
             _set_alias(derived_table, canonical_aliases, scope=scope)
-            if pivot := seq_get(derived_table.args.get("pivots") or [], 0):
+            if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)
 
         table_aliases = {}
@@ -141,7 +141,7 @@ def qualify_tables(
                 # When the name is empty, it means that we have a non-table source, e.g. a pivoted cte
                 is_real_table_source = bool(name)
 
-                if pivot := seq_get(source.args.get("pivots") or [], 0):
+                if pivot := seq_get(source.args.get("pivots") or [], -1):
                     name = source.name
 
                 table_this = source.this

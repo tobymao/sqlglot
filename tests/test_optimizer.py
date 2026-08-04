@@ -117,6 +117,14 @@ class TestOptimizer(unittest.TestCase):
         INSERT INTO y VALUES (null, null);
 
         INSERT INTO w VALUES ('a', 'b');
+
+        CREATE TABLE unpivotable (id INT, jan INT, feb INT, north INT, south INT);
+        INSERT INTO unpivotable VALUES (1, 100, 200, 7, 8);
+        INSERT INTO unpivotable VALUES (2, 300, 400, 9, 10);
+
+        CREATE TABLE pivotable (id INT, cat TEXT, val INT, kind TEXT, amt INT);
+        INSERT INTO pivotable VALUES (1, 'a', 10, 'x', 5);
+        INSERT INTO pivotable VALUES (1, 'b', 20, 'x', 5);
         """
         )
 
@@ -150,6 +158,20 @@ class TestOptimizer(unittest.TestCase):
             "t_bool": {
                 "a": "BOOLEAN",
                 "b": "BOOLEAN",
+            },
+            "unpivotable": {
+                "id": "INT",
+                "jan": "INT",
+                "feb": "INT",
+                "north": "INT",
+                "south": "INT",
+            },
+            "pivotable": {
+                "id": "INT",
+                "cat": "TEXT",
+                "val": "INT",
+                "kind": "TEXT",
+                "amt": "INT",
             },
         }
 
@@ -832,6 +854,68 @@ class TestOptimizer(unittest.TestCase):
             "`produce`.`first_half` AS `first_half`, `produce`.`second_half` AS `second_half` "
             "FROM `produce` AS `produce` UNPIVOT((`first_half`, `second_half`) FOR `semesters` "
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
+        )
+
+    def test_multiple_pivots_annotate_types(self):
+        # NOTE: the value column takes the type of the first IN-list entry, so the columns
+        # folded by a single operator are kept uniformly typed here
+        schema = {
+            "t": {"id": "int", "jan": "int", "feb": "int", "north": "double", "south": "double"}
+        }
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT * FROM t
+                    UNPIVOT(revenue FOR month IN (jan, feb))
+                    UNPIVOT(headcount FOR region IN (north, south))
+                    """,
+                    dialect="snowflake",
+                ),
+                schema=schema,
+                dialect="snowflake",
+            ),
+            schema=schema,
+            dialect="snowflake",
+        )
+
+        # Types flow through every operator, not just the last one: the name columns are
+        # text and each value column takes the type of the columns it was folded from
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [
+                ("ID", "INT"),
+                ("MONTH", "VARCHAR"),
+                ("REVENUE", "INT"),
+                ("REGION", "VARCHAR"),
+                ("HEADCOUNT", "DOUBLE"),
+            ],
+        )
+
+        pivot_schema = {
+            "t": {"id": "int", "cat": "text", "val": "int", "kind": "text", "amt": "double"}
+        }
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT * FROM t
+                    PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b))
+                    PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y))
+                    """,
+                    dialect="snowflake",
+                ),
+                schema=pivot_schema,
+                dialect="snowflake",
+            ),
+            schema=pivot_schema,
+            dialect="snowflake",
+        )
+
+        # Each PIVOT's outputs take the type of its own aggregate
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [("ID", "INT"), ("A", "BIGINT"), ("B", "BIGINT"), ("X", "DOUBLE"), ("Y", "DOUBLE")],
         )
 
     def test_unnest_type_trace_is_memoized(self):

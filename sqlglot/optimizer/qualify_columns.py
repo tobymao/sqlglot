@@ -7,7 +7,6 @@ import typing as t
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError, highlight_sql
-from sqlglot.helper import seq_get
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import Scope, build_scope, find_in_scope, traverse_scope, walk_in_scope
@@ -52,7 +51,8 @@ def qualify_columns(
         The qualified expression.
 
     Notes:
-        - Currently only handles a single PIVOT or UNPIVOT operator
+        - A source may carry a chain of (UN)PIVOT operators; each one is resolved against
+          the output of the one before it, and the last one's alias names the result
     """
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
@@ -632,7 +632,9 @@ def _qualify_columns(
             if isinstance(column_source, exp.Table) and (
                 pivots := column_source.args.get("pivots")
             ):
-                source_columns = pivots[0].output_columns(source_columns)
+                # Each operator's input is the previous one's output
+                for pivot in pivots:
+                    source_columns = pivot.output_columns(source_columns)
             if (
                 not allow_partial_qualification
                 and source_columns
@@ -645,7 +647,7 @@ def _qualify_columns(
             if scope.pivots and not column.find_ancestor(exp.Pivot):
                 # If the column is under the Pivot expression, we need to qualify it
                 # using the name of the pivoted source instead of the pivot's alias
-                column.set("table", exp.to_identifier(scope.pivots[0].alias))
+                column.set("table", exp.to_identifier(scope.pivots[-1].alias))
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
@@ -668,12 +670,31 @@ def _qualify_columns(
                 # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
                 scope.replace(column, exp.TableColumn(this=column.this))
 
-    for pivot in scope.pivots:
+    pivots = scope.pivots
+
+    # A chained operator's IN-list may name columns produced by earlier operators, which no
+    # source exposes; track the chain's accumulated output to resolve them. Attribution is
+    # only unambiguous when all pivots share one parent, i.e. there's a single pivoted source.
+    single_chain = bool(pivots) and pivots[0].parent is pivots[-1].parent
+    produced: set[str] = set()
+    pivoted_source = pivots[-1].alias if single_chain else ""
+    available: t.Collection[str] = (
+        resolver.get_source_columns(pivoted_source) if pivoted_source in scope.sources else []
+    )
+
+    for pivot in pivots:
         for column in pivot.find_all(exp.Column):
-            if not column.table and column.name in resolver.all_columns:
+            if column.table:
+                continue
+            if column.name in resolver.all_columns:
                 table = resolver.get_table(column.name)
                 if table:
                     column.set("table", table)
+            elif column.name in produced:
+                column.set("table", exp.to_identifier(pivoted_source))
+
+        available = pivot.output_columns(available)
+        produced.update(available)
 
 
 def _expand_struct_stars_no_parens(
@@ -810,8 +831,6 @@ def _expand_stars(
     coalesced_columns = set()
     dialect = resolver.dialect
 
-    pivot = t.cast(t.Optional[exp.Pivot], seq_get(scope.pivots, 0))
-
     annotated_ahead = dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
         isinstance(col, exp.Dot) for col in scope.stars
     )
@@ -900,12 +919,22 @@ def _expand_stars(
                 else set()
             )
 
-            if pivot:
-                pivot_columns = pivot.output_columns(columns) or pivot.alias_column_names
+            # The operators belong to a specific source, so a star over a source joined
+            # alongside it must expand from that source's own columns
+            selected_node, _ = scope.selected_sources.get(table, (None, None))
+            pivots = (
+                selected_node.args.get("pivots") if isinstance(selected_node, exp.Expr) else None
+            )
+
+            if pivots:
+                # Each operator consumes the previous one's output, so fold them in order
+                pivot_columns: t.Collection[str] = columns
+                for pivot in pivots:
+                    pivot_columns = pivot.output_columns(pivot_columns) or pivot.alias_column_names
 
                 if pivot_columns:
                     new_selections.extend(
-                        alias(exp.column(name, table=pivot.alias or None), name, copy=False)
+                        alias(exp.column(name, table=pivots[-1].alias or None), name, copy=False)
                         for name in pivot_columns
                         if name not in columns_to_exclude
                     )

@@ -3436,6 +3436,14 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_chained_pivots(self):
+        self.validate_identity(
+            "SELECT * FROM t UNPIVOT(a FOR b IN (c, d)) UNPIVOT(e FOR f IN (g, h))"
+        )
+        self.validate_identity(
+            "SELECT * FROM t PIVOT(SUM(v) FOR c IN ('a' AS a)) UNPIVOT(x FOR y IN (a))"
+        )
+
     def test_pivot_output_column_names(self):
         # Snowflake names a bare IN-list column after the literal, quotes included, but an
         # explicit `<value> AS <alias>` names it after the alias. Both verified in-engine.

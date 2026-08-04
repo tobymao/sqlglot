@@ -15,3 +15,4 @@ SELECT x FROM tbl AS tbl(a);
 SELECT a JOIN b USING (a);
 SELECT x.a FROM x INNER JOIN y ON x.a = c INNER JOIN z ON x.a = c;
 SELECT b FROM x INNER JOIN y ON x.a = y.c INNER JOIN z ON x.a = z.c;
+SELECT unpivotable.north FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))

@@ -381,19 +381,11 @@ def to_node(
     }
 
     pivots = scope.pivots
-    pivot = pivots[0] if len(pivots) == 1 else None
     pivot_renames: dict[str, str] = {}
     pivot_column_mapping: dict[str, list[exp.Column]] = {}
 
-    if pivot:
-        pivot_renames = _pivot_output_renames(pivot, scope, schema)
-        pivot_column_mapping = _pivot_column_mapping(pivot)
-        if pivot_renames:
-            pivot_column_mapping = {
-                post: pivot_column_mapping[pre]
-                for post, pre in pivot_renames.items()
-                if pre in pivot_column_mapping
-            }
+    if pivots:
+        pivot_renames, pivot_column_mapping = _pivot_chain_mapping(pivots, scope, schema)
 
     for c in source_columns:
         table = c.table
@@ -422,7 +414,9 @@ def to_node(
                 _scope_meta=_scope_meta,
                 on_node=on_node,
             )
-        elif pivot and pivot.alias_or_name == c.table:
+        elif pivots and pivots[-1].alias_or_name == c.table:
+            # Only the last operator in a chain names the resulting source
+            pivot_parent = pivots[-1].parent
             downstream_columns = []
 
             column_name = c.name
@@ -431,7 +425,6 @@ def to_node(
             else:
                 # The column is not in the pivot, so it must be an implicit column of the
                 # pivoted source -- adapt column to be from the implicit pivoted source.
-                pivot_parent = pivot.parent
                 downstream_columns.append(
                     exp.column(
                         pivot_renames.get(c.name, c.this),
@@ -443,7 +436,6 @@ def to_node(
                 if not downstream_column.table:
                     # Some dialects (e.g. bigquery) don't qualify the IN-list columns,
                     # but they can only come from the pivoted source
-                    pivot_parent = pivot.parent
                     downstream_column = exp.column(
                         downstream_column.this,
                         table=pivot_parent.alias_or_name if pivot_parent else None,
@@ -500,36 +492,77 @@ def to_node(
     return node
 
 
-def _pivot_output_renames(
-    pivot: exp.Pivot, scope: Scope, schema: Schema | None = None
-) -> dict[str, str]:
+def _pre_pivot_columns(pivot: exp.Pivot, scope: Scope, schema: Schema | None = None) -> list[str]:
     """
-    Map each (UN)PIVOT output column name to its pre-rename name, when an alias column
-    list (`... AS t(c1, c2, ...)`) renames the outputs. The renames are positional over
-    the operator's full output, so they can only be aligned when the pre-pivot columns
-    are known: from the projections of a derived table or CTE source, or from the
-    schema for a physical table.
+    The columns the first operator of a chain sees, taken from the projections of a
+    derived table or CTE source, or from the schema for a physical table. Returns an
+    empty list when they can't be determined (e.g. an unexpanded star), since anything
+    positional over them would silently shift.
     """
-    if not pivot.alias_column_names:
-        return {}
-
     parent = pivot.parent
-    pre_pivot_columns: list[str] = []
+    columns: list[str] = []
     if isinstance(parent, exp.DerivedTable) and isinstance(parent.this, exp.Query):
-        pre_pivot_columns = parent.this.named_selects
+        columns = parent.this.named_selects
     elif isinstance(parent, exp.Table):
         cte_source = scope.cte_sources.get(parent.name) if not parent.db else None
         if isinstance(cte_source, Scope) and isinstance(cte_source.expression, exp.Query):
-            pre_pivot_columns = cte_source.expression.named_selects
+            columns = cte_source.expression.named_selects
         elif schema is not None:
-            pre_pivot_columns = list(schema.column_names(parent, only_visible=True))
+            columns = list(schema.column_names(parent, only_visible=True))
 
-    # The alignment is also unknowable when the source's projections aren't fully
-    # expanded (e.g. an unresolved star), since the renames would silently shift
-    if not pre_pivot_columns or "*" in pre_pivot_columns:
-        return {}
+    return [] if "*" in columns else columns
 
-    return pivot.output_columns(pre_pivot_columns)
+
+def _pivot_chain_mapping(
+    pivots: list[exp.Pivot], scope: Scope, schema: Schema | None = None
+) -> tuple[dict[str, str], dict[str, list[exp.Column]]]:
+    """
+    Fold a chain of (UN)PIVOT operators into a single view of its output, since each one
+    consumes the previous one's columns rather than the pivoted source's.
+
+    Returns the composed output-name -> pre-chain-name renames (from alias column lists),
+    and the composed output-name -> source columns it derives from.
+    """
+    available = _pre_pivot_columns(pivots[0], scope, schema)
+    renames: dict[str, str] = {}
+    mapping: dict[str, list[exp.Column]] = {}
+
+    for pivot in pivots:
+        # Renames are positional over the operator's full output, so they can only be
+        # applied when the columns going into it are known
+        step_renames = (
+            pivot.output_columns(available) if pivot.alias_column_names and available else {}
+        )
+        step_mapping = _pivot_column_mapping(pivot)
+        if step_renames:
+            step_mapping = {
+                post: step_mapping[pre] for post, pre in step_renames.items() if pre in step_mapping
+            }
+
+        # Columns this operator consumed may have been produced by an earlier one, so
+        # resolve them back through what we've folded so far
+        composed = {
+            out: [resolved for col in cols for resolved in mapping.get(col.name, [col])]
+            for out, cols in step_mapping.items()
+        }
+
+        # Whatever an earlier operator produced and this one didn't consume passes through,
+        # under whatever name this operator's alias column list gives it
+        consumed = {col.name for cols in step_mapping.values() for col in cols}
+        pre_to_post = {pre: post for post, pre in step_renames.items()}
+        for out, cols in mapping.items():
+            if out not in consumed:
+                composed.setdefault(pre_to_post.get(out, out), cols)
+
+        renames = (
+            {post: renames.get(pre, pre) for post, pre in step_renames.items()}
+            if step_renames
+            else renames
+        )
+        mapping = composed
+        available = list(pivot.output_columns(available)) if available else []
+
+    return renames, mapping
 
 
 def _pivot_column_mapping(pivot: exp.Pivot) -> dict[str, list[exp.Column]]:

@@ -791,6 +791,86 @@ class TestLineage(unittest.TestCase):
         node = lineage("d", sql, dialect="snowflake")
         self.assertEqual([d.name for d in node.downstream], ["SRC.D"])
 
+    def test_chained_pivots(self) -> None:
+        """Each operator in a chain consumes the previous one's output, so the mappings
+        have to be folded rather than read off a single operator."""
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        SELECT id, score, headcount
+        FROM sales UNPIVOT(score FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
+        """
+
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+
+        node = lineage("headcount", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.NORTH", "SALES.SOUTH"])
+
+        # A column that survives every operator still traces back to the source
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.ID"])
+
+    def test_chained_pivots_through_cte(self) -> None:
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        WITH src AS (SELECT id, jan, feb, north, south FROM sales)
+        SELECT score FROM src
+        UNPIVOT(score FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
+        """
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+
+        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
+        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
+
+    def test_chained_pivots_mixed(self) -> None:
+        # The UNPIVOT consumes columns the PIVOT produced, so they resolve through it
+        schema = {"t": {"id": "int", "cat": "text", "val": "int"}}
+        sql = """
+        SELECT id, c, v FROM t
+        PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) UNPIVOT(v FOR c IN (a, b))
+        """
+
+        node = lineage("v", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["T.VAL", "T.VAL"])
+
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["T.ID"])
+
+    def test_chained_pivots_with_alias_columns(self) -> None:
+        # The alias column list renames the chain's *final* output positionally, so a
+        # column an earlier operator produced is reached under its renamed name
+        schema = {
+            "m": {
+                "empid": "int",
+                "dept": "text",
+                "jan": "int",
+                "feb": "int",
+                "n": "int",
+                "s": "int",
+            }
+        }
+        sql = """
+        SELECT a, b, c, d, e, f FROM m
+        UNPIVOT(sales FOR mon IN (jan, feb)) UNPIVOT(hc FOR reg IN (n, s)) AS t(a, b, c, d, e, f)
+        """
+        expected = {
+            "a": ["M.EMPID"],
+            "b": ["M.DEPT"],
+            "c": ["M.JAN", "M.FEB"],
+            "d": ["M.JAN", "M.FEB"],
+            "e": ["M.N", "M.S"],
+            "f": ["M.N", "M.S"],
+        }
+        for column, downstream in expected.items():
+            with self.subTest(column):
+                node = lineage(column, sql, schema=schema, dialect="snowflake")
+                self.assertEqual([d.name for d in node.downstream], downstream)
+
     def test_pivot_with_alias_columns(self) -> None:
         sql = """
         SELECT x FROM (SELECT value, category FROM sample_data) AS sd

@@ -544,10 +544,17 @@ def _pivot_chain_mapping(
                 post: step_mapping[pre] for post, pre in step_renames.items() if pre in step_mapping
             }
 
-        # Columns this operator consumed may have been produced by an earlier one, so
-        # resolve them back through what we've folded so far
+        # Columns this operator consumed may have been produced by an earlier one, or be
+        # alias-list renames of passthroughs; resolve through what we've folded so far
+        def resolve(col: exp.Column) -> list[exp.Column]:
+            if col.name in mapping:
+                return mapping[col.name]
+            if col.name in renames:
+                return [exp.column(renames[col.name])]
+            return [col]
+
         composed = {
-            out: [resolved for col in cols for resolved in mapping.get(col.name, [col])]
+            out: [resolved for col in cols for resolved in resolve(col)]
             for out, cols in step_mapping.items()
         }
 

@@ -871,6 +871,34 @@ class TestLineage(unittest.TestCase):
                 node = lineage(column, sql, schema=schema, dialect="snowflake")
                 self.assertEqual([d.name for d in node.downstream], downstream)
 
+    def test_chained_pivots_consuming_alias_columns(self) -> None:
+        # An earlier operator's alias column list renames passthroughs (b -> north,
+        # c -> south), and a later operator consumes them under the new names
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        SELECT hc, region FROM sales
+        UNPIVOT(score FOR month IN (jan, feb)) AS u1(a, b, c, d)
+        UNPIVOT(hc FOR region IN (b, c))
+        """
+        for column in ("hc", "region"):
+            with self.subTest(column):
+                node = lineage(column, sql, schema=schema, dialect="duckdb")
+                self.assertEqual([d.name for d in node.downstream], ["sales.north", "sales.south"])
+
+        # Multi-value form: the value columns are derived positionally from the entries
+        sql = """
+        SELECT hi, lo FROM sales
+        UNPIVOT(score FOR month IN (jan, feb)) AS u1(a, b, c, d)
+        UNPIVOT((hi, lo) FOR region IN ((b, c)))
+        """
+        node = lineage("hi", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["sales.north"])
+
+        node = lineage("lo", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["sales.south"])
+
     def test_multiple_pivoted_sources(self) -> None:
         # Pivots over different sources don't form a chain, so folding them would trace
         # `hc` through the other source's `val` output; degrade to leaves instead

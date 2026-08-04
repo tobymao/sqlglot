@@ -163,6 +163,11 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     else:
         order_refs = set()
 
+    # Bare GROUP BY ordinals refer to the pre-prune projection list. Force those
+    # targets to survive pruning and remap ordinals after the new list is built.
+    ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
+    forced_ids = {id(selection) for selection in ordinal_refs.values()}
+
     new_selections = []
     removed = False
     star = False
@@ -173,7 +178,13 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     for selection in scope.expression.selects:
         name = selection.alias_or_name
 
-        if select_all or name in parent_selections or name in order_refs or alias_count > 0:
+        if (
+            select_all
+            or name in parent_selections
+            or name in order_refs
+            or alias_count > 0
+            or id(selection) in forced_ids
+        ):
             new_selections.append(selection)
             alias_count -= 1
         elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
@@ -208,40 +219,41 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         record(journal, scope.expression, "expressions")
 
     scope.expression.select(*new_selections, append=False, copy=False)
+    _remap_group_by_ordinals(ordinal_refs, new_selections)
 
     if removed:
-        _scrub_stale_group_by_ordinals(scope.expression)
         scope.clear_cache()
 
 
-def _scrub_stale_group_by_ordinals(select: exp.Select) -> None:
-    """Remove bare GROUP BY integer ordinals that are invalid after SELECT prune.
-
-    Positional GROUP BY keys that still point at a real non-aggregate projection are kept;
-    out-of-range ordinals and those pointing at aggregates are dropped.
-    """
+def _bare_group_by_ordinal_refs(select: exp.Select) -> dict[exp.Literal, exp.Expr]:
+    """Map each bare GROUP BY integer ordinal to its pre-prune projection."""
     group = select.args.get("group")
     if not group:
-        return
+        return {}
 
     selects = select.selects
     n = len(selects)
-    kept: list[exp.Expr] = []
+    refs: dict[exp.Literal, exp.Expr] = {}
 
     for node in group.expressions:
         if node.is_int and isinstance(node, exp.Literal):
             pos = int(node.this)
-            if pos < 1 or pos > n:
-                continue
-            if find_in_scope(selects[pos - 1], exp.AggFunc):
-                continue
-        kept.append(node)
+            if 1 <= pos <= n:
+                refs[node] = selects[pos - 1]
 
-    if kept:
-        group.set("expressions", kept)
-    elif not (
-        group.args.get("grouping_sets") or group.args.get("cube") or group.args.get("rollup")
-    ):
-        select.set("group", None)
-    else:
-        group.set("expressions", None)
+    return refs
+
+
+def _remap_group_by_ordinals(
+    ordinal_refs: dict[exp.Literal, exp.Expr],
+    new_selections: list[exp.Expr],
+) -> None:
+    """Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list."""
+    if not ordinal_refs:
+        return
+
+    new_pos = {id(selection): i + 1 for i, selection in enumerate(new_selections)}
+    for node, old_selection in ordinal_refs.items():
+        pos = new_pos.get(id(old_selection))
+        if pos is not None and int(node.this) != pos:
+            node.set("this", str(pos))

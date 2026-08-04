@@ -690,11 +690,12 @@ def _qualify_columns(
                 table = resolver.get_table(column.name)
                 if table:
                     column.set("table", table)
-            elif column.name in produced:
+            elif single_chain and column.name in produced:
                 column.set("table", exp.to_identifier(pivoted_source))
 
-        available = pivot.output_columns(available)
-        produced.update(available)
+        if single_chain:
+            available = pivot.output_columns(available)
+            produced.update(available)
 
 
 def _expand_struct_stars_no_parens(
@@ -890,10 +891,23 @@ def _expand_stars(
 
         for table in tables:
             source = scope.sources.get(table)
-            if source is None:
-                raise OptimizeError(f"Unknown table: {table}")
+            pivots: list[exp.Pivot] | None = None
+            source_table = table
 
-            columns = resolver.get_source_columns(table, only_visible=True)
+            if source is None:
+                # The chain's final alias names the resulting source, but only the underlying
+                # source is registered in `scope.sources`, so resolve through the chain's parent
+                chain = scope.pivots
+                parent = chain[-1].parent if chain and chain[-1].alias == table else None
+                if parent:
+                    pivots = chain
+                    source_table = parent.alias_or_name
+                    source = scope.sources.get(source_table)
+
+                if source is None:
+                    raise OptimizeError(f"Unknown table: {table}")
+
+            columns = resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns
 
             if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
@@ -921,10 +935,18 @@ def _expand_stars(
 
             # The operators belong to a specific source, so a star over a source joined
             # alongside it must expand from that source's own columns
-            selected_node, _ = scope.selected_sources.get(table, (None, None))
-            pivots = (
-                selected_node.args.get("pivots") if isinstance(selected_node, exp.Expr) else None
-            )
+            if pivots is None:
+                selected_node, _ = scope.selected_sources.get(table, (None, None))
+                if selected_node is None and isinstance(source, exp.Table):
+                    # A pivoted CTE reference is registered under the pivot's alias, a name
+                    # `references` doesn't know, so it's absent from `selected_sources`
+                    selected_node = source
+
+                pivots = (
+                    selected_node.args.get("pivots")
+                    if isinstance(selected_node, exp.Expr)
+                    else None
+                )
 
             if pivots:
                 # Each operator consumes the previous one's output, so fold them in order

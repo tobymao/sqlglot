@@ -1192,3 +1192,28 @@ SELECT x.a AS a, x.b AS b, u.id AS id, u.north AS north, u.south AS south, u.mon
 # dialect: snowflake
 WITH t AS (SELECT 1 AS "Id", 2 AS "Jan", 3 AS "Feb", 4 AS "Nor", 5 AS "Sou") SELECT * FROM t UNPIVOT(v1 FOR n1 IN ("Jan", "Feb")) UNPIVOT(v2 FOR n2 IN ("Nor", "Sou"));
 WITH T AS (SELECT 1 AS "Id", 2 AS "Jan", 3 AS "Feb", 4 AS "Nor", 5 AS "Sou") SELECT T."Id" AS "Id", T.N1 AS N1, T.V1 AS V1, T.N2 AS N2, T.V2 AS V2 FROM T AS T UNPIVOT(V1 FOR N1 IN ("Jan", "Feb")) UNPIVOT(V2 FOR N2 IN ("Nor", "Sou")) AS T;
+
+# title: qualified star over the pivot alias of a pivoted table
+# dialect: duckdb
+SELECT u.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u;
+SELECT u.id AS id, u.north AS north, u.south AS south, u.month AS month, u.revenue AS revenue FROM unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u;
+
+# title: qualified star over the pivot alias, next to a joined plain source
+# dialect: duckdb
+SELECT x.b, u.* FROM x JOIN unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u ON x.a = u.id;
+SELECT x.b AS b, u.id AS id, u.north AS north, u.south AS south, u.month AS month, u.revenue AS revenue FROM x AS x JOIN unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u ON x.a = u.id;
+
+# title: qualified star over the pivot alias of a pivoted CTE
+# dialect: duckdb
+WITH c AS (SELECT id, jan, feb FROM unpivotable) SELECT piv.* FROM c UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+WITH c AS (SELECT unpivotable.id AS id, unpivotable.jan AS jan, unpivotable.feb AS feb FROM unpivotable AS unpivotable) SELECT piv.id AS id, piv.month AS month, piv.revenue AS revenue FROM c AS c UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+
+# title: qualified star over the pivot alias of a pivoted subquery
+# dialect: duckdb
+SELECT piv.* FROM (SELECT id, jan, feb FROM unpivotable) UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+SELECT piv.id AS id, piv.month AS month, piv.revenue AS revenue FROM (SELECT unpivotable.id AS id, unpivotable.jan AS jan, unpivotable.feb AS feb FROM unpivotable AS unpivotable) AS _0 UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+
+# title: qualified star over the alias of a chain of operators
+# dialect: duckdb
+SELECT u.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;
+SELECT u.id AS id, u.month AS month, u.revenue AS revenue, u.region AS region, u.headcount AS headcount FROM unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;

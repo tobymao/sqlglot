@@ -3622,7 +3622,7 @@ OPTIONS (
             write={
                 "bigquery": "SELECT TIMESTAMP_TRUNC(ts, WEEK)",
                 "clickhouse": "SELECT dateTrunc('WEEK', ts)",
-                "duckdb": "SELECT DATE_TRUNC('WEEK', ts)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', ts + INTERVAL '1' DAY) + INTERVAL '-1' DAY",
                 "mysql": "SELECT DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF(WEEK, '0000-01-01 00:00:00', ts)) WEEK)",
                 "snowflake": "SELECT DATE_TRUNC('WEEK', ts)",
             },
@@ -3631,7 +3631,7 @@ OPTIONS (
             "SELECT DATETIME_TRUNC(dt, WEEK(SUNDAY))",
             write={
                 "bigquery": "SELECT DATETIME_TRUNC(dt, WEEK)",
-                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST(dt AS TIMESTAMP))",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST(dt AS TIMESTAMP) + INTERVAL '1' DAY) + INTERVAL '-1' DAY",
             },
         )
         self.validate_all(
@@ -3644,7 +3644,6 @@ OPTIONS (
             "SELECT TIMESTAMP_TRUNC(ts, WEEK(SUNDAY))",
             write={
                 "clickhouse": UnsupportedError,
-                "duckdb": UnsupportedError,
                 "snowflake": UnsupportedError,
                 "spark": UnsupportedError,
             },
@@ -3677,6 +3676,43 @@ OPTIONS (
             "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
             write={
                 "spark": UnsupportedError,
+            },
+        )
+        # DuckDB's weeks are Monday-based, so other week starts need shifting and ISOWEEK
+        # maps to its plain WEEK unit
+        self.validate_all(
+            "SELECT DATE_TRUNC(DATE '2008-11-10', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2008-11-10' AS DATE), WEEK)",
+                "duckdb": "SELECT CAST(DATE_TRUNC('WEEK', CAST('2008-11-10' AS DATE) + INTERVAL '1' DAY) + INTERVAL '-1' DAY AS DATE)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_TRUNC(DATE '2008-11-10', ISOWEEK)",
+            write={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2008-11-10' AS DATE), ISOWEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST('2008-11-10' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_TRUNC(TIMESTAMP '2008-11-10 14:30:00', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT TIMESTAMP_TRUNC(CAST('2008-11-10 14:30:00' AS TIMESTAMP), WEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST('2008-11-10 14:30:00' AS TIMESTAMPTZ) + INTERVAL '1' DAY) + INTERVAL '-1' DAY",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME_TRUNC(DATETIME '2008-11-10 14:30:00', WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATETIME_TRUNC(CAST('2008-11-10 14:30:00' AS DATETIME), WEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST(CAST('2008-11-10 14:30:00' AS TIMESTAMP) AS TIMESTAMP) + INTERVAL '1' DAY) + INTERVAL '-1' DAY",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_TRUNC(TIMESTAMP '2008-11-10 14:30:00+00', WEEK(SUNDAY), 'America/New_York')",
+            write={
+                "bigquery": "SELECT TIMESTAMP_TRUNC(CAST('2008-11-10 14:30:00+00' AS TIMESTAMP), WEEK, 'America/New_York')",
+                "duckdb": "SELECT (DATE_TRUNC('WEEK', CAST('2008-11-10 14:30:00+00' AS TIMESTAMPTZ) AT TIME ZONE 'America/New_York' + INTERVAL '1' DAY) + INTERVAL '-1' DAY) AT TIME ZONE 'America/New_York'",
             },
         )
         self.validate_identity(

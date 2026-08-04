@@ -83,6 +83,9 @@ def _annotate_compress(self: TypeAnnotator, expression: exp.Compress) -> exp.Exp
 def _annotate_bit_and(self: TypeAnnotator, expression: exp.BitwiseAndAgg) -> exp.Expr:
     this = expression.this
 
+    if this.is_type(exp.DType.UNKNOWN):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+
     if this.is_type(*exp.DataType.BINARY_TYPES):
         return self._set_type(expression, exp.DType.VARBINARY)
 

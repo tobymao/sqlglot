@@ -1148,6 +1148,29 @@ class TestOptimizer(unittest.TestCase):
                 self.assertGreaterEqual(pos, 1)
                 self.assertLessEqual(pos, n_selects)
 
+    def test_optimize_remaps_repeated_group_by_ordinals_after_prune(self):
+        optimized = optimizer.optimize(
+            parse_one(
+                """
+                WITH x AS (
+                  SELECT z, 0 AS c, SUM(d) AS s
+                  FROM t
+                  GROUP BY z, 2, 2
+                )
+                SELECT c, s FROM x
+                """,
+                dialect="presto",
+            ),
+            dialect="presto",
+            validate_qualify_columns=False,
+        )
+        cte = optimized.find(exp.CTE)
+        self.assertEqual([s.alias_or_name for s in cte.this.selects], ["c", "s"])
+        self.assertEqual(
+            [e.sql(dialect="presto") for e in cte.this.args["group"].expressions],
+            ['"t"."z"', "1", "1"],
+        )
+
     def test_simplify(self):
         self.check_file("simplify", simplify, schema=self.schema)
 

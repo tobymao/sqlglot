@@ -166,7 +166,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     # Bare GROUP BY ordinals refer to the pre-prune projection list. Force those
     # targets to survive pruning and remap ordinals after the new list is built.
     ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
-    forced_ids = {id(selection) for selection in ordinal_refs.values()}
+    group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
 
     new_selections = []
     removed = False
@@ -183,7 +183,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
             or name in parent_selections
             or name in order_refs
             or alias_count > 0
-            or id(selection) in forced_ids
+            or id(selection) in group_ordinal_selection_ids
         ):
             new_selections.append(selection)
             alias_count -= 1
@@ -219,41 +219,35 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         record(journal, scope.expression, "expressions")
 
     scope.expression.select(*new_selections, append=False, copy=False)
-    _remap_group_by_ordinals(ordinal_refs, new_selections)
+
+    # Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list
+    if ordinal_refs:
+        new_pos = {id(selection): i + 1 for i, selection in enumerate(new_selections)}
+        for node, old_selection in ordinal_refs:
+            pos = new_pos.get(id(old_selection))
+            if pos is not None and int(node.this) != pos:
+                node.set("this", str(pos))
 
     if removed:
         scope.clear_cache()
 
 
-def _bare_group_by_ordinal_refs(select: exp.Select) -> dict[exp.Literal, exp.Expr]:
+def _bare_group_by_ordinal_refs(
+    select: exp.Select,
+) -> list[tuple[exp.Literal, exp.Expr]]:
     """Map each bare GROUP BY integer ordinal to its pre-prune projection."""
     group = select.args.get("group")
     if not group:
-        return {}
+        return []
 
     selects = select.selects
     n = len(selects)
-    refs: dict[exp.Literal, exp.Expr] = {}
+    refs: list[tuple[exp.Literal, exp.Expr]] = []
 
     for node in group.expressions:
         if node.is_int and isinstance(node, exp.Literal):
             pos = int(node.this)
             if 1 <= pos <= n:
-                refs[node] = selects[pos - 1]
+                refs.append((node, selects[pos - 1]))
 
     return refs
-
-
-def _remap_group_by_ordinals(
-    ordinal_refs: dict[exp.Literal, exp.Expr],
-    new_selections: list[exp.Expr],
-) -> None:
-    """Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list."""
-    if not ordinal_refs:
-        return
-
-    new_pos = {id(selection): i + 1 for i, selection in enumerate(new_selections)}
-    for node, old_selection in ordinal_refs.items():
-        pos = new_pos.get(id(old_selection))
-        if pos is not None and int(node.this) != pos:
-            node.set("this", str(pos))

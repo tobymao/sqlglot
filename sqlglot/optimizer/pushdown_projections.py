@@ -163,8 +163,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     else:
         order_refs = set()
 
-    # Bare GROUP BY ordinals refer to the pre-prune projection list. Force those
-    # targets to survive pruning and remap ordinals after the new list is built.
+    # Resolve bare GROUP BY ordinals before pruning
     ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
     group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
 
@@ -226,6 +225,8 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         for node, old_selection in ordinal_refs:
             pos = new_pos.get(id(old_selection))
             if pos is not None and int(node.this) != pos:
+                if journal is not None:
+                    record(journal, node, "this")
                 node.set("this", str(pos))
 
     if removed:

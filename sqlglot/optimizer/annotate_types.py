@@ -305,56 +305,7 @@ class TypeAnnotator:
             source = scope.sources.get(source_name)
 
             if isinstance(source, Scope):
-                expression = source.expression
-
-                if isinstance(expression, exp.UDTF):
-                    values = []
-
-                    if isinstance(expression, exp.Lateral):
-                        if isinstance(expression.this, exp.Explode):
-                            values = [expression.this.this]
-                    elif isinstance(expression, exp.Unnest):
-                        values = [expression]
-                    elif not isinstance(expression, exp.TableFromRows):
-                        values = expression.expressions[0].expressions
-
-                    if not values:
-                        return {}
-
-                    alias_column_names = expression.alias_column_names
-
-                    if isinstance(expression, exp.Unnest):
-                        exp_type = expression.type
-                    elif isinstance(expression, exp.Lateral) and isinstance(
-                        expression.this, exp.Explode
-                    ):
-                        exp_type = expression.this.type
-                    else:
-                        exp_type = None
-
-                    struct_type = (
-                        exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
-                    )
-
-                    if struct_type:
-                        selects = {
-                            col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
-                            for col_def in struct_type.expressions
-                            if isinstance(col_def, exp.ColumnDef) and col_def.kind
-                        }
-                    else:
-                        selects = {
-                            alias: column.type for alias, column in zip(alias_column_names, values)
-                        }
-
-                elif isinstance(expression, exp.SetOperation) and len(
-                    expression.this.selects
-                ) == len(expression.expression.selects):
-                    selects = self._get_setop_column_types(expression)
-
-                elif isinstance(expression, exp.Selectable):
-                    selects = {s.alias_or_name: s.type for s in expression.selects if s.type}
-
+                selects = self._get_source_scope_selects(source)
             else:
                 pivots = (
                     source.args.get("pivots", []) if isinstance(source, exp.Table) else scope.pivots
@@ -365,8 +316,17 @@ class TypeAnnotator:
                     parent = pivots[-1].parent
                     parent_source = scope.sources.get(parent.alias_or_name) if parent else None
 
-                    if parent and isinstance(parent_source, Scope):
-                        src_types = self._get_scope_source_selects(scope, parent.alias_or_name)
+                    if (
+                        not isinstance(parent_source, Scope)
+                        and isinstance(parent, exp.Table)
+                        and not parent.db
+                    ):
+                        # A chain aliased like the CTE it reads from shadows it in
+                        # `scope.sources`, so reach for the CTE's scope directly
+                        parent_source = scope.cte_sources.get(parent.name)
+
+                    if isinstance(parent_source, Scope):
+                        src_types = self._get_source_scope_selects(parent_source)
                     elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
                         src_types = (
                             self.schema.find(parent, raise_on_missing=False, ensure_data_types=True)
@@ -387,6 +347,53 @@ class TypeAnnotator:
             self._scope_source_selects[key] = selects
 
         return selects
+
+    def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
+        expression = source.expression
+
+        if isinstance(expression, exp.UDTF):
+            values = []
+
+            if isinstance(expression, exp.Lateral):
+                if isinstance(expression.this, exp.Explode):
+                    values = [expression.this.this]
+            elif isinstance(expression, exp.Unnest):
+                values = [expression]
+            elif not isinstance(expression, exp.TableFromRows):
+                values = expression.expressions[0].expressions
+
+            if not values:
+                return {}
+
+            alias_column_names = expression.alias_column_names
+
+            if isinstance(expression, exp.Unnest):
+                exp_type = expression.type
+            elif isinstance(expression, exp.Lateral) and isinstance(expression.this, exp.Explode):
+                exp_type = expression.this.type
+            else:
+                exp_type = None
+
+            struct_type = exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
+
+            if struct_type:
+                return {
+                    col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
+                    for col_def in struct_type.expressions
+                    if isinstance(col_def, exp.ColumnDef) and col_def.kind
+                }
+
+            return {alias: column.type for alias, column in zip(alias_column_names, values)}
+
+        if isinstance(expression, exp.SetOperation) and len(expression.this.selects) == len(
+            expression.expression.selects
+        ):
+            return self._get_setop_column_types(expression)
+
+        if isinstance(expression, exp.Selectable):
+            return {s.alias_or_name: s.type for s in expression.selects if s.type}
+
+        return {}
 
     def annotate_scope(self, scope: Scope) -> None:
         if isinstance(self.schema, MappingSchema):

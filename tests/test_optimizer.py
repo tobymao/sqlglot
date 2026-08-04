@@ -918,6 +918,29 @@ class TestOptimizer(unittest.TestCase):
             [("ID", "INT"), ("A", "BIGINT"), ("B", "BIGINT"), ("X", "DOUBLE"), ("Y", "DOUBLE")],
         )
 
+    def test_unpivot_cte_annotate_types(self):
+        # An unaliased operator takes the CTE's name, shadowing it in scope.sources, so
+        # the source types must be resolved through the CTE's scope instead
+        schema = {"t": {"id": "int", "jan": "int", "feb": "int"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH c AS (SELECT id, jan, feb FROM t) "
+                    "SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb))",
+                    dialect="duckdb",
+                ),
+                schema=schema,
+                dialect="duckdb",
+            ),
+            schema=schema,
+            dialect="duckdb",
+        )
+
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [("id", "INT"), ("m", "VARCHAR"), ("v", "INT")],
+        )
+
     def test_unnest_type_trace_is_memoized(self):
         """Tracing an UNNEST's element type must not re-walk shared parts of the scope graph.
 

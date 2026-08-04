@@ -6229,9 +6229,11 @@ class Generator:
 
         # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit
         this = expression.this.name.upper()
-        if sqlglot.dialects.dialect.WEEK_START_DAY_TO_DOW.get(
-            this
-        ) != sqlglot.dialects.dialect.week_offset_to_dow(self.dialect.WEEK_OFFSET):
+
+        dow_from_week_start_day = sqlglot.dialects.dialect.WEEK_START_DAY_TO_DOW.get(this)
+        dow_from_week_offset = sqlglot.dialects.dialect.week_offset_to_dow(self.dialect.WEEK_OFFSET)
+
+        if dow_from_week_start_day != dow_from_week_offset:
             self.unsupported(
                 f"WEEK({this}) is not supported; falling back to the default week start day"
             )

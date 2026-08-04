@@ -672,16 +672,14 @@ def _qualify_columns(
 
     pivots = scope.pivots
 
-    # In a chain, the Nth operator's IN-list may reference columns produced by operators
-    # 1..N-1, which no source exposes. Track that accumulated output so those resolve too.
-    # Only one chain can be tracked at a time -- with several pivoted sources we can't tell
-    # which produced a given column, so leave it unqualified for validation to reject. They
-    # are collected per source, so first and last sharing a parent means there's only one.
+    # A chained operator's IN-list may name columns produced by earlier operators, which no
+    # source exposes; track the chain's accumulated output to resolve them. Attribution is
+    # only unambiguous when all pivots share one parent, i.e. there's a single pivoted source.
     single_chain = bool(pivots) and pivots[0].parent is pivots[-1].parent
     produced: set[str] = set()
     pivoted_source = pivots[-1].alias if single_chain else ""
-    available = (
-        list(resolver.get_source_columns(pivoted_source)) if pivoted_source in scope.sources else []
+    available: t.Collection[str] = (
+        resolver.get_source_columns(pivoted_source) if pivoted_source in scope.sources else []
     )
 
     for pivot in pivots:
@@ -695,7 +693,7 @@ def _qualify_columns(
             elif column.name in produced:
                 column.set("table", exp.to_identifier(pivoted_source))
 
-        available = list(pivot.output_columns(available))
+        available = pivot.output_columns(available)
         produced.update(available)
 
 

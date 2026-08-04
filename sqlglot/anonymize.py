@@ -42,7 +42,7 @@ def anonymize(
     """
     dialect = Dialect.get_or_raise(dialect)
     tokenizer_class = dialect.tokenizer_class
-    known_functions = dialect.parser_class.FUNCTIONS
+    parser_class = dialect.parser_class
 
     errored = False
     if isinstance(sql_or_tokens, str):
@@ -77,9 +77,12 @@ def anonymize(
             token.token_type == TokenType.VAR
             and i + 1 < len(tokens)
             and tokens[i + 1].token_type == TokenType.L_PAREN
-            and token.text.upper() in known_functions
         ):
-            continue
+            # A function name can live in either registry, e.g. JSON_OBJECT is only in
+            # FUNCTION_PARSERS. They're consulted separately to avoid building their union
+            name = token.text.upper()
+            if name in parser_class.FUNCTIONS or name in parser_class.FUNCTION_PARSERS:
+                continue
         if token.token_type not in ANONYMIZED_TYPES:
             continue
         if not token.text:

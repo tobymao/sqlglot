@@ -268,6 +268,20 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ],
         )
 
+        # JSON_OBJECT is registered in FUNCTION_PARSERS rather than FUNCTIONS
+        self.assert_anonymized(
+            "SELECT JSON_OBJECT('k', v)",
+            [
+                (TokenType.SELECT, "SELECT"),
+                (TokenType.VAR, "JSON_OBJECT"),  # known function — kept
+                (TokenType.L_PAREN, "("),
+                (TokenType.STRING, "a"),  # 'k'
+                (TokenType.COMMA, ","),
+                (TokenType.VAR, "b"),  # v
+                (TokenType.R_PAREN, ")"),
+            ],
+        )
+
     def test_string_family_forms_anonymized(self):
         self.assert_anonymized(
             "SELECT N'nat', $$her$$, x'4141'",

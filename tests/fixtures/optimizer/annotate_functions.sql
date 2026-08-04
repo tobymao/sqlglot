@@ -6847,6 +6847,14 @@ BIGINT;
 BIT_AND(tbl.bin_col);
 VARBINARY;
 
+# dialect: mysql
+BIT_AND(tbl.int_col) OVER (ORDER BY tbl.int_col);
+BIGINT;
+
+# dialect: mysql
+BIT_AND(tbl.bin_col) OVER (ORDER BY tbl.bin_col);
+VARBINARY;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -1074,9 +1074,8 @@ class TestOptimizer(unittest.TestCase):
     def test_pushdown_projection(self):
         self.check_file("pushdown_projections", pushdown_projections, schema=self.schema)
 
-    def test_optimize_remaps_group_by_ordinals_after_prune(self):
-        # Case A: constant group key must survive prune (empty-input cardinality)
-        case_a = optimizer.optimize(
+    def test_optimize_preserves_constant_group_by_ordinal(self):
+        optimized = optimizer.optimize(
             parse_one(
                 """
                 WITH x AS (
@@ -1086,43 +1085,37 @@ class TestOptimizer(unittest.TestCase):
                 )
                 SELECT s FROM x
                 """,
-                dialect="presto",
             ),
-            dialect="presto",
-            validate_qualify_columns=False,
         )
-        cte = case_a.find(exp.CTE)
+        cte = optimized.find(exp.CTE)
         self.assertEqual([s.alias_or_name for s in cte.this.selects], ["c", "s"])
         self.assertEqual(
-            [e.sql(dialect="presto") for e in cte.this.args["group"].expressions],
+            [e.sql() for e in cte.this.args["group"].expressions],
             ["1"],
         )
 
-        # Case B: after pruning an earlier column, remap ordinal to the same target
-        case_b = optimizer.optimize(
+    def test_optimize_remaps_ordinal_after_pruning_earlier_projection(self):
+        optimized = optimizer.optimize(
             parse_one(
                 """
                 WITH x AS (
                   SELECT z, 0 AS c, a, SUM(d) AS s
                   FROM t
-                  GROUP BY 2
+                  GROUP BY z, 2, a
                 )
                 SELECT c, a, s FROM x
                 """,
-                dialect="presto",
             ),
-            dialect="presto",
-            validate_qualify_columns=False,
         )
-        cte = case_b.find(exp.CTE)
+        cte = optimized.find(exp.CTE)
         self.assertEqual([s.alias_or_name for s in cte.this.selects], ["c", "a", "s"])
         self.assertEqual(
-            [e.sql(dialect="presto") for e in cte.this.args["group"].expressions],
-            ["1"],
+            [e.sql() for e in cte.this.args["group"].expressions],
+            ['"t"."z"', "1", '"t"."a"'],
         )
 
-        # Non-constant keys stay as expressions; constant ordinal target survives + remaps
-        pruned = optimizer.optimize(
+    def test_optimize_preserves_mixed_group_by_keys(self):
+        optimized = optimizer.optimize(
             parse_one(
                 """
                 WITH x AS (
@@ -1132,21 +1125,14 @@ class TestOptimizer(unittest.TestCase):
                 )
                 SELECT a, s FROM x
                 """,
-                dialect="presto",
             ),
-            dialect="presto",
-            validate_qualify_columns=False,
         )
-        cte = pruned.find(exp.CTE)
+        cte = optimized.find(exp.CTE)
         self.assertEqual([s.alias_or_name for s in cte.this.selects], ["a", "c", "s"])
-        group_exprs = [e.sql(dialect="presto") for e in cte.this.args["group"].expressions]
-        self.assertEqual(group_exprs, ['"t"."a"', '"t"."b"', "2"])
-        n_selects = len(cte.this.selects)
-        for node in cte.this.args["group"].expressions:
-            if node.is_int and isinstance(node, exp.Literal):
-                pos = int(node.this)
-                self.assertGreaterEqual(pos, 1)
-                self.assertLessEqual(pos, n_selects)
+        self.assertEqual(
+            [e.sql() for e in cte.this.args["group"].expressions],
+            ['"t"."a"', '"t"."b"', "2"],
+        )
 
     def test_optimize_remaps_repeated_group_by_ordinals_after_prune(self):
         optimized = optimizer.optimize(
@@ -1159,15 +1145,12 @@ class TestOptimizer(unittest.TestCase):
                 )
                 SELECT c, s FROM x
                 """,
-                dialect="presto",
             ),
-            dialect="presto",
-            validate_qualify_columns=False,
         )
         cte = optimized.find(exp.CTE)
         self.assertEqual([s.alias_or_name for s in cte.this.selects], ["c", "s"])
         self.assertEqual(
-            [e.sql(dialect="presto") for e in cte.this.args["group"].expressions],
+            [e.sql() for e in cte.this.args["group"].expressions],
             ['"t"."z"', "1", "1"],
         )
 
@@ -1456,9 +1439,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ),
             dialect="duckdb",
             identify=False,
-            validate_qualify_columns=False,
         )
-        sql = expression.sql()
+        original = expression.copy()
         optimizer.pushdown_projections.pushdown_projections(
             expression, dialect="duckdb", journal=journal
         )
@@ -1466,7 +1448,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual([e.sql() for e in group.expressions], ["t.z", "1", "1"])
 
         revert(journal)
-        self.assertEqual(expression.sql(), sql)
+        self.assertEqual(expression, original)
 
     @patch("sqlglot.generator.logger")
     def test_merge_subqueries(self, logger):

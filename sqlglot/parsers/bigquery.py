@@ -381,7 +381,6 @@ class BigQueryParser(parser.Parser):
         TokenType.END: lambda self: self._parse_as_command(self._prev),
         TokenType.FOR: lambda self: self._parse_for_in(),
         TokenType.EXPORT: lambda self: self._parse_export_data(),
-        TokenType.DECLARE: lambda self: self._parse_declare(),
     }
 
     BRACKET_OFFSETS: t.ClassVar = {

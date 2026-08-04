@@ -857,6 +857,7 @@ class Parser:
         TokenType.CURRENT_TIME,
         TokenType.CURRENT_USER,
         TokenType.CURRENT_CATALOG,
+        TokenType.DECLARE,
         TokenType.FILTER,
         TokenType.FIRST,
         TokenType.FORMAT,

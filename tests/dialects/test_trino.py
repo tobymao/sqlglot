@@ -281,6 +281,7 @@ SELECT f(1)""",
 
         # DECLARE isn't reserved in Trino, so it must still work as a plain identifier
         self.validate_identity("SELECT declare FROM (VALUES (1), (2)) AS t(declare)")
+        self.validate_identity("WITH FUNCTION declare() RETURNS INTEGER RETURN 1 SELECT DECLARE()")
 
         # A Block built without begin=True (i.e. not by _parse_routine_block) must
         # not get a synthesized BEGIN

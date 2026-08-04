@@ -418,7 +418,6 @@ class TSQLParser(parser.Parser):
 
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
-        TokenType.DECLARE: lambda self: self._parse_declare(),
         TokenType.EXECUTE: lambda self: self._parse_execute(),
     }
 

@@ -871,6 +871,24 @@ class TestLineage(unittest.TestCase):
                 node = lineage(column, sql, schema=schema, dialect="snowflake")
                 self.assertEqual([d.name for d in node.downstream], downstream)
 
+    def test_multiple_pivoted_sources(self) -> None:
+        # Pivots over different sources don't form a chain, so folding them would trace
+        # `hc` through the other source's `val` output; degrade to leaves instead
+        schema = {
+            "t1": {"id": "int", "jan": "int", "feb": "int"},
+            "t2": {"id": "int", "val": "int", "other": "int"},
+        }
+        sql = """
+        SELECT s1.val, s2.hc
+        FROM t1 UNPIVOT(val FOR m IN (jan, feb)) AS s1
+        JOIN t2 UNPIVOT(hc FOR r IN (val, other)) AS s2 ON s1.id = s2.id
+        """
+        node = lineage("hc", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["S2.HC"])
+
+        node = lineage("val", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["S1.VAL"])
+
     def test_pivot_with_alias_columns(self) -> None:
         sql = """
         SELECT x FROM (SELECT value, category FROM sample_data) AS sd

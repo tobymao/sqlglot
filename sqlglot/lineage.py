@@ -381,6 +381,11 @@ def to_node(
     }
 
     pivots = scope.pivots
+    if pivots and pivots[0].parent is not pivots[-1].parent:
+        # The scope's pivots only form a chain when they all hang off of the same source;
+        # otherwise they can't be folded, so their columns degrade to unresolved leaves
+        pivots = []
+
     pivot_renames: dict[str, str] = {}
     pivot_column_mapping: dict[str, list[exp.Column]] = {}
 

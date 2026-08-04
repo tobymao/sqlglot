@@ -896,9 +896,14 @@ def _expand_stars(
 
             if source is None:
                 # The chain's final alias names the resulting source, but only the underlying
-                # source is registered in `scope.sources`, so resolve through the chain's parent
+                # source is registered in `scope.sources`, so resolve through the chain's parent.
+                # Attribution is only unambiguous for a single chain (all pivots share a parent)
                 chain = scope.pivots
-                parent = chain[-1].parent if chain and chain[-1].alias == table else None
+                parent = (
+                    chain[-1].parent
+                    if chain and chain[0].parent is chain[-1].parent and chain[-1].alias == table
+                    else None
+                )
                 if parent:
                     pivots = chain
                     source_table = parent.alias_or_name

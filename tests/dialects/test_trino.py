@@ -292,6 +292,53 @@ SELECT f(1)""",
             "SELECT 1; SELECT 2; END",
         )
 
+    def test_inline_udf_if(self):
+        # https://trino.io/docs/current/udf/sql/if.html - verbatim from the docs, but
+        # real Trino rejects this exact body with "Function must end in a RETURN
+        # statement": its function-body check requires a literal trailing RETURN and
+        # doesn't credit an IF/ELSEIF/ELSE that already returns on every branch. This
+        # asserts round-trip grammar only, confirmed against a real Trino instance.
+        self.validate_identity(
+            "WITH FUNCTION simple_if(a BIGINT) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; ELSEIF a = 1 THEN RETURN 'one'; "
+            "ELSE RETURN 'more than one or negative'; END IF; END "
+            "SELECT SIMPLE_IF(3)"
+        )
+
+        # IF with no ELSE/ELSEIF at all; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; END IF; RETURN 'other'; END "
+            "SELECT F(1)"
+        )
+
+        # An ELSEIF chain with no final ELSE; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; ELSEIF a = 1 THEN RETURN 'one'; END IF; "
+            "RETURN 'other'; END "
+            "SELECT F(1)"
+        )
+
+        # IF can nest; the trailing RETURN is required by the same real-Trino
+        # completeness check noted above, confirmed to actually run and return 'a zero'
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER, b INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN IF b = 0 THEN RETURN 'both zero'; ELSE RETURN 'a zero'; "
+            "END IF; ELSE RETURN 'a nonzero'; END IF; RETURN 'unreachable'; END "
+            "SELECT F(1, 2)"
+        )
+
+        # Combines with DECLARE/SET, and a CASE expression nested inside a RETURN
+        # doesn't get confused with the surrounding IF's own ELSE/END IF
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS INTEGER "
+            "BEGIN DECLARE result INTEGER DEFAULT 0; "
+            "IF a > 0 THEN RETURN CASE WHEN a > 10 THEN 1 ELSE 2 END; "
+            "ELSE SET result = -1; END IF; RETURN result; END "
+            "SELECT F(1)"
+        )
+
         # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration
         # on a body it can tell is trivially deterministic (same class of issue as the
         # SECURITY/WITH (...) note above), so this asserts round-trip grammar only.

@@ -116,9 +116,43 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_routine_block(self) -> exp.Block:
+        # The body spans semicolon-delimited chunks like _parse_block(), but unlike it,
+        # closes on END even when tokens follow; Trino's enclosing query always does
+        # and is left for the caller (`... END SELECT f(1)`).
+        self._match(TokenType.BEGIN)
+        statements: list[exp.Expr] = []
+
+        while not self._match(TokenType.END):
+            if not self._curr:
+                if self._chunk_index >= len(self._chunks):
+                    self.raise_error("Unexpected end of routine body")
+                    break
+
+                self._advance_chunk()
+            elif not self._match(TokenType.SEMICOLON):
+                statement = self._parse_routine_statement()
+                if not statement:
+                    break
+
+                statements.append(statement)
+        else:
+            statements.append(exp.EndStatement())
+
+        return self.expression(exp.Block(expressions=statements, begin=True))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
+        if self._match(TokenType.BEGIN, advance=False):
+            return self._parse_routine_block()
+
         if self._match_text_seq("RETURN"):
             return self.expression(exp.Return(this=self._parse_disjunction()))
+
+        if self._match(TokenType.DECLARE):
+            return self._parse_declare()
+
+        if self._match(TokenType.SET):
+            return self._parse_set()
 
         self.raise_error("Expected routine statement")
         return None

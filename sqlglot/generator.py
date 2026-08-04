@@ -6257,7 +6257,8 @@ class Generator:
 
     def block_sql(self, expression: exp.Block) -> str:
         expressions = self.expressions(expression, sep="; ", flat=True)
-        return f"{expressions}" if expressions else ""
+        begin = "BEGIN " if expression.args.get("begin") else ""
+        return f"{begin}{expressions}" if expressions else ""
 
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
         self.unsupported("Unsupported Inline UDFs syntax")

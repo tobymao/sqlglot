@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -246,4 +246,60 @@ SELECT f(1)""",
             "WITH FUNCTION custom_sqrt(a INTEGER) RETURNS DOUBLE COMMENT 'Custom sqrt function' "
             "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
             "WITH (weight=42, cost='low') RETURN a SELECT CUSTOM_SQRT(4)"
+        )
+
+    def test_inline_udf_begin_end(self):
+        # https://trino.io/docs/current/udf/sql/begin.html
+        self.validate_identity(
+            "WITH FUNCTION meaning_of_life() RETURNS INTEGER "
+            "BEGIN DECLARE a INTEGER DEFAULT 6; DECLARE b INTEGER DEFAULT 7; RETURN a * b; END "
+            "SELECT MEANING_OF_LIFE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/set.html
+        self.validate_identity(
+            "WITH FUNCTION one() RETURNS INTEGER "
+            "BEGIN DECLARE counter INTEGER DEFAULT 1; SET counter = 0; "
+            "SET counter = counter + 2; SET counter = counter / counter; RETURN counter; END "
+            "SELECT ONE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/declare.html - multiple identifiers can
+        # share one DECLARE and type
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE first_name, last_name, middle_name VARCHAR(25); RETURN 1; END "
+            "SELECT F()"
+        )
+
+        # BEGIN can nest; confirmed against a real Trino instance (returns 2)
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; BEGIN SET x = x + 1; END; RETURN x; END "
+            "SELECT F()"
+        )
+
+        # DECLARE isn't reserved in Trino, so it must still work as a plain identifier
+        self.validate_identity("SELECT declare FROM (VALUES (1), (2)) AS t(declare)")
+
+        # A Block built without begin=True (i.e. not by _parse_routine_block) must
+        # not get a synthesized BEGIN
+        self.assertEqual(
+            exp.Block(
+                expressions=[parse_one("SELECT 1"), parse_one("SELECT 2"), exp.EndStatement()]
+            ).sql(dialect="trino"),
+            "SELECT 1; SELECT 2; END",
+        )
+
+        # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration
+        # on a body it can tell is trivially deterministic (same class of issue as the
+        # SECURITY/WITH (...) note above), so this asserts round-trip grammar only.
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL NOT DETERMINISTIC "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; RETURN x; END "
+            "SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER BEGIN RETURN x * 2; END "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
         )

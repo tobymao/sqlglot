@@ -13,6 +13,7 @@ from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_tab
 
 class TrinoGenerator(PrestoGenerator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
+    DECLARE_DEFAULT_ASSIGNMENT = "DEFAULT"
     PROPERTIES_LOCATION = {
         **PrestoGenerator.PROPERTIES_LOCATION,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,

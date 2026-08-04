@@ -3633,7 +3633,12 @@ class Generator:
             if self.NORMALIZE_EXTRACT_DATE_PARTS
             else expression.this
         )
-        this_sql = self.sql(this) if self.EXTRACT_ALLOWS_QUOTES else this.name
+        if self.EXTRACT_ALLOWS_QUOTES:
+            this_sql = self.sql(this)
+        elif isinstance(this, exp.WeekStart):
+            this_sql = self.weekstart_name(this)
+        else:
+            this_sql = this.name
         expression_sql = self.sql(expression, "expression")
 
         return f"EXTRACT({this_sql} FROM {expression_sql})"
@@ -6219,13 +6224,30 @@ class Generator:
         this = expression.this
         return self.func("LOCALTIMESTAMP", this) if this else "LOCALTIMESTAMP"
 
-    def weekstart_sql(self, expression: exp.WeekStart) -> str:
-        this = expression.this.name.upper()
-        if self.dialect.WEEK_OFFSET == -1 and this == "SUNDAY":
-            # BigQuery specific optimization since WEEK(SUNDAY) == WEEK
-            return "WEEK"
+    def weekstart_name(self, expression: exp.WeekStart) -> str:
+        import sqlglot.dialects.dialect
 
-        return self.func("WEEK", expression.this)
+        # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit
+        this = expression.this.name.upper()
+
+        dow_from_week_start_day = sqlglot.dialects.dialect.WEEK_START_DAY_TO_DOW.get(this)
+        dow_from_week_offset = sqlglot.dialects.dialect.week_offset_to_dow(self.dialect.WEEK_OFFSET)
+
+        if dow_from_week_start_day != dow_from_week_offset:
+            self.unsupported(
+                f"WEEK({this}) is not supported; falling back to the default week start day"
+            )
+
+        return "WEEK"
+
+    def weekstart_sql(self, expression: exp.WeekStart) -> str:
+        name = self.weekstart_name(expression)
+
+        # DateTrunc stores string literal units, whereas TimeUnit expressions store keywords
+        if isinstance(expression.parent, exp.DateTrunc):
+            return self.sql(exp.Literal.string(name))
+
+        return name
 
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
         this = self.expressions(expression)

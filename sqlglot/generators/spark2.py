@@ -6,7 +6,8 @@ from sqlglot.dialects.dialect import (
     bracket_to_element_at_sql,
     is_parse_json,
     rename_func,
-    unit_to_str,
+    timestamptrunc_sql,
+    weekstart_unit_to_str,
 )
 from sqlglot.generators.hive import HIVE_DATE_FORMAT, HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
 from sqlglot.transforms import (
@@ -153,7 +154,9 @@ class Spark2Generator(HiveGenerator):
                 ]
             ),
             exp.DateFromParts: rename_func("MAKE_DATE"),
-            exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+            exp.DateTrunc: lambda self, e: self.func(
+                "TRUNC", e.this, weekstart_unit_to_str(self, e)
+            ),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
             exp.DayOfWeek: rename_func("DAYOFWEEK"),
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
@@ -190,7 +193,7 @@ class Spark2Generator(HiveGenerator):
             ),
             exp.StrToDate: _str_to_date,
             exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-            exp.TimestampTrunc: lambda self, e: self.func("DATE_TRUNC", unit_to_str(e), e.this),
+            exp.TimestampTrunc: timestamptrunc_sql(),
             exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),

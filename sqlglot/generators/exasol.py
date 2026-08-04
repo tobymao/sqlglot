@@ -91,7 +91,12 @@ def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp
 def _trunc_sql(
     self: ExasolGenerator, kind: str, expression: exp.DateTrunc | exp.TimestampTrunc
 ) -> str:
-    unit = expression.text("unit")
+    unit_expr = expression.args.get("unit")
+    unit = (
+        self.weekstart_name(unit_expr)
+        if isinstance(unit_expr, exp.WeekStart)
+        else expression.text("unit")
+    )
     node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
     expr_sql = self.sql(node)
     if isinstance(node, exp.Literal) and node.is_string:

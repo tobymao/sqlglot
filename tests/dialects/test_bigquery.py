@@ -272,6 +272,13 @@ class TestBigQuery(Validator):
         self.validate_identity("x <> ''")
         self.validate_identity("DATE_TRUNC(col, WEEK(MONDAY))")
         self.validate_identity("DATE_TRUNC(col, MONTH, 'UTC+8')")
+        self.validate_all(
+            "SELECT DATE_TRUNC(DATE '2015-06-15', ISOYEAR)",
+            write={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2015-06-15' AS DATE), ISOYEAR)",
+                "duckdb": "SELECT DATE_TRUNC('ISOYEAR', CAST('2015-06-15' AS DATE))",
+            },
+        )
         self.validate_identity("SELECT b'abc'")
         self.validate_identity("SELECT AS STRUCT 1 AS a, 2 AS b")
         self.validate_identity("SELECT DISTINCT AS STRUCT 1 AS a, 2 AS b")
@@ -3596,6 +3603,80 @@ OPTIONS (
             write={
                 "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), ISOWEEK)",
                 "duckdb": "SELECT CAST(CAST('2008-11-10' AS DATE) + INTERVAL ((7 - EXTRACT(DAYOFWEEK FROM CAST('2008-11-10' AS DATE))) % 7) DAY AS DATE)",
+            },
+        )
+        # Dialects without week-start syntax degrade WEEK(<day>) to their plain week
+        # unit (with an unsupported warning when the week start day differs)
+        self.validate_all(
+            "SELECT DATE_TRUNC(d, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATE_TRUNC(d, WEEK)",
+                "exasol": "SELECT DATE_TRUNC('WEEK', d)",
+                "mysql": "SELECT STR_TO_DATE(CONCAT(YEAR(d), ' ', WEEK(d, 1), ' 1'), '%Y %u %w')",
+                "snowflake": "SELECT DATE_TRUNC('WEEK', d)",
+                "spark": "SELECT TRUNC(d, 'WEEK')",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_TRUNC(ts, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT TIMESTAMP_TRUNC(ts, WEEK)",
+                "clickhouse": "SELECT dateTrunc('WEEK', ts)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', ts)",
+                "mysql": "SELECT DATE_ADD('0000-01-01 00:00:00', INTERVAL (TIMESTAMPDIFF(WEEK, '0000-01-01 00:00:00', ts)) WEEK)",
+                "snowflake": "SELECT DATE_TRUNC('WEEK', ts)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME_TRUNC(dt, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATETIME_TRUNC(dt, WEEK)",
+                "duckdb": "SELECT DATE_TRUNC('WEEK', CAST(dt AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_TRUNC(d, WEEK(SUNDAY))",
+            write={
+                "spark": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP_TRUNC(ts, WEEK(SUNDAY))",
+            write={
+                "clickhouse": UnsupportedError,
+                "duckdb": UnsupportedError,
+                "snowflake": UnsupportedError,
+                "spark": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_DIFF(d1, d2, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT DATE_DIFF(d1, d2, WEEK)",
+                "snowflake": "SELECT DATEDIFF(WEEK, d2, d1)",
+                "tsql": "SELECT DATEDIFF(WEEK, d2, d1)",
+            },
+        )
+        self.validate_all(
+            "SELECT LAST_DAY(d, WEEK(SUNDAY))",
+            write={
+                "bigquery": "SELECT LAST_DAY(d, WEEK)",
+                "snowflake": "SELECT LAST_DAY(d, WEEK)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
+            write={
+                "bigquery": "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
+                "hive": "SELECT EXTRACT(WEEK FROM d)",
+                "snowflake": "SELECT DATE_PART(WEEK, d)",
+                "spark": "SELECT EXTRACT(WEEK FROM d)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
+            write={
+                "spark": UnsupportedError,
             },
         )
         self.validate_identity(

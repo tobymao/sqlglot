@@ -1129,6 +1129,19 @@ x < CAST('2008-11-16' AS DATE) AND x >= CAST('2008-11-09' AS DATE);
 DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE);
 x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE);
 
+# dialect: bigquery
+DATE_TRUNC(x, WEEK) IN (CAST('2008-11-09' AS DATE), CAST('2008-11-23' AS DATE));
+(x < CAST('2008-11-16' AS DATE) AND x >= CAST('2008-11-09' AS DATE)) OR (x < CAST('2008-11-30' AS DATE) AND x >= CAST('2008-11-23' AS DATE));
+
+-- A week start that doesn't match the dialect's week offset must not be simplified
+# dialect: bigquery
+DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK(MONDAY));
+DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK(MONDAY));
+
+# dialect: bigquery
+DATE_TRUNC(x, WEEK(MONDAY)) = CAST('2008-11-10' AS DATE);
+DATE_TRUNC(x, WEEK(MONDAY)) = CAST('2008-11-10' AS DATE);
+
 -- T-SQL week truncation follows @@DATEFIRST, which defaults to 7 (Sunday)
 # dialect: tsql
 DATETRUNC(WEEK, CAST('2021-12-08' AS DATETIME2));

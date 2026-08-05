@@ -173,4 +173,5 @@ EXPRESSION_METADATA = {
     exp.Compress: {"annotator": _annotate_compress},
     exp.BitwiseAndAgg: {"annotator": _annotate_bit_func},
     exp.BitwiseXorAgg: {"annotator": _annotate_bit_func},
+    exp.BitwiseOrAgg: {"annotator": _annotate_bit_func},
 }

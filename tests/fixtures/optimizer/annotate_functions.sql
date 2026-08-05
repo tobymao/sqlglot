@@ -6875,6 +6875,22 @@ BIGINT UNSIGNED;
 BIT_XOR(tbl.bin_col) OVER (ORDER BY tbl.bin_col);
 VARBINARY;
 
+# dialect: mysql
+BIT_OR(tbl.int_col);
+BIGINT UNSIGNED;
+
+# dialect: mysql
+BIT_OR(tbl.bin_col);
+VARBINARY;
+
+# dialect: mysql
+BIT_OR(tbl.int_col) OVER (ORDER BY tbl.int_col);
+BIGINT UNSIGNED;
+
+# dialect: mysql
+BIT_OR(tbl.bin_col) OVER (ORDER BY tbl.bin_col);
+VARBINARY;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -411,6 +411,17 @@ def _expand_alias_refs(
                     simplified = simplify_parens(column, dialect)
                     if simplified is not column:
                         column.replace(simplified)
+                        column = simplified
+
+                    if resolve_table and resolver.schema.empty:
+                        # resolve alias spliced into QUALIFY/HAVING with unqualified columns
+                        for inner in walk_in_scope(column):
+                            if (
+                                isinstance(inner, exp.Column)
+                                and not inner.table
+                                and (inner_table := resolver.get_table(inner))
+                            ):
+                                inner.set("table", inner_table)
 
     for i, projection in enumerate(expression.selects):
         replace_columns(projection)
@@ -444,22 +455,6 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("group"), literal_index=True)
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
-
-    if resolver.schema.empty:
-        # Resolve window PARTITION BY / argument columns left unqualified by early alias
-        for clause in (expression.args.get("qualify"), expression.args.get("having")):
-            if not clause:
-                continue
-            for column in walk_in_scope(clause):
-                if (
-                    isinstance(column, exp.Column)
-                    and not column.table
-                    and isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
-                ):
-                    table = resolver.get_table(column)
-                    if table:
-                        column.set("table", table)
-                        replaced = True
 
     if dialect.SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS:
         for join in expression.args.get("joins") or []:

@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name
-from sqlglot.optimizer.scope import Scope, build_scope
+from sqlglot.optimizer.scope import Scope, build_scope, fill_metadata
 from sqlglot._typing import E
 
 if t.TYPE_CHECKING:
@@ -13,7 +13,7 @@ if t.TYPE_CHECKING:
     TakenNameMapping = dict[str, t.Union[Scope, exp.Expr]]
 
 
-def eliminate_subqueries(expression: E) -> E:
+def eliminate_subqueries(expression: E, metadata: dict[str, int] | None = None) -> E:
     """
     Rewrite derived tables as CTES, deduplicating if possible.
 
@@ -30,6 +30,7 @@ def eliminate_subqueries(expression: E) -> E:
 
     Args:
         expression (sqlglot.Expr): expression
+        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: expression
     """
@@ -41,6 +42,13 @@ def eliminate_subqueries(expression: E) -> E:
     root = build_scope(expression)
 
     if not root:
+        return expression
+
+    if metadata is not None and not metadata:
+        fill_metadata(list(root.traverse()), metadata)
+
+    # Only derived tables and existing CTEs can be rewritten as CTEs.
+    if metadata and not metadata["nested_queries"] and not metadata["ctes"]:
         return expression
 
     # Map of alias->Scope|Table
@@ -85,9 +93,12 @@ def eliminate_subqueries(expression: E) -> E:
             if scope is cte_scope:
                 # Don't try to eliminate this CTE itself
                 continue
-            new_cte = _eliminate(scope, existing_ctes, taken)
+            new_cte = _eliminate(scope, existing_ctes, taken, metadata)
             if new_cte:
                 new_ctes.append(new_cte)
+
+                if metadata:
+                    metadata["ctes"] += 1
 
         # Append the existing CTE itself
         cte_parent = cte_scope.expression.parent
@@ -97,9 +108,12 @@ def eliminate_subqueries(expression: E) -> E:
     # Now append the rest
     for scope in itertools.chain(root.union_scopes, root.subquery_scopes, root.table_scopes):
         for child_scope in scope.traverse():
-            new_cte = _eliminate(child_scope, existing_ctes, taken)
+            new_cte = _eliminate(child_scope, existing_ctes, taken, metadata)
             if new_cte:
                 new_ctes.append(new_cte)
+
+                if metadata:
+                    metadata["ctes"] += 1
 
     if new_ctes:
         query = expression.expression if isinstance(expression, exp.DDL) else expression
@@ -109,19 +123,25 @@ def eliminate_subqueries(expression: E) -> E:
 
 
 def _eliminate(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
+    scope: Scope,
+    existing_ctes: ExistingCTEsMapping,
+    taken: TakenNameMapping,
+    metadata: dict[str, int] | None = None,
 ) -> exp.Expr | None:
     if scope.is_derived_table:
-        return _eliminate_derived_table(scope, existing_ctes, taken)
+        return _eliminate_derived_table(scope, existing_ctes, taken, metadata)
 
     if scope.is_cte:
-        return _eliminate_cte(scope, existing_ctes, taken)
+        return _eliminate_cte(scope, existing_ctes, taken, metadata)
 
     return None
 
 
 def _eliminate_derived_table(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
+    scope: Scope,
+    existing_ctes: ExistingCTEsMapping,
+    taken: TakenNameMapping,
+    metadata: dict[str, int] | None = None,
 ) -> exp.Expr | None:
     # This makes sure that we don't:
     # - drop the "pivot" arg from a pivoted subquery
@@ -142,11 +162,17 @@ def _eliminate_derived_table(
 
     to_replace.replace(table)
 
+    if metadata:
+        metadata["derived_tables"] -= 1
+
     return cte
 
 
 def _eliminate_cte(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
+    scope: Scope,
+    existing_ctes: ExistingCTEsMapping,
+    taken: TakenNameMapping,
+    metadata: dict[str, int] | None = None,
 ) -> exp.Expr | None:
     parent = scope.expression.parent
     if not parent:
@@ -155,6 +181,9 @@ def _eliminate_cte(
 
     with_ = parent.parent
     parent.pop()
+
+    if metadata:
+        metadata["ctes"] -= 1
     if with_ and not with_.expressions:
         with_.pop()
 

@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, fill_metadata, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -14,7 +14,11 @@ if t.TYPE_CHECKING:
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
+def merge_subqueries(
+    expression: E,
+    leave_tables_isolated: bool = False,
+    metadata: dict[str, int] | None = None,
+) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -37,19 +41,36 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Args:
         expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
+        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: optimized expression
     """
+    # Only CTEs and derived tables can be merged.
+    if metadata and not metadata["ctes"] and not metadata["derived_tables"]:
+        return expression
+
     # Shared across both passes so the scope tree is only built once, as long as merge_ctes
     # doesn't mutate the AST; if it does, the scopes it was given are no longer valid, so the
     # scope tree needs to be rebuilt before merge_derived_tables runs.
     scopes = traverse_scope(expression)
-    expression, merged_ctes = merge_ctes(expression, leave_tables_isolated, scopes=scopes)
 
-    if merged_ctes:
-        scopes = traverse_scope(expression)
+    if metadata is not None and not metadata:
+        fill_metadata(scopes, metadata)
 
-    expression = merge_derived_tables(expression, leave_tables_isolated, scopes=scopes)
+    merged_ctes = False
+    if not metadata or metadata["ctes"]:
+        expression, merged_ctes = merge_ctes(
+            expression, leave_tables_isolated, scopes=scopes, metadata=metadata
+        )
+
+    if not metadata or metadata["derived_tables"]:
+        if merged_ctes:
+            scopes = traverse_scope(expression)
+
+        expression = merge_derived_tables(
+            expression, leave_tables_isolated, scopes=scopes, metadata=metadata
+        )
+
     return expression
 
 
@@ -79,6 +100,7 @@ def merge_ctes(
     expression: E,
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
+    metadata: dict[str, int] | None = None,
 ) -> tuple[E, bool]:
     # All places where we select from CTEs.
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
@@ -112,6 +134,9 @@ def merge_ctes(
             _pop_cte(inner_scope)
             outer_scope.clear_cache()
             merged = True
+
+            if metadata:
+                metadata["ctes"] -= 1
     return expression, merged
 
 
@@ -119,6 +144,7 @@ def merge_derived_tables(
     expression: E,
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
+    metadata: dict[str, int] | None = None,
 ) -> E:
     for outer_scope in traverse_scope(expression) if scopes is None else scopes:
         for subquery in outer_scope.derived_tables:
@@ -138,6 +164,9 @@ def merge_derived_tables(
                 _merge_where(outer_scope, inner_scope, from_or_join)
                 _merge_hints(outer_scope, inner_scope)
                 outer_scope.clear_cache()
+
+                if metadata:
+                    metadata["derived_tables"] -= 1
 
     return expression
 

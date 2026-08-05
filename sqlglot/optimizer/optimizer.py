@@ -86,6 +86,7 @@ def optimize(
         sql: Original SQL string for error highlighting. If not provided, errors will not include
             highlighting. Requires that the expression has position metadata from parsing.
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
+            Pass `metadata=None` to disable metadata-based rule skipping.
 
     Returns:
         The optimized expression.
@@ -99,6 +100,7 @@ def optimize(
         "sql": sql,
         "isolate_tables": True,  # needed for other optimizations to perform well
         "quote_identifiers": False,
+        "metadata": {},
         **kwargs,
     }
 

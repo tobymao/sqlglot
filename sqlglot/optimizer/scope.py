@@ -672,6 +672,48 @@ def build_scope(expression: exp.Expr) -> Scope | None:
     return seq_get(traverse_scope(expression), -1)
 
 
+def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
+    """
+    Populate `metadata` with structural facts read off an already-built scope tree, so
+    optimizer rules can share them and skip work that provably does not apply.
+
+    Each counter is an upper bound on the number of corresponding constructs in the
+    tree: 0 means the construct is definitely absent, so a rule may only skip work when
+    a counter is 0. Rules that declare a `metadata` argument uphold this by incrementing
+    counters for any construct they may introduce (decrementing is allowed only for
+    definite removals). An empty dict means the facts are unknown.
+    """
+    if not scopes:
+        return
+
+    ctes = joins = derived_tables = nested_queries = 0
+    for scope in scopes:
+        args = scope.expression.args
+        ctes += len(scope.ctes)
+        derived_tables += len(scope.derived_tables)
+
+        # Joins inside parenthesized FROM sources aren't attached to the select's
+        # "joins" arg, so joins are also detected through their right-hand source
+        # nodes, which the scope buckets always hold.
+        joins += max(
+            len(args.get("joins") or ()),
+            sum(
+                1
+                for node in (*scope.tables, *scope.derived_tables, *scope.udtfs)
+                if isinstance(node.parent, exp.Join)
+            ),
+        )
+
+        parent = scope.expression.parent
+        if parent and not isinstance(parent, exp.SetOperation):
+            nested_queries += 1
+
+    metadata["ctes"] = ctes
+    metadata["joins"] = joins
+    metadata["derived_tables"] = derived_tables
+    metadata["nested_queries"] = nested_queries
+
+
 def _traverse_scope(scope: Scope) -> Iterator[Scope]:
     expression = scope.expression
 

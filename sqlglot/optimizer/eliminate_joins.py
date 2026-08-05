@@ -4,13 +4,13 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, fill_metadata, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def eliminate_joins(expression: E) -> E:
+def eliminate_joins(expression: E, metadata: dict[str, int] | None = None) -> E:
     """
     Remove unused joins from an expression.
 
@@ -25,11 +25,20 @@ def eliminate_joins(expression: E) -> E:
 
     Args:
         expression: expression to optimize
+        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
 
     Returns:
         The optimized expression
     """
-    for scope in traverse_scope(expression):
+    if metadata and not metadata["joins"]:
+        return expression
+
+    scopes = traverse_scope(expression)
+
+    if metadata is not None and not metadata:
+        fill_metadata(scopes, metadata)
+
+    for scope in scopes:
         joins: list[exp.Join] = scope.expression.args.get("joins", [])
         if not joins:
             continue
@@ -49,6 +58,9 @@ def eliminate_joins(expression: E) -> E:
             if _should_eliminate_join(scope, join, alias):
                 join.pop()
                 scope.remove_source(alias)
+
+                if metadata:
+                    metadata["joins"] -= 1
 
     return expression
 

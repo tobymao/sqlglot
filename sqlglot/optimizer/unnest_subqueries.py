@@ -5,7 +5,7 @@ from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 from sqlglot._typing import E
 
 
-def unnest_subqueries(expression: E) -> E:
+def unnest_subqueries(expression: E, metadata: dict[str, int] | None = None) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
 
@@ -31,14 +31,14 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
         if scope.external_columns:
-            decorrelate(select, parent, scope.external_columns, next_alias_name)
+            decorrelate(select, parent, scope.external_columns, next_alias_name, metadata)
         elif scope.scope_type == ScopeType.SUBQUERY:
-            unnest(select, parent, next_alias_name)
+            unnest(select, parent, next_alias_name, metadata)
 
     return expression
 
 
-def unnest(select, parent_select, next_alias_name):
+def unnest(select, parent_select, next_alias_name, metadata=None):
     if len(select.selects) > 1:
         return
 
@@ -101,6 +101,11 @@ def unnest(select, parent_select, next_alias_name):
         _replace(select.parent, column)
         parent_select.join(select, on=on_clause, join_type=join_type, join_alias=alias, copy=False)
 
+        if metadata:
+            # The new join wraps the lifted subquery as a derived table.
+            metadata["joins"] += 1
+            metadata["derived_tables"] += 1
+
         return
 
     if find_in_scope(select, exp.Limit, exp.Offset):
@@ -144,8 +149,13 @@ def unnest(select, parent_select, next_alias_name):
         copy=False,
     )
 
+    if metadata:
+        # The new join wraps the lifted subquery as a derived table.
+        metadata["joins"] += 1
+        metadata["derived_tables"] += 1
 
-def decorrelate(select, parent_select, external_columns, next_alias_name):
+
+def decorrelate(select, parent_select, external_columns, next_alias_name, metadata=None):
     where = select.args.get("where")
 
     if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
@@ -321,6 +331,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         join_alias=table_alias,
         copy=False,
     )
+
+    if metadata:
+        # The new join wraps the lifted subquery as a derived table.
+        metadata["joins"] += 1
+        metadata["derived_tables"] += 1
 
 
 def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:

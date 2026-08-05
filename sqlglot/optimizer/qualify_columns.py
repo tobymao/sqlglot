@@ -671,17 +671,23 @@ def _qualify_columns(
                 and source_columns
                 and "*" not in source_columns
             ):
-                positional_columns = resolver.get_source_columns(column_table, only_visible=True)
+                positional_columns = list(
+                    resolver.get_source_columns(column_table, only_visible=True)
+                )
                 for pivot in pivots:
-                    positional_columns = pivot.output_columns(positional_columns)
+                    positional_columns = pivot.output_column_names(positional_columns)
 
                 position_value = int(position.to_py())
                 if not 1 <= position_value <= len(positional_columns):
+                    if allow_partial_qualification:
+                        continue
                     raise OptimizeError(
                         f"Positional reference ${position_value} is out of range for source '{column_table}'"
                     )
 
-                positional_name = list(positional_columns)[position_value - 1]
+                positional_name = positional_columns[position_value - 1]
+                if positional_columns.count(positional_name) > 1:
+                    continue
                 source_expression = (
                     column_source.expression if isinstance(column_source, Scope) else None
                 )

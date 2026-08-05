@@ -1804,6 +1804,13 @@ class Pivot(Expression):
             pre_pivot_columns: Columns visible to the operator before it runs
                 (e.g. the source table or subquery's projections).
         """
+        return dict(self._output_column_pairs(pre_pivot_columns))
+
+    def output_column_names(self, pre_pivot_columns: t.Iterable[str]) -> list[str]:
+        """Returns the ordered output names without deduplicating them."""
+        return [name for name, _ in self._output_column_pairs(pre_pivot_columns)]
+
+    def _output_column_pairs(self, pre_pivot_columns: t.Iterable[str]) -> list[tuple[str, str]]:
         if self.unpivot:
             excluded: set[str] = set()
             name_columns: list[Identifier] = []
@@ -1834,7 +1841,7 @@ class Pivot(Expression):
                 outputs = [c.alias_or_name for c in self.expressions]
 
         if not excluded or not outputs:
-            return {}
+            return []
 
         pre_rename = [c for c in pre_pivot_columns if c not in excluded] + outputs
 
@@ -1850,7 +1857,7 @@ class Pivot(Expression):
         else:
             post_rename = pre_rename
 
-        return dict(zip(post_rename, pre_rename))
+        return list(zip(post_rename, pre_rename))
 
 
 class UnpivotColumns(Expression):

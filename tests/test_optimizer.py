@@ -1204,6 +1204,41 @@ class TestOptimizer(unittest.TestCase):
             "SELECT T.SHOWN AS SHOWN FROM T AS T",
         )
 
+    def test_qualify_snowflake_positional_columns_with_duplicate_names(self):
+        expression = parse_one(
+            "WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS y) SELECT t.$2, t.$3 FROM t",
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            "WITH T AS (SELECT 1 AS X, 2 AS X, 3 AS Y) SELECT T.$2 AS _COL_0, T.Y AS Y FROM T AS T",
+        )
+
+    def test_qualify_snowflake_positional_columns_with_duplicate_names_after_unpivot(self):
+        expression = parse_one(
+            """
+            WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS a, 4 AS b)
+            SELECT t.$2, t.$3 FROM t UNPIVOT(v FOR k IN (a, b))
+            """,
+            dialect="snowflake",
+        )
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            "WITH T AS (SELECT 1 AS X, 2 AS X, 3 AS A, 4 AS B) "
+            "SELECT T.$2 AS _COL_0, T.K AS K FROM T AS T "
+            "UNPIVOT(V FOR K IN (A, B)) AS T",
+        )
+
     def test_qualify_snowflake_positional_columns_with_unknown_sources(self):
         for sql, expected in (
             (
@@ -1253,6 +1288,22 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t", dialect="snowflake"),
                 dialect="snowflake",
             )
+
+    def test_qualify_snowflake_positional_column_out_of_range_with_partial_qualification(self):
+        try:
+            expression = qualify(
+                parse_one("WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t", dialect="snowflake"),
+                dialect="snowflake",
+                allow_partial_qualification=True,
+                quote_identifiers=False,
+            )
+        except OptimizeError as error:
+            self.fail(f"Partial qualification unexpectedly failed: {error}")
+
+        self.assertEqual(
+            expression.sql("snowflake"),
+            "WITH T AS (SELECT 1 AS A) SELECT T.$2 AS _COL_0 FROM T AS T",
+        )
 
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})

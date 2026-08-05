@@ -10,7 +10,11 @@ if t.TYPE_CHECKING:
     from sqlglot._typing import E
 
 
-def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
+def eliminate_ctes(
+    expression: E,
+    journal: Journal | None = None,
+    metadata: dict[str, int] | None = None,
+) -> E:
     """
     Remove unused CTEs from an expression.
 
@@ -23,9 +27,13 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
 
     Args:
         expression (sqlglot.Expr): expression to optimize
+        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: optimized expression
     """
+    if metadata and not metadata["ctes"]:
+        return expression
+
     root = build_scope(expression)
 
     if root:
@@ -43,6 +51,9 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
                     if journal is not None and with_node:
                         record(journal, with_node, "expressions")
                     cte_node.pop()
+
+                    if metadata:
+                        metadata["ctes"] -= 1
 
                     # Pop the entire WITH clause if this is the last CTE
                     if with_node and len(with_node.expressions) <= 0:

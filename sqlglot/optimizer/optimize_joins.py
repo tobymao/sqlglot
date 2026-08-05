@@ -9,7 +9,7 @@ from sqlglot.helper import tsort
 JOIN_ATTRS = ("on", "side", "kind", "using", "method")
 
 
-def optimize_joins(expression: E) -> E:
+def optimize_joins(expression: E, metadata: dict[str, int] | None = None) -> E:
     """
     Removes cross joins if possible and reorder joins based on predicate dependencies.
 
@@ -18,6 +18,8 @@ def optimize_joins(expression: E) -> E:
         >>> optimize_joins(parse_one("SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a AND y.a = z.a")).sql()
         'SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a'
     """
+    if metadata and not metadata["joins"]:
+        return expression
 
     for select in expression.find_all(exp.Select):
         joins: list[exp.Join] = select.args.get("joins", [])

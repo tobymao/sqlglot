@@ -6,7 +6,13 @@ from collections import defaultdict
 from sqlglot import alias, exp
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import (
+    Scope,
+    fill_metadata,
+    find_all_in_scope,
+    find_in_scope,
+    traverse_scope,
+)
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -53,6 +59,7 @@ def pushdown_projections(
     remove_unused_selections: bool = True,
     dialect: DialectType = None,
     journal: Journal | None = None,
+    metadata: dict[str, int] | None = None,
 ) -> E:
     """
     Rewrite sqlglot AST to remove unused columns projections.
@@ -70,6 +77,17 @@ def pushdown_projections(
     Returns:
         sqlglot.Expr: optimized expression
     """
+    scopes = traverse_scope(expression)
+
+    # This is the first rule of the default pipeline that builds the scope tree, so it
+    # doubles as the collector of the structural facts shared with the later rules.
+    if metadata is not None and not metadata:
+        fill_metadata(scopes, metadata)
+
+    # Projections can only be pushed down into nested queries and CTEs.
+    if metadata and not metadata["nested_queries"] and not metadata["ctes"]:
+        return expression
+
     schema = ensure_schema(schema, dialect=dialect)
     source_column_alias_count: dict[exp.Expr | Scope, int] = {}
 
@@ -79,7 +97,7 @@ def pushdown_projections(
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
     # columns for a particular scope are completely build by the time we get to it.
-    for scope in reversed(traverse_scope(expression)):
+    for scope in reversed(scopes):
         scope_expression = scope.expression
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
         alias_count = source_column_alias_count.get(scope, 0)

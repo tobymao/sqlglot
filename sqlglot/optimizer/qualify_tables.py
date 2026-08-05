@@ -137,6 +137,11 @@ def qualify_tables(
         table_aliases = {}
 
         for name, source in scope.sources.items():
+            # Lateral sources are sources that this scope merely references and they're processed when
+            # their defining (outer) scope is traversed; skip them to avoid double-visiting issues
+            if scope.lateral_sources.get(name) is source:
+                continue
+
             if isinstance(source, exp.Table):
                 # When the name is empty, it means that we have a non-table source, e.g. a pivoted cte
                 is_real_table_source = bool(name)
@@ -215,7 +220,8 @@ def qualify_tables(
             elif (
                 canonical_aliases
                 and column_table
-                and (canonical_table := canonical_aliases.get(column_table, "")) != column_table
+                and (canonical_table := canonical_aliases.get(column_table))
+                and canonical_table != column_table
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
                 column.set("table", exp.to_identifier(canonical_table))

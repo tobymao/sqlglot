@@ -284,6 +284,16 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(tables, {"bar", "baz"})
 
+        # Tables referenced by lateral sources (e.g. UNNEST) must only be qualified once
+        qualified = []
+        optimizer.qualify_tables.qualify_tables(
+            parse_one("SELECT a, x FROM t, UNNEST(arr) AS x"),
+            db="db",
+            catalog="c",
+            on_qualify=lambda t: qualified.append(t.sql()),
+        )
+        self.assertEqual(qualified, ["c.db.t AS t"])
+
         self.assertEqual(
             optimizer.qualify.qualify(
                 parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),

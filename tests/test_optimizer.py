@@ -1452,6 +1452,31 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         revert(journal)
         self.assertEqual(expression.sql(), sql)
 
+        expression = optimizer.qualify.qualify(
+            parse_one(
+                """
+                WITH x AS (
+                  SELECT z, 0 AS c, SUM(d) AS s
+                  FROM t
+                  GROUP BY z, 2, 2
+                )
+                SELECT c, s FROM x
+                """,
+                dialect="duckdb",
+            ),
+            dialect="duckdb",
+            identify=False,
+        )
+        original = expression.copy()
+        optimizer.pushdown_projections.pushdown_projections(
+            expression, dialect="duckdb", journal=journal
+        )
+        group = expression.find(exp.CTE).this.args["group"]
+        self.assertEqual([e.sql() for e in group.expressions], ["t.z", "1", "1"])
+
+        revert(journal)
+        self.assertEqual(expression, original)
+
     @patch("sqlglot.generator.logger")
     def test_merge_subqueries(self, logger):
         optimize = partial(

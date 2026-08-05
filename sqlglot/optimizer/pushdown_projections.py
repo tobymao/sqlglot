@@ -163,6 +163,10 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     else:
         order_refs = set()
 
+    # Resolve bare GROUP BY ordinals before pruning
+    ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
+    group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
+
     new_selections = []
     removed = False
     star = False
@@ -173,7 +177,13 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     for selection in scope.expression.selects:
         name = selection.alias_or_name
 
-        if select_all or name in parent_selections or name in order_refs or alias_count > 0:
+        if (
+            select_all
+            or name in parent_selections
+            or name in order_refs
+            or alias_count > 0
+            or id(selection) in group_ordinal_selection_ids
+        ):
             new_selections.append(selection)
             alias_count -= 1
         elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
@@ -209,5 +219,36 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     scope.expression.select(*new_selections, append=False, copy=False)
 
+    # Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list
+    if ordinal_refs:
+        new_pos = {id(selection): i + 1 for i, selection in enumerate(new_selections)}
+        for node, old_selection in ordinal_refs:
+            pos = new_pos.get(id(old_selection))
+            if pos is not None and int(node.this) != pos:
+                if journal is not None:
+                    record(journal, node, "this")
+                node.set("this", str(pos))
+
     if removed:
         scope.clear_cache()
+
+
+def _bare_group_by_ordinal_refs(
+    select: exp.Select,
+) -> list[tuple[exp.Literal, exp.Expr]]:
+    """Map each bare GROUP BY integer ordinal to its pre-prune projection."""
+    group = select.args.get("group")
+    if not group:
+        return []
+
+    selects = select.selects
+    n = len(selects)
+    refs: list[tuple[exp.Literal, exp.Expr]] = []
+
+    for node in group.expressions:
+        if node.is_int and isinstance(node, exp.Literal):
+            pos = int(node.this)
+            if 1 <= pos <= n:
+                refs.append((node, selects[pos - 1]))
+
+    return refs

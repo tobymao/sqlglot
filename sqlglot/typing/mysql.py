@@ -80,7 +80,7 @@ def _annotate_compress(self: TypeAnnotator, expression: exp.Compress) -> exp.Exp
     return self._set_type(expression, exp.DType.UNKNOWN)
 
 
-def _annotate_bit_and(self: TypeAnnotator, expression: exp.BitwiseAndAgg) -> exp.Expr:
+def _annotate_bit_func(self: TypeAnnotator, expression: exp.Expression) -> exp.Expr:
     this = expression.this
 
     if this.is_type(exp.DType.UNKNOWN):
@@ -89,19 +89,7 @@ def _annotate_bit_and(self: TypeAnnotator, expression: exp.BitwiseAndAgg) -> exp
     if this.is_type(*exp.DataType.BINARY_TYPES):
         return self._set_type(expression, exp.DType.VARBINARY)
 
-    return self._set_type(expression, exp.DType.BIGINT)
-
-
-def _annotate_bit_xor(self: TypeAnnotator, expression: exp.BitwiseXorAgg) -> exp.Expr:
-    this = expression.this
-
-    if this.is_type(exp.DType.UNKNOWN):
-        return self._set_type(expression, exp.DType.UNKNOWN)
-
-    if this.is_type(*exp.DataType.BINARY_TYPES):
-        return self._set_type(expression, exp.DType.VARBINARY)
-
-    return self._set_type(expression, exp.DType.BIGINT)
+    return self._set_type(expression, exp.DType.UBIGINT)
 
 
 EXPRESSION_METADATA = {
@@ -183,6 +171,6 @@ EXPRESSION_METADATA = {
     exp.Trunc: {"annotator": _annotate_truncate},
     exp.RegexpReplace: {"annotator": _annotate_regexp_replace},
     exp.Compress: {"annotator": _annotate_compress},
-    exp.BitwiseAndAgg: {"annotator": _annotate_bit_and},
-    exp.BitwiseXorAgg: {"annotator": _annotate_bit_xor},
+    exp.BitwiseAndAgg: {"annotator": _annotate_bit_func},
+    exp.BitwiseXorAgg: {"annotator": _annotate_bit_func},
 }

@@ -30,12 +30,6 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        exp_type: {"returns": exp.DType.INT}
-        for exp_type in {
-            exp.ArraySize,
-        }
-    },
-    **{
         exp_type: {"returns": exp.DType.VARCHAR}
         for exp_type in {
             exp.Collation,

@@ -391,6 +391,10 @@ class Scope:
                         )
                     )
                     or (isinstance(ancestor, exp.Star) and not column.arg_key == "except_")
+                    or (
+                        isinstance(ancestor, (exp.Qualify, exp.Having))
+                        and isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
+                    )
                 ):
                     self._columns.append(column)
 

@@ -167,10 +167,16 @@ EXPRESSION_METADATA = {
             exp.Right,
         }
     },
+    **{
+        expr_type: {"annotator": _annotate_bit_func}
+        for expr_type in {
+            exp.BitwiseAndAgg,
+            exp.BitwiseXorAgg,
+            exp.BitwiseOrAgg,
+        }
+    },
     exp.Reverse: {"annotator": _annotate_reverse},
     exp.Trunc: {"annotator": _annotate_truncate},
     exp.RegexpReplace: {"annotator": _annotate_regexp_replace},
     exp.Compress: {"annotator": _annotate_compress},
-    exp.BitwiseAndAgg: {"annotator": _annotate_bit_func},
-    exp.BitwiseXorAgg: {"annotator": _annotate_bit_func},
 }

@@ -108,6 +108,7 @@ def qualify_tables(
             scope.rename_source(None, new_alias_name)
 
     for scope in traverse_scope(expression):
+        parent = scope.parent
         local_columns = scope.local_columns
         canonical_aliases: dict[str, str] = {}
 
@@ -137,9 +138,10 @@ def qualify_tables(
         table_aliases = {}
 
         for name, source in scope.sources.items():
-            # Lateral sources are sources that this scope merely references and they're processed when
-            # their defining (outer) scope is traversed; skip them to avoid double-visiting issues
-            if scope.lateral_sources.get(name) is source:
+            # A source can appear in many scopes, e.g. as a lateral source of a UDTF scope or as a CTE
+            # propagated to inner scopes. Deferring to the parent scope when it contains the same source
+            # ensures each source is processed once, in the outermost scope that contains it
+            if parent and parent.sources.get(name) is source:
                 continue
 
             if isinstance(source, exp.Table):

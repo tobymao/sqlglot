@@ -717,6 +717,10 @@ ARRAY_SIZE(tbl.array_col);
 INT;
 
 # dialect: hive, spark2, spark, databricks
+SIZE(tbl.array_col);
+INT;
+
+# dialect: hive, spark2, spark, databricks
 QUARTER(tbl.date_col);
 INT;
 

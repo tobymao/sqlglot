@@ -127,6 +127,12 @@ class Scope:
         self.can_be_correlated = can_be_correlated
         self.clear_cache()
 
+    def clear_column_cache(self) -> None:
+        """Invalidate the column-classification caches after columns are qualified in place."""
+        self._columns = None
+        self._external_columns = None
+        self._local_columns = None
+
     def clear_cache(self) -> None:
         self._collected = False
         self._scans_all_subscope_columns = False

@@ -493,6 +493,21 @@ SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b 
 SELECT (SELECT n.a FROM n WHERE n.id = m.id) FROM m AS m;
 SELECT (SELECT n.a AS a FROM n AS n WHERE n.id = m.id) AS _col_0 FROM m AS m;
 
+# title: correlated aggregate resolves to local source without schema
+# execute: false
+SELECT id FROM t WHERE id > (SELECT AVG(id) FROM u WHERE u.name = t.name);
+SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.id) AS _col_0 FROM u AS u WHERE u.name = t.name);
+
+# title: correlated aggregate with self-correlation via alias
+# execute: false
+SELECT id FROM t WHERE id > (SELECT AVG(id) FROM t AS t2 WHERE t2.k = t.k);
+SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(t2.id) AS _col_0 FROM t AS t2 WHERE t2.k = t.k);
+
+# title: correlated aggregate where inner column name matches outer table
+# execute: false
+SELECT id FROM t WHERE id > (SELECT AVG(u) FROM u WHERE u.k = t.k);
+SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.u) AS _col_0 FROM u AS u WHERE u.k = t.k);
+
 --------------------------------------
 -- Expand *
 --------------------------------------

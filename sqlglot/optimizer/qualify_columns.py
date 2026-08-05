@@ -89,6 +89,9 @@ def qualify_columns(
             allow_partial_qualification=allow_partial_qualification,
         )
 
+        # Refresh classification caches: a column just qualified in place may have been cached as external
+        scope.clear_column_cache()
+
         if not schema.empty and expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 

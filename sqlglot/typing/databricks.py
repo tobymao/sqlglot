@@ -26,8 +26,15 @@ EXPRESSION_METADATA = {
             exp.RegexpInstr,
         }
     },
-    exp.ToChar: {"returns": exp.DType.VARCHAR},
-    exp.RegexpSubstr: {"returns": exp.DType.VARCHAR},
+    **{
+        exp_type: {"returns": exp.DType.VARCHAR}
+        for exp_type in {
+            exp.RegexpSubstr,
+            exp.Secret,
+            exp.Trim,
+            exp.ToChar,  # <-- Only new addition
+        }
+    },
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
     exp.RegexpExtractAll: {

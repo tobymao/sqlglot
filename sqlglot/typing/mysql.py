@@ -165,6 +165,7 @@ EXPRESSION_METADATA = {
             exp.JSONObjectAgg,
             exp.JSONObject,
             exp.JSONExtract,
+            exp.JSONKeys,
         }
     },
     **{

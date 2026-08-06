@@ -6939,6 +6939,14 @@ JSON;
 JSON_EXTRACT(tbl.json_col, '$.json_col');
 JSON;
 
+# dialect: mysql
+JSON_KEYS(tbl.json_col);
+JSON;
+
+# dialect: mysql
+JSON_KEYS(tbl.json_col, '$.json_col');
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

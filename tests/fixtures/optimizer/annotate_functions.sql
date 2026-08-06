@@ -6959,6 +6959,22 @@ VARCHAR;
 JSON_TYPE(JSON_ARRAY(tbl.int_col, tbl.varchar_col));
 VARCHAR;
 
+# dialect: mysql
+JSON_ARRAY_APPEND(tbl.json_col, '$', tbl.int_col);
+JSON;
+
+# dialect: mysql
+JSON_ARRAY_APPEND(tbl.json_col, '$', tbl.varchar_col);
+JSON;
+
+# dialect: mysql
+JSON_ARRAY_APPEND(tbl.json_col, '$', tbl.double_col);
+JSON;
+
+# dialect: mysql
+JSON_ARRAY_APPEND(tbl.json_col, '$', tbl.json_col);
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

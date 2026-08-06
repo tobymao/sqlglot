@@ -166,6 +166,10 @@ SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS x;
 SELECT x FROM t, LATERAL UNNEST(t.xs);
 SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS _0;
 
+# title: multiple lateral unnests without aliases each get a distinct alias
+SELECT x FROM t, LATERAL UNNEST(t.xs), LATERAL UNNEST(t.ys);
+SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS _0, LATERAL UNNEST(t.ys) AS _1;
+
 # title: table with ordinality
 SELECT * FROM t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
 SELECT * FROM c.db.t AS t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
@@ -260,6 +264,16 @@ SELECT * FROM c.db.x AS _1 WHERE _1.a = (SELECT SUM(_0.c) AS c FROM c.db.y AS _0
 # canonicalize_table_aliases: true
 SELECT t.foo FROM t AS t, (SELECT t.bar FROM t AS t);
 SELECT _2.foo FROM c.db.t AS _2, (SELECT _0.bar FROM c.db.t AS _0) AS _1;
+
+# title: canonicalize table referenced by lateral unnest
+# canonicalize_table_aliases: true
+SELECT t.a, x FROM t, UNNEST(t.arr) AS x;
+SELECT _0.a, x FROM c.db.t AS _0, UNNEST(_0.arr) AS _1;
+
+# title: canonicalize lateral unnest referencing a previous unnest
+# canonicalize_table_aliases: true
+SELECT t.a, x, z FROM t, UNNEST(t.arr) AS x, UNNEST(x.b) AS z;
+SELECT _0.a, x, z FROM c.db.t AS _0, UNNEST(_0.arr) AS _1, UNNEST(_1.b) AS _2;
 
 # title: Qualify GENERATE_SERIES with its default column generate_series
 # dialect: postgres

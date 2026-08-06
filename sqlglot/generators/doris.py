@@ -22,6 +22,7 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
 
 class DorisGenerator(MySQLGenerator):
     LAST_DAY_SUPPORTS_DATE_PART = False
+    SUPPORTS_ALTER_COLUMN_NULLABILITY = False
     VARCHAR_REQUIRES_SIZE = False
     WITH_PROPERTIES_PREFIX = "PROPERTIES"
     RENAME_TABLE_WITH_DB = False

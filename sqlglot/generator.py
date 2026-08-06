@@ -4208,14 +4208,7 @@ class Generator:
             using = self.sql(expression, "using")
             using = f" USING {using}" if using else ""
             alter_set_type = self.ALTER_SET_TYPE + " " if self.ALTER_SET_TYPE else ""
-
-            null_constraint = ""
-            allow_null = expression.args.get("allow_null")
-            if allow_null is not None:
-                if self.SUPPORTS_ALTER_COLUMN_NULLABILITY:
-                    null_constraint = " NULL" if allow_null else " NOT NULL"
-                else:
-                    self.unsupported("ALTER COLUMN cannot set nullability along with a type")
+            null_constraint = self._alter_column_null_constraint_sql(expression)
 
             return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}{null_constraint}"
 
@@ -4242,6 +4235,17 @@ class Generator:
             return f"ALTER COLUMN {this} {keyword} NOT NULL"
 
         return f"ALTER COLUMN {this} DROP DEFAULT"
+
+    def _alter_column_null_constraint_sql(self, expression: exp.AlterColumn) -> str:
+        allow_null = expression.args.get("allow_null")
+        if allow_null is None:
+            return ""
+
+        if not self.SUPPORTS_ALTER_COLUMN_NULLABILITY:
+            self.unsupported("ALTER COLUMN cannot set nullability along with a type")
+            return ""
+
+        return " NULL" if allow_null else " NOT NULL"
 
     def modifycolumn_sql(self, expression: exp.ModifyColumn) -> str:
         this = self.sql(expression, "this")

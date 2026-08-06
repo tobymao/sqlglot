@@ -548,7 +548,7 @@ class HiveGenerator(generator.Generator):
         allow_null = expression.args.get("allow_null")
         drop = expression.args.get("drop")
 
-        if any([default, drop, visible, allow_null, drop]):
+        if any([default, drop, visible]) or allow_null is not None:
             self.unsupported("Unsupported CHANGE COLUMN syntax")
 
         if not dtype:

@@ -115,6 +115,7 @@ class MySQLGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_MODIFY_COLUMN = True
     SUPPORTS_CHANGE_COLUMN = True
+    SUPPORTS_ALTER_COLUMN_NULLABILITY = True
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -748,7 +749,8 @@ class MySQLGenerator(generator.Generator):
             return super().altercolumn_sql(expression)
 
         this = self.sql(expression, "this")
-        return f"MODIFY COLUMN {this} {dtype}"
+        null_constraint = self._alter_column_null_constraint_sql(expression)
+        return f"MODIFY COLUMN {this} {dtype}{null_constraint}"
 
     def _prefixed_sql(self, prefix: str, expression: exp.Expr, arg: str) -> str:
         sql = self.sql(expression, arg)

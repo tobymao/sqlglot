@@ -27,6 +27,7 @@ def _unicode_substitute(m: re.Match[str]) -> str:
 
 class SingleStoreGenerator(MySQLGenerator):
     SUPPORTS_UESCAPE = False
+    SUPPORTS_ALTER_COLUMN_NULLABILITY = False
     NULL_ORDERING_SUPPORTED: bool | None = True
     MATCH_AGAINST_TABLE_PREFIX: str | None = "TABLE "
     STRUCT_DELIMITER = ("(", ")")
@@ -1585,7 +1586,7 @@ class SingleStoreGenerator(MySQLGenerator):
         return f"CHANGE {old_column} {new_column}"
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
-        for arg_name in ("drop", "comment", "allow_null", "visible", "using"):
+        for arg_name in ("drop", "comment", "visible", "using"):
             if expression.args.get(arg_name):
                 self.unsupported(f"ALTER COLUMN does not support {arg_name}")
         alter = super().altercolumn_sql(expression)

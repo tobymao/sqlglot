@@ -1347,6 +1347,16 @@ WHERE
             "ALTER TABLE a ALTER COLUMN b INTEGER NOT NULL",
             write={
                 "": UnsupportedError,
+                "hive": UnsupportedError,
+                "singlestore": UnsupportedError,
+                "mysql": "ALTER TABLE a MODIFY COLUMN b INT NOT NULL",
+                "starrocks": "ALTER TABLE a MODIFY COLUMN b INT NOT NULL",
+            },
+        )
+        self.validate_all(
+            "ALTER TABLE a ALTER COLUMN b INTEGER NULL",
+            write={
+                "mysql": "ALTER TABLE a MODIFY COLUMN b INT NULL",
             },
         )
         self.validate_all(

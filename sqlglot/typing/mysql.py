@@ -129,6 +129,7 @@ EXPRESSION_METADATA = {
             exp.SubstringIndex,
             exp.RegexpSubstr,
             exp.Collation,
+            exp.JSONType,
         }
     },
     **{

@@ -6947,6 +6947,18 @@ JSON;
 JSON_KEYS(tbl.json_col, '$.json_col');
 JSON;
 
+# dialect: mysql
+JSON_TYPE(tbl.json_col);
+VARCHAR;
+
+# dialect: mysql
+JSON_TYPE(JSON_OBJECT(tbl.varchar_col, tbl.int_col));
+VARCHAR;
+
+# dialect: mysql
+JSON_TYPE(JSON_ARRAY(tbl.int_col, tbl.varchar_col));
+VARCHAR;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -64,6 +64,24 @@ class TrinoGenerator(PrestoGenerator):
         body = self.sql(expression, "expression")
         return f"FUNCTION {self.sql(expression, 'this')}{characteristics_sql}{with_sql} {body}"
 
+    def ifblock_sql(self, expression: exp.IfBlock) -> str:
+        # ELSEIF chains are nested into `false` at parse time (see
+        # TrinoParser._parse_routine_if), so this flattens them back out rather
+        # than recursing on ifblock_sql itself, which would re-wrap each link in
+        # its own IF ... END IF.
+        branches: list[str] = []
+        node: exp.Expr | None = expression
+
+        while isinstance(node, exp.IfBlock):
+            keyword = "IF" if not branches else "ELSEIF"
+            branches.append(f"{keyword} {self.sql(node, 'this')} THEN {self.sql(node, 'true')};")
+            node = node.args.get("false")
+
+        if node is not None:
+            branches.append(f"ELSE {self.sql(node)};")
+
+        return f"{' '.join(branches)} END IF"
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

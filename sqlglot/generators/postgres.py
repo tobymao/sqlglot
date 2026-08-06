@@ -255,6 +255,7 @@ class PostgresGenerator(generator.Generator):
     TABLE_HINTS = False
     QUERY_HINTS = False
     NVL2_SUPPORTED = False
+    UPDATE_STATEMENT_SUPPORTS_JOIN = False
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "%"
     TABLESAMPLE_SIZE_IS_ROWS = False

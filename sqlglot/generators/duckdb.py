@@ -1556,6 +1556,7 @@ class DuckDBGenerator(generator.Generator):
     JOIN_HINTS = False
     TABLE_HINTS = False
     QUERY_HINTS = False
+    UPDATE_STATEMENT_SUPPORTS_JOIN = False
     LIMIT_FETCH = "LIMIT"
     STRUCT_DELIMITER = ("(", ")")
     RENAME_TABLE_WITH_DB = False

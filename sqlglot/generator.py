@@ -617,6 +617,14 @@ class Generator:
     # Unsupported (MySQL, SingleStore): UPDATE t1 JOIN t2 ON TRUE SET t1.a = t2.b
     UPDATE_STATEMENT_SUPPORTS_FROM = True
 
+    # Whether an UPDATE statement's target table can carry a JOIN directly on it
+    # (`UPDATE t1 JOIN t2 ON ... SET ...`), as opposed to only ever expecting an
+    # UPDATE ... FROM ... structure. This is used to convert JOINs attached to the
+    # UPDATE target (e.g. parsed from MySQL's native UPDATE JOIN syntax) into a
+    # FROM clause for dialects, like Postgres and DuckDB, whose engines reject
+    # UPDATE ... JOIN ... syntax outright.
+    UPDATE_STATEMENT_SUPPORTS_JOIN = True
+
     # Whether SELECT *, ... EXCLUDE requires wrapping in a subquery for transpilation.
     STAR_EXCLUDE_REQUIRES_DERIVED_TABLE = True
 
@@ -2642,7 +2650,50 @@ class Generator:
         - from_sql: placed after SET clause (standard position)
         Dialects like MySQL need to convert FROM to JOIN syntax.
         """
-        if self.UPDATE_STATEMENT_SUPPORTS_FROM or not (from_expr := expression.args.get("from_")):
+        from_expr = expression.args.get("from_")
+
+        if (
+            self.UPDATE_STATEMENT_SUPPORTS_FROM
+            and not self.UPDATE_STATEMENT_SUPPORTS_JOIN
+            and not from_expr
+        ):
+            # Some dialects (e.g. MySQL) attach JOINs directly onto the target table
+            # instead of using a separate FROM clause, e.g.
+            # `UPDATE t1 JOIN t2 ON t1.id = t2.id SET t1.a = t2.a`. If the target
+            # dialect only supports the `UPDATE ... FROM` form, we must convert
+            # these joins into a FROM clause, otherwise we'd emit an invalid
+            # `UPDATE t1 JOIN t2 ON ... SET ...` statement for that dialect.
+            target_table = expression.this
+            joins = target_table.args.get("joins") if isinstance(target_table, exp.Table) else None
+
+            if joins:
+                first_join, *rest_joins = joins
+                target_table.set("joins", None)
+
+                # The target dialect's SET clause doesn't expect (and may reject) a
+                # table-qualified column when it matches the UPDATE target, e.g.
+                # Postgres errors on `SET foo.a = ...` but accepts `SET a = ...`.
+                target_name = exp.to_identifier(target_table.alias_or_name)
+                for eq in expression.expressions:
+                    col = eq.this
+                    if isinstance(col, exp.Column) and col.table and col.table == target_name.this:
+                        col.set("table", None)
+
+                from_table = first_join.this
+                if rest_joins:
+                    from_table.set("joins", rest_joins)
+
+                on = first_join.args.get("on")
+                if on:
+                    where = expression.args.get("where")
+                    if where:
+                        where.set("this", exp.and_(on, where.this, copy=False))
+                    else:
+                        expression.set("where", exp.Where(this=on))
+
+                return ("", self.sql(exp.From(this=from_table)))
+
+        if self.UPDATE_STATEMENT_SUPPORTS_FROM or not from_expr:
             return ("", self.sql(expression, "from_"))
 
         # Qualify unqualified columns in SET clause with the target table
@@ -2669,8 +2720,11 @@ class Generator:
 
     def update_sql(self, expression: exp.Update) -> str:
         hint = self.sql(expression, "hint")
-        this = self.sql(expression, "this")
+        # NOTE: this must run before rendering `this`, since it may strip JOINs
+        # off the target table (attached there by dialects like MySQL) and move
+        # them into a FROM clause instead.
         join_sql, from_sql = self._update_from_joins_sql(expression)
+        this = self.sql(expression, "this")
         set_sql = self.expressions(expression, flat=True)
         where_sql = self.sql(expression, "where")
         returning = self.sql(expression, "returning")

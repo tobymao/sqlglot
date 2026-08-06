@@ -258,6 +258,19 @@ class TestMySQL(Validator):
         self.validate_identity(
             "UPDATE foo JOIN bar ON TRUE SET foo.a = bar.a WHERE foo.id = bar.id"
         )
+        # MySQL's UPDATE ... JOIN ... syntax must be converted into the
+        # UPDATE ... FROM ... form for target dialects that only support
+        # UPDATE ... FROM (postgres, duckdb, ...), otherwise sqlglot emits
+        # invalid `UPDATE t1 JOIN t2 ON ... SET ...` SQL that fails with a
+        # syntax error against the target engine.
+        self.validate_all(
+            "UPDATE foo JOIN bar ON foo.id = bar.id SET foo.a = bar.a WHERE foo.tenant = 5",
+            write={
+                "mysql": "UPDATE foo JOIN bar ON foo.id = bar.id SET foo.a = bar.a WHERE foo.tenant = 5",
+                "postgres": "UPDATE foo SET a = bar.a FROM bar WHERE foo.id = bar.id AND foo.tenant = 5",
+                "duckdb": "UPDATE foo SET a = bar.a FROM bar WHERE foo.id = bar.id AND foo.tenant = 5",
+            },
+        )
         self.validate_identity(
             "UPDATE items, month SET items.price = month.price WHERE items.id = month.id"
         )

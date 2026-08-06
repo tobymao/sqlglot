@@ -6983,6 +6983,12 @@ JSON;
 JSON_REMOVE(tbl.json_col, '$.a');
 JSON;
 
+# dialect: mysql
+JSON_SET(tbl.json_col, '$.a', tbl.int_col);
+JSON;
+
+
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

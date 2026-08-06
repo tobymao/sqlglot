@@ -149,28 +149,30 @@ class TrinoParser(PrestoParser):
     def _parse_routine_if(self) -> exp.IfBlock:
         # https://trino.io/docs/current/udf/sql/if.html
         # ELSEIF chains nest into `false` rather than a flat list, reusing the
-        # existing binary IfBlock instead of a new N-way expression; only the
-        # branch that isn't itself followed by another ELSEIF consumes END IF.
-        condition = self._parse_disjunction()
-        self._match_text_seq("THEN")
-        true = self.expression(
-            exp.Block(expressions=self._parse_routine_statements("ELSEIF", "ELSE", "END"))
-        )
+        # existing binary IfBlock instead of a new N-way expression; each loop
+        # iteration links the next branch into the previous one's `false` slot.
+        def parse_branch() -> exp.IfBlock:
+            condition = self._parse_disjunction()
+            self._match_text_seq("THEN")
+            true = self.expression(
+                exp.Block(expressions=self._parse_routine_statements("ELSEIF", "ELSE", "END"))
+            )
+            return self.expression(exp.IfBlock(this=condition, true=true))
 
-        false: exp.Expr | None
-        if self._prev.text.upper() == "ELSEIF":
-            false = self._parse_routine_if()
-        else:
-            if self._prev.text.upper() == "ELSE":
-                false = self.expression(
-                    exp.Block(expressions=self._parse_routine_statements("END"))
-                )
-            else:
-                false = None
+        this = tail = parse_branch()
+        while self._prev.text.upper() == "ELSEIF":
+            node = parse_branch()
+            tail.set("false", node)
+            tail = node
 
-            self._match_text_seq("IF")
+        if self._prev.text.upper() == "ELSE":
+            tail.set(
+                "false",
+                self.expression(exp.Block(expressions=self._parse_routine_statements("END"))),
+            )
 
-        return self.expression(exp.IfBlock(this=condition, true=true, false=false))
+        self._match_text_seq("IF")
+        return this
 
     def _parse_routine_statement(self) -> exp.Expr | None:
         if self._match(TokenType.BEGIN, advance=False):

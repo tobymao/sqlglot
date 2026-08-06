@@ -411,6 +411,17 @@ def _expand_alias_refs(
                     simplified = simplify_parens(column, dialect)
                     if simplified is not column:
                         column.replace(simplified)
+                        column = simplified
+
+                    if resolve_table and resolver.schema.empty:
+                        # resolve alias spliced into QUALIFY/HAVING with unqualified columns
+                        for inner in walk_in_scope(column):
+                            if (
+                                isinstance(inner, exp.Column)
+                                and not inner.table
+                                and (inner_table := resolver.get_table(inner))
+                            ):
+                                inner.set("table", inner_table)
 
     for i, projection in enumerate(expression.selects):
         replace_columns(projection)

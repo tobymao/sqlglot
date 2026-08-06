@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
 )
-from sqlglot.generator import unsupported_args
+from sqlglot.generator import UNSUPPORTED_TEMPLATE, unsupported_args
 from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.tokens import TokenType
 
@@ -246,6 +246,23 @@ class SQLiteGenerator(generator.Generator):
             return self.func("DATE", expression.this)
 
         return super().cast_sql(expression)
+
+    # https://www.sqlite.org/gencol.html
+    # mypyc can't compile a decorated override of an undecorated base method, so the
+    # data_type check is inlined instead of using @unsupported_args
+    def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+        if expression.args.get("data_type"):
+            self.unsupported(
+                UNSUPPORTED_TEMPLATE.format(
+                    "data_type", expression.__class__.__name__, self.dialect.__class__.__name__
+                )
+            )
+
+        this = expression.this
+        this_sql = self.sql(this) if isinstance(this, exp.Paren) else f"({self.sql(this)})"
+        storage = " STORED" if expression.args.get("persisted") else ""
+        not_null = " NOT NULL" if expression.args.get("not_null") else ""
+        return f"AS {this_sql}{storage}{not_null}"
 
     # Note: SQLite's TRUNC always returns REAL (e.g., trunc(10.99) -> 10.0), not INTEGER.
     # This creates a transpilation gap affecting division semantics, similar to Presto.

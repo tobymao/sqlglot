@@ -298,6 +298,21 @@ class TestSQLite(Validator):
             self.validate_identity("TRUNC(3.14, 2)", "TRUNC(3.14)").assert_is(exp.Trunc)
             self.assertIn("'decimals' is not supported", cm.output[0])
 
+    def test_generated_columns(self):
+        # https://www.sqlite.org/gencol.html
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))")
+        # The unparenthesized postgres expression must be parenthesized for SQLite;
+        # the missing STORED is a pre-existing postgres reader gap
+        self.validate_all(
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
+            read={"postgres": "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED)"},
+        )
+        self.validate_all(
+            "CREATE TABLE t (a INTEGER, b AS (a * 2) STORED NOT NULL)",
+            read={"tsql": "CREATE TABLE t (a INT, b AS (a * 2) PERSISTED NOT NULL)"},
+        )
+
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):

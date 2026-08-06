@@ -220,6 +220,10 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT SQLITE_VERSION()")
 
+    def test_median(self):
+        self.validate_identity("SELECT MEDIAN(x) FROM t")
+        self.validate_identity("SELECT MEDIAN(x) OVER () FROM t")
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")

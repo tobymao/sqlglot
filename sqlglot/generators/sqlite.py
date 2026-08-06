@@ -113,7 +113,8 @@ class SQLiteGenerator(generator.Generator):
     SUPPORTS_TO_NUMBER = False
     SUPPORTS_WINDOW_EXCLUDE = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
-    SUPPORTS_MEDIAN = False
+    # MEDIAN ships with SQLite's percentile extension, https://www.sqlite.org/percentile.html
+    SUPPORTS_MEDIAN = True
     JSON_KEY_VALUE_PAIR_SEP = ","
     PARSE_JSON_NAME: str | None = None
 

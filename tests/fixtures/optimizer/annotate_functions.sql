@@ -6923,6 +6923,22 @@ JSON;
 JSON_OBJECT(tbl.varchar_col, tbl.json_col);
 JSON;
 
+# dialect: mysql
+JSON_EXTRACT(tbl.json_col, '$.int_col');
+JSON;
+
+# dialect: mysql
+JSON_EXTRACT(tbl.json_col, '$.varchar_col');
+JSON;
+
+# dialect: mysql
+JSON_EXTRACT(tbl.json_col, '$.double_col');
+JSON;
+
+# dialect: mysql
+JSON_EXTRACT(tbl.json_col, '$.json_col');
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -164,6 +164,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.JSONObjectAgg,
             exp.JSONObject,
+            exp.JSONExtract,
         }
     },
     **{

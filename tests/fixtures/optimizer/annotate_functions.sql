@@ -118,6 +118,12 @@ INT;
 UNICODE('bcd');
 INT;
 
+CEIL(tbl.double_col);
+INT;
+
+FLOOR(tbl.double_col);
+INT;
+
 LAST_DAY(tbl.timestamp_col);
 DATE;
 

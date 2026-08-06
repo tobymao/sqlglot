@@ -383,6 +383,13 @@ SELECT f(1)""",
             "SELECT NO_ELSE(0)"
         )
 
+        # No-operand form, no ELSE; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION no_operand_no_else(a INTEGER) RETURNS VARCHAR "
+            "BEGIN CASE WHEN a = 0 THEN RETURN 'zero'; END CASE; RETURN 'other'; END "
+            "SELECT NO_OPERAND_NO_ELSE(1)"
+        )
+
         # CASE can nest, in both the operand and no-operand forms; confirmed to
         # actually run and return 'a0b0'/'a0bN'/'aN' against a real Trino instance
         self.validate_identity(
@@ -403,4 +410,16 @@ SELECT f(1)""",
             "ELSE SET result = CASE WHEN a < -10 THEN -1 ELSE -2 END; END CASE; "
             "RETURN result; END "
             "SELECT MIX(1)"
+        )
+
+        # CASE as the literal last statement, with nothing after it before the
+        # enclosing END; real Trino rejects this body with "Function must end in
+        # a RETURN statement" - the same function-body completeness check noted
+        # on the IF phase, which requires a literal trailing RETURN and doesn't
+        # credit a CASE that already returns on every branch. This asserts
+        # round-trip grammar only, confirmed against a real Trino instance.
+        self.validate_identity(
+            "WITH FUNCTION last_stmt(a INTEGER) RETURNS VARCHAR "
+            "BEGIN CASE a WHEN 0 THEN RETURN 'zero'; ELSE RETURN 'other'; END CASE; END "
+            "SELECT LAST_STMT(1)"
         )

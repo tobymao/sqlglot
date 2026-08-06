@@ -82,6 +82,28 @@ class TrinoGenerator(PrestoGenerator):
 
         return f"{' '.join(branches)} END IF"
 
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        # ELSEIF-style chaining doesn't apply here (WHEN branches are a flat
+        # list, not nested per exp.IfBlock's `false`), so this walks `ifs`
+        # directly instead of following ifblock_sql's linked-list pattern.
+        this = expression.args.get("this")
+        operand_sql = f" {self.sql(expression, 'this')}" if this else ""
+
+        branches = [f"CASE{operand_sql}"]
+        for node in expression.args["ifs"]:
+            condition = node.args["this"]
+            # Undo the WHEN match -> WHEN this = match normalization done at
+            # parse time so the operand form round-trips losslessly.
+            condition = condition.expression if this else condition
+            branches.append(f"WHEN {self.sql(condition)} THEN {self.sql(node, 'true')};")
+
+        default = expression.args.get("default")
+        if default:
+            branches.append(f"ELSE {self.sql(default)};")
+
+        branches.append("END CASE")
+        return " ".join(branches)
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

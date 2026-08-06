@@ -6288,6 +6288,10 @@ class Generator:
         self.unsupported("Unsupported If block syntax")
         return ""
 
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        self.unsupported("Unsupported Case statement syntax")
+        return ""
+
     def whileblock_sql(self, expression: exp.WhileBlock) -> str:
         self.unsupported("Unsupported While block syntax")
         return ""

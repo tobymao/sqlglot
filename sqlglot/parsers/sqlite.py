@@ -15,6 +15,17 @@ def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
+def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSONExtractScalar:
+    # Single-path json_extract() returns an SQL representation like ->>, except
+    # that object/array results keep the JSON subtype (json_subtype); the
+    # multi-path form returns a JSON array. https://www.sqlite.org/json1.html#jex
+    if len(args) == 2:
+        extract = parser.build_extract_json_with_path(exp.JSONExtractScalar)(args, dialect)
+        extract.set("json_subtype", True)
+        return extract
+    return parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
+
+
 class SQLiteParser(parser.Parser):
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
@@ -30,6 +41,7 @@ class SQLiteParser(parser.Parser):
         **parser.Parser.FUNCTIONS,
         "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
         "EDITDIST3": exp.Levenshtein.from_arg_list,
+        "JSON_EXTRACT": _build_json_extract,
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "STRFTIME": _build_strftime,

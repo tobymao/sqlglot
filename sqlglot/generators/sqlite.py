@@ -163,7 +163,6 @@ class SQLiteGenerator(generator.Generator):
         exp.JSONArrayAgg: unsupported_args("order", "null_handling", "return_type", "strict")(
             rename_func("JSON_GROUP_ARRAY")
         ),
-        exp.JSONExtractScalar: arrow_json_extract_sql,
         exp.JSONObjectAgg: lambda self, e: self._jsonobject_sql(e, name="JSON_GROUP_OBJECT"),
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("EDITDIST3")
@@ -227,6 +226,13 @@ class SQLiteGenerator(generator.Generator):
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if expression.expressions:
             return self.function_fallback_sql(expression)
+        return arrow_json_extract_sql(self, expression)
+
+    def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
+        if expression.args.get("json_subtype"):
+            # json_extract() keeps the JSON subtype on object/array results;
+            # ->> strips it, observable when the result feeds another JSON function
+            return self.func("JSON_EXTRACT", expression.this, expression.expression)
         return arrow_json_extract_sql(self, expression)
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:

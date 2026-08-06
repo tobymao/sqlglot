@@ -51,6 +51,28 @@ class TestSQLite(Validator):
         self.validate_identity(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
         )
+        # Single-path json_extract() returns an SQL value like ->>, except that
+        # object/array results keep the JSON subtype (json_subtype variant);
+        # each of the three spellings round-trips to itself
+        self.validate_identity("SELECT JSON_EXTRACT(a, '$.k') FROM t")
+        self.validate_identity("SELECT a -> '$.k' FROM t")
+        self.validate_identity("SELECT a ->> '$.k' FROM t")
+        self.validate_identity("SELECT JSON_SET('{}', '$.x', JSON_EXTRACT(a, '$.k'))")
+        fn = (
+            self.parse_one("SELECT JSON_EXTRACT(a, '$.k') FROM t")
+            .selects[0]
+            .assert_is(exp.JSONExtractScalar)
+        )
+        op = self.parse_one("SELECT a ->> '$.k' FROM t").selects[0].assert_is(exp.JSONExtractScalar)
+        self.assertTrue(fn.args.get("json_subtype"))
+        self.assertNotEqual(fn, op)
+        self.validate_all(
+            "SELECT JSON_EXTRACT(a, '$.k') FROM t",
+            write={
+                "postgres": "SELECT JSON_EXTRACT_PATH_TEXT(a, 'k') FROM t",
+                "mysql": "SELECT a ->> '$.k' FROM t",
+            },
+        )
         self.validate_identity(
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )

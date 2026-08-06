@@ -1130,7 +1130,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR ',')",
-                "sqlite": "GROUP_CONCAT(DISTINCT x)",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
                 "tsql": "STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y DESC)",
                 "databricks": "LISTAGG(DISTINCT x, ',') WITHIN GROUP (ORDER BY y DESC)",
                 "postgres": "STRING_AGG(DISTINCT x, ',' ORDER BY y DESC NULLS LAST)",
@@ -1140,7 +1140,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
             write={
                 "mysql": "GROUP_CONCAT(x ORDER BY y SEPARATOR z)",
-                "sqlite": "GROUP_CONCAT(x, z)",
+                "sqlite": "GROUP_CONCAT(x, z ORDER BY y)",
                 "tsql": "STRING_AGG(x, z) WITHIN GROUP (ORDER BY y)",
                 "databricks": "LISTAGG(x, z) WITHIN GROUP (ORDER BY y)",
                 "postgres": "STRING_AGG(x, z ORDER BY y NULLS FIRST)",
@@ -1150,7 +1150,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '')",
-                "sqlite": "GROUP_CONCAT(DISTINCT x, '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT x ORDER BY y DESC)",
                 "tsql": "STRING_AGG(x, '') WITHIN GROUP (ORDER BY y DESC)",
                 "databricks": "LISTAGG(DISTINCT x, '') WITHIN GROUP (ORDER BY y DESC)",
                 "postgres": "STRING_AGG(DISTINCT x, '' ORDER BY y DESC NULLS LAST)",
@@ -1181,7 +1181,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(DISTINCT a, b, c SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) SEPARATOR '')",
-                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c)",
                 "tsql": "STRING_AGG(a + b + c, '')",
                 "databricks": "LISTAGG(DISTINCT CONCAT(a, b, c), '')",
                 "postgres": "STRING_AGG(DISTINCT a || b || c, '')",
@@ -1191,7 +1191,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(a, b, c ORDER BY d SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
-                "sqlite": "GROUP_CONCAT(a || b || c, '')",
+                "sqlite": "GROUP_CONCAT(a || b || c, '' ORDER BY d)",
                 "tsql": "STRING_AGG(a + b + c, '') WITHIN GROUP (ORDER BY d)",
                 "databricks": "LISTAGG(CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
                 "postgres": "STRING_AGG(a || b || c, '' ORDER BY d NULLS FIRST)",
@@ -1201,7 +1201,7 @@ class TestMySQL(Validator):
             "GROUP_CONCAT(DISTINCT a, b, c ORDER BY d SEPARATOR '')",
             write={
                 "mysql": "GROUP_CONCAT(DISTINCT CONCAT(a, b, c) ORDER BY d SEPARATOR '')",
-                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c, '')",
+                "sqlite": "GROUP_CONCAT(DISTINCT a || b || c ORDER BY d)",
                 "tsql": "STRING_AGG(a + b + c, '') WITHIN GROUP (ORDER BY d)",
                 "databricks": "LISTAGG(DISTINCT CONCAT(a, b, c), '') WITHIN GROUP (ORDER BY d)",
                 "postgres": "STRING_AGG(DISTINCT a || b || c, '' ORDER BY d NULLS FIRST)",

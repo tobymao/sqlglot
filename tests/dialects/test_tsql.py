@@ -421,7 +421,7 @@ class TestTSQL(Validator):
             write={
                 "tsql": "STRING_AGG(x, y) WITHIN GROUP (ORDER BY z DESC)",
                 "mysql": "GROUP_CONCAT(x ORDER BY z DESC SEPARATOR y)",
-                "sqlite": "GROUP_CONCAT(x, y)",
+                "sqlite": "GROUP_CONCAT(x, y ORDER BY z DESC)",
                 "postgres": "STRING_AGG(x, y ORDER BY z DESC NULLS LAST)",
             },
         )
@@ -430,7 +430,7 @@ class TestTSQL(Validator):
             write={
                 "tsql": "STRING_AGG(x, '|') WITHIN GROUP (ORDER BY z ASC)",
                 "mysql": "GROUP_CONCAT(x ORDER BY z ASC SEPARATOR '|')",
-                "sqlite": "GROUP_CONCAT(x, '|')",
+                "sqlite": "GROUP_CONCAT(x, '|' ORDER BY z ASC)",
                 "postgres": "STRING_AGG(x, '|' ORDER BY z ASC NULLS FIRST)",
             },
         )

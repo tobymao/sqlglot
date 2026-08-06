@@ -308,13 +308,23 @@ class SQLiteGenerator(generator.Generator):
         else:
             distinct_sql = ""
 
+        order_sql = ""
         if isinstance(expression.this, exp.Order):
-            self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
             if expression.this.this and not distinct:
                 this = expression.this.this
 
+            # ORDER BY within aggregates requires SQLite 3.44+
+            order = expression.this.copy()
+            order.set("this", None)
+            order_sql = self.sql(order)
+
         separator = expression.args.get("separator")
-        return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
+        if distinct and separator:
+            # SQLite rejects DISTINCT aggregates with more than one argument
+            self.unsupported("SQLite GROUP_CONCAT does not support DISTINCT with a separator")
+            separator = None
+
+        return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)}{order_sql})"
 
     def least_sql(self, expression: exp.Least) -> str:
         if expression.expressions:

@@ -1,6 +1,7 @@
 from tests.dialects.test_dialect import Validator
 
-from sqlglot import exp
+from sqlglot import exp, transpile
+from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import logger as helper_logger
 
 
@@ -288,6 +289,28 @@ class TestSQLite(Validator):
             )
 
             self.assertIn("Named columns are not supported in table alias.", cm.output[0])
+
+    def test_group_concat(self):
+        # ORDER BY within aggregates is supported since SQLite 3.44
+        self.validate_identity("SELECT GROUP_CONCAT(a ORDER BY a) FROM t")
+        self.validate_identity("SELECT GROUP_CONCAT(a, ';' ORDER BY a DESC) FROM t")
+        self.validate_identity("SELECT GROUP_CONCAT(DISTINCT x ORDER BY y) FROM t")
+        self.validate_identity("SELECT GROUP_CONCAT(a) FROM t")
+        self.validate_identity("SELECT GROUP_CONCAT(DISTINCT a) FROM t")
+
+        # SQLite rejects DISTINCT aggregates with more than one argument, so a
+        # custom separator cannot be combined with DISTINCT
+        self.validate_all(
+            "SELECT GROUP_CONCAT(DISTINCT x ORDER BY y DESC) FROM t",
+            read={"mysql": "SELECT GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '') FROM t"},
+        )
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT GROUP_CONCAT(DISTINCT x ORDER BY y DESC SEPARATOR '') FROM t",
+                read="mysql",
+                write="sqlite",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_trunc(self):
         # SQLite TRUNC only accepts one argument

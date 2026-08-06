@@ -160,6 +160,12 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DType.JSON}
+        for expr_type in {
+            exp.JSONObjectAgg,
+        }
+    },
+    **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.Pad,

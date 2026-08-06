@@ -6891,6 +6891,22 @@ BIGINT UNSIGNED;
 BIT_OR(tbl.bin_col) OVER (ORDER BY tbl.bin_col);
 VARBINARY;
 
+# dialect: mysql
+JSON_OBJECTAGG(tbl.int_col, tbl.int_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECTAGG(tbl.varchar_col, tbl.varchar_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECTAGG(tbl.int_col, tbl.int_col) OVER (ORDER BY tbl.int_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECTAGG(tbl.varchar_col, tbl.varchar_col) OVER (ORDER BY tbl.varchar_col);
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

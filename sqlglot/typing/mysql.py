@@ -130,6 +130,7 @@ EXPRESSION_METADATA = {
             exp.RegexpSubstr,
             exp.Collation,
             exp.JSONType,
+            exp.Uuid,
         }
     },
     **{

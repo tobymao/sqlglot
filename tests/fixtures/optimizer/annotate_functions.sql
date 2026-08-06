@@ -6995,6 +6995,10 @@ BIGINT;
 GROUPING(tbl.str_col);
 BIGINT;
 
+# dialect: mysql
+UUID();
+VARCHAR;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -167,6 +167,7 @@ EXPRESSION_METADATA = {
             exp.JSONObject,
             exp.JSONExtract,
             exp.JSONKeys,
+            exp.JSONArrayAppend,
         }
     },
     **{

@@ -25,7 +25,7 @@ from sqlglot.dialects.dialect import (
     time_format,
     timestrtotime_sql,
     trim_sql,
-    unit_to_str,
+    weekstart_unit_to_str,
     var_map_sql,
     sequence_sql,
     property_sql,
@@ -351,7 +351,9 @@ class HiveGenerator(generator.Generator):
         exp.TimeStrToDate: rename_func("TO_DATE"),
         exp.TimeStrToTime: timestrtotime_sql,
         exp.TimeStrToUnix: rename_func("UNIX_TIMESTAMP"),
-        exp.TimestampTrunc: lambda self, e: self.func("TRUNC", e.this, unit_to_str(e)),
+        exp.TimestampTrunc: lambda self, e: self.func(
+            "TRUNC", e.this, weekstart_unit_to_str(self, e)
+        ),
         exp.TimeToUnix: rename_func("UNIX_TIMESTAMP"),
         exp.ToBase64: rename_func("BASE64"),
         exp.TsOrDiToDi: lambda self, e: (
@@ -546,7 +548,7 @@ class HiveGenerator(generator.Generator):
         allow_null = expression.args.get("allow_null")
         drop = expression.args.get("drop")
 
-        if any([default, drop, visible, allow_null, drop]):
+        if any([default, drop, visible]) or allow_null is not None:
             self.unsupported("Unsupported CHANGE COLUMN syntax")
 
         if not dtype:

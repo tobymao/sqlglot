@@ -1761,6 +1761,7 @@ class Pivot(Expression):
         "identify_pivot_strings": False,
         "prefixed_pivot_columns": False,
         "pivot_column_naming": False,
+        "value_columns_first": False,
     }
 
     @property
@@ -1814,7 +1815,13 @@ class Pivot(Expression):
                 for ident in (e.expressions if isinstance(e, Tuple) else [e])
                 if isinstance(ident, Identifier)
             ]
-            outputs = [i.name for i in name_columns + value_columns]
+            # T-SQL emits the value column(s) ahead of the name column, everyone else emits them after it
+            ordered = (
+                value_columns + name_columns
+                if self.args.get("value_columns_first")
+                else name_columns + value_columns
+            )
+            outputs = [i.name for i in ordered]
         else:
             excluded = {c.output_name for c in self.find_all(Column)}
             outputs = [c.output_name for c in self.args.get("columns") or []]
@@ -2105,7 +2112,7 @@ class StoredProcedure(Expression):
 
 
 class Block(Expression):
-    arg_types = {"expressions": True}
+    arg_types = {"expressions": True, "begin": False}
 
 
 class IfBlock(Expression):
@@ -2122,7 +2129,12 @@ class EndStatement(Expression):
 
 # https://trino.io/docs/current/udf.html
 class FunctionSpecification(Expression):
-    arg_types = {"this": True, "properties": False, "expression": True}
+    arg_types = {
+        "this": True,
+        "characteristics": False,
+        "properties": False,
+        "expression": True,
+    }
 
 
 UNWRAPPED_QUERIES = (Select, SetOperation)

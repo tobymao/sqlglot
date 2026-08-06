@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.tokens import TokenType
 
 
@@ -299,7 +300,7 @@ class SQLiteGenerator(generator.Generator):
     # https://www.sqlite.org/lang_aggfunc.html#group_concat
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this
-        distinct = expression.find(exp.Distinct)
+        distinct = find_in_scope(expression, exp.Distinct)
 
         if distinct:
             this = distinct.expressions[0]

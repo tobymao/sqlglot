@@ -1,3 +1,4 @@
+from sqlglot import exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -203,3 +204,150 @@ SELECT f(1)""",
         )
         self.validate_identity("WITH function AS (SELECT 1 AS x) SELECT x FROM function")
         self.validate_identity("WITH function(x) AS (SELECT 1) SELECT x FROM function")
+
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL RETURN 1 SELECT F()")
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER NOT DETERMINISTIC RETURN 1 SELECT F()"
+        )
+        self.assertIsInstance(
+            self.validate_identity("SELECT NOT deterministic FROM t").selects[0], exp.Not
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER CALLED ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER RETURNS NULL ON NULL INPUT RETURN 1 SELECT F()"
+        )
+        self.validate_identity("WITH FUNCTION f() RETURNS INTEGER COMMENT 'hi' RETURN 1 SELECT F()")
+
+        # SECURITY and WITH (...) are part of Trino's documented function-specification
+        # grammar, but real Trino rejects both for LANGUAGE SQL inline functions
+        # specifically ("Security mode not supported for inline functions", "Function
+        # language 'SQL' does not support properties"). These assert round-trip
+        # correctness for that shared grammar, not that this exact combination executes
+        # on an inline SQL UDF.
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY DEFINER RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER SECURITY INVOKER RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER WITH (weight=42) RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL WITH (weight=42, cost='low') "
+            "RETURN 1 SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION custom_sqrt(a INTEGER) RETURNS DOUBLE COMMENT 'Custom sqrt function' "
+            "RETURNS NULL ON NULL INPUT NOT DETERMINISTIC LANGUAGE SQL SECURITY DEFINER "
+            "WITH (weight=42, cost='low') RETURN a SELECT CUSTOM_SQRT(4)"
+        )
+
+    def test_inline_udf_begin_end(self):
+        # https://trino.io/docs/current/udf/sql/begin.html
+        self.validate_identity(
+            "WITH FUNCTION meaning_of_life() RETURNS INTEGER "
+            "BEGIN DECLARE a INTEGER DEFAULT 6; DECLARE b INTEGER DEFAULT 7; RETURN a * b; END "
+            "SELECT MEANING_OF_LIFE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/set.html
+        self.validate_identity(
+            "WITH FUNCTION one() RETURNS INTEGER "
+            "BEGIN DECLARE counter INTEGER DEFAULT 1; SET counter = 0; "
+            "SET counter = counter + 2; SET counter = counter / counter; RETURN counter; END "
+            "SELECT ONE()"
+        )
+
+        # https://trino.io/docs/current/udf/sql/declare.html - multiple identifiers can
+        # share one DECLARE and type
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE first_name, last_name, middle_name VARCHAR(25); RETURN 1; END "
+            "SELECT F()"
+        )
+
+        # BEGIN can nest; confirmed against a real Trino instance (returns 2)
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; BEGIN SET x = x + 1; END; RETURN x; END "
+            "SELECT F()"
+        )
+
+        # DECLARE isn't reserved in Trino, so it must still work as a plain identifier
+        self.validate_identity("SELECT declare FROM (VALUES (1), (2)) AS t(declare)")
+        self.validate_identity("WITH FUNCTION declare() RETURNS INTEGER RETURN 1 SELECT DECLARE()")
+
+        # A Block built without begin=True (i.e. not by _parse_routine_block) must
+        # not get a synthesized BEGIN
+        self.assertEqual(
+            exp.Block(
+                expressions=[parse_one("SELECT 1"), parse_one("SELECT 2"), exp.EndStatement()]
+            ).sql(dialect="trino"),
+            "SELECT 1; SELECT 2; END",
+        )
+
+    def test_inline_udf_if(self):
+        # https://trino.io/docs/current/udf/sql/if.html - verbatim from the docs, but
+        # real Trino rejects this exact body with "Function must end in a RETURN
+        # statement": its function-body check requires a literal trailing RETURN and
+        # doesn't credit an IF/ELSEIF/ELSE that already returns on every branch. This
+        # asserts round-trip grammar only, confirmed against a real Trino instance.
+        self.validate_identity(
+            "WITH FUNCTION simple_if(a BIGINT) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; ELSEIF a = 1 THEN RETURN 'one'; "
+            "ELSE RETURN 'more than one or negative'; END IF; END "
+            "SELECT SIMPLE_IF(3)"
+        )
+
+        # IF with no ELSE/ELSEIF at all; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; END IF; RETURN 'other'; END "
+            "SELECT F(1)"
+        )
+
+        # An ELSEIF chain with no final ELSE; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN RETURN 'zero'; ELSEIF a = 1 THEN RETURN 'one'; END IF; "
+            "RETURN 'other'; END "
+            "SELECT F(1)"
+        )
+
+        # IF can nest; the trailing RETURN is required by the same real-Trino
+        # completeness check noted above, confirmed to actually run and return 'a zero'
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER, b INTEGER) RETURNS VARCHAR "
+            "BEGIN IF a = 0 THEN IF b = 0 THEN RETURN 'both zero'; ELSE RETURN 'a zero'; "
+            "END IF; ELSE RETURN 'a nonzero'; END IF; RETURN 'unreachable'; END "
+            "SELECT F(1, 2)"
+        )
+
+        # Combines with DECLARE/SET, and a CASE expression nested inside a RETURN
+        # doesn't get confused with the surrounding IF's own ELSE/END IF
+        self.validate_identity(
+            "WITH FUNCTION f(a INTEGER) RETURNS INTEGER "
+            "BEGIN DECLARE result INTEGER DEFAULT 0; "
+            "IF a > 0 THEN RETURN CASE WHEN a > 10 THEN 1 ELSE 2 END; "
+            "ELSE SET result = -1; END IF; RETURN result; END "
+            "SELECT F(1)"
+        )
+
+        # Trino's own function-body analysis rejects a NOT DETERMINISTIC declaration
+        # on a body it can tell is trivially deterministic (same class of issue as the
+        # SECURITY/WITH (...) note above), so this asserts round-trip grammar only.
+        self.validate_identity(
+            "WITH FUNCTION f() RETURNS INTEGER LANGUAGE SQL NOT DETERMINISTIC "
+            "BEGIN DECLARE x INTEGER DEFAULT 1; RETURN x; END "
+            "SELECT F()"
+        )
+        self.validate_identity(
+            "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER BEGIN RETURN x * 2; END "
+            "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
+        )

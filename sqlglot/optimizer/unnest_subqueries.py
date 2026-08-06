@@ -103,7 +103,7 @@ def unnest(select, parent_select, next_alias_name):
 
         return
 
-    if select.find(exp.Limit, exp.Offset):
+    if find_in_scope(select, exp.Limit, exp.Offset):
         return
 
     if isinstance(predicate, exp.Any):
@@ -160,9 +160,14 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if column.find_ancestor(exp.Where) is not where:
             return
 
+        # The predicate is replaced with TRUE below, which is only sound if its result flows
+        # into the WHERE through conjunctions; wrappers like NOT would invert that TRUE.
         predicate = column.find_ancestor(exp.Predicate)
+        ancestor = predicate.parent if predicate else None
+        while isinstance(ancestor, (exp.And, exp.Paren)):
+            ancestor = ancestor.parent
 
-        if not predicate or predicate.find_ancestor(exp.Where) is not where:
+        if ancestor is not where:
             return
 
         if isinstance(predicate, exp.Binary):
@@ -212,7 +217,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
     agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg
-    if not value.find(exp.AggFunc) and value.this not in group_by:
+    if (
+        not isinstance(value, exp.Subquery)
+        and not find_in_scope(value, exp.AggFunc)
+        and value.this not in group_by
+    ):
         select.select(
             exp.alias_(agg_func(this=value.this), value.alias, quoted=False),
             append=False,
@@ -268,7 +277,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         # COUNT always returns 0 on empty datasets, so we need take that into consideration here
         # by transforming all counts into 0 and using that as the coalesced value
-        if value.find(exp.Count):
+        if find_in_scope(value, exp.Count):
 
             def remove_aggs(node):
                 if isinstance(node, exp.Count):

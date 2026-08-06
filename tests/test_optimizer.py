@@ -11,6 +11,7 @@ from sqlglot import exp, optimizer, parse_one
 from sqlglot.errors import ANSI_RESET, ANSI_UNDERLINE, OptimizeError, SchemaError
 from sqlglot.optimizer.annotate_types import TypeAnnotator, annotate_types
 from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_names
+from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
@@ -116,6 +117,14 @@ class TestOptimizer(unittest.TestCase):
         INSERT INTO y VALUES (null, null);
 
         INSERT INTO w VALUES ('a', 'b');
+
+        CREATE TABLE unpivotable (id INT, jan INT, feb INT, north INT, south INT);
+        INSERT INTO unpivotable VALUES (1, 100, 200, 7, 8);
+        INSERT INTO unpivotable VALUES (2, 300, 400, 9, 10);
+
+        CREATE TABLE pivotable (id INT, cat TEXT, val INT, kind TEXT, amt INT);
+        INSERT INTO pivotable VALUES (1, 'a', 10, 'x', 5);
+        INSERT INTO pivotable VALUES (1, 'b', 20, 'x', 5);
         """
         )
 
@@ -149,6 +158,20 @@ class TestOptimizer(unittest.TestCase):
             "t_bool": {
                 "a": "BOOLEAN",
                 "b": "BOOLEAN",
+            },
+            "unpivotable": {
+                "id": "INT",
+                "jan": "INT",
+                "feb": "INT",
+                "north": "INT",
+                "south": "INT",
+            },
+            "pivotable": {
+                "id": "INT",
+                "cat": "TEXT",
+                "val": "INT",
+                "kind": "TEXT",
+                "amt": "INT",
             },
         }
 
@@ -260,6 +283,16 @@ class TestOptimizer(unittest.TestCase):
             on_qualify=lambda t: tables.add(t.name),
         )
         self.assertEqual(tables, {"bar", "baz"})
+
+        # Tables referenced by lateral sources (e.g. UNNEST) must only be qualified once
+        qualified = []
+        optimizer.qualify_tables.qualify_tables(
+            parse_one("SELECT a, x FROM t, UNNEST(arr) AS x"),
+            db="db",
+            catalog="c",
+            on_qualify=lambda t: qualified.append(t.sql()),
+        )
+        self.assertEqual(qualified, ["c.db.t AS t"])
 
         self.assertEqual(
             optimizer.qualify.qualify(
@@ -833,6 +866,91 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
+    def test_multiple_pivots_annotate_types(self):
+        # NOTE: the value column takes the type of the first IN-list entry, so the columns
+        # folded by a single operator are kept uniformly typed here
+        schema = {
+            "t": {"id": "int", "jan": "int", "feb": "int", "north": "double", "south": "double"}
+        }
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT * FROM t
+                    UNPIVOT(revenue FOR month IN (jan, feb))
+                    UNPIVOT(headcount FOR region IN (north, south))
+                    """,
+                    dialect="snowflake",
+                ),
+                schema=schema,
+                dialect="snowflake",
+            ),
+            schema=schema,
+            dialect="snowflake",
+        )
+
+        # Types flow through every operator, not just the last one: the name columns are
+        # text and each value column takes the type of the columns it was folded from
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [
+                ("ID", "INT"),
+                ("MONTH", "VARCHAR"),
+                ("REVENUE", "INT"),
+                ("REGION", "VARCHAR"),
+                ("HEADCOUNT", "DOUBLE"),
+            ],
+        )
+
+        pivot_schema = {
+            "t": {"id": "int", "cat": "text", "val": "int", "kind": "text", "amt": "double"}
+        }
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    """
+                    SELECT * FROM t
+                    PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b))
+                    PIVOT(SUM(amt) FOR kind IN ('x' AS x, 'y' AS y))
+                    """,
+                    dialect="snowflake",
+                ),
+                schema=pivot_schema,
+                dialect="snowflake",
+            ),
+            schema=pivot_schema,
+            dialect="snowflake",
+        )
+
+        # Each PIVOT's outputs take the type of its own aggregate
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [("ID", "INT"), ("A", "BIGINT"), ("B", "BIGINT"), ("X", "DOUBLE"), ("Y", "DOUBLE")],
+        )
+
+    def test_unpivot_cte_annotate_types(self):
+        # An unaliased operator takes the CTE's name, shadowing it in scope.sources, so
+        # the source types must be resolved through the CTE's scope instead
+        schema = {"t": {"id": "int", "jan": "int", "feb": "int"}}
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH c AS (SELECT id, jan, feb FROM t) "
+                    "SELECT * FROM c UNPIVOT(v FOR m IN (jan, feb))",
+                    dialect="duckdb",
+                ),
+                schema=schema,
+                dialect="duckdb",
+            ),
+            schema=schema,
+            dialect="duckdb",
+        )
+
+        self.assertEqual(
+            [(s.alias_or_name, s.type.sql()) for s in expression.selects],
+            [("id", "INT"), ("m", "VARCHAR"), ("v", "INT")],
+        )
+
     def test_unnest_type_trace_is_memoized(self):
         """Tracing an UNNEST's element type must not re-walk shared parts of the scope graph.
 
@@ -1115,6 +1233,18 @@ class TestOptimizer(unittest.TestCase):
             "CONCAT_WS(' ', a, NULL, 'b c')", simplified_concat_ws.sql(dialect="duckdb")
         )
 
+        # DuckDB's || coerces its args to strings, so the "safe" flag must survive simplification
+        # for the transpiled CONCAT to keep coercing in stricter dialects like Presto
+        dpipe = parse_one("x || 'a' || 'b'", read="duckdb")
+        simplified_dpipe = optimizer.simplify.simplify(dpipe)
+
+        self.assertEqual(simplified_dpipe.args["safe"], True)
+        self.assertEqual("x || 'ab'", simplified_dpipe.sql(dialect="duckdb"))
+        self.assertEqual(
+            "CONCAT(CAST(x AS VARCHAR), CAST('ab' AS VARCHAR))",
+            simplified_dpipe.sql(dialect="presto"),
+        )
+
         anon_unquoted_str = parse_one("anonymous(x, y)")
         self.assertEqual(optimizer.simplify.gen(anon_unquoted_str), "ANONYMOUS(x,y)")
 
@@ -1271,6 +1401,91 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.eliminate_ctes.eliminate_ctes,
             pretty=True,
         )
+
+    def test_journal(self):
+        journal = []
+
+        expression = parse_one("SELECT a, b FROM x")
+        record(journal, expression, "expressions")
+        expression.set("expressions", [expression.expressions[0]])
+        self.assertEqual(expression.sql(), "SELECT a FROM x")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), "SELECT a, b FROM x")
+        self.assertEqual(journal, [])
+
+        for i, selection in enumerate(expression.expressions):
+            self.assertIs(selection.parent, expression)
+            self.assertEqual(selection.arg_key, "expressions")
+            self.assertEqual(selection.index, i)
+
+        # Removing the last CTE pops the entire WITH clause
+        sql = "WITH y AS (SELECT a FROM x) SELECT a FROM z"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "SELECT a FROM z")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        # The WITH clause survives when other CTEs remain
+        sql = "WITH y AS (SELECT a FROM x), z AS (SELECT b FROM x) SELECT b FROM z"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "WITH z AS (SELECT b FROM x) SELECT b FROM z")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        # Chained removals record the same WITH clause multiple times
+        sql = "WITH y AS (SELECT a FROM x), z AS (SELECT a FROM y) SELECT 1 AS c"
+        expression = parse_one(sql)
+        optimizer.eliminate_ctes.eliminate_ctes(expression, journal=journal)
+        self.assertEqual(expression.sql(), "SELECT 1 AS c")
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        expression = optimizer.qualify.qualify(
+            parse_one("SELECT a FROM (SELECT a, b FROM x) AS t"),
+            schema=self.schema,
+            identify=False,
+        )
+        sql = expression.sql()
+        optimizer.pushdown_projections.pushdown_projections(
+            expression, schema=self.schema, journal=journal
+        )
+        self.assertEqual(
+            expression.sql(), "SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x) AS t"
+        )
+
+        revert(journal)
+        self.assertEqual(expression.sql(), sql)
+
+        expression = optimizer.qualify.qualify(
+            parse_one(
+                """
+                WITH x AS (
+                  SELECT z, 0 AS c, SUM(d) AS s
+                  FROM t
+                  GROUP BY z, 2, 2
+                )
+                SELECT c, s FROM x
+                """,
+                dialect="duckdb",
+            ),
+            dialect="duckdb",
+            identify=False,
+        )
+        original = expression.copy()
+        optimizer.pushdown_projections.pushdown_projections(
+            expression, dialect="duckdb", journal=journal
+        )
+        group = expression.find(exp.CTE).this.args["group"]
+        self.assertEqual([e.sql() for e in group.expressions], ["t.z", "1", "1"])
+
+        revert(journal)
+        self.assertEqual(expression, original)
 
     @patch("sqlglot.generator.logger")
     def test_merge_subqueries(self, logger):
@@ -1548,6 +1763,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         outer_table_aliases = [t.alias for t in canon_triple_scope.tables]
         self.assertEqual(len(set(outer_table_aliases)), 3, outer_table_aliases)
         self.assertEqual(len(canon_triple_scope.selected_sources), 3)
+
+        # test UNNEST whose element type is unresolved after qualify must not crash:
+        # the heuristic reads the element type and has to tolerate a missing one.
+        canon_unnest = qualify_then_canonicalize(
+            parse_one("SELECT v FROM t, UNNEST(t.arr) AS v(v)", dialect="duckdb"),
+            schema={"t": {"arr": "ARRAY<INT>"}},
+            dialect="duckdb",
+        )
+        self.assertEqual(
+            canon_unnest.sql(dialect="duckdb"),
+            'SELECT "_t1"."_c0" AS "v" FROM "_t0" AS "_t0" JOIN UNNEST("_t0"."arr") AS "_t1"("_c0") ON TRUE',
+        )
 
     def test_canonicalize(self):
         optimize = partial(

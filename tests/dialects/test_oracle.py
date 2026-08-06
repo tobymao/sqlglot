@@ -152,6 +152,10 @@ class TestOracle(Validator):
         self.validate_identity(
             "SELECT * FROM t START WITH col CONNECT BY NOCYCLE PRIOR col1 = col2"
         )
+        self.validate_identity(
+            "SELECT id FROM t START WITH (parent_id IS NULL) CONNECT BY PRIOR id = parent_id"
+        )
+        self.validate_identity("SELECT id FROM t START WITH (x) CONNECT BY PRIOR id = parent_id")
 
         self.validate_all(
             "SELECT DBMS_RANDOM.VALUE()",
@@ -391,6 +395,33 @@ class TestOracle(Validator):
         )
         self.validate_identity("L2_DISTANCE(x, y)")
         self.validate_identity("BITMAP_OR_AGG(x)")
+
+    def test_pivot_syntax_restrictions(self):
+        """Oracle only accepts simple column names in a (UN)PIVOT's FOR clause and IN-list
+        (ORA-01748), and rejects AS before the operator's alias (ORA-03048). The aggregate
+        itself may stay qualified. All of these were executed against Oracle Free.
+        """
+        self.validate_all(
+            "SELECT * FROM t UNPIVOT(revenue FOR month IN (t.jan, t.feb)) AS u",
+            write={"oracle": "SELECT * FROM t UNPIVOT(revenue FOR month IN (jan, feb)) u"},
+        )
+        self.validate_all(
+            "SELECT * FROM t PIVOT(SUM(t.val) FOR t.cat IN ('a' AS a)) AS p",
+            write={"oracle": "SELECT * FROM t PIVOT(SUM(t.val) FOR cat IN ('a' AS a)) p"},
+        )
+
+        # qualify qualifies the IN-list in the AST, which must not reach the generated SQL
+        self.assertEqual(
+            qualify(
+                parse_one(
+                    "SELECT * FROM t UNPIVOT(revenue FOR month IN (jan, feb))", dialect="oracle"
+                ),
+                schema={"t": {"id": "int", "jan": "int", "feb": "int"}},
+                dialect="oracle",
+            ).sql(dialect="oracle"),
+            'SELECT "T"."ID" AS "ID", "T"."MONTH" AS "MONTH", "T"."REVENUE" AS "REVENUE" '
+            'FROM "T" "T" UNPIVOT("REVENUE" FOR "MONTH" IN ("JAN", "FEB")) "T"',
+        )
 
     def test_join_marker(self):
         self.validate_identity("SELECT e1.x, e2.x FROM e e1, e e2 WHERE e1.y (+) = e2.y")

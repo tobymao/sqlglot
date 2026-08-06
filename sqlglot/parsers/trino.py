@@ -2,6 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
+from sqlglot.helper import ensure_list
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
@@ -62,6 +63,12 @@ class TrinoParser(PrestoParser):
             )
         )
 
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
+
     def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
         # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a
@@ -77,17 +84,111 @@ class TrinoParser(PrestoParser):
         return super()._parse_cte()
 
     def _parse_function_specification(self) -> exp.FunctionSpecification:
+        this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
+
+        # Collected separately (rather than one _parse_properties() call) so the
+        # generator can place `WITH (...)` in its own bracketed clause at the end,
+        # instead of it blending into the bare characteristics list.
+        characteristics = []
+        properties = []
+
+        while True:
+            if self._match(TokenType.WITH):
+                properties.extend(self._parse_wrapped_csv(self._parse_key_value_property))
+                continue
+
+            characteristic = self._parse_property()
+            if not characteristic:
+                break
+
+            characteristics.extend(ensure_list(characteristic))
+
         return self.expression(
             exp.FunctionSpecification(
-                this=self._parse_user_defined_function(kind=TokenType.FUNCTION),
-                properties=self._parse_properties(),
+                this=this,
+                characteristics=self.expression(exp.Properties(expressions=characteristics))
+                if characteristics
+                else None,
+                properties=self.expression(exp.Properties(expressions=properties))
+                if properties
+                else None,
                 expression=self._parse_routine_statement(),
             )
         )
 
+    def _parse_routine_statements(self, *terminators: str) -> list[exp.Expr]:
+        # Unlike _parse_block(), stops on any of `terminators` even when tokens
+        # follow (Trino's own END is always followed by the enclosing query, left
+        # for the caller), matching them as text rather than just TokenType.END, so
+        # this same chunk-continuation loop also serves IF/ELSEIF/ELSE.
+        statements: list[exp.Expr] = []
+
+        while not self._match_texts(terminators):
+            if not self._curr:
+                if self._chunk_index >= len(self._chunks):
+                    self.raise_error("Unexpected end of routine body")
+                    break
+
+                self._advance_chunk()
+            elif not self._match(TokenType.SEMICOLON):
+                statement = self._parse_routine_statement()
+                if not statement:
+                    break
+
+                statements.append(statement)
+
+        return statements
+
+    def _parse_routine_block(self) -> exp.Block:
+        self._match(TokenType.BEGIN)
+        statements = self._parse_routine_statements("END")
+        statements.append(exp.EndStatement())
+
+        return self.expression(exp.Block(expressions=statements, begin=True))
+
+    def _parse_routine_if(self) -> exp.IfBlock:
+        # https://trino.io/docs/current/udf/sql/if.html
+        # ELSEIF chains nest into `false` rather than a flat list, reusing the
+        # existing binary IfBlock instead of a new N-way expression; each loop
+        # iteration links the next branch into the previous one's `false` slot.
+        def parse_branch() -> exp.IfBlock:
+            condition = self._parse_disjunction()
+            self._match_text_seq("THEN")
+            true = self.expression(
+                exp.Block(expressions=self._parse_routine_statements("ELSEIF", "ELSE", "END"))
+            )
+            return self.expression(exp.IfBlock(this=condition, true=true))
+
+        this = tail = parse_branch()
+        while self._prev.text.upper() == "ELSEIF":
+            node = parse_branch()
+            tail.set("false", node)
+            tail = node
+
+        if self._prev.text.upper() == "ELSE":
+            tail.set(
+                "false",
+                self.expression(exp.Block(expressions=self._parse_routine_statements("END"))),
+            )
+
+        self._match_text_seq("IF")
+        return this
+
     def _parse_routine_statement(self) -> exp.Expr | None:
+        if self._match(TokenType.BEGIN, advance=False):
+            return self._parse_routine_block()
+
         if self._match_text_seq("RETURN"):
             return self.expression(exp.Return(this=self._parse_disjunction()))
+
+        if self._match_text_seq("IF"):
+            return self._parse_routine_if()
+
+        if self._match(TokenType.DECLARE):
+            return self._parse_declare()
+
+        if self._match(TokenType.SET):
+            return self._parse_set()
 
         self.raise_error("Expected routine statement")
         return None

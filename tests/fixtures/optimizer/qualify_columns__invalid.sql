@@ -15,3 +15,6 @@ SELECT x FROM tbl AS tbl(a);
 SELECT a JOIN b USING (a);
 SELECT x.a FROM x INNER JOIN y ON x.a = c INNER JOIN z ON x.a = c;
 SELECT b FROM x INNER JOIN y ON x.a = y.c INNER JOIN z ON x.a = z.c;
+SELECT unpivotable.north FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
+SELECT u1.id FROM unpivotable UNPIVOT(zzz FOR m IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (zzz)) AS u2
+SELECT u2.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (b)) AS u2

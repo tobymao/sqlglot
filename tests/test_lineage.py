@@ -791,6 +791,132 @@ class TestLineage(unittest.TestCase):
         node = lineage("d", sql, dialect="snowflake")
         self.assertEqual([d.name for d in node.downstream], ["SRC.D"])
 
+    def test_chained_pivots(self) -> None:
+        """Each operator in a chain consumes the previous one's output, so the mappings
+        have to be folded rather than read off a single operator."""
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        SELECT id, score, headcount
+        FROM sales UNPIVOT(score FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
+        """
+
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.JAN", "SALES.FEB"])
+
+        node = lineage("headcount", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.NORTH", "SALES.SOUTH"])
+
+        # A column that survives every operator still traces back to the source
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["SALES.ID"])
+
+    def test_chained_pivots_through_cte(self) -> None:
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        WITH src AS (SELECT id, jan, feb, north, south FROM sales)
+        SELECT score FROM src
+        UNPIVOT(score FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
+        """
+        node = lineage("score", sql, schema=schema, dialect="snowflake")
+
+        self.assertEqual([d.name for d in node.downstream], ["SRC.JAN", "SRC.FEB"])
+        self.assertEqual(node.downstream[0].downstream[0].name, "SALES.JAN")
+        self.assertEqual(node.downstream[1].downstream[0].name, "SALES.FEB")
+
+    def test_chained_pivots_mixed(self) -> None:
+        # The UNPIVOT consumes columns the PIVOT produced, so they resolve through it
+        schema = {"t": {"id": "int", "cat": "text", "val": "int"}}
+        sql = """
+        SELECT id, c, v FROM t
+        PIVOT(SUM(val) FOR cat IN ('a' AS a, 'b' AS b)) UNPIVOT(v FOR c IN (a, b))
+        """
+
+        node = lineage("v", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["T.VAL", "T.VAL"])
+
+        node = lineage("id", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["T.ID"])
+
+    def test_chained_pivots_with_alias_columns(self) -> None:
+        # The alias column list renames the chain's *final* output positionally, so a
+        # column an earlier operator produced is reached under its renamed name
+        schema = {
+            "m": {
+                "empid": "int",
+                "dept": "text",
+                "jan": "int",
+                "feb": "int",
+                "n": "int",
+                "s": "int",
+            }
+        }
+        sql = """
+        SELECT a, b, c, d, e, f FROM m
+        UNPIVOT(sales FOR mon IN (jan, feb)) UNPIVOT(hc FOR reg IN (n, s)) AS t(a, b, c, d, e, f)
+        """
+        expected = {
+            "a": ["M.EMPID"],
+            "b": ["M.DEPT"],
+            "c": ["M.JAN", "M.FEB"],
+            "d": ["M.JAN", "M.FEB"],
+            "e": ["M.N", "M.S"],
+            "f": ["M.N", "M.S"],
+        }
+        for column, downstream in expected.items():
+            with self.subTest(column):
+                node = lineage(column, sql, schema=schema, dialect="snowflake")
+                self.assertEqual([d.name for d in node.downstream], downstream)
+
+    def test_chained_pivots_consuming_alias_columns(self) -> None:
+        # An earlier operator's alias column list renames passthroughs (b -> north,
+        # c -> south), and a later operator consumes them under the new names
+        schema = {
+            "sales": {"id": "int", "jan": "int", "feb": "int", "north": "int", "south": "int"}
+        }
+        sql = """
+        SELECT hc, region FROM sales
+        UNPIVOT(score FOR month IN (jan, feb)) AS u1(a, b, c, d)
+        UNPIVOT(hc FOR region IN (b, c))
+        """
+        for column in ("hc", "region"):
+            with self.subTest(column):
+                node = lineage(column, sql, schema=schema, dialect="duckdb")
+                self.assertEqual([d.name for d in node.downstream], ["sales.north", "sales.south"])
+
+        # Multi-value form: the value columns are derived positionally from the entries
+        sql = """
+        SELECT hi, lo FROM sales
+        UNPIVOT(score FOR month IN (jan, feb)) AS u1(a, b, c, d)
+        UNPIVOT((hi, lo) FOR region IN ((b, c)))
+        """
+        node = lineage("hi", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["sales.north"])
+
+        node = lineage("lo", sql, schema=schema, dialect="duckdb")
+        self.assertEqual([d.name for d in node.downstream], ["sales.south"])
+
+    def test_multiple_pivoted_sources(self) -> None:
+        # Pivots over different sources don't form a chain, so folding them would trace
+        # `hc` through the other source's `val` output; degrade to leaves instead
+        schema = {
+            "t1": {"id": "int", "jan": "int", "feb": "int"},
+            "t2": {"id": "int", "val": "int", "other": "int"},
+        }
+        sql = """
+        SELECT s1.val, s2.hc
+        FROM t1 UNPIVOT(val FOR m IN (jan, feb)) AS s1
+        JOIN t2 UNPIVOT(hc FOR r IN (val, other)) AS s2 ON s1.id = s2.id
+        """
+        node = lineage("hc", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["S2.HC"])
+
+        node = lineage("val", sql, schema=schema, dialect="snowflake")
+        self.assertEqual([d.name for d in node.downstream], ["S1.VAL"])
+
     def test_pivot_with_alias_columns(self) -> None:
         sql = """
         SELECT x FROM (SELECT value, category FROM sample_data) AS sd

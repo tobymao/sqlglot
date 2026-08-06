@@ -43,6 +43,7 @@ def _subpkg_files(src_dir, subpkg, files=None):
 
 def _source_files(src_dir):
     return [
+        "anonymize.py",
         "errors.py",
         "generator.py",
         "helper.py",

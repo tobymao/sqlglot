@@ -109,8 +109,6 @@ class Hive(Dialect):
             "MINUS": TokenType.EXCEPT,
             "MSCK REPAIR": TokenType.COMMAND,
             "REFRESH": TokenType.REFRESH,
-            "TIMESTAMP AS OF": TokenType.TIMESTAMP_SNAPSHOT,
-            "VERSION AS OF": TokenType.VERSION_SNAPSHOT,
             "SERDEPROPERTIES": TokenType.SERDE_PROPERTIES,
         }
 

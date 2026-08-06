@@ -24,6 +24,7 @@ from sqlglot.helper import (
     ensure_list,
 )
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSONPathTokenizer, parse as parse_json_path
+from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.parser import Parser
 from sqlglot.parsers.base import BaseParser
 from sqlglot.time import TIMEZONES, format_time, subsecond_precision
@@ -1700,7 +1701,7 @@ def timestamptrunc_sql(
     func: str = "DATE_TRUNC", zone: bool = False
 ) -> t.Callable[[Generator, exp.TimestampTrunc], str]:
     def _timestamptrunc_sql(self: Generator, expression: exp.TimestampTrunc) -> str:
-        args = [unit_to_str(expression), expression.this]
+        args = [weekstart_unit_to_str(self, expression), expression.this]
         if zone:
             args.append(expression.args.get("zone"))
         return self.func(func, *args)
@@ -1993,6 +1994,23 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
     return expression
 
 
+def remove_ts_or_ds_to_date(
+    to_sql: t.Callable[[Generator, exp.Expr], str] | None = None,
+    args: tuple[str, ...] = ("this",),
+) -> t.Callable[[Generator, exp.Func], str]:
+    def func(self: Generator, expression: exp.Func) -> str:
+        for arg_key in args:
+            arg = expression.args.get(arg_key)
+            if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(
+                "format"
+            ):
+                expression.set(arg_key, arg.this)
+
+        return to_sql(self, expression) if to_sql else self.function_fallback_sql(expression)
+
+    return func
+
+
 def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE_ADD_OR_DIFF], str]:
     def _delta_sql(self: Generator, expression: DATE_ADD_OR_DIFF) -> str:
         if cast and isinstance(expression, exp.TsOrDsAdd):
@@ -2043,10 +2061,26 @@ def unit_to_str(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     if not unit:
         return exp.Literal.string(default) if default else None
 
+    if isinstance(unit, exp.WeekStart):
+        # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit. Unlike
+        # Generator.weekstart_name, this can't warn about a changed week start (no generator
+        # access here) - callers that need the warning should use weekstart_unit_to_str
+        return exp.Literal.string("WEEK")
+
     if isinstance(unit, exp.Placeholder) or type(unit) not in (exp.Var, exp.Literal):
         return unit
 
     return exp.Literal.string(unit.name)
+
+
+def weekstart_unit_to_str(
+    self: Generator, expression: exp.Expr, default: str = "DAY"
+) -> exp.Expr | None:
+    unit = expression.args.get("unit")
+    if isinstance(unit, exp.WeekStart):
+        return exp.Literal.string(self.weekstart_name(unit))
+
+    return unit_to_str(expression, default)
 
 
 def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
@@ -2072,10 +2106,14 @@ WEEK_START_DAY_TO_DOW = {
 }
 
 
+def week_offset_to_dow(offset: int) -> int:
+    """Convert a dialect's WEEK_OFFSET (days relative to Monday) to the ISO day number of its week start."""
+    return offset % 7 + 1
+
+
 def week_unit_to_dow(unit: exp.Expr | None) -> int | None:
     """
-    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>)
-    or ISOWEEK unit parts.
+    Compute the week start day for a week-ish diff unit, e.g BigQuery's WEEK(<day>) or ISOWEEK unit parts.
 
     Args:
         unit: The unit expression (Var for WEEK/ISOWEEK or WeekStart)
@@ -2147,7 +2185,7 @@ def merge_without_target_sql(self: Generator, expression: exp.Merge) -> str:
         then: exp.Insert | exp.Update | None = when.args.get("then")
         if then:
             if isinstance(then, exp.Update):
-                for equals in then.find_all(exp.EQ):
+                for equals in find_all_in_scope(then, exp.EQ):
                     equal_lhs = equals.this
                     if (
                         isinstance(equal_lhs, exp.Column)

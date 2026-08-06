@@ -17,7 +17,7 @@ from sqlglot.dialects.dialect import (
     sha256_sql,
     strposition_sql,
     var_map_sql,
-    unit_to_str,
+    weekstart_unit_to_str,
     unit_to_var,
     trim_sql,
     sha2_digest_sql,
@@ -187,6 +187,7 @@ class ClickHouseGenerator(generator.Generator):
     SET_OP_MODIFIERS = False
     ARRAY_SIZE_NAME = "LENGTH"
     WRAP_DERIVED_VALUES = False
+    AUTO_REFRESH_BARE_INTERVALS = True
 
     STRING_TYPE_MAPPING: t.ClassVar = {
         exp.DType.BLOB: "String",
@@ -274,7 +275,7 @@ class ClickHouseGenerator(generator.Generator):
     }
 
     TRANSFORMS = {
-        **generator.Generator.TRANSFORMS,
+        **{k: v for k, v in generator.Generator.TRANSFORMS.items() if k != exp.AutoRefreshProperty},
         exp.AnyValue: rename_func("any"),
         exp.ApproxDistinct: rename_func("uniq"),
         exp.ArrayDistinct: rename_func("arrayDistinct"),
@@ -386,6 +387,7 @@ class ClickHouseGenerator(generator.Generator):
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.AutoRefreshProperty: exp.Properties.Location.POST_NAME,
         exp.DefinerProperty: exp.Properties.Location.POST_SCHEMA,
         exp.OnCluster: exp.Properties.Location.POST_NAME,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
@@ -578,6 +580,29 @@ class ClickHouseGenerator(generator.Generator):
     def oncluster_sql(self, expression: exp.OnCluster) -> str:
         return f"ON CLUSTER {self.sql(expression, 'this')}"
 
+    def _refresh_interval_sql(self, expression: exp.Expr) -> str:
+        if isinstance(expression, exp.Add):
+            return f"{self._refresh_interval_sql(expression.this)} {self._refresh_interval_sql(expression.expression)}"
+        return self.sql(expression.assert_is(exp.Interval))
+
+    def autorefreshproperty_sql(self, expression: exp.AutoRefreshProperty) -> str:
+        cadence = self.sql(expression, "cadence")
+        interval = expression.this
+        schedule = (
+            f" {cadence} {self._refresh_interval_sql(interval)}" if cadence and interval else ""
+        )
+        offset = expression.args.get("offset")
+        offset = f" OFFSET {self._refresh_interval_sql(offset)}" if offset else ""
+        randomize = expression.args.get("randomize")
+        randomize = f" RANDOMIZE FOR {self._refresh_interval_sql(randomize)}" if randomize else ""
+        dependencies = self.expressions(expression, flat=True)
+        dependencies = f" DEPENDS ON {dependencies}" if dependencies else ""
+        settings = self.sql(expression, "settings")
+        settings = f" {settings}" if settings else ""
+        append = " APPEND" if expression.args.get("append") else ""
+
+        return f"REFRESH{schedule}{offset}{randomize}{dependencies}{settings}{append}"
+
     def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         if expression.kind in self.ON_CLUSTER_TARGETS and locations.get(
             exp.Properties.Location.POST_NAME
@@ -686,7 +711,7 @@ class ClickHouseGenerator(generator.Generator):
         return super().values_sql(expression, values_as_table=values_as_table)
 
     def timestamptrunc_sql(self, expression: exp.DateTrunc | exp.TimestampTrunc) -> str:
-        unit = unit_to_str(expression)
+        unit = weekstart_unit_to_str(self, expression)
         # https://clickhouse.com/docs/whats-new/changelog/2023#improvement
         if self.dialect.version < (23, 12) and unit and unit.is_string:
             unit = exp.Literal.string(unit.name.lower())

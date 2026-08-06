@@ -589,6 +589,21 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(executed.rows, [])
         self.assertEqual(executed.columns, ("id_alias", "sub_type"))
 
+    def test_unsupported_subqueries(self):
+        tables = {
+            "x": [{"id": 1}, {"id": 2}, {"id": 3}],
+            "y": [{"id": 1}, {"id": 2}],
+        }
+
+        for sql in (
+            "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
+            "SELECT x.id, (SELECT MAX(y.id) FROM y) AS max_id FROM x",
+        ):
+            with self.subTest(sql):
+                with self.assertRaises(ExecuteError):
+                    execute(sql, tables=tables)
+
     def test_correlated_count(self):
         tables = {
             "parts": [{"pnum": 0, "qoh": 1}],

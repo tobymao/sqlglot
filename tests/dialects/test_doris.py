@@ -92,6 +92,9 @@ class TestDoris(Validator):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
         self.validate_identity("COALECSE(a, b, c, d)")
+        self.validate_identity("DROP TABLE my_table")
+        self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
+        self.validate_identity("DROP TABLE my_table FORCE")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
         self.validate_identity(

@@ -6,6 +6,11 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_insert_replace_using(self):
+        self.validate_identity(
+            "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
+        )
+
     def test_databricks(self):
         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")
@@ -172,7 +177,7 @@ class TestDatabricks(Validator):
             "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
             write={
                 "databricks": "CREATE TABLE foo (x INT GENERATED ALWAYS AS (YEAR(y)))",
-                "tsql": "CREATE TABLE foo (x AS YEAR(CAST(y AS DATE)))",
+                "tsql": "CREATE TABLE foo (x AS YEAR(y))",
             },
         )
         self.validate_all(
@@ -284,6 +289,15 @@ class TestDatabricks(Validator):
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT get_json_object(c, '$.x-y') FROM t""",
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
         ).selects[0].expression.assert_is(exp.JSONPath)
+
+        self.validate_identity("INSERT INTO t REPLACE WHERE a = 1 SELECT * FROM src")
+        self.validate_identity("INSERT INTO t REPLACE WHERE a = 2 (SELECT * FROM src)")
+        self.validate_identity(
+            "WITH s AS (SELECT * FROM src) INSERT INTO t REPLACE WHERE a = 1 SELECT * FROM s"
+        )
+        self.validate_identity(
+            "WITH s AS (SELECT * FROM src) INSERT INTO t REPLACE USING (a) SELECT * FROM s"
+        )
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):

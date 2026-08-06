@@ -108,6 +108,7 @@ def qualify_tables(
             scope.rename_source(None, new_alias_name)
 
     for scope in traverse_scope(expression):
+        parent = scope.parent
         local_columns = scope.local_columns
         canonical_aliases: dict[str, str] = {}
 
@@ -131,17 +132,23 @@ def qualify_tables(
                 derived_table.this.set("joins", joins)
 
             _set_alias(derived_table, canonical_aliases, scope=scope)
-            if pivot := seq_get(derived_table.args.get("pivots") or [], 0):
+            if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)
 
         table_aliases = {}
 
         for name, source in scope.sources.items():
+            # A source can appear in many scopes, e.g. as a lateral source of a UDTF scope or as a CTE
+            # propagated to inner scopes. Deferring to the parent scope when it contains the same source
+            # ensures each source is processed once, in the outermost scope that contains it
+            if parent and parent.sources.get(name) is source:
+                continue
+
             if isinstance(source, exp.Table):
                 # When the name is empty, it means that we have a non-table source, e.g. a pivoted cte
                 is_real_table_source = bool(name)
 
-                if pivot := seq_get(source.args.get("pivots") or [], 0):
+                if pivot := seq_get(source.args.get("pivots") or [], -1):
                     name = source.name
 
                 table_this = source.this
@@ -215,7 +222,8 @@ def qualify_tables(
             elif (
                 canonical_aliases
                 and column_table
-                and (canonical_table := canonical_aliases.get(column_table, "")) != column_table
+                and (canonical_table := canonical_aliases.get(column_table))
+                and canonical_table != column_table
             ):
                 # Amend existing aliases, e.g. t.c -> _0.c if t is aliased to _0
                 column.set("table", exp.to_identifier(canonical_table))

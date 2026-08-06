@@ -28,22 +28,27 @@ def _build_date(args: list) -> exp.Date | exp.DateFromParts:
     return expr_type.from_arg_list(args)
 
 
+def _normalize_bare_week(expr: E) -> E:
+    # In BigQuery, a bare WEEK date part is equivalent to WEEK(SUNDAY)
+    unit = expr.args.get("unit")
+    if isinstance(unit, (exp.Literal, exp.Var)) and unit.name.upper() == "WEEK":
+        expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+
+    return expr
+
+
 def build_date_diff(
     expr_type: type[exp.DateDiff | exp.DatetimeDiff],
 ) -> t.Callable[[list], exp.Expr]:
     def _builder(args: list) -> exp.Expr:
-        expr = expr_type(
-            this=seq_get(args, 0),
-            expression=seq_get(args, 1),
-            unit=seq_get(args, 2),
-            date_part_boundary=True,
+        return _normalize_bare_week(
+            expr_type(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 2),
+                date_part_boundary=True,
+            )
         )
-
-        unit = expr.args.get("unit")
-        if isinstance(unit, exp.Var) and unit.name.upper() == "WEEK":
-            expr.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
-
-        return expr
 
     return _builder
 
@@ -229,15 +234,18 @@ class BigQueryParser(parser.Parser):
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
         "DATE_DIFF": build_date_diff(exp.DateDiff),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub),
-        "DATE_TRUNC": lambda args: exp.DateTrunc(
-            unit=seq_get(args, 1),
-            this=seq_get(args, 0),
-            zone=seq_get(args, 2),
+        "DATE_TRUNC": lambda args: _normalize_bare_week(
+            exp.DateTrunc(
+                unit=seq_get(args, 1),
+                this=seq_get(args, 0),
+                zone=seq_get(args, 2),
+            )
         ),
         "DATETIME": _build_datetime,
         "DATETIME_ADD": build_date_delta_with_interval(exp.DatetimeAdd),
         "DATETIME_DIFF": build_date_diff(exp.DatetimeDiff),
         "DATETIME_SUB": build_date_delta_with_interval(exp.DatetimeSub),
+        "DATETIME_TRUNC": lambda args: _normalize_bare_week(exp.DatetimeTrunc.from_arg_list(args)),
         "DIV": binary_from_function(exp.IntDiv),
         "EDIT_DISTANCE": _build_levenshtein,
         "EMBED": exp.AIEmbed.from_arg_list,
@@ -253,6 +261,7 @@ class BigQueryParser(parser.Parser):
         "JSON_STRIP_NULLS": _build_json_strip_nulls,
         "JSON_VALUE": _build_extract_json_with_default_path(exp.JSONExtractScalar),
         "JSON_VALUE_ARRAY": _build_extract_json_with_default_path(exp.JSONValueArray),
+        "LAST_DAY": lambda args: _normalize_bare_week(exp.LastDay.from_arg_list(args)),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "MD5": exp.MD5Digest.from_arg_list,
         "SHA1": exp.SHA1Digest.from_arg_list,
@@ -299,6 +308,9 @@ class BigQueryParser(parser.Parser):
             this=seq_get(args, 0), scale=exp.UnixToTime.MILLIS
         ),
         "TIMESTAMP_SECONDS": lambda args: exp.UnixToTime(this=seq_get(args, 0)),
+        "TIMESTAMP_TRUNC": lambda args: _normalize_bare_week(
+            exp.TimestampTrunc.from_arg_list(args)
+        ),
         "TO_JSON": lambda args: exp.JSONFormat(
             this=seq_get(args, 0), options=seq_get(args, 1), to_json=True
         ),
@@ -345,9 +357,6 @@ class BigQueryParser(parser.Parser):
 
     PROPERTY_PARSERS: t.ClassVar = {
         **parser.Parser.PROPERTY_PARSERS,
-        "NOT DETERMINISTIC": lambda self: self.expression(
-            exp.StabilityProperty(this=exp.Literal.string("VOLATILE"))
-        ),
         "OPTIONS": lambda self: self._parse_with_property(),
     }
 
@@ -372,7 +381,6 @@ class BigQueryParser(parser.Parser):
         TokenType.END: lambda self: self._parse_as_command(self._prev),
         TokenType.FOR: lambda self: self._parse_for_in(),
         TokenType.EXPORT: lambda self: self._parse_export_data(),
-        TokenType.DECLARE: lambda self: self._parse_declare(),
     }
 
     BRACKET_OFFSETS: t.ClassVar = {
@@ -534,6 +542,12 @@ class BigQueryParser(parser.Parser):
                 expressions=self._parse_csv(self._parse_column),
             )
         )
+
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
 
     @t.overload
     def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...

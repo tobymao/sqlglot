@@ -77,6 +77,18 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
     return func
 
 
+def _day_month_year_sql(self: PostgresGenerator, expression: exp.Day | exp.Month | exp.Year) -> str:
+    this = expression.this
+    value = this.this if isinstance(this, exp.TsOrDsToDate) else this
+
+    if value.is_type(*exp.DataType.INTEGER_TYPES) and (
+        default_date := this.args.get("default_date")
+    ):
+        this = exp.cast(default_date, exp.DType.DATE) + value
+
+    return self.sql(exp.Extract(this=exp.var(expression.sql_name()), expression=this))
+
+
 def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrDsDiff) -> str:
     unit = expression.text("unit").upper() or "DAY"
 
@@ -312,6 +324,7 @@ class PostgresGenerator(generator.Generator):
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
+        exp.Day: _day_month_year_sql,
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),
@@ -341,6 +354,7 @@ class PostgresGenerator(generator.Generator):
         exp.MapFromEntries: no_map_from_entries_sql,
         exp.Min: min_or_least,
         exp.Merge: merge_without_target_sql,
+        exp.Month: _day_month_year_sql,
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),
         exp.PercentileDisc: transforms.preprocess([transforms.add_within_group_for_percentiles]),
@@ -389,6 +403,7 @@ class PostgresGenerator(generator.Generator):
         exp.VariancePop: rename_func("VAR_POP"),
         exp.Variance: rename_func("VAR_SAMP"),
         exp.Xor: bool_xor_sql,
+        exp.Year: _day_month_year_sql,
         exp.Unicode: rename_func("ASCII"),
         exp.UnixToTime: _unix_to_time_sql,
         exp.Levenshtein: _levenshtein_sql,

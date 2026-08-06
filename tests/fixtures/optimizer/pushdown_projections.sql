@@ -40,6 +40,18 @@ WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z UNION SELECT
 SELECT b FROM (SELECT a, SUM(b) AS b FROM x GROUP BY a);
 SELECT _0.b AS b FROM (SELECT SUM(x.b) AS b FROM x AS x GROUP BY x.a) AS _0;
 
+WITH x AS (SELECT 0 AS c, SUM(d) AS s FROM t GROUP BY 1) SELECT s FROM x;
+WITH x AS (SELECT 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY 1) SELECT x.s AS s FROM x AS x;
+
+WITH x AS (SELECT z, 0 AS c, a, SUM(d) AS s FROM t GROUP BY z, 2, a) SELECT c, a, s FROM x;
+WITH x AS (SELECT 0 AS c, t.a AS a, SUM(t.d) AS s FROM t AS t GROUP BY t.z, 1, t.a) SELECT x.c AS c, x.a AS a, x.s AS s FROM x AS x;
+
+WITH x AS (SELECT a, b, 0 AS c, SUM(d) AS s FROM t GROUP BY 1, 2, 3) SELECT a, s FROM x;
+WITH x AS (SELECT t.a AS a, 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY t.a, t.b, 2) SELECT x.a AS a, x.s AS s FROM x AS x;
+
+WITH x AS (SELECT z, 0 AS c, SUM(d) AS s FROM t GROUP BY z, 2, 2) SELECT c, s FROM x;
+WITH x AS (SELECT 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY t.z, 1, 1) SELECT x.c AS c, x.s AS s FROM x AS x;
+
 SELECT b FROM (SELECT a, SUM(b) AS b FROM x ORDER BY a);
 SELECT _0.b AS b FROM (SELECT x.a AS a, SUM(x.b) AS b FROM x AS x ORDER BY a) AS _0;
 

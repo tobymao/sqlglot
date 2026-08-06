@@ -35,6 +35,7 @@ from sqlglot.dialects.dialect import (
     timestrtotime_sql,
     unit_to_str,
     week_unit_to_dow,
+    weekstart_unit_to_str,
     WEEK_START_DAY_TO_DOW,
 )
 from sqlglot.generator import unsupported_args
@@ -160,6 +161,24 @@ def _last_day_sql(self: DuckDBGenerator, expression: exp.LastDay) -> str:
     For other date parts (year, quarter, week), we need to implement equivalent logic.
     """
     date_expr = expression.this
+    unit_expr = expression.args.get("unit")
+
+    week_start = week_unit_to_dow(unit_expr)
+    if week_start:
+        # The week's last day precedes its start day; DuckDB DAYOFWEEK: Sunday=0, ..., Saturday=6
+        last_dow = week_start - 1
+        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
+
+        # Days to the last day of week: (last_dow + 7 - dayofweek) % 7
+        days_to_last_expr = exp.Mod(
+            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(last_dow + 7), expression=dow)),
+            expression=exp.Literal.number(7),
+        )
+        interval_expr = exp.Interval(this=days_to_last_expr, unit=exp.var("DAY"))
+        add_expr = exp.Add(this=date_expr, expression=interval_expr)
+
+        return self.sql(exp.cast(add_expr, exp.DType.DATE))
+
     unit = expression.text("unit")
 
     if not unit or unit.upper() == "MONTH":
@@ -188,20 +207,6 @@ def _last_day_sql(self: DuckDBGenerator, expression: exp.LastDay) -> str:
         # Last day of the last month of the quarter
         last_day_expr = exp.func("LAST_DAY", first_day_last_month_expr)
         return self.sql(last_day_expr)
-
-    if unit.upper() == "WEEK":
-        # DuckDB DAYOFWEEK: Sunday=0, Monday=1, ..., Saturday=6
-        dow = exp.func("EXTRACT", "DAYOFWEEK", date_expr)
-        # Days to the last day of week: (7 - dayofweek) % 7, assuming the last day of week is Sunday (Snowflake)
-        # Wrap in parentheses to ensure correct precedence
-        days_to_sunday_expr = exp.Mod(
-            this=exp.Paren(this=exp.Sub(this=exp.Literal.number(7), expression=dow)),
-            expression=exp.Literal.number(7),
-        )
-        interval_expr = exp.Interval(this=days_to_sunday_expr, unit=exp.var("DAY"))
-        add_expr = exp.Add(this=date_expr, expression=interval_expr)
-        cast_expr = exp.cast(add_expr, exp.DType.DATE)
-        return self.sql(cast_expr)
 
     self.unsupported(f"Unsupported date part '{unit}' in LAST_DAY function")
     return self.function_fallback_sql(expression)
@@ -895,10 +900,18 @@ def _implicit_datetime_cast(
     return arg
 
 
+def _week_trunc_start_dow(unit: exp.Expr | None) -> int | None:
+    # DuckDB's weeks are ISO 8601, so ISOWEEK maps to its plain WEEK unit
+    if isinstance(unit, exp.Literal) and unit.name.upper() == "ISOWEEK":
+        return 1
+    return week_unit_to_dow(unit)
+
+
 def _build_week_trunc_expression(
     date_expr: exp.Expr,
     start_dow: int,
     preserve_start_day: bool = False,
+    cast_to_date: bool = True,
 ) -> exp.Expr:
     """
     Build DATE_TRUNC expression for week boundaries with custom start day.
@@ -912,6 +925,8 @@ def _build_week_trunc_expression(
         preserve_start_day: If True, reverse the shift after truncating so the result lands on the
             correct week start day. Needed for DATE_TRUNC (absolute result matters) but
             not for DATE_DIFF (only relative alignment matters).
+        cast_to_date: If True, cast the shifted result back to DATE; set to False for
+            timestamp-valued inputs, where the result must remain a timestamp.
 
     Shift formula: Sunday (7) gets +1, others get (1 - start_dow).
     """
@@ -927,9 +942,10 @@ def _build_week_trunc_expression(
 
     if preserve_start_day:
         interval = exp.Interval(this=exp.Literal.string(str(-shift_days)), unit=exp.var("DAY"))
-        return exp.cast(
-            exp.DateAdd(this=truncated, expression=interval), to=exp.DType.DATE, copy=False
-        )
+        shifted_back: exp.Expr = exp.DateAdd(this=truncated, expression=interval)
+        if cast_to_date:
+            return exp.cast(shifted_back, to=exp.DType.DATE, copy=False)
+        return shifted_back
 
     return truncated
 
@@ -1773,9 +1789,6 @@ class DuckDBGenerator(generator.Generator):
         ),
         exp.UnixToStr: lambda self, e: self.func(
             "STRFTIME", self.func("TO_TIMESTAMP", e.this), self.format_time(e)
-        ),
-        exp.DatetimeTrunc: lambda self, e: self.func(
-            "DATE_TRUNC", unit_to_str(e), exp.cast(e.this, exp.DType.DATETIME)
         ),
         exp.UnixToTime: _unix_to_time_sql,
         exp.UnixToTimeStr: lambda self, e: f"CAST(TO_TIMESTAMP({self.sql(e, 'this')}) AS TEXT)",
@@ -4413,7 +4426,7 @@ class DuckDBGenerator(generator.Generator):
         unit = expression.args.get("unit")
         date = expression.this
 
-        week_start = week_unit_to_dow(unit)
+        week_start = _week_trunc_start_dow(unit)
         unit = unit_to_str(expression)
 
         if week_start:
@@ -4432,11 +4445,33 @@ class DuckDBGenerator(generator.Generator):
 
         return result
 
+    def datetimetrunc_sql(self, expression: exp.DatetimeTrunc) -> str:
+        this = exp.cast(expression.this, exp.DType.DATETIME)
+        week_start = _week_trunc_start_dow(expression.args.get("unit"))
+        if week_start:
+            return self.sql(
+                _build_week_trunc_expression(
+                    this, week_start, preserve_start_day=True, cast_to_date=False
+                )
+            )
+
+        return self.func("DATE_TRUNC", unit_to_str(expression), this)
+
     def timestamptrunc_sql(self, expression: exp.TimestampTrunc) -> str:
-        unit = unit_to_str(expression)
         zone = expression.args.get("zone")
         timestamp = expression.this
-        date_unit = is_date_unit(unit)
+        week_start = _week_trunc_start_dow(expression.args.get("unit"))
+
+        # The week start emulation below is exact, so avoid weekstart_unit_to_str's degrade warning
+        unit = unit_to_str(expression) if week_start else weekstart_unit_to_str(self, expression)
+        date_unit = is_date_unit(unit) or bool(week_start)
+
+        def _trunc_expr(this: exp.Expr) -> exp.Expr:
+            if week_start:
+                return _build_week_trunc_expression(
+                    this, week_start, preserve_start_day=True, cast_to_date=False
+                )
+            return exp.func("DATE_TRUNC", unit, this)
 
         if date_unit and zone:
             # BigQuery's TIMESTAMP_TRUNC with timezone truncates in the target timezone and returns as UTC.
@@ -4444,10 +4479,13 @@ class DuckDBGenerator(generator.Generator):
             # 1. First AT TIME ZONE: ensures truncation happens in the target timezone
             # 2. Second AT TIME ZONE: converts the DATE result back to TIMESTAMPTZ (preserving time component)
             timestamp = exp.AtTimeZone(this=timestamp, zone=zone)
-            result_sql = self.func("DATE_TRUNC", unit, timestamp)
-            return self.sql(exp.AtTimeZone(this=result_sql, zone=zone))
+            trunced = _trunc_expr(timestamp)
+            if isinstance(trunced, exp.DateAdd):
+                # Parenthesize so the trailing AT TIME ZONE binds to the whole shifted expression
+                trunced = exp.Paren(this=trunced)
+            return self.sql(exp.AtTimeZone(this=trunced, zone=zone))
 
-        result = self.func("DATE_TRUNC", unit, timestamp)
+        result = self.sql(_trunc_expr(timestamp))
         if expression.args.get("input_type_preserved"):
             if timestamp.type and timestamp.is_type(exp.DType.TIME, exp.DType.TIMETZ):
                 dummy_date = exp.Cast(

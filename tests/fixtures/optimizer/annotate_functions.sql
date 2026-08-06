@@ -6975,6 +6975,10 @@ JSON;
 JSON_ARRAY_APPEND(tbl.json_col, '$', tbl.json_col);
 JSON;
 
+# dialect: mysql
+JSON_ARRAY_INSERT(tbl.json_col, '$[0]', tbl.int_col);
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

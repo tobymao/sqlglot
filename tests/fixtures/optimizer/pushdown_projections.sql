@@ -170,3 +170,8 @@ SELECT _0.d AS d FROM (SELECT INLINE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
 -- Window functions do not affect cardinality and stay prunable
 SELECT d FROM (SELECT d, ROW_NUMBER() OVER (PARTITION BY e ORDER BY d) AS rn FROM w);
 SELECT _0.d AS d FROM (SELECT w.d AS d FROM w AS w) AS _0;
+
+# dialect: bigquery
+# title: a GROUP BY / HAVING column shadowed by a colliding projection alias is kept by pushdown
+SELECT t.n FROM (SELECT a, ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM (SELECT a, b FROM x) AS agg GROUP BY a HAVING a >= 1) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS agg GROUP BY a HAVING a >= 1) AS t;

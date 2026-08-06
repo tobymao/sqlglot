@@ -807,6 +807,12 @@ class TSQLParser(parser.Parser):
                 identifier = collation.this
                 collation.set("this", exp.Var(this=identifier.name))
 
+            if expression.args.get("dtype"):
+                if self._match_pair(TokenType.NOT, TokenType.NULL):
+                    expression.set("allow_null", False)
+                elif self._match(TokenType.NULL):
+                    expression.set("allow_null", True)
+
         return expression
 
     def _parse_primary_key_part(self) -> exp.Expr | None:

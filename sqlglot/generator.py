@@ -484,6 +484,9 @@ class Generator:
     # Whether ALTER TABLE ... CHANGE COLUMN column-rename-and-redefine syntax is supported
     SUPPORTS_CHANGE_COLUMN = False
 
+    # Whether ALTER COLUMN can set a column's nullability together with its type
+    SUPPORTS_ALTER_COLUMN_NULLABILITY = False
+
     # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
@@ -4205,7 +4208,16 @@ class Generator:
             using = self.sql(expression, "using")
             using = f" USING {using}" if using else ""
             alter_set_type = self.ALTER_SET_TYPE + " " if self.ALTER_SET_TYPE else ""
-            return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}"
+
+            null_constraint = ""
+            allow_null = expression.args.get("allow_null")
+            if allow_null is not None:
+                if self.SUPPORTS_ALTER_COLUMN_NULLABILITY:
+                    null_constraint = " NULL" if allow_null else " NOT NULL"
+                else:
+                    self.unsupported("ALTER COLUMN cannot set nullability along with a type")
+
+            return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}{null_constraint}"
 
         default = self.sql(expression, "default")
         if default:

@@ -147,6 +147,7 @@ class TSQLGenerator(generator.Generator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     ALTER_SET_WRAPPED = True
     ALTER_SET_TYPE = ""
+    SUPPORTS_ALTER_COLUMN_NULLABILITY = True
 
     EXPRESSIONS_WITHOUT_NESTED_CTES = {
         exp.Create,

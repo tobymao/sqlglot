@@ -1066,6 +1066,10 @@ class Parser:
         ),
     }
 
+    # Binary-operator-tier JSON extraction ops (Postgres's "any other operator" tier,
+    # below +/-, level with ||). Same value signature as COLUMN_OPERATORS: (self, this, rhs).
+    JSON_EXTRACT_OPERATORS: t.ClassVar[dict[TokenType, t.Callable]] = {}
+
     CAST_COLUMN_OPERATORS: t.ClassVar = {
         TokenType.DOTCOLON,
         TokenType.DCOLON,
@@ -6257,6 +6261,10 @@ class Parser:
             elif self._match_pair(TokenType.GT, TokenType.GT):
                 this = self.expression(
                     exp.BitwiseRightShift(this=this, expression=self._parse_term())
+                )
+            elif self.JSON_EXTRACT_OPERATORS and self._match_set(self.JSON_EXTRACT_OPERATORS):
+                this = self.JSON_EXTRACT_OPERATORS[self._prev.token_type](
+                    self, this, self._parse_term()
                 )
             else:
                 break

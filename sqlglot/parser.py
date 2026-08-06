@@ -1071,6 +1071,10 @@ class Parser:
         TokenType.DCOLON,
     }
 
+    # Column operators that a dialect instead parses as ordinary binary operators in the
+    # _parse_bitwise tier (with ||), so their operands bind at the engine's precedence
+    BITWISE_COLUMN_OPERATORS: t.ClassVar[dict[TokenType, t.Callable]] = {}
+
     EXPRESSION_PARSERS: t.ClassVar = {
         exp.Cluster: lambda self: self._parse_sort(exp.Cluster, TokenType.CLUSTER_BY),
         exp.Column: lambda self: self._parse_column(),
@@ -6245,6 +6249,10 @@ class Parser:
                         expression=self._parse_term(),
                         safe=not self.dialect.STRICT_STRING_CONCAT,
                     )
+                )
+            elif self.BITWISE_COLUMN_OPERATORS and self._match_set(self.BITWISE_COLUMN_OPERATORS):
+                this = self.BITWISE_COLUMN_OPERATORS[self._prev.token_type](
+                    self, this, self._parse_term()
                 )
             elif self._match(TokenType.DQMARK):
                 this = self.expression(

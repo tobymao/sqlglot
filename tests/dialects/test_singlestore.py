@@ -22,6 +22,11 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz')")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
         self.validate_identity("SELECT TO_JSON(ROW(1, 2) :> RECORD(a INT, b INT))")
+        # `::` takes a field name, not an expression, so a cast that follows it applies
+        # to the extracted value
+        self.validate_identity(
+            "SELECT a::b :> INT FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') :> INT FROM t"
+        )
 
         self.validate_identity("JSON_KEYS(json_doc, 'a', 'b', 'c', 2)")
         self.validate_identity("SELECT VERSION()")

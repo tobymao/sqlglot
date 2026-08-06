@@ -1163,6 +1163,81 @@ FROM json_data, field_ids""",
             "SELECT * FROM schema_name.table_name AS st WHERE JSON_EXTRACT_PATH_TEXT(CAST((st.data) AS JSON), VARIADIC ARRAY[CAST('test' AS TEXT)]) = CAST('test' AS TEXT)",
         )
 
+    def test_json_operator_precedence(self):
+        # Postgres parses ->, ->>, #>, #>> and ? in the same tier as ||, below + and -,
+        # left associative
+        # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-PRECEDENCE
+
+        # Casts and subscripts bind to the operand
+        self.validate_identity(
+            """SELECT '{"a":4}'::jsonb #>> '{a}'::text[]""",
+            """SELECT CAST('{"a":4}' AS JSONB) #>> CAST('{a}' AS TEXT[])""",
+        ).assert_is(exp.Select).selects[0].assert_is(exp.JSONBExtractScalar).expression.assert_is(
+            exp.Cast
+        )
+        self.validate_identity("SELECT a -> b[1]", "SELECT JSON_EXTRACT_PATH(a, b[1])")
+
+        # Left associativity holds for qualified operands
+        self.validate_identity(
+            "SELECT a -> b.c -> d",
+            "SELECT JSON_EXTRACT_PATH(JSON_EXTRACT_PATH(a, b.c), d)",
+        )
+
+        # + binds tighter, so it belongs to the operand: j -> (1 + 1)
+        self.parse_one("SELECT j -> 1 + 1").selects[0].assert_is(
+            exp.JSONExtract
+        ).expression.assert_is(exp.Add)
+
+        # || is in the same tier: left of the operator it applies first, right of it last
+        self.validate_identity("SELECT 'x' || j ->> 'a'").assert_is(exp.Select).selects[
+            0
+        ].assert_is(exp.JSONExtractScalar).this.assert_is(exp.DPipe)
+        # A non-field right operand (like -1) must not swallow the rest of the tier
+        self.validate_identity(
+            "SELECT j ->> -1 || 'z'", "SELECT JSON_EXTRACT_PATH_TEXT(j, -1) || 'z'"
+        )
+        self.parse_one("SELECT x ->> 'a' || 'z'").selects[0].assert_is(exp.DPipe)
+
+        # - binds tighter than the JSON operators
+        self.validate_identity(
+            """SELECT '{"a":1,"b":2}'::jsonb - 'b' -> 'a'""",
+            """SELECT CAST('{"a":1,"b":2}' AS JSONB) - 'b' -> 'a'""",
+        )
+
+        # ? stops at boolean operators
+        self.parse_one("SELECT a ? 'k' AND b").selects[0].assert_is(exp.And)
+
+        # Casts on the right operand, for every operator
+        self.validate_identity(
+            """SELECT '{"a":{"b":4}}'::jsonb #> '{a}'::text[]""",
+            """SELECT CAST('{"a":{"b":4}}' AS JSONB) #> CAST('{a}' AS TEXT[])""",
+        )
+        self.validate_identity(
+            """SELECT '{"a":4}'::jsonb -> 'a'::text""",
+            """SELECT JSON_EXTRACT_PATH(CAST('{"a":4}' AS JSONB), CAST('a' AS TEXT))""",
+        )
+        self.validate_identity(
+            """SELECT '{"a":4}'::jsonb ->> 'a'::text""",
+            """SELECT JSON_EXTRACT_PATH_TEXT(CAST('{"a":4}' AS JSONB), CAST('a' AS TEXT))""",
+        )
+        self.validate_identity(
+            """SELECT '{"a":4}'::jsonb ? 'a'::text""",
+            """SELECT CAST('{"a":4}' AS JSONB) ? CAST('a' AS TEXT)""",
+        )
+
+        # This is how pg_get_indexdef() renders an expression index over a JSON path
+        self.validate_identity(
+            "CREATE INDEX ix_spans_session_id ON spans (((attributes #>> '{session,id}'::text[])::character varying))",
+            "CREATE INDEX ix_spans_session_id ON spans((CAST((attributes #>> CAST('{session,id}' AS TEXT[])) AS VARCHAR)))",
+        )
+
+        self.validate_identity("x #> y[1]").assert_is(exp.JSONBExtract).expression.assert_is(
+            exp.Bracket
+        )
+        self.validate_identity("x #> y.z #> w").assert_is(exp.JSONBExtract).this.assert_is(
+            exp.JSONBExtract
+        )
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

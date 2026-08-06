@@ -169,6 +169,7 @@ EXPRESSION_METADATA = {
             exp.JSONKeys,
             exp.JSONArrayAppend,
             exp.JSONArrayInsert,
+            exp.JSONRemove,
         }
     },
     **{

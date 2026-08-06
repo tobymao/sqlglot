@@ -6979,6 +6979,10 @@ JSON;
 JSON_ARRAY_INSERT(tbl.json_col, '$[0]', tbl.int_col);
 JSON;
 
+# dialect: mysql
+JSON_REMOVE(tbl.json_col, '$.a');
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

@@ -1,6 +1,7 @@
 from tests.dialects.test_dialect import Validator
 
-from sqlglot import exp
+from sqlglot import exp, transpile
+from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.helper import logger as helper_logger
 
 
@@ -242,6 +243,20 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT STRFTIME('%Y-%m-%d', CURRENT_TIMESTAMP)",
             },
         )
+
+    def test_regexp(self):
+        self.validate_identity("SELECT a REGEXP 'x' FROM t").assert_is(exp.Select).selects[
+            0
+        ].assert_is(exp.RegexpLike)
+
+        # flag and full_match cannot be expressed with the REGEXP operator
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT REGEXP_LIKE(a, 'x', 'i') FROM t",
+                read="snowflake",
+                write="sqlite",
+                unsupported_level=ErrorLevel.RAISE,
+            )
 
     def test_datediff(self):
         self.validate_all(

@@ -255,6 +255,10 @@ class SQLiteGenerator(generator.Generator):
     def trunc_sql(self, expression: exp.Trunc) -> str:
         return self.func("TRUNC", expression.this)
 
+    @unsupported_args("flag", "full_match")
+    def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+        return self.binary(expression, "REGEXP")
+
     def generateseries_sql(self, expression: exp.GenerateSeries) -> str:
         parent = expression.parent
         alias = parent and parent.args.get("alias")

@@ -145,6 +145,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.BIGINT}
         for expr_type in {
             exp.RegexpInstr,
+            exp.Grouping,
         }
     },
     **{

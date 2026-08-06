@@ -6987,7 +6987,13 @@ JSON;
 JSON_SET(tbl.json_col, '$.a', tbl.int_col);
 JSON;
 
+# dialect: mysql
+GROUPING(tbl.int_col);
+BIGINT;
 
+# dialect: mysql
+GROUPING(tbl.str_col);
+BIGINT;
 
 --------------------------------------
 -- DuckDB

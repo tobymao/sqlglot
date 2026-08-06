@@ -163,6 +163,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.JSON}
         for expr_type in {
             exp.JSONObjectAgg,
+            exp.JSONObject,
         }
     },
     **{

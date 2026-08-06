@@ -6907,6 +6907,22 @@ JSON;
 JSON_OBJECTAGG(tbl.varchar_col, tbl.varchar_col) OVER (ORDER BY tbl.varchar_col);
 JSON;
 
+# dialect: mysql
+JSON_OBJECT(tbl.varchar_col, tbl.int_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECT(tbl.varchar_col, tbl.varchar_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECT(tbl.varchar_col, tbl.double_col);
+JSON;
+
+# dialect: mysql
+JSON_OBJECT(tbl.varchar_col, tbl.json_col);
+JSON;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

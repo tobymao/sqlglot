@@ -7009,6 +7009,10 @@ BIGINT;
 UUID();
 VARCHAR;
 
+# dialect: mysql
+CURRENT_ROLE();
+LONGTEXT;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

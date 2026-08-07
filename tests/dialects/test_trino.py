@@ -351,3 +351,75 @@ SELECT f(1)""",
             "WITH FUNCTION doubled(x INTEGER) RETURNS INTEGER BEGIN RETURN x * 2; END "
             "WITH t AS (SELECT 3 AS v) SELECT DOUBLED(v) FROM t"
         )
+
+    def test_inline_udf_case(self):
+        # https://trino.io/docs/current/udf/sql/case.html - verbatim from the docs
+        # (operand form). The docs label the operand form "Searched case" with a
+        # synopsis ending in a bare END, but that contradicts this very example,
+        # which uses the operand form and ends in END CASE; confirmed against a
+        # real Trino instance that only END CASE is accepted for either form.
+        self.validate_identity(
+            "WITH FUNCTION simple_case(a BIGINT) RETURNS VARCHAR "
+            "BEGIN CASE a WHEN 0 THEN RETURN 'zero'; WHEN 1 THEN RETURN 'one'; "
+            "ELSE RETURN 'more than one or negative'; END CASE; RETURN NULL; END "
+            "SELECT SIMPLE_CASE(0)"
+        )
+
+        # No-operand form ("Simple case" per the docs' own, inverted labeling);
+        # confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION searched_case(a BIGINT) RETURNS VARCHAR "
+            "BEGIN CASE WHEN a = 0 THEN RETURN 'zero'; WHEN a = 1 THEN RETURN 'one'; "
+            "ELSE RETURN 'other'; END CASE; RETURN NULL; END "
+            "SELECT SEARCHED_CASE(0)"
+        )
+
+        # No ELSE at all, and only a single WHEN; confirmed against a real Trino
+        # instance that this falls through to the following RETURN rather than
+        # erroring
+        self.validate_identity(
+            "WITH FUNCTION no_else(a BIGINT) RETURNS VARCHAR "
+            "BEGIN CASE a WHEN 0 THEN RETURN 'zero'; END CASE; RETURN 'fallthrough'; END "
+            "SELECT NO_ELSE(0)"
+        )
+
+        # No-operand form, no ELSE; confirmed against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION no_operand_no_else(a INTEGER) RETURNS VARCHAR "
+            "BEGIN CASE WHEN a = 0 THEN RETURN 'zero'; END CASE; RETURN 'other'; END "
+            "SELECT NO_OPERAND_NO_ELSE(1)"
+        )
+
+        # CASE can nest, in both the operand and no-operand forms; confirmed to
+        # actually run and return 'a0b0'/'a0bN'/'aN' against a real Trino instance
+        self.validate_identity(
+            "WITH FUNCTION nested_case(a BIGINT, b BIGINT) RETURNS VARCHAR "
+            "BEGIN DECLARE result VARCHAR; "
+            "CASE WHEN a = 0 THEN CASE b WHEN 0 THEN SET result = 'a0b0'; "
+            "ELSE SET result = 'a0bN'; END CASE; ELSE SET result = 'aN'; END CASE; "
+            "RETURN result; END "
+            "SELECT NESTED_CASE(0, 0)"
+        )
+
+        # Combines with IF, and a CASE expression nested inside a SET doesn't get
+        # confused with the surrounding CASE statement's own ELSE/END CASE
+        self.validate_identity(
+            "WITH FUNCTION mix(a INTEGER) RETURNS INTEGER "
+            "BEGIN DECLARE result INTEGER DEFAULT 0; "
+            "CASE WHEN a > 0 THEN IF a > 10 THEN SET result = 1; ELSE SET result = 2; END IF; "
+            "ELSE SET result = CASE WHEN a < -10 THEN -1 ELSE -2 END; END CASE; "
+            "RETURN result; END "
+            "SELECT MIX(1)"
+        )
+
+        # CASE as the literal last statement, with nothing after it before the
+        # enclosing END; real Trino rejects this body with "Function must end in
+        # a RETURN statement" - the same function-body completeness check noted
+        # on the IF phase, which requires a literal trailing RETURN and doesn't
+        # credit a CASE that already returns on every branch. This asserts
+        # round-trip grammar only, confirmed against a real Trino instance.
+        self.validate_identity(
+            "WITH FUNCTION last_stmt(a INTEGER) RETURNS VARCHAR "
+            "BEGIN CASE a WHEN 0 THEN RETURN 'zero'; ELSE RETURN 'other'; END CASE; END "
+            "SELECT LAST_STMT(1)"
+        )

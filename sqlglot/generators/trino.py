@@ -82,6 +82,22 @@ class TrinoGenerator(PrestoGenerator):
 
         return f"{' '.join(branches)} END IF"
 
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        # Mirrors case_sql, using `;`-terminated statement bodies and END CASE
+        # instead of a single value expression per branch and bare END.
+        this = self.sql(expression, "this")
+        branches = [f"CASE {this}" if this else "CASE"]
+
+        for node in expression.args["ifs"]:
+            branches.append(f"WHEN {self.sql(node, 'this')} THEN {self.sql(node, 'true')};")
+
+        default = expression.args.get("default")
+        if default:
+            branches.append(f"ELSE {self.sql(default)};")
+
+        branches.append("END CASE")
+        return " ".join(branches)
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

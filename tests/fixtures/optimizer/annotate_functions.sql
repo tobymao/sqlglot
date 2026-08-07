@@ -4566,7 +4566,11 @@ RPAD(tbl.str_col, 5);
 STRING;
 
 # dialect: databricks
-TO_CHAR(tbl.str_col);
+TO_CHAR(tbl.str_col, fmt);
+STRING;
+
+# dialect: spark
+TO_CHAR(tbl.str_col, fmt);
 STRING;
 
 # dialect: databricks

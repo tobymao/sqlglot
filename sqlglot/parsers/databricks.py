@@ -13,12 +13,8 @@ class DatabricksParser(SparkParser):
     COLON_IS_VARIANT_EXTRACT = True
     COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
-    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.AND, TokenType.OR}
-
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,
-        "AND": lambda args: exp.And(this=seq_get(args, 0), expression=seq_get(args, 1)),
-        "OR": lambda args: exp.Or(this=seq_get(args, 0), expression=seq_get(args, 1)),
         "IFF": exp.If.from_arg_list,
         "GETDATE": exp.CurrentTimestamp.from_arg_list,
         "DATEDIFF": build_date_delta(exp.DateDiff),
@@ -61,14 +57,6 @@ class DatabricksParser(SparkParser):
         *SparkParser.CAST_COLUMN_OPERATORS,
         TokenType.QDCOLON,
     }
-
-    def _parse_interval_span(
-        self, this: exp.Expr, parse_function_unit: bool = True
-    ) -> exp.Interval:
-        # AND/OR in FUNC_TOKENS would be consumed as interval units; they never are.
-        if self._curr and self._curr.token_type in (TokenType.AND, TokenType.OR):
-            parse_function_unit = False
-        return super()._parse_interval_span(this, parse_function_unit=parse_function_unit)
 
     def _parse_curdate(self) -> exp.CurrentDate:
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses

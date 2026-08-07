@@ -191,8 +191,8 @@ class TrinoParser(PrestoParser):
             )
             return self.expression(exp.IfBlock(this=condition, true=true))
 
+        ifs = []
         self._match_text_seq("WHEN")
-        ifs = [parse_branch()]
         while self._prev.text.upper() == "WHEN":
             ifs.append(parse_branch())
 

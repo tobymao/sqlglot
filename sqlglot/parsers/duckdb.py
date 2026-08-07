@@ -91,22 +91,9 @@ class DuckDBParser(parser.Parser):
         if k not in (TokenType.ARROW, TokenType.DARROW)
     }
 
-    JSON_EXTRACT_OPERATORS = {
-        TokenType.ARROW: lambda self, this, path: self.expression(
-            exp.JSONExtract(
-                this=this,
-                expression=self.dialect.to_json_path(path),
-                only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
-            )
-        ),
-        TokenType.DARROW: lambda self, this, path: self.expression(
-            exp.JSONExtractScalar(
-                this=this,
-                expression=self.dialect.to_json_path(path),
-                only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
-                scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
-            )
-        ),
+    JSON_OPERATORS = {
+        TokenType.ARROW: parser.build_json_extract,
+        TokenType.DARROW: parser.build_json_extract_scalar,
     }
 
     RANGE_PARSERS = {

@@ -1585,7 +1585,6 @@ class SingleStoreGenerator(MySQLGenerator):
         new_column = self.sql(expression, "to")
         return f"CHANGE {old_column} {new_column}"
 
-    @unsupported_args("exists")
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         for arg_name in ("drop", "comment", "visible", "using"):
             if expression.args.get(arg_name):

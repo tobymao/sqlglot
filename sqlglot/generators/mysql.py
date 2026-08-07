@@ -743,11 +743,13 @@ class MySQLGenerator(generator.Generator):
         """
         return super().alterrename_sql(expression, include_to=False)
 
-    @unsupported_args("exists")
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         dtype = self.sql(expression, "dtype")
         if not dtype:
             return super().altercolumn_sql(expression)
+
+        if expression.args.get("exists"):
+            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
 
         this = self.sql(expression, "this")
         null_constraint = self._alter_column_null_constraint_sql(expression)

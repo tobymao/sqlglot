@@ -536,6 +536,7 @@ class HiveGenerator(generator.Generator):
             ),
         )
 
+    @unsupported_args("exists")
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         this = self.sql(expression, "this")
         new_name = self.sql(expression, "rename_to") or this

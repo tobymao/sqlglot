@@ -743,6 +743,7 @@ class MySQLGenerator(generator.Generator):
         """
         return super().alterrename_sql(expression, include_to=False)
 
+    @unsupported_args("exists")
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         dtype = self.sql(expression, "dtype")
         if not dtype:

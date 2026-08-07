@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     timestamptrunc_sql,
     weekstart_unit_to_str,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.generators.hive import HIVE_DATE_FORMAT, HiveGenerator, HIVE_TS_OR_DS_EXPRESSIONS
 from sqlglot.transforms import (
     preprocess,
@@ -239,6 +240,7 @@ class Spark2Generator(HiveGenerator):
 
         return f"USING {expression.name.upper()}"
 
+    @unsupported_args("exists")
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         this = self.sql(expression, "this")
         new_name = self.sql(expression, "rename_to") or this

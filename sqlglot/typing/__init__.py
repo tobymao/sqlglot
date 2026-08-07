@@ -52,6 +52,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
     **{
         expr_type: {"returns": exp.DType.BOOLEAN}
         for expr_type in {
+            exp.Adjacent,
             exp.All,
             exp.Any,
             exp.ArrayContainedBy,
@@ -63,6 +64,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Contains,
             exp.EndsWith,
             exp.Exists,
+            exp.ExtendsLeft,
+            exp.ExtendsRight,
             exp.In,
             exp.IsInf,
             exp.IsNan,
@@ -71,6 +74,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.JSONBContainsAnyTopKeys,
             exp.LogicalAnd,
             exp.LogicalOr,
+            exp.Overlaps,
             exp.RegexpFullMatch,
             exp.RegexpILike,
             exp.RegexpLike,

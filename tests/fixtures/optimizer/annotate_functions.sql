@@ -7341,6 +7341,22 @@ BOOLEAN;
 tbl.obj_col ?| tbl.array_col;
 BOOLEAN;
 
+# dialect: postgres
+INT4RANGE(1, 2) -|- INT4RANGE(2, 3);
+BOOLEAN;
+
+# dialect: postgres
+INT4RANGE(1, 2) &< INT4RANGE(2, 3);
+BOOLEAN;
+
+# dialect: postgres
+INT4RANGE(1, 2) &> INT4RANGE(2, 3);
+BOOLEAN;
+
+# dialect: postgres
+(tbl.date_col, tbl.date_col) OVERLAPS (tbl.date_col, tbl.date_col);
+BOOLEAN;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

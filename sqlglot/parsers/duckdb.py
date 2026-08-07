@@ -85,6 +85,17 @@ class DuckDBParser(parser.Parser):
 
     BITWISE = {k: v for k, v in parser.Parser.BITWISE.items() if k != TokenType.CARET}
 
+    COLUMN_OPERATORS = {
+        k: v
+        for k, v in parser.Parser.COLUMN_OPERATORS.items()
+        if k not in (TokenType.ARROW, TokenType.DARROW)
+    }
+
+    JSON_OPERATORS = {
+        TokenType.ARROW: parser.build_json_extract,
+        TokenType.DARROW: parser.build_json_extract_scalar,
+    }
+
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),

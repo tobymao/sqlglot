@@ -289,6 +289,46 @@ def _unpivot_target(expr: exp.Expr) -> exp.Expr:
     return expr
 
 
+# Builders for the JSON `->` / `->>` / `#>` / `#>>` / `?` operators, shared between
+# COLUMN_OPERATORS (accessor-tier dialects) and JSON_OPERATORS (Postgres/DuckDB's
+# binary-operator tier).
+def build_json_extract(self: Parser, this: exp.Expr, path: exp.Expr) -> exp.JSONExtract:
+    return self.expression(
+        exp.JSONExtract(
+            this=this,
+            expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+        )
+    )
+
+
+def build_json_extract_scalar(
+    self: Parser, this: exp.Expr, path: exp.Expr
+) -> exp.JSONExtractScalar:
+    return self.expression(
+        exp.JSONExtractScalar(
+            this=this,
+            expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+            scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
+        )
+    )
+
+
+def build_jsonb_extract(self: Parser, this: exp.Expr, path: exp.Expr) -> exp.JSONBExtract:
+    return self.expression(exp.JSONBExtract(this=this, expression=path))
+
+
+def build_jsonb_extract_scalar(
+    self: Parser, this: exp.Expr, path: exp.Expr
+) -> exp.JSONBExtractScalar:
+    return self.expression(exp.JSONBExtractScalar(this=this, expression=path))
+
+
+def build_jsonb_contains(self: Parser, this: exp.Expr, key: exp.Expr) -> exp.JSONBContains:
+    return self.expression(exp.JSONBContains(this=this, expression=key))
+
+
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
@@ -1065,6 +1105,10 @@ class Parser:
             exp.JSONBContains(this=this, expression=key)
         ),
     }
+
+    # JSON/JSONB operators (extraction and containment) at Postgres's "any other operator"
+    # tier, below +/-, level with ||. Same value signature as COLUMN_OPERATORS: (self, this, rhs).
+    JSON_OPERATORS: t.ClassVar[dict[TokenType, t.Callable]] = {}
 
     CAST_COLUMN_OPERATORS: t.ClassVar = {
         TokenType.DOTCOLON,
@@ -6258,6 +6302,8 @@ class Parser:
                 this = self.expression(
                     exp.BitwiseRightShift(this=this, expression=self._parse_term())
                 )
+            elif self.JSON_OPERATORS and self._match_set(self.JSON_OPERATORS):
+                this = self.JSON_OPERATORS[self._prev.token_type](self, this, self._parse_term())
             else:
                 break
 

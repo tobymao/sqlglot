@@ -39,7 +39,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 
 
 DATE_DIFF_FACTOR = {
@@ -185,8 +185,10 @@ def _json_extract_sql(
 ) -> t.Callable[[PostgresGenerator, JSON_EXTRACT_TYPE], str]:
     def _generate(self: PostgresGenerator, expression: JSON_EXTRACT_TYPE) -> str:
         path = expression.expression
-        # A single non-literal path segment (cast, arithmetic, etc.) is already a right-hand operand
-        if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not expression.expressions:
+        # Single non-literal segment: render as infix, not JSON_EXTRACT_PATH[_TEXT] (jsonb-unsafe).
+        if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not ensure_list(
+            expression.args.get("expressions")
+        ):
             return self.binary(expression, op)
 
         if expression.args.get("only_json_types"):

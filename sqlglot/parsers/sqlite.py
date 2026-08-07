@@ -3,8 +3,12 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.dialects.dialect import Dialect
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import BuilderArgs
 
 
 def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
@@ -13,6 +17,13 @@ def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 2:
         return exp.TimeToStr(this=exp.TsOrDsToTimestamp(this=args[1]), format=args[0])
     return exp.Anonymous(this="STRFTIME", expressions=args)
+
+
+def _build_json_extract(args: BuilderArgs, dialect: Dialect) -> exp.Expr:
+    # A single path yields an SQL value, like ->>, whereas multiple paths yield a
+    # JSON array, like -> does: https://www.sqlite.org/json1.html#jex
+    expr_type = exp.JSONExtractScalar if len(args) == 2 else exp.JSONExtract
+    return parser.build_extract_json_with_path(expr_type)(args, dialect)
 
 
 class SQLiteParser(parser.Parser):
@@ -30,6 +41,7 @@ class SQLiteParser(parser.Parser):
         **parser.Parser.FUNCTIONS,
         "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
         "EDITDIST3": exp.Levenshtein.from_arg_list,
+        "JSON_EXTRACT": _build_json_extract,
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "STRFTIME": _build_strftime,

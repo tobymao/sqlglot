@@ -4560,6 +4560,10 @@ RPAD(tbl.str_col, 5);
 STRING;
 
 # dialect: databricks
+TO_CHAR(tbl.str_col);
+STRING;
+
+# dialect: databricks
 RPAD(tbl.bin_col, 5);
 BINARY;
 

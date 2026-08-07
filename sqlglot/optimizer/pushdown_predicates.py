@@ -245,22 +245,43 @@ def nodes_for_predicate(
                 nodes[table] = node
 
         if isinstance(node, exp.Select) and len(tables) == 1:
-            # We can't push down window expressions
-            has_window_expression = any(
+            window_expressions = [
                 select for select in node.selects if find_in_scope(select, exp.Window)
-            )
+            ]
+
             # we can't push down predicates to select statements if they are referenced in
             # multiple places.
             if (
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
-                and not has_window_expression
                 # LIMIT/OFFSET and QUALIFY select rows before the outer predicate runs
                 and not node.args.get("limit")
                 and not node.args.get("offset")
                 and not node.args.get("qualify")
             ):
-                nodes[table] = node
+                can_pushdown = True
+                if window_expressions:
+                    inner_predicate = replace_aliases(node, predicate)
+                    predicate_cols = {c.name for c in inner_predicate.find_all(exp.Column)}
+
+                    for select in window_expressions:
+                        for window in select.find_all(exp.Window):
+                            partition_by = window.args.get("partition_by")
+                            if not partition_by:
+                                can_pushdown = False
+                                break
+
+                            partition_cols = {
+                                c.name for part in partition_by for c in part.find_all(exp.Column)
+                            }
+                            if not predicate_cols.issubset(partition_cols):
+                                can_pushdown = False
+                                break
+                        if not can_pushdown:
+                            break
+
+                if can_pushdown:
+                    nodes[table] = node
     return nodes
 
 

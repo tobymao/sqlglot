@@ -111,3 +111,23 @@ SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3
 -- A FULL JOIN preserves both sides, so a WHERE predicate on either of them can't be pushed down
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
+
+-- Pushdown predicate through window functions when filtering strictly on partition columns
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.a = 1;
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x WHERE x.a = 1) SELECT t1.a, t1.b FROM t1 WHERE TRUE;
+
+-- Predicate cannot be pushed down because it filters on a non-partition column
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.b = 1;
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.b = 1;
+
+-- Multiple window functions: predicate must be in ALL partition keys
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS rn1, RANK() OVER (PARTITION BY x.a, x.b) AS rn2 FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.a = 1;
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS rn1, RANK() OVER (PARTITION BY x.a, x.b) AS rn2 FROM x WHERE x.a = 1) SELECT t1.a, t1.b FROM t1 WHERE TRUE;
+
+-- Multiple window functions: predicate not in ALL partition keys (rn1 only partitions by x.a)
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS rn1, RANK() OVER (PARTITION BY x.a, x.b) AS rn2 FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.b = 1;
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.b) AS rn1, RANK() OVER (PARTITION BY x.a, x.b) AS rn2 FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.b = 1;
+
+-- Window function without PARTITION BY (blocks all pushdown)
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (ORDER BY x.a) AS row_num FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.a = 1;
+WITH t1 AS (SELECT x.a, x.b, ROW_NUMBER() OVER (ORDER BY x.a) AS row_num FROM x) SELECT t1.a, t1.b FROM t1 WHERE t1.a = 1;

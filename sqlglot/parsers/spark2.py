@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import HiveParser
 from sqlglot.parser import build_trim
+from sqlglot.tokens import TokenType
 
 
 def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
@@ -21,6 +22,8 @@ class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
     PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
+
+    FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR}
 
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
@@ -80,11 +83,13 @@ class Spark2Parser(HiveParser):
 
     FUNCTION_PARSERS = {
         **HiveParser.FUNCTION_PARSERS,
+        "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
         "APPROX_PERCENTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
         "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
         "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
         "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
         "MERGE": lambda self: self._parse_join_hint("MERGE"),
+        "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
         "SHUFFLEMERGE": lambda self: self._parse_join_hint("SHUFFLEMERGE"),
         "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
         "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
@@ -97,6 +102,13 @@ class Spark2Parser(HiveParser):
             if self._match_text_seq("DROP", "COLUMNS")
             else None
         )
+
+    def _parse_interval_span(
+        self, this: exp.Expr, parse_function_unit: bool = True
+    ) -> exp.Interval:
+        if self._curr and self._curr.token_type in (TokenType.AND, TokenType.OR):
+            parse_function_unit = False
+        return super()._parse_interval_span(this, parse_function_unit=parse_function_unit)
 
     def _pivot_column_names(self, aggregations: list[exp.Expr]) -> list[str]:
         if len(aggregations) == 1:

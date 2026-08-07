@@ -7289,6 +7289,58 @@ BIGINT;
 EXTRACT('month' FROM tbl.timestamp_col);
 BIGINT;
 
+# dialect: duckdb
+REGEXP_FULL_MATCH(tbl.str_col, 'a');
+BOOLEAN;
+
+# dialect: duckdb
+tbl.str_col ~ 'a';
+BOOLEAN;
+
+# dialect: duckdb
+LIST_HAS_ANY(tbl.array_col, tbl.array_col);
+BOOLEAN;
+
+# dialect: duckdb
+tbl.array_col && tbl.array_col;
+BOOLEAN;
+
+--------------------------------------
+-- Postgres
+--------------------------------------
+
+# dialect: postgres
+tbl.str_col ~ 'a';
+BOOLEAN;
+
+# dialect: postgres
+tbl.str_col ~* 'a';
+BOOLEAN;
+
+# dialect: postgres
+tbl.array_col @> tbl.array_col;
+BOOLEAN;
+
+# dialect: postgres
+tbl.array_col <@ tbl.array_col;
+BOOLEAN;
+
+# dialect: postgres
+tbl.array_col && tbl.array_col;
+BOOLEAN;
+
+# dialect: postgres
+tbl.obj_col ? 'a';
+BOOLEAN;
+
+# dialect: postgres
+tbl.obj_col ?& tbl.array_col;
+BOOLEAN;
+
+# dialect: postgres
+tbl.obj_col ?| tbl.array_col;
+BOOLEAN;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

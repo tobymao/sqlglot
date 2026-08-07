@@ -58,6 +58,8 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT a -> '$.k' FROM t")
         self.validate_identity("SELECT a ->> '$.k' FROM t")
         self.validate_identity("SELECT JSON_SET('{}', '$.x', JSON_EXTRACT(a, '$.k'))")
+        self.validate_identity("SELECT JSON_EXTRACT(a, '$') FROM t")
+        self.validate_identity("SELECT JSON_EXTRACT(a, b) FROM t")
         fn = (
             self.parse_one("SELECT JSON_EXTRACT(a, '$.k') FROM t")
             .selects[0]
@@ -71,6 +73,14 @@ class TestSQLite(Validator):
             write={
                 "postgres": "SELECT JSON_EXTRACT_PATH_TEXT(a, 'k') FROM t",
                 "mysql": "SELECT a ->> '$.k' FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+            write={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
+                "mysql": "SELECT CAST('[10, 20, [30, 40]]' AS JSON) ->> '$[1]'",
+                "duckdb": "SELECT '[10, 20, [30, 40]]' ->> '$[1]'",
             },
         )
         self.validate_identity(

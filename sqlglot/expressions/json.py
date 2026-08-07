@@ -46,15 +46,15 @@ class JSONArrayInsert(Expression, Func):
     _sql_names = ["JSON_ARRAY_INSERT"]
 
 
-class JSONBContains(Expression, Binary, Func):
+class JSONBContains(Expression, Binary, Predicate, Func):
     _sql_names = ["JSONB_CONTAINS"]
 
 
-class JSONBContainsAllTopKeys(Expression, Binary, Func):
+class JSONBContainsAllTopKeys(Expression, Binary, Predicate, Func):
     pass
 
 
-class JSONBContainsAnyTopKeys(Expression, Binary, Func):
+class JSONBContainsAnyTopKeys(Expression, Binary, Predicate, Func):
     pass
 
 

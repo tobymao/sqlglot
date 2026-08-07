@@ -32,7 +32,7 @@ EXPRESSION_METADATA = {
             exp.RegexpSubstr,
             exp.Secret,
             exp.Trim,
-            exp.ToChar,  # <-- Only new addition
+            exp.ToChar,
         }
     },
     exp.RegrCount: {"returns": exp.DType.BIGINT},

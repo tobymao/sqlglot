@@ -184,6 +184,11 @@ def _json_extract_sql(
     name: str, op: str
 ) -> t.Callable[[PostgresGenerator, JSON_EXTRACT_TYPE], str]:
     def _generate(self: PostgresGenerator, expression: JSON_EXTRACT_TYPE) -> str:
+        path = expression.expression
+        # A single non-literal path segment (cast, arithmetic, etc.) is already a right-hand operand
+        if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not expression.expressions:
+            return self.binary(expression, op)
+
         if expression.args.get("only_json_types"):
             return json_extract_segments(name, quoted_index=False, op=op)(self, expression)
         return json_extract_segments(name)(self, expression)

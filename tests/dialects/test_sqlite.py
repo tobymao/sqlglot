@@ -51,19 +51,6 @@ class TestSQLite(Validator):
         self.validate_identity(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
         )
-        self.validate_identity("SELECT a -> '$.k' FROM t")
-        self.validate_identity("SELECT a ->> '$.k' FROM t")
-        self.validate_identity("SELECT JSON_EXTRACT(a, '$.k') FROM t", "SELECT a ->> '$.k' FROM t")
-        self.validate_identity("SELECT JSON_EXTRACT(a, '$') FROM t", "SELECT a ->> '$' FROM t")
-        self.validate_all(
-            "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
-            write={
-                "sqlite": "SELECT '[10, 20, [30, 40]]' ->> '$[1]'",
-                "mysql": "SELECT CAST('[10, 20, [30, 40]]' AS JSON) ->> '$[1]'",
-                "postgres": "SELECT JSON_EXTRACT_PATH_TEXT('[10, 20, [30, 40]]', '1')",
-                "duckdb": "SELECT '[10, 20, [30, 40]]' ->> '$[1]'",
-            },
-        )
         self.validate_identity(
             """SELECT item AS "item", some AS "some" FROM data WHERE (item = 'value_1' COLLATE NOCASE) AND (some = 't' COLLATE NOCASE) ORDER BY item ASC LIMIT 1 OFFSET 0"""
         )

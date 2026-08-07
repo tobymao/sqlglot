@@ -537,6 +537,9 @@ class HiveGenerator(generator.Generator):
         )
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+        if expression.args.get("exists"):
+            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
+
         this = self.sql(expression, "this")
         new_name = self.sql(expression, "rename_to") or this
         dtype = self.sql(expression, "dtype")

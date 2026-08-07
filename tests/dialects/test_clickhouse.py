@@ -653,13 +653,32 @@ class TestClickhouse(Validator):
         self.validate_identity("DELETE FROM tbl ON CLUSTER '{cluster}' WHERE date = '2019-01-01'")
 
         # ClickHouse changes a column's type with ALTER COLUMN ... TYPE, not the
-        # ANSI ALTER COLUMN ... SET DATA TYPE
+        # ANSI ALTER COLUMN ... SET DATA TYPE. MODIFY COLUMN is accepted on read and
+        # canonicalized to ALTER COLUMN ... TYPE on write.
         self.validate_all(
             "ALTER TABLE t ALTER COLUMN c TYPE Nullable(Int64)",
             read={
                 "clickhouse": "ALTER TABLE t ALTER COLUMN c TYPE Nullable(Int64)",
                 "postgres": "ALTER TABLE t ALTER COLUMN c TYPE BIGINT",
             },
+        )
+        modify = self.validate_identity(
+            "ALTER TABLE t MODIFY COLUMN c Int64",
+            "ALTER TABLE t ALTER COLUMN c TYPE Int64",
+        ).assert_is(exp.Alter)
+        self.assertIsInstance(modify.args["actions"][0], exp.AlterColumn)
+        self.validate_identity(
+            "ALTER TABLE t MODIFY COLUMN IF EXISTS c Int64",
+            "ALTER TABLE t ALTER COLUMN IF EXISTS c TYPE Int64",
+        )
+        self.validate_identity("ALTER TABLE t ALTER COLUMN IF EXISTS c TYPE Int64")
+        self.assertIsInstance(
+            parse_one(
+                "ALTER TABLE t MODIFY COLUMN c REMOVE DEFAULT",
+                read="clickhouse",
+                error_level=ErrorLevel.IGNORE,
+            ),
+            exp.Command,
         )
 
         self.assertIsInstance(

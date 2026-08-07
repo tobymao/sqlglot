@@ -8990,23 +8990,38 @@ class Parser:
         # Many dialects support the ALTER [COLUMN] syntax, so if there is no
         # keyword after ALTER we default to parsing this statement
         self._match(TokenType.COLUMN)
+        exists = self._parse_exists()
         column = self._parse_field(any_token=True)
 
         if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
-            return self.expression(exp.AlterColumn(this=column, drop=True))
+            return self.expression(exp.AlterColumn(this=column, drop=True, exists=exists or None))
         if self._match_pair(TokenType.SET, TokenType.DEFAULT):
-            return self.expression(exp.AlterColumn(this=column, default=self._parse_disjunction()))
+            return self.expression(
+                exp.AlterColumn(
+                    this=column, default=self._parse_disjunction(), exists=exists or None
+                )
+            )
         if self._match(TokenType.COMMENT):
-            return self.expression(exp.AlterColumn(this=column, comment=self._parse_string()))
+            return self.expression(
+                exp.AlterColumn(this=column, comment=self._parse_string(), exists=exists or None)
+            )
         if self._match_text_seq("DROP", "NOT", "NULL"):
-            return self.expression(exp.AlterColumn(this=column, drop=True, allow_null=True))
+            return self.expression(
+                exp.AlterColumn(this=column, drop=True, allow_null=True, exists=exists or None)
+            )
         if self._match_text_seq("SET", "NOT", "NULL"):
-            return self.expression(exp.AlterColumn(this=column, allow_null=False))
+            return self.expression(
+                exp.AlterColumn(this=column, allow_null=False, exists=exists or None)
+            )
 
         if self._match_text_seq("SET", "VISIBLE"):
-            return self.expression(exp.AlterColumn(this=column, visible="VISIBLE"))
+            return self.expression(
+                exp.AlterColumn(this=column, visible="VISIBLE", exists=exists or None)
+            )
         if self._match_text_seq("SET", "INVISIBLE"):
-            return self.expression(exp.AlterColumn(this=column, visible="INVISIBLE"))
+            return self.expression(
+                exp.AlterColumn(this=column, visible="INVISIBLE", exists=exists or None)
+            )
 
         self._match_text_seq("SET", "DATA")
         self._match_text_seq("TYPE")
@@ -9016,6 +9031,7 @@ class Parser:
                 dtype=self._parse_types(),
                 collate=self._match(TokenType.COLLATE) and self._parse_term(),
                 using=self._match(TokenType.USING) and self._parse_disjunction(),
+                exists=exists or None,
             )
         )
 

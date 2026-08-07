@@ -1000,9 +1000,6 @@ class TestMySQL(Validator):
         )
         self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
-            read={
-                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
-            },
             write={
                 "mysql": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[1]')",
                 "sqlite": "SELECT '[10, 20, [30, 40]]' -> '$[1]'",

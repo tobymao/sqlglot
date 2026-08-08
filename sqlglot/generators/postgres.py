@@ -38,6 +38,7 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     ts_or_ds_add_cast,
 )
+from sqlglot.errors import UnsupportedError
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 
@@ -220,6 +221,60 @@ def _versioned_anyvalue_sql(self: PostgresGenerator, expression: exp.AnyValue) -
     return rename_func("ANY_VALUE")(self, expression)
 
 
+def _postgres_merge_sql(self: PostgresGenerator, expression: exp.Merge) -> str:
+    """Translate Oracle action predicates to PostgreSQL WHEN conditions."""
+    whens = expression.args["whens"].expressions
+    categories = {
+        category: sum(
+            1
+            for when in whens
+            if (
+                bool(when.args["matched"]),
+                bool(when.args.get("source")),
+            )
+            == category
+        )
+        for category in {
+            (bool(when.args["matched"]), bool(when.args.get("source"))) for when in whens
+        }
+    }
+
+    for when in whens:
+        then = when.args.get("then")
+        where = then.args.get("where") if isinstance(then, (exp.Insert, exp.Update)) else None
+        if not where:
+            continue
+
+        category = (bool(when.args["matched"]), bool(when.args.get("source")))
+        if (
+            category not in {(True, False), (False, False)}
+            or not isinstance(then, (exp.Insert, exp.Update))
+            or categories[category] > 1
+        ):
+            raise UnsupportedError(
+                "PostgreSQL cannot safely translate a MERGE action WHERE clause "
+                "for multiple or unsupported WHEN clauses"
+            )
+
+    for when in whens:
+        then = when.args.get("then")
+        if not isinstance(then, (exp.Insert, exp.Update)):
+            continue
+
+        where = then.args.get("where")
+        if not where:
+            continue
+
+        condition = when.args.get("condition")
+        when.set(
+            "condition",
+            exp.and_(condition, where.this, copy=False) if condition else where.this,
+        )
+        then.set("where", None)
+
+    return merge_without_target_sql(self, expression)
+
+
 def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
     this = self.sql(expression, "this")
     decimals = self.sql(expression, "decimals")
@@ -353,7 +408,7 @@ class PostgresGenerator(generator.Generator):
         exp.Max: max_or_greatest,
         exp.MapFromEntries: no_map_from_entries_sql,
         exp.Min: min_or_least,
-        exp.Merge: merge_without_target_sql,
+        exp.Merge: _postgres_merge_sql,
         exp.Month: _day_month_year_sql,
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.PercentileCont: transforms.preprocess([transforms.add_within_group_for_percentiles]),

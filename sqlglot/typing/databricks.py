@@ -32,8 +32,12 @@ EXPRESSION_METADATA = {
             exp.RegexpSubstr,
             exp.Secret,
             exp.Trim,
+            exp.ToChar,  
         }
     },
+    exp.BitwiseAndAgg: {
+    "annotator": lambda self, e: self._set_type(e, e.this.type),
+},
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
     exp.RegexpExtractAll: {

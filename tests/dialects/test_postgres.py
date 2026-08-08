@@ -1,4 +1,4 @@
-from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -422,6 +422,57 @@ class TestPostgres(Validator):
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET x.a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
             "MERGE INTO x USING (SELECT id) AS y ON a = b WHEN MATCHED THEN UPDATE SET a = y.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (y.a, y.b)",
         )
+
+    def test_merge_action_where(self):
+        expression = parse_one(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED THEN UPDATE SET target.value = source.value "
+            "WHERE target.active = 1 "
+            "WHEN NOT MATCHED THEN INSERT (target.id, target.value) "
+            "VALUES (source.id, source.value) WHERE source.enabled = 1",
+            read="oracle",
+        )
+        self.assertEqual(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED AND target.active = 1 THEN UPDATE SET value = source.value "
+            "WHEN NOT MATCHED AND source.enabled = 1 THEN INSERT (id, value) "
+            "VALUES (source.id, source.value)",
+            expression.sql("postgres", unsupported_level=ErrorLevel.RAISE),
+        )
+
+        expression = parse_one(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED AND target.active = 1 OR source.force = 1 "
+            "THEN UPDATE SET target.value = source.value WHERE target.enabled = 1",
+            read="oracle",
+        )
+        self.assertEqual(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED AND (target.active = 1 OR source.force = 1) "
+            "AND target.enabled = 1 THEN UPDATE SET value = source.value",
+            expression.sql("postgres", unsupported_level=ErrorLevel.RAISE),
+        )
+
+    def test_merge_action_where_rejects_unsafe_translation(self):
+        repeated_category = parse_one(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED THEN UPDATE SET value = source.value WHERE target.active = 1 "
+            "WHEN MATCHED THEN DELETE",
+            read="oracle",
+        )
+        for unsupported_level in (None, ErrorLevel.IGNORE):
+            kwargs = {} if unsupported_level is None else {"unsupported_level": unsupported_level}
+            with self.assertRaisesRegex(UnsupportedError, "multiple or unsupported"):
+                repeated_category.sql("postgres", **kwargs)
+
+        unsupported_category = parse_one(
+            "MERGE INTO target USING source ON target.id = source.id "
+            "WHEN MATCHED BY SOURCE THEN UPDATE SET value = source.value "
+            "WHERE source.active = 1",
+            read="oracle",
+        )
+        with self.assertRaisesRegex(UnsupportedError, "multiple or unsupported"):
+            unsupported_category.sql("postgres")
         self.validate_identity(
             "SELECT * FROM t1*",
             "SELECT * FROM t1",

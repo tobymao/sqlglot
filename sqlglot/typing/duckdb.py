@@ -44,6 +44,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DType.VARCHAR}
         for expr_type in {
+            exp.CurrentRole,
             exp.Format,
             exp.Reverse,
             exp.Decode,

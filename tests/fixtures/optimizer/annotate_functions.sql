@@ -4329,6 +4329,14 @@ BIGINT;
 REGR_COUNT(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
 BIGINT;
 
+# dialect: databricks
+BIT_AND(tbl.int_col);
+iNT;
+
+# dialect: databricks
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
 # dialect: snowflake
 REGR_INTERCEPT(tbl.double_col, tbl.double_col);
 DOUBLE;

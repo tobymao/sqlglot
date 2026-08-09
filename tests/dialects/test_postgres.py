@@ -1509,6 +1509,19 @@ FROM json_data, field_ids""",
                 read="postgres",
             )
 
+    def test_called_on_null_input_malformed(self):
+        # Regression test for a zero-progress parse loop: a malformed property suffix used to
+        # retreat the cursor back onto the property keyword, making the function-property loop
+        # re-match it forever. It now terminates with a ParseError instead of hanging or
+        # silently re-parsing the leftover keyword as the function body.
+        for sql in (
+            "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL CALLED XYZ AS 'SELECT 1'",
+            "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL PARTITION XYZ AS 'SELECT 1'",
+            "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL COPY XYZ AS 'SELECT 1'",
+        ):
+            with self.assertRaises(ParseError):
+                self.parse_one(sql)
+
     def test_unnest(self):
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"

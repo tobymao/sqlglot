@@ -4,6 +4,7 @@ import logging
 import re
 import typing as t
 from collections import defaultdict
+from decimal import Decimal
 from functools import reduce, wraps
 
 from sqlglot import exp
@@ -1705,11 +1706,12 @@ class Generator:
                 continue
 
             param_value = param.this if isinstance(param, exp.DataTypeParam) else param
-            if (
-                isinstance(param_value, exp.Literal)
-                and param_value.is_number
-                and int(param_value.to_py()) > bound
-            ):
+            value = (
+                param_value.to_py()
+                if isinstance(param_value, exp.Literal) and param_value.is_number
+                else None
+            )
+            if isinstance(value, (int, Decimal)) and value > bound:
                 self.unsupported(
                     f"{type_value.value} parameter {param_value.name} exceeds "
                     f"{self.dialect.__class__.__name__}'s maximum of {bound}; capping"

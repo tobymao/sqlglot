@@ -4202,6 +4202,15 @@ OPTIONS (
                     },
                 )
 
+                # Exponent notation must not materialize a huge integer when checking bounds
+                self.validate_all(
+                    f"DECLARE x {type_}(1e1000000, 4)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(1e1000000, 4)",
+                        "duckdb": "DECLARE x DECIMAL(38, 4)",
+                    },
+                )
+
                 self.validate_all(
                     f"SELECT CAST(1 AS {type_})",
                     write={

@@ -1607,6 +1607,9 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "SELECT u&'\\0441\\043B\\043E\\043D'", "SELECT U&'\\0441\\043B\\043E\\043D'"
         )
+        # Apostrophes decoded from U&'...' must be re-escaped on generation (#8110)
+        self.validate_identity("SELECT U&'can''t'")
+        self.validate_identity("SELECT U&'a''b''c'")
 
         self.validate_all(
             "SELECT U&'Hello winter \\2603 !'",

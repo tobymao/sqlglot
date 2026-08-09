@@ -1664,6 +1664,8 @@ class Generator:
         if not self.dialect.UNICODE_START or (escape and not self.SUPPORTS_UESCAPE):
             this = escape_pattern.sub(self.UNICODE_SUBSTITUTE or escape_substitute, this)
 
+        this = self.escape_str(this, escape_backslash=False, delimiter=right_quote)
+
         return f"{left_quote}{this}{right_quote}{escape_sql}"
 
     def rawstring_sql(self, expression: exp.RawString) -> str:

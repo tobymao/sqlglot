@@ -372,6 +372,9 @@ class TestSQLite(Validator):
         # https://www.sqlite.org/gencol.html
         self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)")
         self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))")
+        # Typeless computed columns must keep STORED/VIRTUAL (not parse them as types).
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2))")
         self.validate_identity(
             "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2) STORED)",
             "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)",
@@ -384,10 +387,10 @@ class TestSQLite(Validator):
             "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2))",
             "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
         )
-        # True identity still maps to AUTOINCREMENT.
+        # True identity maps to AUTOINCREMENT; SQLite requires PRIMARY KEY.
         self.validate_identity(
-            "CREATE TABLE t (a INTEGER GENERATED ALWAYS AS IDENTITY)",
-            "CREATE TABLE t (a INTEGER AUTOINCREMENT)",
+            "CREATE TABLE t (a INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY)",
+            "CREATE TABLE t (a INTEGER PRIMARY KEY AUTOINCREMENT)",
         )
         self.validate_all(
             "CREATE TABLE t (a INTEGER, b AS (a * 2) STORED NOT NULL)",

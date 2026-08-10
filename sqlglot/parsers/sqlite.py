@@ -189,16 +189,16 @@ class SQLiteParser(parser.Parser):
     ):
         this = super()._parse_generated_as_identity()
 
-        matched_storage = self._match_texts(("STORED", "VIRTUAL"))
-        persisted = bool(matched_storage and self._prev.text.upper() == "STORED")
-
+        # Only expression-bearing GENERATED ALWAYS AS (expr) forms are computed
+        # columns. Match STORED/VIRTUAL inside this branch so true identity
+        # (AS IDENTITY) does not silently consume a trailing storage keyword.
         if (
             isinstance(this, exp.GeneratedAsIdentityColumnConstraint)
             and this.expression is not None
         ):
-            # GENERATED ALWAYS AS (expr) [STORED|VIRTUAL] is a computed column.
-            # Without this, the expression-bearing identity form is rewritten to
-            # AUTOINCREMENT by the SQLite generator.
+            persisted = (
+                self._match_texts(("STORED", "VIRTUAL")) and self._prev.text.upper() == "STORED"
+            )
             return self.expression(
                 exp.ComputedColumnConstraint(this=this.expression, persisted=persisted)
             )

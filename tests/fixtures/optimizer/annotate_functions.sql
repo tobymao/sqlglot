@@ -7025,6 +7025,18 @@ VARCHAR;
 CURRENT_ROLE();
 LONGTEXT;
 
+# dialect: mysql
+LEAD(tbl.int_col) OVER (ORDER BY tbl.int_col);
+INT;
+
+# dialect: mysql
+LEAD(tbl.double_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
+LEAD(tbl.bin_col) OVER (ORDER BY tbl.int_col);
+BINARY;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

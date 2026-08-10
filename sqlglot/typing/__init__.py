@@ -237,6 +237,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ConcatWs,
             exp.Chr,
             exp.CurrentCatalog,
+            exp.CurrentRole,
             exp.CurrentSchema,
             exp.CurrentVersion,
             exp.CurrentUser,

@@ -509,7 +509,6 @@ EXPRESSION_METADATA = {
             exp.CurrentWarehouse,
             exp.CurrentOrganizationUser,
             exp.CurrentRegion,
-            exp.CurrentRole,
             exp.CurrentRoleType,
             exp.CurrentOrganizationName,
             exp.DecompressString,

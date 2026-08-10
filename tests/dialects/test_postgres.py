@@ -212,7 +212,7 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "x::JSON -> 'duration' ->> -1",
-            "JSON_EXTRACT_PATH_TEXT(CAST(x AS JSON) -> 'duration', -1)",
+            "CAST(x AS JSON) -> 'duration' ->> -1",
         ).assert_is(exp.JSONExtractScalar).this.assert_is(exp.JSONExtract)
         self.validate_identity(
             "SELECT SUBSTRING('Thomas' FOR 3 FROM 2)",
@@ -452,7 +452,7 @@ class TestPostgres(Validator):
     'field_id' AS field_id
 )
 SELECT
-  JSON_ARRAY_ELEMENTS(JSON_EXTRACT_PATH(json_data.data, field_ids.field_id)) AS element
+  JSON_ARRAY_ELEMENTS(json_data.data -> field_ids.field_id) AS element
 FROM json_data, field_ids""",
             pretty=True,
         )

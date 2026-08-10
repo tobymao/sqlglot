@@ -4213,13 +4213,13 @@ class Generator:
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         this = self.sql(expression, "this")
-        if expression.args.get("exists") and not self.SUPPORTS_ALTER_COLUMN_IF_EXISTS:
-            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
-        exists = (
-            " IF EXISTS"
-            if expression.args.get("exists") and self.SUPPORTS_ALTER_COLUMN_IF_EXISTS
-            else ""
-        )
+
+        exists = ""
+        if expression.args.get("exists"):
+            if self.SUPPORTS_ALTER_COLUMN_IF_EXISTS:
+                exists = " IF EXISTS"
+            else:
+                self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
 
         dtype = self.sql(expression, "dtype")
         if dtype:

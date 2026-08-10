@@ -909,14 +909,14 @@ class ClickHouseParser(parser.Parser):
         )
 
     def _parse_alter_table_alter(self) -> exp.Expr | None:
-        # Gate SQL SECURITY to MODIFY, since ALTER can now reach this path too
-        if self._prev.text.upper() == "MODIFY" and self._match(
-            TokenType.SQL_SECURITY, advance=False
-        ):
+        # MODIFY forms other than MODIFY COLUMN (SQL SECURITY, ORDER BY, TTL, COMMENT, ...)
+        # are parsed as properties, since ALTER can now reach this path too
+        if self._prev.text.upper() == "MODIFY" and not self._match(TokenType.COLUMN, advance=False):
             if properties := self._parse_properties():
                 return self.expression(
                     exp.AlterModifySqlSecurity(expressions=properties.expressions)
                 )
+            return None
 
         # https://clickhouse.com/docs/sql-reference/statements/alter/column#modify-column
         alter = super()._parse_alter_table_alter()

@@ -681,6 +681,15 @@ class TestClickhouse(Validator):
             exp.Command,
         )
 
+        # Non-column MODIFY forms must not be routed to the ALTER COLUMN parser
+        modify_order = parse_one("ALTER TABLE t MODIFY ORDER BY (a, b)", read="clickhouse")
+        self.assertIsInstance(modify_order.args["actions"][0], exp.AlterModifySqlSecurity)
+        self.validate_identity(
+            "ALTER TABLE t MODIFY TTL d + INTERVAL 1 DAY",
+            "ALTER TABLE t MODIFY TTL d + INTERVAL '1' DAY",
+        )
+        self.validate_identity("ALTER TABLE t MODIFY COMMENT 'hi'")
+
         self.assertIsInstance(
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )

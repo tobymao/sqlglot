@@ -178,3 +178,29 @@ class SQLiteParser(parser.Parser):
             if is_attach
             else self.expression(exp.Detach(this=this))
         )
+
+    # https://www.sqlite.org/gencol.html
+    def _parse_generated_as_identity(
+        self,
+    ) -> (
+        exp.GeneratedAsIdentityColumnConstraint
+        | exp.ComputedColumnConstraint
+        | exp.GeneratedAsRowColumnConstraint
+    ):
+        this = super()._parse_generated_as_identity()
+
+        matched_storage = self._match_texts(("STORED", "VIRTUAL"))
+        persisted = bool(matched_storage and self._prev.text.upper() == "STORED")
+
+        if (
+            isinstance(this, exp.GeneratedAsIdentityColumnConstraint)
+            and this.expression is not None
+        ):
+            # GENERATED ALWAYS AS (expr) [STORED|VIRTUAL] is a computed column.
+            # Without this, the expression-bearing identity form is rewritten to
+            # AUTOINCREMENT by the SQLite generator.
+            return self.expression(
+                exp.ComputedColumnConstraint(this=this.expression, persisted=persisted)
+            )
+
+        return this

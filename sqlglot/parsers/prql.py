@@ -29,7 +29,7 @@ class PRQLParser(parser.Parser):
         TokenType.DPIPE: exp.Or,
     }
 
-    TRANSFORM_PARSERS = {
+    TRANSFORM_PARSERS: t.ClassVar = {
         "DERIVE": lambda self, query: self._parse_selection(query),
         "SELECT": lambda self, query: self._parse_selection(query, append=False),
         "TAKE": lambda self, query: self._parse_take(query),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import typing as t
 from functools import partial
 
 from sqlglot import exp, generator, transforms
@@ -401,9 +402,9 @@ class HiveGenerator(generator.Generator):
         exp.WithDataProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
-    TS_OR_DS_EXPRESSIONS = HIVE_TS_OR_DS_EXPRESSIONS
+    TS_OR_DS_EXPRESSIONS: t.ClassVar = HIVE_TS_OR_DS_EXPRESSIONS
 
-    IGNORE_NULLS_FUNCS = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
+    IGNORE_NULLS_FUNCS: t.ClassVar = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
 
     def format_time(
         self,

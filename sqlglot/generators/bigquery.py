@@ -292,7 +292,7 @@ class BigQueryGenerator(generator.Generator):
         exp.RowNumber,
     )
 
-    TS_OR_DS_TYPES = (
+    TS_OR_DS_TYPES: t.ClassVar = (
         exp.TsOrDsToDatetime,
         exp.TsOrDsToTimestamp,
         exp.TsOrDsToTime,

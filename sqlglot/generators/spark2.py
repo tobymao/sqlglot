@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -121,7 +122,7 @@ class Spark2Generator(HiveGenerator):
         exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
-    TS_OR_DS_EXPRESSIONS = (
+    TS_OR_DS_EXPRESSIONS: t.ClassVar = (
         *HIVE_TS_OR_DS_EXPRESSIONS,
         exp.DayOfMonth,
         exp.DayOfWeek,

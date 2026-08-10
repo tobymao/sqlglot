@@ -399,7 +399,7 @@ class ClickHouseGenerator(generator.Generator):
 
     # There's no list in docs, but it can be found in Clickhouse code
     # see `ClickHouse/src/Parsers/ParserCreate*.cpp`
-    ON_CLUSTER_TARGETS = {
+    ON_CLUSTER_TARGETS: t.ClassVar = {
         "SCHEMA",  # Transpiled CREATE SCHEMA may have OnCluster property set
         "DATABASE",
         "TABLE",
@@ -411,7 +411,7 @@ class ClickHouseGenerator(generator.Generator):
     }
 
     # https://clickhouse.com/docs/en/sql-reference/data-types/nullable
-    NON_NULLABLE_TYPES = {
+    NON_NULLABLE_TYPES: t.ClassVar = {
         exp.DType.ARRAY,
         exp.DType.MAP,
         exp.DType.STRUCT,

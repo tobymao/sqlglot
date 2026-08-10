@@ -409,9 +409,9 @@ class TSQLParser(parser.Parser):
         ("ENCRYPTION", "RECOMPILE", "SCHEMABINDING", "NATIVE_COMPILATION", "EXECUTE"), tuple()
     )
 
-    COLUMN_DEFINITION_MODES = {"OUT", "OUTPUT", "READONLY"}
+    COLUMN_DEFINITION_MODES: t.ClassVar = {"OUT", "OUTPUT", "READONLY"}
 
-    RETURNS_TABLE_TOKENS = parser.Parser.ID_VAR_TOKENS - {
+    RETURNS_TABLE_TOKENS: t.ClassVar = parser.Parser.ID_VAR_TOKENS - {
         TokenType.TABLE,
         *parser.Parser.TYPE_TOKENS,
     }

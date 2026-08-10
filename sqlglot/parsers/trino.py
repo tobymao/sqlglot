@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.helper import ensure_list
@@ -26,7 +27,7 @@ class TrinoParser(PrestoParser):
         "LISTAGG": lambda self: self._parse_string_agg(),
     }
 
-    JSON_QUERY_OPTIONS: parser.OPTIONS_TYPE = {
+    JSON_QUERY_OPTIONS: t.ClassVar[parser.OPTIONS_TYPE] = {
         **dict.fromkeys(
             ("WITH", "WITHOUT"),
             (

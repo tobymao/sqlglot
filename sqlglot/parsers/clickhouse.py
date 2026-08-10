@@ -87,7 +87,7 @@ TIMESTAMP_TRUNC_UNITS = {
 }
 
 
-AGG_FUNCTIONS = {
+_AGG_FUNCTIONS = {
     "count",
     "min",
     "max",
@@ -209,7 +209,7 @@ AGG_FUNCTIONS = {
 
 # Sorted longest-first so that compound suffixes (e.g. "SimpleState") are matched
 # before their sub-suffixes (e.g. "State") when resolving multi-combinator functions.
-AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
+_AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
     [
         "If",
         "Array",
@@ -232,9 +232,9 @@ AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
 )
 
 # Memoized examples of all 0- and 1-suffix aggregate function names
-AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
-    f"{f}{sfx}": (f, sfx) for sfx in AGG_FUNCTIONS_SUFFIXES for f in AGG_FUNCTIONS
-} | {f: (f, None) for f in AGG_FUNCTIONS}
+_AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
+    f"{f}{sfx}": (f, sfx) for sfx in _AGG_FUNCTIONS_SUFFIXES for f in _AGG_FUNCTIONS
+} | {f: (f, None) for f in _AGG_FUNCTIONS}
 
 
 class ClickHouseParser(parser.Parser):
@@ -324,8 +324,8 @@ class ClickHouseParser(parser.Parser):
         "UTCTIMESTAMP": exp.UtcTimestamp.from_arg_list,
     }
 
-    AGG_FUNCTIONS = AGG_FUNCTIONS
-    AGG_FUNCTIONS_SUFFIXES = AGG_FUNCTIONS_SUFFIXES
+    AGG_FUNCTIONS: t.ClassVar = _AGG_FUNCTIONS
+    AGG_FUNCTIONS_SUFFIXES: t.ClassVar = _AGG_FUNCTIONS_SUFFIXES
 
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
@@ -342,7 +342,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.LIKE,
     }
 
-    AGG_FUNC_MAPPING = AGG_FUNC_MAPPING
+    AGG_FUNC_MAPPING: t.ClassVar = _AGG_FUNC_MAPPING
 
     @classmethod
     def _resolve_clickhouse_agg(cls, name: str) -> tuple[str, Sequence[str]] | None:
@@ -356,8 +356,8 @@ class ClickHouseParser(parser.Parser):
         # AGG_FUNCTIONS_SUFFIXES_SORTED). This loop only runs for 2 or more suffixes,
         # as AGG_FUNC_MAPPING memoizes all 0- and 1-suffix
         accumulated_suffixes: deque[str] = deque()
-        while (parts := AGG_FUNC_MAPPING.get(name)) is None:
-            for suffix in AGG_FUNCTIONS_SUFFIXES:
+        while (parts := _AGG_FUNC_MAPPING.get(name)) is None:
+            for suffix in _AGG_FUNCTIONS_SUFFIXES:
                 if name.endswith(suffix) and len(name) != len(suffix):
                     accumulated_suffixes.appendleft(suffix)
                     name = name[: -len(suffix)]

@@ -671,7 +671,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
-    UNSUPPORTED_VALUES_EXPRESSIONS = {
+    UNSUPPORTED_VALUES_EXPRESSIONS: t.ClassVar = {
         exp.Map,
         exp.StarMap,
         exp.Struct,

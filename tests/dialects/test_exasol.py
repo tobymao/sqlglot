@@ -986,17 +986,33 @@ class TestExasol(Validator):
 
     def test_show_tables(self):
         self.validate_all(
-            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = 'TEST'",
+            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'",
             read={"mysql": "SHOW TABLES FROM test"},
             write={
-                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = 'TEST'"
+                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'"
             },
         )
         self.validate_all(
-            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA",
+            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(CURRENT_SCHEMA)",
             read={"mysql": "SHOW TABLES"},
             write={
-                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE TABLE_SCHEMA = CURRENT_SCHEMA"
+                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(CURRENT_SCHEMA)"
+            },
+        )
+        # a schema stored lower case still matches, whatever case the query used
+        self.validate_all(
+            "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'",
+            read={"mysql": "SHOW TABLES FROM `test`"},
+            write={
+                "exasol": "SELECT TABLE_NAME FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'"
+            },
+        )
+        # SHOW FULL TABLES also reports a table type
+        self.validate_all(
+            "SELECT TABLE_NAME, 'BASE TABLE' AS \"Table_type\" FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'",
+            read={"mysql": "SHOW FULL TABLES FROM test"},
+            write={
+                "exasol": "SELECT TABLE_NAME, 'BASE TABLE' AS \"Table_type\" FROM SYS.EXA_ALL_TABLES WHERE UPPER(TABLE_SCHEMA) = 'TEST'"
             },
         )
 

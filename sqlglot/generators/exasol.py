@@ -906,13 +906,24 @@ class ExasolGenerator(generator.Generator):
     def show_sql(self, expression: exp.Show) -> str:
         if expression.name == "TABLES":
             db_name = expression.text("db")
+            # TABLE_SCHEMA stores identifier text as created, so compare case-insensitively:
+            # Exasol resolves identifiers that way under SQL_IDENTIFIER_COMPARISON =
+            # 'IGNORE CASE', and a schema created lower case never matches otherwise.
             schema_filter: exp.Expression = (
-                exp.Literal.string(db_name.upper()) if db_name else exp.CurrentSchema()
+                exp.Literal.string(db_name.upper())
+                if db_name
+                else exp.func("UPPER", exp.CurrentSchema())
             )
+            projections: t.List[exp.Expression] = [exp.column("TABLE_NAME")]
+            if expression.args.get("full"):
+                # EXA_ALL_TABLES holds only base tables — views live in EXA_ALL_VIEWS.
+                projections.append(
+                    exp.alias_(exp.Literal.string("BASE TABLE"), "Table_type", quoted=True)
+                )
             select = (
-                exp.select(exp.column("TABLE_NAME"))
+                exp.select(*projections)
                 .from_(exp.table_("EXA_ALL_TABLES", db="SYS"))
-                .where(exp.column("TABLE_SCHEMA").eq(schema_filter))
+                .where(exp.func("UPPER", exp.column("TABLE_SCHEMA")).eq(schema_filter))
             )
             return self.sql(select)
 

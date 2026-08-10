@@ -1607,6 +1607,9 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "SELECT u&'\\0441\\043B\\043E\\043D'", "SELECT U&'\\0441\\043B\\043E\\043D'"
         )
+        self.validate_identity("SELECT U&'can''t'")
+        self.validate_identity("SELECT U&'a''b''c'")
+        self.validate_identity("SELECT U&'can''t !0061' UESCAPE '!' AS label")
 
         self.validate_all(
             "SELECT U&'Hello winter \\2603 !'",
@@ -1615,6 +1618,31 @@ FROM json_data, field_ids""",
             },
             write={
                 "presto": "SELECT U&'Hello winter \\2603 !'",
+            },
+        )
+
+        # A Unicode literal doubles its delimiter regardless of the dialect's string escapes,
+        # since a backslash there introduces a code point rather than an escape sequence
+        self.validate_all(
+            "SELECT U&'can''t'",
+            write={
+                "athena": "SELECT U&'can''t'",
+                "bigquery": "SELECT 'can\\'t'",
+                "duckdb": "SELECT 'can''t'",
+                "postgres": "SELECT U&'can''t'",
+                "presto": "SELECT U&'can''t'",
+            },
+        )
+
+        # A control character stays raw inside a Unicode literal, where \n would be read back
+        # as an invalid code point escape; dialects without one fall back to their own escapes
+        self.validate_all(
+            "SELECT U&'a\nb'",
+            write={
+                "athena": "SELECT U&'a\nb'",
+                "bigquery": "SELECT 'a\\nb'",
+                "duckdb": "SELECT 'a\nb'",
+                "postgres": "SELECT U&'a\nb'",
             },
         )
 

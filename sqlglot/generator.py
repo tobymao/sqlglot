@@ -1646,10 +1646,11 @@ class Generator:
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         this = self.sql(expression, "this")
         escape = expression.args.get("escape")
+        unicode_start = self.dialect.UNICODE_START
 
-        if self.dialect.UNICODE_START:
+        if unicode_start:
             escape_substitute = r"\\\1"
-            left_quote, right_quote = self.dialect.UNICODE_START, self.dialect.UNICODE_END
+            left_quote, right_quote = unicode_start, self.dialect.UNICODE_END or ""
         else:
             escape_substitute = r"\\u\1"
             left_quote, right_quote = self.dialect.QUOTE_START, self.dialect.QUOTE_END
@@ -1661,8 +1662,15 @@ class Generator:
             escape_pattern = ESCAPED_UNICODE_RE
             escape_sql = ""
 
-        if not self.dialect.UNICODE_START or (escape and not self.SUPPORTS_UESCAPE):
+        if not unicode_start or (escape and not self.SUPPORTS_UESCAPE):
             this = escape_pattern.sub(self.UNICODE_SUBSTITUTE or escape_substitute, this)
+
+        if unicode_start:
+            # A Unicode literal only escapes its delimiter by doubling it; the escape character
+            # introduces a code point, so the dialect's ordinary string escapes don't apply here
+            this = self._replace_line_breaks(this).replace(right_quote, right_quote * 2)
+        else:
+            this = self.escape_str(this, escape_backslash=False)
 
         return f"{left_quote}{this}{right_quote}{escape_sql}"
 

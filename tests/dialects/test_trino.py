@@ -423,3 +423,57 @@ SELECT f(1)""",
             "BEGIN CASE a WHEN 0 THEN RETURN 'zero'; ELSE RETURN 'other'; END CASE; END "
             "SELECT LAST_STMT(1)"
         )
+
+    def test_inline_udf_while(self):
+        # https://trino.io/docs/current/udf/sql/while.html - verbatim from the docs
+        # (wrapped in a function since the docs show it as a body fragment);
+        # confirmed against a real Trino instance (returns 625 = 5^4)
+        # (renamed from the docs' own function name to avoid colliding with the
+        # builtin two-argument POWER function)
+        self.validate_identity(
+            "WITH FUNCTION npow(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE r BIGINT DEFAULT 1; DECLARE p BIGINT DEFAULT n; "
+            "WHILE p > 1 DO SET r = r * n; SET p = p - 1; END WHILE; "
+            "RETURN r; END "
+            "SELECT NPOW(5)"
+        )
+
+        # The optional `label :` prefix names the block for ITERATE/LEAVE (not
+        # yet supported); confirmed to still return 625 against a real Trino
+        # instance, and that a repeated label after END WHILE is rejected
+        self.validate_identity(
+            "WITH FUNCTION npow_labeled(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE r BIGINT DEFAULT 1; DECLARE p BIGINT DEFAULT n; "
+            "abc: WHILE p > 1 DO SET r = r * n; SET p = p - 1; END WHILE; "
+            "RETURN r; END "
+            "SELECT NPOW_LABELED(5)"
+        )
+
+        # WHILE as the literal last statement, with nothing after it before the
+        # enclosing END; real Trino rejects this body with "Function must end in
+        # a RETURN statement", the same function-body completeness check noted
+        # on the IF and CASE phases. This asserts round-trip grammar only,
+        # confirmed against a real Trino instance.
+        self.validate_identity(
+            "WITH FUNCTION last_stmt(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE r BIGINT DEFAULT 1; WHILE r < n DO SET r = r + 1; END WHILE; END "
+            "SELECT LAST_STMT(5)"
+        )
+
+        # WHILE can nest, and combines with IF and CASE; confirmed against a real
+        # Trino instance to actually run and return 4 for count_evens(3)
+        self.validate_identity(
+            "WITH FUNCTION count_evens(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE total BIGINT DEFAULT 0; DECLARE i BIGINT DEFAULT 0; "
+            "WHILE i < n DO SET total = total + 1; IF i = 0 THEN SET total = total + 1; END IF; "
+            "SET i = i + 1; END WHILE; "
+            "RETURN total; END "
+            "SELECT COUNT_EVENS(3)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION while_case(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE i BIGINT DEFAULT 0; "
+            "WHILE i < n DO CASE WHEN i = 0 THEN SET i = 1; ELSE SET i = i + 1; END CASE; END WHILE; "
+            "RETURN i; END "
+            "SELECT WHILE_CASE(3)"
+        )

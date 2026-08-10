@@ -199,6 +199,14 @@ class TrinoParser(PrestoParser):
         self._match_text_seq("CASE")
         return self.expression(exp.CaseStatement(this=this, ifs=ifs, default=default))
 
+    def _parse_routine_while(self, label: exp.Expr | None = None) -> exp.WhileBlock:
+        # https://trino.io/docs/current/udf/sql/while.html
+        condition = self._parse_disjunction()
+        self._match_text_seq("DO")
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+        self._match_text_seq("WHILE")
+        return self.expression(exp.WhileBlock(this=condition, body=body, label=label))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
         if self._match(TokenType.BEGIN, advance=False):
             return self._parse_routine_block()
@@ -217,6 +225,16 @@ class TrinoParser(PrestoParser):
 
         if self._match(TokenType.SET):
             return self._parse_set()
+
+        # An optional `label :` can precede WHILE (and, in later phases, LOOP/REPEAT)
+        # to name the block for ITERATE/LEAVE.
+        label = None
+        if self._next and self._next.token_type == TokenType.COLON:
+            label = self._parse_id_var()
+            self._match(TokenType.COLON)
+
+        if self._match_text_seq("WHILE"):
+            return self._parse_routine_while(label=label)
 
         self.raise_error("Expected routine statement")
         return None

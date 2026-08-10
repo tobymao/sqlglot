@@ -2124,7 +2124,7 @@ class CaseStatement(Expression):
 
 
 class WhileBlock(Expression):
-    arg_types = {"this": True, "body": True}
+    arg_types = {"this": True, "body": True, "label": False}
 
 
 class EndStatement(Expression):

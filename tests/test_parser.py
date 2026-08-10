@@ -98,6 +98,12 @@ class TestParser(unittest.TestCase):
 
         self.assertIsNotNone(parse_one("date").find(exp.Column))
 
+    def test_malformed_number_interval_span(self):
+        # A malformed numeric literal reaching Oracle's interval-span handling
+        # used to leak decimal.InvalidOperation; it now parses like every other
+        # dialect instead of crashing.
+        self.assertEqual(parse_one("SELECT .1.2", dialect="oracle").sql(), "SELECT 0.1.2")
+
     def test_no_paren_functions_after_dot(self):
         # NO_PAREN_FUNCTIONS (token-type-based): should be identifiers after a dot
         col = parse_one("SELECT t.current_date FROM t").find(exp.Column)

@@ -14,7 +14,7 @@ from builtins import type as Type
 from collections import deque
 from collections.abc import Collection, Iterator, Mapping, MutableMapping, Sequence
 from copy import deepcopy
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from functools import reduce
 
 from sqlglot._typing import E, GeneratorNoDialectArgs, ParserNoDialectArgs, T
@@ -1764,7 +1764,13 @@ class Literal(Expression, Condition):
             try:
                 return int(self.this)
             except ValueError:
-                return Decimal(self.this)
+                try:
+                    return Decimal(self.this)
+                except InvalidOperation as e:
+                    # A malformed numeric literal (e.g. "0.1.2") must not leak
+                    # decimal's InvalidOperation; surface it as a ValueError,
+                    # consistent with int() above.
+                    raise ValueError(f"Invalid numeric literal: {self.this!r}") from e
         return self.this
 
 

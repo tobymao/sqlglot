@@ -176,10 +176,6 @@ class TrinoParser(PrestoParser):
 
     def _parse_routine_case(self) -> exp.CaseStatement:
         # https://trino.io/docs/current/udf/sql/case.html
-        # Mirrors the base parser's _parse_case() (operand and match/condition
-        # values are carried as-is, with no normalization between the operand
-        # and no-operand forms); only the branch bodies differ, since they're
-        # ;-delimited statement lists instead of single value expressions.
         this = self._parse_disjunction()
 
         def parse_branch() -> exp.If:

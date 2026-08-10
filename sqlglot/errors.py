@@ -72,7 +72,21 @@ class ParseError(SqlglotError):
 
 
 class TokenError(SqlglotError):
-    pass
+    """Error raised when tokenizing fails.
+
+    When available, `start` and `end` are the offsets in the source SQL of the context
+    snippet quoted in the message, i.e. the snippet is `sql[start:end]`.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        start: int | None = None,
+        end: int | None = None,
+    ):
+        super().__init__(message)
+        self.start = start
+        self.end = end
 
 
 class OptimizeError(SqlglotError):

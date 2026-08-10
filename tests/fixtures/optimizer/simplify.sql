@@ -454,6 +454,19 @@ SELECT -(x.a > x.b) FROM x;
 SELECT (-((x.a) IS NULL)) FROM x;
 SELECT -(x.a IS NULL) FROM x;
 
+-- like unary minus, `~` binds tighter than a predicate, so its parens must be kept
+# dialect: postgres
+~(a = b);
+~(a = b);
+
+# dialect: postgres
+~(a LIKE b);
+~(a LIKE b);
+
+# dialect: postgres
+~(a @> b);
+~(a @> b);
+
 SELECT * FROM A WHERE a - (b < c) < 0 AND a + (b > c) >= 0;
 SELECT * FROM A WHERE a + (b > c) >= 0 AND a - (b < c) < 0;
 

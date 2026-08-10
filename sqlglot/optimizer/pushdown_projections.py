@@ -135,7 +135,7 @@ def pushdown_projections(
                 col_name = col.name
                 selects[table_name].add(col_name)
 
-            # qualify's alias shadow workaround leaves bare identifier refs that the scan above misses
+            # qualify's alias shadow workaround leaves bare identifier/unqualified column refs that the scan above misses
             resolver = None
             for clause in (
                 scope.expression.args.get("group"),
@@ -144,14 +144,17 @@ def pushdown_projections(
             ):
                 if not clause:
                     continue
-                for ident in find_all_in_scope(clause, exp.Identifier):
-                    if isinstance(ident.parent, (exp.Column, exp.Alias, exp.TableAlias)):
+                for ref in find_all_in_scope(clause, exp.Identifier, exp.Column):
+                    if isinstance(ref, exp.Column):
+                        if ref.table:
+                            continue
+                    elif isinstance(ref.parent, (exp.Column, exp.Alias, exp.TableAlias)):
                         continue
                     if resolver is None:
                         resolver = Resolver(scope, schema)
-                    source_table = resolver.get_table(ident.name)
+                    source_table = resolver.get_table(ref.name)
                     if source_table:
-                        selects[source_table.name].add(ident.name)
+                        selects[source_table.name].add(ref.name)
 
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():

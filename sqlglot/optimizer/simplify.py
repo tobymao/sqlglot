@@ -154,7 +154,8 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     if isinstance(this, exp.Predicate) and (
         not (
             parent_is_predicate
-            or isinstance(parent, exp.Neg)
+            # unary operators that bind tighter than the predicate, unlike NOT
+            or isinstance(parent, (exp.Neg, exp.BitwiseNot))
             or (isinstance(parent, exp.Binary) and not isinstance(parent, exp.Connector))
         )
     ):

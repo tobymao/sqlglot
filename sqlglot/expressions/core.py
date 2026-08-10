@@ -1577,7 +1577,7 @@ class Condition(Expr):
 
 @trait
 class Predicate(Condition):
-    """Relationships like x = y, x > 1, x >= y."""
+    """Any condition that evaluates to a boolean, e.g. x = y, x LIKE 'a%', a @> b."""
 
 
 class Cache(Expression):
@@ -2122,15 +2122,15 @@ class Div(Expression, Binary):
     arg_types = {"this": True, "expression": True, "typed": False, "safe": False}
 
 
-class Overlaps(Expression, Binary):
+class Overlaps(Expression, Binary, Predicate):
     pass
 
 
-class ExtendsLeft(Expression, Binary):
+class ExtendsLeft(Expression, Binary, Predicate):
     pass
 
 
-class ExtendsRight(Expression, Binary):
+class ExtendsRight(Expression, Binary, Predicate):
     pass
 
 
@@ -2234,7 +2234,7 @@ class Sub(Expression, Binary):
     pass
 
 
-class Adjacent(Expression, Binary):
+class Adjacent(Expression, Binary, Predicate):
     pass
 
 
@@ -2320,7 +2320,7 @@ class Pow(Expression, Binary, Func):
     _sql_names = ["POWER", "POW"]
 
 
-class RegexpLike(Expression, Binary, Func):
+class RegexpLike(Expression, Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "flag": False, "full_match": False}
 
 

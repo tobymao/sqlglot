@@ -252,6 +252,43 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT SQLITE_VERSION()")
 
+    def test_json_arrow_precedence(self):
+        # ||, -> and ->> form a single left-associative precedence tier that binds
+        # tighter than multiplication: https://sqlite.org/lang_expr.html
+        expr = self.parse_one(
+            "SELECT a.data ->> b.key ->> a.final_key FROM source AS a JOIN keys AS b ON TRUE"
+        ).selects[0]
+        expr.assert_is(exp.JSONExtractScalar).this.assert_is(exp.JSONExtractScalar)
+
+        self.validate_identity("SELECT a.data ->> b.key ->> a.final_key FROM t")
+        self.validate_identity("SELECT a -> b ->> c -> d FROM t")
+        self.validate_identity("SELECT a || b ->> c", "SELECT (a || b) ->> c")
+        self.validate_identity("SELECT a ->> b || c FROM t")
+        self.validate_identity("SELECT 2 * 3 || 4", "SELECT 2 * (3 || 4)")
+        self.validate_identity("SELECT 1 + 2 || 3", "SELECT 1 + (2 || 3)")
+        self.validate_identity("SELECT a || b * c FROM t", "SELECT (a || b) * c FROM t")
+        self.validate_identity("SELECT a - b ->> c FROM t", "SELECT a - (b ->> c) FROM t")
+        self.validate_identity("SELECT a ->> b + c FROM t", "SELECT (a ->> b) + c FROM t")
+        self.validate_identity("SELECT -a || b FROM t")
+        self.validate_identity("SELECT a || b COLLATE NOCASE FROM t ORDER BY 1")
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE || b -> c FROM t",
+            "SELECT (a COLLATE NOCASE || b) -> c FROM t",
+        )
+
+        # COLLATE binds tighter than the ||, ->, ->> tier
+        expr = self.parse_one("SELECT a || b COLLATE NOCASE FROM t").selects[0]
+        expr.assert_is(exp.DPipe).expression.assert_is(exp.Collate)
+
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE || b * c FROM t",
+            "SELECT (a COLLATE NOCASE || b) * c FROM t",
+        )
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE -> b + c FROM t",
+            "SELECT (a COLLATE NOCASE -> b) + c FROM t",
+        )
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")

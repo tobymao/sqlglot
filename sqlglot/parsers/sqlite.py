@@ -15,6 +15,14 @@ def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
+def _build_dpipe(
+    self: parser.Parser, this: exp.Expr | None, expression: exp.Expr | None
+) -> exp.DPipe:
+    return self.expression(
+        exp.DPipe(this=this, expression=expression, safe=not self.dialect.STRICT_STRING_CONCAT)
+    )
+
+
 def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSONExtractScalar:
     # Single-path json_extract() returns an SQL representation like ->>, except
     # that object/array results keep the JSON subtype (json_subtype); the
@@ -36,6 +44,27 @@ class SQLiteParser(parser.Parser):
         TokenType.ANTI,
         TokenType.SEMI,
     }
+
+    COLUMN_OPERATORS = {
+        k: v
+        for k, v in parser.Parser.COLUMN_OPERATORS.items()
+        if k not in (TokenType.ARROW, TokenType.DARROW)
+    }
+
+    # ||, -> and ->> form a single left-associative precedence tier that binds tighter
+    # than multiplication, so it's consumed in _parse_factor_operand rather than in
+    # _parse_bitwise: https://sqlite.org/lang_expr.html
+    CONCAT_OPERATORS: t.ClassVar[dict[TokenType, t.Callable]] = {
+        TokenType.DPIPE: _build_dpipe,
+        TokenType.ARROW: parser.build_json_extract,
+        TokenType.DARROW: parser.build_json_extract_scalar,
+    }
+
+    ARITHMETIC_TOKENS = {
+        *parser.Parser.BITWISE,
+        *parser.Parser.TERM,
+        *parser.Parser.FACTOR,
+    } - {TokenType.COLLATE}
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
@@ -67,6 +96,44 @@ class SQLiteParser(parser.Parser):
         # https://www.sqlite.org/lang_expr.html
         TokenType.MATCH: binary_range_parser(exp.Match),
     }
+
+    def _parse_factor_operand(self) -> exp.Expr | None:
+        in_arithmetic_operand = (
+            self._prev is not None and self._prev.token_type in self.ARITHMETIC_TOKENS
+        )
+        this = self._parse_concat_operand()
+        parsed_op = False
+
+        while self._curr and (build := self.CONCAT_OPERATORS.get(self._curr.token_type)):
+            if self._curr.token_type != TokenType.DPIPE and isinstance(this, exp.DPipe):
+                # Parenthesize so that dialects where the arrows bind tighter
+                # than || still produce the same, left-associative grouping
+                this = self.expression(exp.Paren(this=this))
+
+            self._advance()
+            this = build(self, this, self._parse_concat_operand())
+            parsed_op = True
+
+        if parsed_op and (
+            in_arithmetic_operand
+            or (self._curr and self._curr.token_type in self.ARITHMETIC_TOKENS)
+        ):
+            # This tier binds tighter than arithmetic in SQLite but looser elsewhere,
+            # so parenthesize it to preserve the grouping in other dialects
+            this = self.expression(exp.Paren(this=this))
+
+        return this
+
+    def _parse_concat_operand(self) -> exp.Expr | None:
+        this = self._parse_unary()
+
+        # COLLATE binds tighter than any binary operator, including this tier
+        while self._match(TokenType.COLLATE):
+            collate = self.expression(exp.Collate(this=this, expression=self._parse_unary()))
+            self._normalize_collate(collate)
+            this = collate
+
+        return this
 
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
         # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:

@@ -6170,8 +6170,6 @@ class Parser:
             try:
                 this = exp.Literal.string(this.to_py())
             except ValueError:
-                # A malformed numeric literal is not a valid interval value;
-                # raise a ParseError instead of leaking the conversion error.
                 self.raise_error(f"Invalid numeric interval literal: {this.name!r}")
         elif this and this.is_string:
             parts = exp.INTERVAL_STRING_RE.findall(this.name)

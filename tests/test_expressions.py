@@ -1161,6 +1161,9 @@ FROM foo""",
         with self.assertRaises(ValueError):
             parse_one("x").to_py()
 
+        with self.assertRaises(ValueError):
+            exp.Literal.number("0.1.2").to_py()
+
     def test_is_int(self):
         self.assertTrue(parse_one("- -1").is_int)
 

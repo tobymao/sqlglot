@@ -2119,6 +2119,10 @@ class IfBlock(Expression):
     arg_types = {"this": True, "true": True, "false": False}
 
 
+class CaseStatement(Expression):
+    arg_types = {"this": False, "ifs": True, "default": False}
+
+
 class WhileBlock(Expression):
     arg_types = {"this": True, "body": True}
 

@@ -174,6 +174,30 @@ class TrinoParser(PrestoParser):
         self._match_text_seq("IF")
         return this
 
+    def _parse_routine_case(self) -> exp.CaseStatement:
+        # https://trino.io/docs/current/udf/sql/case.html
+        this = self._parse_disjunction()
+
+        def parse_branch() -> exp.If:
+            condition = self._parse_disjunction()
+            self._match_text_seq("THEN")
+            true = self.expression(
+                exp.Block(expressions=self._parse_routine_statements("WHEN", "ELSE", "END"))
+            )
+            return self.expression(exp.If(this=condition, true=true))
+
+        ifs = []
+        self._match_text_seq("WHEN")
+        while self._prev.text.upper() == "WHEN":
+            ifs.append(parse_branch())
+
+        default = None
+        if self._prev.text.upper() == "ELSE":
+            default = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+
+        self._match_text_seq("CASE")
+        return self.expression(exp.CaseStatement(this=this, ifs=ifs, default=default))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
         if self._match(TokenType.BEGIN, advance=False):
             return self._parse_routine_block()
@@ -183,6 +207,9 @@ class TrinoParser(PrestoParser):
 
         if self._match_text_seq("IF"):
             return self._parse_routine_if()
+
+        if self._match_text_seq("CASE"):
+            return self._parse_routine_case()
 
         if self._match(TokenType.DECLARE):
             return self._parse_declare()

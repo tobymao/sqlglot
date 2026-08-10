@@ -362,8 +362,6 @@ EXPRESSION_METADATA = {
             exp.ApproxPercentileEstimate,
             exp.ApproximateSimilarity,
             exp.CosineDistance,
-            exp.CovarPop,
-            exp.CovarSamp,
             exp.DotProduct,
             exp.EuclideanDistance,
             exp.ManhattanDistance,

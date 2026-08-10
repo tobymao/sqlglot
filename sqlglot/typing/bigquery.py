@@ -292,8 +292,6 @@ EXPRESSION_METADATA = {
             exp.Corr,
             exp.CosineDistance,
             exp.Coth,
-            exp.CovarPop,
-            exp.CovarSamp,
             exp.Csc,
             exp.Csch,
             exp.EuclideanDistance,

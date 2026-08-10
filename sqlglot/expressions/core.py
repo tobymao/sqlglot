@@ -85,6 +85,7 @@ class Expr:
     arg_types: t.ClassVar[dict[str, bool]] = {"this": True}
     required_args: t.ClassVar[set[str]] = {"this"}
     is_var_len_args: t.ClassVar[bool] = False
+    var_len_arg_key: t.ClassVar[str] = "expressions"
     _hash_raw_args: t.ClassVar[bool] = False
     is_subquery: t.ClassVar[bool] = False
     is_cast: t.ClassVar[bool] = False
@@ -1643,8 +1644,11 @@ class Func(Condition):
     The base class for all function expressions.
 
     Attributes:
-        is_var_len_args (bool): if set to True the last argument defined in arg_types will be
+        is_var_len_args (bool): if set to True the argument identified by var_len_arg_key will be
             treated as a variable length argument and the argument's value will be stored as a list.
+        var_len_arg_key (str): the arg_types key that collects the variable length arguments.
+            Arguments preceding it in arg_types are filled positionally; those following it (e.g.
+            dialect flags) are never populated by from_arg_list.
         _sql_names (list): the SQL name (1st item in the list) and aliases (subsequent items) for this
             function expression. These values are used to map this node to a name during parsing as
             well as to provide the function's name during SQL string generation. By default the SQL
@@ -1652,18 +1656,17 @@ class Func(Condition):
     """
 
     is_var_len_args: t.ClassVar[bool] = False
+    var_len_arg_key: t.ClassVar[str] = "expressions"
     _sql_names: t.ClassVar[list[str]] = []
 
     @classmethod
     def from_arg_list(cls, args: Sequence[object]) -> Self:
         if cls.is_var_len_args:
             all_arg_keys = tuple(cls.arg_types)
-            # If this function supports variable length argument treat the last argument as such.
-            non_var_len_arg_keys = all_arg_keys[:-1] if cls.is_var_len_args else all_arg_keys
-            num_non_var = len(non_var_len_arg_keys)
+            var_len_index = all_arg_keys.index(cls.var_len_arg_key)
 
-            args_dict = {arg_key: arg for arg, arg_key in zip(args, non_var_len_arg_keys)}
-            args_dict[all_arg_keys[-1]] = args[num_non_var:]
+            args_dict = {arg_key: arg for arg, arg_key in zip(args, all_arg_keys[:var_len_index])}
+            args_dict[cls.var_len_arg_key] = args[var_len_index:]
         else:
             args_dict = {arg_key: arg for arg, arg_key in zip(args, cls.arg_types)}
 

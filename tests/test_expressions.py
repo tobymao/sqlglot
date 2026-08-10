@@ -417,6 +417,27 @@ class TestExprs(unittest.TestCase):
             "expression of interest or parse the function call.",
         )
 
+    def test_var_len_args_spill_into_var_len_arg_key(self):
+        # Variadic args spill into var_len_arg_key, not into trailing flag args
+        chr_ = exp.Chr.from_arg_list([exp.convert(65), exp.convert(66)])
+        self.assertEqual(chr_.expressions, [exp.convert(65), exp.convert(66)])
+        self.assertIsNone(chr_.args.get("charset"))
+        self.assertEqual(chr_.sql(), "CHR(65, 66)")
+        self.assertEqual(exp.func("CHR", 65, 66).sql(), "CHR(65, 66)")
+
+        count = exp.Count.from_arg_list([exp.column("a"), exp.column("b"), exp.column("c")])
+        self.assertEqual(count.expressions, [exp.column("b"), exp.column("c")])
+        self.assertIsNone(count.args.get("big_int"))
+
+        greatest = exp.Greatest.from_arg_list([exp.column("a"), exp.column("b")])
+        self.assertEqual(greatest.expressions, [exp.column("b")])
+        self.assertIsNone(greatest.args.get("ignore_nulls"))
+
+        # VarMap overrides var_len_arg_key so the spill lands in "values"
+        var_map = exp.VarMap.from_arg_list([exp.column("k"), exp.column("v1"), exp.column("v2")])
+        self.assertEqual(var_map.args["keys"], exp.column("k"))
+        self.assertEqual(var_map.args["values"], [exp.column("v1"), exp.column("v2")])
+
     def test_named_selects(self):
         expression = parse_one(
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"

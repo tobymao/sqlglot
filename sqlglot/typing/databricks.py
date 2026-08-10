@@ -33,7 +33,6 @@ EXPRESSION_METADATA = {
             exp.Secret,
         }
     },
-    exp.Grouping: {"returns": exp.DType.TINYINT},
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
     exp.RegexpExtractAll: {

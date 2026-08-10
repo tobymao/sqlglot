@@ -51,5 +51,6 @@ EXPRESSION_METADATA = {
         }
     },
     exp.BitmapCount: {"returns": exp.DType.BIGINT},
+    exp.Grouping: {"returns": exp.DType.TINYINT},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMPNTZ},
 }

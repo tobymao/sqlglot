@@ -7313,6 +7313,10 @@ BOOLEAN;
 tbl.array_col && tbl.array_col;
 BOOLEAN;
 
+# dialect: duckdb
+CURRENT_ROLE();
+VARCHAR;
+
 --------------------------------------
 -- Postgres
 --------------------------------------

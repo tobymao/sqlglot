@@ -459,7 +459,7 @@ class ClickHouseParser(parser.Parser):
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
-        "MODIFY": lambda self: self._parse_alter_table_modify(),
+        "MODIFY": lambda self: self._parse_alter_table_alter(),
         "REPLACE": lambda self: self._parse_alter_table_replace(),
     }
 
@@ -908,10 +908,19 @@ class ClickHouseParser(parser.Parser):
             exp.ReplacePartition(expression=partition, source=self._parse_table_parts())
         )
 
-    def _parse_alter_table_modify(self) -> exp.Expr | None:
-        if properties := self._parse_properties():
-            return self.expression(exp.AlterModifySqlSecurity(expressions=properties.expressions))
-        return None
+    def _parse_alter_table_alter(self) -> exp.Expr | None:
+        # Gate SQL SECURITY to MODIFY, since ALTER can now reach this path too
+        if self._prev.text.upper() == "MODIFY" and self._match(
+            TokenType.SQL_SECURITY, advance=False
+        ):
+            if properties := self._parse_properties():
+                return self.expression(
+                    exp.AlterModifySqlSecurity(expressions=properties.expressions)
+                )
+
+        # https://clickhouse.com/docs/sql-reference/statements/alter/column#modify-column
+        alter = super()._parse_alter_table_alter()
+        return None if self._curr else alter
 
     def _parse_definer(self) -> exp.DefinerProperty | None:
         self._match(TokenType.EQ)

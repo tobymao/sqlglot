@@ -488,6 +488,9 @@ class Generator:
     # Whether ALTER COLUMN can set a column's nullability together with its type
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
 
+    # Whether ALTER COLUMN IF EXISTS is supported
+    SUPPORTS_ALTER_COLUMN_IF_EXISTS = False
+
     # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
 
@@ -4210,6 +4213,13 @@ class Generator:
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         this = self.sql(expression, "this")
+        if expression.args.get("exists") and not self.SUPPORTS_ALTER_COLUMN_IF_EXISTS:
+            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
+        exists = (
+            " IF EXISTS"
+            if expression.args.get("exists") and self.SUPPORTS_ALTER_COLUMN_IF_EXISTS
+            else ""
+        )
 
         dtype = self.sql(expression, "dtype")
         if dtype:
@@ -4220,19 +4230,22 @@ class Generator:
             alter_set_type = self.ALTER_SET_TYPE + " " if self.ALTER_SET_TYPE else ""
             null_constraint = self._alter_column_null_constraint_sql(expression)
 
-            return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}{null_constraint}"
+            return (
+                f"ALTER COLUMN{exists} {this} {alter_set_type}{dtype}"
+                f"{collate}{using}{null_constraint}"
+            )
 
         default = self.sql(expression, "default")
         if default:
-            return f"ALTER COLUMN {this} SET DEFAULT {default}"
+            return f"ALTER COLUMN{exists} {this} SET DEFAULT {default}"
 
         comment = self.sql(expression, "comment")
         if comment:
-            return f"ALTER COLUMN {this} COMMENT {comment}"
+            return f"ALTER COLUMN{exists} {this} COMMENT {comment}"
 
         visible = expression.args.get("visible")
         if visible:
-            return f"ALTER COLUMN {this} SET {visible}"
+            return f"ALTER COLUMN{exists} {this} SET {visible}"
 
         allow_null = expression.args.get("allow_null")
         drop = expression.args.get("drop")
@@ -4242,9 +4255,9 @@ class Generator:
 
         if allow_null is not None:
             keyword = "DROP" if drop else "SET"
-            return f"ALTER COLUMN {this} {keyword} NOT NULL"
+            return f"ALTER COLUMN{exists} {this} {keyword} NOT NULL"
 
-        return f"ALTER COLUMN {this} DROP DEFAULT"
+        return f"ALTER COLUMN{exists} {this} DROP DEFAULT"
 
     def _alter_column_null_constraint_sql(self, expression: exp.AlterColumn) -> str:
         allow_null = expression.args.get("allow_null")

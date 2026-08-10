@@ -672,13 +672,9 @@ class TestClickhouse(Validator):
             "ALTER TABLE t ALTER COLUMN IF EXISTS c TYPE Int64",
         )
         self.validate_identity("ALTER TABLE t ALTER COLUMN IF EXISTS c TYPE Int64")
-        self.assertIsInstance(
-            parse_one(
-                "ALTER TABLE t MODIFY COLUMN c REMOVE DEFAULT",
-                read="clickhouse",
-                error_level=ErrorLevel.IGNORE,
-            ),
-            exp.Command,
+        self.validate_identity(
+            "ALTER TABLE t MODIFY COLUMN c REMOVE DEFAULT",
+            check_command_warning=True,
         )
 
         # Non-column MODIFY forms must not be routed to the ALTER COLUMN parser

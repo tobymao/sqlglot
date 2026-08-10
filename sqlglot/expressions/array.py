@@ -344,6 +344,7 @@ class ToMap(Expression, Func):
 class VarMap(Expression, Func):
     arg_types = {"keys": True, "values": True}
     is_var_len_args = True
+    var_len_arg_key = "values"
 
     @property
     def keys(self) -> list[Expr]:

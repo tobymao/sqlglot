@@ -577,6 +577,11 @@ FROM json_data, field_ids""",
                 "redshift": "SELECT JSON_EXTRACT_PATH_TEXT(x, k1, k2, k3) FROM t",
             },
         )
+
+        self.validate_identity("SELECT JSON_EXTRACT_PATH(x, k1, 'k2') FROM t")
+        self.validate_identity("SELECT JSON_EXTRACT_PATH(x, 'k1', k2) FROM t")
+        self.validate_identity("SELECT JSON_EXTRACT_PATH_TEXT(x, k1, 'k2') FROM t")
+
         self.validate_all(
             "x #> 'y'",
             read={

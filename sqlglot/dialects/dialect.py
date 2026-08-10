@@ -2213,7 +2213,11 @@ def build_json_extract_path(
         for arg in args[1:]:
             if not isinstance(arg, exp.Literal):
                 # We use the fallback parser because we can't really transpile non-literals safely
-                return expr_type.from_arg_list(args)
+                return expr_type(
+                    this=seq_get(args, 0),
+                    expression=seq_get(args, 1),
+                    expressions=list(args[2:]) or None,
+                )
 
             text = arg.name
             if is_int(text) and (not arrow_req_json_type or not arg.is_string):

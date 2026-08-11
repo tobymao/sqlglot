@@ -98,9 +98,7 @@ class SQLiteParser(parser.Parser):
     }
 
     def _parse_factor_operand(self) -> exp.Expr | None:
-        in_arithmetic_operand = (
-            self._prev is not None and self._prev.token_type in self.ARITHMETIC_TOKENS
-        )
+        in_arithmetic_operand = self._prev.token_type in self.ARITHMETIC_TOKENS
         this = self._parse_concat_operand()
         parsed_op = False
 

@@ -2136,7 +2136,7 @@ class RepeatBlock(Expression):
 
 
 class Leave(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class Iterate(Expression):

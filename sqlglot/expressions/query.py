@@ -2127,6 +2127,22 @@ class WhileBlock(Expression):
     arg_types = {"this": True, "body": True, "label": False}
 
 
+class LoopBlock(Expression):
+    arg_types = {"body": True, "label": False}
+
+
+class RepeatBlock(Expression):
+    arg_types = {"body": True, "until": True, "label": False}
+
+
+class Leave(Expression):
+    pass
+
+
+class Iterate(Expression):
+    pass
+
+
 class EndStatement(Expression):
     arg_types = {}
 

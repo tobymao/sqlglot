@@ -105,6 +105,25 @@ class TrinoGenerator(PrestoGenerator):
         body = self.sql(expression, "body")
         return f"{label_sql}WHILE {condition} DO {body}; END WHILE"
 
+    def loopblock_sql(self, expression: exp.LoopBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        body = self.sql(expression, "body")
+        return f"{label_sql}LOOP {body}; END LOOP"
+
+    def repeatblock_sql(self, expression: exp.RepeatBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        body = self.sql(expression, "body")
+        until = self.sql(expression, "until")
+        return f"{label_sql}REPEAT {body}; UNTIL {until} END REPEAT"
+
+    def leave_sql(self, expression: exp.Leave) -> str:
+        return f"LEAVE {self.sql(expression, 'this')}"
+
+    def iterate_sql(self, expression: exp.Iterate) -> str:
+        return f"ITERATE {self.sql(expression, 'this')}"
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

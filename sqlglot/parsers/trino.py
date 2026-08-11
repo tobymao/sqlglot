@@ -207,6 +207,20 @@ class TrinoParser(PrestoParser):
         self._match_text_seq("WHILE")
         return self.expression(exp.WhileBlock(this=condition, body=body, label=label))
 
+    def _parse_routine_loop(self, label: exp.Expr | None = None) -> exp.LoopBlock:
+        # https://trino.io/docs/current/udf/sql/loop.html
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+        self._match_text_seq("LOOP")
+        return self.expression(exp.LoopBlock(body=body, label=label))
+
+    def _parse_routine_repeat(self, label: exp.Expr | None = None) -> exp.RepeatBlock:
+        # https://trino.io/docs/current/udf/sql/repeat.html - unlike WHILE/LOOP,
+        # the body is evaluated at least once, with UNTIL <condition> tested after
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("UNTIL")))
+        until = self._parse_disjunction()
+        self._match_text_seq("END", "REPEAT")
+        return self.expression(exp.RepeatBlock(body=body, until=until, label=label))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
         if self._match(TokenType.BEGIN, advance=False):
             return self._parse_routine_block()
@@ -226,15 +240,26 @@ class TrinoParser(PrestoParser):
         if self._match(TokenType.SET):
             return self._parse_set()
 
-        # An optional `label :` can precede WHILE (and, in later phases, LOOP/REPEAT)
-        # to name the block for ITERATE/LEAVE.
+        # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the
+        # block for ITERATE/LEAVE; these themselves are valid label names, so
+        # the colon lookahead has to run first, before either is matched as a keyword.
         label = None
         if self._next and self._next.token_type == TokenType.COLON:
             label = self._parse_id_var()
             self._match(TokenType.COLON)
+        elif self._match_text_seq("ITERATE"):
+            return self.expression(exp.Iterate(this=self._parse_id_var()))
+        elif self._match_text_seq("LEAVE"):
+            return self.expression(exp.Leave(this=self._parse_id_var()))
 
         if self._match_text_seq("WHILE"):
             return self._parse_routine_while(label=label)
+
+        if self._match_text_seq("LOOP"):
+            return self._parse_routine_loop(label=label)
+
+        if self._match_text_seq("REPEAT"):
+            return self._parse_routine_repeat(label=label)
 
         self.raise_error("Expected routine statement")
         return None

@@ -1,4 +1,5 @@
 from sqlglot import exp, parse_one
+from sqlglot.generator import logger as generator_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -482,7 +483,7 @@ SELECT f(1)""",
         # https://trino.io/docs/current/udf/sql/loop.html - verbatim from the docs
         # (wrapped as a function invocation); confirmed against a real Trino
         # instance to return 10, 20, 30 for step values of 10, 20, 30
-        self.validate_identity(
+        loop_ast = self.validate_identity(
             "WITH FUNCTION to_one_hundred(start_value BIGINT, step BIGINT) RETURNS BIGINT "
             "BEGIN DECLARE count BIGINT DEFAULT 0; DECLARE current BIGINT DEFAULT 0; "
             "SET current = start_value; "
@@ -506,7 +507,7 @@ SELECT f(1)""",
         # docs (renamed from the docs' own function name to avoid colliding with
         # the builtin COUNT aggregate); confirmed against a real Trino instance
         # to return 7
-        self.validate_identity(
+        repeat_ast = self.validate_identity(
             "WITH FUNCTION iter_count() RETURNS BIGINT "
             "BEGIN DECLARE a BIGINT DEFAULT 0; DECLARE b BIGINT DEFAULT 0; "
             "top: REPEAT SET a = a + 1; IF a <= 3 THEN ITERATE top; END IF; SET b = b + 1; "
@@ -559,3 +560,25 @@ SELECT f(1)""",
             "RETURN i; END "
             "SELECT LABEL_TEST2(5)"
         )
+
+        # Any non-reserved keyword is a valid label name, so the label lookahead
+        # has to run before the statement keywords (e.g. SET) are matched;
+        # confirmed against a real Trino instance to return 5
+        self.validate_identity(
+            "WITH FUNCTION label_test3(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE i BIGINT DEFAULT 0; "
+            "set: LOOP IF i >= n THEN LEAVE set; END IF; SET i = i + 1; END LOOP; "
+            "RETURN i; END "
+            "SELECT LABEL_TEST3(5)"
+        )
+
+        # The base generator warns on these Trino-specific routine statements
+        # instead of crashing
+        for node in (
+            *loop_ast.find_all(exp.LoopBlock, exp.Leave),
+            *repeat_ast.find_all(exp.RepeatBlock, exp.Iterate),
+        ):
+            with self.assertLogs(generator_logger, level="WARNING") as cm:
+                self.assertEqual(node.sql(), "")
+
+            self.assertIn("Unsupported", cm.output[0])

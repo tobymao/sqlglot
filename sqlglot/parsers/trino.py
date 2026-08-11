@@ -222,6 +222,14 @@ class TrinoParser(PrestoParser):
         return self.expression(exp.RepeatBlock(body=body, until=until, label=label))
 
     def _parse_routine_statement(self) -> exp.Expr | None:
+        # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the block for ITERATE/LEAVE.
+        # Any non-reserved keyword (SET, IF, ITERATE etc) is a valid label name, so the colon lookahead
+        # has to run first, before the statement keywords are matched.
+        label = None
+        if self._next and self._next.token_type == TokenType.COLON:
+            label = self._parse_id_var()
+            self._match(TokenType.COLON)
+
         if self._match(TokenType.BEGIN, advance=False):
             return self._parse_routine_block()
 
@@ -240,16 +248,10 @@ class TrinoParser(PrestoParser):
         if self._match(TokenType.SET):
             return self._parse_set()
 
-        # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the
-        # block for ITERATE/LEAVE; these themselves are valid label names, so
-        # the colon lookahead has to run first, before either is matched as a keyword.
-        label = None
-        if self._next and self._next.token_type == TokenType.COLON:
-            label = self._parse_id_var()
-            self._match(TokenType.COLON)
-        elif self._match_text_seq("ITERATE"):
+        if self._match_text_seq("ITERATE"):
             return self.expression(exp.Iterate(this=self._parse_id_var()))
-        elif self._match_text_seq("LEAVE"):
+
+        if self._match_text_seq("LEAVE"):
             return self.expression(exp.Leave(this=self._parse_id_var()))
 
         if self._match_text_seq("WHILE"):

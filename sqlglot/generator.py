@@ -6319,6 +6319,22 @@ class Generator:
         self.unsupported("Unsupported While block syntax")
         return ""
 
+    def loopblock_sql(self, expression: exp.LoopBlock) -> str:
+        self.unsupported("Unsupported Loop block syntax")
+        return ""
+
+    def repeatblock_sql(self, expression: exp.RepeatBlock) -> str:
+        self.unsupported("Unsupported Repeat block syntax")
+        return ""
+
+    def leave_sql(self, expression: exp.Leave) -> str:
+        self.unsupported("Unsupported Leave syntax")
+        return ""
+
+    def iterate_sql(self, expression: exp.Iterate) -> str:
+        self.unsupported("Unsupported Iterate syntax")
+        return ""
+
     def execute_sql(self, expression: exp.Execute) -> str:
         self.unsupported("Unsupported Execute syntax")
         return ""

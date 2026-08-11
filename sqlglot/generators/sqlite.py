@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
 )
-from sqlglot.generator import UNSUPPORTED_TEMPLATE, unsupported_args
+from sqlglot.generator import unsupported_args
 from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.tokens import TokenType
 
@@ -256,15 +256,11 @@ class SQLiteGenerator(generator.Generator):
         return super().cast_sql(expression)
 
     # https://www.sqlite.org/gencol.html
-    # Inline unsupported check: mypyc cannot compile a decorated override of an
-    # undecorated base-class method (same constraint as other SQLite overrides).
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
     def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
         if expression.args.get("data_type"):
-            self.unsupported(
-                UNSUPPORTED_TEMPLATE.format(
-                    "data_type", expression.__class__.__name__, self.dialect.__class__.__name__
-                )
-            )
+            self.unsupported("SQLite generated columns do not support a data type")
 
         this = expression.this
         this_sql = self.sql(this) if isinstance(this, exp.Paren) else f"({self.sql(this)})"

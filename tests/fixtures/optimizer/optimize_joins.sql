@@ -40,5 +40,14 @@ SELECT * FROM x CROSS JOIN z;
 SELECT * FROM x LEFT ANTI JOIN y ON x.a = y.a; 
 SELECT * FROM x LEFT ANTI JOIN y ON x.a = y.a;
 
+SELECT * FROM x CROSS JOIN y ANTI JOIN z ON x.a = z.a AND y.a = x.a;
+SELECT * FROM x CROSS JOIN y ANTI JOIN z ON x.a = z.a AND y.a = x.a;
+
+SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a OR y.a = x.a;
+SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a OR y.a = x.a;
+
+SELECT * FROM x CROSS JOIN y SEMI JOIN z ON x.a = z.a OR y.a = x.a;
+SELECT * FROM x CROSS JOIN y SEMI JOIN z ON x.a = z.a OR y.a = x.a;
+
 SELECT * FROM x LEFT SEMI JOIN y ON x.a = y.a; 
 SELECT * FROM x LEFT SEMI JOIN y ON x.a = y.a;

@@ -170,3 +170,28 @@ SELECT _0.d AS d FROM (SELECT INLINE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
 -- Window functions do not affect cardinality and stay prunable
 SELECT d FROM (SELECT d, ROW_NUMBER() OVER (PARTITION BY e ORDER BY d) AS rn FROM w);
 SELECT _0.d AS d FROM (SELECT w.d AS d FROM w AS w) AS _0;
+
+# dialect: bigquery
+# title: a GROUP BY / HAVING column shadowed by a colliding projection alias is kept by pushdown
+SELECT t.n FROM (SELECT a, ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM (SELECT a, b FROM x) AS agg GROUP BY a HAVING a >= 1) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS agg GROUP BY a HAVING a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed HAVING column left unqualified by qualify's early return is kept by pushdown
+SELECT t.n FROM (SELECT ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM (SELECT a, b FROM x) AS agg GROUP BY a HAVING a >= 1 AND SUM(b) > 0) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS agg GROUP BY a HAVING a >= 1 AND SUM(b) > 0) AS t;
+
+# dialect: bigquery
+# title: shadowed column referenced only in QUALIFY is kept by pushdown
+SELECT t.rn FROM (SELECT ARRAY_AGG(b) OVER (PARTITION BY b) AS agg, ROW_NUMBER() OVER (ORDER BY b) AS rn FROM (SELECT a, b FROM x) AS agg QUALIFY a >= 1) AS t;
+SELECT t.rn AS rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY agg.b) AS rn FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS agg QUALIFY a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed clause column is pushed down into a CTE
+WITH agg AS (SELECT a, b FROM x) SELECT t.n FROM (SELECT ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM agg GROUP BY a HAVING a >= 1) AS t;
+WITH agg AS (SELECT x.a AS a FROM x AS x) SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM agg AS agg GROUP BY a HAVING a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed clause column resolves to the correct side of a join
+SELECT t.n FROM (SELECT ARRAY_AGG(q.b) AS q, COUNT(*) AS n FROM (SELECT a, b FROM x) AS q CROSS JOIN (SELECT c FROM y) AS r GROUP BY a HAVING a > 0) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS q CROSS JOIN (SELECT 1 AS _ FROM y AS y) AS r GROUP BY a HAVING a > 0) AS t;

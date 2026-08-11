@@ -218,8 +218,7 @@ class TrinoParser(PrestoParser):
         # the body is evaluated at least once, with UNTIL <condition> tested after
         body = self.expression(exp.Block(expressions=self._parse_routine_statements("UNTIL")))
         until = self._parse_disjunction()
-        self._match_text_seq("END")
-        self._match_text_seq("REPEAT")
+        self._match_text_seq("END", "REPEAT")
         return self.expression(exp.RepeatBlock(body=body, until=until, label=label))
 
     def _parse_routine_statement(self) -> exp.Expr | None:

@@ -8,7 +8,7 @@ from sqlglot.tokens import TokenType
 from collections.abc import Collection
 
 
-def _select_all(table: exp.Expr) -> exp.Select | None:
+def _select_all(table: exp.Expr | None) -> exp.Select | None:
     return exp.select("*").from_(table, copy=False) if table else None
 
 

@@ -540,3 +540,22 @@ SELECT f(1)""",
             "top: LOOP IF i >= n THEN LEAVE top; END IF; SET i = i + 1; END LOOP; END "
             "SELECT LAST_STMT(5)"
         )
+
+        # `ITERATE`/`LEAVE` are themselves valid label names, confirmed against
+        # a real Trino instance to still return 5 for both; the label lookahead
+        # has to be checked before ITERATE/LEAVE are matched as keywords, or
+        # this misparses as a bare (invalid) ITERATE/LEAVE statement
+        self.validate_identity(
+            "WITH FUNCTION label_test(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE i BIGINT DEFAULT 0; "
+            "iterate: LOOP IF i >= n THEN LEAVE iterate; END IF; SET i = i + 1; END LOOP; "
+            "RETURN i; END "
+            "SELECT LABEL_TEST(5)"
+        )
+        self.validate_identity(
+            "WITH FUNCTION label_test2(n BIGINT) RETURNS BIGINT "
+            "BEGIN DECLARE i BIGINT DEFAULT 0; "
+            "leave: LOOP IF i >= n THEN LEAVE leave; END IF; SET i = i + 1; END LOOP; "
+            "RETURN i; END "
+            "SELECT LABEL_TEST2(5)"
+        )

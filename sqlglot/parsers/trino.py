@@ -241,18 +241,19 @@ class TrinoParser(PrestoParser):
         if self._match(TokenType.SET):
             return self._parse_set()
 
-        if self._match_text_seq("ITERATE"):
-            return self.expression(exp.Iterate(this=self._parse_id_var()))
-
-        if self._match_text_seq("LEAVE"):
-            return self.expression(exp.Leave(this=self._parse_id_var()))
-
         # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the
-        # block for ITERATE/LEAVE.
+        # block for ITERATE/LEAVE - and, confirmed against a real Trino
+        # instance, `ITERATE`/`LEAVE` themselves are valid label names (e.g.
+        # `iterate: LOOP ... END LOOP`), so the colon lookahead has to run
+        # first, before either is matched as a keyword.
         label = None
         if self._next and self._next.token_type == TokenType.COLON:
             label = self._parse_id_var()
             self._match(TokenType.COLON)
+        elif self._match_text_seq("ITERATE"):
+            return self.expression(exp.Iterate(this=self._parse_id_var()))
+        elif self._match_text_seq("LEAVE"):
+            return self.expression(exp.Leave(this=self._parse_id_var()))
 
         if self._match_text_seq("WHILE"):
             return self._parse_routine_while(label=label)

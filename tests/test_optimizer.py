@@ -3039,6 +3039,19 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT "custom_fields"."id" AS "id", ARRAY_AGG("custom_fields"."col") AS "custom_fields" FROM "custom_fields" AS "custom_fields" GROUP BY "custom_fields"."id" HAVING "custom_fields"."id" >= 1',
         )
 
+        # A clause ref whose name matches a projection alias takes the alias-expansion path
+        # instead of the branch above; the final sweep must still mark its colliding qualifier
+        query = "SELECT custom_fields.id AS id, ARRAY_AGG(custom_fields.col) AS custom_fields FROM custom_fields AS custom_fields GROUP BY id HAVING id >= 1"
+        qual = optimizer.qualify.qualify(
+            parse_one(query, dialect=dialect),
+            schema=schema,
+            dialect=dialect,
+        )
+        self.assertEqual(
+            qual.sql(dialect=dialect),
+            "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
+        )
+
     def test_struct_annotation_bigquery(self):
         sql = """
         WITH t1 AS (SELECT 'foo' AS c),

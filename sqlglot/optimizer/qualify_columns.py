@@ -9,7 +9,14 @@ from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
-from sqlglot.optimizer.scope import Scope, build_scope, find_in_scope, traverse_scope, walk_in_scope
+from sqlglot.optimizer.scope import (
+    Scope,
+    build_scope,
+    find_all_in_scope,
+    find_in_scope,
+    traverse_scope,
+    walk_in_scope,
+)
 from sqlglot.optimizer.simplify import simplify_parens
 from sqlglot.schema import Schema, ensure_schema
 
@@ -382,24 +389,6 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            elif dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES and (
-                is_group_by or is_having or is_qualify
-            ):
-                column_table = table.name if table else column.table
-                if column_table in projections:
-                    # In BigQuery's GROUP BY, HAVING and QUALIFY clauses, a qualifier that collides
-                    # with a projection alias resolves to the projection instead of the source. For instance:
-                    # SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields GROUP BY custom_fields.id
-                    # fails with "Column custom_fields contains an aggregation function, which is not
-                    # allowed in GROUP BY", so the reference must be rendered as the bare name "id".
-                    # We keep the column qualified and mark it, deferring to Generator.column_parts
-                    if table:
-                        column.set("table", table)
-
-                    column.set("shadow", True)
-                    replaced = True
-                    continue
-
             if table and (not alias_expr or skip_replace):
                 column.set("table", table)
             elif not column.table and alias_expr and not skip_replace:
@@ -463,6 +452,25 @@ def _expand_alias_refs(
     if dialect.SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS:
         for join in expression.args.get("joins") or []:
             replace_columns(join)
+
+    if dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+        # In BigQuery's GROUP BY, HAVING and QUALIFY clauses, a qualifier that collides with a
+        # projection alias resolves to the projection instead of the source. For instance:
+        # SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields GROUP BY custom_fields.id
+        # fails with "Column custom_fields contains an aggregation function, which is not
+        # allowed in GROUP BY", so such references must be rendered as bare names. We keep the
+        # columns qualified and mark them, deferring to Generator.column_parts
+        for clause in (
+            expression.args.get("group"),
+            expression.args.get("having"),
+            expression.args.get("qualify"),
+        ):
+            if not clause:
+                continue
+
+            for column in find_all_in_scope(clause, exp.Column):
+                if column.table and not column.db:
+                    column.set("shadow", column.table in projections or None)
 
     if replaced:
         scope.clear_cache()

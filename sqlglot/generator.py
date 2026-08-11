@@ -1151,6 +1151,10 @@ class Generator:
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_parts(self, expression: exp.Column) -> str:
+        if expression.args.get("shadow") and self.dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+            # The qualifier would be captured by a colliding projection alias (see qualify_columns)
+            return self.sql(expression, "this")
+
         return ".".join(
             self.sql(part)
             for part in (

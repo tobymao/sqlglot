@@ -387,14 +387,18 @@ def _expand_alias_refs(
             ):
                 column_table = table.name if table else column.table
                 if column_table in projections:
-                    # BigQuery's GROUP BY and HAVING clauses get confused if the column name
-                    # matches a source name and a projection. For instance:
-                    # SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields GROUP BY id HAVING id >= 1
-                    # We should not qualify "id" with "custom_fields" in either clause, since the aggregation shadows the actual table
-                    # and we'd get the error: "Column custom_fields contains an aggregation function, which is not allowed in GROUP BY clause"
-                    column.replace(exp.to_identifier(column.name))
+                    # In BigQuery's GROUP BY, HAVING and QUALIFY clauses, a qualifier that collides
+                    # with a projection alias resolves to the projection instead of the source. For instance:
+                    # SELECT id, ARRAY_AGG(col) AS custom_fields FROM custom_fields GROUP BY custom_fields.id
+                    # fails with "Column custom_fields contains an aggregation function, which is not
+                    # allowed in GROUP BY", so the reference must be rendered as the bare name "id".
+                    # We keep the column qualified and mark it, deferring to Generator.column_parts
+                    if table:
+                        column.set("table", table)
+
+                    column.set("shadow", True)
                     replaced = True
-                    return
+                    continue
 
             if table and (not alias_expr or skip_replace):
                 column.set("table", table)

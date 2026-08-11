@@ -3029,6 +3029,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
         )
 
+        # The shadowed references stay qualified in the AST and only render bare in
+        # dialects where projection aliases shadow source names
+        group_col = qual.args["group"].find(exp.Column)
+        self.assertEqual(group_col.table, "custom_fields")
+        self.assertTrue(group_col.args.get("shadow"))
+        self.assertEqual(
+            qual.sql(dialect="duckdb"),
+            'SELECT "custom_fields"."id" AS "id", ARRAY_AGG("custom_fields"."col") AS "custom_fields" FROM "custom_fields" AS "custom_fields" GROUP BY "custom_fields"."id" HAVING "custom_fields"."id" >= 1',
+        )
+
     def test_struct_annotation_bigquery(self):
         sql = """
         WITH t1 AS (SELECT 'foo' AS c),

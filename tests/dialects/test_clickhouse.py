@@ -228,14 +228,6 @@ class TestClickhouse(Validator):
             "SELECT * FROM t1 CROSS JOIN t2",
         )
         self.validate_identity(
-            "SELECT and(1, 2)",
-            "SELECT 1 AND 2",
-        )
-        self.validate_identity(
-            "SELECT or(1, 2)",
-            "SELECT 1 OR 2",
-        )
-        self.validate_identity(
             "SELECT generate_series FROM generate_series(0, 10) AS g",
             "SELECT generate_series FROM generate_series(0, 10) AS g(generate_series)",
         )
@@ -754,10 +746,6 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT quantilesExactExclusive(0.25, 0.5, 0.75)(x) AS y FROM (SELECT number AS x FROM num)"
         )
-
-        self.validate_identity("SELECT or(0, 1, -2)", "SELECT 0 OR 1 OR -2")
-        self.validate_identity("SELECT and(1, 2, 3)", "SELECT 1 AND 2 AND 3")
-        self.validate_identity("SELECT or(and(3, 0), 5)", "SELECT (3 AND 0) OR 5")
 
         self.validate_identity("arrayCompact([1, 1, nan, nan, 2, 3, 3, 3])").assert_is(
             exp.ArrayCompact

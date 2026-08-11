@@ -6202,11 +6202,14 @@ class Parser:
         if interval_span_units_omitted:
             unit = None
         else:
-            unit = self._parse_function() if parse_function_unit else None
-            if not unit and (
+            # Only attempt to parse a unit if the current token can actually be one, so that a
+            # trailing operator isn't swallowed, e.g. INTERVAL '1 day' AND (x)
+            is_unit = self._curr is not None and (
                 self._curr.token_type == TokenType.VAR
                 or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
-            ):
+            )
+            unit = self._parse_function() if parse_function_unit and is_unit else None
+            if not unit and is_unit:
                 unit = self._parse_var(any_token=True, upper=True)
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse

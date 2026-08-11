@@ -367,6 +367,36 @@ class TestSQLite(Validator):
             self.validate_identity("TRUNC(3.14, 2)", "TRUNC(3.14)").assert_is(exp.Trunc)
             self.assertIn("'decimals' is not supported", cm.output[0])
 
+    def test_generated_columns(self):
+        # SQLite uses STORED/VIRTUAL; PERSISTED is T-SQL and is rejected by SQLite.
+        # https://www.sqlite.org/gencol.html
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))")
+        # Typeless computed columns must keep STORED/VIRTUAL (not parse them as types).
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2))")
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2) STORED)",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2) VIRTUAL)",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2))",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
+        )
+        # True identity maps to AUTOINCREMENT; SQLite requires PRIMARY KEY.
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY)",
+            "CREATE TABLE t (a INTEGER PRIMARY KEY AUTOINCREMENT)",
+        )
+        self.validate_all(
+            "CREATE TABLE t (a INTEGER, b AS (a * 2) STORED NOT NULL)",
+            read={"tsql": "CREATE TABLE t (a INT, b AS (a * 2) PERSISTED NOT NULL)"},
+        )
+
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):

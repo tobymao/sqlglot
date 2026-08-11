@@ -241,10 +241,8 @@ class TrinoParser(PrestoParser):
             return self._parse_set()
 
         # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the
-        # block for ITERATE/LEAVE - and, confirmed against a real Trino
-        # instance, `ITERATE`/`LEAVE` themselves are valid label names (e.g.
-        # `iterate: LOOP ... END LOOP`), so the colon lookahead has to run
-        # first, before either is matched as a keyword.
+        # block for ITERATE/LEAVE; these themselves are valid label names, so
+        # the colon lookahead has to run first, before either is matched as a keyword.
         label = None
         if self._next and self._next.token_type == TokenType.COLON:
             label = self._parse_id_var()

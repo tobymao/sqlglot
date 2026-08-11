@@ -2140,7 +2140,7 @@ class Leave(Expression):
 
 
 class Iterate(Expression):
-    arg_types = {"this": True}
+    pass
 
 
 class EndStatement(Expression):

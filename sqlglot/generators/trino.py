@@ -98,6 +98,13 @@ class TrinoGenerator(PrestoGenerator):
         branches.append("END CASE")
         return " ".join(branches)
 
+    def whileblock_sql(self, expression: exp.WhileBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        condition = self.sql(expression, "this")
+        body = self.sql(expression, "body")
+        return f"{label_sql}WHILE {condition} DO {body}; END WHILE"
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

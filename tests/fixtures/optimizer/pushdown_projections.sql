@@ -204,3 +204,50 @@ WITH agg AS (SELECT x.a AS a FROM x AS x) SELECT t.n AS n FROM (SELECT COUNT(*) 
 # title: shadowed clause column resolves to the correct side of a join
 SELECT t.n FROM (SELECT ARRAY_AGG(q.b) AS q, COUNT(*) AS n FROM (SELECT a, b FROM x) AS q CROSS JOIN (SELECT c FROM y) AS r GROUP BY a HAVING a > 0) AS t;
 SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS q CROSS JOIN (SELECT 1 AS _ FROM y AS y) AS r GROUP BY a HAVING a > 0) AS t;
+
+--------------------------------------
+-- GROUP BY ALL implicitly groups by every non-aggregate projection, so those
+-- projections must be retained even when unreferenced by the outer scope
+--------------------------------------
+SELECT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS t;
+
+-- Selecting only the aggregate must not collapse every implicit key
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
+SELECT t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ALL) AS t;
+
+-- An implicit key can be a non-column expression, not just a bare column
+SELECT t.a, t.c FROM (SELECT a, b, b + 1 AS c, SUM(a) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a, t.c AS c FROM (SELECT x.a AS a, x.b AS b, x.b + 1 AS c FROM x AS x GROUP BY ALL) AS t;
+
+-- Same rule applies when the GROUP BY ALL scope is a named CTE
+WITH t AS (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) SELECT t.a FROM t;
+WITH t AS (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) SELECT t.a AS a FROM t AS t;
+
+-- Same rule applies to every branch of a set operation
+SELECT u.a, u.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL UNION ALL SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) u;
+SELECT u.a AS a, u.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ALL UNION ALL SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ALL) AS u;
+
+-- HAVING referencing the aggregate does not make an unrelated implicit key referenced
+SELECT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL HAVING SUM(b) > 1) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL HAVING SUM(x.b) > 1) AS t;
+
+-- An outer SELECT DISTINCT does not protect the inner scope's implicit keys
+SELECT DISTINCT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
+SELECT DISTINCT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS t;
+
+-- A join predicate referencing one key must not leave the others unprotected
+SELECT t.s FROM y JOIN (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t ON y.b = t.a;
+SELECT t.s AS s FROM y AS y JOIN (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ALL) AS t ON y.b = t.a;
+
+-- The rule must hold across nested GROUP BY ALL scopes
+SELECT z.s2 FROM (SELECT y.a AS a, SUM(y.s) AS s2 FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) y GROUP BY ALL) z;
+SELECT z.s2 AS s2 FROM (SELECT y.a AS a, SUM(y.s) AS s2 FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ALL) AS y GROUP BY ALL) AS z;
+
+-- ALL is a grouping-sets modifier (not implicit-key inference) once CUBE/ROLLUP/an explicit
+-- list is present, so those columns stay prunable like any other explicit GROUP BY column
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL CUBE (a, b)) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL CUBE (x.a, x.b)) AS t;
+
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL a, b) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL x.a, x.b) AS t;

@@ -6198,6 +6198,7 @@ class Parser:
 
             self._retreat(index)
 
+        unit_index = self._index
         if interval_span_units_omitted:
             unit = None
         else:
@@ -6220,7 +6221,7 @@ class Parser:
             if parts and unit:
                 # Unconsume the eagerly-parsed unit, since the real unit was part of the string
                 unit = None
-                self._retreat(self._index - 1)
+                self._retreat(unit_index)
 
             if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
@@ -7172,6 +7173,14 @@ class Parser:
 
     def _parse_function_args(self, alias: bool = False) -> list[exp.Expr]:
         return self._parse_csv(lambda: self._parse_lambda(alias=alias))
+
+    def _parse_connector_function(self, connector: t.Callable[..., exp.Condition]) -> exp.Paren:
+        args = self._parse_function_args(alias=False)
+        if not args:
+            self.raise_error("Expected at least one argument")
+
+        # Wrapped so the connector keeps its precedence in the parent context
+        return exp.Paren(this=connector(*args, copy=False))
 
     def _parse_function_call(
         self,

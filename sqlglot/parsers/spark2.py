@@ -83,13 +83,13 @@ class Spark2Parser(HiveParser):
 
     FUNCTION_PARSERS = {
         **HiveParser.FUNCTION_PARSERS,
-        "AND": lambda self: exp.Paren(this=exp.and_(*self._parse_function_args(alias=False))),
+        "AND": lambda self: self._parse_connector_function(exp.and_),
         "APPROX_PERCENTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
         "BROADCAST": lambda self: self._parse_join_hint("BROADCAST"),
         "BROADCASTJOIN": lambda self: self._parse_join_hint("BROADCASTJOIN"),
         "MAPJOIN": lambda self: self._parse_join_hint("MAPJOIN"),
         "MERGE": lambda self: self._parse_join_hint("MERGE"),
-        "OR": lambda self: exp.Paren(this=exp.or_(*self._parse_function_args(alias=False))),
+        "OR": lambda self: self._parse_connector_function(exp.or_),
         "SHUFFLEMERGE": lambda self: self._parse_join_hint("SHUFFLEMERGE"),
         "MERGEJOIN": lambda self: self._parse_join_hint("MERGEJOIN"),
         "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),

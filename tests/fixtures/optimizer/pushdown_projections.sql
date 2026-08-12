@@ -212,6 +212,11 @@ SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS
 SELECT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
 SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS t;
 
+-- Unreferenced aggregate projections stay prunable, including those after the
+-- first aggregate in the SELECT list
+SELECT t.a FROM (SELECT a, SUM(b) AS s1, MAX(b) AS s2 FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x GROUP BY ALL) AS t;
+
 -- An implicit key can be a non-column expression, not just a bare column
 SELECT t.a, t.c FROM (SELECT a, b, b + 1 AS c, SUM(a) AS s FROM x GROUP BY ALL) t;
 SELECT t.a AS a, t.c AS c FROM (SELECT x.a AS a, x.b AS b, x.b + 1 AS c FROM x AS x GROUP BY ALL) AS t;

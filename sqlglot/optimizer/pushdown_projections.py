@@ -187,7 +187,9 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     for selection in scope.expression.selects:
         name = selection.alias_or_name
-        is_agg_selection = find_in_scope(selection, exp.AggFunc) is not None
+        is_agg_selection = (implicit_group_by_all or not is_agg) and find_in_scope(
+            selection, exp.AggFunc
+        ) is not None
 
         if (
             select_all

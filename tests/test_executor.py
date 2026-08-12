@@ -739,6 +739,30 @@ class TestExecutor(unittest.TestCase):
                     negated, [r for r in [("Bump version",), ("Add feature",)] if r not in matches]
                 )
 
+    def test_ilike_semantics(self):
+        tables = {"t": [{"s": "Bump Version"}, {"s": "B.mp Version"}, {"s": "Add feature"}]}
+
+        for pattern, matches in (
+            ("bump", []),
+            ("bump%", [("Bump Version",)]),
+            ("%version", [("Bump Version",), ("B.mp Version",)]),
+            ("bump_version", [("Bump Version",)]),
+            ("b.mp version", [("B.mp Version",)]),
+            ("b_mp version", [("Bump Version",), ("B.mp Version",)]),
+            ("bump version", [("Bump Version",)]),
+        ):
+            for cased in (pattern.lower(), pattern.upper()):
+                with self.subTest(cased):
+                    rows = execute(f"SELECT s FROM t WHERE s ILIKE '{cased}'", tables=tables).rows
+                    self.assertEqual(rows, matches)
+
+                    negated = execute(
+                        f"SELECT s FROM t WHERE s NOT ILIKE '{cased}'", tables=tables
+                    ).rows
+                    self.assertEqual(
+                        negated, [(r["s"],) for r in tables["t"] if (r["s"],) not in matches]
+                    )
+
     def test_typed_division(self):
         """Postgres' 10 / 3 is 3, but its 10 / 3.0 and 10 / 3::numeric are not."""
         schema = {"t": {"n": "INT", "d": "DECIMAL"}}

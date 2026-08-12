@@ -185,6 +185,12 @@ def ordered(this, desc, nulls_first):
     return this
 
 
+def _like(this, e, flags=0):
+    return bool(
+        re.fullmatch(re.escape(e).replace("_", ".").replace("%", ".*"), this, re.DOTALL | flags)
+    )
+
+
 @null_if_any
 def interval(this, unit):
     plural = unit + "S"
@@ -255,11 +261,8 @@ ENV = {
     "INTERVAL": interval,
     "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),
-    "LIKE": null_if_any(
-        lambda this, e: bool(
-            re.fullmatch(re.escape(e).replace("_", ".").replace("%", ".*"), this, re.DOTALL)
-        )
-    ),
+    "LIKE": null_if_any(lambda this, e: _like(this, e)),
+    "ILIKE": null_if_any(lambda this, e: _like(this, e, re.IGNORECASE)),
     "LOWER": null_if_any(lambda arg: arg.lower()),
     "LT": null_if_any(lambda this, e: this < e),
     "LTE": null_if_any(lambda this, e: this <= e),

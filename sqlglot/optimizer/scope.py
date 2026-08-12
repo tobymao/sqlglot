@@ -189,6 +189,12 @@ class Scope:
         self._semi_anti_join_tables = set()
         self._column_index = set()
 
+        # The inner query of a Subquery-rooted scope is scoped as a derived table by
+        # `_traverse_tables`, so it must not also be collected as a subquery
+        inner_query = (
+            self.expression.unnest() if isinstance(self.expression, exp.Subquery) else None
+        )
+
         for node in self.walk():
             # Most nodes (identifiers, literals, operators etc.) aren't collectible, so a
             # single isinstance gate lets them skip the classification chain below.
@@ -220,7 +226,11 @@ class Scope:
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(t.cast(exp.Subquery, node))
-            elif isinstance(node, exp.UNWRAPPED_QUERIES) and not _is_from_or_join(node):
+            elif (
+                isinstance(node, exp.UNWRAPPED_QUERIES)
+                and not _is_from_or_join(node)
+                and node is not inner_query
+            ):
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
@@ -705,10 +715,47 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         return
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
+
+        # Bare tables in relation position (e.g. UPDATE ... FROM t, DELETE / MERGE ... USING t)
+        # aren't part of any query, so they're scoped as standalone tables; `_traverse_tables`
+        # also picks up any joins hanging off of them
+        relations: list[exp.Expr] = []
+        from_ = expression.args.get("from_")
+
+        if isinstance(from_, exp.From):
+            relations.append(from_.this)
+
+        using = expression.args.get("using")
+        if isinstance(using, list):
+            relations.extend(using)
+        elif isinstance(using, exp.Expr):
+            relations.append(using)
+
+        for relation in relations:
+            if isinstance(relation, exp.Table):
+                yield from _traverse_scope(Scope(relation, cte_sources=scope.cte_sources))
+
         for query in find_all_in_scope(expression, exp.Query):
             # This check ensures we don't yield the CTE/nested queries twice
-            if not isinstance(query.parent, (exp.CTE, exp.Subquery)):
+            if isinstance(query.parent, (exp.CTE, exp.Subquery)):
+                continue
+
+            if _is_from_or_join(query):
+                parent = query.parent
+                if isinstance(parent, exp.Join) and isinstance(
+                    parent.parent, (exp.Subquery, exp.Table)
+                ):
+                    # Scoped by the FROM-position relation (wrapper or table) it's joined to
+                    continue
+
+                # A query in FROM/JOIN position (e.g. UPDATE ... FROM (SELECT ...) AS s) acts
+                # like a derived table, so its scope stays rooted at the Subquery wrapper to
+                # pick up the wrapper's alias, column list and joins
                 yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
+            else:
+                # Queries in value position (SET, WHERE, USING, ...) are scoped as subqueries,
+                # e.g. so their columns can be correlated to the DML's target table
+                yield from _traverse_scope(scope.branch(query, scope_type=ScopeType.SUBQUERY))
         return
     else:
         logger.warning("Cannot traverse scope %s with type '%s'", expression, type(expression))
@@ -835,7 +882,10 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
     for join in scope.expression.args.get("joins") or []:
         expressions.append(join.this)
 
-    if isinstance(scope.expression, exp.Table):
+    if isinstance(scope.expression, (exp.Table, exp.Subquery)):
+        # A Subquery-rooted scope, e.g., the FROM clause of a DML statement, a DDL source or
+        # a parenthesized query like (SELECT ...) LIMIT 1, scopes its own inner query as a
+        # derived table
         expressions.append(scope.expression)
 
     expressions.extend(scope.expression.args.get("laterals") or [])
@@ -880,11 +930,14 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             lateral_sources = None
             scope_type = ScopeType.DERIVED_TABLE
             scopes = scope.derived_table_scopes
-            expressions.extend(join.this for join in node.args.get("joins") or [])
+            if node is not scope.expression:
+                # The scope expression's own joins were already added above
+                expressions.extend(join.this for join in node.args.get("joins") or [])
         else:
             # Makes sure we check for possible sources in nested table constructs
             expressions.append(node.this)
-            expressions.extend(join.this for join in node.args.get("joins") or [])
+            if node is not scope.expression:
+                expressions.extend(join.this for join in node.args.get("joins") or [])
             continue
 
         child_scope: Scope | None = None

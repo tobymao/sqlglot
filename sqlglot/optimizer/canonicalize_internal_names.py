@@ -30,11 +30,13 @@ def canonicalize_internal_names(expression: E) -> E:
         >>> canonicalize_internal_names(qualify(sqlglot.parse_one("WITH t AS (SELECT c1, c2 FROM c.db.src) SELECT * FROM t"), schema=schema)).sql()
         'WITH "_t1" AS (SELECT "_t0"."c1" AS "_c0", "_t0"."c2" AS "_c1" FROM "c"."db"."src" AS "_t0") SELECT "_t1"."_c0" AS "c1", "_t1"."_c1" AS "c2" FROM "_t1" AS "_t1"'
     """
+    # Skip non-queries for now (e.g., UPDATE ... SET x = s.x FROM (SELECT ...) AS s)
+    if not isinstance(expression, exp.Query):
+        return expression
 
-    # Top-level output scopes: their aliases are the query's data contract.
-    # Regular UNION takes names from the left branch; UNION BY NAME takes names
-    # from the union of all branches, so both sides of a by_name SetOperation
-    # contribute.
+    # Top-level output scopes: their aliases are the query's data contract. Regular UNION takes names
+    # from the left branch; UNION BY NAME takes names from the union of all branches, so both sides of
+    # a by_name SetOperation contribute.
     output_scope_exprs: set[int] = set()
     stack: list[exp.Expr] = [expression]
     while stack:

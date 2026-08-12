@@ -93,3 +93,15 @@ WITH cte AS (SELECT c FROM t1) SELECT * FROM (cte AS cte, t2);
 -- Wrapped subquery with redundant parentheses
 SELECT * FROM (((SELECT * FROM tbl)));
 WITH cte AS (SELECT * FROM tbl) SELECT * FROM cte AS cte;
+
+-- CTE hoisted from a DML value-position subquery stays within that subquery
+UPDATE t SET x = (SELECT a FROM (SELECT a FROM x) AS y);
+UPDATE t SET x = (WITH y AS (SELECT a FROM x) SELECT a FROM y AS y);
+
+-- Derived table under a DML FROM clause is not eliminated; subqueries nested in it are hoisted within the fragment
+WITH c AS (SELECT 1 AS y) UPDATE t SET x = 1 FROM (SELECT x FROM (SELECT x FROM t2) AS i) AS s;
+WITH c AS (SELECT 1 AS y) UPDATE t SET x = 1 FROM (WITH i AS (SELECT x FROM t2) SELECT x FROM i AS i) AS s;
+
+-- CTE hoisted from a MERGE USING subquery stays within that subquery
+MERGE INTO t USING (SELECT id FROM (SELECT id FROM u) AS i) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = 1;
+MERGE INTO t USING (WITH i AS (SELECT id FROM u) SELECT id FROM i AS i) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = 1;

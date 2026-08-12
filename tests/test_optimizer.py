@@ -1260,6 +1260,21 @@ class TestOptimizer(unittest.TestCase):
         anon_quoted = parse_one('"anonymous"(x, y)')
         self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous"(x,y)')
 
+        # Literal and identifier content must be escaped so it can't forge structure,
+        # e.g. the single literal 'x'',''y' vs the two literals 'x', 'y'
+        self.assertNotEqual(
+            optimizer.simplify.gen(parse_one("v IN ('x'',''y')")),
+            optimizer.simplify.gen(parse_one("v IN ('x', 'y')")),
+        )
+        self.assertEqual(optimizer.simplify.gen(parse_one("'''a'''")), "'''a'''")
+        self.assertEqual(optimizer.simplify.gen(parse_one('"a""b"')), '"a""b"')
+        self.assertEqual(optimizer.simplify.gen(parse_one('"an""on"(x)')), '"an""on"(x)')
+
+        raw_in = parse_one("v IN (r'a', r'b')", read="spark")
+        forged = parse_one("v IN (r'x')", read="spark")
+        forged.find(exp.RawString).set("this", "a,RAWSTRING :this,b")
+        self.assertNotEqual(optimizer.simplify.gen(raw_in), optimizer.simplify.gen(forged))
+
         with self.assertRaises(ValueError) as e:
             anon_invalid = exp.Anonymous(this=5)
             optimizer.simplify.gen(anon_invalid)
@@ -1287,7 +1302,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.simplify.gen(sql),
             """
-SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
+SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,'OVER',:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,'CROSS') AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,'LEFT',:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
         self.assertEqual(

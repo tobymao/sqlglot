@@ -701,6 +701,28 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
 
+    def test_typed_division(self):
+        """Postgres' 10 / 3 is 3, but its 10 / 3.0 and 10 / 3::numeric are not."""
+        schema = {"t": {"n": "INT", "d": "DECIMAL"}}
+        tables = {"t": [{"n": 10, "d": 3}]}
+
+        for sql, expected in (
+            ("SELECT n / 3.0 AS x FROM t", 10 / 3),
+            ("SELECT 3.0 / n AS x FROM t", 3.0 / 10),
+            ("SELECT CAST(n AS DOUBLE) / 3 AS x FROM t", 10 / 3),
+            ("SELECT n / d AS x FROM t", 10 / 3),  # decimal: real, but not a float
+            ("SELECT n / 3 AS x FROM t", 3),
+            ("SELECT -n / 3 AS x FROM t", -3),
+        ):
+            for dialect in ("postgres", "sqlite"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual(result.rows, [(expected,)])
+
+        # unknown operand types are still truncated
+        result = execute("SELECT n / 3 AS x FROM t", tables=tables, dialect="postgres")
+        self.assertEqual(result.rows, [(3,)])
+
     def test_aggregate_without_group_by(self):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})
         self.assertEqual(result.columns, ("_col_0",))

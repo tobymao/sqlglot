@@ -188,6 +188,7 @@ EXPRESSION_METADATA = {
             exp.Left,
             exp.Right,
             exp.Lead,
+            exp.Lag,
         }
     },
     **{

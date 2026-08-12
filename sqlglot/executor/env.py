@@ -199,6 +199,14 @@ def interval(this, unit):
     return datetime.timedelta(**{unit.lower(): float(this)})
 
 
+@null_if_any
+def arrayconcat(*args):
+    result = []
+    for arg in args:
+        result.extend(arg if isinstance(arg, list) else [arg])
+    return result
+
+
 @null_if_any("this", "expression")
 def arraytostring(this, expression, null=None):
     return expression.join(x for x in (x if x is not None else null for x in this) if x is not None)
@@ -235,6 +243,7 @@ ENV = {
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
     "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
+    "ARRAYCONCAT": arrayconcat,
     "ARRAYTOSTRING": arraytostring,
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),

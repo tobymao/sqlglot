@@ -80,13 +80,10 @@ def pushdown_projections(
         alias_count = source_column_alias_count.get(scope, 0)
 
         # We can't remove columns from SELECT DISTINCT nor UNION DISTINCT. INTERSECT and
-        # EXCEPT match on entire rows, so every column is used even in the ALL variants,
-        # and GROUP BY ALL groups by every non-aggregate projection.
-        group = scope.expression.args.get("group")
-        if (
-            scope.expression.args.get("distinct")
-            or (group and group.args.get("all"))
-            or isinstance(scope.expression, (exp.Intersect, exp.Except))
+        # EXCEPT match on entire rows, so every column is used even in the ALL variants.
+        # Bare GROUP BY ALL is handled per-selection in _remove_unused_selections.
+        if scope.expression.args.get("distinct") or isinstance(
+            scope.expression, (exp.Intersect, exp.Except)
         ):
             parent_selections = {SELECT_ALL}
 

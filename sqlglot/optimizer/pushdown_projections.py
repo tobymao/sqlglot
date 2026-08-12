@@ -6,7 +6,7 @@ from collections import defaultdict
 from sqlglot import alias, exp
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -109,6 +109,13 @@ def pushdown_projections(
             if len(le.selects) != len(re.selects):
                 scope_sql = scope.expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
+
+            # columns in ORDER BY need to be kept too
+            order = set_op.args.get("order")
+            if order and SELECT_ALL not in parent_selections:
+                order_refs = {c.name for c in find_all_in_scope(order, exp.Column) if not c.table}
+                if order_refs:
+                    parent_selections = parent_selections | order_refs
 
             referenced_columns[left] = parent_selections
 

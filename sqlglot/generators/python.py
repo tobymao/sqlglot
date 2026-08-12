@@ -75,7 +75,9 @@ def _div_sql(self: generator.Generator, e: exp.Div) -> str:
 
     sql = f"DIV({self.sql(e, 'this')}, {denominator})"
 
-    if e.args.get("typed"):
+    if e.args.get("typed") and not (
+        e.this.is_type(*exp.DataType.REAL_TYPES) or e.expression.is_type(*exp.DataType.REAL_TYPES)
+    ):
         sql = f"int({sql})"
 
     return sql

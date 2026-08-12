@@ -1050,6 +1050,11 @@ class SetOperation(Expression, Query):
     def named_selects(self) -> list[str]:
         expr: Expr = self
         while isinstance(expr, SetOperation):
+            if expr.args.get("by_name"):
+                left = t.cast(Selectable, expr.this.unnest()).named_selects
+                right = t.cast(Selectable, expr.expression.unnest()).named_selects
+                return list(dict.fromkeys(left + right))
+
             expr = expr.this.unnest()
         return _named_selects(expr)
 

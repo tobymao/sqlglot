@@ -405,6 +405,14 @@ SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL CORRESPONDING BY (foo, b
 SELECT _0.foo AS foo, _0.bar AS bar FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME ON (foo, bar) SELECT 3 AS bar, 4 AS baz) AS _0;
 
 
+# dialect: duckdb
+SELECT * FROM (SELECT 1 AS foo, 2 AS bar UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) ORDER BY bar;
+SELECT _0.foo AS foo, _0.bar AS bar, _0.baz AS baz FROM (SELECT 1 AS foo, 2 AS bar UNION ALL BY NAME SELECT 3 AS bar, 4 AS baz) AS _0 ORDER BY _0.bar;
+
+# dialect: duckdb
+SELECT baz FROM (SELECT 1 AS foo, 2 AS bar UNION BY NAME SELECT 3 AS bar, 4 AS baz) AS t ORDER BY baz;
+SELECT t.baz AS baz FROM (SELECT 1 AS foo, 2 AS bar UNION BY NAME SELECT 3 AS bar, 4 AS baz) AS t ORDER BY baz;
+
 # dialect: bigquery
 # execute: false
 SELECT * FROM (SELECT 1 AS foo, 2 AS bar FULL UNION ALL BY NAME ON (foo, bar) SELECT 3 AS bar, 4 AS baz);

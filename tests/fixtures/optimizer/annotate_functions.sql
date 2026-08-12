@@ -7405,6 +7405,10 @@ BOOLEAN;
 WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 
+# dialect: postgres
+ENCODE(tbl.bin_col, 'base64');
+TEXT;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

@@ -204,3 +204,27 @@ WITH agg AS (SELECT x.a AS a FROM x AS x) SELECT t.n AS n FROM (SELECT COUNT(*) 
 # title: shadowed clause column resolves to the correct side of a join
 SELECT t.n FROM (SELECT ARRAY_AGG(q.b) AS q, COUNT(*) AS n FROM (SELECT a, b FROM x) AS q CROSS JOIN (SELECT c FROM y) AS r GROUP BY a HAVING a > 0) AS t;
 SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS q CROSS JOIN (SELECT 1 AS _ FROM y AS y) AS r GROUP BY a HAVING a > 0) AS t;
+
+--------------------------------------
+-- GROUP BY ALL implicitly groups by every non-aggregate projection, so those
+-- projections must be retained even when unreferenced by the outer scope
+--------------------------------------
+SELECT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS t;
+
+-- Unreferenced aggregate projections stay prunable, including those after the
+-- first aggregate in the SELECT list
+SELECT t.a FROM (SELECT a, SUM(b) AS s1, MAX(b) AS s2 FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x GROUP BY ALL) AS t;
+
+-- An implicit key can be a non-column expression, not just a bare column
+SELECT t.a, t.c FROM (SELECT a, b, b + 1 AS c, SUM(a) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a, t.c AS c FROM (SELECT x.a AS a, x.b AS b, x.b + 1 AS c FROM x AS x GROUP BY ALL) AS t;
+
+-- ALL is a grouping-sets modifier (not implicit-key inference) once CUBE/ROLLUP/an explicit
+-- list is present, so those columns stay prunable like any other explicit GROUP BY column
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL CUBE (a, b)) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL CUBE (x.a, x.b)) AS t;
+
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL a, b) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL x.a, x.b) AS t;

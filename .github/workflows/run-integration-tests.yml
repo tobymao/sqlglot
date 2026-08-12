@@ -2,7 +2,6 @@ name: Run Integration Tests
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
 
 jobs:
   should-run:
@@ -20,10 +19,6 @@ jobs:
             Github event name: ${{ github.event_name }}
 
             Github event ${{ toJSON(github.event) }}
-
-            Github event comment body: ${{ github.event.comment.body }}
-
-            Github event pr body: ${{ github.event.pull_request.body }}
 
             Generic Number: ${{ github.event.number }}
 

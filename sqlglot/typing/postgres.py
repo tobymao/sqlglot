@@ -12,4 +12,10 @@ EXPRESSION_METADATA = {
             exp.WidthBucket,
         }
     },
+    **{
+        expr_type: {"returns": exp.DType.TEXT}
+        for expr_type in {
+            exp.Encode,
+        }
+    },
 }

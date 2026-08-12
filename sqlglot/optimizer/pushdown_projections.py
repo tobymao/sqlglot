@@ -6,7 +6,7 @@ from collections import defaultdict
 from sqlglot import alias, exp
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -141,27 +141,6 @@ def pushdown_projections(
                 table_name = col.table
                 col_name = col.name
                 selects[table_name].add(col_name)
-
-            # qualify's alias shadow workaround leaves bare identifier/unqualified column refs that the scan above misses
-            resolver = None
-            for clause in (
-                scope.expression.args.get("group"),
-                scope.expression.args.get("having"),
-                scope.expression.args.get("qualify"),
-            ):
-                if not clause:
-                    continue
-                for ref in find_all_in_scope(clause, exp.Identifier, exp.Column):
-                    if isinstance(ref, exp.Column):
-                        if ref.table:
-                            continue
-                    elif isinstance(ref.parent, (exp.Column, exp.Alias, exp.TableAlias)):
-                        continue
-                    if resolver is None:
-                        resolver = Resolver(scope, schema)
-                    source_table = resolver.get_table(ref.name)
-                    if source_table:
-                        selects[source_table.name].add(ref.name)
 
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():

@@ -1699,7 +1699,16 @@ class AggFunc(Func):
 
 
 class Column(Expression, Condition):
-    arg_types = {"this": True, "table": False, "db": False, "catalog": False, "join_mark": False}
+    # "shadow" marks a column whose qualifier is shadowed by a projection alias, so it must be
+    # rendered unqualified in dialects where PROJECTION_ALIASES_SHADOW_SOURCE_NAMES is set
+    arg_types = {
+        "this": True,
+        "table": False,
+        "db": False,
+        "catalog": False,
+        "join_mark": False,
+        "shadow": False,
+    }
 
     @property
     def table(self) -> str:

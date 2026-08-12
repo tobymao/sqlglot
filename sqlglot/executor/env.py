@@ -261,6 +261,7 @@ ENV = {
     "INTERVAL": interval,
     "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),
+    "LENGTH": null_if_any(len),
     "LIKE": null_if_any(lambda this, e: _like(this, e)),
     "ILIKE": null_if_any(lambda this, e: _like(this, e, re.IGNORECASE)),
     "LOWER": null_if_any(lambda arg: arg.lower()),

@@ -739,6 +739,14 @@ class TestExecutor(unittest.TestCase):
                     negated, [r for r in [("Bump version",), ("Add feature",)] if r not in matches]
                 )
 
+    def test_length(self):
+        tables = {"t": [{"s": "abc"}, {"s": ""}, {"s": None}]}
+
+        for func in ("LENGTH", "CHAR_LENGTH"):
+            with self.subTest(func):
+                rows = execute(f"SELECT {func}(s) FROM t", tables=tables).rows
+                self.assertEqual(rows, [(3,), (0,), (None,)])
+
     def test_ilike_semantics(self):
         tables = {"t": [{"s": "Bump Version"}, {"s": "B.mp Version"}, {"s": "Add feature"}]}
 

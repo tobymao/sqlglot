@@ -523,7 +523,13 @@ class TypeAnnotator:
                     i = iter(dot_parts)
                     parent = expr.parent
                     while isinstance(parent, exp.Dot):
-                        parent.expression.replace(exp.to_identifier(next(i), quoted=True))
+                        identifier = parent.expression
+                        if isinstance(identifier, exp.Identifier):
+                            # Rename in place to preserve the identifier's meta, e.g. token positions
+                            identifier.set("this", next(i))
+                            identifier.set("quoted", True)
+                        else:
+                            identifier.replace(exp.to_identifier(next(i), quoted=True))
                         parent = parent.parent
 
                     expr.meta.pop("dot_parts", None)

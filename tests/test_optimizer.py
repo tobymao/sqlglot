@@ -2028,6 +2028,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         div = parse_one("a / b")
         self.assertTrue(annotator._annotate_div(div).is_type(exp.DataType.Type.UNKNOWN))
 
+    def test_annotate_json_dot_parts_preserve_meta(self):
+        # The case restoration of JSON dot parts must rename identifiers in place, so
+        # that their meta (e.g. token positions) is preserved
+        schema = {"cat": {"sch": {"t": {"id": "varchar", "payload": "json"}}}}
+        sql = "SELECT payload.CaseSensitive FROM cat.sch.t"
+
+        qualified = qualify(
+            parse_one(sql, dialect="duckdb"),
+            schema=schema,
+            dialect="snowflake",
+            quote_identifiers=False,
+        )
+        annotated = annotate_types(qualified, schema=schema, dialect="snowflake")
+
+        identifier = annotated.selects[0].this.expression
+        self.assertIsInstance(identifier, exp.Identifier)
+        self.assertEqual(identifier.name, "CaseSensitive")
+        self.assertTrue(identifier.quoted)
+        self.assertEqual(
+            sql[identifier.meta["start"] : identifier.meta["end"] + 1], "CaseSensitive"
+        )
+
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})
         qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)

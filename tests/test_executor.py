@@ -138,6 +138,8 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("MAP([1], [2])")), "MAP([1], [2])")
         self.assertEqual(generate(parse_one("1 is null")), "1 == None")
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
+        self.assertEqual(generate(parse_one("x like 'y'")), "LIKE(scope[None][x], 'y')")
+        self.assertEqual(generate(parse_one("x not like 'y'")), "NOT(LIKE(scope[None][x], 'y'))")
 
     def test_optimized_tpch(self):
         for i, (_, sql, optimized) in enumerate(self.tpch_sqls, start=1):
@@ -700,6 +702,20 @@ class TestExecutor(unittest.TestCase):
                 result = execute(sql)
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
+
+    def test_negated_like(self):
+        """NOT LIKE must exclude what LIKE matches, and match no NULL either."""
+        tables = {"t": [{"s": "Bump version"}, {"s": "Add feature"}, {"s": None}]}
+
+        result = execute("SELECT s FROM t WHERE s LIKE 'Bump%'", tables=tables)
+        self.assertEqual(result.rows, [("Bump version",)])
+
+        for sql in (
+            "SELECT s FROM t WHERE s NOT LIKE 'Bump%'",
+            "SELECT s FROM t WHERE NOT (s LIKE 'Bump%')",
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, [("Add feature",)])
 
     def test_aggregate_without_group_by(self):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})

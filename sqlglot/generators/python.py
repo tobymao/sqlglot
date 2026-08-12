@@ -58,6 +58,15 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
     return f"lambda {self.expressions(e, flat=True)}: {self.sql(e, 'this')}"
 
 
+def _like_sql(self: generator.Generator, e: exp.Like | exp.ILike) -> str:
+    sql = self.func(e.key, e.this, e.expression)
+
+    if e.args.get("negate"):
+        sql = f"NOT({sql})"
+
+    return sql
+
+
 def _div_sql(self: generator.Generator, e: exp.Div) -> str:
     denominator = self.sql(e, "expression")
 
@@ -90,6 +99,7 @@ class PythonGenerator(generator.Generator):
         exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
         exp.Div: _div_sql,
         exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
+        exp.ILike: _like_sql,
         exp.In: lambda self, e: self.func("IN", e.this, *e.expressions),
         exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",
         exp.Is: lambda self, e: (
@@ -102,6 +112,7 @@ class PythonGenerator(generator.Generator):
         exp.JSONPathKey: lambda self, e: f"'{self.sql(e.this)}'",
         exp.JSONPathSubscript: lambda self, e: f"'{e.this}'",
         exp.Lambda: _lambda_sql,
+        exp.Like: _like_sql,
         exp.Not: lambda self, e: self.func("NOT", e.this),
         exp.Null: lambda *_: "None",
         exp.Or: lambda self, e: f"OR(lambda: {self.sql(e.left)}, lambda: {self.sql(e.right)})",

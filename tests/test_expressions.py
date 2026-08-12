@@ -461,6 +461,21 @@ class TestExprs(unittest.TestCase):
         )
         self.assertEqual(expression.named_selects, ["foo", "bar"])
 
+        expression = parse_one("SELECT a, b FROM x UNION BY NAME SELECT c, b FROM y", read="duckdb")
+        self.assertEqual(expression.named_selects, ["a", "b", "c"])
+
+        expression = parse_one(
+            "SELECT a FROM x UNION SELECT b FROM y UNION BY NAME SELECT c FROM z",
+            read="duckdb",
+        )
+        self.assertEqual(expression.named_selects, ["a", "c"])
+
+        expression = parse_one(
+            "(SELECT a FROM x UNION BY NAME SELECT c FROM z) UNION SELECT a, c FROM w",
+            read="duckdb",
+        )
+        self.assertEqual(expression.named_selects, ["a", "c"])
+
     def test_selects(self):
         expression = parse_one("SELECT FROM x")
         self.assertEqual(expression.selects, [])

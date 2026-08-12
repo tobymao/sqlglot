@@ -2706,6 +2706,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
 
+        # BY NAME with differing column counts: columns missing from one side are
+        # NULL-filled, so the other side's type is preserved
+        union_by_name = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b, t.c FROM (SELECT 1 AS a, 2 AS b UNION BY NAME SELECT 'x' AS c) AS t",
+                read="duckdb",
+            )
+        )
+        self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.INT)
+        self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.INT)
+        self.assertEqual(union_by_name.selects[2].type.this, exp.DataType.Type.VARCHAR)
+
         # Test chained UNIONs
         sql = """
             WITH t AS

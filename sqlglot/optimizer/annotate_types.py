@@ -385,8 +385,9 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if isinstance(expression, exp.SetOperation) and len(expression.this.selects) == len(
-            expression.expression.selects
+        if isinstance(expression, exp.SetOperation) and (
+            expression.args.get("by_name")
+            or len(expression.this.selects) == len(expression.expression.selects)
         ):
             return self._get_setop_column_types(expression)
 
@@ -633,12 +634,16 @@ class TypeAnnotator:
 
         col_types: dict[str, exp.DataType | exp.DType] = {}
 
-        # Validate that left and right have same number of projections
+        # Validate that left and right have same number of projections (BY NAME
+        # operations match columns by name, so their counts are allowed to differ)
         if not (
             isinstance(setop, exp.SetOperation)
             and setop.this.selects
             and setop.expression.selects
-            and len(setop.this.selects) == len(setop.expression.selects)
+            and (
+                setop.args.get("by_name")
+                or len(setop.this.selects) == len(setop.expression.selects)
+            )
         ):
             return col_types
 
@@ -650,14 +655,18 @@ class TypeAnnotator:
                 continue
 
             if set_op.args.get("by_name"):
+                # Columns missing from one side are filled with NULLs, so the other
+                # side's type is preserved (NULL is the identity for _maybe_coerce)
                 r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
                 setop_cols = {
                     s.alias_or_name: self._maybe_coerce(
                         t.cast(exp.DataType, s.type),
-                        r_type_by_select.get(s.alias_or_name) or exp.DType.UNKNOWN,
+                        r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
                     )
                     for s in set_op.this.selects
                 }
+                for name, r_type in r_type_by_select.items():
+                    setop_cols[name] = r_type or exp.DType.UNKNOWN
             else:
                 setop_cols = {
                     ls.alias_or_name: self._maybe_coerce(

@@ -44,8 +44,11 @@ class MySQL(Dialect):
         "%u": "%W",
         "%k": "%-H",
         "%l": "%-I",
+        "%r": "%I:%M:%S %p",
         "%T": "%H:%M:%S",
+        "%v": "%V",
         "%W": "%A",
+        "%x": "%G",
     }
 
     VALID_INTERVAL_UNITS = {

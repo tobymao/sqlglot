@@ -719,7 +719,6 @@ class TestExecutor(unittest.TestCase):
                     result = execute(sql, schema=schema, tables=tables, dialect=dialect)
                     self.assertEqual(result.rows, [(expected,)])
 
-        # unknown operand types are still truncated
         result = execute("SELECT n / 3 AS x FROM t", tables=tables, dialect="postgres")
         self.assertEqual(result.rows, [(3,)])
 

@@ -715,6 +715,26 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         return
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
+
+        # Bare tables in relation position (e.g. UPDATE ... FROM t, DELETE / MERGE ... USING t)
+        # aren't part of any query, so they're scoped as standalone tables; `_traverse_tables`
+        # also picks up any joins hanging off of them
+        relations: list[exp.Expr] = []
+        from_ = expression.args.get("from_")
+
+        if isinstance(from_, exp.From):
+            relations.append(from_.this)
+
+        using = expression.args.get("using")
+        if isinstance(using, list):
+            relations.extend(using)
+        elif isinstance(using, exp.Expr):
+            relations.append(using)
+
+        for relation in relations:
+            if isinstance(relation, exp.Table):
+                yield from _traverse_scope(Scope(relation, cte_sources=scope.cte_sources))
+
         for query in find_all_in_scope(expression, exp.Query):
             # This check ensures we don't yield the CTE/nested queries twice
             if isinstance(query.parent, (exp.CTE, exp.Subquery)):
@@ -722,8 +742,10 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
 
             if _is_from_or_join(query):
                 parent = query.parent
-                if isinstance(parent, exp.Join) and isinstance(parent.parent, exp.Subquery):
-                    # Scoped by the wrapper of the FROM-position subquery it's joined to
+                if isinstance(parent, exp.Join) and isinstance(
+                    parent.parent, (exp.Subquery, exp.Table)
+                ):
+                    # Scoped by the FROM-position relation (wrapper or table) it's joined to
                     continue
 
                 # A query in FROM/JOIN position (e.g. UPDATE ... FROM (SELECT ...) AS s) acts

@@ -1972,6 +1972,36 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
 
+        # Bare tables in relation position get their own scopes, including any attached joins
+        sql = "UPDATE t1 SET x = u.x FROM c.db.u AS u"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+
+        sql = "MERGE INTO t1 USING c.db.u AS u ON t1.id = u.id WHEN MATCHED THEN UPDATE SET x = u.x"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+
+        sql = (
+            "WITH source AS (SELECT * FROM c.db.real) DELETE FROM t1 "
+            "USING source JOIN c.db.lookup AS l ON source.id = l.id"
+        )
+        scopes = traverse_scope(parse_one(sql, dialect="duckdb"))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(set(scopes[0].sources), {"real"})
+        self.assertEqual(set(scopes[1].sources), {"source", "l"})
+        self.assertIs(scopes[1].sources["source"], scopes[0])
+
+        # The subquery joined to a FROM-position table is scoped by that table, not twice
+        sql = (
+            "UPDATE t1 SET x = q.x FROM c.db.u AS u JOIN (SELECT * FROM c.db.v) AS q ON u.id = q.id"
+        )
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(set(scopes[0].sources), {"v"})
+        self.assertEqual(set(scopes[1].sources), {"u", "q"})
+
         # Value-position subqueries can be correlated to the DML's target table
         sql = "UPDATE t SET x = (SELECT MAX(u.a) FROM u WHERE u.id = t.id)"
         self.assertEqual(

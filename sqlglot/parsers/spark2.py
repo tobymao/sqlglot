@@ -18,12 +18,23 @@ def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.from_str(to_type))
 
 
+def build_int_div(args: list) -> exp.IntDiv:
+    # Wrap the operands if they are binary nodes, e.g. DIV(a + 1, 7) -> (a + 1) DIV 7
+    this = seq_get(args, 0)
+    expression = seq_get(args, 1)
+
+    this = exp.Paren(this=this) if isinstance(this, exp.Binary) else this
+    expression = exp.Paren(this=expression) if isinstance(expression, exp.Binary) else expression
+
+    return exp.IntDiv(this=this, expression=expression)
+
+
 class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
     PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
 
-    FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR}
+    FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR, TokenType.DIV}
 
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
@@ -36,6 +47,7 @@ class Spark2Parser(HiveParser):
         "DAYOFMONTH": lambda args: exp.DayOfMonth(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "DAYOFWEEK": lambda args: exp.DayOfWeek(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "DAYOFYEAR": lambda args: exp.DayOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
+        "DIV": build_int_div,
         "DOUBLE": build_as_cast("double"),
         "ELEMENT_AT": lambda args: exp.Bracket(
             this=seq_get(args, 0),

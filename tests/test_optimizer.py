@@ -1942,13 +1942,74 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         sql = (
             "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
         )
-        self.assertEqual(len(traverse_scope(parse_one(sql))), 3)
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertTrue(all(scope.is_subquery for scope in scopes))
+
+        sql = "UPDATE t1 SET x = s.x FROM (SELECT x FROM t2) AS s"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].expression.sql(), "SELECT x FROM t2")
+        self.assertEqual(set(scopes[0].sources), {"t2"})
+        self.assertTrue(scopes[0].is_derived_table)
+        self.assertEqual(set(scopes[1].sources), {"s"})
+
+        # Joins and column lists attached to the FROM-position subquery are not lost
+        sql = "UPDATE t1 SET x = s.renamed FROM (SELECT y FROM t2) AS s(renamed) CROSS JOIN v WHERE v.id = t1.id"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].outer_columns, ["renamed"])
+        self.assertEqual(set(scopes[1].sources), {"s", "v"})
+
+        sql = "UPDATE t1 SET x = 1 FROM (t2 JOIN v ON t2.id = v.id) WHERE t1.id = t2.id"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t2", "v"})
 
         sql = "UPDATE tbl1 SET col = 1 WHERE EXISTS (SELECT 1 FROM tbl2 WHERE tbl1.id = tbl2.id)"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 1)
 
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+
+        # Value-position subqueries can be correlated to the DML's target table
+        sql = "UPDATE t SET x = (SELECT MAX(u.a) FROM u WHERE u.id = t.id)"
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(sql),
+                schema={"t": {"id": "int", "x": "int"}, "u": {"a": "int", "id": "int"}},
+            ).sql(),
+            'UPDATE "t" SET "x" = (SELECT MAX("u"."a") AS "_col_0" FROM "u" AS "u" WHERE "u"."id" = "t"."id")',
+        )
+
+        # The query of an INSERT / CTAS is scoped as a derived table
+        for sql in ("INSERT INTO t (SELECT a FROM x)", "CREATE TABLE t AS (SELECT a FROM x)"):
+            scopes = traverse_scope(parse_one(sql))
+            self.assertEqual(len(scopes), 2)
+            self.assertEqual(scopes[0].expression.sql(), "SELECT a FROM x")
+            self.assertEqual(set(scopes[0].sources), {"x"})
+            self.assertEqual(set(scopes[1].sources), {""})
+
+        sql = "MERGE INTO t USING (SELECT id, a FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = s.a"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+        self.assertTrue(scopes[0].is_subquery)
+
+        sql = "MERGE INTO t USING (SELECT * FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = (SELECT MAX(w.a) FROM w WHERE w.id = t.id)"
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(sql),
+                schema={
+                    "t": {"id": "int", "x": "int"},
+                    "u": {"id": "int", "a": "int"},
+                    "w": {"id": "int", "a": "int"},
+                },
+            ).sql(),
+            'MERGE INTO "t" USING (SELECT "u"."id" AS "id", "u"."a" AS "a" FROM "u" AS "u") AS "s" '
+            'ON "t"."id" = "s"."id" WHEN MATCHED THEN UPDATE SET "x" = '
+            '(SELECT MAX("w"."a") AS "_col_0" FROM "w" AS "w" WHERE "w"."id" = "t"."id")',
+        )
 
         # VALUES as a set operation operand, e.g. in ASTs built programmatically (the parser
         # wraps such operands in selects); the compiled left/right accessors raise a TypeError

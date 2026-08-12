@@ -7037,6 +7037,18 @@ DOUBLE;
 LEAD(tbl.bin_col) OVER (ORDER BY tbl.int_col);
 BINARY;
 
+# dialect: mysql
+LAG(tbl.int_col) OVER (ORDER BY tbl.int_col);
+INT;
+
+# dialect: mysql
+LAG(tbl.str_col) OVER (ORDER BY tbl.int_col);
+VARCHAR;
+
+# dialect: mysql
+LAG(tbl.date_col) OVER (ORDER BY tbl.int_col);
+DATE;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------

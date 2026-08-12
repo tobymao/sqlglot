@@ -717,6 +717,28 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 self.assertEqual(execute(sql, tables=tables).rows, [("Add feature",)])
 
+    def test_like_semantics(self):
+        tables = {"t": [{"s": "Bump version"}, {"s": "Add feature"}]}
+
+        for pattern, matches in (
+            ("Bump", []),
+            ("Bump%", [("Bump version",)]),
+            ("%version", [("Bump version",)]),
+            ("Bump_version", [("Bump version",)]),
+            ("B.mp version", []),
+            ("Bump version", [("Bump version",)]),
+        ):
+            with self.subTest(pattern):
+                rows = execute(f"SELECT s FROM t WHERE s LIKE '{pattern}'", tables=tables).rows
+                self.assertEqual(rows, matches)
+
+                negated = execute(
+                    f"SELECT s FROM t WHERE s NOT LIKE '{pattern}'", tables=tables
+                ).rows
+                self.assertEqual(
+                    negated, [r for r in [("Bump version",), ("Add feature",)] if r not in matches]
+                )
+
     def test_typed_division(self):
         """Postgres' 10 / 3 is 3, but its 10 / 3.0 and 10 / 3::numeric are not."""
         schema = {"t": {"n": "INT", "d": "DECIMAL"}}

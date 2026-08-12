@@ -256,7 +256,9 @@ ENV = {
     "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),
     "LIKE": null_if_any(
-        lambda this, e: bool(re.match(e.replace("_", ".").replace("%", ".*"), this))
+        lambda this, e: bool(
+            re.fullmatch(re.escape(e).replace("_", ".").replace("%", ".*"), this, re.DOTALL)
+        )
     ),
     "LOWER": null_if_any(lambda arg: arg.lower()),
     "LT": null_if_any(lambda this, e: this < e),

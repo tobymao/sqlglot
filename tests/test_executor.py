@@ -822,6 +822,34 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT n / 3 AS x FROM t", tables=tables, dialect="postgres")
         self.assertEqual(result.rows, [(3,)])
 
+    def test_null_ordering_honors_nulls_first_and_dialect_defaults(self):
+        schema = {"t": {"a": "INT"}}
+        tables = {"t": [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]}
+
+        for sql, expected in (
+            ("SELECT a FROM t ORDER BY a NULLS FIRST", [None, None, 1, 3]),
+            ("SELECT a FROM t ORDER BY a NULLS LAST", [1, 3, None, None]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS FIRST", [None, None, 3, 1]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS LAST", [3, 1, None, None]),
+        ):
+            for dialect in ("postgres", "duckdb", "mysql"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual([row[0] for row in result.rows], expected)
+
+        for dialect, ascending, descending in (
+            ("postgres", [1, 3, None, None], [None, None, 3, 1]),
+            ("mysql", [None, None, 1, 3], [3, 1, None, None]),
+            ("duckdb", [1, 3, None, None], [3, 1, None, None]),
+        ):
+            for sql, expected in (
+                ("SELECT a FROM t ORDER BY a", ascending),
+                ("SELECT a FROM t ORDER BY a DESC", descending),
+            ):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual([row[0] for row in result.rows], expected)
+
     def test_aggregate_without_group_by(self):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})
         self.assertEqual(result.columns, ("_col_0",))

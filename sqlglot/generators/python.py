@@ -83,6 +83,13 @@ def _div_sql(self: generator.Generator, e: exp.Div) -> str:
     return sql
 
 
+def _dpipe_sql(self: generator.Generator, e: exp.DPipe) -> str:
+    if e.this.is_type(exp.DataType.Type.ARRAY) or e.expression.is_type(exp.DataType.Type.ARRAY):
+        return self.func("ARRAYCONCAT", e.this, e.expression)
+
+    return self.func("SAFECONCAT" if e.args.get("safe") else "CONCAT", e.this, e.expression)
+
+
 class PythonGenerator(generator.Generator):
     TRANSFORMS = {
         **{klass: _rename for klass in subclasses(exp.__name__, exp.Binary)},
@@ -100,6 +107,7 @@ class PythonGenerator(generator.Generator):
         ),
         exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
         exp.Div: _div_sql,
+        exp.DPipe: _dpipe_sql,
         exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
         exp.ILike: _like_sql,
         exp.In: lambda self, e: self.func("IN", e.this, *e.expressions),

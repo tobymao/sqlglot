@@ -747,6 +747,36 @@ class TestExecutor(unittest.TestCase):
                 rows = execute(f"SELECT {func}(s) FROM t", tables=tables).rows
                 self.assertEqual(rows, [(3,), (0,), (None,)])
 
+    def test_dpipe(self):
+        tables = {"t": [{"a": "x", "b": "y", "n": 1, "arr": [1, 2], "nul": None}]}
+
+        for expression, expected in (
+            ("a || b", "xy"),
+            ("a || b || a", "xyx"),
+            ("a || n", "x1"),
+            ("n || a", "1x"),
+            ("a || nul", None),
+            ("nul || a", None),
+            ("arr || arr", [1, 2, 1, 2]),
+            ("arr || n", [1, 2, 1]),
+            ("n || arr", [1, 1, 2]),
+            ("arr || nul", None),
+            ("ARRAY_CONCAT(arr, arr)", [1, 2, 1, 2]),
+            ("ARRAY_CAT(arr, arr, arr)", [1, 2, 1, 2, 1, 2]),
+        ):
+            with self.subTest(expression):
+                rows = execute(f"SELECT {expression} FROM t", tables=tables).rows
+                self.assertEqual(rows, [(expected,)])
+
+    def test_dpipe_source_dialect_coercion(self):
+        tables = {"t": [{"a": "x", "n": 1}]}
+
+        rows = execute("SELECT a || n FROM t", tables=tables, dialect="postgres").rows
+        self.assertEqual(rows, [("x1",)])
+
+        with self.assertRaises(ExecuteError):
+            execute("SELECT a || n FROM t", tables=tables, dialect="trino")
+
     def test_ilike_semantics(self):
         tables = {"t": [{"s": "Bump Version"}, {"s": "B.mp Version"}, {"s": "Add feature"}]}
 

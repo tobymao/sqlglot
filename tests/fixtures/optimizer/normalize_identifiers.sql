@@ -77,3 +77,50 @@ SELECT @X;
 # dialect: bigquery,normalization_strategy=case_insensitive_uppercase
 SELECT `foo`, `BaR` FROM baz CROSS JOIN `bla` CROSS JOIN bloo;
 SELECT `FOO`, `BAR` FROM BAZ CROSS JOIN `BLA` CROSS JOIN BLOO;
+
+# title: struct field names are data, so they're not normalized
+# dialect: duckdb
+SELECT TO_JSON(STRUCT_PACK(Foo := 1)), UNION_TAG(UNION_VALUE(Num := 1)), CAST({'Foo': 1} AS STRUCT(Foo INT)), Bar FROM Tbl;
+SELECT TO_JSON({'Foo': 1}), UNION_TAG(UNION_VALUE(Num := 1)), CAST({'Foo': 1} AS STRUCT(Foo INT)), bar FROM tbl;
+
+# title: column definitions are normalized, unlike struct field definitions
+# dialect: duckdb
+CREATE TABLE Tbl (Foo INT, Bar STRUCT(Baz INT));
+CREATE TABLE tbl (foo INT, bar STRUCT(Baz INT));
+
+# dialect: snowflake
+SELECT CAST(OBJECT_CONSTRUCT('Foo', 1) AS OBJECT(Foo INT)) FROM Tbl;
+SELECT CAST(OBJECT_CONSTRUCT('Foo', 1) AS OBJECT(Foo INT)) FROM TBL;
+
+# dialect: bigquery
+SELECT TO_JSON_STRING(STRUCT(1 AS Foo)) FROM Tbl;
+SELECT TO_JSON_STRING(STRUCT(1 AS Foo)) FROM tbl;
+
+# dialect: trino
+SELECT CAST(CAST(ROW(1) AS ROW("Foo" INT)) AS JSON) FROM Tbl;
+SELECT CAST(CAST(ROW(1) AS ROW("Foo" INTEGER)) AS JSON) FROM tbl;
+
+# title: duckdb only normalizes ascii characters
+# dialect: duckdb
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";
+
+# title: postgres only normalizes ascii characters
+# dialect: postgres
+SELECT FoÄ FROM BaÜ;
+SELECT foÄ FROM baÜ;
+
+# title: bigquery only normalizes ascii characters
+# dialect: bigquery
+SELECT `FoÄ` FROM `BaÜ`;
+SELECT `foÄ` FROM `baÜ`;
+
+# title: redshift only normalizes ascii characters
+# dialect: redshift
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";
+
+# title: spark normalizes unicode characters
+# dialect: spark
+SELECT `FoÄ` FROM `BaÜ`;
+SELECT `foä` FROM `baü`;

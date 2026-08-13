@@ -41,6 +41,11 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         Some dialects (e.g. DuckDB) treat all identifiers as case-insensitive even
         when they're quoted, so in these cases all identifiers are normalized.
 
+    Known limitation:
+        Engines that preserve case expose it as data, i.e., as output column names, so normalizing
+        can change what a statement produces. E.g., `CREATE TABLE t AS SELECT 1 AS Foo` materializes
+        a `foo` column in DuckDB after this transformation, instead of `Foo`.
+
     Example:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one('SELECT Bar.A AS A FROM "Foo".Bar')
@@ -64,16 +69,48 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         expression = exp.parse_identifier(expression, dialect=dialect)
 
     for node in expression.walk(prune=lambda n: bool(n.meta_get("case_sensitive"))):
-        if not node.meta_get("case_sensitive"):
-            if store_original_column_identifiers and isinstance(node, exp.Column):
-                # TODO: This does not handle non-column cases, e.g PARSE_JSON(...).key
+        if node.meta_get("case_sensitive"):
+            continue
+
+        if store_original_column_identifiers:
+            if isinstance(node, exp.Column):
                 parent = node
                 while parent and isinstance(parent.parent, exp.Dot):
                     parent = parent.parent
 
                 node.meta["dot_parts"] = [p.name for p in parent.parts]
+            elif isinstance(node.parent, exp.Dot) and not isinstance(
+                node, (exp.Dot, exp.Identifier)
+            ):
+                # Dot access rooted at an arbitrary expression, e.g. PARSE_JSON(...).key
+                dot_parts = []
+                child, parent = node, node.parent
+                while isinstance(parent, exp.Dot) and parent.this is child:
+                    dot_parts.append(parent.expression.name)
+                    child, parent = parent, parent.parent
 
-            if isinstance(node, exp.Identifier):
-                dialect.normalize_identifier(node)
+                if dot_parts:
+                    node.meta["dot_parts"] = dot_parts
+
+        if isinstance(node, exp.Identifier) and not _is_field_name(node):
+            dialect.normalize_identifier(node)
 
     return expression
+
+
+def _is_field_name(identifier: exp.Identifier) -> bool:
+    """
+    Whether this identifier names a field at a construction site, e.g. a struct literal key.
+
+    Such names aren't resolved by the engine, they're baked into the value that is produced,
+    so normalizing them would change the data itself, e.g. the keys of a serialized struct.
+    """
+    parent = identifier.parent
+
+    if isinstance(parent, exp.PropertyEQ):
+        return parent.this is identifier
+
+    if isinstance(parent, exp.ColumnDef):
+        return parent.this is identifier and isinstance(parent.parent, exp.DataType)
+
+    return False

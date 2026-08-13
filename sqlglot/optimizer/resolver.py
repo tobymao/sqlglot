@@ -361,11 +361,17 @@ class Resolver:
         if col_type and col_type.is_type(exp.DType.ARRAY):
             col_type = seq_get(col_type.expressions, 0)
 
-        return (
-            [k.name for k in col_type.expressions]
-            if col_type and col_type.is_type(exp.DType.STRUCT)
-            else []
-        )
+        if not col_type or not col_type.is_type(exp.DType.STRUCT):
+            return []
+
+        # Struct field names are data, so they're not normalized in the AST, but the columns
+        # they expose here are referenced like any other column, i.e. they are normalized
+        return [
+            self.dialect.normalize_identifier(k.this.copy()).name
+            if isinstance(k.this, exp.Identifier)
+            else k.name
+            for k in col_type.expressions
+        ]
 
     def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
         """

@@ -2141,6 +2141,63 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             sql[identifier.meta["start"] : identifier.meta["end"] + 1], "CaseSensitive"
         )
 
+    def test_annotate_semi_structured_dot_parts(self):
+        # Dot access into semi-structured values is a case sensitive data lookup, unlike
+        # struct field access, which the engines resolve like any other identifier
+        schema = {
+            "t": {"m": "MAP(VARCHAR, INT)", "v": "VARIANT", "j": "JSON", "s": "STRUCT(Foo INT)"}
+        }
+
+        for sql, expected in (
+            ("SELECT m.Foo FROM t", 'SELECT "t"."m"."Foo" AS "foo" FROM "t" AS "t"'),
+            ("SELECT v.Foo FROM t", 'SELECT "t"."v"."Foo" AS "foo" FROM "t" AS "t"'),
+            ("SELECT j.Foo.Bar FROM t", 'SELECT "t"."j"."Foo"."Bar" AS "bar" FROM "t" AS "t"'),
+            ("SELECT s.Foo FROM t", 'SELECT "t"."s"."foo" AS "foo" FROM "t" AS "t"'),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="duckdb"), schema=schema, dialect="duckdb"
+                )
+                annotated = annotate_types(qualified, schema=schema, dialect="duckdb")
+                self.assertEqual(annotated.sql("duckdb"), expected)
+
+    def test_annotate_dot_parts_of_non_column_roots(self):
+        # Dot access is also restored when the chain is rooted at an arbitrary expression
+        for sql, dialect, expected in (
+            (
+                "SELECT PARSE_JSON('{\"Foo\":1}').Foo",
+                "bigquery",
+                "SELECT PARSE_JSON('{\"Foo\":1}').`Foo` AS `foo`",
+            ),
+            (
+                "SELECT ('{\"Foo\":1}'::JSON).Foo",
+                "duckdb",
+                'SELECT (CAST(\'{"Foo":1}\' AS JSON))."Foo" AS "foo"',
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(parse_one(sql, dialect=dialect), dialect=dialect)
+                annotated = annotate_types(qualified, dialect=dialect)
+                self.assertEqual(annotated.sql(dialect), expected)
+
+    def test_annotate_unnormalized_struct_fields(self):
+        # Struct field names aren't normalized in the AST, because they're data, so the
+        # references that resolve to them have to be normalized on the fly
+        for sql, dialect, expected in (
+            ("SELECT s.Foo AS x FROM (SELECT {'Foo': 1} AS s) t", "duckdb", "INT"),
+            ("SELECT s.Foo AS x FROM (SELECT CAST(y AS STRUCT(Foo INT)) AS s) t", "duckdb", "INT"),
+            ("SELECT x.Foo AS a FROM UNNEST([STRUCT(1 AS Foo)]) AS x", "bigquery", "INT64"),
+            ("SELECT Foo AS a FROM UNNEST([STRUCT(1 AS Foo)])", "bigquery", "INT64"),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(
+                    parse_one(sql, dialect=dialect),
+                    dialect=dialect,
+                    validate_qualify_columns=False,
+                )
+                annotated = annotate_types(qualified, dialect=dialect)
+                self.assertEqual(annotated.selects[0].type.sql(dialect), expected)
+
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})
         qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)

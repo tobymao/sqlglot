@@ -348,6 +348,15 @@ class TypeAnnotator:
 
         return selects
 
+    def _normalized_field_name(self, field: exp.Expr) -> str:
+        # Struct field names are data, so they're not normalized in the AST, but references
+        # to them are, so we have to normalize them here in order to match the two
+        this = field.this
+        if not isinstance(this, exp.Identifier):
+            return field.name
+
+        return self.dialect.normalize_identifier(this.copy()).name
+
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
 
@@ -378,7 +387,9 @@ class TypeAnnotator:
 
             if struct_type:
                 return {
-                    col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
+                    self._normalized_field_name(col_def): t.cast(
+                        t.Union[exp.DataType, exp.DType], col_def.kind
+                    )
                     for col_def in struct_type.expressions
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
@@ -518,21 +529,7 @@ class TypeAnnotator:
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
 
-                if expr.is_type(exp.DType.JSON) and (dot_parts := expr.meta_get("dot_parts")):
-                    # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
-                    i = iter(dot_parts)
-                    parent = expr.parent
-                    while isinstance(parent, exp.Dot):
-                        identifier = parent.expression
-                        if isinstance(identifier, exp.Identifier):
-                            # Rename in place to preserve the identifier's meta, e.g. token positions
-                            identifier.set("this", next(i))
-                            identifier.set("quoted", True)
-                        else:
-                            identifier.replace(exp.to_identifier(next(i), quoted=True))
-                        parent = parent.parent
-
-                    expr.meta.pop("dot_parts", None)
+                self._restore_dot_parts(expr)
 
                 if expr.type and expr.type.args.get("nullable") is False:
                     expr.meta["nonnull"] = True
@@ -546,6 +543,32 @@ class TypeAnnotator:
                 self._set_type(expr, returns)
             else:
                 self._set_type(expr, exp.DType.UNKNOWN)
+
+            self._restore_dot_parts(expr)
+
+    def _restore_dot_parts(self, expr: exp.Expr) -> None:
+        # Dot access into semi-structured values is a case sensitive data lookup, i.e. the
+        # engine doesn't resolve the keys as identifiers, so we undo their normalization.
+        dot_parts = expr.meta_get("dot_parts")
+        if not dot_parts or not expr.is_type(exp.DType.JSON, exp.DType.MAP, exp.DType.VARIANT):
+            return
+
+        parent = expr.parent
+        for part in dot_parts:
+            if not isinstance(parent, exp.Dot):
+                break
+
+            identifier = parent.expression
+            if isinstance(identifier, exp.Identifier):
+                # Rename in place to preserve the identifier's meta, e.g. token positions
+                identifier.set("this", part)
+                identifier.set("quoted", True)
+            else:
+                identifier.replace(exp.to_identifier(part, quoted=True))
+
+            parent = parent.parent
+
+        expr.meta.pop("dot_parts", None)
 
     def _fixup_order_by_aliases(self, scope: Scope) -> None:
         query = scope.expression
@@ -949,8 +972,9 @@ class TypeAnnotator:
         this_type = expression.this.type
 
         if this_type and this_type.is_type(exp.DType.STRUCT):
+            name = expression.expression.name
             for e in this_type.expressions:
-                if e.name == expression.expression.name:
+                if e.name == name or self._normalized_field_name(e) == name:
                     self._set_type(expression, e.kind)
                     break
 

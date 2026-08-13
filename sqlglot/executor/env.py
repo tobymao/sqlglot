@@ -284,7 +284,7 @@ ENV = {
     "NOT": sql_not,
     "OR": sql_or,
     "ORDERED": ordered,
-    "POW": pow,
+    "POW": null_if_any(pow),
     "RIGHT": null_if_any(lambda this, e: this[-e:]),
     "ROUND": null_if_any(lambda this, decimals=None, truncate=None: round(this, ndigits=decimals)),
     "STRPOSITION": str_position,

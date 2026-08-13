@@ -179,10 +179,15 @@ def cast(this, to):
     raise NotImplementedError(f"Casting {this} to '{to}' not implemented.")
 
 
+FIRST = 0
+LAST = 1
+NULL_PLACEHOLDER = 0
+
+
 def ordered(this, desc, nulls_first):
-    if desc:
-        return reverse_key(this)
-    return this
+    if this is None:
+        return (FIRST if nulls_first else LAST, NULL_PLACEHOLDER)
+    return (LAST if nulls_first else FIRST, reverse_key(this) if desc else this)
 
 
 def _like(this, e, flags=0):

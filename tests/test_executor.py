@@ -822,30 +822,25 @@ class TestExecutor(unittest.TestCase):
         result = execute("SELECT n / 3 AS x FROM t", tables=tables, dialect="postgres")
         self.assertEqual(result.rows, [(3,)])
 
-    def test_null_ordering(self):
-        """NULLS FIRST/LAST is honored, and each dialect's default is what it says."""
+    def test_null_ordering_honors_nulls_first_and_dialect_defaults(self):
         schema = {"t": {"a": "INT"}}
-        tables = {"t": [{"a": 1}, {"a": None}, {"a": 3}]}
+        tables = {"t": [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]}
 
         for sql, expected in (
-            ("SELECT a FROM t ORDER BY a NULLS FIRST", [None, 1, 3]),
-            ("SELECT a FROM t ORDER BY a NULLS LAST", [1, 3, None]),
-            ("SELECT a FROM t ORDER BY a DESC NULLS FIRST", [None, 3, 1]),
-            ("SELECT a FROM t ORDER BY a DESC NULLS LAST", [3, 1, None]),
+            ("SELECT a FROM t ORDER BY a NULLS FIRST", [None, None, 1, 3]),
+            ("SELECT a FROM t ORDER BY a NULLS LAST", [1, 3, None, None]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS FIRST", [None, None, 3, 1]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS LAST", [3, 1, None, None]),
         ):
             for dialect in ("postgres", "duckdb", "mysql"):
                 with self.subTest(f"{dialect}: {sql}"):
                     result = execute(sql, schema=schema, tables=tables, dialect=dialect)
                     self.assertEqual([row[0] for row in result.rows], expected)
 
-        # Without an explicit NULLS clause the parser resolves the dialect's own
-        # default, so DESC must not flip what it decided: Postgres defaults to
-        # NULLS LAST ascending and NULLS FIRST descending, MySQL to the reverse,
-        # and DuckDB to NULLS LAST either way.
         for dialect, ascending, descending in (
-            ("postgres", [1, 3, None], [None, 3, 1]),
-            ("mysql", [None, 1, 3], [3, 1, None]),
-            ("duckdb", [1, 3, None], [3, 1, None]),
+            ("postgres", [1, 3, None, None], [None, None, 3, 1]),
+            ("mysql", [None, None, 1, 3], [3, 1, None, None]),
+            ("duckdb", [1, 3, None, None], [3, 1, None, None]),
         ):
             for sql, expected in (
                 ("SELECT a FROM t ORDER BY a", ascending),

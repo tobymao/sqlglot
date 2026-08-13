@@ -2071,6 +2071,11 @@ class OpenJSONColumnDef(Expression):
     arg_types = {"this": True, "kind": True, "path": False, "as_json": False}
 
 
+# https://learn.microsoft.com/en-us/sql/t-sql/functions/openrowset-transact-sql
+class OpenRowset(Expression):
+    arg_types = {"expressions": True, "with": False}
+
+
 class JSONExtractQuote(Expression):
     arg_types = {
         "option": True,

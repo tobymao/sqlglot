@@ -445,6 +445,7 @@ class TSQLParser(parser.Parser):
             )
         ),
         "DATEPART": lambda self: self._parse_datepart(),
+        "OPENROWSET": lambda self: self._parse_open_rowset(),
     }
 
     # The DCOLON (::) operator serves as a scope resolution (exp.ScopeResolution) operator in T-SQL
@@ -494,6 +495,17 @@ class TSQLParser(parser.Parser):
         name = map_date_part(this, self.dialect)
 
         return self.expression(exp.Extract(this=name, expression=expression))
+
+    def _parse_open_rowset(self) -> exp.OpenRowset:
+        # OPENROWSET( ... ) [ WITH ( column_name data_type [ COLLATE collation ], ... ) ]
+        expressions = self._parse_function_args()
+
+        columns = None
+        if self._match_pair(TokenType.R_PAREN, TokenType.WITH):
+            self._match_l_paren()
+            columns = self._parse_csv(self._parse_field_def)
+
+        return self.expression(exp.OpenRowset(expressions=expressions, **{"with": columns}))
 
     def _parse_alter_table_set(self) -> exp.AlterSet:
         return self._parse_wrapped(super()._parse_alter_table_set)

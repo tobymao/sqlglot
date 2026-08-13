@@ -564,6 +564,23 @@ class TestTSQL(Validator):
         self.validate_identity("OBJECT_ID('foo')")
         self.validate_identity("OBJECT_ID('foo', 'U')")
 
+    def test_openrowset(self):
+        # OPENROWSET without a schema still round-trips
+        self.validate_identity("SELECT * FROM OPENROWSET('MSDASQL', 'DRIVER=x', 'SELECT 1') AS a")
+        self.validate_identity(
+            "SELECT sample_id FROM OPENROWSET(BULK ('/a'), FORMAT = 'csv') AS r",
+            "SELECT sample_id FROM OPENROWSET(BULK('/a'), FORMAT = 'csv') AS r",
+        )
+
+        # Azure Synapse OPENROWSET followed by a WITH (...) schema definition
+        self.validate_identity(
+            "SELECT sample_id FROM OPENROWSET(BULK ('/a/*.parquet'), DATA_SOURCE = 'ds', FORMAT = 'csv', FIRSTROW = 2) WITH (sample_id VARCHAR(50)) AS area_type",
+            "SELECT sample_id FROM OPENROWSET(BULK('/a/*.parquet'), DATA_SOURCE = 'ds', FORMAT = 'csv', FIRSTROW = 2) WITH (sample_id VARCHAR(50)) AS area_type",
+        )
+        self.validate_identity(
+            "SELECT * FROM OPENROWSET(BULK('f.csv'), FORMAT = 'csv') WITH (id INTEGER, name VARCHAR(100) COLLATE Latin1_General_100_CI_AS) AS t"
+        )
+
     def test_unpivot_value_column_comes_first(self):
         # T-SQL emits an UNPIVOT's value column ahead of its name column; DuckDB,
         # Snowflake, Oracle and Spark all emit it after. Verified against SQL Server:

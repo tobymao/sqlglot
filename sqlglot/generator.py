@@ -3933,6 +3933,16 @@ class Generator:
         )
         return f"OPENJSON({this}{path}){with_}"
 
+    def openrowset_sql(self, expression: exp.OpenRowset) -> str:
+        expressions = self.expressions(expression, flat=True)
+        columns = self.expressions(expression, key="with")
+        with_ = (
+            f" WITH ({self.seg(self.indent(columns), sep='')}{self.seg(')', sep='')}"
+            if columns
+            else ""
+        )
+        return f"OPENROWSET({expressions}){with_}"
+
     def in_sql(self, expression: exp.In) -> str:
         query = expression.args.get("query")
         unnest = expression.args.get("unnest")

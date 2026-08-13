@@ -61,6 +61,14 @@ class OracleParser(parser.Parser):
         "TO_NUMBER": lambda self: self._parse_to_number(),
     }
 
+    def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
+        if isinstance(this, exp.NthValue):
+            if self._match_text_seq("FROM", "FIRST"):
+                this.set("from_first", True)
+            elif self._match_text_seq("FROM", "LAST"):
+                this.set("from_first", False)
+        return super()._parse_window(this, alias)
+
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
         "GLOBAL": lambda self: (

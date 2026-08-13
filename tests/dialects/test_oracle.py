@@ -8,6 +8,12 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
+        self.validate_identity(
+            "SELECT NTH_VALUE(1, 1) FROM FIRST OVER (ORDER BY 1) AS FIRST_VALUE FROM DUAL"
+        )
+        self.validate_identity(
+            "SELECT NTH_VALUE(1, 1) FROM LAST OVER (ORDER BY 1) AS LAST_VALUE FROM DUAL"
+        )
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={

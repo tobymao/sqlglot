@@ -6411,12 +6411,11 @@ class Parser:
                 if parser:
                     return parser(self, this, data_type)
 
-                if (
-                    self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
-                    and data_type.is_type(exp.DType.TIMESTAMP)
-                    and TIME_ZONE_RE.search(literal)
-                ):
-                    data_type = exp.DType.TIMESTAMPTZ.into_expr()
+                if self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR and TIME_ZONE_RE.search(literal):
+                    if data_type.is_type(exp.DType.TIMESTAMP):
+                        data_type = exp.DType.TIMESTAMPTZ.into_expr()
+                    elif data_type.is_type(exp.DType.TIME):
+                        data_type = exp.DType.TIMETZ.into_expr()
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 

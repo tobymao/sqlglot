@@ -54,6 +54,10 @@ class JSONBContainsAllTopKeys(Expression, Binary, Predicate, Func):
     pass
 
 
+class JSONBContainsTopKey(Expression, Binary, Predicate, Func):
+    pass
+
+
 class JSONBContainsAnyTopKeys(Expression, Binary, Predicate, Func):
     pass
 

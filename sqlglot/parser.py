@@ -325,8 +325,10 @@ def build_jsonb_extract_scalar(
     return self.expression(exp.JSONBExtractScalar(this=this, expression=path))
 
 
-def build_jsonb_contains(self: Parser, this: exp.Expr, key: exp.Expr) -> exp.JSONBContains:
-    return self.expression(exp.JSONBContains(this=this, expression=key))
+def build_jsonb_contains_top_key(
+    self: Parser, this: exp.Expr, key: exp.Expr
+) -> exp.JSONBContainsTopKey:
+    return self.expression(exp.JSONBContainsTopKey(this=this, expression=key))
 
 
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
@@ -1102,7 +1104,7 @@ class Parser:
             exp.JSONBExtractScalar(this=this, expression=path)
         ),
         TokenType.PLACEHOLDER: lambda self, this, key: self.expression(
-            exp.JSONBContains(this=this, expression=key)
+            exp.JSONBContainsTopKey(this=this, expression=key)
         ),
     }
 

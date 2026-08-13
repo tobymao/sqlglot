@@ -349,7 +349,6 @@ class PostgresGenerator(generator.Generator):
         exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
         exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
         exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
-        exp.JSONBContains: lambda self, e: self.binary(e, "?"),
         exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DType.JSON)),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",

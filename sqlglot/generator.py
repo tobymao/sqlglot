@@ -206,6 +206,7 @@ class Generator:
         exp.Int64: lambda self, e: self.sql(exp.cast(e.this, exp.DType.BIGINT)),
         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
+        exp.JSONBContainsTopKey: lambda self, e: self.binary(e, "?"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
         exp.JSONBPathExists: lambda self, e: self.binary(e, "@?"),
         exp.JSONObject: lambda self, e: self._jsonobject_sql(e),

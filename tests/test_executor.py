@@ -930,6 +930,10 @@ class TestExecutor(unittest.TestCase):
             ("ROUND(1.2)", 1),
             ("ROUND(1.2345, 2)", 1.23),
             ("ROUND(NULL)", None),
+            ("POWER(2, 3)", 8),
+            ("POWER(NULL, 3)", None),
+            ("POWER(2, NULL)", None),
+            ("POWER(NULL, NULL)", None),
             (
                 "UNIXTOTIME(1659981729)",
                 datetime.datetime(2022, 8, 8, 18, 2, 9, tzinfo=datetime.timezone.utc),

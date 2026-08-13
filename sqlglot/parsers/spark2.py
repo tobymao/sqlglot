@@ -18,15 +18,17 @@ def build_as_cast(to_type: str) -> t.Callable[[list], exp.Expr]:
     return lambda args: exp.Cast(this=seq_get(args, 0), to=exp.DataType.from_str(to_type))
 
 
-def build_int_div(args: list) -> exp.IntDiv:
-    # Wrap the operands if they are binary nodes, e.g. DIV(a + 1, 7) -> (a + 1) DIV 7
+def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
+
+    if this is None or expression is None:
+        return exp.IntDiv(this=this, expression=expression)
 
     this = exp.Paren(this=this) if isinstance(this, exp.Binary) else this
     expression = exp.Paren(this=expression) if isinstance(expression, exp.Binary) else expression
 
-    return exp.IntDiv(this=this, expression=expression)
+    return exp.Paren(this=exp.IntDiv(this=this, expression=expression))
 
 
 class Spark2Parser(HiveParser):

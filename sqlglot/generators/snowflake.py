@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_make_interval_sql,
     no_timestamp_sql,
+    nth_value_from_sql,
     rename_func,
     strposition_sql,
     timestampdiff_sql,
@@ -518,6 +519,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.MakeInterval: no_make_interval_sql,
         exp.Max: max_or_greatest,
         exp.Min: min_or_least,
+        exp.NthValue: nth_value_from_sql,
         exp.ParseJSON: lambda self, e: self.func(
             f"{'TRY_' if e.args.get('safe') else ''}PARSE_JSON", e.this
         ),
@@ -628,19 +630,6 @@ class SnowflakeGenerator(generator.Generator):
         if asc == exp.false() and nulls_first == exp.true():
             nulls_first = None
         return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
-
-    def nthvalue_sql(self, expression: exp.NthValue) -> str:
-        result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
-
-        from_first = expression.args.get("from_first")
-
-        if from_first is not None:
-            if from_first:
-                result = result + " FROM FIRST"
-            else:
-                result = result + " FROM LAST"
-
-        return result
 
     SUPPORTED_JSON_PATH_PARTS = {
         exp.JSONPathKey,

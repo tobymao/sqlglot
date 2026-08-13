@@ -4,6 +4,7 @@ from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     groupconcat_sql,
     no_ilike_sql,
+    nth_value_from_sql,
     rename_func,
     strposition_sql,
     trim_sql,
@@ -76,6 +77,7 @@ class OracleGenerator(generator.Generator):
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
         exp.Mod: rename_func("MOD"),
+        exp.NthValue: nth_value_from_sql,
         exp.Rand: rename_func("DBMS_RANDOM.VALUE"),
         exp.Select: transforms.preprocess(
             [
@@ -109,13 +111,6 @@ class OracleGenerator(generator.Generator):
         **generator.Generator.PROPERTIES_LOCATION,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
-
-    def nthvalue_sql(self, expression: exp.NthValue) -> str:
-        result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
-        from_first = expression.args.get("from_first")
-        if from_first is not None:
-            result = result + (" FROM FIRST" if from_first else " FROM LAST")
-        return result
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):

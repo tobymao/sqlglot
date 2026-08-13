@@ -2623,6 +2623,16 @@ def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Expr | 
     return modifiers
 
 
+def nth_value_from_sql(self: Generator, expression: exp.NthValue) -> str:
+    this = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
+    from_first = expression.args.get("from_first")
+
+    if from_first is None:
+        return this
+
+    return f"{this} FROM {'FIRST' if from_first else 'LAST'}"
+
+
 def getbit_sql(self: Generator, expression: exp.Getbit) -> str:
     """
     Generates SQL for Getbit according to DuckDB and Postgres, transpiling it if either:

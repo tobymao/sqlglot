@@ -333,6 +333,7 @@ class SnowflakeParser(parser.Parser):
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
     COLON_IS_VARIANT_EXTRACT = True
     JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
+    SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
 
     TYPE_TOKENS = {*parser.Parser.TYPE_TOKENS, TokenType.FILE}
     STRUCT_TYPE_TOKENS = {*parser.Parser.STRUCT_TYPE_TOKENS, TokenType.FILE}
@@ -1399,12 +1400,6 @@ class SnowflakeParser(parser.Parser):
         return cast
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
-        if isinstance(this, exp.NthValue):
-            if self._match_text_seq("FROM", "FIRST"):
-                this.set("from_first", True)
-            elif self._match_text_seq("FROM", "LAST"):
-                this.set("from_first", False)
-
         result = super()._parse_window(this, alias)
 
         # Set default window frame for ranking functions if not present

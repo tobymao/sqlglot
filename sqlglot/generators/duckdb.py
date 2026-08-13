@@ -2469,13 +2469,6 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(result)
 
-    def nthvalue_sql(self, expression: exp.NthValue) -> str:
-        from_first = expression.args.get("from_first", True)
-        if not from_first:
-            self.unsupported("DuckDB's NTH_VALUE doesn't support starting from the end ")
-
-        return self.function_fallback_sql(expression)
-
     def randstr_sql(self, expression: exp.Randstr) -> str:
         """
         Transpile Snowflake's RANDSTR to DuckDB equivalent using deterministic hash-based random.

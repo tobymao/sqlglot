@@ -23,6 +23,7 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
 class OracleParser(parser.Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
+    SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "TO_BOOLEAN"},
@@ -60,14 +61,6 @@ class OracleParser(parser.Parser):
         "LISTAGG": lambda self: self._parse_string_agg(),
         "TO_NUMBER": lambda self: self._parse_to_number(),
     }
-
-    def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
-        if isinstance(this, exp.NthValue):
-            if self._match_text_seq("FROM", "FIRST"):
-                this.set("from_first", True)
-            elif self._match_text_seq("FROM", "LAST"):
-                this.set("from_first", False)
-        return super()._parse_window(this, alias)
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,

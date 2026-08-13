@@ -8,12 +8,6 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
-        self.validate_identity(
-            "SELECT NTH_VALUE(1, 1) FROM FIRST OVER (ORDER BY 1) AS FIRST_VALUE FROM DUAL"
-        )
-        self.validate_identity(
-            "SELECT NTH_VALUE(1, 1) FROM LAST OVER (ORDER BY 1) AS LAST_VALUE FROM DUAL"
-        )
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",
             write={
@@ -23,6 +17,13 @@ class TestOracle(Validator):
         )
         self.parse_one("ALTER TABLE tbl_name DROP FOREIGN KEY fk_symbol").assert_is(exp.Alter)
 
+        self.validate_identity("SELECT NTH_VALUE(x, 2) FROM FIRST OVER (ORDER BY y) AS c FROM t")
+        self.validate_identity(
+            "SELECT NTH_VALUE(x, 2) FROM LAST IGNORE NULLS OVER (ORDER BY y) AS c FROM t"
+        )
+        self.validate_identity(
+            "SELECT NTH_VALUE(x, 2) FROM FIRST RESPECT NULLS OVER (ORDER BY y) AS c FROM t"
+        )
         self.validate_identity("XMLELEMENT(EVALNAME foo + bar)")
         self.validate_identity("SELECT BITMAP_BUCKET_NUMBER(32769)")
         self.validate_identity("SELECT BITMAP_CONSTRUCT_AGG(value)")
@@ -163,6 +164,16 @@ class TestOracle(Validator):
         )
         self.validate_identity("SELECT id FROM t START WITH (x) CONNECT BY PRIOR id = parent_id")
 
+        self.validate_all(
+            "SELECT NTH_VALUE(x, 2) FROM LAST OVER (ORDER BY y) AS c FROM t",
+            write={
+                "oracle": "SELECT NTH_VALUE(x, 2) FROM LAST OVER (ORDER BY y) AS c FROM t",
+                "snowflake": "SELECT NTH_VALUE(x, 2) FROM LAST OVER (ORDER BY y) AS c FROM t",
+                # FROM LAST is lossy in dialects that don't support it
+                "duckdb": "SELECT NTH_VALUE(x, 2) OVER (ORDER BY y) AS c FROM t",
+                "postgres": UnsupportedError,
+            },
+        )
         self.validate_all(
             "SELECT DBMS_RANDOM.VALUE()",
             read={

@@ -4720,9 +4720,14 @@ class DuckDBGenerator(generator.Generator):
 
     def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
         if expression.args.get("scalar_only"):
-            expression = exp.JSONExtractScalar(
+            json_value = exp.JSONExtractScalar(
                 this=rename_func("JSON_VALUE")(self, expression), expression="'$'"
             )
+
+            # `->>` binds looser than most operators, so the wrap logic needs the parent
+            json_value.parent = expression.parent
+            expression = json_value
+
         return _arrow_json_extract_sql(self, expression)
 
     def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:

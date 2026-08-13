@@ -12,7 +12,9 @@ class SynapseGenerator(TSQLGenerator):
 
     TRANSFORMS = {
         **TSQLGenerator.TRANSFORMS,
-        exp.LocationProperty: lambda self, expression: (f"LOCATION={self.sql(expression, 'this')}"),
+        exp.LocationProperty: lambda self, expression: (
+            f"LOCATION={self.sql(expression, 'this')}"
+        ),
         exp.OpenRowset: lambda self, expression: self.openrowset_sql(expression),
         exp.TryParse: lambda self, expression: self.tryparse_sql(expression),
     }

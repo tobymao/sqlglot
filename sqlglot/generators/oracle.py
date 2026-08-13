@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     groupconcat_sql,
@@ -110,6 +109,13 @@ class OracleGenerator(generator.Generator):
         **generator.Generator.PROPERTIES_LOCATION,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def nthvalue_sql(self, expression: exp.NthValue) -> str:
+        result = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
+        from_first = expression.args.get("from_first")
+        if from_first is not None:
+            result = result + (" FROM FIRST" if from_first else " FROM LAST")
+        return result
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):

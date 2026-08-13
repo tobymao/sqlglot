@@ -216,7 +216,7 @@ class PostgresParser(parser.Parser):
         ),
         TokenType.HASH_ARROW: parser.build_jsonb_extract,
         TokenType.DHASH_ARROW: parser.build_jsonb_extract_scalar,
-        TokenType.PLACEHOLDER: parser.build_jsonb_contains,
+        TokenType.PLACEHOLDER: parser.build_jsonb_contains_top_key,
     }
 
     ARG_MODE_TOKENS: t.ClassVar = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}

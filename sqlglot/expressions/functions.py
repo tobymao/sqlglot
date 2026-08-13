@@ -433,6 +433,12 @@ class ReadParquet(Expression, Func):
     arg_types = {"expressions": True}
 
 
+class OpenRowset(Expression, Func):
+    """A Synapse table source that reads a bulk data path in a specified format."""
+
+    arg_types = {"bulk": True, "format": True}
+
+
 # XML
 
 

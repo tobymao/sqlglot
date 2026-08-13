@@ -819,16 +819,16 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x-%v')",
+            "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x')",
             write={
-                "mysql": "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x-%v')",
-                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G-%V')",
+                "mysql": "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x')",
+                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G')",
             },
         )
         self.validate_all(
-            "SELECT DATE_FORMAT(CAST('2021-01-01 22:23:00' AS DATETIME), '%x-%v')",
+            "SELECT DATE_FORMAT(CAST('2021-01-01 22:23:00' AS DATETIME), '%x')",
             read={
-                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G-%V')",
+                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G')",
             },
         )
         self.validate_all(
@@ -838,6 +838,11 @@ class TestMySQL(Validator):
                 "duckdb": "SELECT STRFTIME(CAST('2007-10-04 22:23:00' AS TIMESTAMP), '%I:%M:%S %p')",
             },
         )
+        # Native week/year specifiers must survive a MySQL round-trip untouched:
+        # %V/%X (Sunday-based) are distinct from %v/%x (ISO) and must not be rewritten
+        self.validate_identity("SELECT DATE_FORMAT(x, '%X-%V')")
+        self.validate_identity("SELECT DATE_FORMAT(x, '%x-%v')")
+        self.validate_identity("SELECT DATE_FORMAT(x, '%U')")
 
     def test_mysql_time(self):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")

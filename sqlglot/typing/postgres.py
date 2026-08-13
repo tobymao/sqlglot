@@ -18,4 +18,10 @@ EXPRESSION_METADATA = {
             exp.Encode,
         }
     },
+    **{
+        expr_type: {"returns": exp.DType.VARBINARY}
+        for expr_type in {
+            exp.Decode,
+        }
+    },
 }

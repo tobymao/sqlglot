@@ -7409,6 +7409,10 @@ INT;
 ENCODE(tbl.bin_col, 'base64');
 TEXT;
 
+# dialect: postgres
+DECODE(tbl.str_col, 'base64');
+VARBINARY;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

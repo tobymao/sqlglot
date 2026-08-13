@@ -20,7 +20,10 @@ class TestSynapse(Validator):
 
         openrowset = expression.find(exp.OpenRowset)
         self.assertIsNotNone(openrowset)
-        self.assertEqual(["Property"] * 4, [p.__class__.__name__ for p in openrowset.args["properties"]])
+        self.assertEqual(
+            ["Property"] * 4,
+            [p.__class__.__name__ for p in openrowset.args["properties"]],
+        )
         self.assertEqual(
             "SELECT * FROM OPENROWSET(BULK '/lake-raw/file.parquet', "
             "DATA_SOURCE='datasource_x', FORMAT='Parquet', "
@@ -83,8 +86,7 @@ class TestSynapse(Validator):
 
     def test_try_parse(self):
         expression = self.parse_one(
-            "SELECT TRY_PARSE(NULLIF(value, 'nan') AS DATETIME USING 'en-GB') AS parsed "
-            "FROM source"
+            "SELECT TRY_PARSE(NULLIF(value, 'nan') AS DATETIME USING 'en-GB') AS parsed FROM source"
         )
 
         try_parse = expression.find(exp.TryParse)

@@ -48,6 +48,7 @@ class SynapseParser(TSQLParser):
 
     def _parse_external_create(self) -> exp.Create | exp.Command:
         start = self._prev
+        table: exp.Expr | None
 
         if self._match_text_seq("FILE", "FORMAT"):
             kind = "FILE FORMAT"
@@ -71,11 +72,15 @@ class SynapseParser(TSQLParser):
         if not self._match(TokenType.WITH):
             return self._parse_as_command(start)
 
-        properties = self._parse_wrapped_properties()
+        parsed_properties = self._parse_wrapped_properties()
+        properties: list[exp.Expr] = []
+        for property_ in parsed_properties:
+            if isinstance(property_, list):
+                properties.extend(property_)
+            else:
+                properties.append(property_)
         external = self.expression(exp.ExternalProperty())
-        properties = self.expression(
-            exp.Properties(expressions=[external, *(properties or [])])
-        )
+        properties_expression = self.expression(exp.Properties(expressions=[external, *properties]))
 
         if self._curr and not self._match_set(
             (TokenType.R_PAREN, TokenType.COMMA, TokenType.SEMICOLON, TokenType.END),
@@ -88,7 +93,7 @@ class SynapseParser(TSQLParser):
                 this=table,
                 kind=kind,
                 exists=exists,
-                properties=properties,
+                properties=properties_expression,
             )
         )
 
@@ -101,9 +106,10 @@ class SynapseParser(TSQLParser):
             bulk = self._parse_csv(self._parse_bitwise)
             self._match_r_paren()
         else:
-            bulk = [self._parse_bitwise()]
+            bulk_expression = self._parse_bitwise()
+            bulk = [bulk_expression] if bulk_expression is not None else []
 
-        if not bulk or any(value is None for value in bulk):
+        if not bulk:
             self.raise_error("Expected a BULK path in OPENROWSET")
 
         properties: list[exp.Expr] = []
@@ -115,7 +121,8 @@ class SynapseParser(TSQLParser):
                 property_ = self._parse_key_value_property()
                 if not property_:
                     self.raise_error("Expected an OPENROWSET option")
-                properties.append(property_)
+                else:
+                    properties.append(property_)
 
         self._openrowset_pending_schema = True
         return self.expression(

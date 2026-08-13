@@ -31,6 +31,23 @@ class TestTrino(Validator):
             "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP WITH TIME ZONE)",
         )
 
+        self.validate_identity(
+            "SELECT TIME '01:02:03.456 -08:00'",
+            "SELECT CAST('01:02:03.456 -08:00' AS TIME WITH TIME ZONE)",
+        )
+        self.validate_identity(
+            "SELECT TIME '01:02:03.456'",
+            "SELECT CAST('01:02:03.456' AS TIME)",
+        )
+
+        self.validate_all(
+            "SELECT TIME '01:02:03.456 -08:00'",
+            write={
+                "duckdb": "SELECT CAST('01:02:03.456 -08:00' AS TIMETZ)",
+                "trino": "SELECT CAST('01:02:03.456 -08:00' AS TIME WITH TIME ZONE)",
+            },
+        )
+
         self.validate_all(
             "SELECT FROM_ISO8601_TIMESTAMP_NANOS('2020-05-11T11:15:05.000000000')",
             write={

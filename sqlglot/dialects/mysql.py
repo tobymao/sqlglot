@@ -48,9 +48,7 @@ class MySQL(Dialect):
         "%T": "%H:%M:%S",
         "%W": "%A",
         "%x": "%G",
-        # %v (ISO week) is intentionally unmapped: its strftime equivalent %V is also a
-        # native MySQL specifier (Sunday-based week), so the derived INVERSE_TIME_MAPPING
-        # would rewrite %V to %v on generation, silently changing week numbering
+        # %v (ISO week) is unmapped due to collision with %V (roundtrip issue)
     }
 
     VALID_INTERVAL_UNITS = {

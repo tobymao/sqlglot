@@ -838,8 +838,6 @@ class TestMySQL(Validator):
                 "duckdb": "SELECT STRFTIME(CAST('2007-10-04 22:23:00' AS TIMESTAMP), '%I:%M:%S %p')",
             },
         )
-        # Native week/year specifiers must survive a MySQL round-trip untouched:
-        # %V/%X (Sunday-based) are distinct from %v/%x (ISO) and must not be rewritten
         self.validate_identity("SELECT DATE_FORMAT(x, '%X-%V')")
         self.validate_identity("SELECT DATE_FORMAT(x, '%x-%v')")
         self.validate_identity("SELECT DATE_FORMAT(x, '%U')")

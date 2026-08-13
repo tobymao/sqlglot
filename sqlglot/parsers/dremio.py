@@ -56,6 +56,17 @@ def build_date_delta_with_cast_interval(
     return _builder
 
 
+def _build_regexp_split(args: list[exp.Expr]) -> exp.RegexpSplit:
+    # Dremio's REGEXP_SPLIT(string, pattern, mode, limit) puts "mode" (e.g. 'ALL')
+    # ahead of "limit", unlike the shared exp.RegexpSplit arg order.
+    return exp.RegexpSplit(
+        this=seq_get(args, 0),
+        expression=seq_get(args, 1),
+        mode=seq_get(args, 2),
+        limit=seq_get(args, 3),
+    )
+
+
 def datetype_handler(args: list[exp.Expr], dialect: DialectType) -> exp.Expr:
     from sqlglot.dialects.dialect import Dialect
 
@@ -104,6 +115,7 @@ class DremioParser(parser.Parser):
         "DATE_FORMAT": build_formatted_time(exp.TimeToStr),
         "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
         "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
+        "REGEXP_SPLIT": _build_regexp_split,
         "REPEATSTR": exp.Repeat.from_arg_list,
         "TO_CHAR": to_char_is_numeric_handler,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate),

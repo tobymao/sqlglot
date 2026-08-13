@@ -3020,6 +3020,15 @@ OPTIONS (
                     },
                 )
 
+                # `->>` binds looser than most operators in DuckDB, so the arrow expression
+                # must be parenthesized when it's an operand of another operator
+                self.validate_all(
+                    f"SELECT {func}(j, '$.a') IS NOT NULL AND TRUE FROM t",
+                    write={
+                        "duckdb": "SELECT NOT (JSON_VALUE(j, '$.a') ->> '$') IS NULL AND TRUE FROM t",
+                    },
+                )
+
         self.assertEqual(self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql)
 
         # Test double quote escaping

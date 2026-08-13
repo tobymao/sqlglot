@@ -185,6 +185,10 @@ class FileFormatProperty(Property):
     arg_types = {"this": False, "expressions": False, "hive_format": False}
 
 
+class FormatOptionsProperty(Property):
+    arg_types = {"expressions": True, "equals": False}
+
+
 class CredentialsProperty(Property):
     arg_types = {"expressions": True}
 

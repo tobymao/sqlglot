@@ -69,6 +69,10 @@ class Cast(Expression, Func):
         return self.to.is_type(*dtypes)
 
 
+class TryParse(Expression, Func):
+    arg_types = {"this": True, "to": True, "culture": False}
+
+
 class TryCast(Cast):
     arg_types = {
         **Cast.arg_types,

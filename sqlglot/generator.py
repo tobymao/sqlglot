@@ -723,6 +723,7 @@ class Generator:
         exp.ExternalProperty: exp.Properties.Location.POST_CREATE,
         exp.FallbackProperty: exp.Properties.Location.POST_NAME,
         exp.FileFormatProperty: exp.Properties.Location.POST_WITH,
+        exp.FormatOptionsProperty: exp.Properties.Location.POST_WITH,
         exp.FreespaceProperty: exp.Properties.Location.POST_NAME,
         exp.GlobalProperty: exp.Properties.Location.POST_CREATE,
         exp.HeapProperty: exp.Properties.Location.POST_WITH,
@@ -2116,6 +2117,9 @@ class Generator:
             self.unsupported(f"Unsupported property {expression.key}")
 
         return f"{property_name}={self.sql(expression, 'this')}"
+
+    def formatoptionsproperty_sql(self, expression: exp.FormatOptionsProperty) -> str:
+        return f"FORMAT_OPTIONS {self.wrap(self.expressions(expression))}"
 
     def uuidproperty_sql(self, expression: exp.UuidProperty) -> str:
         return f"UUID {self.sql(expression, 'this')}"

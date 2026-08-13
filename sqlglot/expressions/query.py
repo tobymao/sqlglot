@@ -814,6 +814,15 @@ class TableFromRows(Expression, UDTF):
     }
 
 
+class OpenRowset(Expression, UDTF):
+    arg_types = {
+        "bulk": True,
+        "properties": False,
+        "schema": False,
+        "bulk_parenthesized": False,
+    }
+
+
 class MatchRecognizeMeasure(Expression):
     arg_types = {
         "this": True,

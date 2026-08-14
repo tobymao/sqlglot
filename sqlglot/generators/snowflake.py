@@ -1168,7 +1168,7 @@ class SnowflakeGenerator(generator.Generator):
         # Snowflake doesn't support FILTER (WHERE cond), so we rewrite it into an
         # equivalent conditional aggregation, i.e. wrap the input values in an IFF
         agg = expression.this
-        agg_arg = agg.this
+        agg_arg = seq_get(agg.expressions, 0) if isinstance(agg, exp.Anonymous) else agg.this
         cond = expression.expression.this
 
         if isinstance(agg, exp.WithinGroup):
@@ -1192,7 +1192,7 @@ class SnowflakeGenerator(generator.Generator):
         # `COUNT(*/t.*) FILTER (WHERE cond)` counts qualifying rows, but a star can't be an IFF
         # argument: `IFF(cond, *, NULL)` expands to multiple columns once the table has 2+ of
         # them, which Snowflake rejects. Use its native COUNT_IF instead.
-        if isinstance(agg, exp.Count) and agg_arg.is_star:
+        if isinstance(agg, exp.Count) and isinstance(agg_arg, exp.Expression) and agg_arg.is_star:
             return self.func("COUNT_IF", cond)
 
         # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the

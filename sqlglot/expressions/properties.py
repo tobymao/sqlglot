@@ -337,6 +337,14 @@ class PartitionByRangeProperty(Property):
     arg_types = {"partition_expressions": True, "create_expressions": True}
 
 
+class PartitionByHashProperty(Property):
+    arg_types = {
+        "partition_expressions": True,
+        "create_expressions": False,
+        "partition_count": False,
+    }
+
+
 class PartitionByRangePropertyDynamic(Expression):
     arg_types = {"this": False, "start": True, "end": True, "every": True}
 
@@ -354,7 +362,11 @@ class RowAccessProperty(Property):
 
 
 class PartitionByListProperty(Property):
-    arg_types = {"partition_expressions": True, "create_expressions": True}
+    arg_types = {
+        "partition_expressions": True,
+        "create_expressions": True,
+        "automatic": False,
+    }
 
 
 class PartitionList(Expression):

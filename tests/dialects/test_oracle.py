@@ -6,6 +6,26 @@ from sqlglot.optimizer.qualify import qualify
 class TestOracle(Validator):
     dialect = "oracle"
 
+    def test_create_partitioned_table(self):
+        self.validate_identity(
+            "CREATE TABLE sales (id NUMBER) "
+            "PARTITION BY RANGE (id) (PARTITION p1 VALUES LESS THAN (100), "
+            "PARTITION p_max VALUES LESS THAN (MAXVALUE))"
+        )
+        self.validate_identity(
+            "CREATE TABLE sales (region VARCHAR2(2)) "
+            "PARTITION BY LIST (region) (PARTITION p_us VALUES ('US'), "
+            "PARTITION p_ca VALUES ('CA'))"
+        )
+        self.validate_identity(
+            "CREATE TABLE sales (region VARCHAR2(2)) "
+            "PARTITION BY LIST (region) AUTOMATIC (PARTITION p_us VALUES ('US'))"
+        )
+        self.validate_identity("CREATE TABLE sales (id NUMBER) PARTITION BY HASH (id) PARTITIONS 4")
+        self.validate_identity(
+            "CREATE TABLE sales (id NUMBER) PARTITION BY HASH (id) (PARTITION p1, PARTITION p2)"
+        )
+
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
         self.validate_all(

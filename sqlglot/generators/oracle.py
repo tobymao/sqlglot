@@ -109,8 +109,52 @@ class OracleGenerator(generator.Generator):
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.PartitionByHashProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def partition_sql(self, expression: exp.Partition) -> str:
+        parent = expression.parent
+        if isinstance(parent, (exp.PartitionByRangeProperty, exp.PartitionByListProperty)):
+            return self.expressions(expression, flat=True)
+        if isinstance(parent, exp.PartitionByHashProperty):
+            return f"PARTITION {self.expressions(expression, flat=True)}"
+        return super().partition_sql(expression)
+
+    def _partition_by_sql(
+        self, expression: exp.PartitionByRangeProperty | exp.PartitionByListProperty, kind: str
+    ) -> str:
+        columns = self.expressions(expression, key="partition_expressions", flat=True)
+        definitions = self.expressions(expression, key="create_expressions", flat=True)
+        automatic = " AUTOMATIC" if expression.args.get("automatic") else ""
+        return f"PARTITION BY {kind} ({columns}){automatic} ({definitions})"
+
+    def partitionbyrangeproperty_sql(self, expression: exp.PartitionByRangeProperty) -> str:
+        return self._partition_by_sql(expression, "RANGE")
+
+    def partitionbylistproperty_sql(self, expression: exp.PartitionByListProperty) -> str:
+        return self._partition_by_sql(expression, "LIST")
+
+    def partitionbyhashproperty_sql(self, expression: exp.PartitionByHashProperty) -> str:
+        columns = self.expressions(expression, key="partition_expressions", flat=True)
+        definitions = self.expressions(expression, key="create_expressions", flat=True)
+        count = self.sql(expression, "partition_count")
+
+        if definitions:
+            return f"PARTITION BY HASH ({columns}) ({definitions})"
+        return f"PARTITION BY HASH ({columns}) PARTITIONS {count}"
+
+    def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
+        name = self.sql(expression, "this")
+        values = self.expressions(expression, flat=True)
+        return f"PARTITION {name} VALUES LESS THAN ({values})"
+
+    def partitionlist_sql(self, expression: exp.PartitionList) -> str:
+        name = self.sql(expression, "this")
+        values = self.expressions(expression, flat=True)
+        return f"PARTITION {name} VALUES ({values})"
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):

@@ -68,6 +68,7 @@ class OracleParser(parser.Parser):
             self._match_text_seq("TEMPORARY")
             and self.expression(exp.TemporaryProperty(this="GLOBAL"))
         ),
+        "PARTITION BY": lambda self: self._parse_partition_property(),
         "PRIVATE": lambda self: (
             self._match_text_seq("TEMPORARY")
             and self.expression(exp.TemporaryProperty(this="PRIVATE"))
@@ -102,6 +103,75 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_partition_property(self) -> exp.Expr | None:
+        if self._match_text_seq("RANGE"):
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            create_expressions = self._parse_wrapped_csv(self._parse_partition_range_value)
+            return self.expression(
+                exp.PartitionByRangeProperty(
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                )
+            )
+
+        if self._match_text_seq("LIST"):
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+            automatic = self._match_text_seq("AUTOMATIC")
+            create_expressions = self._parse_wrapped_csv(self._parse_partition_list_value)
+            return self.expression(
+                exp.PartitionByListProperty(
+                    partition_expressions=partition_expressions,
+                    create_expressions=create_expressions,
+                    automatic=automatic,
+                )
+            )
+
+        if self._match_text_seq("HASH"):
+            partition_expressions = self._parse_wrapped_csv(self._parse_assignment)
+
+            if self._match_text_seq("PARTITIONS"):
+                return self.expression(
+                    exp.PartitionByHashProperty(
+                        partition_expressions=partition_expressions,
+                        partition_count=self._parse_number(),
+                    )
+                )
+
+            return self.expression(
+                exp.PartitionByHashProperty(
+                    partition_expressions=partition_expressions,
+                    create_expressions=self._parse_wrapped_csv(self._parse_hash_partition),
+                )
+            )
+
+        return None
+
+    def _parse_partition_range_value(self) -> exp.Partition:
+        self._match_text_seq("PARTITION")
+        name = self._parse_id_var()
+        self._match_text_seq("VALUES", "LESS", "THAN")
+        values = self._parse_wrapped_csv(self._parse_expression)
+
+        if len(values) == 1 and isinstance(values[0], exp.Column) and values[0].name == "MAXVALUE":
+            values = [exp.var("MAXVALUE")]
+
+        return self.expression(
+            exp.Partition(expressions=[exp.PartitionRange(this=name, expressions=values)])
+        )
+
+    def _parse_partition_list_value(self) -> exp.Partition:
+        self._match_text_seq("PARTITION")
+        name = self._parse_id_var()
+        self._match_text_seq("VALUES")
+        values = self._parse_wrapped_csv(self._parse_expression)
+        return self.expression(
+            exp.Partition(expressions=[exp.PartitionList(this=name, expressions=values)])
+        )
+
+    def _parse_hash_partition(self) -> exp.Partition:
+        self._match_text_seq("PARTITION")
+        return self.expression(exp.Partition(expressions=[self._parse_id_var()]))
 
     def _parse_to_number(self) -> exp.ToNumber:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html

@@ -2178,6 +2178,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "duckdb",
                 'SELECT (CAST(\'{"Foo":1}\' AS JSON))."Foo" AS "foo"',
             ),
+            # Every part of the chain is restored, not just the innermost one
+            (
+                'SELECT PARSE_JSON(\'{"Foo":{"Bar":1}}\').Foo.Bar',
+                "bigquery",
+                'SELECT PARSE_JSON(\'{"Foo":{"Bar":1}}\').`Foo`.`Bar` AS `bar`',
+            ),
+            (
+                'SELECT (\'{"Foo":{"Bar":{"Baz":1}}}\'::JSON).Foo.Bar.Baz',
+                "duckdb",
+                'SELECT (CAST(\'{"Foo":{"Bar":{"Baz":1}}}\' AS JSON))."Foo"."Bar"."Baz" AS "baz"',
+            ),
+            # Dot access that doesn't name a key is left alone
+            (
+                "SELECT ('{\"Foo\":1}'::JSON).*",
+                "duckdb",
+                "SELECT (CAST('{\"Foo\":1}' AS JSON)).*",
+            ),
         ):
             with self.subTest(sql):
                 qualified = qualify(parse_one(sql, dialect=dialect), dialect=dialect)

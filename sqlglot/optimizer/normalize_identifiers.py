@@ -72,25 +72,28 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         if node.meta_get("case_sensitive"):
             continue
 
-        if store_original_column_identifiers:
+        # A dot chain is recorded once, at its outermost Dot. Ancestors are visited before
+        # their descendants, so none of the names it wraps have been normalized yet
+        if (
+            store_original_column_identifiers
+            and isinstance(node, (exp.Column, exp.Dot))
+            and not isinstance(node.parent, exp.Dot)
+        ):
             if isinstance(node, exp.Column):
-                parent = node
-                while parent and isinstance(parent.parent, exp.Dot):
-                    parent = parent.parent
+                node.meta["dot_parts"] = [p.name for p in node.parts]
+            elif not node.is_star:
+                root, dot_parts = node, []
+                while isinstance(root, exp.Dot):
+                    dot_parts.append(root.expression.name)
+                    root = root.this
 
-                node.meta["dot_parts"] = [p.name for p in parent.parts]
-            elif isinstance(node.parent, exp.Dot) and not isinstance(
-                node, (exp.Dot, exp.Identifier)
-            ):
-                # Dot access rooted at an arbitrary expression, e.g. PARSE_JSON(...).key
-                dot_parts = []
-                child, parent = node, node.parent
-                while isinstance(parent, exp.Dot) and parent.this is child:
-                    dot_parts.append(parent.expression.name)
-                    child, parent = parent, parent.parent
+                dot_parts.reverse()
 
-                if dot_parts:
-                    node.meta["dot_parts"] = dot_parts
+                # The chain may be rooted at a column (j.k), or at an arbitrary expression (f().k)
+                if isinstance(root, exp.Column):
+                    dot_parts = [p.name for p in root.parts] + dot_parts
+
+                root.meta["dot_parts"] = dot_parts
 
         if isinstance(node, exp.Identifier):
             dialect.normalize_identifier(node)

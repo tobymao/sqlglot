@@ -540,6 +540,8 @@ class TypeAnnotator:
         # engine doesn't resolve the keys as identifiers, so we undo their normalization.
         dot_parts = expr.meta_get("dot_parts")
         if not dot_parts or not expr.is_type(exp.DType.JSON, exp.DType.MAP, exp.DType.VARIANT):
+            if dot_parts:
+                expr.meta.pop("dot_parts", None)
             return
 
         parent = expr.parent

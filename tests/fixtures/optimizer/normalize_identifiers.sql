@@ -102,3 +102,8 @@ SELECT "foÄ" FROM "baÜ";
 # dialect: spark
 SELECT `FoÄ` FROM `BaÜ`;
 SELECT `foä` FROM `baü`;
+
+# title: sqlite only normalizes ascii characters
+# dialect: sqlite
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";

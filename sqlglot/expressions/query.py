@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import typing as t
 import itertools
 
+import typing as t
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
@@ -1811,10 +1811,6 @@ class Pivot(Expression):
         return {
             output.name: source for output, source in self._output_column_pairs(pre_pivot_columns)
         }
-
-    def output_column_names(self, pre_pivot_columns: t.Iterable[str]) -> list[str]:
-        """Returns the ordered output names without deduplicating them."""
-        return [identifier.name for identifier in self.output_column_identifiers(pre_pivot_columns)]
 
     def output_column_identifiers(
         self, pre_pivot_columns: t.Iterable[str | Identifier]

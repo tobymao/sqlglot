@@ -1125,12 +1125,70 @@ class TestOptimizer(unittest.TestCase):
             """"T"."FILEPATH" AS "FILENAME" FROM "T" AS "T\"""",
         )
 
-    def test_qualify_snowflake_positional_columns_preserve_quoted_identifiers(self):
-        for sql, expected in (
+        visible_schema = MappingSchema(
+            {"t": {"hidden": "INT", "shown": "INT"}},
+            visible={"T": {"SHOWN"}},
+            dialect="snowflake",
+        )
+        unsafe_schema = MappingSchema({"t": {"HAS SPACE": "INT"}}, dialect="snowflake")
+        cases = (
             (
                 'WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t',
-                'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
+                ('T."lower" AS "lower"',),
+                {},
             ),
+            (
+                'WITH t AS (SELECT 1 AS "SELECT", 2 AS a, 3 AS b) '
+                "SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))",
+                ('T."SELECT" AS "SELECT"',),
+                {},
+            ),
+            (
+                "WITH t AS (SELECT 1 AS a, 2 AS b) "
+                'SELECT t.$1 FROM t UNPIVOT(v FOR "SELECT" IN (a, b))',
+                ('T."SELECT" AS "SELECT"',),
+                {},
+            ),
+            (
+                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT p.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS \"SELECT\")) AS p",
+                ('P."SELECT" AS "SELECT"',),
+                {},
+            ),
+            (
+                "SELECT piv.$1, piv.$2 FROM "
+                "(SELECT 1 AS id, 2 AS jan, 3 AS feb) "
+                "UNPIVOT(revenue FOR month IN (jan, feb)) AS piv",
+                ("PIV.ID AS ID", "PIV.MONTH AS MONTH"),
+                {},
+            ),
+            (
+                "SELECT t.$1 FROM t",
+                ("T.SHOWN AS SHOWN",),
+                {"schema": visible_schema},
+            ),
+            (
+                "SELECT t.$1 FROM t",
+                ('T."HAS SPACE" AS "HAS SPACE"',),
+                {"schema": unsafe_schema},
+            ),
+        )
+
+        for sql, expected, options in cases:
+            with self.subTest(sql=sql):
+                expression = qualify(
+                    parse_one(sql, dialect="snowflake"),
+                    dialect="snowflake",
+                    quote_identifiers=False,
+                    **options,
+                )
+                self.assertEqual(
+                    tuple(selection.sql("snowflake") for selection in expression.selects),
+                    expected,
+                )
+
+    def test_qualify_snowflake_positional_columns_nested_sources(self):
+        cases = (
             (
                 'WITH t("lower") AS (SELECT 1) SELECT t.$1 FROM t',
                 'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
@@ -1140,99 +1198,11 @@ class TestOptimizer(unittest.TestCase):
                 'SELECT T."lower" AS "lower" FROM (SELECT 1 AS "lower") AS T',
             ),
             (
-                'WITH t AS (SELECT 1 AS "SELECT", 2 AS a, 3 AS b) '
-                "SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))",
-                'WITH T AS (SELECT 1 AS "SELECT", 2 AS A, 3 AS B) '
-                'SELECT T."SELECT" AS "SELECT" FROM T AS T '
-                "UNPIVOT(V FOR K IN (A, B)) AS T",
-            ),
-            (
-                "WITH t AS (SELECT 1 AS a, 2 AS b) "
-                'SELECT t.$1 FROM t UNPIVOT(v FOR "SELECT" IN (a, b))',
-                "WITH T AS (SELECT 1 AS A, 2 AS B) "
-                'SELECT T."SELECT" AS "SELECT" FROM T AS T '
-                'UNPIVOT(V FOR "SELECT" IN (A, B)) AS T',
-            ),
-            (
-                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
-                "SELECT p.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS \"SELECT\")) AS p",
-                "WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) "
-                'SELECT P."SELECT" AS "SELECT" FROM T AS T '
-                "PIVOT(SUM(T.V) FOR T.K IN ('a' AS \"SELECT\")) AS P",
-            ),
-            (
                 "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
                 "SELECT p.$2 FROM t PIVOT(SUM(v) AS total FOR k IN ('a' AS \"lower\")) AS p",
                 "WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) "
                 'SELECT P."lower_TOTAL" AS "lower_TOTAL" FROM T AS T '
                 "PIVOT(SUM(T.V) AS TOTAL FOR T.K IN ('a' AS \"lower\")) AS P",
-            ),
-        ):
-            with self.subTest(sql=sql):
-                self.assertEqual(
-                    qualify(
-                        parse_one(sql, dialect="snowflake"),
-                        dialect="snowflake",
-                        quote_identifiers=False,
-                    ).sql("snowflake"),
-                    expected,
-                )
-
-    def test_qualify_snowflake_positional_columns_after_unpivot(self):
-        expression = parse_one(
-            """
-            WITH t AS (SELECT 1 AS passthrough, 2 AS a, 3 AS b)
-            SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))
-            """,
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            "WITH T AS (SELECT 1 AS PASSTHROUGH, 2 AS A, 3 AS B) "
-            "SELECT T.PASSTHROUGH AS PASSTHROUGH FROM T AS T "
-            "UNPIVOT(V FOR K IN (A, B)) AS T",
-        )
-
-    def test_qualify_snowflake_positional_columns_after_chained_unpivots(self):
-        expression = parse_one(
-            """
-            WITH t AS (
-                SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south
-            )
-            SELECT t.$2
-            FROM t
-            UNPIVOT(revenue FOR month IN (jan, feb))
-            UNPIVOT(headcount FOR region IN (north, south))
-            """,
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            "WITH T AS (SELECT 1 AS ID, 100 AS JAN, 200 AS FEB, 7 AS NORTH, 8 AS SOUTH) "
-            "SELECT T.MONTH AS MONTH FROM T AS T "
-            "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) "
-            "UNPIVOT(HEADCOUNT FOR REGION IN (NORTH, SOUTH)) AS T",
-        )
-
-    def test_qualify_snowflake_positional_columns_after_derived_unpivot(self):
-        for sql, expected in (
-            (
-                "SELECT piv.$1, piv.$2 FROM "
-                "(SELECT 1 AS id, 2 AS jan, 3 AS feb) "
-                "UNPIVOT(revenue FOR month IN (jan, feb)) AS piv",
-                "SELECT PIV.ID AS ID, PIV.MONTH AS MONTH FROM "
-                "(SELECT 1 AS ID, 2 AS JAN, 3 AS FEB) AS _0 "
-                "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) AS PIV",
             ),
             (
                 "SELECT piv.$2, piv.$4 FROM "
@@ -1244,7 +1214,9 @@ class TestOptimizer(unittest.TestCase):
                 "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) "
                 "UNPIVOT(HEADCOUNT FOR REGION IN (NORTH, SOUTH)) AS PIV",
             ),
-        ):
+        )
+
+        for sql, expected in cases:
             with self.subTest(sql=sql):
                 self.assertEqual(
                     qualify(
@@ -1255,95 +1227,40 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                 )
 
-    def test_qualify_snowflake_positional_columns_exclude_invisible_columns(self):
-        expression = parse_one("SELECT t.$1 FROM t", dialect="snowflake")
-        schema = MappingSchema(
-            {"t": {"hidden": "INT", "shown": "INT"}},
-            visible={"T": {"SHOWN"}},
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                schema=schema,
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            "SELECT T.SHOWN AS SHOWN FROM T AS T",
-        )
-
-    def test_qualify_snowflake_positional_columns_quote_unsafe_schema_names(self):
-        expression = parse_one("SELECT t.$1 FROM t", dialect="snowflake")
-        schema = MappingSchema({"t": {"HAS SPACE": "INT"}}, dialect="snowflake")
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                schema=schema,
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            'SELECT T."HAS SPACE" AS "HAS SPACE" FROM T AS T',
-        )
-
-    def test_qualify_snowflake_positional_columns_with_duplicate_names(self):
-        expression = parse_one(
-            "WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS y) SELECT t.$2, t.$3 FROM t",
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            "WITH T AS (SELECT 1 AS X, 2 AS X, 3 AS Y) SELECT T.$2 AS _COL_0, T.Y AS Y FROM T AS T",
-        )
-
-    def test_qualify_snowflake_positional_columns_with_duplicate_names_after_unpivot(self):
-        expression = parse_one(
-            """
-            WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS a, 4 AS b)
-            SELECT t.$2, t.$3 FROM t UNPIVOT(v FOR k IN (a, b))
-            """,
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            "WITH T AS (SELECT 1 AS X, 2 AS X, 3 AS A, 4 AS B) "
-            "SELECT T.$2 AS _COL_0, T.K AS K FROM T AS T "
-            "UNPIVOT(V FOR K IN (A, B)) AS T",
-        )
-
-    def test_qualify_snowflake_positional_columns_with_unknown_sources(self):
-        for sql, expected in (
+    def test_qualify_snowflake_positional_columns_preserve_unresolved(self):
+        cases = (
+            (
+                "WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS y) SELECT t.$2, t.$3 FROM t",
+                ("T.$2 AS _COL_0", "T.Y AS Y"),
+            ),
+            (
+                "WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS a, 4 AS b) "
+                "SELECT t.$2, t.$3 FROM t UNPIVOT(v FOR k IN (a, b))",
+                ("T.$2 AS _COL_0", "T.K AS K"),
+            ),
             (
                 "SELECT t.$1 FROM source AS t",
-                "SELECT T.$1 AS _COL_0 FROM SOURCE AS T",
+                ("T.$1 AS _COL_0",),
             ),
             (
                 "WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t",
-                "WITH T AS (SELECT * FROM SOURCE AS SOURCE) SELECT T.$1 AS _COL_0 FROM T AS T",
+                ("T.$1 AS _COL_0",),
             ),
             (
                 "SELECT t.$1 FROM source AS t UNPIVOT(v FOR k IN (a, b))",
-                "SELECT T.$1 AS _COL_0 FROM SOURCE AS T UNPIVOT(V FOR K IN (A, B)) AS T",
+                ("T.$1 AS _COL_0",),
             ),
-        ):
+        )
+
+        for sql, expected in cases:
             with self.subTest(sql=sql):
+                expression = qualify(
+                    parse_one(sql, dialect="snowflake"),
+                    dialect="snowflake",
+                    quote_identifiers=False,
+                )
                 self.assertEqual(
-                    qualify(
-                        parse_one(sql, dialect="snowflake"),
-                        dialect="snowflake",
-                        quote_identifiers=False,
-                    ).sql("snowflake"),
+                    tuple(selection.sql("snowflake") for selection in expression.selects),
                     expected,
                 )
 

@@ -2044,6 +2044,15 @@ class TestDuckDB(Validator):
             },
         )
 
+        # Single-argument DATETIME(x) has no second argument to inspect
+        self.validate_all(
+            "SELECT CAST('2020-01-01' AS TIMESTAMP)",
+            read={
+                "duckdb": "SELECT DATETIME('2020-01-01')",
+                "spark": "SELECT DATETIME('2020-01-01')",
+            },
+        )
+
         self.validate_all(
             "SELECT TIMESTAMP 'foo'",
             write={

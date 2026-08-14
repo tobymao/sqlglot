@@ -1737,6 +1737,10 @@ def no_datetime_sql(self: Generator, expression: exp.Datetime) -> str:
     this = expression.this
     expr = expression.expression
 
+    if expr is None:
+        # DATETIME(<expr>) with a single argument just builds a timestamp from it
+        return self.sql(exp.cast(this, exp.DType.TIMESTAMP))
+
     if expr.name.lower() in TIMEZONES:
         # Transpile BQ's DATETIME(timestamp, zone) to CAST(TIMESTAMPTZ <timestamp> AT TIME ZONE <zone> AS TIMESTAMP)
         this = exp.cast(this, exp.DType.TIMESTAMPTZ)

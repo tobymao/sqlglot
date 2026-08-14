@@ -206,6 +206,34 @@ SELECT t.n FROM (SELECT ARRAY_AGG(q.b) AS q, COUNT(*) AS n FROM (SELECT a, b FRO
 SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS q CROSS JOIN (SELECT 1 AS _ FROM y AS y) AS r GROUP BY a HAVING a > 0) AS t;
 
 --------------------------------------
+-- Set operation's own ORDER BY keeps referenced columns
+--------------------------------------
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b, a LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b, a LIMIT 3) AS t;
+
+WITH t AS (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b LIMIT 3) SELECT a FROM t;
+WITH t AS (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b LIMIT 3) SELECT t.a AS a FROM t AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b) AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION SELECT a, b FROM x ORDER BY b LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b LIMIT 3) AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x UNION ALL SELECT x.a AS a FROM x AS x LIMIT 3) AS t;
+
+# dialect: bigquery
+# title: set operation's own ORDER BY keeps referenced columns with BY NAME
+SELECT t.a FROM (SELECT 1 AS a, 2 AS c, 3 AS d UNION ALL BY NAME SELECT 6 AS c, 7 AS d, 8 AS a ORDER BY c) AS t;
+SELECT t.a AS a FROM (SELECT 1 AS a, 2 AS c UNION ALL BY NAME SELECT 6 AS c, 8 AS a ORDER BY c) AS t;
+
+# title: a column referenced only inside a correlated subquery in the set operation's ORDER BY is not treated as an output reference
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY (SELECT 1 FROM y WHERE b = 5)) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x UNION ALL SELECT x.a AS a FROM x AS x ORDER BY (SELECT 1 FROM y WHERE b = 5)) AS t;
+
+--------------------------------------
 -- GROUP BY ALL implicitly groups by every non-aggregate projection, so those
 -- projections must be retained even when unreferenced by the outer scope
 --------------------------------------

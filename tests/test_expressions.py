@@ -536,6 +536,12 @@ class TestExprs(unittest.TestCase):
         self.assertEqual(len(list(recast.find_all(exp.Cast))), 2)
         self.assertEqual(recast.sql(), "CAST(CAST(x AS DATE) AS VARCHAR)")
 
+        # a cast to a complex type (e.g. INTERVAL) nests an expression in `to.this`,
+        # which the equivalence check must not treat as a plain type enum
+        interval_cast = parse_one("CAST(-1 AS INTERVAL HOUR)")
+        recast = exp.cast(interval_cast, to=exp.DataType.Type.BIGINT)
+        self.assertEqual(recast.sql(), "CAST(CAST(-1 AS INTERVAL HOUR) AS BIGINT)")
+
         # check that dialect is used when casting strings
         self.assertEqual(
             exp.cast("x", to="regtype", dialect="postgres").sql(), "CAST(x AS REGTYPE)"

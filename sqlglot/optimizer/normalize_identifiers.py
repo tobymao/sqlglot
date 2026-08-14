@@ -92,25 +92,7 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
                 if dot_parts:
                     node.meta["dot_parts"] = dot_parts
 
-        if isinstance(node, exp.Identifier) and not _is_field_name(node):
+        if isinstance(node, exp.Identifier):
             dialect.normalize_identifier(node)
 
     return expression
-
-
-def _is_field_name(identifier: exp.Identifier) -> bool:
-    """
-    Whether this identifier names a field at a construction site, e.g. a struct literal key.
-
-    Such names aren't resolved by the engine, they're baked into the value that is produced,
-    so normalizing them would change the data itself, e.g. the keys of a serialized struct.
-    """
-    parent = identifier.parent
-
-    if isinstance(parent, exp.PropertyEQ):
-        return parent.this is identifier
-
-    if isinstance(parent, exp.ColumnDef):
-        return parent.this is identifier and isinstance(parent.parent, exp.DataType)
-
-    return False

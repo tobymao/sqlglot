@@ -2184,24 +2184,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 annotated = annotate_types(qualified, dialect=dialect)
                 self.assertEqual(annotated.sql(dialect), expected)
 
-    def test_annotate_unnormalized_struct_fields(self):
-        # Struct field names aren't normalized in the AST, because they're data, so the
-        # references that resolve to them have to be normalized on the fly
-        for sql, dialect, expected in (
-            ("SELECT s.Foo AS x FROM (SELECT {'Foo': 1} AS s) t", "duckdb", "INT"),
-            ("SELECT s.Foo AS x FROM (SELECT CAST(y AS STRUCT(Foo INT)) AS s) t", "duckdb", "INT"),
-            ("SELECT x.Foo AS a FROM UNNEST([STRUCT(1 AS Foo)]) AS x", "bigquery", "INT64"),
-            ("SELECT Foo AS a FROM UNNEST([STRUCT(1 AS Foo)])", "bigquery", "INT64"),
-        ):
-            with self.subTest(sql):
-                qualified = qualify(
-                    parse_one(sql, dialect=dialect),
-                    dialect=dialect,
-                    validate_qualify_columns=False,
-                )
-                annotated = annotate_types(qualified, dialect=dialect)
-                self.assertEqual(annotated.selects[0].type.sql(dialect), expected)
-
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})
         qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)

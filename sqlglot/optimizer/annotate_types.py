@@ -348,15 +348,6 @@ class TypeAnnotator:
 
         return selects
 
-    def _normalized_field_name(self, field: exp.Expr) -> str:
-        # Struct field names are data, so they're not normalized in the AST, but references
-        # to them are, so we have to normalize them here in order to match the two
-        this = field.this
-        if not isinstance(this, exp.Identifier):
-            return field.name
-
-        return self.dialect.normalize_identifier(this.copy()).name
-
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
 
@@ -387,9 +378,7 @@ class TypeAnnotator:
 
             if struct_type:
                 return {
-                    self._normalized_field_name(col_def): t.cast(
-                        t.Union[exp.DataType, exp.DType], col_def.kind
-                    )
+                    col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
                     for col_def in struct_type.expressions
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
@@ -972,9 +961,8 @@ class TypeAnnotator:
         this_type = expression.this.type
 
         if this_type and this_type.is_type(exp.DType.STRUCT):
-            name = expression.expression.name
             for e in this_type.expressions:
-                if e.name == name or self._normalized_field_name(e) == name:
+                if e.name == expression.expression.name:
                     self._set_type(expression, e.kind)
                     break
 

@@ -495,7 +495,7 @@ def cast(
         target_dialect = Dialect.get_or_raise(dialect)
         type_mapping = target_dialect.generator_class.TYPE_MAPPING
 
-        existing_cast_type: DType = expr.to.this
+        existing_cast_type = expr.to.this
         new_cast_type: DType = data_type.this
         # `this` is only a plain type enum for simple types; complex ones such as
         # INTERVAL nest another expression there, so the equivalence check is skipped.

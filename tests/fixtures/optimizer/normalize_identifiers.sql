@@ -77,3 +77,33 @@ SELECT @X;
 # dialect: bigquery,normalization_strategy=case_insensitive_uppercase
 SELECT `foo`, `BaR` FROM baz CROSS JOIN `bla` CROSS JOIN bloo;
 SELECT `FOO`, `BAR` FROM BAZ CROSS JOIN `BLA` CROSS JOIN BLOO;
+
+# title: duckdb only normalizes ascii characters
+# dialect: duckdb
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";
+
+# title: postgres only normalizes ascii characters
+# dialect: postgres
+SELECT FoÄ FROM BaÜ;
+SELECT foÄ FROM baÜ;
+
+# title: bigquery only normalizes ascii characters
+# dialect: bigquery
+SELECT `FoÄ` FROM `BaÜ`;
+SELECT `foÄ` FROM `baÜ`;
+
+# title: redshift only normalizes ascii characters
+# dialect: redshift
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";
+
+# title: spark normalizes unicode characters
+# dialect: spark
+SELECT `FoÄ` FROM `BaÜ`;
+SELECT `foä` FROM `baü`;
+
+# title: sqlite only normalizes ascii characters
+# dialect: sqlite
+SELECT "FoÄ" FROM "BaÜ";
+SELECT "foÄ" FROM "baÜ";

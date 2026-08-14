@@ -13,6 +13,7 @@ from sqlglot.tokens import TokenType
 class SQLite(Dialect):
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    ASCII_ONLY_NORMALIZATION = True
     TYPED_DIVISION = True
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False

@@ -11,6 +11,7 @@ from sqlglot.typing.postgres import EXPRESSION_METADATA
 class Postgres(Dialect):
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
+    ASCII_ONLY_NORMALIZATION = True
     # Normalizing `x IS NOT NULL` to `NOT x IS NULL` is unsafe due to row values,
     # e.g. `ROW(1, NULL) IS NOT NULL` is false whereas `NOT ROW(1, NULL) IS NULL` is true
     NORMALIZE_NOT_NULL = False

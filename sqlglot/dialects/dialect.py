@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import string
 import typing as t
 import sys
 from collections.abc import Iterable, MutableSequence
@@ -76,6 +77,9 @@ UNESCAPED_SEQUENCES = {
 }
 
 PLUGIN_GROUP_NAME = "sqlglot.dialects"
+
+ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
+ASCII_UPPER = str.maketrans(string.ascii_lowercase, string.ascii_uppercase)
 
 
 class Dialects(str, Enum):
@@ -374,6 +378,10 @@ class Dialect(metaclass=_Dialect):
 
     NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
     """Specifies the strategy according to which identifiers should be normalized."""
+
+    ASCII_ONLY_NORMALIZATION = False
+    """Whether identifiers are only normalized with respect to ASCII characters, e.g. `Ä` and
+    `ä` are different identifiers in DuckDB, but the same identifier in Spark."""
 
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
     """Whether an unquoted identifier can start with a digit."""
@@ -1079,15 +1087,22 @@ class Dialect(metaclass=_Dialect):
                 )
             )
         ):
-            normalized = (
-                expression.this.upper()
-                if self.normalization_strategy
-                in (
-                    NormalizationStrategy.UPPERCASE,
-                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+            if self.normalization_strategy in (
+                NormalizationStrategy.UPPERCASE,
+                NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+            ):
+                normalized = (
+                    expression.this.translate(ASCII_UPPER)
+                    if self.ASCII_ONLY_NORMALIZATION
+                    else expression.this.upper()
                 )
-                else expression.this.lower()
-            )
+            else:
+                normalized = (
+                    expression.this.translate(ASCII_LOWER)
+                    if self.ASCII_ONLY_NORMALIZATION
+                    else expression.this.lower()
+                )
+
             expression.set("this", normalized)
 
         return expression

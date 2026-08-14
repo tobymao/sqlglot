@@ -163,6 +163,18 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
     return f"{this}.:{to_sql}"
 
 
+def _codec_sql(self: ClickHouseGenerator, expression: exp.CompressColumnConstraint) -> str:
+    # COMPRESS accepts either a single value or a parenthesized list; only the
+    # list form is stored as a sequence, so render the single value directly.
+    this = expression.args.get("this")
+    codecs = (
+        self.expressions(expression, key="this", flat=True)
+        if isinstance(this, list)
+        else self.sql(expression, "this")
+    )
+    return f"CODEC({codecs})"
+
+
 class ClickHouseGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -299,9 +311,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.CurrentSchemas: rename_func("CURRENT_SCHEMAS"),
         exp.CountIf: rename_func("countIf"),
         exp.CosineDistance: rename_func("cosineDistance"),
-        exp.CompressColumnConstraint: lambda self, e: (
-            f"CODEC({self.expressions(e, key='this', flat=True)})"
-        ),
+        exp.CompressColumnConstraint: _codec_sql,
         exp.ComputedColumnConstraint: lambda self, e: (
             f"{'MATERIALIZED' if e.args.get('persisted') else 'ALIAS'} {self.sql(e, 'this')}"
         ),

@@ -1126,19 +1126,29 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_snowflake_positional_columns_preserve_quoted_identifiers(self):
-        expression = parse_one(
-            'WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t',
-            dialect="snowflake",
-        )
-
-        self.assertEqual(
-            qualify(
-                expression,
-                dialect="snowflake",
-                quote_identifiers=False,
-            ).sql("snowflake"),
-            'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
-        )
+        for sql, expected in (
+            (
+                'WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t',
+                'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
+            ),
+            (
+                'WITH t("lower") AS (SELECT 1) SELECT t.$1 FROM t',
+                'WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T',
+            ),
+            (
+                'SELECT t.$1 FROM (SELECT 1) AS t("lower")',
+                'SELECT T."lower" AS "lower" FROM (SELECT 1 AS "lower") AS T',
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    qualify(
+                        parse_one(sql, dialect="snowflake"),
+                        dialect="snowflake",
+                        quote_identifiers=False,
+                    ).sql("snowflake"),
+                    expected,
+                )
 
     def test_qualify_snowflake_positional_columns_after_unpivot(self):
         expression = parse_one(
@@ -1202,6 +1212,20 @@ class TestOptimizer(unittest.TestCase):
                 quote_identifiers=False,
             ).sql("snowflake"),
             "SELECT T.SHOWN AS SHOWN FROM T AS T",
+        )
+
+    def test_qualify_snowflake_positional_columns_quote_unsafe_schema_names(self):
+        expression = parse_one("SELECT t.$1 FROM t", dialect="snowflake")
+        schema = MappingSchema({"t": {"HAS SPACE": "INT"}}, dialect="snowflake")
+
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                schema=schema,
+                quote_identifiers=False,
+            ).sql("snowflake"),
+            'SELECT T."HAS SPACE" AS "HAS SPACE" FROM T AS T',
         )
 
     def test_qualify_snowflake_positional_columns_with_duplicate_names(self):

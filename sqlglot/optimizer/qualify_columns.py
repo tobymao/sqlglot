@@ -686,23 +686,31 @@ def _qualify_columns(
                     )
 
                 positional_name = positional_columns[position_value - 1]
-                # if an output name is duplicated, we can't safely replace the positional reference
+                # Keep the positional reference when its output name is duplicated, since a
+                # named reference would be ambiguous.
                 if positional_columns.count(positional_name) > 1:
                     continue
+
                 source_expression = (
                     column_source.expression if isinstance(column_source, Scope) else None
                 )
-                quoted = (
-                    any(
-                        selection.output_name == positional_name
-                        and _output_identifier_quoted(selection)
-                        for selection in source_expression.selects
-                    )
+                source_selection = (
+                    source_expression.selects[position_value - 1]
                     if isinstance(source_expression, exp.Query)
-                    else isinstance(column_source, exp.Table)
-                    and resolver.dialect.case_sensitive(positional_name)
+                    and not pivots
+                    and position_value <= len(source_expression.selects)
+                    else None
                 )
-                column.set("this", exp.to_identifier(positional_name, quoted=quoted))
+                positional_identifier = _output_identifier(source_selection)
+                if not positional_identifier or positional_identifier.name != positional_name:
+                    positional_identifier = exp.to_identifier(positional_name)
+                else:
+                    positional_identifier = positional_identifier.copy()
+
+                if not positional_identifier.quoted:
+                    resolver.dialect.quote_identifier(positional_identifier, identify=False)
+
+                column.set("this", positional_identifier)
                 column_name = column.name
             if (
                 not allow_partial_qualification
@@ -1078,8 +1086,7 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _output_identifier_quoted(selection: exp.Expr) -> bool:
-    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:
     if isinstance(selection, exp.Alias):
         identifier = selection.args.get("alias")
     elif isinstance(selection, exp.Column):
@@ -1087,7 +1094,13 @@ def _output_identifier_quoted(selection: exp.Expr) -> bool:
     else:
         identifier = None
 
-    return isinstance(identifier, exp.Identifier) and identifier.quoted
+    return identifier if isinstance(identifier, exp.Identifier) else None
+
+
+def _output_identifier_quoted(selection: exp.Expr) -> bool:
+    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+    identifier = _output_identifier(selection)
+    return bool(identifier and identifier.quoted)
 
 
 def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
@@ -1172,6 +1185,9 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
 
     if not isinstance(expression, exp.Selectable):
         return
+    parent = expression.parent
+    parent_alias = parent.args.get("alias") if isinstance(parent, exp.DerivedTable) else None
+    outer_column_identifiers = parent_alias.args.get("columns", []) if parent_alias else []
 
     new_selections = []
 
@@ -1210,7 +1226,14 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             else:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
-            selection.set("alias", exp.to_identifier(aliased_column))
+            selection.set(
+                "alias",
+                exp.to_identifier(
+                    outer_column_identifiers[i]
+                    if i < len(outer_column_identifiers)
+                    else aliased_column
+                ),
+            )
 
         new_selections.append(selection)
 
@@ -1241,12 +1264,14 @@ def pushdown_cte_alias_columns(scope: Scope) -> None:
         scope: Scope to find ctes to pushdown aliases.
     """
     for cte in scope.ctes:
-        if cte.alias_column_names and isinstance(cte.this, exp.Select):
+        table_alias = cte.args.get("alias")
+        alias_columns = table_alias.args.get("columns") if table_alias else None
+        if alias_columns and isinstance(cte.this, exp.Select):
             new_expressions = []
-            for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
+            for alias_identifier, projection in zip(alias_columns, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", exp.to_identifier(_alias))
+                    projection.set("alias", alias_identifier.copy())
                 else:
-                    projection = alias(projection, alias=_alias)
+                    projection = alias(projection, alias=alias_identifier)
                 new_expressions.append(projection)
             cte.this.set("expressions", new_expressions)

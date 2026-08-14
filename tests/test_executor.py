@@ -703,6 +703,17 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
 
+    def test_operators_apply_to_a_whole_case_expression(self):
+        tables = {"t": [{"a": 1}, {"a": 2}]}
+
+        for sql, expected in (
+            ("SELECT (CASE WHEN a = 1 THEN 'x' END) IS NOT NULL AS c FROM t", [(True,), (False,)]),
+            ("SELECT (CASE WHEN a = 1 THEN 'x' END) IS NULL AS c FROM t", [(False,), (True,)]),
+            ("SELECT (CASE WHEN a = 1 THEN 1 ELSE 2 END) + 10 AS c FROM t", [(11,), (12,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, expected)
+
     def test_negated_like(self):
         """NOT LIKE must exclude what LIKE matches, and match no NULL either."""
         tables = {"t": [{"s": "Bump version"}, {"s": "Add feature"}, {"s": None}]}

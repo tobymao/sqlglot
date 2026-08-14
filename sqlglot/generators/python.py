@@ -43,7 +43,7 @@ def _case_sql(self, expression):
         condition = f"{this} = ({condition})" if this else condition
         chain = f"{true} if {condition} else ({chain})"
 
-    return chain
+    return f"({chain})"
 
 
 def _lambda_sql(self, e: exp.Lambda) -> str:

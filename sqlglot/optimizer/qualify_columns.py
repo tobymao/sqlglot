@@ -686,6 +686,7 @@ def _qualify_columns(
                     )
 
                 positional_name = positional_columns[position_value - 1]
+                # if an output name is duplicated, we can't safely replace the positional reference
                 if positional_columns.count(positional_name) > 1:
                     continue
                 source_expression = (

@@ -1281,24 +1281,22 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_qualify_snowflake_positional_column_out_of_range(self):
+        sql = "WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t"
+
         with self.assertRaisesRegex(
             OptimizeError, r"Positional reference \$2 is out of range for source 'T'"
         ):
             qualify(
-                parse_one("WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t", dialect="snowflake"),
+                parse_one(sql, dialect="snowflake"),
                 dialect="snowflake",
             )
 
-    def test_qualify_snowflake_positional_column_out_of_range_with_partial_qualification(self):
-        try:
-            expression = qualify(
-                parse_one("WITH t AS (SELECT 1 AS a) SELECT t.$2 FROM t", dialect="snowflake"),
-                dialect="snowflake",
-                allow_partial_qualification=True,
-                quote_identifiers=False,
-            )
-        except OptimizeError as error:
-            self.fail(f"Partial qualification unexpectedly failed: {error}")
+        expression = qualify(
+            parse_one(sql, dialect="snowflake"),
+            dialect="snowflake",
+            allow_partial_qualification=True,
+            quote_identifiers=False,
+        )
 
         self.assertEqual(
             expression.sql("snowflake"),

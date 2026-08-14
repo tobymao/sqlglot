@@ -430,6 +430,30 @@ class BigQueryParser(parser.Parser):
 
         return this
 
+    def _parse_field(
+        self,
+        any_token: bool = False,
+        tokens: t.Collection[TokenType] | None = None,
+        anonymous_func: bool = False,
+    ) -> exp.Expr | None:
+        # data.144A_FLAG is tokenized as NUMBER + VAR. After a DOT, glue them
+        # into one identifier, same as _parse_table_part does for foo.bar.25x.
+        # https://github.com/tobymao/sqlglot/issues/8175
+        after_dot = self._prev is not None and self._prev.token_type == TokenType.DOT
+        field = super()._parse_field(
+            any_token=any_token, tokens=tokens, anonymous_func=anonymous_func
+        )
+        if (
+            after_dot
+            and isinstance(field, exp.Literal)
+            and field.is_number
+            and self._is_connected()
+            and self._parse_var(any_token=True)
+        ):
+            name = f"{field.name}{self._prev.text}"
+            field = exp.Identifier(this=name, quoted=True).update_positions(field)
+        return field
+
     def _parse_table_parts(
         self,
         schema: bool = False,

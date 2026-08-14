@@ -70,7 +70,9 @@ class DremioGenerator(generator.Generator):
         exp.DateAdd: _date_delta_sql("DATE_ADD"),
         exp.DateSub: _date_delta_sql("DATE_SUB"),
         exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),
-        exp.RegexpSplit: rename_func("REGEXP_SPLIT"),
+        exp.RegexpSplit: lambda self, e: self.func(
+            "REGEXP_SPLIT", e.this, e.expression, e.args.get("mode"), e.args.get("limit")
+        ),
     }
 
     def version_sql(self, expression: exp.Version) -> str:

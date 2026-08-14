@@ -478,8 +478,7 @@ class RegexpReplace(Expression, Func):
 
 
 class RegexpSplit(Expression, Func):
-    # "mode" is Dremio-specific (e.g. 'ALL'), appended after "limit" so existing
-    # 2/3-arg positional callers (from_arg_list) keep mapping "limit" unchanged
+    # "mode" is Dremio-specific, appended after "limit" for from_arg_list compat
     arg_types = {"this": True, "expression": True, "limit": False, "mode": False}
 
 

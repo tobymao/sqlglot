@@ -256,6 +256,21 @@ class TestDremio(Validator):
         self.assertEqual(regexp_split.text("mode"), "ALL")
         self.assertEqual(regexp_split.text("limit"), "1000")
 
+        # Construct in exp.RegexpSplit's declared arg_types order (this,
+        # expression, limit, mode), which does NOT match Dremio's real
+        # argument order (this, expression, mode, limit), to prove the
+        # generator renders by key and not by construction/kwarg order.
+        reordered = exp.RegexpSplit(
+            this=exp.column("tags"),
+            expression=exp.Literal.string(","),
+            limit=exp.Literal.number(1000),
+            mode=exp.Literal.string("ALL"),
+        )
+        self.assertEqual(
+            reordered.sql(dialect="dremio"),
+            "REGEXP_SPLIT(tags, ',', 'ALL', 1000)",
+        )
+
     def test_try_cast(self):
         self.validate_all(
             "CAST(a AS FLOAT)",

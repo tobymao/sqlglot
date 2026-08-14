@@ -1289,6 +1289,14 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            # POSEXPLODE over a map yields three columns (pos, key, value)
+            "SELECT POSEXPLODE(m) AS (pos, key, value)",
+            write={
+                "duckdb": "SELECT GENERATE_SUBSCRIPTS(MAP_KEYS(m), 1) - 1 AS pos, UNNEST(MAP_KEYS(m)) AS key, UNNEST(MAP_VALUES(m)) AS value",
+                "spark": "SELECT POSEXPLODE(m) AS (pos, key, value)",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM POSEXPLODE(ARRAY('a'))",
             write={
                 "duckdb": "SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(['a'], 1) - 1 AS pos, UNNEST(['a']) AS col)",

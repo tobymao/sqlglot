@@ -1139,6 +1139,34 @@ class TestOptimizer(unittest.TestCase):
                 'SELECT t.$1 FROM (SELECT 1) AS t("lower")',
                 'SELECT T."lower" AS "lower" FROM (SELECT 1 AS "lower") AS T',
             ),
+            (
+                'WITH t AS (SELECT 1 AS "SELECT", 2 AS a, 3 AS b) '
+                "SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))",
+                'WITH T AS (SELECT 1 AS "SELECT", 2 AS A, 3 AS B) '
+                'SELECT T."SELECT" AS "SELECT" FROM T AS T '
+                "UNPIVOT(V FOR K IN (A, B)) AS T",
+            ),
+            (
+                "WITH t AS (SELECT 1 AS a, 2 AS b) "
+                'SELECT t.$1 FROM t UNPIVOT(v FOR "SELECT" IN (a, b))',
+                "WITH T AS (SELECT 1 AS A, 2 AS B) "
+                'SELECT T."SELECT" AS "SELECT" FROM T AS T '
+                'UNPIVOT(V FOR "SELECT" IN (A, B)) AS T',
+            ),
+            (
+                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT p.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS \"SELECT\")) AS p",
+                "WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) "
+                'SELECT P."SELECT" AS "SELECT" FROM T AS T '
+                "PIVOT(SUM(T.V) FOR T.K IN ('a' AS \"SELECT\")) AS P",
+            ),
+            (
+                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT p.$2 FROM t PIVOT(SUM(v) AS total FOR k IN ('a' AS \"lower\")) AS p",
+                "WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) "
+                'SELECT P."lower_TOTAL" AS "lower_TOTAL" FROM T AS T '
+                "PIVOT(SUM(T.V) AS TOTAL FOR T.K IN ('a' AS \"lower\")) AS P",
+            ),
         ):
             with self.subTest(sql=sql):
                 self.assertEqual(
@@ -1195,6 +1223,37 @@ class TestOptimizer(unittest.TestCase):
             "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) "
             "UNPIVOT(HEADCOUNT FOR REGION IN (NORTH, SOUTH)) AS T",
         )
+
+    def test_qualify_snowflake_positional_columns_after_derived_unpivot(self):
+        for sql, expected in (
+            (
+                "SELECT piv.$1, piv.$2 FROM "
+                "(SELECT 1 AS id, 2 AS jan, 3 AS feb) "
+                "UNPIVOT(revenue FOR month IN (jan, feb)) AS piv",
+                "SELECT PIV.ID AS ID, PIV.MONTH AS MONTH FROM "
+                "(SELECT 1 AS ID, 2 AS JAN, 3 AS FEB) AS _0 "
+                "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) AS PIV",
+            ),
+            (
+                "SELECT piv.$2, piv.$4 FROM "
+                "(SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) "
+                "UNPIVOT(revenue FOR month IN (jan, feb)) "
+                "UNPIVOT(headcount FOR region IN (north, south)) AS piv",
+                "SELECT PIV.MONTH AS MONTH, PIV.REGION AS REGION FROM "
+                "(SELECT 1 AS ID, 100 AS JAN, 200 AS FEB, 7 AS NORTH, 8 AS SOUTH) AS _0 "
+                "UNPIVOT(REVENUE FOR MONTH IN (JAN, FEB)) "
+                "UNPIVOT(HEADCOUNT FOR REGION IN (NORTH, SOUTH)) AS PIV",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    qualify(
+                        parse_one(sql, dialect="snowflake"),
+                        dialect="snowflake",
+                        quote_identifiers=False,
+                    ).sql("snowflake"),
+                    expected,
+                )
 
     def test_qualify_snowflake_positional_columns_exclude_invisible_columns(self):
         expression = parse_one("SELECT t.$1 FROM t", dialect="snowflake")

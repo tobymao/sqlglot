@@ -641,6 +641,28 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
+def _resolve_pivot_source(
+    scope: Scope, table: str
+) -> tuple[str, exp.Table | Scope | None, list[exp.Pivot] | None]:
+    source = scope.sources.get(table)
+    if source is not None:
+        return table, source, None
+
+    # A chain's final alias may not be registered as a source, so resolve it through the
+    # shared parent only when attribution is unambiguous.
+    chain = scope.pivots
+    parent = (
+        chain[-1].parent
+        if chain and chain[0].parent is chain[-1].parent and chain[-1].alias == table
+        else None
+    )
+    if parent:
+        source_table = parent.alias_or_name
+        return source_table, scope.sources.get(source_table), chain
+
+    return table, None, None
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -651,13 +673,18 @@ def _qualify_columns(
         column_table = column.table
         column_name = column.name
 
-        if column_table and column_table in scope.sources:
-            column_source = scope.sources[column_table]
-            source_columns = resolver.get_source_columns(column_table)
+        source_table, column_source, pivots = (
+            _resolve_pivot_source(scope, column_table) if column_table else ("", None, None)
+        )
+        if column_source is not None:
+            source_columns: t.Collection[str] = resolver.get_source_columns(source_table)
             # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
-            pivots = (
-                column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
-            )
+            if pivots is None:
+                pivots = (
+                    column_source.args.get("pivots", [])
+                    if isinstance(column_source, exp.Table)
+                    else []
+                )
             if source_columns and pivots:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
@@ -671,11 +698,30 @@ def _qualify_columns(
                 and source_columns
                 and "*" not in source_columns
             ):
-                positional_columns = list(
-                    resolver.get_source_columns(column_table, only_visible=True)
+                positional_identifiers = [
+                    exp.to_identifier(name)
+                    for name in resolver.get_source_columns(source_table, only_visible=True)
+                ]
+                metadata_source = (
+                    scope.cte_sources.get(column_source.name)
+                    if isinstance(column_source, exp.Table) and not column_source.db
+                    else column_source
                 )
+                source_expression = (
+                    metadata_source.expression if isinstance(metadata_source, Scope) else None
+                )
+                if isinstance(source_expression, exp.Query):
+                    for index, (identifier, selection) in enumerate(
+                        zip(positional_identifiers, source_expression.selects)
+                    ):
+                        source_identifier = _output_identifier(selection)
+                        if source_identifier and source_identifier.name == identifier.name:
+                            positional_identifiers[index] = source_identifier.copy()
+
                 for pivot in pivots:
-                    positional_columns = pivot.output_column_names(positional_columns)
+                    positional_identifiers = pivot.output_column_identifiers(positional_identifiers)
+
+                positional_columns = [identifier.name for identifier in positional_identifiers]
 
                 position_value = int(position.to_py())
                 if not 1 <= position_value <= len(positional_columns):
@@ -691,21 +737,7 @@ def _qualify_columns(
                 if positional_columns.count(positional_name) > 1:
                     continue
 
-                source_expression = (
-                    column_source.expression if isinstance(column_source, Scope) else None
-                )
-                source_selection = (
-                    source_expression.selects[position_value - 1]
-                    if isinstance(source_expression, exp.Query)
-                    and not pivots
-                    and position_value <= len(source_expression.selects)
-                    else None
-                )
-                positional_identifier = _output_identifier(source_selection)
-                if not positional_identifier or positional_identifier.name != positional_name:
-                    positional_identifier = exp.to_identifier(positional_name)
-                else:
-                    positional_identifier = positional_identifier.copy()
+                positional_identifier = positional_identifiers[position_value - 1].copy()
 
                 if not positional_identifier.quoted:
                     resolver.dialect.quote_identifier(positional_identifier, identify=False)
@@ -967,27 +999,9 @@ def _expand_stars(
             continue
 
         for table in tables:
-            source = scope.sources.get(table)
-            pivots: list[exp.Pivot] | None = None
-            source_table = table
-
+            source_table, source, pivots = _resolve_pivot_source(scope, table)
             if source is None:
-                # The chain's final alias names the resulting source, but only the underlying
-                # source is registered in `scope.sources`, so resolve through the chain's parent.
-                # Attribution is only unambiguous for a single chain (all pivots share a parent)
-                chain = scope.pivots
-                parent = (
-                    chain[-1].parent
-                    if chain and chain[0].parent is chain[-1].parent and chain[-1].alias == table
-                    else None
-                )
-                if parent:
-                    pivots = chain
-                    source_table = parent.alias_or_name
-                    source = scope.sources.get(source_table)
-
-                if source is None:
-                    raise OptimizeError(f"Unknown table: {table}")
+                raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns

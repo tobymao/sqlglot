@@ -1011,6 +1011,17 @@ ORDER BY (
             'CREATE TABLE t ("projection" Int8)',
         )
 
+        # A COMPRESS constraint with a single value (stored as a lone expression,
+        # not a list) must still map to CODEC without raising.
+        self.validate_all(
+            "CREATE TABLE t (a Int32 CODEC('x'))",
+            read={"clickhouse": "CREATE TABLE t (a Int32 COMPRESS 'x')"},
+        )
+        self.validate_all(
+            "CREATE TABLE t (a Int32 CODEC('x', 'y'))",
+            read={"clickhouse": "CREATE TABLE t (a Int32 COMPRESS ('x', 'y'))"},
+        )
+
         db_table_expr = exp.Table(this=None, db=exp.to_identifier("foo"), catalog=None)
         create_with_cluster = exp.Create(
             this=db_table_expr,

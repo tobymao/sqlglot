@@ -4313,32 +4313,48 @@ class DuckDBGenerator(generator.Generator):
         parent = expression.parent
 
         # The default Spark aliases are "pos" and "col", unless specified otherwise
-        pos, col = exp.to_identifier("pos"), exp.to_identifier("col")
+        columns: list[exp.Expression] = [exp.to_identifier("pos"), exp.to_identifier("col")]
 
         if isinstance(parent, exp.Aliases):
             # Column case: SELECT POSEXPLODE(col) [AS (a, b)]
-            pos, col = parent.expressions
+            columns = parent.expressions
         elif isinstance(parent, exp.Table):
             # Table case: SELECT * FROM POSEXPLODE(col) [AS (a, b)]
             alias = parent.args.get("alias")
             if alias:
-                pos, col = alias.columns or [pos, col]
+                columns = alias.columns or columns
                 alias.pop()
 
         # Translate POSEXPLODE to UNNEST + GENERATE_SUBSCRIPTS
         # Note: In Spark pos is 0-indexed, but in DuckDB it's 1-indexed, so we subtract 1 from GENERATE_SUBSCRIPTS
-        unnest_sql = self.sql(exp.Unnest(expressions=[this], alias=col))
-        gen_subscripts = self.sql(
-            exp.Alias(
-                this=exp.Anonymous(
-                    this="GENERATE_SUBSCRIPTS", expressions=[this, exp.Literal.number(1)]
+        def _generate_subscripts(array: exp.Expression, alias: exp.Expression) -> str:
+            return self.sql(
+                exp.Alias(
+                    this=exp.Anonymous(
+                        this="GENERATE_SUBSCRIPTS", expressions=[array, exp.Literal.number(1)]
+                    )
+                    - exp.Literal.number(1),
+                    alias=alias,
                 )
-                - exp.Literal.number(1),
-                alias=pos,
             )
-        )
 
-        posexplode_sql = self.format_args(gen_subscripts, unnest_sql)
+        if len(columns) == 3:
+            # POSEXPLODE over a map yields three columns: (pos, key, value)
+            pos, key, value = columns
+            keys = exp.Anonymous(this="MAP_KEYS", expressions=[this.copy()])
+            values = exp.Anonymous(this="MAP_VALUES", expressions=[this.copy()])
+            posexplode_sql = self.format_args(
+                _generate_subscripts(keys.copy(), pos),
+                self.sql(exp.Unnest(expressions=[keys], alias=key)),
+                self.sql(exp.Unnest(expressions=[values], alias=value)),
+            )
+        else:
+            # POSEXPLODE over an array yields two columns: (pos, col)
+            pos, col = columns
+            posexplode_sql = self.format_args(
+                _generate_subscripts(this, pos),
+                self.sql(exp.Unnest(expressions=[this], alias=col)),
+            )
 
         if isinstance(parent, exp.From) or (parent and isinstance(parent.parent, exp.From)):
             # SELECT * FROM POSEXPLODE(col) -> SELECT * FROM (SELECT GENERATE_SUBSCRIPTS(...), UNNEST(...))

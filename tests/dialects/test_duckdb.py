@@ -368,6 +368,14 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            # An anonymous aggregate keeps its name in `this`, with the value in `expressions`
+            "SELECT COLLECT_LIST(x) FILTER (WHERE x > 1) FROM t",
+            write={
+                "duckdb": "SELECT COLLECT_LIST(x) FILTER(WHERE x > 1) FROM t",
+                "snowflake": "SELECT COLLECT_LIST(IFF(x > 1, x, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
             "SELECT COUNT(*) FILTER (WHERE b > 0) FROM t",
             write={
                 "duckdb": "SELECT COUNT(*) FILTER(WHERE b > 0) FROM t",

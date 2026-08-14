@@ -1201,7 +1201,11 @@ class SnowflakeGenerator(generator.Generator):
         if isinstance(agg_arg, exp.Order):
             agg_arg = agg_arg.this
 
-        if isinstance(agg_arg, exp.Distinct):
+        if isinstance(agg, exp.Anonymous):
+            # Anonymous aggregates keep the function name in `this`, so the values to
+            # wrap are its `expressions` rather than `this`.
+            targets = agg.expressions
+        elif isinstance(agg_arg, exp.Distinct):
             targets = agg_arg.expressions
         else:
             targets = [agg_arg]

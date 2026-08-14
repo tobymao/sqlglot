@@ -18,6 +18,12 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
 
 
+def _build_btrim(args: list) -> exp.Trim | exp.Anonymous:
+    if 1 <= len(args) <= 2:
+        return exp.Trim(this=seq_get(args, 0), expression=seq_get(args, 1))
+    return exp.Anonymous(this="BTRIM", expressions=args)
+
+
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
     # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
@@ -102,6 +108,7 @@ class PostgresParser(parser.Parser):
         "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
             this=seq_get(args, 1), expression=seq_get(args, 0)
         ),
+        "BTRIM": _build_btrim,
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
         "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,

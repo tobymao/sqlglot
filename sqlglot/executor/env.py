@@ -271,6 +271,7 @@ ENV = {
     "GTE": null_if_any(lambda this, e: this >= e),
     "IF": lambda predicate, true, false: true if predicate else false,
     "IN": sql_in,
+    "INT": null_if_any(int),
     "INTDIV": null_if_any(lambda e, this: e // this),
     "INTERVAL": interval,
     "JSONEXTRACT": jsonextract,

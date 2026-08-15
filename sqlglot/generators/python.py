@@ -78,7 +78,7 @@ def _div_sql(self: generator.Generator, e: exp.Div) -> str:
     if e.args.get("typed") and not (
         e.this.is_type(*exp.DataType.REAL_TYPES) or e.expression.is_type(*exp.DataType.REAL_TYPES)
     ):
-        sql = f"int({sql})"
+        sql = f"INT({sql})"
 
     return sql
 

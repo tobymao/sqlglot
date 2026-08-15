@@ -1082,6 +1082,17 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result.columns, ("_col_0",))
         self.assertEqual(result.rows, [(3,)])
 
+    def test_in_subquery_without_a_from(self):
+        tables = {"x": [{"a": 1}, {"a": 2}, {"a": None}]}
+
+        for sql, rows in (
+            ("SELECT x.a FROM x WHERE x.a IN (SELECT 1)", [(1,)]),
+            ("SELECT x.a FROM x WHERE x.a IN (SELECT 1 + 1)", [(2,)]),
+            ("SELECT x.a FROM x WHERE x.a IN (SELECT 1 UNION SELECT 2)", [(1,), (2,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, rows)
+
     def test_scalar_functions(self):
         now = datetime.datetime.now()
 

@@ -265,7 +265,9 @@ class PythonExecutor:
         return sink
 
     def static(self):
-        return self.context({}), [RowReader(())]
+        reader = RowReader(())
+        reader.row = ()
+        return self.context({}), [reader]
 
     def scan_table(self, step):
         table = self.tables.find(step.source)
@@ -483,7 +485,9 @@ class PythonExecutor:
         context = self.context({step.name: table, **{name: table for name in context.tables}})
 
         if step.projections or step.condition:
-            return self.scan(step, context)
+            return self.context(
+                {step.name: self._project_and_filter(context, step, context.table_iter(step.name))}
+            )
         return context
 
     def sort(self, step, context):

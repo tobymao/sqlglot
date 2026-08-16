@@ -977,11 +977,13 @@ class ClickHouseParser(parser.Parser):
         # In INSERT INTO statements the same clause actually references multiple columns (opposite semantics),
         # but the final result is not altered by the extra parentheses.
         # Note: Clickhouse allows VALUES([structure], value, ...) so the branch checks for the last expression
+        # A single-value tuple is generated as "(x)", which is parsed back into a Paren
+        # rather than a Tuple, so it's unwrapped here to keep this rewrite idempotent
         expressions = value.expressions
         if values and not isinstance(expressions[-1], exp.Tuple):
             value.set(
                 "expressions",
-                [self.expression(exp.Tuple(expressions=[expr])) for expr in expressions],
+                [self.expression(exp.Tuple(expressions=[expr.unnest()])) for expr in expressions],
             )
 
         return value

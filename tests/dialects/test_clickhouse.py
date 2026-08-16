@@ -815,6 +815,11 @@ class TestClickhouse(Validator):
             "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
         )
 
+        # Wrapping the values in tuples must be idempotent, otherwise re-parsing
+        # generated SQL keeps adding a layer of parentheses on every roundtrip
+        self.validate_identity("INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))")
+        self.validate_identity("SELECT * FROM VALUES ((1), (2), (3))")
+
         self.validate_all(
             "SELECT col FROM (SELECT 1 AS col) AS _t",
             read={

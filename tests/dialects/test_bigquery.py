@@ -174,6 +174,19 @@ class TestBigQuery(Validator):
         self.validate_identity("CAST(x AS STRUCT<list ARRAY<INT64>>)")
         self.validate_identity("assert.true(1 = 1)")
         self.validate_identity("SELECT jsondoc['some_key']")
+        self.validate_identity("SELECT data.144A_FLAG FROM t", "SELECT data.`144A_FLAG` FROM t")
+        self.validate_identity("SELECT t.1a FROM t", "SELECT t.`1a` FROM t")
+        self.validate_identity("SELECT STRING(data.144) FROM t", "SELECT STRING(data.`144`) FROM t")
+        self.validate_identity(
+            "SELECT STRING(data.1e10) FROM t", "SELECT STRING(data.`1e10`) FROM t"
+        )
+        self.validate_identity("SELECT t.144 A_FLAG FROM t", "SELECT t.`144` AS A_FLAG FROM t")
+
+        col = self.parse_one("SELECT data.144A_FLAG FROM t").selects[0]
+        self.assertIsInstance(col, exp.Column)
+        self.assertEqual(
+            col.parts, [exp.to_identifier("data"), exp.to_identifier("144A_FLAG", quoted=True)]
+        )
         self.validate_identity("SELECT `p.d.UdF`(data).* FROM `p.d.t`")
         self.validate_identity("SELECT * FROM `my-project.my-dataset.my-table`")
         self.validate_identity("CREATE OR REPLACE TABLE `a.b.c` CLONE `a.b.d`")

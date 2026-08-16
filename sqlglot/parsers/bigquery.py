@@ -192,6 +192,7 @@ class BigQueryParser(parser.Parser):
     SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = True
     JOINS_HAVE_EQUAL_PRECEDENCE: t.ClassVar = True
     ADJACENT_STRINGS_CANNOT_BE_CONNECTED: t.ClassVar = True
+    SUPPORTS_DIGIT_PREFIXED_FIELD_NAMES: t.ClassVar = True
 
     # BigQuery does not allow ASC/DESC to be used as an identifier, allows GRANT as an identifier
     ID_VAR_TOKENS: t.ClassVar = {
@@ -400,27 +401,6 @@ class BigQueryParser(parser.Parser):
             self._retreat(index)
             return self._parse_as_command(self._prev)
         return self.expression(exp.ForIn(this=this, expression=self._parse_statement()))
-
-    def _parse_field(
-        self,
-        any_token: bool = False,
-        tokens: t.Collection[TokenType] | None = None,
-        anonymous_func: bool = False,
-    ) -> exp.Expr | None:
-        # BQ allows things like data.144A_FLAG or data.144; this override mirrors _parse_table_part
-        after_dot = self._prev.token_type == TokenType.DOT
-        field = super()._parse_field(
-            any_token=any_token, tokens=tokens, anonymous_func=anonymous_func
-        )
-
-        if after_dot and isinstance(field, exp.Literal) and field.is_number:
-            name = field.name
-            if self._is_connected() and self._parse_var(any_token=True):
-                name += self._prev.text
-
-            field = exp.Identifier(this=name, quoted=True).update_positions(field)
-
-        return field
 
     def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
         this = super()._parse_table_part(schema=schema) or self._parse_number()

@@ -8049,7 +8049,41 @@ class Parser:
             exp.Case(this=expression, ifs=ifs, default=default), comments=comments
         )
 
+    def _is_statement_if(self) -> bool:
+        """Whether the current `IF ( ... )` is the statement form
+        `IF (condition) THEN ... END IF` rather than a function call
+        `IF(a, b, c)`.
+
+        The statement form has a `THEN` at parenthesis depth 0 before any
+        top-level comma or semicolon.
+        """
+        depth = 0
+        for i in range(self._index, len(self._tokens)):
+            token_type = self._tokens[i].token_type
+            if token_type == TokenType.L_PAREN:
+                depth += 1
+            elif token_type == TokenType.R_PAREN:
+                depth -= 1
+            elif depth == 0:
+                if token_type == TokenType.THEN:
+                    return True
+                if token_type in (TokenType.COMMA, TokenType.SEMICOLON):
+                    return False
+        return False
+
     def _parse_if(self) -> exp.Expr | None:
+        start = self._prev
+
+        if (
+            self.NO_PAREN_IF_COMMANDS
+            and self._curr.token_type == TokenType.L_PAREN
+            and self._is_statement_if()
+        ):
+            # `IF (condition) THEN ... END IF` used as a statement, e.g. inside a
+            # procedure body. This is not a function call `IF(a, b, c)`, so fall
+            # back to parsing it as a command instead of failing.
+            return self._parse_as_command(start)
+
         if self._match(TokenType.L_PAREN):
             args = self._parse_csv(
                 lambda: self._parse_alias(self._parse_assignment(), explicit=True)
@@ -8060,7 +8094,7 @@ class Parser:
             index = self._index - 1
 
             if self.NO_PAREN_IF_COMMANDS and index == 0:
-                return self._parse_as_command(self._prev)
+                return self._parse_as_command(start)
 
             condition = self._parse_disjunction()
 

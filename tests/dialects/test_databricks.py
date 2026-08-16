@@ -570,3 +570,19 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
         self.validate_identity("DECLARE x INT = 1")
         self.validate_identity("DECLARE OR REPLACE x INT = 1")
+
+    def test_procedure_if_statement(self):
+        # https://github.com/tobymao/sqlglot/issues/8186
+        # `IF (condition) THEN ... END IF` as a statement must not be parsed as
+        # a function call `IF(a, b, c)` -- it falls back to a Command, exactly
+        # like the unparenthesized form.
+        self.validate_identity(
+            "CREATE OR REPLACE PROCEDURE dm_common.usp_test() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN IF (SELECT 1) = 0 THEN SELECT 1; ELSE SELECT 2; END AS IF; END"
+        )
+        self.validate_identity(
+            "CREATE PROCEDURE test_proc() AS BEGIN IF (1 = 1) THEN SELECT 1; END AS IF; END"
+        )
+        self.validate_identity("IF 1 = 1 THEN SELECT 1; END AS IF")
+        self.validate_identity("IF (1 = 1) THEN SELECT 1; END AS IF")
+        self.validate_identity("SELECT IF(1 = 1, 2, 3)")
+        self.validate_identity("SELECT IF(x > 0, 'positive', 'non-positive')")

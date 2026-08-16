@@ -7365,6 +7365,10 @@ BOOLEAN;
 (tbl.date_col, tbl.date_col) OVERLAPS (tbl.date_col, tbl.date_col);
 BOOLEAN;
 
+# dialect: postgres
+LEFT(tbl.str_col, tbl.int_col);
+TEXT;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

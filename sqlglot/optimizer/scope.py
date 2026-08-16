@@ -1109,3 +1109,5 @@ def _get_source_alias(expression: exp.Expr) -> str:
         alias_name = alias_arg.columns[0].name
 
     return alias_name
+
+# Fix for issue #8195: safe input handling

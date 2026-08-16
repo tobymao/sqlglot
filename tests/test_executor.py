@@ -28,6 +28,14 @@ from tests.helpers import (
 DIR_TPCH = FIXTURES_DIR + "/optimizer/tpc-h/"
 DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
 
+SUBQUERY_SCHEMA = {t: {"a" if t == "x" else "b": "int"} for t in ("x", "y", "e", "n")}
+SUBQUERY_TABLES = {
+    "x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}],
+    "y": [{"b": 2}, {"b": 3}],
+    "e": [],
+    "n": [{"b": 2}, {"b": None}],
+}
+
 
 def open_file(file_name):
     """Open a file that may be compressed as gzip and return it in universal newline mode."""
@@ -591,20 +599,126 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(executed.rows, [])
         self.assertEqual(executed.columns, ("id_alias", "sub_type"))
 
-    def test_unsupported_subqueries(self):
+    def test_subqueries(self):
+        # expected rows are duckdb's, which postgres agrees with on every case here
+        schema = {t: {"a" if t == "x" else "b": "int"} for t in ("x", "y", "e", "n")}
         tables = {
-            "x": [{"id": 1}, {"id": 2}, {"id": 3}],
-            "y": [{"id": 1}, {"id": 2}],
+            "x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}],
+            "y": [{"b": 2}, {"b": 3}],
+            "e": [],
+            "n": [{"b": 2}, {"b": None}],
         }
+        cases = (
+            ("SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = x.a OR b = 3)", []),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT b = x.a)",
+                [(1,), (2,), (3,), (5,)],
+            ),
+            ("SELECT a FROM x WHERE EXISTS (SELECT 1 FROM e)", []),
+            (
+                "SELECT a, (SELECT MAX(b) FROM y WHERE b > x.a) AS m FROM x",
+                [(1, 3), (2, 3), (3, None), (5, None)],
+            ),
+            ("SELECT a FROM x WHERE (SELECT COUNT(*) FROM y WHERE b > x.a) > 0", [(1,), (2,)]),
+            ("SELECT a FROM x WHERE a IN (SELECT b FROM y WHERE b = x.a OR b = 3)", [(2,), (3,)]),
+            ("SELECT a FROM x WHERE a NOT IN (SELECT b FROM y)", [(1,), (5,)]),
+            ("SELECT a FROM x WHERE a IN (SELECT b FROM n)", [(2,)]),
+            ("SELECT a FROM x WHERE a NOT IN (SELECT b FROM n)", []),
+            ("SELECT a FROM x WHERE a IN (5, (SELECT MIN(b) FROM y WHERE b > x.a))", [(5,)]),
+            ("SELECT a FROM x WHERE (SELECT MIN(b) FROM y WHERE b > x.a) IN (1, 2)", [(1,)]),
+            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM n)", [(3,), (5,)]),
+            ("SELECT a FROM x WHERE a > ALL (SELECT b FROM n)", []),
+            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM e)", []),
+            ("SELECT a FROM x WHERE a > ALL (SELECT b FROM e)", [(1,), (2,), (3,), (5,)]),
+            ("SELECT a FROM x WHERE a > SOME (SELECT b FROM y)", [(3,), (5,)]),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a AND EXISTS (SELECT 1 FROM n WHERE n.b = y.b))",
+                [(2,)],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = 99 OR EXISTS (SELECT 1 FROM n WHERE n.b = x.a OR n.b = 99))",
+                [(2,)],
+            ),
+            (
+                "SELECT a FROM x WHERE a IN (SELECT b FROM y WHERE b = x.a) OR a IN (SELECT b FROM n WHERE b = x.a)",
+                [(2,), (3,)],
+            ),
+            ("SELECT a FROM x WHERE a IN (SELECT b FROM y UNION SELECT b FROM n)", [(2,), (3,)]),
+            (
+                "SELECT a FROM x WHERE EXISTS ((SELECT 1 FROM y WHERE b = x.a OR b = 99))",
+                [(2,), (3,)],
+            ),
+            ("SELECT a FROM x GROUP BY a HAVING MAX(a) > (SELECT MIN(b) FROM y)", [(3,), (5,)]),
+            (
+                "WITH w AS (SELECT b, COUNT(*) AS k FROM y GROUP BY b) SELECT a FROM x "
+                "WHERE EXISTS (SELECT 1 FROM w WHERE w.b = x.a OR w.k = 2)",
+                [(2,), (3,)],
+            ),
+            (
+                "WITH c AS (SELECT b FROM y) SELECT a FROM x WHERE a IN (SELECT b FROM c) AND NOT EXISTS (SELECT 1 FROM c WHERE b = x.a OR b = 99)",
+                [],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a OR EXISTS (SELECT 1 FROM n WHERE n.b = x.a))",
+                [(2,), (3,)],
+            ),
+        )
 
-        for sql in (
-            "SELECT x.id FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
-            "SELECT x.id FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE NOT (y.id = x.id))",
-            "SELECT x.id, (SELECT MAX(y.id) FROM y) AS max_id FROM x",
+        def sort(rows):
+            return sorted(rows, key=lambda row: tuple((v is None, v) for v in row))
+
+        for sql, expected in cases:
+            with self.subTest(sql):
+                self.assertEqual(sort(execute(sql, schema, tables=tables).rows), sort(expected))
+
+    def test_subquery_memoization(self):
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": i % 3} for i in range(12)], "y": [{"b": 1}, {"b": 2}]}
+
+        for sql, plans in (
+            ("SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = x.a OR b = 9)", 1),
+            (
+                "SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = 9 OR EXISTS "
+                "(SELECT 1 FROM y AS y2 WHERE y2.b = x.a OR y2.b = 9))",
+                2,
+            ),
+        ):
+            with self.subTest(sql):
+                executor = PythonExecutor(tables=ensure_tables(tables))
+                executor.execute(Plan(optimize(sql, schema, leave_tables_isolated=True)))
+
+                # one plan per subquery, and one run per distinct correlated value of the 12 rows
+                self.assertEqual(len(executor._subquery_plans), plans)
+                self.assertEqual(
+                    [len(cache) for _, cache in executor._subquery_plans.values()], [3] * plans
+                )
+
+    def test_subquery_execution_does_not_mutate_the_plan(self):
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": 1}, {"a": 2}], "y": [{"b": 2}]}
+        sql = "SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = x.a OR b = 9)"
+
+        plan = Plan(optimize(sql, schema, leave_tables_isolated=True))
+        before = plan.expression.sql()
+        PythonExecutor(tables=ensure_tables(tables)).execute(plan)
+
+        self.assertEqual(plan.expression.sql(), before)
+
+    def test_subquery_cardinality(self):
+        # a scalar subquery must yield a single row and column, as in duckdb and postgres
+        for sql, tables in (
+            (
+                "SELECT a, (SELECT b FROM y) AS m FROM x",
+                {"x": [{"a": 1}], "y": [{"b": 2}, {"b": 3}]},
+            ),
+            ("SELECT a, (SELECT b, b FROM y) AS m FROM x", {"x": [{"a": 1}], "y": [{"b": 2}]}),
+            # the column count is a property of the query, so it is rejected even when no
+            # outer row would have evaluated it -- duckdb reports this as a binder error
+            ("SELECT a, (SELECT b, b FROM y) AS m FROM x", {"x": [], "y": [{"b": 2}]}),
         ):
             with self.subTest(sql):
                 with self.assertRaises(ExecuteError):
-                    execute(sql, tables=tables)
+                    execute(sql, schema={"x": {"a": "int"}, "y": {"b": "int"}}, tables=tables)
 
     def test_correlated_count(self):
         tables = {

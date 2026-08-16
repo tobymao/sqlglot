@@ -105,6 +105,7 @@ class PostgresParser(parser.Parser):
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
         "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
+        "BTRIM": exp.Trim.from_arg_list,
         "VERSION": exp.CurrentVersion.from_arg_list,
         "DATE_TRUNC": build_timestamp_trunc,
         "DIV": lambda args: exp.cast(binary_from_function(exp.IntDiv)(args), exp.DType.DECIMAL),

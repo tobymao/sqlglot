@@ -86,6 +86,13 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
+        self.validate_all(
+            "SELECT BTRIM(x, 'ab')",
+            write={
+                "postgres": "SELECT TRIM('ab' FROM x)",
+                "duckdb": "SELECT TRIM(x, 'ab')",
+            },
+        )
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
         self.validate_identity("""SELECT * FROM JSON_TO_RECORDSET(z) AS y("rank" INT)""")
         self.validate_identity("SELECT ~x")

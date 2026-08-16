@@ -82,8 +82,11 @@ class TestPostgres(Validator):
         self.validate_identity("COMMENT ON MATERIALIZED VIEW foo.my_view IS 'x'")
         self.validate_identity("COMMENT ON SEQUENCE public.seq IS 'x'")
         self.validate_identity("COMMENT ON INDEX public.idx IS 'x'")
-        self.validate_identity("SELECT e'\\xDEADBEEF'")
-        self.validate_identity("SELECT CAST(e'\\176' AS BYTEA)")
+        # \xhh and \ooo are decoded, so these no longer round-trip verbatim
+        self.validate_all("SELECT e'\\xDEADBEEF'", write={"postgres": "SELECT e'\xdeADBEEF'"})
+        self.validate_all(
+            "SELECT CAST(e'\\176' AS BYTEA)", write={"postgres": "SELECT CAST(e'~' AS BYTEA)"}
+        )
         self.validate_identity("SELECT * FROM x WHERE SUBSTRING('Thomas' FROM '...$') IN ('mas')")
         self.validate_identity("SELECT TRIM(' X' FROM ' XXX ')")
         self.validate_identity("SELECT TRIM(LEADING 'bla' FROM ' XXX ' COLLATE utf8_bin)")
@@ -470,7 +473,70 @@ FROM json_data, field_ids""",
             write={
                 "postgres": "SELECT e'a\\tb'",
                 "mysql": "SELECT 'a\\tb'",
-                "sqlite": UnsupportedError,
+                "sqlite": "SELECT 'a\tb'",
+            },
+        )
+        # An escape string is text, not binary, so a dialect without byte string syntax can
+        # still represent it, provided the tokenizer left no backslash behind to interpret.
+        self.validate_all(
+            "SELECT E'hello'",
+            write={
+                "postgres": "SELECT e'hello'",
+                "mysql": "SELECT 'hello'",
+                "sqlite": "SELECT 'hello'",
+                "tsql": "SELECT 'hello'",
+                "oracle": "SELECT 'hello'",
+                "presto": "SELECT 'hello'",
+                "trino": "SELECT 'hello'",
+                "teradata": "SELECT 'hello'",
+            },
+        )
+        self.validate_all(
+            "SELECT E'a\\nb'",
+            write={
+                "postgres": "SELECT e'a\\nb'",
+                "sqlite": "SELECT 'a\nb'",
+            },
+        )
+        self.validate_all(
+            "SELECT LENGTH(E'a\\nb')",
+            write={
+                "postgres": "SELECT LENGTH(e'a\\nb')",
+                "sqlite": "SELECT LENGTH('a\nb')",
+            },
+        )
+        # Hexadecimal, octal and Unicode escapes all denote the character they encode
+        for sql, value in (
+            ("SELECT E'\\x41'", "A"),
+            ("SELECT E'\\x4a'", "J"),
+            ("SELECT E'\\xA'", "\n"),
+            ("SELECT E'\\101'", "A"),
+            ("SELECT E'\\77'", "?"),
+            ("SELECT E'\\u00e9'", "é"),
+            # a backslash before any other character stands for that character
+            ("SELECT E'\\q'", "q"),
+            ("SELECT E'\\a'", "a"),
+            ("SELECT E'\\v'", "v"),
+        ):
+            self.assertEqual(parse_one(sql, read="postgres").selects[0].this, value)
+            self.validate_all(
+                sql, write={"sqlite": f"SELECT '{value}'", "tsql": f"SELECT '{value}'"}
+            )
+
+        # A literal backslash has to survive the round trip rather than pairing up with the
+        # character after it: e'a\\b' must not come back as e'a\b', which reads as a backspace.
+        self.validate_all(
+            "SELECT E'a\\\\b'",
+            write={
+                "postgres": "SELECT e'a\\\\b'",
+                "sqlite": "SELECT 'a\\b'",
+            },
+        )
+        self.validate_all(
+            "SELECT E'C:\\\\tmp\\\\new'",
+            write={
+                "postgres": "SELECT e'C:\\\\tmp\\\\new'",
+                "sqlite": "SELECT 'C:\\tmp\\new'",
             },
         )
         self.validate_all(
@@ -670,7 +736,7 @@ FROM json_data, field_ids""",
             write={
                 "postgres": "e'x'",
                 "mysql": "'x'",
-                "sqlite": UnsupportedError,
+                "sqlite": "'x'",
             },
         )
         self.validate_all(

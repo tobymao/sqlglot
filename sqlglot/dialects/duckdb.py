@@ -14,6 +14,8 @@ from sqlglot.typing.duckdb import EXPRESSION_METADATA
 
 
 class DuckDB(Dialect):
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
     INDEX_OFFSET = 1
@@ -68,6 +70,7 @@ class DuckDB(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
+        C_STYLE_ESCAPES = True
         BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]
 

@@ -166,6 +166,12 @@ class Tokenizer(_TokenizerBase):
     VAR_SINGLE_TOKENS: t.ClassVar[set[str]] = set()
     ESCAPE_FOLLOW_CHARS: t.ClassVar[list[str]] = []
 
+    # Whether backslash escapes follow the C-style rules Postgres documents for e'...' strings:
+    # numeric escapes (\xhh, \ooo, \uxxxx, \Uxxxxxxxx) are decoded, and a backslash before any
+    # other character yields that character. Only applies where "\\" is an escape character.
+    # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-STRINGS-ESCAPE
+    C_STYLE_ESCAPES: t.ClassVar[bool] = False
+
     # The strings in this list can always be used as escapes, regardless of the surrounding
     # identifier delimiters. By default, the closing delimiter is assumed to also act as an
     # identifier escape, e.g. if we use double-quotes, then they also act as escapes: "x"""
@@ -570,6 +576,7 @@ class Tokenizer(_TokenizerBase):
             numbers_can_have_decimals=self.NUMBERS_CAN_HAVE_DECIMALS,
             identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
+            c_style_escapes=self.C_STYLE_ESCAPES,
         )
 
     def tokenize(self, sql: str) -> list[Token]:

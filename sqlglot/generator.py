@@ -1625,7 +1625,12 @@ class Generator:
         if self.dialect.BYTE_START:
             escaped_byte_string = self.escape_str(
                 this,
-                escape_backslash=False,
+                # Only re-escape backslashes for dialects whose escape sequences the tokenizer
+                # fully decodes, so that every remaining backslash is a literal one. Emitted
+                # bare it would pair with the next character, turning e'a\\b' (a, backslash, b)
+                # back into e'a\b', which reads as a followed by a backspace. Where sequences
+                # are left undecoded the backslash still belongs to one of them, so it stays.
+                escape_backslash=self.dialect.tokenizer_class.C_STYLE_ESCAPES,
                 delimiter=self.dialect.BYTE_END,
                 escaped_delimiter=self._escaped_byte_quote_end,
                 is_byte_string=True,
@@ -1646,6 +1651,12 @@ class Generator:
             return delimited_byte_string
 
         if "\\" in self.dialect.tokenizer_class.STRING_ESCAPES:
+            return self.sql(exp.Literal.string(this))
+
+        # An escape string such as Postgres' e'...' is text, not binary, so a dialect without
+        # byte string syntax can still represent it as a plain literal, the same way the
+        # backslash-escaping dialects above do.
+        if not expression.args.get("is_bytes"):
             return self.sql(exp.Literal.string(this))
 
         self.unsupported(f"Byte strings are not supported for {self.dialect.__class__.__name__}")

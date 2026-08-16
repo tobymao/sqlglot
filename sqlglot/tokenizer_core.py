@@ -5,6 +5,9 @@ from enum import IntEnum, auto
 
 from sqlglot.errors import TokenError
 
+_HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
+_OCTAL_DIGITS = frozenset("01234567")
+
 # dict lookup is faster than .upper() and .isdigit()
 _CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 _DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
@@ -574,6 +577,7 @@ class TokenizerCore:
         "numbers_can_have_decimals",
         "identifiers_can_start_with_digit",
         "unescaped_sequences",
+        "c_style_escapes",
     )
 
     def __init__(
@@ -605,6 +609,7 @@ class TokenizerCore:
         numbers_can_have_decimals: bool,
         identifiers_can_start_with_digit: bool,
         unescaped_sequences: dict[str, str],
+        c_style_escapes: bool = False,
     ) -> None:
         self.single_tokens = single_tokens
         self.keywords = keywords
@@ -633,6 +638,7 @@ class TokenizerCore:
         self.numbers_can_have_decimals = numbers_can_have_decimals
         self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
         self.unescaped_sequences = unescaped_sequences
+        self.c_style_escapes = c_style_escapes
         self.sql = ""
         self.size = 0
         self.tokens: list[Token] = []
@@ -719,6 +725,47 @@ class TokenizerCore:
         end = start + size
 
         return self.sql[start:end] if end <= self.size else ""
+
+    def _decode_c_style_escape(self) -> str:
+        """Consumes the escape sequence starting at the current backslash and returns its value.
+
+        Postgres specifies \\xhh and \\ooo as byte values. Since we work on str rather than
+        bytes they are read as code points, which is exact for ASCII; a sequence above 0x7F
+        denotes a byte that is not a valid UTF-8 character on its own anyway.
+        """
+        sql = self.sql
+        size = self.size
+        start = self._current  # index of self._peek, i.e. the character after the backslash
+        kind = sql[start]
+
+        def digits(offset: int, max_len: int, alphabet: frozenset[str]) -> str:
+            i = pos = start + offset
+            end = min(pos + max_len, size)
+            while i < end and sql[i] in alphabet:
+                i += 1
+            return sql[pos:i]
+
+        if kind == "x":
+            hex_digits = digits(1, 2, _HEX_DIGITS)
+            if hex_digits:
+                self._advance(2 + len(hex_digits))
+                return chr(int(hex_digits, 16))
+        elif kind == "u" or kind == "U":
+            width = 4 if kind == "u" else 8
+            hex_digits = digits(1, width, _HEX_DIGITS)
+            if len(hex_digits) == width:
+                code_point = int(hex_digits, 16)
+                if code_point < 0x110000:
+                    self._advance(2 + width)
+                    return chr(code_point)
+        elif kind in _OCTAL_DIGITS:
+            octal_digits = digits(0, 3, _OCTAL_DIGITS)
+            self._advance(1 + len(octal_digits))
+            return chr(int(octal_digits, 8))
+
+        # A backslash before any other character stands for that character
+        self._advance(2)
+        return kind
 
     def _advance(self, i: int = 1, alnum: bool = False) -> None:
         char = self._char
@@ -1161,6 +1208,8 @@ class TokenizerCore:
                 self._peek = "" if self._end else sql[self._current]
                 return sql[pos:end]
 
+        c_style_escapes = self.c_style_escapes and "\\" in escapes
+
         while True:
             if not raw_string and unescaped_sequences and self._peek and self._char in escapes:
                 unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
@@ -1168,6 +1217,19 @@ class TokenizerCore:
                     self._advance(2)
                     text += unescaped_sequence
                     continue
+
+            # Numeric escapes (\xhh, \ooo, \uxxxx, \Uxxxxxxxx) and the "any other character
+            # stands for itself" rule. The escape characters themselves (\\, \') are left to
+            # the generic handling below.
+            if (
+                c_style_escapes
+                and not raw_string
+                and self._char == "\\"
+                and self._peek
+                and self._peek not in escapes
+            ):
+                text += self._decode_c_style_escape()
+                continue
 
             is_valid_custom_escape = (
                 escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars

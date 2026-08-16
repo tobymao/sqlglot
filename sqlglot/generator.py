@@ -5402,9 +5402,11 @@ class Generator:
 
         if self.IGNORE_NULLS_IN_FUNC and not expression.meta_get("inline"):
             if self.IGNORE_NULLS_BEFORE_ORDER:
+                from sqlglot.optimizer.scope import find_all_in_scope
+
                 # The first modifier here will be the one closest to the AggFunc's arg
                 mods = sorted(
-                    expression.find_all(exp.HavingMax, exp.Order, exp.Limit),
+                    find_all_in_scope(expression, exp.HavingMax, exp.Order, exp.Limit),
                     key=lambda x: (
                         0
                         if isinstance(x, exp.HavingMax)

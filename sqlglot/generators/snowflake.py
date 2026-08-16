@@ -373,6 +373,19 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _unnest_projection_to_explode(expression: exp.Expr) -> exp.Expr:
+    # Snowflake has no UNNEST, so one that ends up in a projection has to become a lateral
+    # FLATTEN. Rewriting it as an EXPLODE lets explode_projection_to_unnest do that, instead
+    # of unnest_sql emitting a second FROM clause in the middle of the SELECT list.
+    if isinstance(expression, exp.Select):
+        for projection in expression.expressions:
+            for unnest in list(projection.find_all(exp.Unnest)):
+                if len(unnest.expressions) == 1 and unnest.find_ancestor(exp.Select) is expression:
+                    unnest.replace(exp.Explode(this=unnest.expressions[0].copy()))
+
+    return expression
+
+
 class SnowflakeGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"
@@ -548,6 +561,7 @@ class SnowflakeGenerator(generator.Generator):
             [
                 transforms.eliminate_window_clause,
                 transforms.eliminate_distinct_on,
+                _unnest_projection_to_explode,
                 transforms.explode_projection_to_unnest(),
                 transforms.eliminate_semi_and_anti_joins,
                 _transform_generate_date_array,

@@ -4583,6 +4583,21 @@ WHERE
   )""",
         )
 
+        # An UNNEST that ends up in a projection has to be rewritten into a lateral FLATTEN,
+        # the same way an EXPLODE is, instead of producing a second FROM clause
+        self.validate_all(
+            "SELECT IFF(_u.pos = _u_2.pos_2, _u_2.col, NULL) AS col FROM t"
+            " CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE(arr)) - 1) + 1)))"
+            " AS _u(seq, key, path, index, pos, this)"
+            " CROSS JOIN TABLE(FLATTEN(INPUT => arr)) AS _u_2(seq, key, path, pos_2, col, this)"
+            " WHERE _u.pos = _u_2.pos_2"
+            " OR (_u.pos > (ARRAY_SIZE(arr) - 1) AND _u_2.pos_2 = (ARRAY_SIZE(arr) - 1))",
+            read={
+                "bigquery": "SELECT UNNEST(arr) FROM t",
+                "snowflake": "SELECT UNNEST(arr) FROM t",
+            },
+        )
+
         self.validate_all(
             """
             select

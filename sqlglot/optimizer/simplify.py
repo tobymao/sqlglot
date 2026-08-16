@@ -154,7 +154,8 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     if isinstance(this, exp.Predicate) and (
         not (
             parent_is_predicate
-            or isinstance(parent, exp.Neg)
+            # unary operators that bind tighter than the predicate, unlike NOT
+            or isinstance(parent, (exp.Neg, exp.BitwiseNot))
             or (isinstance(parent, exp.Binary) and not isinstance(parent, exp.Connector))
         )
     ):
@@ -1661,7 +1662,11 @@ class Gen:
             name = this.upper()
         elif isinstance(this, exp.Identifier):
             name = this.this
-            name = f'"{name}"' if this.quoted else name.upper()
+            if this.quoted:
+                escaped = name.replace('"', '""')
+                name = f'"{escaped}"'
+            else:
+                name = name.upper()
         else:
             raise ValueError(
                 f"Anonymous.this expects a str or an Identifier, got '{this.__class__.__name__}'."
@@ -1728,7 +1733,11 @@ class Gen:
         self._binary(e, " >= ")
 
     def identifier_sql(self, e: exp.Identifier) -> None:
-        self.stack.append(f'"{e.this}"' if e.quoted else e.this)
+        if e.quoted:
+            escaped = e.this.replace('"', '""')
+            self.stack.append(f'"{escaped}"')
+        else:
+            self.stack.append(e.this)
 
     def ilike_sql(self, e: exp.ILike) -> None:
         self._binary(e, " NOT ILIKE " if e.args.get("negate") else " ILIKE ")
@@ -1754,7 +1763,11 @@ class Gen:
         self._binary(e, " NOT Like " if e.args.get("negate") else " Like ")
 
     def literal_sql(self, e: exp.Literal) -> None:
-        self.stack.append(f"'{e.this}'" if e.is_string else e.this)
+        if e.is_string:
+            escaped = e.this.replace("'", "''")
+            self.stack.append(f"'{escaped}'")
+        else:
+            self.stack.append(e.this)
 
     def lt_sql(self, e: exp.LT) -> None:
         self._binary(e, " < ")
@@ -1846,7 +1859,8 @@ class Gen:
             v = node.args.get(k)
 
             if v is not None:
-                kvs.append([f":{k}", v])
+                # repr() plain strings so their content can't mimic gen's structural text
+                kvs.append([f":{k}", repr(v) if isinstance(v, str) else v])
         if kvs:
             self.stack.append(kvs)
             return True

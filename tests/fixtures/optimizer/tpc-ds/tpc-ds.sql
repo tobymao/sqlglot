@@ -2341,7 +2341,7 @@ SELECT
   AVG("store_sales"."ss_ext_wholesale_cost") AS "_col_2",
   SUM("store_sales"."ss_ext_wholesale_cost") AS "_col_3"
 FROM "store_sales" AS "store_sales"
-CROSS JOIN "household_demographics" AS "household_demographics"
+CROSS JOIN "customer_demographics" AS "customer_demographics"
 JOIN "customer_address" AS "customer_address"
   ON (
     "customer_address"."ca_address_sk" = "store_sales"."ss_addr_sk"
@@ -2364,7 +2364,10 @@ JOIN "customer_address" AS "customer_address"
     AND "store_sales"."ss_net_profit" <= 300
     AND "store_sales"."ss_net_profit" >= 150
   )
-JOIN "customer_demographics" AS "customer_demographics"
+JOIN "date_dim" AS "date_dim"
+  ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
+  AND "date_dim"."d_year" = 2001
+JOIN "household_demographics" AS "household_demographics"
   ON (
     "customer_demographics"."cd_demo_sk" = "store_sales"."ss_cdemo_sk"
     AND "customer_demographics"."cd_education_status" = 'Advanced Degree'
@@ -2392,9 +2395,6 @@ JOIN "customer_demographics" AS "customer_demographics"
     AND "store_sales"."ss_sales_price" <= 200.00
     AND "store_sales"."ss_sales_price" >= 150.00
   )
-JOIN "date_dim" AS "date_dim"
-  ON "date_dim"."d_date_sk" = "store_sales"."ss_sold_date_sk"
-  AND "date_dim"."d_year" = 2001
 JOIN "store" AS "store"
   ON "store"."s_store_sk" = "store_sales"."ss_store_sk";
 

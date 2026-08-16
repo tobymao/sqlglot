@@ -17,7 +17,7 @@ class TeradataParser(parser.Parser):
         TokenType.SEMI,
     }
 
-    CHARSET_TRANSLATORS = {
+    CHARSET_TRANSLATORS: t.ClassVar = {
         "GRAPHIC_TO_KANJISJIS",
         "GRAPHIC_TO_LATIN",
         "GRAPHIC_TO_UNICODE",

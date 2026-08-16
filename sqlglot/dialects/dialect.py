@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import string
 import typing as t
 import sys
 from collections.abc import Iterable, MutableSequence
@@ -76,6 +77,9 @@ UNESCAPED_SEQUENCES = {
 }
 
 PLUGIN_GROUP_NAME = "sqlglot.dialects"
+
+ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
+ASCII_UPPER = str.maketrans(string.ascii_lowercase, string.ascii_uppercase)
 
 
 class Dialects(str, Enum):
@@ -374,6 +378,10 @@ class Dialect(metaclass=_Dialect):
 
     NORMALIZATION_STRATEGY = NormalizationStrategy.LOWERCASE
     """Specifies the strategy according to which identifiers should be normalized."""
+
+    ASCII_ONLY_NORMALIZATION = False
+    """Whether identifiers are only normalized with respect to ASCII characters, e.g. `Ä` and
+    `ä` are different identifiers in DuckDB, but the same identifier in Spark."""
 
     IDENTIFIERS_CAN_START_WITH_DIGIT = False
     """Whether an unquoted identifier can start with a digit."""
@@ -1079,15 +1087,22 @@ class Dialect(metaclass=_Dialect):
                 )
             )
         ):
-            normalized = (
-                expression.this.upper()
-                if self.normalization_strategy
-                in (
-                    NormalizationStrategy.UPPERCASE,
-                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+            if self.normalization_strategy in (
+                NormalizationStrategy.UPPERCASE,
+                NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+            ):
+                normalized = (
+                    expression.this.translate(ASCII_UPPER)
+                    if self.ASCII_ONLY_NORMALIZATION
+                    else expression.this.upper()
                 )
-                else expression.this.lower()
-            )
+            else:
+                normalized = (
+                    expression.this.translate(ASCII_LOWER)
+                    if self.ASCII_ONLY_NORMALIZATION
+                    else expression.this.lower()
+                )
+
             expression.set("this", normalized)
 
         return expression
@@ -2213,7 +2228,11 @@ def build_json_extract_path(
         for arg in args[1:]:
             if not isinstance(arg, exp.Literal):
                 # We use the fallback parser because we can't really transpile non-literals safely
-                return expr_type.from_arg_list(args)
+                return expr_type(
+                    this=seq_get(args, 0),
+                    expression=seq_get(args, 1),
+                    expressions=list(args[2:]) or None,
+                )
 
             text = arg.name
             if is_int(text) and (not arrow_req_json_type or not arg.is_string):
@@ -2617,6 +2636,16 @@ def regexp_replace_global_modifier(expression: exp.RegexpReplace) -> exp.Expr | 
             modifiers = exp.Literal.string(value + "g")
 
     return modifiers
+
+
+def nth_value_from_sql(self: Generator, expression: exp.NthValue) -> str:
+    this = self.func("NTH_VALUE", expression.this, expression.args.get("offset"))
+    from_first = expression.args.get("from_first")
+
+    if from_first is None:
+        return this
+
+    return f"{this} FROM {'FIRST' if from_first else 'LAST'}"
 
 
 def getbit_sql(self: Generator, expression: exp.Getbit) -> str:

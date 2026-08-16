@@ -112,10 +112,23 @@ def qualify_tables(
         local_columns = scope.local_columns
         canonical_aliases: dict[str, str] = {}
 
-        for query in scope.subqueries:
+        queries: list[exp.Expr] = list(scope.subqueries)
+
+        # Subquery wrappers around a DML / DDL query fragment, e.g., a CREATE FUNCTION body or
+        # an UPDATE's SET subquery, don't belong to any scope, so they aren't collected above
+        if scope.is_root and isinstance(scope.expression, exp.Subquery):
+            queries.append(scope.expression.unnest())
+        elif scope.is_subquery:
+            queries.append(scope.expression)
+
+        for query in queries:
             subquery = query.parent
             if isinstance(subquery, exp.Subquery):
                 unwrapped = subquery.unwrap()
+                if isinstance(unwrapped.parent, (exp.From, exp.Join)):
+                    # We can reach this from a wrapped derived table, which must keep its alias
+                    continue
+
                 if isinstance(unwrapped.parent, exp.Create) and unwrapped is not subquery:
                     # Function bodies may require wrapping parentheses, e.g. in BigQuery
                     # `... AS ((SELECT 1))` the outer parens delimit the body itself

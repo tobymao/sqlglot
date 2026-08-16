@@ -385,8 +385,9 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if isinstance(expression, exp.SetOperation) and len(expression.this.selects) == len(
-            expression.expression.selects
+        if isinstance(expression, exp.SetOperation) and (
+            expression.args.get("by_name")
+            or len(expression.this.selects) == len(expression.expression.selects)
         ):
             return self._get_setop_column_types(expression)
 
@@ -517,15 +518,7 @@ class TypeAnnotator:
                 else:
                     self._set_type(expr, exp.DType.UNKNOWN)
 
-                if expr.is_type(exp.DType.JSON) and (dot_parts := expr.meta_get("dot_parts")):
-                    # JSON dot access is case sensitive across all dialects, so we need to undo the normalization.
-                    i = iter(dot_parts)
-                    parent = expr.parent
-                    while isinstance(parent, exp.Dot):
-                        parent.expression.replace(exp.to_identifier(next(i), quoted=True))
-                        parent = parent.parent
-
-                    expr.meta.pop("dot_parts", None)
+                self._restore_dot_parts(expr)
 
                 if expr.type and expr.type.args.get("nullable") is False:
                     expr.meta["nonnull"] = True
@@ -539,6 +532,34 @@ class TypeAnnotator:
                 self._set_type(expr, returns)
             else:
                 self._set_type(expr, exp.DType.UNKNOWN)
+
+            self._restore_dot_parts(expr)
+
+    def _restore_dot_parts(self, expr: exp.Expr) -> None:
+        # Dot access into semi-structured values is a case sensitive data lookup, i.e. the
+        # engine doesn't resolve the keys as identifiers, so we undo their normalization.
+        dot_parts = expr.meta_get("dot_parts")
+        if not dot_parts or not expr.is_type(exp.DType.JSON, exp.DType.MAP, exp.DType.VARIANT):
+            if dot_parts:
+                expr.meta.pop("dot_parts", None)
+            return
+
+        parent = expr.parent
+        for part in dot_parts:
+            if not isinstance(parent, exp.Dot):
+                break
+
+            identifier = parent.expression
+            if isinstance(identifier, exp.Identifier):
+                # Rename in place to preserve the identifier's meta, e.g. token positions
+                identifier.set("this", part)
+                identifier.set("quoted", True)
+            else:
+                identifier.replace(exp.to_identifier(part, quoted=True))
+
+            parent = parent.parent
+
+        expr.meta.pop("dot_parts", None)
 
     def _fixup_order_by_aliases(self, scope: Scope) -> None:
         query = scope.expression
@@ -633,12 +654,16 @@ class TypeAnnotator:
 
         col_types: dict[str, exp.DataType | exp.DType] = {}
 
-        # Validate that left and right have same number of projections
+        # Validate that left and right have same number of projections (BY NAME
+        # operations match columns by name, so their counts are allowed to differ)
         if not (
             isinstance(setop, exp.SetOperation)
             and setop.this.selects
             and setop.expression.selects
-            and len(setop.this.selects) == len(setop.expression.selects)
+            and (
+                setop.args.get("by_name")
+                or len(setop.this.selects) == len(setop.expression.selects)
+            )
         ):
             return col_types
 
@@ -650,14 +675,18 @@ class TypeAnnotator:
                 continue
 
             if set_op.args.get("by_name"):
+                # Columns missing from one side are filled with NULLs, so the other
+                # side's type is preserved (NULL is the identity for _maybe_coerce)
                 r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
                 setop_cols = {
                     s.alias_or_name: self._maybe_coerce(
                         t.cast(exp.DataType, s.type),
-                        r_type_by_select.get(s.alias_or_name) or exp.DType.UNKNOWN,
+                        r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
                     )
                     for s in set_op.this.selects
                 }
+                for name, r_type in r_type_by_select.items():
+                    setop_cols[name] = r_type or exp.DType.UNKNOWN
             else:
                 setop_cols = {
                     ls.alias_or_name: self._maybe_coerce(

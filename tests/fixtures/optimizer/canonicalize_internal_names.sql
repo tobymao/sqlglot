@@ -277,3 +277,7 @@ WITH "_t1" AS (SELECT "_t0"."a" + 1 AS "_c0" FROM "c"."db"."x" AS "_t0") SELECT 
 # title: ORDER BY reference to a CTE-level alias follows the alias's _cN canonicalization
 WITH t AS (SELECT a + 1 AS total FROM x ORDER BY total) SELECT total FROM t;
 WITH "_t1" AS (SELECT "_t0"."a" + 1 AS "_c0" FROM "c"."db"."x" AS "_t0" ORDER BY "_c0") SELECT "_t1"."_c0" AS "total" FROM "_t1" AS "_t1";
+
+# title: DML shell references live outside every scope, so the statement is left untouched
+MERGE INTO x USING (SELECT b FROM y) AS s ON x.b = s.b WHEN MATCHED THEN UPDATE SET a = 1;
+MERGE INTO "c"."db"."x" USING (SELECT "y"."b" AS "b" FROM "c"."db"."y" AS "y") AS "s" ON "x"."b" = "s"."b" WHEN MATCHED THEN UPDATE SET "a" = 1;

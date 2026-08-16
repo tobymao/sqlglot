@@ -23,6 +23,7 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT * FROM t NOT INDEXED")
         self.validate_identity("SELECT match FROM t")
         self.validate_identity("SELECT rowid FROM t1 WHERE t1 MATCH 'lorem'")
+        self.validate_identity("SELECT * FROM t WHERE a REGEXP 'x'")
         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity("UNHEX(a, b)")
         self.validate_identity("SELECT DATE()")
@@ -252,6 +253,43 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT SQLITE_VERSION()")
 
+    def test_json_arrow_precedence(self):
+        # ||, -> and ->> form a single left-associative precedence tier that binds
+        # tighter than multiplication: https://sqlite.org/lang_expr.html
+        expr = self.parse_one(
+            "SELECT a.data ->> b.key ->> a.final_key FROM source AS a JOIN keys AS b ON TRUE"
+        ).selects[0]
+        expr.assert_is(exp.JSONExtractScalar).this.assert_is(exp.JSONExtractScalar)
+
+        self.validate_identity("SELECT a.data ->> b.key ->> a.final_key FROM t")
+        self.validate_identity("SELECT a -> b ->> c -> d FROM t")
+        self.validate_identity("SELECT a || b ->> c", "SELECT (a || b) ->> c")
+        self.validate_identity("SELECT a ->> b || c FROM t")
+        self.validate_identity("SELECT 2 * 3 || 4", "SELECT 2 * (3 || 4)")
+        self.validate_identity("SELECT 1 + 2 || 3", "SELECT 1 + (2 || 3)")
+        self.validate_identity("SELECT a || b * c FROM t", "SELECT (a || b) * c FROM t")
+        self.validate_identity("SELECT a - b ->> c FROM t", "SELECT a - (b ->> c) FROM t")
+        self.validate_identity("SELECT a ->> b + c FROM t", "SELECT (a ->> b) + c FROM t")
+        self.validate_identity("SELECT -a || b FROM t")
+        self.validate_identity("SELECT a || b COLLATE NOCASE FROM t ORDER BY 1")
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE || b -> c FROM t",
+            "SELECT (a COLLATE NOCASE || b) -> c FROM t",
+        )
+
+        # COLLATE binds tighter than the ||, ->, ->> tier
+        expr = self.parse_one("SELECT a || b COLLATE NOCASE FROM t").selects[0]
+        expr.assert_is(exp.DPipe).expression.assert_is(exp.Collate)
+
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE || b * c FROM t",
+            "SELECT (a COLLATE NOCASE || b) * c FROM t",
+        )
+        self.validate_identity(
+            "SELECT a COLLATE NOCASE -> b + c FROM t",
+            "SELECT (a COLLATE NOCASE -> b) + c FROM t",
+        )
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
@@ -329,6 +367,36 @@ class TestSQLite(Validator):
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity("TRUNC(3.14, 2)", "TRUNC(3.14)").assert_is(exp.Trunc)
             self.assertIn("'decimals' is not supported", cm.output[0])
+
+    def test_generated_columns(self):
+        # SQLite uses STORED/VIRTUAL; PERSISTED is T-SQL and is rejected by SQLite.
+        # https://www.sqlite.org/gencol.html
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))")
+        # Typeless computed columns must keep STORED/VIRTUAL (not parse them as types).
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2) STORED)")
+        self.validate_identity("CREATE TABLE t (a INTEGER, b AS (a * 2))")
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2) STORED)",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2) STORED)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2) VIRTUAL)",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER, b INTEGER GENERATED ALWAYS AS (a * 2))",
+            "CREATE TABLE t (a INTEGER, b INTEGER AS (a * 2))",
+        )
+        # True identity maps to AUTOINCREMENT; SQLite requires PRIMARY KEY.
+        self.validate_identity(
+            "CREATE TABLE t (a INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY)",
+            "CREATE TABLE t (a INTEGER PRIMARY KEY AUTOINCREMENT)",
+        )
+        self.validate_all(
+            "CREATE TABLE t (a INTEGER, b AS (a * 2) STORED NOT NULL)",
+            read={"tsql": "CREATE TABLE t (a INT, b AS (a * 2) PERSISTED NOT NULL)"},
+        )
 
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):

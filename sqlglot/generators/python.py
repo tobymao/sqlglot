@@ -43,7 +43,7 @@ def _case_sql(self, expression):
         condition = f"{this} = ({condition})" if this else condition
         chain = f"{true} if {condition} else ({chain})"
 
-    return chain
+    return f"({chain})"
 
 
 def _lambda_sql(self, e: exp.Lambda) -> str:
@@ -58,6 +58,15 @@ def _lambda_sql(self, e: exp.Lambda) -> str:
     return f"lambda {self.expressions(e, flat=True)}: {self.sql(e, 'this')}"
 
 
+def _like_sql(self: generator.Generator, e: exp.Like | exp.ILike) -> str:
+    sql = self.func(e.key, e.this, e.expression)
+
+    if e.args.get("negate"):
+        sql = f"NOT({sql})"
+
+    return sql
+
+
 def _div_sql(self: generator.Generator, e: exp.Div) -> str:
     denominator = self.sql(e, "expression")
 
@@ -66,10 +75,19 @@ def _div_sql(self: generator.Generator, e: exp.Div) -> str:
 
     sql = f"DIV({self.sql(e, 'this')}, {denominator})"
 
-    if e.args.get("typed"):
-        sql = f"int({sql})"
+    if e.args.get("typed") and not (
+        e.this.is_type(*exp.DataType.REAL_TYPES) or e.expression.is_type(*exp.DataType.REAL_TYPES)
+    ):
+        sql = f"INT({sql})"
 
     return sql
+
+
+def _dpipe_sql(self: generator.Generator, e: exp.DPipe) -> str:
+    if e.this.is_type(exp.DataType.Type.ARRAY) or e.expression.is_type(exp.DataType.Type.ARRAY):
+        return self.func("ARRAYCONCAT", e.this, e.expression)
+
+    return self.func("SAFECONCAT" if e.args.get("safe") else "CONCAT", e.this, e.expression)
 
 
 class PythonGenerator(generator.Generator):
@@ -89,7 +107,9 @@ class PythonGenerator(generator.Generator):
         ),
         exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
         exp.Div: _div_sql,
+        exp.DPipe: _dpipe_sql,
         exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",
+        exp.ILike: _like_sql,
         exp.In: lambda self, e: self.func("IN", e.this, *e.expressions),
         exp.Interval: lambda self, e: f"INTERVAL({self.sql(e.this)}, '{self.sql(e.unit)}')",
         exp.Is: lambda self, e: (
@@ -102,6 +122,7 @@ class PythonGenerator(generator.Generator):
         exp.JSONPathKey: lambda self, e: f"'{self.sql(e.this)}'",
         exp.JSONPathSubscript: lambda self, e: f"'{e.this}'",
         exp.Lambda: _lambda_sql,
+        exp.Like: _like_sql,
         exp.Not: lambda self, e: self.func("NOT", e.this),
         exp.Null: lambda *_: "None",
         exp.Or: lambda self, e: f"OR(lambda: {self.sql(e.left)}, lambda: {self.sql(e.right)})",

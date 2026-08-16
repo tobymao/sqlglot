@@ -302,16 +302,17 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         if key in group_by:
             key.replace(nested)
-        elif isinstance(predicate, exp.EQ):
-            parent_predicate = _replace(
-                parent_predicate,
-                f"({parent_predicate} AND ARRAY_CONTAINS({nested}, {column}))",
-            )
         else:
+            # Built as AST rather than a SQL string, because dialect-specific operators such as
+            # Postgres' `@>` can't be round-tripped through the default dialect's parser.
             key.replace(exp.to_identifier("_x"))
+            right = exp.ArrayAny(
+                this=nested,
+                expression=exp.Lambda(this=predicate.copy(), expressions=[exp.to_identifier("_x")]),
+            )
             parent_predicate = _replace(
                 parent_predicate,
-                f"({parent_predicate} AND ARRAY_ANY({nested}, _x -> {predicate}))",
+                exp.paren(exp.and_(parent_predicate.copy(), right, copy=False)),
             )
 
     parent_select.join(

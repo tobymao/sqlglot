@@ -41,6 +41,11 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         Some dialects (e.g. DuckDB) treat all identifiers as case-insensitive even
         when they're quoted, so in these cases all identifiers are normalized.
 
+    Known limitation:
+        Engines that preserve case expose it as data, i.e., as output column names, so normalizing
+        can change what a statement produces. E.g., `CREATE TABLE t AS SELECT 1 AS Foo` materializes
+        a `foo` column in DuckDB after this transformation, instead of `Foo`.
+
     Example:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one('SELECT Bar.A AS A FROM "Foo".Bar')
@@ -64,16 +69,33 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
         expression = exp.parse_identifier(expression, dialect=dialect)
 
     for node in expression.walk(prune=lambda n: bool(n.meta_get("case_sensitive"))):
-        if not node.meta_get("case_sensitive"):
-            if store_original_column_identifiers and isinstance(node, exp.Column):
-                # TODO: This does not handle non-column cases, e.g PARSE_JSON(...).key
-                parent = node
-                while parent and isinstance(parent.parent, exp.Dot):
-                    parent = parent.parent
+        if node.meta_get("case_sensitive"):
+            continue
 
-                node.meta["dot_parts"] = [p.name for p in parent.parts]
+        # A dot chain is recorded once, at its outermost Dot. Ancestors are visited before
+        # their descendants, so none of the names it wraps have been normalized yet
+        if (
+            store_original_column_identifiers
+            and isinstance(node, (exp.Column, exp.Dot))
+            and not isinstance(node.parent, exp.Dot)
+        ):
+            if isinstance(node, exp.Column):
+                node.meta["dot_parts"] = [p.name for p in node.parts]
+            elif not node.is_star:
+                root, dot_parts = node, []
+                while isinstance(root, exp.Dot):
+                    dot_parts.append(root.expression.name)
+                    root = root.this
 
-            if isinstance(node, exp.Identifier):
-                dialect.normalize_identifier(node)
+                dot_parts.reverse()
+
+                # The chain may be rooted at a column (j.k), or at an arbitrary expression (f().k)
+                if isinstance(root, exp.Column):
+                    dot_parts = [p.name for p in root.parts] + dot_parts
+
+                root.meta["dot_parts"] = dot_parts
+
+        if isinstance(node, exp.Identifier):
+            dialect.normalize_identifier(node)
 
     return expression

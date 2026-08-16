@@ -4,6 +4,7 @@ import logging
 import re
 import typing as t
 from collections import defaultdict
+from decimal import Decimal
 from functools import reduce, wraps
 
 from sqlglot import exp
@@ -205,6 +206,7 @@ class Generator:
         exp.Int64: lambda self, e: self.sql(exp.cast(e.this, exp.DType.BIGINT)),
         exp.JSONBContainsAnyTopKeys: lambda self, e: self.binary(e, "?|"),
         exp.JSONBContainsAllTopKeys: lambda self, e: self.binary(e, "?&"),
+        exp.JSONBContainsTopKey: lambda self, e: self.binary(e, "?"),
         exp.JSONBDeleteAtPath: lambda self, e: self.binary(e, "#-"),
         exp.JSONBPathExists: lambda self, e: self.binary(e, "@?"),
         exp.JSONObject: lambda self, e: self._jsonobject_sql(e),
@@ -486,6 +488,9 @@ class Generator:
 
     # Whether ALTER COLUMN can set a column's nullability together with its type
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
+
+    # Whether ALTER COLUMN IF EXISTS is supported
+    SUPPORTS_ALTER_COLUMN_IF_EXISTS = False
 
     # Whether the LikeProperty needs to be specified inside of the schema clause
     LIKE_PROPERTY_INSIDE_SCHEMA = False
@@ -1147,6 +1152,10 @@ class Generator:
         return f"{default}CHARACTER SET={self.sql(expression, 'this')}"
 
     def column_parts(self, expression: exp.Column) -> str:
+        if expression.args.get("shadow") and self.dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES:
+            # The qualifier would be captured by a colliding projection alias (see qualify_columns)
+            return self.sql(expression, "this")
+
         return ".".join(
             self.sql(part)
             for part in (
@@ -1645,10 +1654,11 @@ class Generator:
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         this = self.sql(expression, "this")
         escape = expression.args.get("escape")
+        unicode_start = self.dialect.UNICODE_START
 
-        if self.dialect.UNICODE_START:
+        if unicode_start:
             escape_substitute = r"\\\1"
-            left_quote, right_quote = self.dialect.UNICODE_START, self.dialect.UNICODE_END
+            left_quote, right_quote = unicode_start, self.dialect.UNICODE_END or ""
         else:
             escape_substitute = r"\\u\1"
             left_quote, right_quote = self.dialect.QUOTE_START, self.dialect.QUOTE_END
@@ -1660,8 +1670,15 @@ class Generator:
             escape_pattern = ESCAPED_UNICODE_RE
             escape_sql = ""
 
-        if not self.dialect.UNICODE_START or (escape and not self.SUPPORTS_UESCAPE):
+        if not unicode_start or (escape and not self.SUPPORTS_UESCAPE):
             this = escape_pattern.sub(self.UNICODE_SUBSTITUTE or escape_substitute, this)
+
+        if unicode_start:
+            # A Unicode literal only escapes its delimiter by doubling it; the escape character
+            # introduces a code point, so the dialect's ordinary string escapes don't apply here
+            this = self._replace_line_breaks(this).replace(right_quote, right_quote * 2)
+        else:
+            this = self.escape_str(this, escape_backslash=False)
 
         return f"{left_quote}{this}{right_quote}{escape_sql}"
 
@@ -1705,11 +1722,12 @@ class Generator:
                 continue
 
             param_value = param.this if isinstance(param, exp.DataTypeParam) else param
-            if (
-                isinstance(param_value, exp.Literal)
-                and param_value.is_number
-                and int(param_value.to_py()) > bound
-            ):
+            value = (
+                param_value.to_py()
+                if isinstance(param_value, exp.Literal) and param_value.is_number
+                else None
+            )
+            if isinstance(value, (int, Decimal)) and value > bound:
                 self.unsupported(
                     f"{type_value.value} parameter {param_value.name} exceeds "
                     f"{self.dialect.__class__.__name__}'s maximum of {bound}; capping"
@@ -4201,6 +4219,13 @@ class Generator:
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         this = self.sql(expression, "this")
 
+        exists = ""
+        if expression.args.get("exists"):
+            if self.SUPPORTS_ALTER_COLUMN_IF_EXISTS:
+                exists = " IF EXISTS"
+            else:
+                self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
+
         dtype = self.sql(expression, "dtype")
         if dtype:
             collate = self.sql(expression, "collate")
@@ -4210,19 +4235,22 @@ class Generator:
             alter_set_type = self.ALTER_SET_TYPE + " " if self.ALTER_SET_TYPE else ""
             null_constraint = self._alter_column_null_constraint_sql(expression)
 
-            return f"ALTER COLUMN {this} {alter_set_type}{dtype}{collate}{using}{null_constraint}"
+            return (
+                f"ALTER COLUMN{exists} {this} {alter_set_type}{dtype}"
+                f"{collate}{using}{null_constraint}"
+            )
 
         default = self.sql(expression, "default")
         if default:
-            return f"ALTER COLUMN {this} SET DEFAULT {default}"
+            return f"ALTER COLUMN{exists} {this} SET DEFAULT {default}"
 
         comment = self.sql(expression, "comment")
         if comment:
-            return f"ALTER COLUMN {this} COMMENT {comment}"
+            return f"ALTER COLUMN{exists} {this} COMMENT {comment}"
 
         visible = expression.args.get("visible")
         if visible:
-            return f"ALTER COLUMN {this} SET {visible}"
+            return f"ALTER COLUMN{exists} {this} SET {visible}"
 
         allow_null = expression.args.get("allow_null")
         drop = expression.args.get("drop")
@@ -4232,9 +4260,9 @@ class Generator:
 
         if allow_null is not None:
             keyword = "DROP" if drop else "SET"
-            return f"ALTER COLUMN {this} {keyword} NOT NULL"
+            return f"ALTER COLUMN{exists} {this} {keyword} NOT NULL"
 
-        return f"ALTER COLUMN {this} DROP DEFAULT"
+        return f"ALTER COLUMN{exists} {this} DROP DEFAULT"
 
     def _alter_column_null_constraint_sql(self, expression: exp.AlterColumn) -> str:
         allow_null = expression.args.get("allow_null")
@@ -5007,6 +5035,12 @@ class Generator:
             case.else_(else_cond, copy=False)
 
         return self.sql(case)
+
+    def nthvalue_sql(self, expression: exp.NthValue) -> str:
+        if expression.args.get("from_first") is False:
+            self.unsupported("NTH_VALUE FROM LAST is not supported")
+
+        return self.function_fallback_sql(expression)
 
     def comprehension_sql(self, expression: exp.Comprehension) -> str:
         this = self.sql(expression, "this")
@@ -6288,8 +6322,28 @@ class Generator:
         self.unsupported("Unsupported If block syntax")
         return ""
 
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        self.unsupported("Unsupported Case statement syntax")
+        return ""
+
     def whileblock_sql(self, expression: exp.WhileBlock) -> str:
         self.unsupported("Unsupported While block syntax")
+        return ""
+
+    def loopblock_sql(self, expression: exp.LoopBlock) -> str:
+        self.unsupported("Unsupported Loop block syntax")
+        return ""
+
+    def repeatblock_sql(self, expression: exp.RepeatBlock) -> str:
+        self.unsupported("Unsupported Repeat block syntax")
+        return ""
+
+    def leave_sql(self, expression: exp.Leave) -> str:
+        self.unsupported("Unsupported Leave syntax")
+        return ""
+
+    def iterate_sql(self, expression: exp.Iterate) -> str:
+        self.unsupported("Unsupported Iterate syntax")
         return ""
 
     def execute_sql(self, expression: exp.Execute) -> str:

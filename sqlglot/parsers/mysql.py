@@ -267,7 +267,7 @@ class MySQLParser(parser.Parser):
         "SPATIAL",
     }
 
-    PROFILE_TYPES: parser.OPTIONS_TYPE = {
+    PROFILE_TYPES: t.ClassVar[parser.OPTIONS_TYPE] = {
         **dict.fromkeys(("ALL", "CPU", "IPC", "MEMORY", "SOURCE", "SWAPS"), tuple()),
         "BLOCK": ("IO",),
         "CONTEXT": ("SWITCHES",),

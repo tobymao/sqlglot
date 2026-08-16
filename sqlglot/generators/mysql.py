@@ -223,7 +223,7 @@ class MySQLGenerator(generator.Generator):
         exp.UtcTime: rename_func("UTC_TIME"),
     }
 
-    UNSIGNED_TYPE_MAPPING = {
+    UNSIGNED_TYPE_MAPPING: t.ClassVar = {
         exp.DType.UBIGINT: "BIGINT",
         exp.DType.UINT: "INT",
         exp.DType.UMEDIUMINT: "MEDIUMINT",
@@ -233,7 +233,7 @@ class MySQLGenerator(generator.Generator):
         exp.DType.UDOUBLE: "DOUBLE",
     }
 
-    TIMESTAMP_TYPE_MAPPING = {
+    TIMESTAMP_TYPE_MAPPING: t.ClassVar = {
         exp.DType.DATETIME2: "DATETIME",
         exp.DType.SMALLDATETIME: "DATETIME",
         exp.DType.TIMESTAMP: "DATETIME",
@@ -302,7 +302,7 @@ class MySQLGenerator(generator.Generator):
 
     # MySQL doesn't support many datatypes in cast.
     # https://dev.mysql.com/doc/refman/8.0/en/cast-functions.html#function_cast
-    CAST_MAPPING = {
+    CAST_MAPPING: t.ClassVar = {
         exp.DType.LONGTEXT: "CHAR",
         exp.DType.LONGBLOB: "CHAR",
         exp.DType.MEDIUMBLOB: "CHAR",
@@ -320,7 +320,7 @@ class MySQLGenerator(generator.Generator):
         exp.DType.UBIGINT: "UNSIGNED",
     }
 
-    TIMESTAMP_FUNC_TYPES = {
+    TIMESTAMP_FUNC_TYPES: t.ClassVar = {
         exp.DType.TIMESTAMPTZ,
         exp.DType.TIMESTAMPLTZ,
     }
@@ -591,7 +591,7 @@ class MySQLGenerator(generator.Generator):
         "zerofill",
     }
 
-    SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_CREATE
+    SQL_SECURITY_VIEW_LOCATION: t.ClassVar = exp.Properties.Location.POST_CREATE
 
     def makeinterval_sql(self: MySQLGenerator, expression: exp.MakeInterval) -> str:
         intervals: list[exp.Interval] = []
@@ -747,6 +747,9 @@ class MySQLGenerator(generator.Generator):
         dtype = self.sql(expression, "dtype")
         if not dtype:
             return super().altercolumn_sql(expression)
+
+        if expression.args.get("exists"):
+            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
 
         this = self.sql(expression, "this")
         null_constraint = self._alter_column_null_constraint_sql(expression)

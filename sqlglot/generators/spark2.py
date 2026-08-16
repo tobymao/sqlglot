@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -121,7 +122,7 @@ class Spark2Generator(HiveGenerator):
         exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
-    TS_OR_DS_EXPRESSIONS = (
+    TS_OR_DS_EXPRESSIONS: t.ClassVar = (
         *HIVE_TS_OR_DS_EXPRESSIONS,
         exp.DayOfMonth,
         exp.DayOfWeek,
@@ -240,6 +241,9 @@ class Spark2Generator(HiveGenerator):
         return f"USING {expression.name.upper()}"
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
+        if expression.args.get("exists"):
+            self.unsupported("ALTER COLUMN IF EXISTS is not supported by this dialect")
+
         this = self.sql(expression, "this")
         new_name = self.sql(expression, "rename_to") or this
         comment = self.sql(expression, "comment")

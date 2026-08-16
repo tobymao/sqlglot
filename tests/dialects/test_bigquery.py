@@ -3020,6 +3020,15 @@ OPTIONS (
                     },
                 )
 
+                # `->>` binds looser than most operators in DuckDB, so the arrow expression
+                # must be parenthesized when it's an operand of another operator
+                self.validate_all(
+                    f"SELECT {func}(j, '$.a') IS NOT NULL FROM t",
+                    write={
+                        "duckdb": "SELECT NOT (JSON_VALUE(j, '$.a') ->> '$') IS NULL FROM t",
+                    },
+                )
+
         self.assertEqual(self.parse_one(sql).sql("bigquery", normalize_functions="upper"), sql)
 
         # Test double quote escaping
@@ -4199,6 +4208,15 @@ OPTIONS (
                     write={
                         "bigquery": "DECLARE x BIGNUMERIC(76, 38)",
                         "duckdb": "DECLARE x DECIMAL(38, 38)",
+                    },
+                )
+
+                # Exponent notation must not materialize a huge integer when checking bounds
+                self.validate_all(
+                    f"DECLARE x {type_}(1e1000000, 4)",
+                    write={
+                        "bigquery": "DECLARE x BIGNUMERIC(1e1000000, 4)",
+                        "duckdb": "DECLARE x DECIMAL(38, 4)",
                     },
                 )
 

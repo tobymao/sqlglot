@@ -25,8 +25,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.AddMonths,
             exp.CurrentDatabase,
-            exp.CurrentUser,
-            exp.CurrentSchema,
             exp.Hex,
             exp.JSONExtractScalar,
             exp.JSONFormat,
@@ -58,7 +56,6 @@ EXPRESSION_METADATA = {
             exp.Minute,
         }
     },
-    exp.PercentileDisc: {"returns": exp.DType.DOUBLE},
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
@@ -70,14 +67,16 @@ EXPRESSION_METADATA = {
             exp.Reverse,
         }
     },
-    exp.ApproxQuantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
-    exp.WithinGroup: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.ArrayIntersect: {"annotator": lambda self, e: self._annotate_by_args(e, "expressions")},
+    exp.ApproxQuantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
     exp.Coalesce: {
         "annotator": lambda self, e: self._annotate_by_args(e, "this", "expressions", promote=True)
     },
+    exp.Grouping: {"returns": exp.DType.BIGINT},
     exp.If: {"annotator": lambda self, e: self._annotate_by_args(e, "true", "false", promote=True)},
+    exp.PercentileDisc: {"returns": exp.DType.DOUBLE},
     exp.Quantile: {"annotator": lambda self, e: self._annotate_by_args(e, "quantile")},
     exp.RegexpSplit: {"returns": exp.DataType.from_str("ARRAY<STRING>")},
     exp.StrToMap: {"returns": exp.DataType.from_str("MAP<STRING, STRING>")},
+    exp.WithinGroup: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
 }

@@ -103,6 +103,11 @@ def eliminate_subqueries(expression: E) -> E:
 
     if new_ctes:
         query = expression.expression if isinstance(expression, exp.DDL) else expression
+        if not isinstance(query, exp.Query):
+            # This can be reached for DMLs, which shouldn't hold the WITH clause; attach it to
+            # the root query, which is also where any pre-existing CTEs in `new_ctes` came from
+            query = root.expression.unnest()
+
         query.set("with_", exp.With(expressions=new_ctes, recursive=recursive))
 
     return expression
@@ -131,7 +136,9 @@ def _eliminate_derived_table(
         return None
 
     expr_parent = scope.expression.parent
-    if not isinstance(expr_parent, exp.Subquery):
+    if not isinstance(expr_parent, exp.Subquery) or expr_parent is parent_scope.expression:
+        # In the latter case the wrapper is the parent scope's root, e.g., the FROM clause
+        # of a DML statement or a parenthesized DDL source, not one of its derived tables
         return None
 
     # Get rid of redundant exp.Subquery expressions, i.e. those that are just used as wrappers

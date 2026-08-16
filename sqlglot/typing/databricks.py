@@ -31,7 +31,6 @@ EXPRESSION_METADATA = {
         for exp_type in {
             exp.RegexpSubstr,
             exp.Secret,
-            exp.Trim,
         }
     },
     exp.RegrCount: {"returns": exp.DType.BIGINT},

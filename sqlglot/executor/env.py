@@ -179,10 +179,21 @@ def cast(this, to):
     raise NotImplementedError(f"Casting {this} to '{to}' not implemented.")
 
 
+FIRST = 0
+LAST = 1
+NULL_PLACEHOLDER = 0
+
+
 def ordered(this, desc, nulls_first):
-    if desc:
-        return reverse_key(this)
-    return this
+    if this is None:
+        return (FIRST if nulls_first else LAST, NULL_PLACEHOLDER)
+    return (LAST if nulls_first else FIRST, reverse_key(this) if desc else this)
+
+
+def _like(this, e, flags=0):
+    return bool(
+        re.fullmatch(re.escape(e).replace("_", ".").replace("%", ".*"), this, re.DOTALL | flags)
+    )
 
 
 @null_if_any
@@ -191,6 +202,14 @@ def interval(this, unit):
     if plural in Generator.TIME_PART_SINGULARS:
         unit = plural
     return datetime.timedelta(**{unit.lower(): float(this)})
+
+
+@null_if_any
+def arrayconcat(*args):
+    result = []
+    for arg in args:
+        result.extend(arg if isinstance(arg, list) else [arg])
+    return result
 
 
 @null_if_any("this", "expression")
@@ -229,6 +248,7 @@ ENV = {
     "ABS": null_if_any(lambda this: abs(this)),
     "ADD": null_if_any(lambda e, this: e + this),
     "ARRAYANY": null_if_any(lambda arr, func: any(func(e) for e in arr)),
+    "ARRAYCONCAT": arrayconcat,
     "ARRAYTOSTRING": arraytostring,
     "BETWEEN": null_if_any(lambda this, low, high: low <= this and this <= high),
     "BITWISEAND": null_if_any(lambda this, e: this & e),
@@ -251,13 +271,14 @@ ENV = {
     "GTE": null_if_any(lambda this, e: this >= e),
     "IF": lambda predicate, true, false: true if predicate else false,
     "IN": sql_in,
+    "INT": null_if_any(int),
     "INTDIV": null_if_any(lambda e, this: e // this),
     "INTERVAL": interval,
     "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),
-    "LIKE": null_if_any(
-        lambda this, e: bool(re.match(e.replace("_", ".").replace("%", ".*"), this))
-    ),
+    "LENGTH": null_if_any(len),
+    "LIKE": null_if_any(lambda this, e: _like(this, e)),
+    "ILIKE": null_if_any(lambda this, e: _like(this, e, re.IGNORECASE)),
     "LOWER": null_if_any(lambda arg: arg.lower()),
     "LT": null_if_any(lambda this, e: this < e),
     "LTE": null_if_any(lambda this, e: this <= e),
@@ -269,7 +290,8 @@ ENV = {
     "NOT": sql_not,
     "OR": sql_or,
     "ORDERED": ordered,
-    "POW": pow,
+    "POW": null_if_any(pow),
+    "REVERSE": null_if_any(lambda this: this[::-1]),
     "RIGHT": null_if_any(lambda this, e: this[-e:]),
     "ROUND": null_if_any(lambda this, decimals=None, truncate=None: round(this, ndigits=decimals)),
     "STRPOSITION": str_position,

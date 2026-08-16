@@ -672,7 +672,7 @@ class TokenizerCore:
             start = max(self._current - 50, 0)
             end = min(self._current + 50, self.size - 1)
             context = self.sql[start:end]
-            raise TokenError(f"Error tokenizing '{context}'") from e
+            raise TokenError(f"Error tokenizing '{context}'", start=start, end=end) from e
 
         return self.tokens
 

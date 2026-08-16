@@ -289,6 +289,48 @@ def _unpivot_target(expr: exp.Expr) -> exp.Expr:
     return expr
 
 
+# Builders for the JSON `->` / `->>` / `#>` / `#>>` / `?` operators, shared between
+# COLUMN_OPERATORS (accessor-tier dialects) and JSON_OPERATORS (Postgres/DuckDB's
+# binary-operator tier).
+def build_json_extract(self: Parser, this: exp.Expr, path: exp.Expr) -> exp.JSONExtract:
+    return self.expression(
+        exp.JSONExtract(
+            this=this,
+            expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+        )
+    )
+
+
+def build_json_extract_scalar(
+    self: Parser, this: exp.Expr, path: exp.Expr
+) -> exp.JSONExtractScalar:
+    return self.expression(
+        exp.JSONExtractScalar(
+            this=this,
+            expression=self.dialect.to_json_path(path),
+            only_json_types=self.JSON_ARROWS_REQUIRE_JSON_TYPE,
+            scalar_only=self.dialect.JSON_EXTRACT_SCALAR_SCALAR_ONLY,
+        )
+    )
+
+
+def build_jsonb_extract(self: Parser, this: exp.Expr, path: exp.Expr) -> exp.JSONBExtract:
+    return self.expression(exp.JSONBExtract(this=this, expression=path))
+
+
+def build_jsonb_extract_scalar(
+    self: Parser, this: exp.Expr, path: exp.Expr
+) -> exp.JSONBExtractScalar:
+    return self.expression(exp.JSONBExtractScalar(this=this, expression=path))
+
+
+def build_jsonb_contains_top_key(
+    self: Parser, this: exp.Expr, key: exp.Expr
+) -> exp.JSONBContainsTopKey:
+    return self.expression(exp.JSONBContainsTopKey(this=this, expression=key))
+
+
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
 
 
@@ -1062,9 +1104,13 @@ class Parser:
             exp.JSONBExtractScalar(this=this, expression=path)
         ),
         TokenType.PLACEHOLDER: lambda self, this, key: self.expression(
-            exp.JSONBContains(this=this, expression=key)
+            exp.JSONBContainsTopKey(this=this, expression=key)
         ),
     }
+
+    # JSON/JSONB operators (extraction and containment) at Postgres's "any other operator"
+    # tier, below +/-, level with ||. Same value signature as COLUMN_OPERATORS: (self, this, rhs).
+    JSON_OPERATORS: t.ClassVar[dict[TokenType, t.Callable]] = {}
 
     CAST_COLUMN_OPERATORS: t.ClassVar = {
         TokenType.DOTCOLON,
@@ -1889,6 +1935,10 @@ class Parser:
     # Whether adjacent string literals like 'foo' 'bar' require a whitespace or comment between them
     # to be considered valid syntactically. Such expressions evaluate to the strings' concatenation.
     ADJACENT_STRINGS_CANNOT_BE_CONNECTED: t.ClassVar = False
+
+    # Whether NTH_VALUE accepts the FROM FIRST | LAST modifier before its OVER clause,
+    # e.g. NTH_VALUE(x, 2) FROM LAST IGNORE NULLS OVER (...) (Oracle, Snowflake)
+    SUPPORTS_NTH_VALUE_FROM_MODIFIER: t.ClassVar = False
 
     SHOW_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SET_PARSERS)
@@ -6154,26 +6204,33 @@ class Parser:
 
             self._retreat(index)
 
+        unit_index = self._index
         if interval_span_units_omitted:
             unit = None
         else:
-            unit = self._parse_function() if parse_function_unit else None
-            if not unit and (
+            # Only attempt to parse a unit if the current token can actually be one, so that a
+            # trailing operator isn't swallowed, e.g. INTERVAL '1 day' AND (x)
+            is_unit = self._curr is not None and (
                 self._curr.token_type == TokenType.VAR
                 or self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS
-            ):
+            )
+            unit = self._parse_function() if parse_function_unit and is_unit else None
+            if not unit and is_unit:
                 unit = self._parse_var(any_token=True, upper=True)
 
         # Most dialects support, e.g., the form INTERVAL '5' day, thus we try to parse
         # each INTERVAL expression into this canonical form so it's easy to transpile
         if this and this.is_number:
-            this = exp.Literal.string(this.to_py())
+            try:
+                this = exp.Literal.string(this.to_py())
+            except ValueError:
+                self.raise_error(f"Invalid numeric interval literal: {this.name!r}")
         elif this and this.is_string:
             parts = exp.INTERVAL_STRING_RE.findall(this.name)
             if parts and unit:
                 # Unconsume the eagerly-parsed unit, since the real unit was part of the string
                 unit = None
-                self._retreat(self._index - 1)
+                self._retreat(unit_index)
 
             if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
@@ -6258,6 +6315,8 @@ class Parser:
                 this = self.expression(
                     exp.BitwiseRightShift(this=this, expression=self._parse_term())
                 )
+            elif self.JSON_OPERATORS and self._match_set(self.JSON_OPERATORS):
+                this = self.JSON_OPERATORS[self._prev.token_type](self, this, self._parse_term())
             else:
                 break
 
@@ -6274,19 +6333,22 @@ class Parser:
             this = self.expression(klass(this=this, expression=expression), comments=comments)
 
             if isinstance(this, exp.Collate):
-                expr = this.expression
-
-                # Preserve collations such as pg_catalog."default" (Postgres) as columns, otherwise
-                # fallback to Identifier / Var
-                if isinstance(expr, exp.Column) and len(expr.parts) == 1:
-                    ident = expr.this
-                    if isinstance(ident, exp.Identifier):
-                        this.set("expression", ident if ident.quoted else exp.var(ident.name))
+                self._normalize_collate(this)
 
         return this
 
+    def _normalize_collate(self, collate: exp.Collate) -> None:
+        expr = collate.expression
+
+        # Preserve collations such as pg_catalog."default" (Postgres) as columns, otherwise
+        # fallback to Identifier / Var
+        if isinstance(expr, exp.Column) and len(expr.parts) == 1:
+            ident = expr.this
+            if isinstance(ident, exp.Identifier):
+                collate.set("expression", ident if ident.quoted else exp.var(ident.name))
+
     def _parse_factor(self) -> exp.Expr | None:
-        parse_method = self._parse_exponent if self.EXPONENT else self._parse_unary
+        parse_method = self._parse_factor_operand
         this = self._parse_at_time_zone(parse_method())
 
         while self._match_set(self.FACTOR):
@@ -6305,6 +6367,9 @@ class Parser:
                 this.set("safe", self.dialect.SAFE_DIVISION)
 
         return this
+
+    def _parse_factor_operand(self) -> exp.Expr | None:
+        return self._parse_exponent() if self.EXPONENT else self._parse_unary()
 
     def _parse_exponent(self) -> exp.Expr | None:
         this = self._parse_unary()
@@ -6352,12 +6417,11 @@ class Parser:
                 if parser:
                     return parser(self, this, data_type)
 
-                if (
-                    self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR
-                    and data_type.is_type(exp.DType.TIMESTAMP)
-                    and TIME_ZONE_RE.search(literal)
-                ):
-                    data_type = exp.DType.TIMESTAMPTZ.into_expr()
+                if self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR and TIME_ZONE_RE.search(literal):
+                    if data_type.is_type(exp.DType.TIMESTAMP):
+                        data_type = exp.DType.TIMESTAMPTZ.into_expr()
+                    elif data_type.is_type(exp.DType.TIME):
+                        data_type = exp.DType.TIMETZ.into_expr()
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 
@@ -7118,6 +7182,14 @@ class Parser:
     def _parse_function_args(self, alias: bool = False) -> list[exp.Expr]:
         return self._parse_csv(lambda: self._parse_lambda(alias=alias))
 
+    def _parse_connector_function(self, connector: t.Callable[..., exp.Condition]) -> exp.Paren:
+        args = self._parse_function_args(alias=False)
+        if not args:
+            self.raise_error("Expected at least one argument")
+
+        # Wrapped so the connector keeps its precedence in the parent context
+        return exp.Paren(this=connector(*args, copy=False))
+
     def _parse_function_call(
         self,
         functions: dict[str, t.Callable] | None = None,
@@ -7272,10 +7344,15 @@ class Parser:
         properties = []
         while True:
             if self._match_texts(self.PROPERTY_PARSERS):
-                prop = self.PROPERTY_PARSERS[self._prev.text.upper()](self)
+                keyword = self._prev.text.upper()
+                prop = self.PROPERTY_PARSERS[keyword](self)
             elif self._match(TokenType.DEFAULT) and self._match_texts(self.PROPERTY_PARSERS):
-                prop = self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
+                keyword = self._prev.text.upper()
+                prop = self.PROPERTY_PARSERS[keyword](self, default=True)
             else:
+                break
+            if not prop:
+                self.raise_error(f"Failed to parse property '{keyword}'")
                 break
             for p in ensure_list(prop):
                 properties.append(p)
@@ -7439,10 +7516,18 @@ class Parser:
         if (not kind and self._match(TokenType.ALIAS)) or self._match_texts(
             ("ALIAS", "MATERIALIZED")
         ):
+            # Match storage before _parse_types so STORED is not treated as a data type
+            # (needed for typeless columns, e.g. SQLite `b AS (a * 2) STORED`).
             persisted = self._prev.text.upper() == "MATERIALIZED"
+            expression = self._parse_disjunction()
+            if not persisted:
+                if self._match_text_seq("PERSISTED"):
+                    persisted = True
+                elif self._match_texts(("STORED", "VIRTUAL")):
+                    persisted = self._prev.text.upper() == "STORED"
             constraint_kind = exp.ComputedColumnConstraint(
-                this=self._parse_disjunction(),
-                persisted=persisted or self._match_text_seq("PERSISTED"),
+                this=expression,
+                persisted=persisted,
                 data_type=exp.Var(this="AUTO")
                 if self._match_text_seq("AUTO")
                 else self._parse_types(),
@@ -8526,6 +8611,13 @@ class Parser:
         func = this
         comments = func.comments if isinstance(func, exp.Expr) else None
 
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/img_text/nth_value.html
+        if self.SUPPORTS_NTH_VALUE_FROM_MODIFIER and isinstance(this, exp.NthValue):
+            if self._match_text_seq("FROM", "FIRST"):
+                this.set("from_first", True)
+            elif self._match_text_seq("FROM", "LAST"):
+                this.set("from_first", False)
+
         # T-SQL allows the OVER (...) syntax after WITHIN GROUP.
         # https://learn.microsoft.com/en-us/sql/t-sql/functions/percentile-disc-transact-sql?view=sql-server-ver16
         if self._match_text_seq("WITHIN", "GROUP"):
@@ -8990,23 +9082,38 @@ class Parser:
         # Many dialects support the ALTER [COLUMN] syntax, so if there is no
         # keyword after ALTER we default to parsing this statement
         self._match(TokenType.COLUMN)
+        exists = self._parse_exists()
         column = self._parse_field(any_token=True)
 
         if self._match_pair(TokenType.DROP, TokenType.DEFAULT):
-            return self.expression(exp.AlterColumn(this=column, drop=True))
+            return self.expression(exp.AlterColumn(this=column, drop=True, exists=exists or None))
         if self._match_pair(TokenType.SET, TokenType.DEFAULT):
-            return self.expression(exp.AlterColumn(this=column, default=self._parse_disjunction()))
+            return self.expression(
+                exp.AlterColumn(
+                    this=column, default=self._parse_disjunction(), exists=exists or None
+                )
+            )
         if self._match(TokenType.COMMENT):
-            return self.expression(exp.AlterColumn(this=column, comment=self._parse_string()))
+            return self.expression(
+                exp.AlterColumn(this=column, comment=self._parse_string(), exists=exists or None)
+            )
         if self._match_text_seq("DROP", "NOT", "NULL"):
-            return self.expression(exp.AlterColumn(this=column, drop=True, allow_null=True))
+            return self.expression(
+                exp.AlterColumn(this=column, drop=True, allow_null=True, exists=exists or None)
+            )
         if self._match_text_seq("SET", "NOT", "NULL"):
-            return self.expression(exp.AlterColumn(this=column, allow_null=False))
+            return self.expression(
+                exp.AlterColumn(this=column, allow_null=False, exists=exists or None)
+            )
 
         if self._match_text_seq("SET", "VISIBLE"):
-            return self.expression(exp.AlterColumn(this=column, visible="VISIBLE"))
+            return self.expression(
+                exp.AlterColumn(this=column, visible="VISIBLE", exists=exists or None)
+            )
         if self._match_text_seq("SET", "INVISIBLE"):
-            return self.expression(exp.AlterColumn(this=column, visible="INVISIBLE"))
+            return self.expression(
+                exp.AlterColumn(this=column, visible="INVISIBLE", exists=exists or None)
+            )
 
         self._match_text_seq("SET", "DATA")
         self._match_text_seq("TYPE")
@@ -9016,6 +9123,7 @@ class Parser:
                 dtype=self._parse_types(),
                 collate=self._match(TokenType.COLLATE) and self._parse_term(),
                 using=self._match(TokenType.USING) and self._parse_disjunction(),
+                exists=exists or None,
             )
         )
 

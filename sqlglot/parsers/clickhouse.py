@@ -87,7 +87,7 @@ TIMESTAMP_TRUNC_UNITS = {
 }
 
 
-AGG_FUNCTIONS = {
+_AGG_FUNCTIONS = {
     "count",
     "min",
     "max",
@@ -209,7 +209,7 @@ AGG_FUNCTIONS = {
 
 # Sorted longest-first so that compound suffixes (e.g. "SimpleState") are matched
 # before their sub-suffixes (e.g. "State") when resolving multi-combinator functions.
-AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
+_AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
     [
         "If",
         "Array",
@@ -232,9 +232,9 @@ AGG_FUNCTIONS_SUFFIXES: list[str] = sorted(
 )
 
 # Memoized examples of all 0- and 1-suffix aggregate function names
-AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
-    f"{f}{sfx}": (f, sfx) for sfx in AGG_FUNCTIONS_SUFFIXES for f in AGG_FUNCTIONS
-} | {f: (f, None) for f in AGG_FUNCTIONS}
+_AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
+    f"{f}{sfx}": (f, sfx) for sfx in _AGG_FUNCTIONS_SUFFIXES for f in _AGG_FUNCTIONS
+} | {f: (f, None) for f in _AGG_FUNCTIONS}
 
 
 class ClickHouseParser(parser.Parser):
@@ -324,8 +324,8 @@ class ClickHouseParser(parser.Parser):
         "UTCTIMESTAMP": exp.UtcTimestamp.from_arg_list,
     }
 
-    AGG_FUNCTIONS = AGG_FUNCTIONS
-    AGG_FUNCTIONS_SUFFIXES = AGG_FUNCTIONS_SUFFIXES
+    AGG_FUNCTIONS: t.ClassVar = _AGG_FUNCTIONS
+    AGG_FUNCTIONS_SUFFIXES: t.ClassVar = _AGG_FUNCTIONS_SUFFIXES
 
     FUNC_TOKENS = {
         *parser.Parser.FUNC_TOKENS,
@@ -342,7 +342,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.LIKE,
     }
 
-    AGG_FUNC_MAPPING = AGG_FUNC_MAPPING
+    AGG_FUNC_MAPPING: t.ClassVar = _AGG_FUNC_MAPPING
 
     @classmethod
     def _resolve_clickhouse_agg(cls, name: str) -> tuple[str, Sequence[str]] | None:
@@ -356,8 +356,8 @@ class ClickHouseParser(parser.Parser):
         # AGG_FUNCTIONS_SUFFIXES_SORTED). This loop only runs for 2 or more suffixes,
         # as AGG_FUNC_MAPPING memoizes all 0- and 1-suffix
         accumulated_suffixes: deque[str] = deque()
-        while (parts := AGG_FUNC_MAPPING.get(name)) is None:
-            for suffix in AGG_FUNCTIONS_SUFFIXES:
+        while (parts := _AGG_FUNC_MAPPING.get(name)) is None:
+            for suffix in _AGG_FUNCTIONS_SUFFIXES:
                 if name.endswith(suffix) and len(name) != len(suffix):
                     accumulated_suffixes.appendleft(suffix)
                     name = name[: -len(suffix)]
@@ -382,8 +382,8 @@ class ClickHouseParser(parser.Parser):
         "MEDIAN": lambda self: self._parse_quantile(),
         "COLUMNS": lambda self: self._parse_columns(),
         "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
-        "AND": lambda self: exp.and_(*self._parse_function_args(alias=False)),
-        "OR": lambda self: exp.or_(*self._parse_function_args(alias=False)),
+        "AND": lambda self: self._parse_connector_function(exp.and_),
+        "OR": lambda self: self._parse_connector_function(exp.or_),
         "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
     }
 
@@ -459,7 +459,7 @@ class ClickHouseParser(parser.Parser):
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
-        "MODIFY": lambda self: self._parse_alter_table_modify(),
+        "MODIFY": lambda self: self._parse_alter_table_alter(),
         "REPLACE": lambda self: self._parse_alter_table_replace(),
     }
 
@@ -908,10 +908,19 @@ class ClickHouseParser(parser.Parser):
             exp.ReplacePartition(expression=partition, source=self._parse_table_parts())
         )
 
-    def _parse_alter_table_modify(self) -> exp.Expr | None:
-        if properties := self._parse_properties():
-            return self.expression(exp.AlterModifySqlSecurity(expressions=properties.expressions))
-        return None
+    def _parse_alter_table_alter(self) -> exp.Expr | None:
+        # MODIFY forms other than MODIFY COLUMN (SQL SECURITY, ORDER BY, TTL, COMMENT, ...)
+        # are parsed as properties, since ALTER can now reach this path too
+        if self._prev.text.upper() == "MODIFY" and not self._match(TokenType.COLUMN, advance=False):
+            if properties := self._parse_properties():
+                return self.expression(
+                    exp.AlterModifySqlSecurity(expressions=properties.expressions)
+                )
+            return None
+
+        # https://clickhouse.com/docs/sql-reference/statements/alter/column#modify-column
+        alter = super()._parse_alter_table_alter()
+        return None if self._curr else alter
 
     def _parse_definer(self) -> exp.DefinerProperty | None:
         self._match(TokenType.EQ)

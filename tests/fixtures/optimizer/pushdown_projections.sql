@@ -28,6 +28,15 @@ WITH t1 AS (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT z.b AS b, z.c
 SELECT a FROM (SELECT a, b FROM x UNION SELECT a, b FROM x);
 SELECT _0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION SELECT x.a AS a, x.b AS b FROM x AS x) AS _0;
 
+SELECT a FROM (SELECT a, b FROM x INTERSECT ALL SELECT a, b FROM x);
+SELECT _0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x INTERSECT ALL SELECT x.a AS a, x.b AS b FROM x AS x) AS _0;
+
+SELECT a FROM (SELECT a, b FROM x EXCEPT ALL SELECT a, b FROM x);
+SELECT _0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x EXCEPT ALL SELECT x.a AS a, x.b AS b FROM x AS x) AS _0;
+
+SELECT a FROM (SELECT a, b FROM x GROUP BY ALL);
+SELECT _0.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS _0;
+
 WITH y AS (SELECT * FROM x) SELECT a FROM y;
 WITH y AS (SELECT x.a AS a FROM x AS x) SELECT y.a AS a FROM y AS y;
 
@@ -170,3 +179,80 @@ SELECT _0.d AS d FROM (SELECT INLINE(w.e) AS col, w.d AS d FROM w AS w) AS _0;
 -- Window functions do not affect cardinality and stay prunable
 SELECT d FROM (SELECT d, ROW_NUMBER() OVER (PARTITION BY e ORDER BY d) AS rn FROM w);
 SELECT _0.d AS d FROM (SELECT w.d AS d FROM w AS w) AS _0;
+
+# dialect: bigquery
+# title: a GROUP BY / HAVING column shadowed by a colliding projection alias is kept by pushdown
+SELECT t.n FROM (SELECT a, ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM (SELECT a, b FROM x) AS agg GROUP BY a HAVING a >= 1) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS agg GROUP BY a HAVING a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed HAVING column left unqualified by qualify's early return is kept by pushdown
+SELECT t.n FROM (SELECT ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM (SELECT a, b FROM x) AS agg GROUP BY a HAVING a >= 1 AND SUM(b) > 0) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS agg GROUP BY a HAVING a >= 1 AND SUM(b) > 0) AS t;
+
+# dialect: bigquery
+# title: shadowed column referenced only in QUALIFY is kept by pushdown
+SELECT t.rn FROM (SELECT ARRAY_AGG(b) OVER (PARTITION BY b) AS agg, ROW_NUMBER() OVER (ORDER BY b) AS rn FROM (SELECT a, b FROM x) AS agg QUALIFY a >= 1) AS t;
+SELECT t.rn AS rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY agg.b) AS rn FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS agg QUALIFY a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed clause column is pushed down into a CTE
+WITH agg AS (SELECT a, b FROM x) SELECT t.n FROM (SELECT ARRAY_AGG(b) AS agg, COUNT(*) AS n FROM agg GROUP BY a HAVING a >= 1) AS t;
+WITH agg AS (SELECT x.a AS a FROM x AS x) SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM agg AS agg GROUP BY a HAVING a >= 1) AS t;
+
+# dialect: bigquery
+# title: shadowed clause column resolves to the correct side of a join
+SELECT t.n FROM (SELECT ARRAY_AGG(q.b) AS q, COUNT(*) AS n FROM (SELECT a, b FROM x) AS q CROSS JOIN (SELECT c FROM y) AS r GROUP BY a HAVING a > 0) AS t;
+SELECT t.n AS n FROM (SELECT COUNT(*) AS n FROM (SELECT x.a AS a FROM x AS x) AS q CROSS JOIN (SELECT 1 AS _ FROM y AS y) AS r GROUP BY a HAVING a > 0) AS t;
+
+--------------------------------------
+-- Set operation's own ORDER BY keeps referenced columns
+--------------------------------------
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b, a LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b, a LIMIT 3) AS t;
+
+WITH t AS (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b LIMIT 3) SELECT a FROM t;
+WITH t AS (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b LIMIT 3) SELECT t.a AS a FROM t AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY b) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x UNION ALL SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b) AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION SELECT a, b FROM x ORDER BY b LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x UNION SELECT x.a AS a, x.b AS b FROM x AS x ORDER BY b LIMIT 3) AS t;
+
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x LIMIT 3) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x UNION ALL SELECT x.a AS a FROM x AS x LIMIT 3) AS t;
+
+# dialect: bigquery
+# title: set operation's own ORDER BY keeps referenced columns with BY NAME
+SELECT t.a FROM (SELECT 1 AS a, 2 AS c, 3 AS d UNION ALL BY NAME SELECT 6 AS c, 7 AS d, 8 AS a ORDER BY c) AS t;
+SELECT t.a AS a FROM (SELECT 1 AS a, 2 AS c UNION ALL BY NAME SELECT 6 AS c, 8 AS a ORDER BY c) AS t;
+
+# title: a column referenced only inside a correlated subquery in the set operation's ORDER BY is not treated as an output reference
+SELECT t.a FROM (SELECT a, b FROM x UNION ALL SELECT a, b FROM x ORDER BY (SELECT 1 FROM y WHERE b = 5)) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x UNION ALL SELECT x.a AS a FROM x AS x ORDER BY (SELECT 1 FROM y WHERE b = 5)) AS t;
+
+--------------------------------------
+-- GROUP BY ALL implicitly groups by every non-aggregate projection, so those
+-- projections must be retained even when unreferenced by the outer scope
+--------------------------------------
+SELECT t.a FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x AS x GROUP BY ALL) AS t;
+
+-- Unreferenced aggregate projections stay prunable, including those after the
+-- first aggregate in the SELECT list
+SELECT t.a FROM (SELECT a, SUM(b) AS s1, MAX(b) AS s2 FROM x GROUP BY ALL) t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x GROUP BY ALL) AS t;
+
+-- An implicit key can be a non-column expression, not just a bare column
+SELECT t.a, t.c FROM (SELECT a, b, b + 1 AS c, SUM(a) AS s FROM x GROUP BY ALL) t;
+SELECT t.a AS a, t.c AS c FROM (SELECT x.a AS a, x.b AS b, x.b + 1 AS c FROM x AS x GROUP BY ALL) AS t;
+
+-- ALL is a grouping-sets modifier (not implicit-key inference) once CUBE/ROLLUP/an explicit
+-- list is present, so those columns stay prunable like any other explicit GROUP BY column
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL CUBE (a, b)) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL CUBE (x.a, x.b)) AS t;
+
+SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL a, b) t;
+SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL x.a, x.b) AS t;

@@ -6,7 +6,7 @@ from collections import defaultdict
 from sqlglot import alias, exp
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -79,8 +79,12 @@ def pushdown_projections(
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
         alias_count = source_column_alias_count.get(scope, 0)
 
-        # We can't remove columns SELECT DISTINCT nor UNION DISTINCT.
-        if scope.expression.args.get("distinct"):
+        # We can't remove columns from SELECT DISTINCT nor UNION DISTINCT. INTERSECT and
+        # EXCEPT match on entire rows, so every column is used even in the ALL variants.
+        # Bare GROUP BY ALL is handled per-selection in _remove_unused_selections.
+        if scope.expression.args.get("distinct") or isinstance(
+            scope.expression, (exp.Intersect, exp.Except)
+        ):
             parent_selections = {SELECT_ALL}
 
         # A recursive CTE's body reads the CTE's own output, so its projections
@@ -105,6 +109,13 @@ def pushdown_projections(
             if len(le.selects) != len(re.selects):
                 scope_sql = scope.expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
+
+            # columns in ORDER BY need to be kept too
+            order = set_op.args.get("order")
+            if order and SELECT_ALL not in parent_selections:
+                order_refs = {c.name for c in find_all_in_scope(order, exp.Column) if not c.table}
+                if order_refs:
+                    parent_selections = parent_selections | order_refs
 
             referenced_columns[left] = parent_selections
 
@@ -167,6 +178,10 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
     group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
 
+    # GROUP BY ALL with no explicit keys implicitly groups by every non-aggregate
+    # projection, so those projections are grouping keys and can't be pruned
+    implicit_group_by_all = _is_implicit_group_by_all(scope.expression)
+
     new_selections = []
     removed = False
     star = False
@@ -176,6 +191,9 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     for selection in scope.expression.selects:
         name = selection.alias_or_name
+        is_agg_selection = (implicit_group_by_all or not is_agg) and find_in_scope(
+            selection, exp.AggFunc
+        ) is not None
 
         if (
             select_all
@@ -183,6 +201,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
             or name in order_refs
             or alias_count > 0
             or id(selection) in group_ordinal_selection_ids
+            or (implicit_group_by_all and not is_agg_selection)
         ):
             new_selections.append(selection)
             alias_count -= 1
@@ -197,7 +216,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
                 star = True
             removed = True
 
-        if not is_agg and find_in_scope(selection, exp.AggFunc):
+        if not is_agg and is_agg_selection:
             is_agg = True
 
     if star:
@@ -231,6 +250,21 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     if removed:
         scope.clear_cache()
+
+
+def _is_implicit_group_by_all(select: exp.Select) -> bool:
+    """Bare GROUP BY ALL infers its keys from the SELECT list, unlike ALL as a
+    grouping-sets modifier (e.g. GROUP BY ALL CUBE (...) or GROUP BY ALL a, b)."""
+    group = select.args.get("group")
+    if not group or not group.args.get("all"):
+        return False
+
+    return not (
+        group.expressions
+        or group.args.get("cube")
+        or group.args.get("rollup")
+        or group.args.get("grouping_sets")
+    )
 
 
 def _bare_group_by_ordinal_refs(

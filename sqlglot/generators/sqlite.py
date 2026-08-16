@@ -69,7 +69,9 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
 
     generated = expression.find(exp.GeneratedAsIdentityColumnConstraint)
 
-    if generated:
+    # Only rewrite true identity columns. Expression-bearing forms are computed
+    # columns (GENERATED ALWAYS AS (expr)) and must keep their expression.
+    if generated and generated.expression is None:
         t.cast(exp.ColumnConstraint, generated.parent).pop()
 
         not_null = expression.find(exp.NotNullColumnConstraint)
@@ -171,6 +173,7 @@ class SQLiteGenerator(generator.Generator):
         exp.LogicalAnd: rename_func("MIN"),
         exp.Pivot: no_pivot_sql,
         exp.Rand: rename_func("RANDOM"),
+        exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [
                 _offset_to_limit,
@@ -252,6 +255,19 @@ class SQLiteGenerator(generator.Generator):
             return self.func("DATE", expression.this)
 
         return super().cast_sql(expression)
+
+    # https://www.sqlite.org/gencol.html
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
+    def computedcolumnconstraint_sql(self, expression: exp.ComputedColumnConstraint) -> str:
+        if expression.args.get("data_type"):
+            self.unsupported("SQLite generated columns do not support a data type")
+
+        this = expression.this
+        this_sql = self.sql(this) if isinstance(this, exp.Paren) else f"({self.sql(this)})"
+        storage = " STORED" if expression.args.get("persisted") else ""
+        not_null = " NOT NULL" if expression.args.get("not_null") else ""
+        return f"AS {this_sql}{storage}{not_null}"
 
     # Note: SQLite's TRUNC always returns REAL (e.g., trunc(10.99) -> 10.0), not INTEGER.
     # This creates a transpilation gap affecting division semantics, similar to Presto.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.helper import ensure_list
@@ -26,7 +27,7 @@ class TrinoParser(PrestoParser):
         "LISTAGG": lambda self: self._parse_string_agg(),
     }
 
-    JSON_QUERY_OPTIONS: parser.OPTIONS_TYPE = {
+    JSON_QUERY_OPTIONS: t.ClassVar[parser.OPTIONS_TYPE] = {
         **dict.fromkeys(
             ("WITH", "WITHOUT"),
             (
@@ -174,7 +175,61 @@ class TrinoParser(PrestoParser):
         self._match_text_seq("IF")
         return this
 
+    def _parse_routine_case(self) -> exp.CaseStatement:
+        # https://trino.io/docs/current/udf/sql/case.html
+        this = self._parse_disjunction()
+
+        def parse_branch() -> exp.If:
+            condition = self._parse_disjunction()
+            self._match_text_seq("THEN")
+            true = self.expression(
+                exp.Block(expressions=self._parse_routine_statements("WHEN", "ELSE", "END"))
+            )
+            return self.expression(exp.If(this=condition, true=true))
+
+        ifs = []
+        self._match_text_seq("WHEN")
+        while self._prev.text.upper() == "WHEN":
+            ifs.append(parse_branch())
+
+        default = None
+        if self._prev.text.upper() == "ELSE":
+            default = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+
+        self._match_text_seq("CASE")
+        return self.expression(exp.CaseStatement(this=this, ifs=ifs, default=default))
+
+    def _parse_routine_while(self, label: exp.Expr | None = None) -> exp.WhileBlock:
+        # https://trino.io/docs/current/udf/sql/while.html
+        condition = self._parse_disjunction()
+        self._match_text_seq("DO")
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+        self._match_text_seq("WHILE")
+        return self.expression(exp.WhileBlock(this=condition, body=body, label=label))
+
+    def _parse_routine_loop(self, label: exp.Expr | None = None) -> exp.LoopBlock:
+        # https://trino.io/docs/current/udf/sql/loop.html
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("END")))
+        self._match_text_seq("LOOP")
+        return self.expression(exp.LoopBlock(body=body, label=label))
+
+    def _parse_routine_repeat(self, label: exp.Expr | None = None) -> exp.RepeatBlock:
+        # https://trino.io/docs/current/udf/sql/repeat.html - unlike WHILE/LOOP,
+        # the body is evaluated at least once, with UNTIL <condition> tested after
+        body = self.expression(exp.Block(expressions=self._parse_routine_statements("UNTIL")))
+        until = self._parse_disjunction()
+        self._match_text_seq("END", "REPEAT")
+        return self.expression(exp.RepeatBlock(body=body, until=until, label=label))
+
     def _parse_routine_statement(self) -> exp.Expr | None:
+        # An optional `label :` can precede WHILE, LOOP, or REPEAT to name the block for ITERATE/LEAVE.
+        # Any non-reserved keyword (SET, IF, ITERATE etc) is a valid label name, so the colon lookahead
+        # has to run first, before the statement keywords are matched.
+        label = None
+        if self._next and self._next.token_type == TokenType.COLON:
+            label = self._parse_id_var()
+            self._match(TokenType.COLON)
+
         if self._match(TokenType.BEGIN, advance=False):
             return self._parse_routine_block()
 
@@ -184,11 +239,29 @@ class TrinoParser(PrestoParser):
         if self._match_text_seq("IF"):
             return self._parse_routine_if()
 
+        if self._match_text_seq("CASE"):
+            return self._parse_routine_case()
+
         if self._match(TokenType.DECLARE):
             return self._parse_declare()
 
         if self._match(TokenType.SET):
             return self._parse_set()
+
+        if self._match_text_seq("ITERATE"):
+            return self.expression(exp.Iterate(this=self._parse_id_var()))
+
+        if self._match_text_seq("LEAVE"):
+            return self.expression(exp.Leave(this=self._parse_id_var()))
+
+        if self._match_text_seq("WHILE"):
+            return self._parse_routine_while(label=label)
+
+        if self._match_text_seq("LOOP"):
+            return self._parse_routine_loop(label=label)
+
+        if self._match_text_seq("REPEAT"):
+            return self._parse_routine_repeat(label=label)
 
         self.raise_error("Expected routine statement")
         return None

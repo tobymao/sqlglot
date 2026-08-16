@@ -138,6 +138,8 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("MAP([1], [2])")), "MAP([1], [2])")
         self.assertEqual(generate(parse_one("1 is null")), "1 == None")
         self.assertEqual(generate(parse_one("x is null")), "scope[None][x] is None")
+        self.assertEqual(generate(parse_one("x like 'y'")), "LIKE(scope[None][x], 'y')")
+        self.assertEqual(generate(parse_one("x not like 'y'")), "NOT(LIKE(scope[None][x], 'y'))")
 
     def test_optimized_tpch(self):
         for i, (_, sql, optimized) in enumerate(self.tpch_sqls, start=1):
@@ -701,6 +703,174 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(result.columns, tuple(cols))
                 self.assertEqual(result.rows, rows)
 
+    def test_operators_apply_to_a_whole_case_expression(self):
+        tables = {"t": [{"a": 1}, {"a": 2}]}
+
+        for sql, expected in (
+            ("SELECT (CASE WHEN a = 1 THEN 'x' END) IS NOT NULL AS c FROM t", [(True,), (False,)]),
+            ("SELECT (CASE WHEN a = 1 THEN 'x' END) IS NULL AS c FROM t", [(False,), (True,)]),
+            ("SELECT (CASE WHEN a = 1 THEN 1 ELSE 2 END) + 10 AS c FROM t", [(11,), (12,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, expected)
+
+    def test_negated_like(self):
+        """NOT LIKE must exclude what LIKE matches, and match no NULL either."""
+        tables = {"t": [{"s": "Bump version"}, {"s": "Add feature"}, {"s": None}]}
+
+        result = execute("SELECT s FROM t WHERE s LIKE 'Bump%'", tables=tables)
+        self.assertEqual(result.rows, [("Bump version",)])
+
+        for sql in (
+            "SELECT s FROM t WHERE s NOT LIKE 'Bump%'",
+            "SELECT s FROM t WHERE NOT (s LIKE 'Bump%')",
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, [("Add feature",)])
+
+    def test_like_semantics(self):
+        tables = {"t": [{"s": "Bump version"}, {"s": "Add feature"}]}
+
+        for pattern, matches in (
+            ("Bump", []),
+            ("Bump%", [("Bump version",)]),
+            ("%version", [("Bump version",)]),
+            ("Bump_version", [("Bump version",)]),
+            ("B.mp version", []),
+            ("Bump version", [("Bump version",)]),
+        ):
+            with self.subTest(pattern):
+                rows = execute(f"SELECT s FROM t WHERE s LIKE '{pattern}'", tables=tables).rows
+                self.assertEqual(rows, matches)
+
+                negated = execute(
+                    f"SELECT s FROM t WHERE s NOT LIKE '{pattern}'", tables=tables
+                ).rows
+                self.assertEqual(
+                    negated, [r for r in [("Bump version",), ("Add feature",)] if r not in matches]
+                )
+
+    def test_length(self):
+        tables = {"t": [{"s": "abc"}, {"s": ""}, {"s": None}]}
+
+        for func in ("LENGTH", "CHAR_LENGTH"):
+            with self.subTest(func):
+                rows = execute(f"SELECT {func}(s) FROM t", tables=tables).rows
+                self.assertEqual(rows, [(3,), (0,), (None,)])
+
+    def test_dpipe(self):
+        tables = {"t": [{"a": "x", "b": "y", "n": 1, "arr": [1, 2], "nul": None}]}
+
+        for expression, expected in (
+            ("a || b", "xy"),
+            ("a || b || a", "xyx"),
+            ("a || n", "x1"),
+            ("n || a", "1x"),
+            ("a || nul", None),
+            ("nul || a", None),
+            ("arr || arr", [1, 2, 1, 2]),
+            ("arr || n", [1, 2, 1]),
+            ("n || arr", [1, 1, 2]),
+            ("arr || nul", None),
+            ("ARRAY_CONCAT(arr, arr)", [1, 2, 1, 2]),
+            ("ARRAY_CAT(arr, arr, arr)", [1, 2, 1, 2, 1, 2]),
+        ):
+            with self.subTest(expression):
+                rows = execute(f"SELECT {expression} FROM t", tables=tables).rows
+                self.assertEqual(rows, [(expected,)])
+
+    def test_dpipe_source_dialect_coercion(self):
+        tables = {"t": [{"a": "x", "n": 1}]}
+
+        rows = execute("SELECT a || n FROM t", tables=tables, dialect="postgres").rows
+        self.assertEqual(rows, [("x1",)])
+
+        with self.assertRaises(ExecuteError):
+            execute("SELECT a || n FROM t", tables=tables, dialect="trino")
+
+    def test_ilike_semantics(self):
+        tables = {"t": [{"s": "Bump Version"}, {"s": "B.mp Version"}, {"s": "Add feature"}]}
+
+        for pattern, matches in (
+            ("bump", []),
+            ("bump%", [("Bump Version",)]),
+            ("%version", [("Bump Version",), ("B.mp Version",)]),
+            ("bump_version", [("Bump Version",)]),
+            ("b.mp version", [("B.mp Version",)]),
+            ("b_mp version", [("Bump Version",), ("B.mp Version",)]),
+            ("bump version", [("Bump Version",)]),
+        ):
+            for cased in (pattern.lower(), pattern.upper()):
+                with self.subTest(cased):
+                    rows = execute(f"SELECT s FROM t WHERE s ILIKE '{cased}'", tables=tables).rows
+                    self.assertEqual(rows, matches)
+
+                    negated = execute(
+                        f"SELECT s FROM t WHERE s NOT ILIKE '{cased}'", tables=tables
+                    ).rows
+                    self.assertEqual(
+                        negated, [(r["s"],) for r in tables["t"] if (r["s"],) not in matches]
+                    )
+
+    def test_typed_division(self):
+        """Postgres' 10 / 3 is 3, but its 10 / 3.0 and 10 / 3::numeric are not."""
+        schema = {"t": {"n": "INT", "d": "DECIMAL"}}
+        tables = {"t": [{"n": 10, "d": 3}]}
+
+        for sql, expected in (
+            ("SELECT n / 3.0 AS x FROM t", 10 / 3),
+            ("SELECT 3.0 / n AS x FROM t", 3.0 / 10),
+            ("SELECT CAST(n AS DOUBLE) / 3 AS x FROM t", 10 / 3),
+            ("SELECT n / d AS x FROM t", 10 / 3),  # decimal: real, but not a float
+            ("SELECT n / 3 AS x FROM t", 3),
+            ("SELECT -n / 3 AS x FROM t", -3),
+        ):
+            for dialect in ("postgres", "sqlite"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual(result.rows, [(expected,)])
+
+        result = execute("SELECT n / 3 AS x FROM t", tables=tables, dialect="postgres")
+        self.assertEqual(result.rows, [(3,)])
+
+    def test_typed_division_of_null_is_null(self):
+        schema = {"t": {"n": "INT"}}
+        tables = {"t": [{"n": None}]}
+
+        for sql in ("SELECT n / 3 AS x FROM t", "SELECT 3 / n AS x FROM t"):
+            for dialect in ("postgres", "sqlite"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual(result.rows, [(None,)])
+
+    def test_null_ordering_honors_nulls_first_and_dialect_defaults(self):
+        schema = {"t": {"a": "INT"}}
+        tables = {"t": [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]}
+
+        for sql, expected in (
+            ("SELECT a FROM t ORDER BY a NULLS FIRST", [None, None, 1, 3]),
+            ("SELECT a FROM t ORDER BY a NULLS LAST", [1, 3, None, None]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS FIRST", [None, None, 3, 1]),
+            ("SELECT a FROM t ORDER BY a DESC NULLS LAST", [3, 1, None, None]),
+        ):
+            for dialect in ("postgres", "duckdb", "mysql"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual([row[0] for row in result.rows], expected)
+
+        for dialect, ascending, descending in (
+            ("postgres", [1, 3, None, None], [None, None, 3, 1]),
+            ("mysql", [None, None, 1, 3], [3, 1, None, None]),
+            ("duckdb", [1, 3, None, None], [3, 1, None, None]),
+        ):
+            for sql, expected in (
+                ("SELECT a FROM t ORDER BY a", ascending),
+                ("SELECT a FROM t ORDER BY a DESC", descending),
+            ):
+                with self.subTest(f"{dialect}: {sql}"):
+                    result = execute(sql, schema=schema, tables=tables, dialect=dialect)
+                    self.assertEqual([row[0] for row in result.rows], expected)
+
     def test_aggregate_without_group_by(self):
         result = execute("SELECT SUM(x) FROM t", tables={"t": [{"x": 1}, {"x": 2}]})
         self.assertEqual(result.columns, ("_col_0",))
@@ -801,6 +971,8 @@ class TestExecutor(unittest.TestCase):
             ("DATEDIFF('2022-01-03'::date, '2022-01-01'::TIMESTAMP::DATE)", 2),
             ("TRIM(' foo ')", "foo"),
             ("TRIM('afoob', 'ab')", "foo"),
+            ("REVERSE('foo')", "oof"),
+            ("REVERSE(NULL)", None),
             ("ARRAY_JOIN(['foo', 'bar'], ':')", "foo:bar"),
             ("ARRAY_JOIN(['hello', null ,'world'], ' ', ',')", "hello , world"),
             ("ARRAY_JOIN(['', null ,'world'], ' ', ',')", " , world"),
@@ -809,6 +981,10 @@ class TestExecutor(unittest.TestCase):
             ("ROUND(1.2)", 1),
             ("ROUND(1.2345, 2)", 1.23),
             ("ROUND(NULL)", None),
+            ("POWER(2, 3)", 8),
+            ("POWER(NULL, 3)", None),
+            ("POWER(2, NULL)", None),
+            ("POWER(NULL, NULL)", None),
             (
                 "UNIXTOTIME(1659981729)",
                 datetime.datetime(2022, 8, 8, 18, 2, 9, tzinfo=datetime.timezone.utc),

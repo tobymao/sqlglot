@@ -39,18 +39,23 @@ def optimize_joins(expression: E) -> E:
 
         for name, join in cross_joins:
             for dep in references.get(name, []):
+                # An ANTI join's ON clause is negated, i.e. NOT EXISTS(a AND b) is not
+                # equivalent to b AND NOT EXISTS(a), so its conjuncts can't be extracted
+                if dep.kind == "ANTI":
+                    continue
+
                 on = dep.args["on"]
 
-                if isinstance(on, exp.Connector):
+                # Only conjuncts can be extracted, i.e. `a OR b` is not `b AND (a OR TRUE)`
+                if isinstance(on, exp.And):
                     if len(other_table_names(dep)) < 2:
                         continue
 
-                    operator = type(on)
                     for predicate in on.flatten():
                         if name in exp.column_table_names(predicate):
                             predicate.replace(exp.true())
                             predicate = exp._combine(
-                                [join.args.get("on"), predicate], operator, copy=False
+                                [join.args.get("on"), predicate], exp.And, copy=False
                             )
                             join.on(predicate, append=False, copy=False)
 

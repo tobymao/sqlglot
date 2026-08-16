@@ -818,6 +818,29 @@ class TestMySQL(Validator):
                 "snowflake": "SELECT TO_CHAR(CAST('1900-10-04 22:23:00' AS TIMESTAMP), 'DD yy DY DD mm mon')",
             },
         )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2021-01-01 22:23:00', '%x')",
+                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT(CAST('2021-01-01 22:23:00' AS DATETIME), '%x')",
+            read={
+                "duckdb": "SELECT STRFTIME(CAST('2021-01-01 22:23:00' AS TIMESTAMP), '%G')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%r')",
+            write={
+                "mysql": "SELECT DATE_FORMAT('2007-10-04 22:23:00', '%r')",
+                "duckdb": "SELECT STRFTIME(CAST('2007-10-04 22:23:00' AS TIMESTAMP), '%I:%M:%S %p')",
+            },
+        )
+        self.validate_identity("SELECT DATE_FORMAT(x, '%X-%V')")
+        self.validate_identity("SELECT DATE_FORMAT(x, '%x-%v')")
+        self.validate_identity("SELECT DATE_FORMAT(x, '%U')")
 
     def test_mysql_time(self):
         self.validate_identity("TIME_STR_TO_UNIX(x)", "UNIX_TIMESTAMP(x)")

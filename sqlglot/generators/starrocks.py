@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -66,7 +67,7 @@ class StarRocksGenerator(MySQLGenerator):
     # StarRocks doesn't support renaming a table with a database.
     RENAME_TABLE_WITH_DB = False
 
-    CAST_MAPPING = {}
+    CAST_MAPPING: t.ClassVar[dict[exp.DType, str]] = {}
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
@@ -76,7 +77,7 @@ class StarRocksGenerator(MySQLGenerator):
         exp.DType.TIMESTAMPTZ: "DATETIME",
     }
 
-    SQL_SECURITY_VIEW_LOCATION = exp.Properties.Location.POST_SCHEMA
+    SQL_SECURITY_VIEW_LOCATION: t.ClassVar = exp.Properties.Location.POST_SCHEMA
 
     PROPERTIES_LOCATION = {
         **MySQLGenerator.PROPERTIES_LOCATION,

@@ -14,6 +14,12 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_snowflake(self):
+        ast = parse_one("BLA(x) FILTER (WHERE x = 5)")
+        self.assertEqual(
+            ast.this.assert_is(exp.Anonymous).parent.sql("snowflake"),
+            "BLA(IFF(x = 5, x, NULL))",
+        )
+
         self.validate_identity(
             """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT data:     level1  : level2 : level3::VARIANT FROM t""",
             """WITH t AS (SELECT PARSE_JSON('{"level1": {"level2": {"level3": "value"}}}') AS data) SELECT CAST(GET_PATH(data, 'level1.level2.level3') AS VARIANT) FROM t""",

@@ -495,11 +495,16 @@ def cast(
         target_dialect = Dialect.get_or_raise(dialect)
         type_mapping = target_dialect.generator_class.TYPE_MAPPING
 
-        existing_cast_type: DType = expr.to.this
+        existing_cast_type = expr.to.this
         new_cast_type: DType = data_type.this
-        types_are_equivalent = type_mapping.get(
-            existing_cast_type, existing_cast_type.value
-        ) == type_mapping.get(new_cast_type, new_cast_type.value)
+        # `this` is only a plain type enum for simple types; complex ones such as
+        # INTERVAL nest another expression there, so the equivalence check is skipped.
+        types_are_equivalent = (
+            isinstance(existing_cast_type, DType)
+            and isinstance(new_cast_type, DType)
+            and type_mapping.get(existing_cast_type, existing_cast_type.value)
+            == type_mapping.get(new_cast_type, new_cast_type.value)
+        )
 
         if expr.is_type(data_type) or types_are_equivalent:
             return expr

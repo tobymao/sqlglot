@@ -1260,6 +1260,21 @@ class TestOptimizer(unittest.TestCase):
         anon_quoted = parse_one('"anonymous"(x, y)')
         self.assertEqual(optimizer.simplify.gen(anon_quoted), '"anonymous"(x,y)')
 
+        # Literal and identifier content must be escaped so it can't forge structure,
+        # e.g. the single literal 'x'',''y' vs the two literals 'x', 'y'
+        self.assertNotEqual(
+            optimizer.simplify.gen(parse_one("v IN ('x'',''y')")),
+            optimizer.simplify.gen(parse_one("v IN ('x', 'y')")),
+        )
+        self.assertEqual(optimizer.simplify.gen(parse_one("'''a'''")), "'''a'''")
+        self.assertEqual(optimizer.simplify.gen(parse_one('"a""b"')), '"a""b"')
+        self.assertEqual(optimizer.simplify.gen(parse_one('"an""on"(x)')), '"an""on"(x)')
+
+        raw_in = parse_one("v IN (r'a', r'b')", read="spark")
+        forged = parse_one("v IN (r'x')", read="spark")
+        forged.find(exp.RawString).set("this", "a,RAWSTRING :this,b")
+        self.assertNotEqual(optimizer.simplify.gen(raw_in), optimizer.simplify.gen(forged))
+
         with self.assertRaises(ValueError) as e:
             anon_invalid = exp.Anonymous(this=5)
             optimizer.simplify.gen(anon_invalid)
@@ -1287,7 +1302,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.simplify.gen(sql),
             """
-SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,OVER,:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,CROSS) AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,LEFT,:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
+SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:expression,SELECT :expressions,2,:distinct,True,:alias, AS cte,CTE :this,SELECT :expressions,WINDOW :this,ROW(),:partition_by,y,:over,'OVER',:from_,FROM ((SELECT :expressions,1):limit,LIMIT :expression,10),:alias, AS cte2,:expressions,STAR,a + 1,a DIV 1,FILTER("B",LAMBDA :this,x + y,:expressions,x,y),:from_,FROM (z AS z:joins,JOIN :this,z,:kind,'CROSS') AS f(a),:joins,JOIN :this,a.b.c.d.e.f.g,:side,'LEFT',:using,n,:order,ORDER :expressions,ORDERED :this,1,:nulls_first,True
 """.strip(),
         )
         self.assertEqual(
@@ -1927,13 +1942,104 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         sql = (
             "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
         )
-        self.assertEqual(len(traverse_scope(parse_one(sql))), 3)
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertTrue(all(scope.is_subquery for scope in scopes))
+
+        sql = "UPDATE t1 SET x = s.x FROM (SELECT x FROM t2) AS s"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].expression.sql(), "SELECT x FROM t2")
+        self.assertEqual(set(scopes[0].sources), {"t2"})
+        self.assertTrue(scopes[0].is_derived_table)
+        self.assertEqual(set(scopes[1].sources), {"s"})
+
+        # Joins and column lists attached to the FROM-position subquery are not lost
+        sql = "UPDATE t1 SET x = s.renamed FROM (SELECT y FROM t2) AS s(renamed) CROSS JOIN v WHERE v.id = t1.id"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].outer_columns, ["renamed"])
+        self.assertEqual(set(scopes[1].sources), {"s", "v"})
+
+        sql = "UPDATE t1 SET x = 1 FROM (t2 JOIN v ON t2.id = v.id) WHERE t1.id = t2.id"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t2", "v"})
 
         sql = "UPDATE tbl1 SET col = 1 WHERE EXISTS (SELECT 1 FROM tbl2 WHERE tbl1.id = tbl2.id)"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 1)
 
         sql = "UPDATE tbl1 SET col = 0"
         self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+
+        # Bare tables in relation position get their own scopes, including any attached joins
+        sql = "UPDATE t1 SET x = u.x FROM c.db.u AS u"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+
+        sql = "MERGE INTO t1 USING c.db.u AS u ON t1.id = u.id WHEN MATCHED THEN UPDATE SET x = u.x"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+
+        sql = (
+            "WITH source AS (SELECT * FROM c.db.real) DELETE FROM t1 "
+            "USING source JOIN c.db.lookup AS l ON source.id = l.id"
+        )
+        scopes = traverse_scope(parse_one(sql, dialect="duckdb"))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(set(scopes[0].sources), {"real"})
+        self.assertEqual(set(scopes[1].sources), {"source", "l"})
+        self.assertIs(scopes[1].sources["source"], scopes[0])
+
+        # The subquery joined to a FROM-position table is scoped by that table, not twice
+        sql = (
+            "UPDATE t1 SET x = q.x FROM c.db.u AS u JOIN (SELECT * FROM c.db.v) AS q ON u.id = q.id"
+        )
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(set(scopes[0].sources), {"v"})
+        self.assertEqual(set(scopes[1].sources), {"u", "q"})
+
+        # Value-position subqueries can be correlated to the DML's target table
+        sql = "UPDATE t SET x = (SELECT MAX(u.a) FROM u WHERE u.id = t.id)"
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(sql),
+                schema={"t": {"id": "int", "x": "int"}, "u": {"a": "int", "id": "int"}},
+            ).sql(),
+            'UPDATE "t" SET "x" = (SELECT MAX("u"."a") AS "_col_0" FROM "u" AS "u" WHERE "u"."id" = "t"."id")',
+        )
+
+        # The query of an INSERT / CTAS is scoped as a derived table
+        for sql in ("INSERT INTO t (SELECT a FROM x)", "CREATE TABLE t AS (SELECT a FROM x)"):
+            scopes = traverse_scope(parse_one(sql))
+            self.assertEqual(len(scopes), 2)
+            self.assertEqual(scopes[0].expression.sql(), "SELECT a FROM x")
+            self.assertEqual(set(scopes[0].sources), {"x"})
+            self.assertEqual(set(scopes[1].sources), {""})
+
+        sql = "MERGE INTO t USING (SELECT id, a FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = s.a"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"u"})
+        self.assertTrue(scopes[0].is_subquery)
+
+        sql = "MERGE INTO t USING (SELECT * FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = (SELECT MAX(w.a) FROM w WHERE w.id = t.id)"
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                parse_one(sql),
+                schema={
+                    "t": {"id": "int", "x": "int"},
+                    "u": {"id": "int", "a": "int"},
+                    "w": {"id": "int", "a": "int"},
+                },
+            ).sql(),
+            'MERGE INTO "t" USING (SELECT "u"."id" AS "id", "u"."a" AS "a" FROM "u" AS "u") AS "s" '
+            'ON "t"."id" = "s"."id" WHEN MATCHED THEN UPDATE SET "x" = '
+            '(SELECT MAX("w"."a") AS "_col_0" FROM "w" AS "w" WHERE "w"."id" = "t"."id")',
+        )
 
         # VALUES as a set operation operand, e.g. in ASTs built programmatically (the parser
         # wraps such operands in selects); the compiled left/right accessors raise a TypeError
@@ -2012,6 +2118,88 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         div = parse_one("a / b")
         self.assertTrue(annotator._annotate_div(div).is_type(exp.DataType.Type.UNKNOWN))
+
+    def test_annotate_json_dot_parts_preserve_meta(self):
+        # The case restoration of JSON dot parts must rename identifiers in place, so
+        # that their meta (e.g. token positions) is preserved
+        schema = {"cat": {"sch": {"t": {"id": "varchar", "payload": "json"}}}}
+        sql = "SELECT payload.CaseSensitive FROM cat.sch.t"
+
+        qualified = qualify(
+            parse_one(sql, dialect="duckdb"),
+            schema=schema,
+            dialect="snowflake",
+            quote_identifiers=False,
+        )
+        annotated = annotate_types(qualified, schema=schema, dialect="snowflake")
+
+        identifier = annotated.selects[0].this.expression
+        self.assertIsInstance(identifier, exp.Identifier)
+        self.assertEqual(identifier.name, "CaseSensitive")
+        self.assertTrue(identifier.quoted)
+        self.assertEqual(
+            sql[identifier.meta["start"] : identifier.meta["end"] + 1], "CaseSensitive"
+        )
+
+    def test_annotate_semi_structured_dot_parts(self):
+        # Dot access into semi-structured values is a case sensitive data lookup, unlike
+        # struct field access, which the engines resolve like any other identifier
+        schema = {
+            "t": {"m": "MAP(VARCHAR, INT)", "v": "VARIANT", "j": "JSON", "s": "STRUCT(Foo INT)"}
+        }
+
+        for sql, expected in (
+            ("SELECT m.Foo FROM t", 'SELECT "t"."m"."Foo" AS "foo" FROM "t" AS "t"'),
+            ("SELECT v.Foo FROM t", 'SELECT "t"."v"."Foo" AS "foo" FROM "t" AS "t"'),
+            ("SELECT j.Foo.Bar FROM t", 'SELECT "t"."j"."Foo"."Bar" AS "bar" FROM "t" AS "t"'),
+            ("SELECT s.Foo FROM t", 'SELECT "t"."s"."foo" AS "foo" FROM "t" AS "t"'),
+            # Roots that are already qualified drop a different number of leading dot parts
+            ("SELECT t.m.Foo FROM t", 'SELECT "t"."m"."Foo" AS "foo" FROM "t" AS "t"'),
+            ("SELECT t.j.Foo.Bar FROM t", 'SELECT "t"."j"."Foo"."Bar" AS "bar" FROM "t" AS "t"'),
+            ("SELECT x.j.Foo FROM t AS x", 'SELECT "x"."j"."Foo" AS "foo" FROM "t" AS "x"'),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="duckdb"), schema=schema, dialect="duckdb"
+                )
+                annotated = annotate_types(qualified, schema=schema, dialect="duckdb")
+                self.assertEqual(annotated.sql("duckdb"), expected)
+
+    def test_annotate_dot_parts_of_non_column_roots(self):
+        # Dot access is also restored when the chain is rooted at an arbitrary expression
+        for sql, dialect, expected in (
+            (
+                "SELECT PARSE_JSON('{\"Foo\":1}').Foo",
+                "bigquery",
+                "SELECT PARSE_JSON('{\"Foo\":1}').`Foo` AS `foo`",
+            ),
+            (
+                "SELECT ('{\"Foo\":1}'::JSON).Foo",
+                "duckdb",
+                'SELECT (CAST(\'{"Foo":1}\' AS JSON))."Foo" AS "foo"',
+            ),
+            # Every part of the chain is restored, not just the innermost one
+            (
+                'SELECT PARSE_JSON(\'{"Foo":{"Bar":1}}\').Foo.Bar',
+                "bigquery",
+                'SELECT PARSE_JSON(\'{"Foo":{"Bar":1}}\').`Foo`.`Bar` AS `bar`',
+            ),
+            (
+                'SELECT (\'{"Foo":{"Bar":{"Baz":1}}}\'::JSON).Foo.Bar.Baz',
+                "duckdb",
+                'SELECT (CAST(\'{"Foo":{"Bar":{"Baz":1}}}\' AS JSON))."Foo"."Bar"."Baz" AS "baz"',
+            ),
+            # Dot access that doesn't name a key is left alone
+            (
+                "SELECT ('{\"Foo\":1}'::JSON).*",
+                "duckdb",
+                "SELECT (CAST('{\"Foo\":1}' AS JSON)).*",
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(parse_one(sql, dialect=dialect), dialect=dialect)
+                annotated = annotate_types(qualified, dialect=dialect)
+                self.assertEqual(annotated.sql(dialect), expected)
 
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})
@@ -2691,6 +2879,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.BIGINT)
         self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.DOUBLE)
 
+        # BY NAME with differing column counts: columns missing from one side are
+        # NULL-filled, so the other side's type is preserved
+        union_by_name = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b, t.c FROM (SELECT 1 AS a, 2 AS b UNION BY NAME SELECT 'x' AS c) AS t",
+                read="duckdb",
+            )
+        )
+        self.assertEqual(union_by_name.selects[0].type.this, exp.DataType.Type.INT)
+        self.assertEqual(union_by_name.selects[1].type.this, exp.DataType.Type.INT)
+        self.assertEqual(union_by_name.selects[2].type.this, exp.DataType.Type.VARCHAR)
+
         # Test chained UNIONs
         sql = """
             WITH t AS
@@ -3026,6 +3226,29 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         sql = qual.sql(dialect=dialect)
         self.assertEqual(
             sql,
+            "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
+        )
+
+        # The shadowed references stay qualified in the AST and only render bare in
+        # dialects where projection aliases shadow source names
+        group_col = qual.args["group"].find(exp.Column)
+        self.assertEqual(group_col.table, "custom_fields")
+        self.assertTrue(group_col.args.get("shadow"))
+        self.assertEqual(
+            qual.sql(dialect="duckdb"),
+            'SELECT "custom_fields"."id" AS "id", ARRAY_AGG("custom_fields"."col") AS "custom_fields" FROM "custom_fields" AS "custom_fields" GROUP BY "custom_fields"."id" HAVING "custom_fields"."id" >= 1',
+        )
+
+        # A clause ref whose name matches a projection alias takes the alias-expansion path
+        # instead of the branch above; the final sweep must still mark its colliding qualifier
+        query = "SELECT custom_fields.id AS id, ARRAY_AGG(custom_fields.col) AS custom_fields FROM custom_fields AS custom_fields GROUP BY id HAVING id >= 1"
+        qual = optimizer.qualify.qualify(
+            parse_one(query, dialect=dialect),
+            schema=schema,
+            dialect=dialect,
+        )
+        self.assertEqual(
+            qual.sql(dialect=dialect),
             "SELECT `custom_fields`.`id` AS `id`, ARRAY_AGG(`custom_fields`.`col`) AS `custom_fields` FROM `custom_fields` AS `custom_fields` GROUP BY `id` HAVING `id` >= 1",
         )
 

@@ -28,6 +28,7 @@ class DuckDB(Dialect):
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    ASCII_ONLY_NORMALIZATION = True
 
     DATE_PART_MAPPING = {
         **Dialect.DATE_PART_MAPPING,

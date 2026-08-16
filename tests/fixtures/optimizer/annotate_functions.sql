@@ -4329,6 +4329,14 @@ BIGINT;
 REGR_COUNT(tbl.double_col, tbl.double_col) OVER (PARTITION BY 1);
 BIGINT;
 
+# dialect: spark, databricks
+GROUPING(tbl.str_col);
+TINYINT;
+
+# dialect: hive, spark2
+GROUPING(tbl.str_col);
+BIGINT;
+
 # dialect: snowflake
 REGR_INTERCEPT(tbl.double_col, tbl.double_col);
 DOUBLE;
@@ -7017,6 +7025,30 @@ VARCHAR;
 CURRENT_ROLE();
 LONGTEXT;
 
+# dialect: mysql
+LEAD(tbl.int_col) OVER (ORDER BY tbl.int_col);
+INT;
+
+# dialect: mysql
+LEAD(tbl.double_col) OVER (ORDER BY tbl.int_col);
+DOUBLE;
+
+# dialect: mysql
+LEAD(tbl.bin_col) OVER (ORDER BY tbl.int_col);
+BINARY;
+
+# dialect: mysql
+LAG(tbl.int_col) OVER (ORDER BY tbl.int_col);
+INT;
+
+# dialect: mysql
+LAG(tbl.str_col) OVER (ORDER BY tbl.int_col);
+VARCHAR;
+
+# dialect: mysql
+LAG(tbl.date_col) OVER (ORDER BY tbl.int_col);
+DATE;
+
 --------------------------------------
 -- DuckDB
 --------------------------------------
@@ -7313,6 +7345,10 @@ BOOLEAN;
 tbl.array_col && tbl.array_col;
 BOOLEAN;
 
+# dialect: duckdb
+CURRENT_ROLE();
+VARCHAR;
+
 --------------------------------------
 -- Postgres
 --------------------------------------
@@ -7368,6 +7404,17 @@ BOOLEAN;
 # dialect: postgres
 LEFT(tbl.str_col, tbl.int_col);
 TEXT;
+
+WIDTH_BUCKET(5, 1, 10, 5);
+INT;
+
+# dialect: postgres
+ENCODE(tbl.bin_col, 'base64');
+TEXT;
+
+# dialect: postgres
+DECODE(tbl.str_col, 'base64');
+VARBINARY;
 
 --------------------------------------
 -- Presto / Trino

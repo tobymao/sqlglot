@@ -13,6 +13,15 @@ NOT x AND x;
 x OR NOT x;
 NOT x OR x;
 
+-- unlike a bare column, a predicate known to be non-null is eliminated by its complement
+# dialect: postgres
+'abc' ~ 'a' AND NOT 'abc' ~ 'a';
+FALSE;
+
+# dialect: postgres
+'abc' ~ 'a' OR NOT 'abc' ~ 'a';
+TRUE;
+
 1 AND TRUE;
 TRUE;
 
@@ -445,8 +454,78 @@ SELECT -(x.a > x.b) FROM x;
 SELECT (-((x.a) IS NULL)) FROM x;
 SELECT -(x.a IS NULL) FROM x;
 
+-- like unary minus, `~` binds tighter than a predicate, so its parens must be kept
+# dialect: postgres
+~(a = b);
+~(a = b);
+
+# dialect: postgres
+~(a LIKE b);
+~(a LIKE b);
+
+# dialect: postgres
+~(a @> b);
+~(a @> b);
+
 SELECT * FROM A WHERE a - (b < c) < 0 AND a + (b > c) >= 0;
 SELECT * FROM A WHERE a + (b > c) >= 0 AND a - (b < c) < 0;
+
+# dialect: postgres
+NOT (a @> b);
+NOT a @> b;
+
+# dialect: postgres
+NOT (a <@ b);
+NOT a <@ b;
+
+# dialect: postgres
+NOT (a && b);
+NOT a && b;
+
+# dialect: postgres
+(j ? 'a') AND id = 1;
+j ? 'a' AND id = 1;
+
+# dialect: postgres
+(j ?& ARRAY['a']) AND id = 1;
+j ?& ARRAY['a'] AND id = 1;
+
+# dialect: postgres
+(j ?| ARRAY['a']) AND id = 1;
+j ?| ARRAY['a'] AND id = 1;
+
+# dialect: postgres
+NOT (s ~ 'a');
+NOT s ~ 'a';
+
+# dialect: postgres
+NOT (s ~* 'a');
+NOT s ~* 'a';
+
+# dialect: postgres
+(r1 -|- r2) AND id = 1;
+r1 -|- r2 AND id = 1;
+
+# dialect: postgres
+(r1 &< r2) AND id = 1;
+r1 &< r2 AND id = 1;
+
+# dialect: postgres
+(r1 &> r2) AND id = 1;
+r1 &> r2 AND id = 1;
+
+-- a predicate parent keeps the parens
+# dialect: postgres
+(a @> b) = (c @> d);
+(a @> b) = (c @> d);
+
+# dialect: duckdb
+NOT (REGEXP_MATCHES(s, 'a'));
+NOT REGEXP_MATCHES(s, 'a');
+
+# dialect: spark
+NOT (s RLIKE 'a');
+NOT s RLIKE 'a';
 
 
 --------------------------------------

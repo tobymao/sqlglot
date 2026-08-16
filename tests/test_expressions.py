@@ -417,6 +417,27 @@ class TestExprs(unittest.TestCase):
             "expression of interest or parse the function call.",
         )
 
+    def test_var_len_args_spill_into_var_len_arg_key(self):
+        # Variadic args spill into var_len_arg_key, not into trailing flag args
+        chr_ = exp.Chr.from_arg_list([exp.convert(65), exp.convert(66)])
+        self.assertEqual(chr_.expressions, [exp.convert(65), exp.convert(66)])
+        self.assertIsNone(chr_.args.get("charset"))
+        self.assertEqual(chr_.sql(), "CHR(65, 66)")
+        self.assertEqual(exp.func("CHR", 65, 66).sql(), "CHR(65, 66)")
+
+        count = exp.Count.from_arg_list([exp.column("a"), exp.column("b"), exp.column("c")])
+        self.assertEqual(count.expressions, [exp.column("b"), exp.column("c")])
+        self.assertIsNone(count.args.get("big_int"))
+
+        greatest = exp.Greatest.from_arg_list([exp.column("a"), exp.column("b")])
+        self.assertEqual(greatest.expressions, [exp.column("b")])
+        self.assertIsNone(greatest.args.get("ignore_nulls"))
+
+        # VarMap overrides var_len_arg_key so the spill lands in "values"
+        var_map = exp.VarMap.from_arg_list([exp.column("k"), exp.column("v1"), exp.column("v2")])
+        self.assertEqual(var_map.args["keys"], exp.column("k"))
+        self.assertEqual(var_map.args["values"], [exp.column("v1"), exp.column("v2")])
+
     def test_named_selects(self):
         expression = parse_one(
             "SELECT a, b AS B, c + d AS e, *, 'zz', 'zz' AS z FROM foo as bar, baz"
@@ -439,6 +460,21 @@ class TestExprs(unittest.TestCase):
         """
         )
         self.assertEqual(expression.named_selects, ["foo", "bar"])
+
+        expression = parse_one("SELECT a, b FROM x UNION BY NAME SELECT c, b FROM y", read="duckdb")
+        self.assertEqual(expression.named_selects, ["a", "b", "c"])
+
+        expression = parse_one(
+            "SELECT a FROM x UNION SELECT b FROM y UNION BY NAME SELECT c FROM z",
+            read="duckdb",
+        )
+        self.assertEqual(expression.named_selects, ["a", "c"])
+
+        expression = parse_one(
+            "(SELECT a FROM x UNION BY NAME SELECT c FROM z) UNION SELECT a, c FROM w",
+            read="duckdb",
+        )
+        self.assertEqual(expression.named_selects, ["a", "c"])
 
     def test_selects(self):
         expression = parse_one("SELECT FROM x")
@@ -499,6 +535,12 @@ class TestExprs(unittest.TestCase):
         self.assertNotEqual(recast, cast)
         self.assertEqual(len(list(recast.find_all(exp.Cast))), 2)
         self.assertEqual(recast.sql(), "CAST(CAST(x AS DATE) AS VARCHAR)")
+
+        # a cast to a complex type (e.g. INTERVAL) nests an expression in `to.this`,
+        # which the equivalence check must not treat as a plain type enum
+        interval_cast = parse_one("CAST(-1 AS INTERVAL HOUR)")
+        recast = exp.cast(interval_cast, to=exp.DataType.Type.BIGINT)
+        self.assertEqual(recast.sql(), "CAST(CAST(-1 AS INTERVAL HOUR) AS BIGINT)")
 
         # check that dialect is used when casting strings
         self.assertEqual(
@@ -1160,6 +1202,9 @@ FROM foo""",
 
         with self.assertRaises(ValueError):
             parse_one("x").to_py()
+
+        with self.assertRaises(ValueError):
+            exp.Literal.number("0.1.2").to_py()
 
     def test_is_int(self):
         self.assertTrue(parse_one("- -1").is_int)

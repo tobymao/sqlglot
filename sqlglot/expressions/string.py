@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlglot.expressions.core import Expression, Func, Binary
+from sqlglot.expressions.core import Expression, Func, Binary, Predicate
 
 
 # String basics
@@ -445,11 +445,11 @@ class RegexpExtractAll(Expression, Func):
     }
 
 
-class RegexpFullMatch(Expression, Binary, Func):
+class RegexpFullMatch(Expression, Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "options": False}
 
 
-class RegexpILike(Expression, Binary, Func):
+class RegexpILike(Expression, Binary, Predicate, Func):
     arg_types = {"this": True, "expression": True, "flag": False}
 
 

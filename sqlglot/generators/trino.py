@@ -82,6 +82,48 @@ class TrinoGenerator(PrestoGenerator):
 
         return f"{' '.join(branches)} END IF"
 
+    def casestatement_sql(self, expression: exp.CaseStatement) -> str:
+        # Mirrors case_sql, using `;`-terminated statement bodies and END CASE
+        # instead of a single value expression per branch and bare END.
+        this = self.sql(expression, "this")
+        branches = [f"CASE {this}" if this else "CASE"]
+
+        for node in expression.args["ifs"]:
+            branches.append(f"WHEN {self.sql(node, 'this')} THEN {self.sql(node, 'true')};")
+
+        default = expression.args.get("default")
+        if default:
+            branches.append(f"ELSE {self.sql(default)};")
+
+        branches.append("END CASE")
+        return " ".join(branches)
+
+    def whileblock_sql(self, expression: exp.WhileBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        condition = self.sql(expression, "this")
+        body = self.sql(expression, "body")
+        return f"{label_sql}WHILE {condition} DO {body}; END WHILE"
+
+    def loopblock_sql(self, expression: exp.LoopBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        body = self.sql(expression, "body")
+        return f"{label_sql}LOOP {body}; END LOOP"
+
+    def repeatblock_sql(self, expression: exp.RepeatBlock) -> str:
+        label = expression.args.get("label")
+        label_sql = f"{self.sql(label)}: " if label else ""
+        body = self.sql(expression, "body")
+        until = self.sql(expression, "until")
+        return f"{label_sql}REPEAT {body}; UNTIL {until} END REPEAT"
+
+    def leave_sql(self, expression: exp.Leave) -> str:
+        return f"LEAVE {self.sql(expression, 'this')}"
+
+    def iterate_sql(self, expression: exp.Iterate) -> str:
+        return f"ITERATE {self.sql(expression, 'this')}"
+
     def jsonextract_sql(self, expression: exp.JSONExtract) -> str:
         if not expression.args.get("json_query"):
             return super().jsonextract_sql(expression)

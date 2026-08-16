@@ -44,8 +44,11 @@ class MySQL(Dialect):
         "%u": "%W",
         "%k": "%-H",
         "%l": "%-I",
+        "%r": "%I:%M:%S %p",
         "%T": "%H:%M:%S",
         "%W": "%A",
+        "%x": "%G",
+        # %v (ISO week) is unmapped due to collision with %V (roundtrip issue)
     }
 
     VALID_INTERVAL_UNITS = {

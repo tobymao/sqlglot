@@ -123,8 +123,12 @@ x"""
         self.assertEqual(tokens[3].token_type, TokenType.SEMICOLON)
 
     def test_error_msg(self):
-        with self.assertRaisesRegex(TokenError, "Error tokenizing 'select /'"):
-            Tokenizer().tokenize("select /*")
+        sql = "select /*"
+        with self.assertRaisesRegex(TokenError, "Error tokenizing 'select /'") as ctx:
+            Tokenizer().tokenize(sql)
+
+        # The quoted context snippet is also exposed through structured offsets
+        self.assertEqual(sql[ctx.exception.start : ctx.exception.end], "select /")
 
     def test_jinja(self):
         # Check that {#, #} are treated as token delimiters, even though BigQuery overrides COMMENTS

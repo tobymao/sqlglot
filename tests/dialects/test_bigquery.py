@@ -3341,6 +3341,17 @@ OPTIONS (
                             f"SELECT 1 AS foo{side}{kind} UNION ALL{name} SELECT 3 AS foo, 4 AS bar",
                         )
 
+        union = self.validate_identity(
+            "(SELECT 1 AS foo) FULL OUTER UNION ALL BY NAME (SELECT 2 AS foo, 3 AS bar)"
+        )
+        self.assertEqual(union.side, "FULL")
+        self.assertEqual(union.kind, "OUTER")
+
+        self.validate_identity("(SELECT 1 AS foo) FULL UNION ALL BY NAME (SELECT 2 AS foo)")
+
+        union = self.validate_identity("(SELECT 1) AS x UNION ALL (SELECT 2)")
+        self.assertIsInstance(union.this, exp.Subquery)
+
         self.validate_identity(
             "SELECT 1 AS x UNION ALL CORRESPONDING SELECT 2 AS x",
             "SELECT 1 AS x INNER UNION ALL BY NAME SELECT 2 AS x",

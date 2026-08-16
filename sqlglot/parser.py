@@ -5950,6 +5950,12 @@ class Parser:
         if isinstance(expression, exp.Values):
             expression = self._values_to_select(expression)
 
+        if isinstance(this, exp.Alias) and isinstance(this.this, exp.Subquery):
+            subquery = this.this
+            subquery.set("alias", exp.TableAlias(this=this.args["alias"]))
+            subquery.add_comments(this.pop_comments())
+            this = subquery
+
         return self.expression(
             operation(
                 this=this,

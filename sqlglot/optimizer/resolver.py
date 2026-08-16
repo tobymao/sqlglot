@@ -96,9 +96,8 @@ class Resolver:
     def get_source_columns_from_set_op(self, expression: exp.Expr) -> list[str]:
         if isinstance(expression, exp.Select):
             return expression.named_selects
-        if isinstance(expression, exp.Subquery) and isinstance(expression.this, exp.SetOperation):
-            # Different types of SET modifiers can be chained together if they're explicitly grouped by nesting
-            return self.get_source_columns_from_set_op(expression.this)
+        if isinstance(expression, exp.Subquery):
+            return self.get_source_columns_from_set_op(expression.unnest())
         if not isinstance(expression, exp.SetOperation):
             raise OptimizeError(f"Unknown set operation: {expression}")
 

@@ -199,10 +199,12 @@ class BigQueryParser(parser.Parser):
         TokenType.GRANT,
     } - {TokenType.ASC, TokenType.DESC}
 
+    # FULL, LEFT and RIGHT are reserved, so they're never (implicit) aliases; excluding
+    # them also disambiguates set operation modifiers, e.g FULL OUTER UNION ALL BY NAME
     ALIAS_TOKENS: t.ClassVar = {
         *parser.Parser.ALIAS_TOKENS,
         TokenType.GRANT,
-    } - {TokenType.ASC, TokenType.DESC}
+    } - {TokenType.ASC, TokenType.DESC, *parser.Parser.JOIN_SIDES}
 
     TABLE_ALIAS_TOKENS: t.ClassVar = {
         *parser.Parser.TABLE_ALIAS_TOKENS,

@@ -13,6 +13,8 @@ from collections.abc import Iterator, Sequence, Iterable
 class Plan:
     def __init__(self, expression: exp.Expr) -> None:
         self.expression: exp.Expr = expression.copy()
+        with_: exp.With | None = self.expression.args.get("with_")
+        self.ctes: exp.With | None = with_.copy() if with_ is not None else None
         self.root: Step = Step.from_expression(self.expression)
         self._dag: dict[Step, set[Step]] = {}
 

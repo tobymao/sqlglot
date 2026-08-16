@@ -19,16 +19,27 @@ class Context:
     evaluation of aggregation functions.
     """
 
-    def __init__(self, tables: dict[str, Table], env: dict | None = None) -> None:
+    def __init__(
+        self, tables: dict[str, Table], env: dict | None = None, outer: dict | None = None
+    ) -> None:
         """
         Args
             tables: representing the scope of the current execution context.
             env: dictionary of functions within the execution context.
+            outer: readers of an enclosing query, for a subquery run once per outer row.
+                Own tables shadow them, as an inner alias shadows an outer one in SQL.
         """
         self.tables = tables
         self._table: Table | None = None
-        self.range_readers = {name: table.range_reader for name, table in self.tables.items()}
-        self.row_readers = {name: table.reader for name, table in tables.items()}
+        range_readers = {name: table.range_reader for name, table in self.tables.items()}
+        row_readers = {name: table.reader for name, table in tables.items()}
+
+        if outer:
+            range_readers = {**outer, **range_readers}
+            row_readers = {**outer, **row_readers}
+
+        self.range_readers = range_readers
+        self.row_readers = row_readers
         self.env = {**ENV, **(env or {}), "scope": self.row_readers}
 
     def eval(self, code):

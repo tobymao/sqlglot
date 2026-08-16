@@ -9,6 +9,9 @@ from sqlglot.executor.context import Context
 from sqlglot.executor.env import ENV
 from sqlglot.executor.table import RowReader, Table
 from sqlglot.generators.python import PythonGenerator
+from sqlglot.optimizer.scope import build_scope
+
+SUBQUERY_NODES = (exp.Subquery, exp.Exists, exp.All, exp.Any)
 
 
 class PythonExecutor:
@@ -16,8 +19,25 @@ class PythonExecutor:
         self.generator = Python().generator(identify=True, comments=False)
         self.env = {**ENV, **(env or {})}
         self.tables = tables or {}
+        self._subquery_plans = {}
+        self._plan_names_by_sql = {}
+        self._ctes = None
+        self._outer_scope = None
+        self.env.update(
+            SUBQUERY_COMPARISON=self._subquery_comparison,
+            SUBQUERY_EXISTS=self._subquery_exists,
+            SUBQUERY_SCALAR=self._subquery_scalar,
+        )
 
-    def execute(self, plan):
+    def execute(self, plan, outer_scope=None):
+        ctes, scope = self._ctes, self._outer_scope
+        self._ctes, self._outer_scope = plan.ctes, outer_scope
+        try:
+            return self._execute(plan)
+        finally:
+            self._ctes, self._outer_scope = ctes, scope
+
+    def _execute(self, plan):
         finished = set()
         queue = set(plan.leaves)
         contexts = {}
@@ -66,8 +86,128 @@ class PythonExecutor:
         if not expression:
             return None
 
+        expression = self._replace_subqueries(expression)
         sql = self.generator.generate(expression)
         return compile(sql, sql, "eval", optimize=2)
+
+    def _replace_subqueries(self, expression):
+        if not expression.find(*SUBQUERY_NODES):
+            return expression
+
+        expression = expression.copy()
+
+        while True:
+            subquery = expression.find(*SUBQUERY_NODES)
+
+            if subquery is None:
+                return expression
+
+            target, replacement = self._compile_subquery(subquery)
+
+            if target is expression:
+                expression = replacement
+            else:
+                target.replace(replacement)
+
+    def _compile_subquery(self, subquery):
+        query = subquery.this.unnest()
+        scope = build_scope(query)
+
+        outer_columns = list(scope.external_columns if scope else [])
+
+        plan = self._register_subquery(query)
+        parent = subquery.parent
+
+        if isinstance(subquery, exp.Exists):
+            return subquery, exp.func(
+                "SUBQUERY_EXISTS", plan, exp.var("scope"), *outer_columns, copy=False
+            )
+
+        if len(query.selects) != 1:
+            raise ExecuteError(
+                f"Subquery used as an expression returned {len(query.selects)} columns"
+            )
+
+        if isinstance(subquery, (exp.All, exp.Any)):
+            return self._compile_quantified(parent, subquery.key.upper(), plan, outer_columns)
+
+        if isinstance(parent, exp.In) and subquery is parent.args.get("query"):
+            return self._compile_quantified(parent, "ANY", plan, outer_columns, op="EQ")
+
+        return subquery, exp.func(
+            "SUBQUERY_SCALAR", plan, exp.var("scope"), *outer_columns, copy=False
+        )
+
+    def _compile_quantified(self, comparison, quantifier, plan, outer_columns, op=None):
+        if not isinstance(comparison, (exp.Binary, exp.In)):
+            raise ExecuteError(f"Unsupported {quantifier} subquery: expected a comparison")
+
+        return comparison, exp.func(
+            "SUBQUERY_COMPARISON",
+            comparison.this,
+            plan,
+            exp.var("scope"),
+            exp.Literal.string(op or comparison.key.upper()),
+            exp.Literal.string(quantifier),
+            *outer_columns,
+            copy=False,
+        )
+
+    def _register_subquery(self, query):
+        if self._ctes is not None and not query.args.get("with_"):
+            query.set("with_", self._ctes)
+
+        sql = query.sql()
+        name = self._plan_names_by_sql.get(sql)
+
+        if name is None:
+            name = self._plan_names_by_sql[sql] = f"_sq_{len(self._subquery_plans)}"
+            self._subquery_plans[name] = (planner.Plan(query), {})
+
+        return exp.Literal.string(name)
+
+    def _subquery_table(self, plan_name, scope, args):
+        plan, cache = self._subquery_plans[plan_name]
+
+        try:
+            return cache[args]
+        except KeyError:
+            pass
+        except TypeError:  # an unhashable correlated value can't be memoized
+            cache = None
+
+        table = self.execute(plan, scope)
+
+        if cache is not None:
+            cache[args] = table
+
+        return table
+
+    def _subquery_exists(self, plan_name, scope, *args):
+        return bool(self._subquery_table(plan_name, scope, args).rows)
+
+    def _subquery_scalar(self, plan_name, scope, *args):
+        rows = self._subquery_table(plan_name, scope, args).rows
+
+        if len(rows) > 1:
+            raise ExecuteError("More than one row returned by a subquery used as an expression")
+
+        return rows[0][0] if rows else None
+
+    def _subquery_comparison(self, value, plan_name, scope, op, quantifier, *args):
+        compare = self.env[op]
+        is_any = quantifier == "ANY"
+        saw_null = False
+
+        for row in self._subquery_table(plan_name, scope, args).rows:
+            result = compare(value, row[0])
+
+            if result is None:
+                saw_null = True
+            elif bool(result) is is_any:
+                return is_any
+
+        return None if saw_null else not is_any
 
     def generate_tuple(self, expressions):
         """Convert an array of SQL expressions into tuple of Python byte code."""
@@ -76,7 +216,7 @@ class PythonExecutor:
         return tuple(self.generate(expression) for expression in expressions)
 
     def context(self, tables):
-        return Context(tables, env=self.env)
+        return Context(tables, env=self.env, outer=self._outer_scope)
 
     def table(self, expressions):
         return Table(

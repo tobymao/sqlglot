@@ -28,14 +28,6 @@ from tests.helpers import (
 DIR_TPCH = FIXTURES_DIR + "/optimizer/tpc-h/"
 DIR_TPCDS = FIXTURES_DIR + "/optimizer/tpc-ds/"
 
-SUBQUERY_SCHEMA = {t: {"a" if t == "x" else "b": "int"} for t in ("x", "y", "e", "n")}
-SUBQUERY_TABLES = {
-    "x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}],
-    "y": [{"b": 2}, {"b": 3}],
-    "e": [],
-    "n": [{"b": 2}, {"b": None}],
-}
-
 
 def open_file(file_name):
     """Open a file that may be compressed as gzip and return it in universal newline mode."""

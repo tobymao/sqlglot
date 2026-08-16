@@ -593,12 +593,17 @@ class TestExecutor(unittest.TestCase):
 
     def test_subqueries(self):
         # expected rows are duckdb's, which postgres agrees with on every case here
-        schema = {t: {"a" if t == "x" else "b": "int"} for t in ("x", "y", "e", "n")}
+        schema = {
+            "x": {"a": "int"},
+            "y": {"b": "int"},
+            "empty_table": {"b": "int"},
+            "tbl_with_null": {"b": "int"},
+        }
         tables = {
             "x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}],
             "y": [{"b": 2}, {"b": 3}],
-            "e": [],
-            "n": [{"b": 2}, {"b": None}],
+            "empty_table": [],
+            "tbl_with_null": [{"b": 2}, {"b": None}],
         }
         cases = (
             ("SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = x.a OR b = 3)", []),
@@ -606,7 +611,7 @@ class TestExecutor(unittest.TestCase):
                 "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE NOT b = x.a)",
                 [(1,), (2,), (3,), (5,)],
             ),
-            ("SELECT a FROM x WHERE EXISTS (SELECT 1 FROM e)", []),
+            ("SELECT a FROM x WHERE EXISTS (SELECT 1 FROM empty_table)", []),
             (
                 "SELECT a, (SELECT MAX(b) FROM y WHERE b > x.a) AS m FROM x",
                 [(1, 3), (2, 3), (3, None), (5, None)],
@@ -614,28 +619,37 @@ class TestExecutor(unittest.TestCase):
             ("SELECT a FROM x WHERE (SELECT COUNT(*) FROM y WHERE b > x.a) > 0", [(1,), (2,)]),
             ("SELECT a FROM x WHERE a IN (SELECT b FROM y WHERE b = x.a OR b = 3)", [(2,), (3,)]),
             ("SELECT a FROM x WHERE a NOT IN (SELECT b FROM y)", [(1,), (5,)]),
-            ("SELECT a FROM x WHERE a IN (SELECT b FROM n)", [(2,)]),
-            ("SELECT a FROM x WHERE a NOT IN (SELECT b FROM n)", []),
+            ("SELECT a FROM x WHERE a IN (SELECT b FROM tbl_with_null)", [(2,)]),
+            ("SELECT a FROM x WHERE a NOT IN (SELECT b FROM tbl_with_null)", []),
             ("SELECT a FROM x WHERE a IN (5, (SELECT MIN(b) FROM y WHERE b > x.a))", [(5,)]),
             ("SELECT a FROM x WHERE (SELECT MIN(b) FROM y WHERE b > x.a) IN (1, 2)", [(1,)]),
-            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM n)", [(3,), (5,)]),
-            ("SELECT a FROM x WHERE a > ALL (SELECT b FROM n)", []),
-            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM e)", []),
-            ("SELECT a FROM x WHERE a > ALL (SELECT b FROM e)", [(1,), (2,), (3,), (5,)]),
+            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM tbl_with_null)", [(3,), (5,)]),
+            ("SELECT a FROM x WHERE a > ALL (SELECT b FROM tbl_with_null)", []),
+            ("SELECT a FROM x WHERE a > ANY (SELECT b FROM empty_table)", []),
+            (
+                "SELECT a FROM x WHERE a > ALL (SELECT b FROM empty_table)",
+                [(1,), (2,), (3,), (5,)],
+            ),
             ("SELECT a FROM x WHERE a > SOME (SELECT b FROM y)", [(3,), (5,)]),
             (
-                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a AND EXISTS (SELECT 1 FROM n WHERE n.b = y.b))",
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a AND EXISTS "
+                "(SELECT 1 FROM tbl_with_null WHERE tbl_with_null.b = y.b))",
                 [(2,)],
             ),
             (
-                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = 99 OR EXISTS (SELECT 1 FROM n WHERE n.b = x.a OR n.b = 99))",
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = 99 OR EXISTS "
+                "(SELECT 1 FROM tbl_with_null WHERE tbl_with_null.b = x.a OR tbl_with_null.b = 99))",
                 [(2,)],
             ),
             (
-                "SELECT a FROM x WHERE a IN (SELECT b FROM y WHERE b = x.a) OR a IN (SELECT b FROM n WHERE b = x.a)",
+                "SELECT a FROM x WHERE a IN (SELECT b FROM y WHERE b = x.a) "
+                "OR a IN (SELECT b FROM tbl_with_null WHERE b = x.a)",
                 [(2,), (3,)],
             ),
-            ("SELECT a FROM x WHERE a IN (SELECT b FROM y UNION SELECT b FROM n)", [(2,), (3,)]),
+            (
+                "SELECT a FROM x WHERE a IN (SELECT b FROM y UNION SELECT b FROM tbl_with_null)",
+                [(2,), (3,)],
+            ),
             (
                 "SELECT a FROM x WHERE EXISTS ((SELECT 1 FROM y WHERE b = x.a OR b = 99))",
                 [(2,), (3,)],
@@ -647,11 +661,13 @@ class TestExecutor(unittest.TestCase):
                 [(2,), (3,)],
             ),
             (
-                "WITH c AS (SELECT b FROM y) SELECT a FROM x WHERE a IN (SELECT b FROM c) AND NOT EXISTS (SELECT 1 FROM c WHERE b = x.a OR b = 99)",
+                "WITH c AS (SELECT b FROM y) SELECT a FROM x WHERE a IN (SELECT b FROM c) "
+                "AND NOT EXISTS (SELECT 1 FROM c WHERE b = x.a OR b = 99)",
                 [],
             ),
             (
-                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a OR EXISTS (SELECT 1 FROM n WHERE n.b = x.a))",
+                "SELECT a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE b = x.a OR EXISTS "
+                "(SELECT 1 FROM tbl_with_null WHERE tbl_with_null.b = x.a))",
                 [(2,), (3,)],
             ),
         )

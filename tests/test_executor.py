@@ -672,18 +672,15 @@ class TestExecutor(unittest.TestCase):
             ),
         )
 
-        def sort(rows):
-            return sorted(rows, key=lambda row: tuple((v is None, v) for v in row))
-
         for sql, expected in cases:
             with self.subTest(sql):
-                self.assertEqual(sort(execute(sql, schema, tables=tables).rows), sort(expected))
+                self.assertCountEqual(execute(sql, schema, tables=tables).rows, expected)
 
     def test_subquery_memoization(self):
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}
         tables = {"x": [{"a": i % 3} for i in range(12)], "y": [{"b": 1}, {"b": 2}]}
 
-        for sql, plans in (
+        for sql, expected_plans in (
             ("SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = x.a OR b = 9)", 1),
             (
                 "SELECT a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE b = 9 OR EXISTS "
@@ -696,9 +693,10 @@ class TestExecutor(unittest.TestCase):
                 executor.execute(Plan(optimize(sql, schema, leave_tables_isolated=True)))
 
                 # one plan per subquery, and one run per distinct correlated value of the 12 rows
-                self.assertEqual(len(executor._subquery_plans), plans)
+                self.assertEqual(len(executor._subquery_plans), expected_plans)
                 self.assertEqual(
-                    [len(cache) for _, cache in executor._subquery_plans.values()], [3] * plans
+                    [len(cache) for _, cache in executor._subquery_plans.values()],
+                    [3] * expected_plans,
                 )
 
     def test_subquery_execution_does_not_mutate_the_plan(self):

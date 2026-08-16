@@ -113,14 +113,14 @@ class PythonExecutor:
         query = subquery.this.unnest()
         scope = build_scope(query)
 
-        outer_columns = [column.copy() for column in (scope.external_columns if scope else [])]
+        outer_columns = list(scope.external_columns if scope else [])
 
         plan = self._register_subquery(query)
         parent = subquery.parent
 
         if isinstance(subquery, exp.Exists):
-            return subquery, exp.Anonymous(
-                this="SUBQUERY_EXISTS", expressions=[plan, exp.var("scope"), *outer_columns]
+            return subquery, exp.func(
+                "SUBQUERY_EXISTS", plan, exp.var("scope"), *outer_columns, copy=False
             )
 
         if len(query.selects) != 1:
@@ -134,30 +134,28 @@ class PythonExecutor:
         if isinstance(parent, exp.In) and subquery is parent.args.get("query"):
             return self._compile_quantified(parent, "ANY", plan, outer_columns, op="EQ")
 
-        return subquery, exp.Anonymous(
-            this="SUBQUERY_SCALAR", expressions=[plan, exp.var("scope"), *outer_columns]
+        return subquery, exp.func(
+            "SUBQUERY_SCALAR", plan, exp.var("scope"), *outer_columns, copy=False
         )
 
     def _compile_quantified(self, comparison, quantifier, plan, outer_columns, op=None):
         if not isinstance(comparison, (exp.Binary, exp.In)):
             raise ExecuteError(f"Unsupported {quantifier} subquery: expected a comparison")
 
-        return comparison, exp.Anonymous(
-            this="SUBQUERY_COMPARISON",
-            expressions=[
-                comparison.this.copy(),
-                plan,
-                exp.var("scope"),
-                exp.Literal.string(op or comparison.key.upper()),
-                exp.Literal.string(quantifier),
-                *outer_columns,
-            ],
+        return comparison, exp.func(
+            "SUBQUERY_COMPARISON",
+            comparison.this,
+            plan,
+            exp.var("scope"),
+            exp.Literal.string(op or comparison.key.upper()),
+            exp.Literal.string(quantifier),
+            *outer_columns,
+            copy=False,
         )
 
     def _register_subquery(self, query):
         if self._ctes is not None and not query.args.get("with_"):
-            query = query.copy()
-            query.set("with_", self._ctes.copy())
+            query.set("with_", self._ctes)
 
         sql = query.sql()
         name = self._plan_names_by_sql.get(sql)

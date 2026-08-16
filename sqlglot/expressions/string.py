@@ -478,7 +478,8 @@ class RegexpReplace(Expression, Func):
 
 
 class RegexpSplit(Expression, Func):
-    arg_types = {"this": True, "expression": True, "limit": False}
+    # "mode" is Dremio-specific, appended after "limit" for from_arg_list compat
+    arg_types = {"this": True, "expression": True, "limit": False, "mode": False}
 
 
 class RegexpSubstr(Expression, Func):

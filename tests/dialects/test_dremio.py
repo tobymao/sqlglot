@@ -250,6 +250,27 @@ class TestDremio(Validator):
         self.validate_identity("DATETYPE(2024,2,2)", "DATE('2024-02-02')")
         self.validate_identity("DATETYPE(x,y,z)", "CAST(CONCAT(x, '-', y, '-', z) AS DATE)")
 
+    def test_regexp_split(self):
+        ast = self.validate_identity("SELECT REGEXP_SPLIT(tags, ',', 'ALL', 1000) AS t")
+        regexp_split = ast.find(exp.RegexpSplit)
+        self.assertEqual(regexp_split.text("mode"), "ALL")
+        self.assertEqual(regexp_split.text("limit"), "1000")
+
+        # Construct in exp.RegexpSplit's declared arg_types order (this,
+        # expression, limit, mode), which does NOT match Dremio's real
+        # argument order (this, expression, mode, limit), to prove the
+        # generator renders by key and not by construction/kwarg order.
+        reordered = exp.RegexpSplit(
+            this=exp.column("tags"),
+            expression=exp.Literal.string(","),
+            limit=exp.Literal.number(1000),
+            mode=exp.Literal.string("ALL"),
+        )
+        self.assertEqual(
+            reordered.sql(dialect="dremio"),
+            "REGEXP_SPLIT(tags, ',', 'ALL', 1000)",
+        )
+
     def test_try_cast(self):
         self.validate_all(
             "CAST(a AS FLOAT)",

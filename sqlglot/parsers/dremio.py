@@ -104,6 +104,12 @@ class DremioParser(parser.Parser):
         "DATE_FORMAT": build_formatted_time(exp.TimeToStr),
         "DATE_SUB": build_date_delta_with_cast_interval(exp.DateSub),
         "REGEXP_MATCHES": exp.RegexpLike.from_arg_list,
+        "REGEXP_SPLIT": lambda args: exp.RegexpSplit(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            mode=seq_get(args, 2),
+            limit=seq_get(args, 3),
+        ),
         "REPEATSTR": exp.Repeat.from_arg_list,
         "TO_CHAR": to_char_is_numeric_handler,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate),

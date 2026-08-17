@@ -718,11 +718,7 @@ class ClickHouseParser(parser.Parser):
         func = expr.this if isinstance(expr, exp.Window) else expr
 
         # Aggregate functions can be split in 2 parts: <func_name><suffix[es]>
-        parts = (
-            self._resolve_clickhouse_agg(func.this)
-            if isinstance(func, exp.Anonymous) and isinstance(func.this, str)
-            else None
-        )
+        parts = self._resolve_clickhouse_agg(func.name) if isinstance(func, exp.Anonymous) else None
 
         if parts:
             anon_func: exp.Anonymous = t.cast(exp.Anonymous, func)

@@ -7414,6 +7414,10 @@ WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 
 # dialect: postgres
+FORMAT('Hello %s, %1$s', 'World');
+TEXT;
+
+# dialect: postgres
 ENCODE(tbl.bin_col, 'base64');
 TEXT;
 

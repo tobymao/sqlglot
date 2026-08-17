@@ -67,36 +67,34 @@ def pushdown_projections(
     Returns:
         sqlglot.Expr: optimized expression
     """
-    # Map of Scope to all columns being selected by outer queries.
     schema = ensure_schema(schema, dialect=dialect)
     source_column_alias_count: dict[exp.Expr | Scope, int] = {}
+
+    # Map of Scope to all columns being selected by outer queries.
     referenced_columns: defaultdict[Scope, set[str | object]] = defaultdict(set)
 
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
     # columns for a particular scope are completely build by the time we get to it.
     for scope in reversed(traverse_scope(expression)):
+        scope_expression = scope.expression
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
         alias_count = source_column_alias_count.get(scope, 0)
 
-        # We can't remove columns from SELECT DISTINCT nor UNION DISTINCT. INTERSECT and
-        # EXCEPT match on entire rows, so every column is used even in the ALL variants.
-        # Bare GROUP BY ALL is handled per-selection in _remove_unused_selections.
-        if scope.expression.args.get("distinct") or isinstance(
-            scope.expression, (exp.Intersect, exp.Except)
+        # SELECT DISTINCT, UNION DISTINCT, INTERSECT, and EXCEPT consume the entire row, so we
+        # can't remove any columns, otherwise we risk changing the query's semantics. Also, we
+        # conservatively skip pruning on recursive CTEs that read their own output for now.
+        if (
+            scope_expression.args.get("distinct")
+            or isinstance(scope_expression, (exp.Intersect, exp.Except))
+            or _is_self_referencing_cte(scope)
         ):
             parent_selections = {SELECT_ALL}
 
-        # A recursive CTE's body reads the CTE's own output, so its projections
-        # can't be pruned based only on what the enclosing query selects.
-        if _is_self_referencing_cte(scope):
-            parent_selections = {SELECT_ALL}
-
-        if isinstance(scope.expression, exp.SetOperation):
-            set_op = scope.expression
-            if set_op.kind or set_op.side:
-                # Do not optimize this set operation if it's using the BigQuery specific
-                # kind / side syntax (e.g INNER UNION ALL BY NAME) which changes the semantics of the operation
+        if isinstance(scope_expression, exp.SetOperation):
+            if scope_expression.kind or scope_expression.side:
+                # Do not optimize this set operation if it's using the BigQuery specific kind / side
+                # syntax (e.g INNER UNION ALL BY NAME) which changes the semantics of the operation
                 continue
 
             left, right = scope.union_scopes
@@ -106,12 +104,14 @@ def pushdown_projections(
             if not (isinstance(le, exp.Selectable) and isinstance(re, exp.Selectable)):
                 continue
 
-            if len(le.selects) != len(re.selects):
-                scope_sql = scope.expression.sql(dialect=dialect)
+            by_name = scope_expression.args.get("by_name")
+
+            if not by_name and len(le.selects) != len(re.selects):
+                scope_sql = scope_expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
 
-            # columns in ORDER BY need to be kept too
-            order = set_op.args.get("order")
+            # Columns in ORDER BY need to be kept too
+            order = scope_expression.args.get("order")
             if order and SELECT_ALL not in parent_selections:
                 order_refs = {c.name for c in find_all_in_scope(order, exp.Column) if not c.table}
                 if order_refs:
@@ -122,17 +122,17 @@ def pushdown_projections(
             if re.is_star:
                 referenced_columns[right] = parent_selections
             elif not le.is_star:
-                if scope.expression.args.get("by_name"):
-                    referenced_columns[right] = referenced_columns[left]
-                else:
+                if by_name:
+                    referenced_columns[right] = parent_selections
+                elif SELECT_ALL not in parent_selections:
+                    # This being unset means looking up `right` later yields SELECT_ALL (default)
                     referenced_columns[right] = {
                         re.selects[i].alias_or_name
                         for i, select in enumerate(le.selects)
-                        if SELECT_ALL in parent_selections
-                        or select.alias_or_name in parent_selections
+                        if select.alias_or_name in parent_selections
                     }
 
-        if isinstance(scope.expression, exp.Select):
+        if isinstance(scope_expression, exp.Select):
             if remove_unused_selections:
                 _remove_unused_selections(scope, parent_selections, schema, alias_count, journal)
 
@@ -142,9 +142,7 @@ def pushdown_projections(
             # Group columns by source name
             selects: dict[str, set[object]] = defaultdict(set)
             for col in scope.columns:
-                table_name = col.table
-                col_name = col.name
-                selects[table_name].add(col_name)
+                selects[col.table].add(col.name)
 
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():
@@ -166,7 +164,8 @@ def pushdown_projections(
 
 
 def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):
-    order = scope.expression.args.get("order")
+    expression = scope.expression
+    order = expression.args.get("order")
 
     if order:
         # Assume columns without a qualified table are references to output columns
@@ -175,12 +174,12 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         order_refs = set()
 
     # Resolve bare GROUP BY ordinals before pruning
-    ordinal_refs = _bare_group_by_ordinal_refs(scope.expression)
+    ordinal_refs = _bare_group_by_ordinal_refs(expression)
     group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
 
     # GROUP BY ALL with no explicit keys implicitly groups by every non-aggregate
     # projection, so those projections are grouping keys and can't be pruned
-    implicit_group_by_all = _is_implicit_group_by_all(scope.expression)
+    implicit_group_by_all = _is_implicit_group_by_all(expression)
 
     new_selections = []
     removed = False
@@ -189,7 +188,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     select_all = SELECT_ALL in parent_selections
 
-    for selection in scope.expression.selects:
+    for selection in expression.selects:
         name = selection.alias_or_name
         is_agg_selection = (implicit_group_by_all or not is_agg) and find_in_scope(
             selection, exp.AggFunc
@@ -234,9 +233,9 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         new_selections.append(default_selection(is_agg))
 
     if journal is not None and removed:
-        record(journal, scope.expression, "expressions")
+        record(journal, expression, "expressions")
 
-    scope.expression.select(*new_selections, append=False, copy=False)
+    expression.select(*new_selections, append=False, copy=False)
 
     # Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list
     if ordinal_refs:

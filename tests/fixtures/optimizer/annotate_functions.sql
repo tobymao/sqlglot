@@ -7410,6 +7410,10 @@ RPAD(tbl.str_col, 10, 'x');
 TEXT;
 
 # dialect: postgres
+TO_HEX(2147483647);
+TEXT;
+
+# dialect: postgres
 SPLIT_PART(tbl.str_col, '~@~', 2);
 TEXT;
 

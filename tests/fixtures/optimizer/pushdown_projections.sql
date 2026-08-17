@@ -137,6 +137,12 @@ SELECT _0.a AS a, _0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT
 SELECT a, b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) (SELECT a, b, c FROM cte1));
 SELECT _0.a AS a, _0.b AS b FROM (WITH cte1 AS (SELECT 1 AS a, 2 AS b) SELECT cte1.a AS a, cte1.b AS b FROM cte1 AS cte1) AS _0;
 
+SELECT c FROM (SELECT 1 AS c UNION ALL BY NAME SELECT 2 AS c, 3 AS d) AS t;
+SELECT t.c AS c FROM (SELECT 1 AS c UNION ALL BY NAME SELECT 2 AS c) AS t;
+
+SELECT c FROM (SELECT 1 AS c UNION ALL BY NAME SELECT 2 AS d, 3 AS c) AS t;
+SELECT t.c AS c FROM (SELECT 1 AS c UNION ALL BY NAME SELECT 3 AS c) AS t;
+
 --------------------------------------
 -- Star used by a function
 --------------------------------------

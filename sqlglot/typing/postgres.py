@@ -22,6 +22,8 @@ EXPRESSION_METADATA = {
             exp.Reverse,
             exp.Pad,
             exp.Format,
+            exp.Hex,
+            exp.SplitPart,
         }
     },
     **{

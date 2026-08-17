@@ -17,6 +17,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Encode,
             exp.Left,
+            exp.Right,
         }
     },
     **{

@@ -7414,6 +7414,10 @@ ENCODE(tbl.bin_col, 'base64');
 TEXT;
 
 # dialect: postgres
+RIGHT(tbl.str_col, tbl.int_col);
+TEXT;
+
+# dialect: postgres
 DECODE(tbl.str_col, 'base64');
 VARBINARY;
 

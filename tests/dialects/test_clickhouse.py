@@ -93,15 +93,9 @@ class TestClickhouse(Validator):
         self.validate_identity("WITH final AS (SELECT 1) SELECT * FROM final")
         self.validate_identity("SELECT * FROM x FINAL")
         self.validate_identity("SELECT * FROM x AS y FINAL")
-        self.validate_identity(
-            'SELECT event_id FROM "analytics"."events_view"(final = 1)'
-        )
-        self.validate_identity(
-            'SELECT event_id FROM "analytics"."uniqExactIf"(final = 1)'
-        )
-        self.validate_identity(
-            'SELECT event_id FROM "analytics"."sum"(final = 1)'
-        )
+        self.validate_identity('SELECT event_id FROM "analytics"."events_view"(final = 1)')
+        self.validate_identity('SELECT event_id FROM "analytics"."uniqExactIf"(final = 1)')
+        self.validate_identity('SELECT event_id FROM "analytics"."sum"(final = 1)')
         self.validate_identity("'a' IN mapKeys(map('a', 1, 'b', 2))")
         self.validate_identity("CAST((1, 2) AS Tuple(a Int8, b Int16))")
         self.validate_identity("SELECT * FROM foo LEFT ANY JOIN bla")

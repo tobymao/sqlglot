@@ -670,14 +670,28 @@ def _qualify_columns(
                 and position.is_int
             ):
                 # Preserve references whose source shape cannot be resolved losslessly.
+                scope_pivot = next(
+                    (pivot for pivot in scope.pivots if pivot.alias == column_table), None
+                )
+                if not scope_pivot:
+                    scope_pivot = next(
+                        (
+                            pivot
+                            for pivot in reversed(scope.pivots)
+                            if pivot.parent and pivot.parent.alias_or_name == column_table
+                        ),
+                        None,
+                    )
                 if (
                     pivots
-                    or scope.pivots
+                    or scope_pivot
                     or (isinstance(column_source, exp.Table) and column_source.alias_column_names)
                     or (isinstance(column_source, Scope) and column_source.outer_columns)
                     or not source_columns
                     or "*" in source_columns
                 ):
+                    if scope_pivot:
+                        column.set("table", exp.to_identifier(scope_pivot.alias))
                     continue
 
                 positional_columns = resolver.get_source_columns(column_table, only_visible=True)

@@ -1201,6 +1201,30 @@ class TestOptimizer(unittest.TestCase):
                 {},
             ),
             (
+                "aliasless PIVOT",
+                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT t.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS a))",
+                ("_0.$2 AS _COL_0",),
+                {},
+            ),
+            (
+                "chained aliasless PIVOT",
+                "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT t.$1 FROM t PIVOT(SUM(v) FOR k IN ('a' AS a)) "
+                "UNPIVOT(v2 FOR k2 IN (a))",
+                ("T.$1 AS _COL_0",),
+                {},
+            ),
+            (
+                "unrelated PIVOT",
+                "WITH t AS (SELECT 1 AS x), "
+                "s AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
+                "SELECT t.$1, p.$2 FROM t CROSS JOIN "
+                "s PIVOT(SUM(v) FOR k IN ('a' AS a)) AS p",
+                ("T.X AS X", "P.$2 AS _COL_1"),
+                {},
+            ),
+            (
                 "unknown source",
                 "SELECT t.$1 FROM source AS t",
                 ("T.$1 AS _COL_0",),

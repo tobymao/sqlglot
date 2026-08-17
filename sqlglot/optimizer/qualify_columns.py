@@ -641,6 +641,70 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
+def _qualify_positional_column(
+    scope: Scope,
+    resolver: Resolver,
+    column: exp.Column,
+    column_table: str,
+    column_source: exp.Expr | Scope,
+    source_columns: t.Sequence[str],
+    pivots: t.Sequence[exp.Pivot],
+    allow_partial_qualification: bool,
+) -> bool:
+    """Resolve a positional column, returning whether to skip further qualification."""
+    if (
+        not resolver.dialect.SUPPORTS_POSITIONAL_COLUMN_REFS
+        or not isinstance(column.this, exp.Parameter)
+        or not isinstance(position := column.this.this, exp.Literal)
+        or not position.is_int
+    ):
+        return False
+
+    # Pivots from unrelated sources may share this scope, so prefer an exact
+    # output-alias match. For an aliasless chain, fall back to the last operator
+    # on the referenced source.
+    scope_pivot = next((pivot for pivot in scope.pivots if pivot.alias == column_table), None)
+    if not scope_pivot:
+        scope_pivot = next(
+            (
+                pivot
+                for pivot in reversed(scope.pivots)
+                if pivot.parent and pivot.parent.alias_or_name == column_table
+            ),
+            None,
+        )
+    if (
+        pivots
+        or scope_pivot
+        or (isinstance(column_source, exp.Table) and column_source.alias_column_names)
+        or (isinstance(column_source, Scope) and column_source.outer_columns)
+        or not source_columns
+        or "*" in source_columns
+    ):
+        if scope_pivot:
+            column.set("table", exp.to_identifier(scope_pivot.alias))
+        return True
+
+    positional_columns = resolver.get_source_columns(column_table, only_visible=True)
+    position_value = int(position.to_py())
+    if not 1 <= position_value <= len(positional_columns):
+        if allow_partial_qualification:
+            return True
+        raise OptimizeError(
+            f"Positional reference ${position_value} is out of range for source '{column_table}'"
+        )
+
+    positional_name = positional_columns[position_value - 1]
+    if positional_columns.count(positional_name) > 1:
+        return True
+
+    positional_identifier = exp.to_identifier(positional_name)
+    resolver.dialect.quote_identifier(positional_identifier, identify=False)
+    column.set("this", positional_identifier)
+
+    return False
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -658,62 +722,23 @@ def _qualify_columns(
             pivots = (
                 column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
             )
-            if source_columns and pivots:
+            if pivots:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
                     source_columns = pivot.output_columns(source_columns)
 
-            if (
-                resolver.dialect.SUPPORTS_POSITIONAL_COLUMN_REFS
-                and isinstance(column.this, exp.Parameter)
-                and isinstance(position := column.this.this, exp.Literal)
-                and position.is_int
+            if _qualify_positional_column(
+                scope,
+                resolver,
+                column,
+                column_table,
+                column_source,
+                source_columns,
+                pivots,
+                allow_partial_qualification,
             ):
-                # Pivots from unrelated sources may share this scope, so prefer an exact
-                # output-alias match. For an aliasless chain, fall back to the last operator
-                # on the referenced source.
-                scope_pivot = next(
-                    (pivot for pivot in scope.pivots if pivot.alias == column_table), None
-                )
-                if not scope_pivot:
-                    scope_pivot = next(
-                        (
-                            pivot
-                            for pivot in reversed(scope.pivots)
-                            if pivot.parent and pivot.parent.alias_or_name == column_table
-                        ),
-                        None,
-                    )
-                if (
-                    pivots
-                    or scope_pivot
-                    or (isinstance(column_source, exp.Table) and column_source.alias_column_names)
-                    or (isinstance(column_source, Scope) and column_source.outer_columns)
-                    or not source_columns
-                    or "*" in source_columns
-                ):
-                    if scope_pivot:
-                        column.set("table", exp.to_identifier(scope_pivot.alias))
-                    continue
-
-                positional_columns = resolver.get_source_columns(column_table, only_visible=True)
-                position_value = int(position.to_py())
-                if not 1 <= position_value <= len(positional_columns):
-                    if allow_partial_qualification:
-                        continue
-                    raise OptimizeError(
-                        f"Positional reference ${position_value} is out of range for source '{column_table}'"
-                    )
-
-                positional_name = positional_columns[position_value - 1]
-                if positional_columns.count(positional_name) > 1:
-                    continue
-
-                positional_identifier = exp.to_identifier(positional_name)
-                resolver.dialect.quote_identifier(positional_identifier, identify=False)
-
-                column.set("this", positional_identifier)
-                column_name = column.name
+                continue
+            column_name = column.name
             if (
                 not allow_partial_qualification
                 and source_columns

@@ -7418,6 +7418,14 @@ RIGHT(tbl.str_col, tbl.int_col);
 TEXT;
 
 # dialect: postgres
+OVERLAY(tbl.str_col PLACING tbl.str_col FROM tbl.int_col FOR tbl.int_col);
+TEXT;
+
+# dialect: postgres
+REVERSE(tbl.str_col);
+TEXT;
+
+# dialect: postgres
 DECODE(tbl.str_col, 'base64');
 VARBINARY;
 

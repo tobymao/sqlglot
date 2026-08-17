@@ -21,6 +21,7 @@ EXPRESSION_METADATA = {
             exp.Overlay,
             exp.Reverse,
             exp.Pad,
+            exp.Format,
             exp.Hex,
             exp.SplitPart,
         }

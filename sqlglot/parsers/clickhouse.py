@@ -708,6 +708,9 @@ class ClickHouseParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
+        if self._curr and self._curr.token_type == TokenType.IDENTIFIER:
+            anonymous = True
+
         expr = super()._parse_function(
             functions=functions,
             anonymous=anonymous,
@@ -718,7 +721,11 @@ class ClickHouseParser(parser.Parser):
         func = expr.this if isinstance(expr, exp.Window) else expr
 
         # Aggregate functions can be split in 2 parts: <func_name><suffix[es]>
-        parts = self._resolve_clickhouse_agg(func.this) if isinstance(func, exp.Anonymous) else None
+        parts = (
+            self._resolve_clickhouse_agg(func.this)
+            if isinstance(func, exp.Anonymous) and isinstance(func.this, str)
+            else None
+        )
 
         if parts:
             anon_func: exp.Anonymous = t.cast(exp.Anonymous, func)

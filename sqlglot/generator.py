@@ -94,6 +94,14 @@ def _build_dispatch(
     return dispatch
 
 
+# Parent node types sharing `%`'s precedence tier (multiplicative ops and unary minus),
+# where a bare infix `a % b` would be misinterpreted by operator precedence/associativity
+# if not wrapped in parens once it's embedded in a larger expression, e.g.
+# `2 * MOD(8, 5)` -> `2 * 8 % 5` would wrongly evaluate as (2*8) % 5. Comparison/logical
+# parents (also exp.Binary) are excluded since `%` always binds tighter than those.
+MOD_NEEDS_PAREN = (exp.Mul, exp.Div, exp.Mod, exp.Neg)
+
+
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
@@ -4588,7 +4596,10 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        return self.binary(expression, "%")
+        sql = self.binary(expression, "%")
+        if not expression.same_parent and isinstance(expression.parent, MOD_NEEDS_PAREN):
+            sql = self.wrap(sql)
+        return sql
 
     def mul_sql(self, expression: exp.Mul) -> str:
         return self.binary(expression, "*")

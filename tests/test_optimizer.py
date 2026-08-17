@@ -1106,6 +1106,23 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
 
+    def test_qualify_columns_pivot_with_unknown_source(self):
+        self.assertEqual(
+            qualify(
+                parse_one("SELECT u.z FROM u PIVOT(SUM(f) FOR h IN ('x', 'y')) AS u"),
+                quote_identifiers=False,
+            ).sql(),
+            "SELECT u.z AS z FROM u AS u PIVOT(SUM(u.f) FOR u.h IN ('x', 'y')) AS u",
+        )
+
+    def test_qualify_columns_pivot_with_known_source(self):
+        with self.assertRaisesRegex(OptimizeError, "Unknown column: q"):
+            qualify(
+                parse_one("SELECT u.q FROM u PIVOT(SUM(f) FOR h IN ('x', 'y')) AS u"),
+                schema={"u": {"f": "INT", "h": "TEXT", "z": "INT"}},
+                quote_identifiers=False,
+            )
+
     def test_qualify_snowflake_positional_columns(self):
         expression = parse_one(
             """
@@ -1126,11 +1143,10 @@ class TestOptimizer(unittest.TestCase):
         )
 
         visible_schema = MappingSchema(
-            {"t": {"hidden": "INT", "shown": "INT"}},
-            visible={"T": {"SHOWN"}},
+            {"t": {"hidden": "INT", "HAS SPACE": "INT"}},
+            visible={"T": {"HAS SPACE"}},
             dialect="snowflake",
         )
-        unsafe_schema = MappingSchema({"t": {"HAS SPACE": "INT"}}, dialect="snowflake")
         cases = (
             (
                 'WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t',
@@ -1139,13 +1155,8 @@ class TestOptimizer(unittest.TestCase):
             ),
             (
                 "SELECT t.$1 FROM t",
-                "SELECT T.SHOWN AS SHOWN FROM T AS T",
-                {"schema": visible_schema},
-            ),
-            (
-                "SELECT t.$1 FROM t",
                 'SELECT T."HAS SPACE" AS "HAS SPACE" FROM T AS T',
-                {"schema": unsafe_schema},
+                {"schema": visible_schema},
             ),
         )
 
@@ -1164,63 +1175,63 @@ class TestOptimizer(unittest.TestCase):
     def test_qualify_snowflake_positional_columns_preserve_unresolved(self):
         cases = (
             (
+                "duplicate output name",
                 "WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS y) SELECT t.$2, t.$3 FROM t",
                 ("T.$2 AS _COL_0", "T.Y AS Y"),
+                {},
             ),
             (
+                "CTE column aliases",
                 'WITH t("lower") AS (SELECT 1) SELECT t.$1 FROM t',
                 ("T.$1 AS _COL_0",),
+                {},
             ),
             (
-                'SELECT t.$1 FROM (SELECT 1) AS t("lower")',
-                ("T.$1 AS _COL_0",),
-            ),
-            (
+                "UNPIVOT",
                 'WITH t AS (SELECT 1 AS "SELECT", 2 AS a, 3 AS b) '
                 "SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b))",
                 ("T.$1 AS _COL_0",),
+                {},
             ),
             (
+                "PIVOT",
                 "WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) "
                 "SELECT p.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS \"SELECT\")) AS p",
                 ("P.$2 AS _COL_0",),
+                {},
             ),
             (
-                "SELECT piv.$1 FROM (SELECT 1 AS id, 2 AS jan, 3 AS feb) "
-                "UNPIVOT(revenue FOR month IN (jan, feb)) AS piv",
-                ("PIV.$1 AS _COL_0",),
-            ),
-            (
+                "unknown source",
                 "SELECT t.$1 FROM source AS t",
                 ("T.$1 AS _COL_0",),
+                {},
             ),
             (
+                "star source",
                 "WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t",
                 ("T.$1 AS _COL_0",),
+                {},
+            ),
+            (
+                "table alias column list",
+                "SELECT t.$1 FROM source AS t(alias_name)",
+                ("T.$1 AS _COL_0",),
+                {"schema": {"source": {"x": "INT"}}},
             ),
         )
 
-        for sql, expected in cases:
-            with self.subTest(sql=sql):
+        for name, sql, expected, options in cases:
+            with self.subTest(name=name):
                 expression = qualify(
                     parse_one(sql, dialect="snowflake"),
                     dialect="snowflake",
                     quote_identifiers=False,
+                    **options,
                 )
                 self.assertEqual(
                     tuple(selection.sql("snowflake") for selection in expression.selects),
                     expected,
                 )
-        expression = qualify(
-            parse_one(
-                "SELECT t.$1 FROM source AS t(alias_name)",
-                dialect="snowflake",
-            ),
-            dialect="snowflake",
-            schema={"source": {"x": "INT"}},
-            quote_identifiers=False,
-        )
-        self.assertEqual(expression.selects[0].sql("snowflake"), "T.$1 AS _COL_0")
 
     def test_qualify_positional_columns_is_snowflake_only(self):
         expression = parse_one(

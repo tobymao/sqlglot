@@ -7410,6 +7410,10 @@ RPAD(tbl.str_col, 10, 'x');
 TEXT;
 
 # dialect: postgres
+TO_HEX(2147483647);
+TEXT;
+
+# dialect: postgres
 WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 

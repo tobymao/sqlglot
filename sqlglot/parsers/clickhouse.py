@@ -708,9 +708,6 @@ class ClickHouseParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        if self._curr and self._curr.token_type == TokenType.IDENTIFIER:
-            anonymous = True
-
         expr = super()._parse_function(
             functions=functions,
             anonymous=anonymous,

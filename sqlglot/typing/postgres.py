@@ -18,6 +18,7 @@ EXPRESSION_METADATA = {
             exp.Encode,
             exp.Left,
             exp.Overlay,
+            exp.Reverse,
         }
     },
     **{

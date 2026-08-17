@@ -7418,6 +7418,10 @@ SPLIT_PART(tbl.str_col, '~@~', 2);
 TEXT;
 
 # dialect: postgres
+NORMALIZE(tbl.str_col);
+TEXT;
+
+# dialect: postgres
 WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 

@@ -20,6 +20,7 @@ EXPRESSION_METADATA = {
             exp.Right,
             exp.Overlay,
             exp.Reverse,
+            exp.Pad,
         }
     },
     **{

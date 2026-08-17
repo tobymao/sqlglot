@@ -669,7 +669,9 @@ def _qualify_columns(
                 and isinstance(position := column.this.this, exp.Literal)
                 and position.is_int
             ):
-                # Preserve references whose source shape cannot be resolved losslessly.
+                # Pivots from unrelated sources may share this scope, so prefer an exact
+                # output-alias match. For an aliasless chain, fall back to the last operator
+                # on the referenced source.
                 scope_pivot = next(
                     (pivot for pivot in scope.pivots if pivot.alias == column_table), None
                 )

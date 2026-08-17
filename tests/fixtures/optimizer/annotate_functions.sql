@@ -7406,6 +7406,10 @@ LEFT(tbl.str_col, tbl.int_col);
 TEXT;
 
 # dialect: postgres
+RPAD(tbl.str_col, 10, 'x');
+TEXT;
+
+# dialect: postgres
 WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 

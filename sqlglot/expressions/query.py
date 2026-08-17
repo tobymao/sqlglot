@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import itertools
-
 import typing as t
 
 from sqlglot.errors import ParseError
 from sqlglot.helper import trait, ensure_list
 from sqlglot.expressions.core import (
-    Alias,
     Aliases,
     Column,
     Condition,
@@ -21,7 +18,6 @@ from sqlglot.expressions.core import (
     Hint,
     Identifier,
     In,
-    PivotAlias,
     _apply_builder,
     _apply_child_list_builder,
     _apply_list_builder,
@@ -1808,87 +1804,6 @@ class Pivot(Expression):
             pre_pivot_columns: Columns visible to the operator before it runs
                 (e.g. the source table or subquery's projections).
         """
-        return {
-            output.name: source for output, source in self._output_column_pairs(pre_pivot_columns)
-        }
-
-    def output_column_identifiers(
-        self, pre_pivot_columns: t.Iterable[str | Identifier]
-    ) -> list[Identifier]:
-        """Returns the ordered output identifiers without deduplicating them."""
-        return [identifier for identifier, _ in self._output_column_pairs(pre_pivot_columns)]
-
-    def _pivot_output_identifiers(self) -> list[Identifier]:
-        columns = [
-            to_identifier(column)
-            for column in self.args.get("columns") or []
-            if isinstance(column, Identifier)
-        ]
-        if not columns:
-            return []
-
-        field_identifiers = []
-        identify_pivot_strings = self.args.get("identify_pivot_strings")
-        for field in self.fields:
-            if not isinstance(field, In):
-                continue
-
-            identifiers = []
-            for value in field.expressions:
-                alias = value.args.get("alias") if isinstance(value, PivotAlias) else None
-                identifiers.append(
-                    to_identifier(
-                        alias
-                        if isinstance(alias, Identifier)
-                        else value.sql()
-                        if identify_pivot_strings
-                        else value.alias_or_name
-                    )
-                )
-            field_identifiers.append(identifiers)
-
-        aggregation_names = [
-            alias
-            for expression in self.expressions
-            if isinstance(expression, Alias)
-            and isinstance(alias := expression.args.get("alias"), Identifier)
-        ]
-        if aggregation_names:
-            field_identifiers.append(aggregation_names)
-
-        if not field_identifiers or any(not identifiers for identifiers in field_identifiers):
-            return columns
-
-        outputs = []
-        for product in itertools.product(*field_identifiers):
-            parts = list(product)
-            if aggregation_names and self.args.get("prefixed_pivot_columns"):
-                parts.insert(0, parts.pop())
-
-            outputs.append(
-                to_identifier(
-                    "_".join(part.name for part in parts),
-                    quoted=True if any(part.quoted for part in parts) else None,
-                )
-            )
-
-        if len(outputs) != len(columns):
-            return columns
-
-        identify_pivot_strings = self.args.get("identify_pivot_strings")
-        return [
-            output
-            if output.name == column.name
-            or output.quoted
-            and (not column.quoted or identify_pivot_strings)
-            else column
-            for output, column in zip(outputs, columns)
-        ]
-
-    def _output_column_pairs(
-        self, pre_pivot_columns: t.Iterable[str | Identifier]
-    ) -> list[tuple[Identifier, str]]:
-        pre_pivot_identifiers = [to_identifier(column) for column in pre_pivot_columns]
         if self.unpivot:
             excluded: set[str] = set()
             name_columns: list[Identifier] = []
@@ -1911,25 +1826,17 @@ class Pivot(Expression):
                 if self.args.get("value_columns_first")
                 else name_columns + value_columns
             )
-            outputs = [to_identifier(identifier) for identifier in ordered]
+            outputs = [i.name for i in ordered]
         else:
             excluded = {c.output_name for c in self.find_all(Column)}
-            outputs = self._pivot_output_identifiers()
+            outputs = [c.output_name for c in self.args.get("columns") or []]
             if not outputs:
-                for expression in self.expressions:
-                    alias = expression.args.get("alias") if isinstance(expression, Alias) else None
-                    outputs.append(
-                        to_identifier(
-                            alias if isinstance(alias, Identifier) else expression.alias_or_name
-                        )
-                    )
+                outputs = [c.alias_or_name for c in self.expressions]
 
         if not excluded or not outputs:
-            return []
+            return {}
 
-        pre_rename = [
-            column for column in pre_pivot_identifiers if column.name not in excluded
-        ] + outputs
+        pre_rename = [c for c in pre_pivot_columns if c not in excluded] + outputs
 
         alias = self.args.get("alias")
         renames = alias.args.get("columns") if alias else None
@@ -1938,11 +1845,12 @@ class Pivot(Expression):
         # positionally from the front (DuckDB, Snowflake): the user's names cover
         # the leading N output columns, remaining columns keep their auto names.
         if renames:
-            post_rename = [to_identifier(rename) for rename in renames] + pre_rename[len(renames) :]
+            rename_names = [r.name for r in renames]
+            post_rename = rename_names + pre_rename[len(rename_names) :]
         else:
             post_rename = pre_rename
 
-        return [(post, pre.name) for post, pre in zip(post_rename, pre_rename)]
+        return dict(zip(post_rename, pre_rename))
 
 
 class UnpivotColumns(Expression):

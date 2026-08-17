@@ -641,28 +641,6 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _resolve_pivot_source(
-    scope: Scope, table: str
-) -> tuple[str, exp.Table | Scope | None, list[exp.Pivot] | None]:
-    source = scope.sources.get(table)
-    if source is not None:
-        return table, source, None
-
-    # A chain's final alias may not be registered as a source, so resolve it through the
-    # shared parent only when attribution is unambiguous.
-    chain = scope.pivots
-    parent = (
-        chain[-1].parent
-        if chain and chain[0].parent is chain[-1].parent and chain[-1].alias == table
-        else None
-    )
-    if parent:
-        source_table = parent.alias_or_name
-        return source_table, scope.sources.get(source_table), chain
-
-    return table, None, None
-
-
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -673,18 +651,13 @@ def _qualify_columns(
         column_table = column.table
         column_name = column.name
 
-        source_table, column_source, pivots = (
-            _resolve_pivot_source(scope, column_table) if column_table else ("", None, None)
-        )
-        if column_source is not None:
-            source_columns: t.Collection[str] = resolver.get_source_columns(source_table)
+        if column_table and column_table in scope.sources:
+            column_source = scope.sources[column_table]
+            source_columns = resolver.get_source_columns(column_table)
             # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
-            if pivots is None:
-                pivots = (
-                    column_source.args.get("pivots", [])
-                    if isinstance(column_source, exp.Table)
-                    else []
-                )
+            pivots = (
+                column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
+            )
             if source_columns and pivots:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
@@ -695,34 +668,19 @@ def _qualify_columns(
                 and isinstance(column.this, exp.Parameter)
                 and isinstance(position := column.this.this, exp.Literal)
                 and position.is_int
-                and source_columns
-                and "*" not in source_columns
             ):
-                positional_identifiers = [
-                    exp.to_identifier(name)
-                    for name in resolver.get_source_columns(source_table, only_visible=True)
-                ]
-                metadata_source = (
-                    scope.cte_sources.get(column_source.name)
-                    if isinstance(column_source, exp.Table) and not column_source.db
-                    else column_source
-                )
-                source_expression = (
-                    metadata_source.expression if isinstance(metadata_source, Scope) else None
-                )
-                if isinstance(source_expression, exp.Query):
-                    for index, (identifier, selection) in enumerate(
-                        zip(positional_identifiers, source_expression.selects)
-                    ):
-                        source_identifier = _output_identifier(selection)
-                        if source_identifier and source_identifier.name == identifier.name:
-                            positional_identifiers[index] = source_identifier.copy()
+                # Preserve references whose source shape cannot be resolved losslessly.
+                if (
+                    pivots
+                    or scope.pivots
+                    or (isinstance(column_source, exp.Table) and column_source.alias_column_names)
+                    or (isinstance(column_source, Scope) and column_source.outer_columns)
+                    or not source_columns
+                    or "*" in source_columns
+                ):
+                    continue
 
-                for pivot in pivots:
-                    positional_identifiers = pivot.output_column_identifiers(positional_identifiers)
-
-                positional_columns = [identifier.name for identifier in positional_identifiers]
-
+                positional_columns = resolver.get_source_columns(column_table, only_visible=True)
                 position_value = int(position.to_py())
                 if not 1 <= position_value <= len(positional_columns):
                     if allow_partial_qualification:
@@ -732,15 +690,11 @@ def _qualify_columns(
                     )
 
                 positional_name = positional_columns[position_value - 1]
-                # Keep the positional reference when its output name is duplicated, since a
-                # named reference would be ambiguous.
                 if positional_columns.count(positional_name) > 1:
                     continue
 
-                positional_identifier = positional_identifiers[position_value - 1].copy()
-
-                if not positional_identifier.quoted:
-                    resolver.dialect.quote_identifier(positional_identifier, identify=False)
+                positional_identifier = exp.to_identifier(positional_name)
+                resolver.dialect.quote_identifier(positional_identifier, identify=False)
 
                 column.set("this", positional_identifier)
                 column_name = column.name
@@ -999,9 +953,27 @@ def _expand_stars(
             continue
 
         for table in tables:
-            source_table, source, pivots = _resolve_pivot_source(scope, table)
+            source = scope.sources.get(table)
+            pivots: list[exp.Pivot] | None = None
+            source_table = table
+
             if source is None:
-                raise OptimizeError(f"Unknown table: {table}")
+                # The chain's final alias names the resulting source, but only the underlying
+                # source is registered in `scope.sources`, so resolve through the chain's parent.
+                # Attribution is only unambiguous for a single chain (all pivots share a parent)
+                chain = scope.pivots
+                parent = (
+                    chain[-1].parent
+                    if chain and chain[0].parent is chain[-1].parent and chain[-1].alias == table
+                    else None
+                )
+                if parent:
+                    pivots = chain
+                    source_table = parent.alias_or_name
+                    source = scope.sources.get(source_table)
+
+                if source is None:
+                    raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns
@@ -1100,7 +1072,8 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:
+def _output_identifier_quoted(selection: exp.Expr) -> bool:
+    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
     if isinstance(selection, exp.Alias):
         identifier = selection.args.get("alias")
     elif isinstance(selection, exp.Column):
@@ -1108,13 +1081,7 @@ def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:
     else:
         identifier = None
 
-    return identifier if isinstance(identifier, exp.Identifier) else None
-
-
-def _output_identifier_quoted(selection: exp.Expr) -> bool:
-    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
-    identifier = _output_identifier(selection)
-    return bool(identifier and identifier.quoted)
+    return isinstance(identifier, exp.Identifier) and identifier.quoted
 
 
 def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
@@ -1199,9 +1166,6 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
 
     if not isinstance(expression, exp.Selectable):
         return
-    parent = expression.parent
-    parent_alias = parent.args.get("alias") if isinstance(parent, exp.DerivedTable) else None
-    outer_column_identifiers = parent_alias.args.get("columns", []) if parent_alias else []
 
     new_selections = []
 
@@ -1240,14 +1204,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             else:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
-            selection.set(
-                "alias",
-                exp.to_identifier(
-                    outer_column_identifiers[i]
-                    if i < len(outer_column_identifiers)
-                    else aliased_column
-                ),
-            )
+            selection.set("alias", exp.to_identifier(aliased_column))
 
         new_selections.append(selection)
 
@@ -1278,14 +1235,12 @@ def pushdown_cte_alias_columns(scope: Scope) -> None:
         scope: Scope to find ctes to pushdown aliases.
     """
     for cte in scope.ctes:
-        table_alias = cte.args.get("alias")
-        alias_columns = table_alias.args.get("columns") if table_alias else None
-        if alias_columns and isinstance(cte.this, exp.Select):
+        if cte.alias_column_names and isinstance(cte.this, exp.Select):
             new_expressions = []
-            for alias_identifier, projection in zip(alias_columns, cte.this.expressions):
+            for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", alias_identifier.copy())
+                    projection.set("alias", exp.to_identifier(_alias))
                 else:
-                    projection = alias(projection, alias=alias_identifier)
+                    projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)
             cte.this.set("expressions", new_expressions)

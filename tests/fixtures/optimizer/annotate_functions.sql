@@ -7426,6 +7426,10 @@ WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 
 # dialect: postgres
+DATE_BIN(tbl.date_col, tbl.date_col);
+TIMESTAMP;
+
+# dialect: postgres
 FORMAT('Hello %s, %1$s', 'World');
 TEXT;
 

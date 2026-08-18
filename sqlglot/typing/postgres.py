@@ -33,4 +33,10 @@ EXPRESSION_METADATA = {
             exp.Decode,
         }
     },
+    **{
+    expr_type: {"returns": exp.DType.TIMESTAMP}
+    for expr_type in {
+        exp.DateBin,
+    }
+},
 }

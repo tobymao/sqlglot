@@ -33,4 +33,5 @@ EXPRESSION_METADATA = {
             exp.Decode,
         }
     },
+    exp.ToNumber: {"returns": exp.DType.DECIMAL},
 }

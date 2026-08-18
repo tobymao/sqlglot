@@ -673,20 +673,28 @@ def _qualify_positional_column(
             ),
             None,
         )
-    if (
-        pivots
-        or scope_pivot
-        or (isinstance(column_source, exp.Table) and column_source.alias_column_names)
-        or (isinstance(column_source, Scope) and column_source.outer_columns)
-        or not source_columns
-        or "*" in source_columns
-    ):
+    if pivots or scope_pivot or not source_columns or "*" in source_columns:
         if scope_pivot:
             column.set("table", exp.to_identifier(scope_pivot.alias))
         return True
 
-    positional_columns = resolver.get_source_columns(column_table, only_visible=True)
     position_value = int(position.to_py())
+    if isinstance(column_source, exp.Table):
+        alias_columns = column_source.alias_column_names
+        source_columns_without_aliases = resolver.schema.column_names(
+            column_source, only_visible=True
+        )
+        source_columns_incomplete = (
+            not source_columns_without_aliases or "*" in source_columns_without_aliases
+        )
+    else:
+        alias_columns = []
+        source_columns_incomplete = False
+
+    if alias_columns and position_value > len(alias_columns) and source_columns_incomplete:
+        return True
+
+    positional_columns = resolver.get_source_columns(column_table, only_visible=True)
     if not 1 <= position_value <= len(positional_columns):
         if allow_partial_qualification:
             return True
@@ -1278,9 +1286,9 @@ def pushdown_cte_alias_columns(scope: Scope) -> None:
     for cte in scope.ctes:
         if cte.alias_column_names and isinstance(cte.this, exp.Select):
             new_expressions = []
-            for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
+            for _alias, projection in zip(cte.args["alias"].columns, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", exp.to_identifier(_alias))
+                    projection.set("alias", _alias.copy())
                 else:
                     projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)

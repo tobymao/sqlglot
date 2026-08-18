@@ -7426,6 +7426,10 @@ WIDTH_BUCKET(5, 1, 10, 5);
 INT;
 
 # dialect: postgres
+BIT_AND(tbl.int_col);
+INT;
+
+# dialect: postgres
 TO_NUMBER('123.45', '999.99');
 NUMERIC;
 

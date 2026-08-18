@@ -438,11 +438,6 @@ class SetOperation(Step):
         step.add_dependency(left)
         step.add_dependency(right)
 
-        limit: exp.Limit | None = expression.args.get("limit")
-
-        if limit is not None:
-            step.limit = int(limit.text("expression"))
-
         return step
 
     def _to_s(self, indent: str) -> list[str]:

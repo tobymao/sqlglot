@@ -426,6 +426,22 @@ class TestExecutor(unittest.TestCase):
             [(2,)],
         )
 
+    def test_set_operation_order_by(self):
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": 3}, {"a": 1}], "y": [{"b": 1}, {"b": 2}]}
+
+        for sql, expected in (
+            ("SELECT a FROM x UNION ALL SELECT b FROM y ORDER BY a", [(1,), (1,), (2,), (3,)]),
+            ("SELECT a FROM x UNION SELECT b FROM y ORDER BY a", [(1,), (2,), (3,)]),
+            ("SELECT a FROM x UNION ALL SELECT b FROM y ORDER BY a DESC", [(3,), (2,), (1,), (1,)]),
+            ("SELECT a FROM x UNION ALL SELECT b FROM y ORDER BY a LIMIT 2", [(1,), (1,)]),
+            ("SELECT a FROM x UNION ALL (SELECT b FROM y LIMIT 1) ORDER BY a", [(1,), (1,), (3,)]),
+            ("SELECT a FROM x EXCEPT SELECT b FROM y ORDER BY a", [(3,)]),
+            ("SELECT a FROM x INTERSECT SELECT b FROM y ORDER BY a", [(1,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
     def test_outer_joins_preserve_unmatched_rows(self):
         tables = {
             "x": [{"id": 1}, {"id": 2}],

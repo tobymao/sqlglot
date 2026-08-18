@@ -501,10 +501,12 @@ class PythonExecutor:
         if not math.isinf(step.limit):
             sort_ctx.table.rows = sort_ctx.table.rows[0 : step.limit]
 
-        output = Table(
-            projection_columns,
-            rows=[r[len(context.columns) : len(all_columns)] for r in sort_ctx.table.rows],
-        )
+        rows = sort_ctx.table.rows
+
+        if projection_columns:
+            rows = [row[len(context.columns) : len(all_columns)] for row in rows]
+
+        output = Table(projection_columns or context.columns, rows=rows)
         return self.context({step.name: output})
 
     def set_operation(self, step, context):

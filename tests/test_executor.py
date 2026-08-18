@@ -442,6 +442,29 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
 
+    def test_offset(self):
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": a} for a in (3, 1, 5, 2, 4)], "y": [{"b": 7}, {"b": 6}]}
+
+        for sql, expected in (
+            ("SELECT a FROM x OFFSET 2", [(5,), (2,), (4,)]),
+            ("SELECT a FROM x LIMIT 2 OFFSET 1", [(1,), (5,)]),
+            ("SELECT a FROM x ORDER BY a OFFSET 2", [(3,), (4,), (5,)]),
+            ("SELECT a FROM x ORDER BY a LIMIT 2 OFFSET 1", [(2,), (3,)]),
+            ("SELECT a FROM x ORDER BY a LIMIT 2 OFFSET 10", []),
+            ("SELECT a FROM x WHERE a > 1 ORDER BY a LIMIT 2 OFFSET 1", [(3,), (4,)]),
+            (
+                "SELECT a, COUNT(*) AS c FROM x GROUP BY a ORDER BY a LIMIT 2 OFFSET 2",
+                [(3, 1), (4, 1)],
+            ),
+            (
+                "SELECT a FROM x UNION ALL SELECT b FROM y ORDER BY a LIMIT 3 OFFSET 2",
+                [(3,), (4,), (5,)],
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
     def test_outer_joins_preserve_unmatched_rows(self):
         tables = {
             "x": [{"id": 1}, {"id": 2}],

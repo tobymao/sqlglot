@@ -1208,6 +1208,57 @@ class TestOptimizer(unittest.TestCase):
         error_msg = str(ctx.exception)
         self.assertIn("Column 'a' could not be resolved", error_msg)
 
+    def test_qualify_columns_preserves_schema_blind_correlated_struct_star(self):
+        expression = optimizer.qualify.qualify(
+            parse_one(
+                "SELECT * REPLACE((SELECT AS STRUCT payload.* EXCEPT (x)) AS payload) "
+                "FROM my_table AS t",
+                read="bigquery",
+            ),
+            schema={},
+            dialect="bigquery",
+        )
+
+        self.assertEqual(
+            expression.sql(dialect="bigquery"),
+            "SELECT * REPLACE ((SELECT AS STRUCT `payload`.* EXCEPT (`x`)) AS `payload`) "
+            "FROM `my_table` AS `t`",
+        )
+
+    def test_qualify_columns_rejects_invisible_correlated_stars(self):
+        cases = [
+            ("SELECT (SELECT z.*) FROM x", {}),
+            ("SELECT (SELECT AS STRUCT a.*) FROM x", {"x": {"a": "INT64"}}),
+            ("SELECT (SELECT AS STRUCT payload.*) FROM x JOIN y ON TRUE", {}),
+            (
+                "WITH base AS (SELECT 1 AS a) SELECT (WITH q AS (SELECT t.*) "
+                "SELECT AS STRUCT * FROM q) AS s FROM base AS t",
+                {},
+            ),
+            (
+                "WITH base AS (SELECT 1 AS a) SELECT "
+                "(SELECT AS STRUCT * FROM (SELECT t.*) AS q) AS s FROM base AS t",
+                {},
+            ),
+            (
+                "SELECT 1 FROM x JOIN y ON (SELECT AS STRUCT z.*) IS NOT NULL JOIN z ON TRUE",
+                {"x": {"a": "INT64"}, "y": {"b": "INT64"}, "z": {"c": "INT64"}},
+            ),
+            (
+                "SELECT 1 FROM x JOIN y ON "
+                "(SELECT AS STRUCT (SELECT AS STRUCT z.*)) IS NOT NULL JOIN z ON TRUE",
+                {"x": {"a": "INT64"}, "y": {"b": "INT64"}, "z": {"c": "INT64"}},
+            ),
+        ]
+
+        for sql, schema in cases:
+            with self.subTest(sql), self.assertRaisesRegex(OptimizeError, "Unknown table"):
+                optimizer.qualify.qualify(
+                    parse_one(sql, read="bigquery"),
+                    schema=schema,
+                    dialect="bigquery",
+                )
+
     def test_optimize_error_highlighting(self):
         # highlighting works with sql parameter
         sql = "SELECT nonexistent FROM x"

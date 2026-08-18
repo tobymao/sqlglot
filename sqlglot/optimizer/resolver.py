@@ -220,6 +220,53 @@ class Resolver:
 
         return self._get_source_columns_cache[cache_key]
 
+    def get_source_name_for_star(
+        self,
+        name: str,
+        join_context: exp.Join | None = None,
+        allow_unknown: bool = False,
+    ) -> str | None:
+        """Resolve a source alias or struct column name in the given join context."""
+        source_columns = (
+            self._get_available_source_columns(join_context)
+            if join_context
+            else self._get_all_source_columns()
+        )
+
+        if name in source_columns:
+            return name
+
+        source_name = self._get_table_name_from_sources(name, source_columns)
+        if not source_name and allow_unknown:
+            sources_without_schema = tuple(
+                source
+                for source, columns in source_columns.items()
+                if not columns or "*" in columns
+            )
+            if len(sources_without_schema) == 1:
+                return sources_without_schema[0]
+
+        source = self.scope.sources.get(source_name or "")
+        if not source_name or not source:
+            return None
+
+        if isinstance(source, Scope) and isinstance(source.expression, exp.Query):
+            selection = None
+            for output_name, source_selection in zip(
+                self.get_source_columns(source_name), source.expression.selects
+            ):
+                if output_name == name:
+                    if selection:
+                        return None
+                    selection = source_selection
+
+            column_type = selection.type if selection else None
+        else:
+            column_type = self._get_column_type_from_scope(
+                source, exp.column(name, table=source_name)
+            )
+        return source_name if column_type and column_type.is_type(exp.DType.STRUCT) else None
+
     def _get_all_source_columns(self) -> dict[str, Sequence[str]]:
         if self._source_columns is None:
             self._source_columns = {

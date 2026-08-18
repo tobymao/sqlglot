@@ -941,6 +941,32 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> list[exp.Alias]:
     return new_selections
 
 
+def _is_outer_star_reference(scope: Scope, table: str, resolver: Resolver) -> bool:
+    outer_scope = scope
+    allow_unknown = (
+        isinstance(scope.expression, exp.Select) and scope.expression.args.get("kind") == "STRUCT"
+    )
+
+    while outer_scope.can_be_correlated and (outer_scope.is_subquery or outer_scope.is_union):
+        parent = outer_scope.expression.parent
+        ancestor = parent.find_ancestor(exp.Join, exp.Select) if parent else None
+        join_context = ancestor if isinstance(ancestor, exp.Join) else None
+        outer_scope = t.cast(Scope, outer_scope.parent)
+        outer_resolver = Resolver(outer_scope, resolver.schema, infer_schema=False)
+        visible_join = (
+            join_context
+            if join_context and join_context.find_ancestor(exp.Select) is outer_scope.expression
+            else None
+        )
+
+        if outer_resolver.get_source_name_for_star(
+            table, visible_join, allow_unknown=allow_unknown
+        ):
+            return True
+
+    return False
+
+
 def _expand_stars(
     scope: Scope,
     resolver: Resolver,
@@ -972,6 +998,7 @@ def _expand_stars(
         return
 
     for expression in scope_expression.selects:
+        preserve_expression = False
         tables: list[str] = []
         if isinstance(expression, exp.Star):
             # Only a string literal ILIKE pattern can filter the expansion at optimization time
@@ -1037,6 +1064,13 @@ def _expand_stars(
                     source = scope.sources.get(source_table)
 
                 if source is None:
+                    if dialect.SUPPORTS_CORRELATED_STAR and _is_outer_star_reference(
+                        scope, table, resolver
+                    ):
+                        new_selections.append(expression)
+                        preserve_expression = True
+                        break
+
                     raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(source_table, only_visible=True)
@@ -1126,6 +1160,9 @@ def _expand_stars(
                         if alias_ != name
                         else selection_expr
                     )
+
+        if preserve_expression:
+            continue
 
         if annotated_ahead:
             # The star projection was replaced by the expansions above

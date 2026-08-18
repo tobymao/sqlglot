@@ -507,6 +507,36 @@ SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b 
 SELECT (SELECT n.a FROM n WHERE n.id = m.id) FROM m AS m;
 SELECT (SELECT n.a AS a FROM n AS n WHERE n.id = m.id) AS _col_0 FROM m AS m;
 
+# dialect: bigquery
+# execute: false
+# title: Preserve a correlated outer table star
+SELECT (SELECT AS STRUCT x.* EXCEPT (a)) AS s FROM x;
+SELECT (SELECT AS STRUCT x.* EXCEPT (a)) AS s FROM x AS x;
+
+# dialect: bigquery
+# execute: false
+# title: Preserve a correlated outer struct star
+SELECT (SELECT AS STRUCT one.* EXCEPT (a_1)) AS s FROM structs;
+SELECT (SELECT AS STRUCT one.* EXCEPT (a_1)) AS s FROM structs AS structs;
+
+# dialect: bigquery
+# execute: false
+# title: Preserve a correlated outer table star in a join
+SELECT 1 FROM x JOIN y ON (SELECT AS STRUCT x.* EXCEPT (a)) IS NOT NULL;
+SELECT 1 AS `1` FROM x AS x JOIN y AS y ON NOT (SELECT AS STRUCT x.* EXCEPT (a)) IS NULL;
+
+# dialect: bigquery
+# execute: false
+# title: Preserve a nested correlated outer table star in a join
+SELECT 1 FROM x JOIN y ON (SELECT AS STRUCT (SELECT AS STRUCT x.* EXCEPT (a))) IS NOT NULL;
+SELECT 1 AS `1` FROM x AS x JOIN y AS y ON NOT (SELECT AS STRUCT (SELECT AS STRUCT x.* EXCEPT (a)) AS _col_0) IS NULL;
+
+# dialect: bigquery
+# execute: false
+# title: Preserve a correlated projected struct star
+WITH t AS (SELECT STRUCT(1 AS a) AS s) SELECT (SELECT AS STRUCT s.*) FROM t;
+WITH t AS (SELECT STRUCT(1 AS a) AS s) SELECT (SELECT AS STRUCT s.*) AS _col_0 FROM t AS t;
+
 # title: correlated aggregate resolves to local source without schema
 # execute: false
 SELECT id FROM t WHERE id > (SELECT AVG(id) FROM u WHERE u.name = t.name);

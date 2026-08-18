@@ -34,9 +34,9 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-    expr_type: {"returns": exp.DType.TIMESTAMP}
-    for expr_type in {
-        exp.DateBin,
-    }
-},
+        expr_type: {"returns": exp.DType.TIMESTAMP}
+        for expr_type in {
+            exp.DateBin,
+        }
+    },
 }

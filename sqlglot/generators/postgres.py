@@ -189,7 +189,19 @@ def _json_extract_sql(
         if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not ensure_list(
             expression.args.get("expressions")
         ):
-            return self.binary(expression, op)
+            # Parenthesise the right operand when it is a Binary expression
+            # that is not itself a JSON extract, so that operators like ||
+            # do not regroup on output (#8211).
+            needs_paren = (
+                isinstance(path, exp.Binary)
+                and not isinstance(path, (exp.JSONExtract, exp.JSONExtractScalar, exp.JSONBExtract, exp.JSONBExtractScalar))
+            )
+            if needs_paren:
+                expression.set("expression", exp.Paren(this=path))
+            sql = self.binary(expression, op)
+            if needs_paren:
+                expression.set("expression", path)
+            return sql
 
         if expression.args.get("only_json_types"):
             return json_extract_segments(name, quoted_index=False, op=op)(self, expression)

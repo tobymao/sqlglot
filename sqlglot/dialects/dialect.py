@@ -1267,7 +1267,21 @@ def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> st
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, exp.DType.JSON))
 
-    return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
+    expr = expression.expression
+    # Parenthesise the right operand when it is a Binary expression that
+    # is not itself a JSON extract (i.e. not a chained -> chain).  Without
+    # this, operators like || bind differently on output than they did on
+    # input, breaking parse -> generate -> parse stability (#8211).
+    needs_paren = (
+        isinstance(expr, exp.Binary)
+        and not isinstance(expr, (exp.JSONExtract, exp.JSONExtractScalar, exp.JSONBExtract, exp.JSONBExtractScalar))
+    )
+    if needs_paren:
+        expression.set("expression", exp.Paren(this=expr))
+    sql = self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
+    if needs_paren:
+        expression.set("expression", expr)
+    return sql
 
 
 def inline_array_sql(self: Generator, expression: exp.Expr) -> str:

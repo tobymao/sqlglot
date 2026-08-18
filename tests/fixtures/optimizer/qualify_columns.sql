@@ -1259,6 +1259,12 @@ WITH T AS (SELECT PARSE_JSON('{"id": 1}') AS DATA, 'file' AS FILEPATH) SELECT CA
 WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t;
 WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T;
 
+# title: preserve explicit quotes when resolving Snowflake positional references
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS "SELECT") SELECT t.$1 FROM t;
+WITH T AS (SELECT 1 AS "SELECT") SELECT T."SELECT" AS "SELECT" FROM T AS T;
+
 # title: preserve ambiguous Snowflake positional reference and resolve unique one
 # execute: false
 # dialect: snowflake

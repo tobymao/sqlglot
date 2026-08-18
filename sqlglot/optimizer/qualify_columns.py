@@ -706,8 +706,23 @@ def _qualify_positional_column(
     if positional_columns.count(positional_name) > 1:
         return True
 
-    positional_identifier = exp.to_identifier(positional_name)
-    resolver.dialect.quote_identifier(positional_identifier, identify=False)
+    if isinstance(column_source, Scope):
+        source_expression = column_source.expression
+        if not isinstance(source_expression, exp.Query):
+            return True
+
+        source_selects = source_expression.selects
+        selection = (
+            source_selects[position_value - 1] if position_value <= len(source_selects) else None
+        )
+        source_identifier = _output_identifier(selection)
+        if not source_identifier or source_identifier.name != positional_name:
+            return True
+
+        positional_identifier = source_identifier.copy()
+    else:
+        positional_identifier = exp.to_identifier(positional_name)
+        resolver.dialect.quote_identifier(positional_identifier, identify=False)
     column.set("this", positional_identifier)
 
     return False
@@ -1045,7 +1060,11 @@ def _expand_stars(
             # so the generated alias isn't folded by dialect normalization
             source_expression = source.expression if isinstance(source, Scope) else None
             quoted_columns = (
-                {s.output_name for s in source_expression.selects if _output_identifier_quoted(s)}
+                {
+                    s.output_name
+                    for s in source_expression.selects
+                    if _is_output_identifier_quoted(s)
+                }
                 if isinstance(source_expression, exp.Query)
                 else set()
             )
@@ -1121,8 +1140,7 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _output_identifier_quoted(selection: exp.Expr) -> bool:
-    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:
     if isinstance(selection, exp.Alias):
         identifier = selection.args.get("alias")
     elif isinstance(selection, exp.Column):
@@ -1130,7 +1148,13 @@ def _output_identifier_quoted(selection: exp.Expr) -> bool:
     else:
         identifier = None
 
-    return isinstance(identifier, exp.Identifier) and identifier.quoted
+    return identifier if isinstance(identifier, exp.Identifier) else None
+
+
+def _is_output_identifier_quoted(selection: exp.Expr) -> bool:
+    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+    identifier = _output_identifier(selection)
+    return bool(identifier and identifier.quoted)
 
 
 def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:

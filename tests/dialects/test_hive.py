@@ -1029,6 +1029,8 @@ class TestHive(Validator):
         self.validate_identity("""SELECT PARSE_JSON('{"key": 123}')""")
         self.validate_identity("""SELECT TO_JSON(PARSE_JSON('{"key": 123}'))""")
 
+        self.validate_identity("""SELECT GET_JSON_OBJECT(x, '$[\\'quo\\\\\\'te\\']')""")
+
     def test_escapes(self) -> None:
         self.validate_identity("'\n'", "'\\n'")
         self.validate_identity("'\\n'")

@@ -66,6 +66,10 @@ class PythonExecutor:
                 else:
                     raise NotImplementedError
 
+                if node.offset:
+                    table = contexts[node].tables[node.name]
+                    table.rows = table.rows[node.offset :]
+
                 finished.add(node)
 
                 for dep in node.dependents:
@@ -247,7 +251,7 @@ class PythonExecutor:
         projections = self.generate_tuple(step.projections)
 
         for reader in table_iter:
-            if len(sink) >= step.limit:
+            if len(sink) >= step.offset + step.limit:
                 break
 
             if condition and not context.eval(condition):
@@ -467,7 +471,7 @@ class PythonExecutor:
                     add_row()
                     group = key
                     start = end - 2
-                if len(table.rows) >= step.limit:
+                if not step.condition and len(table.rows) >= step.offset + step.limit:
                     break
                 if i == length - 1:
                     context.set_range(start, end - 1)
@@ -499,7 +503,7 @@ class PythonExecutor:
         sort_ctx.sort(self.generate_tuple(step.key))
 
         if not math.isinf(step.limit):
-            sort_ctx.table.rows = sort_ctx.table.rows[0 : step.limit]
+            sort_ctx.table.rows = sort_ctx.table.rows[0 : step.offset + step.limit]
 
         rows = sort_ctx.table.rows
 
@@ -539,7 +543,7 @@ class PythonExecutor:
             sink.rows = left.rows + right.rows
 
         if not math.isinf(step.limit):
-            sink.rows = sink.rows[0 : step.limit]
+            sink.rows = sink.rows[0 : step.offset + step.limit]
 
         return self.context({step.name: sink})
 

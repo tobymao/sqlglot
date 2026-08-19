@@ -2,6 +2,7 @@ import ast
 import csv
 import datetime
 import unittest
+from collections import Counter
 from datetime import date, time
 from concurrent.futures import ProcessPoolExecutor
 
@@ -441,6 +442,75 @@ class TestExecutor(unittest.TestCase):
         ):
             with self.subTest(sql):
                 self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
+    def test_offset_order_by(self):
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": a} for a in (3, 1, 5, 2, 4)], "y": [{"b": 7}, {"b": 6}]}
+
+        for sql, expected in (
+            ("SELECT a FROM x ORDER BY a OFFSET 2", [(3,), (4,), (5,)]),
+            ("SELECT a FROM x ORDER BY a LIMIT 2 OFFSET 1", [(2,), (3,)]),
+            ("SELECT a FROM x ORDER BY a LIMIT 2 OFFSET 10", []),
+            ("SELECT a FROM x WHERE a > 1 ORDER BY a LIMIT 2 OFFSET 1", [(3,), (4,)]),
+            (
+                "SELECT a, COUNT(*) AS c FROM x GROUP BY a ORDER BY a LIMIT 2 OFFSET 2",
+                [(3, 1), (4, 1)],
+            ),
+            (
+                "SELECT a FROM x UNION ALL SELECT b FROM y ORDER BY a LIMIT 3 OFFSET 2",
+                [(3,), (4,), (5,)],
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
+    def test_offset_no_order_by(self):
+        x_values = (3, 1, 5, 2, 4)
+        y_values = (7, 6)
+        g_values = (1, 2, 2, 3, 4, 4, 5, 5)
+
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}, "g": {"v": "int"}}
+        tables = {
+            "x": [{"a": a} for a in x_values],
+            "y": [{"b": b} for b in y_values],
+            "g": [{"v": v} for v in g_values],
+        }
+
+        rows_x = {(a,) for a in x_values}
+        rows_union = rows_x | {(b,) for b in y_values}
+        groups = set(Counter(g_values).items())
+        groups_having_count = {group for group in groups if group[1] > 1}
+        groups_having_key = {group for group in groups if group[0] > 2}
+
+        # Row order is unspecified without ORDER BY, so assert cardinality and membership.
+        for sql, count, allowed in (
+            ("SELECT a FROM x OFFSET 2", 3, rows_x),
+            ("SELECT a FROM x LIMIT 2 OFFSET 1", 2, rows_x),
+            ("SELECT v, COUNT(*) AS c FROM g GROUP BY v LIMIT 2 OFFSET 1", 2, groups),
+            ("SELECT v, COUNT(*) AS c FROM g GROUP BY v OFFSET 3", 2, groups),
+            (
+                "SELECT v, COUNT(*) AS c FROM g GROUP BY v HAVING COUNT(*) > 1 LIMIT 2",
+                2,
+                groups_having_count,
+            ),
+            (
+                "SELECT v, COUNT(*) AS c FROM g GROUP BY v HAVING COUNT(*) > 1 LIMIT 2 OFFSET 1",
+                2,
+                groups_having_count,
+            ),
+            (
+                "SELECT v, COUNT(*) AS c FROM g GROUP BY v HAVING v > 2 LIMIT 2 OFFSET 1",
+                2,
+                groups_having_key,
+            ),
+            ("SELECT a FROM x UNION ALL SELECT b FROM y LIMIT 3 OFFSET 2", 3, rows_union),
+            ("SELECT a FROM x UNION ALL SELECT b FROM y OFFSET 2", 5, rows_union),
+            ("SELECT COUNT(*) AS c FROM x LIMIT 1 OFFSET 1", 0, {(5,)}),
+        ):
+            with self.subTest(sql):
+                rows = execute(sql, schema, tables=tables).rows
+                self.assertEqual(len(rows), count)
+                self.assertLessEqual(set(rows), allowed)
 
     def test_outer_joins_preserve_unmatched_rows(self):
         tables = {

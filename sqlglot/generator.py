@@ -102,6 +102,37 @@ def _build_dispatch(
 MOD_NEEDS_PAREN = (exp.Mul, exp.Div, exp.Mod, exp.Neg)
 
 
+def mod_needs_paren(expression: exp.Mod) -> bool:
+    parent = expression.parent
+
+    if not isinstance(parent, MOD_NEEDS_PAREN):
+        return False
+
+    # `%` is non-associative, so a nested Mod only renders safely without parens
+    # when it's the *left* operand of a Mod parent, e.g. `MOD(a, b) % c` -> `a % b % c`
+    # (both mean (a % b) % c). As the *right* operand, e.g. `c % MOD(a, b)`, omitting
+    # parens would flatten to `c % a % b`, silently changing it to (c % a) % b.
+    if isinstance(parent, exp.Mod) and expression is parent.this:
+        return False
+
+    return True
+
+
+def mod_operator_sql(self: Generator, expression: exp.Mod, op: str) -> str:
+    # Rendered via plain recursion, not self.binary()'s chain-flattening helper: binary()
+    # inlines same-class (Mod) children directly without calling their own mod_sql, which
+    # would skip mod_needs_paren's per-node, position-aware check on any nested Mod. Plain
+    # recursion lets every nested Mod node decide for itself (via its own parent/position)
+    # whether it needs wrapping, which is correct at any nesting depth.
+    op_sql = self.maybe_comment(op, comments=expression.comments)
+    sql = f"{self.sql(expression, 'this')} {op_sql} {self.sql(expression, 'expression')}"
+
+    if mod_needs_paren(expression):
+        sql = self.wrap(sql)
+
+    return sql
+
+
 class Generator:
     """
     Generator converts a given syntax tree to the corresponding SQL string.
@@ -4596,10 +4627,7 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        sql = self.binary(expression, "%")
-        if not expression.same_parent and isinstance(expression.parent, MOD_NEEDS_PAREN):
-            sql = self.wrap(sql)
-        return sql
+        return mod_operator_sql(self, expression, "%")
 
     def mul_sql(self, expression: exp.Mul) -> str:
         return self.binary(expression, "*")

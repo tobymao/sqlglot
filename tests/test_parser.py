@@ -9,6 +9,15 @@ from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
+    def test_mod_precedence(self):
+        division = parse_one("SELECT 10 % 3 / 2", read="redshift").selects[0]
+        self.assertIsInstance(division, exp.Div)
+        self.assertIsInstance(division.this, exp.Mod)
+
+        multiplication = parse_one("SELECT a % b * c FROM x", read="snowflake").selects[0]
+        self.assertIsInstance(multiplication, exp.Mul)
+        self.assertIsInstance(multiplication.this, exp.Mod)
+
     def test_parse_empty(self):
         with self.assertRaises(ParseError):
             parse_one("")

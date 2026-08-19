@@ -1064,8 +1064,12 @@ def _expand_stars(
                     source = scope.sources.get(source_table)
 
                 if source is None:
+                    outer_table = table
+                    if isinstance(expression, exp.Column):
+                        outer_table = expression.catalog or expression.db or table
+
                     if dialect.SUPPORTS_CORRELATED_STAR and _is_outer_star_reference(
-                        scope, table, resolver
+                        scope, outer_table, resolver
                     ):
                         new_selections.append(expression)
                         preserve_expression = True

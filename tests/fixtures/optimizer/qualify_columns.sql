@@ -1246,3 +1246,87 @@ SELECT piv.id AS id, piv.month AS month, piv.revenue AS revenue FROM (SELECT unp
 # dialect: duckdb
 SELECT u.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;
 SELECT u.id AS id, u.month AS month, u.revenue AS revenue, u.region AS region, u.headcount AS headcount FROM unpivotable AS unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south)) AS u;
+
+# title: resolve Snowflake positional references inside composed expressions
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT PARSE_JSON('{"id": 1}') AS data, 'file' AS filepath) SELECT t.$1:"id"::INT AS id, t.$2 AS filename FROM t;
+WITH T AS (SELECT PARSE_JSON('{"id": 1}') AS DATA, 'file' AS FILEPATH) SELECT CAST(GET_PATH(T.DATA, 'id') AS INT) AS ID, T.FILEPATH AS FILENAME FROM T AS T;
+
+# title: resolve Snowflake positional reference to a quoted column
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS "lower") SELECT t.$1 FROM t;
+WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T;
+
+# title: preserve explicit quotes when resolving Snowflake positional references
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS "SELECT") SELECT t.$1 FROM t;
+WITH T AS (SELECT 1 AS "SELECT") SELECT T."SELECT" AS "SELECT" FROM T AS T;
+
+# title: preserve ambiguous Snowflake positional reference and resolve unique one
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS x, 2 AS x, 3 AS y) SELECT t.$2, t.$3 FROM t;
+WITH T AS (SELECT 1 AS X, 2 AS X, 3 AS Y) SELECT T.$2 AS _COL_0, T.Y AS Y FROM T AS T;
+
+# title: resolve Snowflake positional reference with CTE column aliases
+# execute: false
+# dialect: snowflake
+WITH t("lower") AS (SELECT 1) SELECT t.$1 FROM t;
+WITH T AS (SELECT 1 AS "lower") SELECT T."lower" AS "lower" FROM T AS T;
+
+# title: preserve Snowflake positional reference through UNPIVOT
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS "SELECT", 2 AS a, 3 AS b) SELECT t.$1 FROM t UNPIVOT(v FOR k IN (a, b));
+WITH T AS (SELECT 1 AS "SELECT", 2 AS A, 3 AS B) SELECT T.$1 AS _COL_0 FROM T AS T UNPIVOT(V FOR K IN (A, B)) AS T;
+
+# title: preserve Snowflake positional reference through aliased PIVOT
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) SELECT p.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS "SELECT")) AS p;
+WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) SELECT P.$2 AS _COL_0 FROM T AS T PIVOT(SUM(T.V) FOR T.K IN ('a' AS "SELECT")) AS P;
+
+# title: retarget Snowflake positional reference to generated PIVOT alias
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) SELECT t.$2 FROM t PIVOT(SUM(v) FOR k IN ('a' AS a));
+WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) SELECT _0.$2 AS _COL_0 FROM T AS T PIVOT(SUM(T.V) FOR T.K IN ('a' AS A)) AS _0;
+
+# title: retarget Snowflake positional reference to final chained operator
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS id, 2 AS v, 'a' AS k) SELECT t.$1 FROM t PIVOT(SUM(v) FOR k IN ('a' AS a)) UNPIVOT(v2 FOR k2 IN (a));
+WITH T AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) SELECT T.$1 AS _COL_0 FROM T AS T PIVOT(SUM(T.V) FOR T.K IN ('a' AS A)) UNPIVOT(V2 FOR K2 IN (A)) AS T;
+
+# title: resolve Snowflake positional reference beside unrelated PIVOT
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT 1 AS x), s AS (SELECT 1 AS id, 2 AS v, 'a' AS k) SELECT t.$1, p.$2 FROM t CROSS JOIN s PIVOT(SUM(v) FOR k IN ('a' AS a)) AS p;
+WITH T AS (SELECT 1 AS X), S AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) SELECT T.X AS X, P.$2 AS _COL_1 FROM T AS T CROSS JOIN S AS S PIVOT(SUM(S.V) FOR S.K IN ('a' AS A)) AS P;
+
+# title: resolve Snowflake positional reference with table alias column list
+# execute: false
+# dialect: snowflake
+SELECT x.$1, x.$2 FROM x AS x(alias_name);
+SELECT X.ALIAS_NAME AS ALIAS_NAME, X.B AS B FROM X AS X(ALIAS_NAME);
+
+# title: preserve Snowflake positional reference from unknown source
+# execute: false
+# dialect: snowflake
+SELECT t.$1 FROM source AS t;
+SELECT T.$1 AS _COL_0 FROM SOURCE AS T;
+
+# title: preserve Snowflake positional reference from star source
+# execute: false
+# dialect: snowflake
+WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t;
+WITH T AS (SELECT * FROM SOURCE AS SOURCE) SELECT T.$1 AS _COL_0 FROM T AS T;
+
+# title: preserve Snowflake positional reference beyond partial table alias list
+# execute: false
+# dialect: snowflake
+SELECT x.$2 FROM unknown AS x(alias_name);
+SELECT X.$2 AS _COL_0 FROM UNKNOWN AS X(ALIAS_NAME);

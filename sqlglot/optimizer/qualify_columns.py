@@ -641,6 +641,93 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
+def _qualify_positional_column(
+    scope: Scope,
+    resolver: Resolver,
+    column: exp.Column,
+    column_table: str,
+    column_source: exp.Expr | Scope,
+    source_columns: t.Sequence[str],
+    pivots: t.Sequence[exp.Pivot],
+    allow_partial_qualification: bool,
+) -> bool:
+    """Resolve a positional column, returning whether to skip further qualification."""
+    if (
+        not resolver.dialect.SUPPORTS_POSITIONAL_COLUMN_REFS
+        or not isinstance(column.this, exp.Parameter)
+        or not isinstance(position := column.this.this, exp.Literal)
+        or not position.is_int
+    ):
+        return False
+
+    # Pivots from unrelated sources may share this scope, so prefer an exact
+    # output-alias match. For an aliasless chain, fall back to the last operator
+    # on the referenced source.
+    scope_pivot = next((pivot for pivot in scope.pivots if pivot.alias == column_table), None)
+    if not scope_pivot:
+        scope_pivot = next(
+            (
+                pivot
+                for pivot in reversed(scope.pivots)
+                if pivot.parent and pivot.parent.alias_or_name == column_table
+            ),
+            None,
+        )
+    if pivots or scope_pivot or not source_columns or "*" in source_columns:
+        if scope_pivot:
+            column.set("table", exp.to_identifier(scope_pivot.alias))
+        return True
+
+    position_value = int(position.to_py())
+    if isinstance(column_source, exp.Table):
+        alias_columns = column_source.alias_column_names
+        source_columns_without_aliases = resolver.schema.column_names(
+            column_source, only_visible=True
+        )
+        source_columns_incomplete = (
+            not source_columns_without_aliases or "*" in source_columns_without_aliases
+        )
+    else:
+        alias_columns = []
+        source_columns_incomplete = False
+
+    if alias_columns and position_value > len(alias_columns) and source_columns_incomplete:
+        return True
+
+    positional_columns = resolver.get_source_columns(column_table, only_visible=True)
+    if not 1 <= position_value <= len(positional_columns):
+        if allow_partial_qualification:
+            return True
+        raise OptimizeError(
+            f"Positional reference ${position_value} is out of range for source '{column_table}'"
+        )
+
+    positional_name = positional_columns[position_value - 1]
+    if positional_columns.count(positional_name) > 1:
+        return True
+
+    if isinstance(column_source, Scope):
+        source_expression = column_source.expression
+        if not isinstance(source_expression, exp.Query):
+            return True
+
+        source_selects = source_expression.selects
+        selection = (
+            source_selects[position_value - 1] if position_value <= len(source_selects) else None
+        )
+        source_identifier = _output_identifier(selection)
+        if not source_identifier or source_identifier.name != positional_name:
+            return True
+
+        positional_identifier = source_identifier.copy()
+    else:
+        positional_identifier = exp.to_identifier(positional_name)
+        resolver.dialect.quote_identifier(positional_identifier, identify=False)
+    column.set("this", positional_identifier)
+
+    return False
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -655,12 +742,26 @@ def _qualify_columns(
             column_source = scope.sources[column_table]
             source_columns = resolver.get_source_columns(column_table)
             # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
-            if isinstance(column_source, exp.Table) and (
-                pivots := column_source.args.get("pivots")
-            ):
+            pivots = (
+                column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
+            )
+            if pivots:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
                     source_columns = pivot.output_columns(source_columns)
+
+            if _qualify_positional_column(
+                scope,
+                resolver,
+                column,
+                column_table,
+                column_source,
+                source_columns,
+                pivots,
+                allow_partial_qualification,
+            ):
+                continue
+            column_name = column.name
             if (
                 not allow_partial_qualification
                 and source_columns
@@ -959,7 +1060,11 @@ def _expand_stars(
             # so the generated alias isn't folded by dialect normalization
             source_expression = source.expression if isinstance(source, Scope) else None
             quoted_columns = (
-                {s.output_name for s in source_expression.selects if _output_identifier_quoted(s)}
+                {
+                    s.output_name
+                    for s in source_expression.selects
+                    if _is_output_identifier_quoted(s)
+                }
                 if isinstance(source_expression, exp.Query)
                 else set()
             )
@@ -1035,8 +1140,7 @@ def _expand_stars(
         scope_expression.set("expressions", new_selections)
 
 
-def _output_identifier_quoted(selection: exp.Expr) -> bool:
-    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:
     if isinstance(selection, exp.Alias):
         identifier = selection.args.get("alias")
     elif isinstance(selection, exp.Column):
@@ -1044,7 +1148,13 @@ def _output_identifier_quoted(selection: exp.Expr) -> bool:
     else:
         identifier = None
 
-    return isinstance(identifier, exp.Identifier) and identifier.quoted
+    return identifier if isinstance(identifier, exp.Identifier) else None
+
+
+def _is_output_identifier_quoted(selection: exp.Expr) -> bool:
+    """Whether a projection's output column name is a quoted (case-sensitive) identifier."""
+    identifier = _output_identifier(selection)
+    return bool(identifier and identifier.quoted)
 
 
 def _add_ilike_columns(expression: exp.Expr, dialect: Dialect) -> str | None:
@@ -1200,9 +1310,9 @@ def pushdown_cte_alias_columns(scope: Scope) -> None:
     for cte in scope.ctes:
         if cte.alias_column_names and isinstance(cte.this, exp.Select):
             new_expressions = []
-            for _alias, projection in zip(cte.alias_column_names, cte.this.expressions):
+            for _alias, projection in zip(cte.args["alias"].columns, cte.this.expressions):
                 if isinstance(projection, exp.Alias):
-                    projection.set("alias", exp.to_identifier(_alias))
+                    projection.set("alias", _alias.copy())
                 else:
                     projection = alias(projection, alias=_alias)
                 new_expressions.append(projection)

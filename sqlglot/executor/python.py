@@ -471,7 +471,7 @@ class PythonExecutor:
                     add_row()
                     group = key
                     start = end - 2
-                if len(table.rows) >= step.offset + step.limit:
+                if not step.condition and len(table.rows) >= step.offset + step.limit:
                     break
                 if i == length - 1:
                     context.set_range(start, end - 1)

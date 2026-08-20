@@ -2,7 +2,6 @@ import ast
 import csv
 import datetime
 import unittest
-from collections import Counter
 from datetime import date, time
 from concurrent.futures import ProcessPoolExecutor
 
@@ -478,7 +477,7 @@ class TestExecutor(unittest.TestCase):
 
         rows_x = {(a,) for a in x_values}
         rows_union = rows_x | {(b,) for b in y_values}
-        groups = set(Counter(g_values).items())
+        groups = {(1, 1), (2, 2), (3, 1), (4, 2), (5, 2)}
         groups_having_count = {group for group in groups if group[1] > 1}
         groups_having_key = {group for group in groups if group[0] > 2}
 

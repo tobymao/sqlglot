@@ -265,9 +265,7 @@ class PythonExecutor:
         return sink
 
     def static(self):
-        reader = RowReader(())
-        reader.row = ()
-        return self.context({}), [reader]
+        return self.context({}), [RowReader(())]
 
     def scan_table(self, step):
         table = self.tables.find(step.source)

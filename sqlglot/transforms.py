@@ -432,12 +432,9 @@ def explode_projection_to_unnest(
                 explode = select.find(exp.Explode)
 
                 if explode:
-                    is_posexplode = isinstance(explode, exp.Posexplode)
-
                     if (
                         unnest_map
-                        and not is_posexplode
-                        and not isinstance(explode, exp.ExplodeOuter)
+                        and explode.args.get("kind") == "map"
                         and isinstance(select, exp.Aliases)
                         and len(select.aliases) == 2
                     ):

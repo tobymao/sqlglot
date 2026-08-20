@@ -307,6 +307,9 @@ class PostgresGenerator(generator.Generator):
         exp.DType.BLOB: "BYTEA",
     }
 
+    def explode_sql(self, expression: exp.Explode) -> str:
+        return self.func("UNNEST", expression.this, *expression.expressions)
+
     TRANSFORMS = {
         **{
             k: v
@@ -332,7 +335,6 @@ class PostgresGenerator(generator.Generator):
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
         exp.Day: _day_month_year_sql,
-        exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),
         exp.Getbit: getbit_sql,

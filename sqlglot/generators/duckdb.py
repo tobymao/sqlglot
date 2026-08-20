@@ -1587,6 +1587,9 @@ class DuckDBGenerator(generator.Generator):
     HISTORICAL_DATA_POST_ALIAS = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
+    def explode_sql(self, expression: exp.Explode) -> str:
+        return self.func("UNNEST", expression.this, *expression.expressions)
+
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
         exp.AnyValue: _anyvalue_sql,
@@ -1694,7 +1697,6 @@ class DuckDBGenerator(generator.Generator):
         exp.GenerateTimestampArray: _generate_datetime_array_sql,
         exp.Getbit: getbit_sql,
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
-        exp.Explode: rename_func("UNNEST"),
         exp.IcebergProperty: lambda *_: "",
         exp.IntDiv: lambda self, e: self.binary(e, "//"),
         exp.IsInf: rename_func("ISINF"),

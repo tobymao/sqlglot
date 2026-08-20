@@ -1318,6 +1318,25 @@ TBLPROPERTIES (
                 "spark": "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl",
             },
         )
+        expression = self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl")
+        explode = expression.find(exp.Explode)
+        assert explode
+        self.assertEqual("map", explode.args.get("kind"))
+        self.assertEqual(
+            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", expression.sql("spark")
+        )
+
+        spark2_explode = parse_one(
+            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", read="spark2"
+        ).find(exp.Explode)
+        assert spark2_explode
+        self.assertEqual("map", spark2_explode.args.get("kind"))
+
+        posexplode = self.parse_one("SELECT POSEXPLODE(cells) AS (pos, cell) FROM tbl").find(
+            exp.Posexplode
+        )
+        assert posexplode
+        self.assertIsNone(posexplode.args.get("kind"))
         self.validate_all(
             "SELECT CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, EXPLODE(cells) AS (cell_id, cell_name) FROM tbl)",
             write={

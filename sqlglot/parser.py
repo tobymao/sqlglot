@@ -2417,9 +2417,6 @@ class Parser:
         else:
             this = self._parse_table_parts(schema=True, is_db_reference=kind == "SCHEMA")
 
-        # MySQL, Postgres and T-SQL accept a list of tables here. This is restricted to TABLE
-        # because ALTER parses its actions with _parse_csv, so consuming the comma for kinds
-        # like COLUMN would swallow the next action, e.g. ALTER TABLE t DROP a, DROP b
         tables = (
             self._parse_csv(lambda: self._parse_table_parts(schema=True))
             if kind == "TABLE" and self._match(TokenType.COMMA)

@@ -347,7 +347,7 @@ class Drop(Expression):
     arg_types = {
         "this": False,
         "kind": False,
-        "tables": False,  # Multiple tables, e.g. DROP TABLE t1, t2
+        "tables": False,
         "expressions": False,
         "exists": False,
         "temporary": False,

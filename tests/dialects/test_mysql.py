@@ -10,8 +10,6 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_ddl(self):
-        # https://dev.mysql.com/doc/refman/8.4/en/drop-table.html
-        self.validate_identity("DROP TABLE t1, t2")
         self.validate_identity("DROP TEMPORARY TABLE IF EXISTS db.t1, t2 CASCADE")
 
         for t in ("BIGINT", "INT", "MEDIUMINT", "SMALLINT", "TINYINT"):

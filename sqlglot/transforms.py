@@ -401,6 +401,7 @@ def unnest_to_explode(
 
 def explode_projection_to_unnest(
     index_offset: int = 0,
+    unnest_map: bool = False,
 ) -> t.Callable[[exp.Expr], exp.Expr]:
     """Convert explode/posexplode projections into unnests."""
 
@@ -431,6 +432,52 @@ def explode_projection_to_unnest(
                 explode = select.find(exp.Explode)
 
                 if explode:
+                    is_posexplode = isinstance(explode, exp.Posexplode)
+
+                    if (
+                        unnest_map
+                        and not is_posexplode
+                        and not isinstance(explode, exp.ExplodeOuter)
+                        and isinstance(select, exp.Aliases)
+                        and len(select.aliases) == 2
+                    ):
+                        # SELECT [...,] EXPLODE(map_col) AS (key_alias, value_alias) [, ...]
+                        #
+                        # Unlike an array, EXPLODE on a MAP already produces exactly one
+                        # (key, value) row per entry, so this doesn't need the
+                        # position-matching machinery below (which exists to align
+                        # multiple array explodes of possibly different lengths).
+                        map_key_alias: t.Any
+                        map_value_alias: t.Any
+                        map_key_alias, map_value_alias = select.aliases
+                        map_arg = explode.this
+                        map_unnest_source = new_name(taken_source_names, "_u")
+
+                        map_key_select = select.replace(
+                            exp.column(map_key_alias, table=map_unnest_source).as_(map_key_alias)
+                        )
+
+                        expressions = expression.expressions
+                        expressions.insert(
+                            expressions.index(map_key_select) + 1,
+                            exp.column(map_value_alias, table=map_unnest_source).as_(
+                                map_value_alias
+                            ),
+                        )
+                        expression.set("expressions", expressions)
+
+                        unnest = exp.alias_(
+                            exp.Unnest(expressions=[map_arg.copy()]),
+                            map_unnest_source,
+                            table=[map_key_alias, map_value_alias],
+                        )
+                        if expression.args.get("from_"):
+                            expression.join(unnest, copy=False, join_type="CROSS")
+                        else:
+                            expression.from_(unnest, copy=False)
+
+                        continue
+
                     pos_alias: t.Any = ""
                     explode_alias: t.Any = ""
 

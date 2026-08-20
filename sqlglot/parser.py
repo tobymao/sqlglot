@@ -2417,6 +2417,15 @@ class Parser:
         else:
             this = self._parse_table_parts(schema=True, is_db_reference=kind == "SCHEMA")
 
+        # MySQL, Postgres and T-SQL accept a list of tables here. This is restricted to TABLE
+        # because ALTER parses its actions with _parse_csv, so consuming the comma for kinds
+        # like COLUMN would swallow the next action, e.g. ALTER TABLE t DROP a, DROP b
+        tables = (
+            self._parse_csv(lambda: self._parse_table_parts(schema=True))
+            if kind == "TABLE" and self._match(TokenType.COMMA)
+            else None
+        )
+
         cluster = self._parse_on_property() if self._match(TokenType.ON) else None
 
         if self._match(TokenType.L_PAREN, advance=False):
@@ -2430,6 +2439,7 @@ class Parser:
             exp.Drop(
                 exists=if_exists,
                 this=this,
+                tables=tables,
                 expressions=expressions,
                 kind=self.dialect.CREATABLE_KIND_MAPPING.get(kind) or kind,
                 temporary=temporary,

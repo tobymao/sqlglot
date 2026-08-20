@@ -67,7 +67,7 @@ class Context:
 
     @property
     def columns(self) -> tuple:
-        return self.table.columns
+        return self.table.columns if self.tables else ()
 
     def __iter__(self):
         self.env["scope"] = self.row_readers

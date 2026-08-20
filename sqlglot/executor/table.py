@@ -109,7 +109,7 @@ class RowReader:
             if columns is not None
             else {}
         )
-        self.row = None
+        self.row = ()
 
     def __getitem__(self, column):
         return self.row[self.columns[column]]

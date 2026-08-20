@@ -297,6 +297,20 @@ class TestMySQL(Validator):
             "CREATE FUNCTION f() RETURNS TEXT LANGUAGE SQL SQL SECURITY INVOKER AS SELECT 'abc'",
         )
 
+    def test_column_key_constraint(self):
+        self.validate_identity(
+            "CREATE TABLE t1 (id INT KEY AUTO_INCREMENT)",
+            "CREATE TABLE t1 (id INT PRIMARY KEY AUTO_INCREMENT)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t1 (id INT AUTO_INCREMENT KEY)",
+            "CREATE TABLE t1 (id INT AUTO_INCREMENT PRIMARY KEY)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t1 (id INT KEY)",
+            "CREATE TABLE t1 (id INT PRIMARY KEY)",
+        )
+
     def test_identity(self):
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")
         self.validate_identity("SELECT CAST(COALESCE(`id`, 'NULL') AS CHAR CHARACTER SET binary)")

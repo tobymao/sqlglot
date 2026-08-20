@@ -1828,6 +1828,8 @@ class Generator:
 
     def drop_sql(self, expression: exp.Drop) -> str:
         this = self.sql(expression, "this")
+        tables = self.expressions(expression, key="tables", flat=True)
+        this = f"{this}, {tables}" if tables else this
         expressions = self.expressions(expression, flat=True)
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]

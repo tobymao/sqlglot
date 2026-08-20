@@ -1827,9 +1827,7 @@ class Generator:
         return self.prepend_ctes(expression, f"DELETE{hint}{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
-        this = self.sql(expression, "this")
         tables = self.expressions(expression, key="tables", flat=True)
-        this = f"{this}, {tables}" if tables else this
         expressions = self.expressions(expression, flat=True)
         expressions = f" ({expressions})" if expressions else ""
         kind = expression.args["kind"]
@@ -1851,7 +1849,7 @@ class Generator:
         purge = " PURGE" if expression.args.get("purge") else ""
         sync = " SYNC" if expression.args.get("sync") else ""
         force = " FORCE" if expression.args.get("force") else ""
-        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{this}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}{force}"
+        return f"DROP{temporary}{materialized}{iceberg} {kind}{concurrently_sql}{exists_sql}{tables}{on_cluster}{expressions}{cascade}{restrict}{constraints}{purge}{sync}{force}"
 
     def set_operation(self, expression: exp.SetOperation) -> str:
         op_type = type(expression)
@@ -6048,8 +6046,8 @@ class Generator:
         options = f" {options}" if options else ""
         kind = self.sql(expression, "kind")
         kind = f" {kind}" if kind else ""
-        this = self.sql(expression, "this")
-        this = f" {this}" if this else ""
+        tables = self.expressions(expression, key="tables", flat=True)
+        tables = f" {tables}" if tables else ""
         mode = self.sql(expression, "mode")
         mode = f" {mode}" if mode else ""
         properties = self.sql(expression, "properties")
@@ -6058,7 +6056,7 @@ class Generator:
         partition = f" {partition}" if partition else ""
         inner_expression = self.sql(expression, "expression")
         inner_expression = f" {inner_expression}" if inner_expression else ""
-        return f"ANALYZE{options}{kind}{this}{partition}{mode}{inner_expression}{properties}"
+        return f"ANALYZE{options}{kind}{tables}{partition}{mode}{inner_expression}{properties}"
 
     def xmltable_sql(self, expression: exp.XMLTable) -> str:
         this = self.sql(expression, "this")

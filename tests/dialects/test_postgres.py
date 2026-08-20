@@ -1822,6 +1822,8 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TBL")
+        self.validate_identity("ANALYZE t1, t2")
+        self.validate_identity("ANALYZE VERBOSE t1, t2")
         self.validate_identity("ANALYZE TBL(col1, col2)")
         self.validate_identity("ANALYZE VERBOSE SKIP_LOCKED TBL(col1, col2)")
         self.validate_identity("ANALYZE BUFFER_USAGE_LIMIT 1337 TBL")

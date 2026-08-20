@@ -963,11 +963,13 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(
                     ast,
                     exp.Drop(
-                        this=exp.Table(
-                            this=None,
-                            db=exp.Identifier(this="schema", quoted=False),
-                            catalog=exp.Identifier(this="catalog", quoted=False),
-                        ),
+                        tables=[
+                            exp.Table(
+                                this=None,
+                                db=exp.Identifier(this="schema", quoted=False),
+                                catalog=exp.Identifier(this="catalog", quoted=False),
+                            )
+                        ],
                         kind="SCHEMA",
                     ),
                 )
@@ -980,11 +982,13 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(
                     ast,
                     exp.Drop(
-                        this=exp.Table(
-                            this=None,
-                            db=exp.Identifier(this="schema", quoted=False),
-                            catalog=exp.Identifier(this="catalog", quoted=False),
-                        ),
+                        tables=[
+                            exp.Table(
+                                this=None,
+                                db=exp.Identifier(this="schema", quoted=False),
+                                catalog=exp.Identifier(this="catalog", quoted=False),
+                            )
+                        ],
                         kind="SCHEMA",
                         exists=True,
                     ),
@@ -998,10 +1002,12 @@ class TestParser(unittest.TestCase):
                 self.assertEqual(
                     ast,
                     exp.Drop(
-                        this=exp.Table(
-                            this=None,
-                            db=exp.Identifier(this="myschema", quoted=False),
-                        ),
+                        tables=[
+                            exp.Table(
+                                this=None,
+                                db=exp.Identifier(this="myschema", quoted=False),
+                            )
+                        ],
                         kind="SCHEMA",
                         exists=True,
                     ),

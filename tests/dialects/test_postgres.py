@@ -421,6 +421,31 @@ class TestPostgres(Validator):
             "'[1,2,3]'::json->2",
             "CAST('[1,2,3]' AS JSON) -> 2",
         )
+
+        # https://github.com/tobymao/sqlglot/issues/8211: the JSON operators are left-associative
+        # and parse their right operand one precedence tier tighter (at +/-), so a right operand
+        # that binds at their tier (||, another JSON operator) or looser (comparison, IN, BETWEEN,
+        # AND, ...) must be parenthesised or the output re-parses to a different tree.
+        self.validate_all(
+            "SELECT a -> ('x' || 'y')",
+            read={"postgres": "SELECT json_extract(a, 'x' || 'y')"},
+        )
+        self.validate_all(
+            "SELECT a ->> ('x' || 'y')",
+            read={"postgres": "SELECT json_extract_scalar(a, 'x' || 'y')"},
+        )
+        self.validate_identity("SELECT a -> ('x' || 'y')")
+        self.validate_identity("SELECT a -> (b -> 'k')")
+        self.validate_identity("SELECT a -> (b ->> 'k')")
+        self.validate_identity("SELECT a -> (x = y)")
+        self.validate_identity("SELECT a -> (n IN (1, 2))")
+        self.validate_identity("SELECT a -> (n BETWEEN 1 AND 2)")
+        self.validate_identity("SELECT a -> (x AND y)")
+        self.validate_identity("SELECT a #> ('x' || 'y')")
+        self.validate_identity("SELECT a #>> ('x' || 'y')")
+        # right operands that bind tighter than the JSON operators are left unparenthesised
+        self.validate_identity("SELECT a -> 1 + 2")
+        self.validate_identity("SELECT a -> UPPER('a')")
         self.validate_identity(
             """SELECT JSON_ARRAY_ELEMENTS((foo->'sections')::JSON) AS sections""",
             """SELECT JSON_ARRAY_ELEMENTS(CAST((foo -> 'sections') AS JSON)) AS sections""",

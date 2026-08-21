@@ -1265,12 +1265,45 @@ def if_sql(
     return _if_sql
 
 
+# Right operands that bind at Postgres's "any other operator" precedence tier - level with the
+# JSON operators themselves and `||` - or looser (comparisons, IN, BETWEEN, AND, ...). The JSON
+# operators are left-associative and parse their right operand one tier tighter (at `+`/`-`), so
+# such an operand has to be parenthesised or the generated SQL re-parses to a different tree. See
+# https://github.com/tobymao/sqlglot/issues/8211.
+JSON_EXTRACT_LOOSE_RHS = (
+    exp.JSONExtract,
+    exp.JSONExtractScalar,
+    exp.JSONBExtract,
+    exp.JSONBExtractScalar,
+    exp.DPipe,
+    exp.BitwiseAnd,
+    exp.BitwiseOr,
+    exp.BitwiseXor,
+    exp.BitwiseLeftShift,
+    exp.BitwiseRightShift,
+    exp.Connector,
+    exp.Predicate,
+    exp.Not,
+)
+
+
+def json_extract_binary_sql(self: Generator, expression: JSON_EXTRACT_TYPE, op: str) -> str:
+    rhs = expression.expression
+    if isinstance(rhs, JSON_EXTRACT_LOOSE_RHS) and not isinstance(rhs, exp.Paren):
+        expression = expression.copy()
+        expression.set("expression", exp.paren(expression.expression))
+
+    return self.binary(expression, op)
+
+
 def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, exp.DType.JSON))
 
-    return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
+    return json_extract_binary_sql(
+        self, expression, "->" if isinstance(expression, exp.JSONExtract) else "->>"
+    )
 
 
 def inline_array_sql(self: Generator, expression: exp.Expr) -> str:

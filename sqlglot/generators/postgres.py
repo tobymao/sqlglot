@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     getbit_sql,
     groupconcat_sql,
     inline_array_sql,
+    json_extract_binary_sql,
     json_extract_segments,
     json_path_key_only_name,
     max_or_greatest,
@@ -189,7 +190,7 @@ def _json_extract_sql(
         if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not ensure_list(
             expression.args.get("expressions")
         ):
-            return self.binary(expression, op)
+            return json_extract_binary_sql(self, expression, op)
 
         if expression.args.get("only_json_types"):
             return json_extract_segments(name, quoted_index=False, op=op)(self, expression)
@@ -347,8 +348,8 @@ class PostgresGenerator(generator.Generator):
         ),
         exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
         exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
-        exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
-        exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
+        exp.JSONBExtract: lambda self, e: json_extract_binary_sql(self, e, "#>"),
+        exp.JSONBExtractScalar: lambda self, e: json_extract_binary_sql(self, e, "#>>"),
         exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DType.JSON)),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",

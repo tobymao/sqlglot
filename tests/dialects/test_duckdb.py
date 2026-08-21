@@ -690,6 +690,13 @@ class TestDuckDB(Validator):
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
         )
+        # https://github.com/tobymao/sqlglot/issues/8211: a right operand that binds level with or
+        # looser than the JSON operator has to be parenthesised on output.
+        self.validate_all(
+            "SELECT a -> ('x' || 'y')",
+            read={"duckdb": "SELECT json_extract(a, 'x' || 'y')"},
+        )
+        self.validate_identity("SELECT a -> ('x' || 'y')")
         self.validate_identity(
             "SELECT ($$hello)'world$$)",
             "SELECT ('hello)''world')",

@@ -647,7 +647,7 @@ def _qualify_positional_column(
     column: exp.Column,
     column_table: str,
     column_source: exp.Expr | Scope,
-    source_columns: t.Sequence[str],
+    post_pivot_columns: t.Sequence[str],
     pivots: t.Sequence[exp.Pivot],
     allow_partial_qualification: bool,
 ) -> bool:
@@ -673,7 +673,7 @@ def _qualify_positional_column(
             ),
             None,
         )
-    if pivots or scope_pivot or not source_columns or "*" in source_columns:
+    if pivots or scope_pivot or not post_pivot_columns or "*" in post_pivot_columns:
         if scope_pivot:
             column.set("table", exp.to_identifier(scope_pivot.alias))
         return True
@@ -740,15 +740,31 @@ def _qualify_columns(
 
         if column_table and column_table in scope.sources:
             column_source = scope.sources[column_table]
-            source_columns = resolver.get_source_columns(column_table)
-            # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
+            pre_pivot_columns = resolver.get_source_columns(column_table)
+            post_pivot_columns = pre_pivot_columns
             pivots = (
                 column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
             )
             if pivots:
+                pre_pivot_columns_incomplete = not pre_pivot_columns or "*" in pre_pivot_columns
+                if pre_pivot_columns_incomplete:
+                    post_pivot_columns = [name for name in pre_pivot_columns if name != "*"]
+                    if column_name not in post_pivot_columns:
+                        post_pivot_columns.append(column_name)
+
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
-                    source_columns = pivot.output_columns(source_columns)
+                    # alias column names are, e.g., w and x in `UNPIVOT(v FOR k IN (a, b)) AS i(w, x)`
+                    alias_columns = pivot.alias_column_names
+                    if pre_pivot_columns_incomplete and alias_columns:
+                        # Aliases positionally rename the first len(alias_columns) outputs, but an
+                        # incomplete pre-pivot column list can't determine which columns occupy
+                        # those positions. Placeholders model the scenario where every aliased
+                        # position contains an unknown passthrough column.
+                        placeholder_columns = [f"\0{index}" for index in range(len(alias_columns))]
+                        post_pivot_columns = [*placeholder_columns, *post_pivot_columns]
+
+                    post_pivot_columns = pivot.output_columns(post_pivot_columns)
 
             if _qualify_positional_column(
                 scope,
@@ -756,7 +772,7 @@ def _qualify_columns(
                 column,
                 column_table,
                 column_source,
-                source_columns,
+                post_pivot_columns,
                 pivots,
                 allow_partial_qualification,
             ):
@@ -764,9 +780,9 @@ def _qualify_columns(
             column_name = column.name
             if (
                 not allow_partial_qualification
-                and source_columns
-                and column_name not in source_columns
-                and "*" not in source_columns
+                and post_pivot_columns
+                and column_name not in post_pivot_columns
+                and "*" not in post_pivot_columns
             ):
                 raise OptimizeError(f"Unknown column: {column_name}")
 

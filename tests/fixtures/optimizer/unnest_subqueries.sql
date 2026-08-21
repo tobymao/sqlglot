@@ -19,8 +19,12 @@ SELECT * FROM x LEFT JOIN (SELECT SUM(y.b) AS b, y.a AS _u_1 FROM y WHERE TRUE G
 SELECT * FROM x WHERE x.a <> ANY (SELECT y.a AS a FROM y WHERE y.a = x.a);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0.a = x.a WHERE x.a <> _u_0.a;
 
+# title: correlated NOT IN is not unnested because LEFT-JOIN-anti loses three-valued NULL semantics
 SELECT * FROM x WHERE x.a NOT IN (SELECT y.a AS a FROM y WHERE y.a = x.a);
-SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0.a = x.a WHERE NOT x.a = _u_0.a;
+SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y WHERE y.a = x.a);
+
+SELECT * FROM x WHERE NOT (x.a IN (SELECT y.a AS a FROM y WHERE y.a = x.a));
+SELECT * FROM x WHERE NOT (x.a IN (SELECT y.a AS a FROM y WHERE y.a = x.a));
 
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y WHERE y.b = x.a);
 SELECT * FROM x LEFT JOIN (SELECT ARRAY_AGG(y.a) AS a, y.b AS _u_1 FROM y WHERE TRUE GROUP BY y.b) AS _u_0 ON _u_0._u_1 = x.a WHERE ARRAY_ANY(_u_0.a, _x -> _x = x.a);
@@ -121,6 +125,9 @@ SELECT * FROM x LEFT JOIN (SELECT _u_0.a AS a FROM (SELECT y.a AS a FROM y UNION
 # title: NOT IN is not unnested because LEFT-JOIN-anti loses three-valued NULL semantics
 SELECT * FROM x WHERE x.a NOT IN (SELECT y.a AS a FROM y);
 SELECT * FROM x WHERE NOT x.a IN (SELECT y.a AS a FROM y);
+
+SELECT * FROM x WHERE NOT (x.a IN (SELECT y.a AS a FROM y));
+SELECT * FROM x WHERE NOT (x.a IN (SELECT y.a AS a FROM y));
 
 # title: NOT IN with UNION ALL subquery is not unnested
 SELECT * FROM x WHERE x.a NOT IN (SELECT y.a AS a FROM y UNION ALL SELECT z.a AS a FROM z);

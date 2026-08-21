@@ -52,7 +52,7 @@ except_columns: dict[int, set[str]]
 with a per-source, per-column plan conceptually equivalent to:
 
 ```python
-except_columns: dict[str, dict[str, list[exp.Column]]]
+except_columns: dict[str, dict[str, list[exp.Expr]]]
 ```
 
 The outer key is the normalized selected-source name. The inner key is a top-level output column. Presence with an empty list means remove the whole column. A non-empty list contains relative nested paths to remove while retaining the top-level struct column.
@@ -71,17 +71,17 @@ Examples:
 * EXCEPT (s.a.b, t.y)
 {
     "t": {
-        "s": [Column("a.b")],
+        "s": [Dot("a", "b")],
         "y": [],
     }
 }
 ```
 
-Source names should be used directly instead of `id(table)`. This removes reliance on Python string object identity and makes resolution results explicit.
+Source names should be used directly instead of `id(table)`, and each select expression should receive a fresh plan so modifiers cannot leak between repeated stars over the same source. This removes reliance on Python string object identity and makes resolution results explicit.
 
 ## Resolution
 
-Add a focused helper near `_add_except_columns`. It receives the star expression, the sources selected by that star, and the current `Resolver`.
+Add a focused helper near `_add_except_columns`. It receives the star expression, the sources selected by that star, and the current `Resolver`, then returns a fresh plan for that select expression.
 
 For each exclusion:
 
@@ -93,7 +93,7 @@ For each exclusion:
 6. Reject duplicate paths and overlaps such as `s` with `s.pk`, or `s.a` with `s.a.b`.
 7. Record a whole-column exclusion only when the column has no existing exclusion entry. Record a nested path only when no whole-column exclusion exists. Any collision is an error.
 
-For `t.s.a.b`, successful relation resolution produces source `t`, top-level column `s`, and relative path `a.b`.
+For `t.s.a.b`, successful relation resolution produces source `t`, top-level column `s`, and relative path `exp.Dot.build([a, b])`. Relative paths remain expression trees rather than dotted strings, preserving quoting and arbitrary nesting.
 
 When struct type information is available, validate every nested field segment. When it is unavailable, preserve the native nested exclusion in the reconstructed AST so the target engine performs validation. Unknown type information must never cause a nested path to be treated as a top-level name exclusion.
 

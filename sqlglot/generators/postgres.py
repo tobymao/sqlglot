@@ -194,8 +194,10 @@ def _json_extract_sql(
         # A root-only path ($) has no key segments, so JSON_EXTRACT_PATH(a) would be
         # emitted with no path arguments, which PostgreSQL rejects. Emit the path
         # operator with an empty path array instead: a #> '{}' / a #>> '{}'.
-        if isinstance(path, exp.JSONPath) and path.expressions and all(
-            isinstance(part, exp.JSONPathRoot) for part in path.expressions
+        if (
+            isinstance(path, exp.JSONPath)
+            and path.expressions
+            and all(isinstance(part, exp.JSONPathRoot) for part in path.expressions)
         ):
             path_op = "#>>" if op == "->>" else "#>"
             return f"{self.sql(expression, 'this')} {path_op} '{{}}'"

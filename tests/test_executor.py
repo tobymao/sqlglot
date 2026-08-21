@@ -796,6 +796,14 @@ class TestExecutor(unittest.TestCase):
 
         self.assertEqual(plan.expression.sql(), before)
 
+    def test_correlated_not_in_is_not_unnested(self):
+        # the LEFT-JOIN-anti rewrite decides NOT IN using `<> `/`IS NULL` logic, which
+        # doesn't reproduce NOT IN's three-valued NULL semantics for a correlated subquery
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        tables = {"x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}], "y": [{"b": 2}, {"b": 3}]}
+        sql = "SELECT a FROM x WHERE a NOT IN (SELECT b FROM y WHERE b = x.a)"
+        self.assertCountEqual(execute(sql, schema, tables=tables).rows, [(1,), (5,)])
+
     def test_subquery_cardinality(self):
         # a scalar subquery must yield a single row and column, as in duckdb and postgres
         for sql, tables in (

@@ -590,6 +590,17 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT JSON_EXTRACT_PATH(x, 'k1', k2) FROM t")
         self.validate_identity("SELECT JSON_EXTRACT_PATH_TEXT(x, k1, 'k2') FROM t")
 
+        # A root-only JSON path ($) has no keys; JSON_EXTRACT_PATH(a) with no path
+        # arguments is rejected by PostgreSQL, so emit the path operator instead.
+        self.validate_all(
+            "SELECT a #> '{}' FROM t",
+            read={"mysql": "SELECT JSON_EXTRACT(a, '$') FROM t"},
+        )
+        self.validate_all(
+            "SELECT a #>> '{}' FROM t",
+            read={"mysql": "SELECT JSON_EXTRACT_SCALAR(a, '$') FROM t"},
+        )
+
         self.validate_all(
             "x #> 'y'",
             read={

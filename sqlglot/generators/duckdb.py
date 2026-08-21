@@ -10,10 +10,10 @@ from sqlglot.dialects.dialect import (
     DATETIME_DELTA,
     JSON_EXTRACT_TYPE,
     approx_count_distinct_sql,
+    arrow_operator_json_extract_sql,
     array_append_sql,
     array_compact_sql,
     array_concat_sql,
-    arrow_json_extract_sql,
     count_if_to_sum,
     date_delta_to_binary_interval_op,
     datestrtodate_sql,
@@ -879,9 +879,19 @@ WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In, exp.Not)
 
 
 def _arrow_json_extract_sql(self: DuckDBGenerator, expression: JSON_EXTRACT_TYPE) -> str:
-    arrow_sql = arrow_json_extract_sql(self, expression)
-    if not expression.same_parent and isinstance(
-        expression.parent, WRAPPED_JSON_EXTRACT_EXPRESSIONS
+    arrow_sql = arrow_operator_json_extract_sql(
+        self,
+        expression,
+        "->" if isinstance(expression, exp.JSONExtract) else "->>",
+    )
+    parent = expression.parent
+    is_arrow_rhs = isinstance(
+        parent, (exp.JSONExtract, exp.JSONExtractScalar)
+    ) and expression is parent.args.get("expression")
+    if (
+        not is_arrow_rhs
+        and not expression.same_parent
+        and isinstance(parent, WRAPPED_JSON_EXTRACT_EXPRESSIONS)
     ):
         arrow_sql = self.wrap(arrow_sql)
     return arrow_sql

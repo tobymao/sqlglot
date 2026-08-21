@@ -802,7 +802,19 @@ class TestExecutor(unittest.TestCase):
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}
         tables = {"x": [{"a": 1}, {"a": 2}, {"a": 3}, {"a": 5}], "y": [{"b": 2}, {"b": 3}]}
         sql = "SELECT a FROM x WHERE a NOT IN (SELECT b FROM y WHERE b = x.a)"
-        self.assertCountEqual(execute(sql, schema, tables=tables).rows, [(1,), (5,)])
+        self.assertEqual(execute(sql, schema, tables=tables).rows, [(1,), (5,)])
+
+        sql = "SELECT a FROM x WHERE NOT (a IN (SELECT b FROM y WHERE b = x.a))"
+        self.assertEqual(execute(sql, schema, tables=tables).rows, [(1,), (5,)])
+
+    def test_correlated_not_in_not_join_key_is_not_unnested(self):
+        schema = {"x": {"a": "int", "c": "int"}, "y": {"b": "int", "c": "int"}}
+        tables = {
+            "x": [{"a": 1, "c": 10}, {"a": 2, "c": 20}, {"a": 3, "c": 40}],
+            "y": [{"b": 2, "c": 20}, {"b": 5, "c": 30}],
+        }
+        sql = "SELECT a FROM x WHERE a NOT IN (SELECT b FROM y WHERE y.c = x.c)"
+        self.assertEqual(execute(sql, schema, tables=tables).rows, [(1,), (3,)])
 
     def test_subquery_cardinality(self):
         # a scalar subquery must yield a single row and column, as in duckdb and postgres

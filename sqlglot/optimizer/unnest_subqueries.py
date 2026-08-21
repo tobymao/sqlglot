@@ -55,7 +55,7 @@ def unnest(select, parent_select, next_alias_name):
         or not parent_select.args.get("from_")
         # NOT IN has three-valued semantics that the LEFT-JOIN-anti rewrite doesn't preserve:
         # a NULL in the subquery makes NOT IN evaluate to NULL for every outer row.
-        or (isinstance(predicate, exp.In) and isinstance(predicate.parent, exp.Not))
+        or (isinstance(predicate, exp.In) and _is_negated(predicate))
     ):
         return
 
@@ -214,8 +214,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is None and not is_subquery_projection:
         return
 
-    # Same three-valued NOT IN gap as unnest()'s guard above; decorrelate() has no equivalent.
-    if isinstance(parent_predicate, exp.In) and isinstance(parent_predicate.parent, exp.Not):
+    if isinstance(parent_predicate, exp.In) and _is_negated(parent_predicate):
         return
 
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
@@ -326,6 +325,13 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         join_alias=table_alias,
         copy=False,
     )
+
+
+def _is_negated(expression: exp.Expression) -> bool:
+    parent = expression.parent
+    while isinstance(parent, exp.Paren):
+        parent = parent.parent
+    return isinstance(parent, exp.Not)
 
 
 def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:

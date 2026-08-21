@@ -1318,6 +1318,14 @@ TBLPROPERTIES (
                 "spark": "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl",
             },
         )
+        self.validate_all(
+            "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
+            write={
+                "presto": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+                "trino": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+                "spark": "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
+            },
+        )
         expression = self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl")
         explode = expression.find(exp.Explode)
         assert explode
@@ -1337,6 +1345,18 @@ TBLPROPERTIES (
         )
         assert posexplode
         self.assertIsNone(posexplode.args.get("kind"))
+
+        single_alias_explode = self.parse_one("SELECT EXPLODE(cells) AS cell FROM tbl").find(
+            exp.Explode
+        )
+        assert single_alias_explode
+        self.assertIsNone(single_alias_explode.args.get("kind"))
+
+        explode_outer = self.parse_one("SELECT EXPLODE_OUTER(cells) AS (k, v) FROM tbl").find(
+            exp.Explode
+        )
+        assert explode_outer
+        self.assertIsNone(explode_outer.args.get("kind"))
         self.validate_all(
             "SELECT CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, EXPLODE(cells) AS (cell_id, cell_name) FROM tbl)",
             write={

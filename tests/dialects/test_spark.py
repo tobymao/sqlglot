@@ -1310,6 +1310,60 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl",
+            write={
+                "presto": "SELECT _u_2.cell_id AS cell_id, _u_2.cell_name AS cell_name FROM tbl CROSS JOIN UNNEST(cells) AS _u_2(cell_id, cell_name)",
+                "trino": "SELECT _u_2.cell_id AS cell_id, _u_2.cell_name AS cell_name FROM tbl CROSS JOIN UNNEST(cells) AS _u_2(cell_id, cell_name)",
+                "duckdb": "SELECT UNNEST(cells) AS (cell_id, cell_name) FROM tbl",
+                "spark": "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl",
+            },
+        )
+        self.validate_all(
+            "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
+            write={
+                "presto": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+                "trino": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+                "spark": "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
+            },
+        )
+        expression = self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl")
+        explode = expression.find(exp.Explode)
+        assert explode
+        self.assertEqual("map", explode.args.get("kind"))
+        self.assertEqual(
+            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", expression.sql("spark")
+        )
+
+        spark2_explode = parse_one(
+            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", read="spark2"
+        ).find(exp.Explode)
+        assert spark2_explode
+        self.assertEqual("map", spark2_explode.args.get("kind"))
+
+        posexplode = self.parse_one("SELECT POSEXPLODE(cells) AS (pos, cell) FROM tbl").find(
+            exp.Posexplode
+        )
+        assert posexplode
+        self.assertIsNone(posexplode.args.get("kind"))
+
+        single_alias_explode = self.parse_one("SELECT EXPLODE(cells) AS cell FROM tbl").find(
+            exp.Explode
+        )
+        assert single_alias_explode
+        self.assertIsNone(single_alias_explode.args.get("kind"))
+
+        explode_outer = self.parse_one("SELECT EXPLODE_OUTER(cells) AS (k, v) FROM tbl").find(
+            exp.Explode
+        )
+        assert explode_outer
+        self.assertIsNone(explode_outer.args.get("kind"))
+        self.validate_all(
+            "SELECT CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, EXPLODE(cells) AS (cell_id, cell_name) FROM tbl)",
+            write={
+                "trino": "SELECT TRY_CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, _u_2.cell_id AS cell_id, _u_2.cell_name AS cell_name FROM tbl CROSS JOIN UNNEST(cells) AS _u_2(cell_id, cell_name))",
+            },
+        )
+        self.validate_all(
             "SELECT col, pos, POSEXPLODE(ARRAY(2, 3)) FROM _u",
             write={
                 "presto": "SELECT col, pos, IF(_u_2.pos_2 = _u_3.pos_3, _u_3.col_2) AS col_2, IF(_u_2.pos_2 = _u_3.pos_3, _u_3.pos_3) AS pos_3 FROM _u CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(ARRAY[2, 3])))) AS _u_2(pos_2) CROSS JOIN UNNEST(ARRAY[2, 3]) WITH ORDINALITY AS _u_3(col_2, pos_3) WHERE _u_2.pos_2 = _u_3.pos_3 OR (_u_2.pos_2 > CARDINALITY(ARRAY[2, 3]) AND _u_3.pos_3 = CARDINALITY(ARRAY[2, 3]))",

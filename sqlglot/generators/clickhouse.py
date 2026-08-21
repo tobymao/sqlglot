@@ -275,6 +275,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.DYNAMIC: "Dynamic",
     }
 
+    def explode_sql(self, expression: exp.Explode) -> str:
+        return self.func("arrayJoin", expression.this, *expression.expressions)
+
     TRANSFORMS = {
         **{k: v for k, v in generator.Generator.TRANSFORMS.items() if k != exp.AutoRefreshProperty},
         exp.AnyValue: rename_func("any"),
@@ -311,7 +314,6 @@ class ClickHouseGenerator(generator.Generator):
         exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
         exp.DateStrToDate: rename_func("toDate"),
         exp.DateSub: _datetime_delta_sql("DATE_SUB"),
-        exp.Explode: rename_func("arrayJoin"),
         exp.FarmFingerprint: rename_func("farmFingerprint64"),
         exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
         exp.IsNan: rename_func("isNaN"),

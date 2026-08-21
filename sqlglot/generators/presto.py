@@ -383,7 +383,7 @@ class PrestoGenerator(generator.Generator):
                 transforms.eliminate_window_clause,
                 transforms.eliminate_qualify,
                 transforms.eliminate_distinct_on,
-                transforms.explode_projection_to_unnest(1),
+                transforms.explode_projection_to_unnest(1, unnest_map=True),
                 transforms.eliminate_semi_and_anti_joins,
                 amend_exploded_column_table,
             ]

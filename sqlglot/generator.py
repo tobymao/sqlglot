@@ -4667,6 +4667,9 @@ class Generator:
 
         return self.function_fallback_sql(expression)
 
+    def explode_sql(self, expression: exp.Explode) -> str:
+        return self.func(expression.sql_name(), expression.this, *expression.expressions)
+
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
 

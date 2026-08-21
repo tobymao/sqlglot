@@ -110,6 +110,19 @@ class Spark2Parser(HiveParser):
         "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
     }
 
+    def _parse_alias(self, this: exp.Expr | None, explicit: bool = False) -> exp.Expr | None:
+        this = super()._parse_alias(this, explicit=explicit)
+
+        if (
+            isinstance(this, exp.Aliases)
+            and len(this.aliases) == 2
+            and isinstance(this.this, exp.Explode)
+            and not isinstance(this.this, (exp.Posexplode, exp.ExplodeOuter))
+        ):
+            this.this.set("kind", "map")
+
+        return this
+
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
         return (
             self.expression(exp.Drop(tables=[self._parse_schema()], kind="COLUMNS"))

@@ -5,7 +5,6 @@ import typing as t
 from collections import deque
 
 from sqlglot import exp, parser
-from sqlglot.parser import build_trim
 from sqlglot.dialects.dialect import (
     build_date_delta,
     build_formatted_time,
@@ -322,8 +321,8 @@ class ClickHouseParser(parser.Parser):
         "TRIMBOTH": lambda args: exp.Trim(
             this=seq_get(args, 0), expression=seq_get(args, 1), position="BOTH"
         ),
-        "TRIMLEFT": lambda args: build_trim(args),
-        "TRIMRIGHT": lambda args: build_trim(args, is_left=False),
+        "TRIMLEFT": parser.build_trim,
+        "TRIMRIGHT": lambda args: parser.build_trim(args, is_left=False),
         "EDITDISTANCE": exp.Levenshtein.from_arg_list,
         "JAROWINKLERSIMILARITY": exp.JarowinklerSimilarity.from_arg_list,
         "LEVENSHTEINDISTANCE": exp.Levenshtein.from_arg_list,

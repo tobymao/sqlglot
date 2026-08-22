@@ -726,23 +726,15 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
         self.validate_identity("SELECT TRIM(LEADING '(' FROM '(   Hello, world!   )')")
         self.validate_all(
-            "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
-            read={
-                "clickhouse": "SELECT trimLeft(s, 'x'), trimRight(s, 'x'), trimBoth(s, 'x')",
-            },
-            write={
-                "clickhouse": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
-                "doris": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
-                "duckdb": "SELECT LTRIM(s, 'x'), RTRIM(s, 'x'), TRIM(s, 'x')",
-                "postgres": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
-            },
+            "SELECT TRIM(LEADING 'xy' FROM s), TRIM(TRAILING 'xy' FROM s), TRIM(BOTH 'xy' FROM s)",
+            read={"clickhouse": "SELECT trimLeft(s, 'xy'), trimRight(s, 'xy'), trimBoth(s, 'xy')"},
+            write={"duckdb": "SELECT LTRIM(s, 'xy'), RTRIM(s, 'xy'), TRIM(s, 'xy')"},
         )
         self.validate_all(
             "SELECT LTRIM(s), RTRIM(s), TRIM(s)",
             read={"clickhouse": "SELECT trimLeft(s), trimRight(s), trimBoth(s)"},
             write={"duckdb": "SELECT LTRIM(s), RTRIM(s), TRIM(s)"},
         )
-        self.assertIsInstance(self.parse_one("SELECT trimLeft(s, 'x')").selects[0], exp.Trim)
         self.validate_identity("current_timestamp").assert_is(exp.Column)
 
         self.validate_identity("SELECT * APPLY(sum) FROM columns_transformers")

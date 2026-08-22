@@ -318,9 +318,7 @@ class ClickHouseParser(parser.Parser):
         "SPLITBYSTRING": _build_split(exp.Split),
         "SUBSTRINGINDEX": exp.SubstringIndex.from_arg_list,
         "TOTYPENAME": exp.Typeof.from_arg_list,
-        "TRIMBOTH": lambda args: exp.Trim(
-            this=seq_get(args, 0), expression=seq_get(args, 1), position="BOTH"
-        ),
+        "TRIMBOTH": exp.Trim.from_arg_list,
         "TRIMLEFT": parser.build_trim,
         "TRIMRIGHT": lambda args: parser.build_trim(args, is_left=False),
         "EDITDISTANCE": exp.Levenshtein.from_arg_list,

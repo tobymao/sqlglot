@@ -741,11 +741,10 @@ def _qualify_columns(
         if column_table and column_table in scope.sources:
             column_source = scope.sources[column_table]
             source_columns = resolver.get_source_columns(column_table)
-            # For pivoted sources, source_columns are pre-pivot; validate against the post-pivot set.
             pivots = (
                 column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
             )
-            if pivots:
+            if pivots and source_columns and "*" not in source_columns:
                 # Each operator's input is the previous one's output
                 for pivot in pivots:
                     source_columns = pivot.output_columns(source_columns)

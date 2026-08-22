@@ -191,6 +191,10 @@ def _json_extract_sql(
         ):
             return self.binary(expression, op)
 
+        # JSON_EXTRACT_PATH requires a key, so use an empty variadic array for the root path
+        if len(path.expressions) == 1 and isinstance(path.expressions[0], exp.JSONPathRoot):
+            expression.set("expression", exp.Variadic(this=exp.Literal.string("{}")))
+
         if expression.args.get("only_json_types"):
             return json_extract_segments(name, quoted_index=False, op=op)(self, expression)
         return json_extract_segments(name)(self, expression)

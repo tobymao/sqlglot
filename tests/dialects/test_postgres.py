@@ -590,6 +590,20 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT JSON_EXTRACT_PATH(x, 'k1', k2) FROM t")
         self.validate_identity("SELECT JSON_EXTRACT_PATH_TEXT(x, k1, 'k2') FROM t")
 
+        # A root-only JSON path ($) has no keys, so pass an empty variadic array.
+        self.validate_all(
+            "SELECT JSON_EXTRACT_PATH(a, VARIADIC '{}') FROM t",
+            read={"mysql": "SELECT JSON_EXTRACT(a, '$') FROM t"},
+        )
+        self.validate_all(
+            "SELECT JSON_EXTRACT_PATH_TEXT(a, VARIADIC '{}') FROM t",
+            read={"mysql": "SELECT JSON_EXTRACT_SCALAR(a, '$') FROM t"},
+        )
+        self.validate_all(
+            "SELECT 'prefix' || JSON_EXTRACT_PATH_TEXT(a, VARIADIC '{}') FROM t",
+            read={"postgres": "SELECT 'prefix' || JSON_EXTRACT_SCALAR(a, '$') FROM t"},
+        )
+
         self.validate_all(
             "x #> 'y'",
             read={

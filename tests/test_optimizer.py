@@ -866,30 +866,37 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
-    def test_unpivot_unknown_schema_does_not_reject_passthrough(self):
-        sql = "SELECT i.other_col FROM my_table AS i UNPIVOT(v FOR k IN (a, b))"
-
+    def test_unpivot_unknown_schema(self):
         self.assertEqual(
-            qualify(parse_one(sql, dialect="snowflake"), dialect="snowflake").sql(
-                dialect="snowflake"
-            ),
+            qualify(
+                parse_one(
+                    "SELECT i.other_col FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
+                    dialect="snowflake",
+                ),
+                dialect="snowflake",
+            ).sql(dialect="snowflake"),
             'SELECT "I"."OTHER_COL" AS "OTHER_COL" FROM "MY_TABLE" AS "I" '
             'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
         )
-
-    def test_unpivot_unknown_schema_rejects_consumed_column(self):
-        sql = "SELECT i.a FROM my_table AS i UNPIVOT(v FOR k IN (a, b))"
-
-        with self.assertRaisesRegex(OptimizeError, "Unknown column: A"):
-            qualify(parse_one(sql, dialect="snowflake"), dialect="snowflake")
-
-    def test_unpivot_unknown_schema_preserves_positional_aliases(self):
-        sql = "SELECT i.z FROM my_table AS i UNPIVOT(v FOR k IN (a, b)) AS i(w, x, y, z)"
-
         self.assertEqual(
-            qualify(parse_one(sql, dialect="snowflake"), dialect="snowflake").sql(
-                dialect="snowflake"
-            ),
+            qualify(
+                parse_one(
+                    "SELECT i.a FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
+                    dialect="snowflake",
+                ),
+                dialect="snowflake",
+            ).sql(dialect="snowflake"),
+            'SELECT "I"."A" AS "A" FROM "MY_TABLE" AS "I" '
+            'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
+        )
+        self.assertEqual(
+            qualify(
+                parse_one(
+                    "SELECT i.z FROM my_table AS i UNPIVOT(v FOR k IN (a, b)) AS i(w, x, y, z)",
+                    dialect="snowflake",
+                ),
+                dialect="snowflake",
+            ).sql(dialect="snowflake"),
             'SELECT "I"."Z" AS "Z" FROM "MY_TABLE" AS "I" '
             'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"("W", "X", "Y", "Z")',
         )

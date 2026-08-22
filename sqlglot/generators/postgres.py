@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     JSON_EXTRACT_TYPE,
     any_value_to_max_sql,
+    arrow_json_extract_sql,
     array_append_sql,
     array_concat_sql,
     bool_xor_sql,
@@ -189,7 +190,7 @@ def _json_extract_sql(
         if not isinstance(path, (exp.JSONPath, exp.Variadic)) and not ensure_list(
             expression.args.get("expressions")
         ):
-            return self.binary(expression, op)
+            return arrow_json_extract_sql(self, expression, op=op)
 
         # JSON_EXTRACT_PATH requires a key, so use an empty variadic array for the root path
         if len(path.expressions) == 1 and isinstance(path.expressions[0], exp.JSONPathRoot):
@@ -351,8 +352,8 @@ class PostgresGenerator(generator.Generator):
         ),
         exp.JSONExtract: _json_extract_sql("JSON_EXTRACT_PATH", "->"),
         exp.JSONExtractScalar: _json_extract_sql("JSON_EXTRACT_PATH_TEXT", "->>"),
-        exp.JSONBExtract: lambda self, e: self.binary(e, "#>"),
-        exp.JSONBExtractScalar: lambda self, e: self.binary(e, "#>>"),
+        exp.JSONBExtract: lambda self, e: arrow_json_extract_sql(self, e, op="#>"),
+        exp.JSONBExtractScalar: lambda self, e: arrow_json_extract_sql(self, e, op="#>>"),
         exp.ParseJSON: lambda self, e: self.sql(exp.cast(e.this, exp.DType.JSON)),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",

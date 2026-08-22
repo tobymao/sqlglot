@@ -1853,6 +1853,23 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         )
 
     def test_json_extract(self):
+        self.validate_all(
+            "SELECT a -> ('x' || 'y')",
+            read={"postgres": "SELECT JSON_EXTRACT(a, 'x' || 'y')"},
+        )
+        self.validate_all(
+            "SELECT a -> (1 + 2)",
+            read={"postgres": "SELECT JSON_EXTRACT(a, 1 + 2)"},
+        )
+        self.validate_all(
+            "SELECT a -> (NOT x)",
+            read={"postgres": "SELECT JSON_EXTRACT(a, NOT x)"},
+        )
+        self.validate_all(
+            "SELECT a #> (n IN (1, 2))",
+            read={"postgres": "SELECT JSONB_EXTRACT(a, n IN (1, 2))"},
+        )
+
         for arrow_op in ("->", "->>"):
             with self.subTest(f"Ensure {arrow_op} operator roundtrips int values as subscripts"):
                 self.validate_all(

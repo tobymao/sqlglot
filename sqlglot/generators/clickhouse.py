@@ -372,12 +372,8 @@ class ClickHouseGenerator(generator.Generator):
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.Stddev: rename_func("stddevSamp"),
         exp.Chr: rename_func("CHAR"),
-        exp.Lag: lambda self, e: self.func(
-            "lagInFrame", e.this, e.args.get("offset"), e.args.get("default")
-        ),
-        exp.Lead: lambda self, e: self.func(
-            "leadInFrame", e.this, e.args.get("offset"), e.args.get("default")
-        ),
+        exp.Lag: rename_func("lag"),
+        exp.Lead: rename_func("lead"),
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("editDistance")
         ),

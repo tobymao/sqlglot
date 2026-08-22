@@ -726,9 +726,12 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT TRIM(TRAILING ')' FROM '(   Hello, world!   )')")
         self.validate_identity("SELECT TRIM(LEADING '(' FROM '(   Hello, world!   )')")
         self.validate_all(
-            "SELECT TRIM(LEADING 'xy' FROM s), TRIM(TRAILING 'xy' FROM s), TRIM(BOTH 'xy' FROM s)",
-            read={"clickhouse": "SELECT trimLeft(s, 'xy'), trimRight(s, 'xy'), trimBoth(s, 'xy')"},
-            write={"duckdb": "SELECT LTRIM(s, 'xy'), RTRIM(s, 'xy'), TRIM(s, 'xy')"},
+            "SELECT trimLeft(s, 'xy'), trimRight(s, 'xy'), trimBoth(s, 'xy')",
+            write={
+                "clickhouse": "SELECT TRIM(LEADING 'xy' FROM s), TRIM(TRAILING 'xy' FROM s), TRIM(BOTH 'xy' FROM s)",
+                "duckdb": "SELECT LTRIM(s, 'xy'), RTRIM(s, 'xy'), TRIM(s, 'xy')",
+                "postgres": "SELECT TRIM(LEADING 'xy' FROM s), TRIM(TRAILING 'xy' FROM s), TRIM('xy' FROM s)",
+            },
         )
         self.validate_all(
             "SELECT LTRIM(s), RTRIM(s), TRIM(s)",

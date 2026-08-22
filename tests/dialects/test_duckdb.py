@@ -690,6 +690,10 @@ class TestDuckDB(Validator):
             """SELECT '{"foo": [1, 2, 3]}' -> 'foo' -> 0""",
             """SELECT '{"foo": [1, 2, 3]}' -> '$.foo' -> '$[0]'""",
         )
+        self.validate_all(
+            "SELECT a -> ('x' || 'y')",
+            read={"duckdb": "SELECT JSON_EXTRACT(a, 'x' || 'y')"},
+        )
         self.validate_identity(
             "SELECT ($$hello)'world$$)",
             "SELECT ('hello)''world')",

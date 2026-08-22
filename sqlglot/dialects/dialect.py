@@ -1265,48 +1265,20 @@ def if_sql(
     return _if_sql
 
 
-def arrow_json_extract_sql(self: Generator, expression: JSON_EXTRACT_TYPE) -> str:
-    this = expression.this
-    if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
-        this.replace(exp.cast(this, exp.DType.JSON))
-
-    return self.binary(expression, "->" if isinstance(expression, exp.JSONExtract) else "->>")
-
-
-_JSON_ARROW_TIGHT_BINARY_RHS = (
-    exp.Add,
-    exp.Collate,
-    exp.Sub,
-    exp.Mul,
-    exp.Div,
-    exp.IntDiv,
-    exp.Mod,
-    exp.Pow,
-    exp.Dot,
-)
-
-
-def _json_arrow_rhs_needs_paren(path: exp.Expression) -> bool:
-    return isinstance(path, (exp.Between, exp.In)) or (
-        isinstance(path, exp.Binary) and not isinstance(path, _JSON_ARROW_TIGHT_BINARY_RHS)
-    )
-
-
-def arrow_operator_json_extract_sql(
-    self: Generator, expression: JSON_EXTRACT_TYPE, op: str | None = None
+def arrow_json_extract_sql(
+    self: Generator,
+    expression: JSON_EXTRACT_TYPE,
+    op: str | None = None,
 ) -> str:
     this = expression.this
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, exp.DType.JSON))
 
-    path = expression.expression
-    path_sql = self.sql(path)
-
-    if _json_arrow_rhs_needs_paren(path):
-        path_sql = self.wrap(path_sql)
+    if isinstance(expression.expression, (exp.Binary, exp.Predicate, exp.Not)):
+        expression.set("expression", exp.paren(expression.expression, copy=False))
 
     op = op or ("->" if isinstance(expression, exp.JSONExtract) else "->>")
-    return f"{self.sql(expression, 'this')} {self.maybe_comment(op, comments=expression.comments)} {path_sql}"
+    return self.binary(expression, op)
 
 
 def inline_array_sql(self: Generator, expression: exp.Expr) -> str:

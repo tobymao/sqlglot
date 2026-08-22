@@ -315,6 +315,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "doris": "SELECT LAG(salary, 1, 0) OVER (ORDER BY CASE WHEN hire_date IS NULL THEN 1 ELSE 0 END, hire_date) AS prev_sal FROM employees",
                 "duckdb": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
                 "oracle": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
             },
@@ -327,6 +328,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "doris": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY CASE WHEN hire_date IS NULL THEN 1 ELSE 0 END, hire_date) AS prev_sal FROM employees",
                 "duckdb": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
                 "oracle": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
             },

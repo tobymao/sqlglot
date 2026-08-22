@@ -719,6 +719,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
+                "doris": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
                 "duckdb": "SELECT LTRIM(s, 'x'), RTRIM(s, 'x'), TRIM(s, 'x')",
                 "postgres": "SELECT TRIM(LEADING 'x' FROM s), TRIM(TRAILING 'x' FROM s), TRIM(BOTH 'x' FROM s)",
             },

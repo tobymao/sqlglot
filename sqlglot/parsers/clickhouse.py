@@ -295,6 +295,12 @@ class ClickHouseParser(parser.Parser):
         "JSONEXTRACTSTRING": build_json_extract_path(
             exp.JSONExtractScalar, zero_based_indexing=False
         ),
+        "LAGINFRAME": lambda args: exp.Lag(
+            this=seq_get(args, 0), offset=seq_get(args, 1), default=seq_get(args, 2)
+        ),
+        "LEADINFRAME": lambda args: exp.Lead(
+            this=seq_get(args, 0), offset=seq_get(args, 1), default=seq_get(args, 2)
+        ),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "LIKE": build_like(exp.Like),
         "L2Distance": exp.EuclideanDistance.from_arg_list,

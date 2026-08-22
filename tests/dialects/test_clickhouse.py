@@ -313,6 +313,11 @@ class TestClickhouse(Validator):
                 "clickhouse": "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
                 "oracle": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
             },
+            write={
+                "clickhouse": "SELECT lagInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "duckdb": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "oracle": "SELECT LAG(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            },
         )
         self.validate_all(
             "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
@@ -320,6 +325,17 @@ class TestClickhouse(Validator):
                 "clickhouse": "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
                 "oracle": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
             },
+            write={
+                "clickhouse": "SELECT leadInFrame(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "duckdb": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+                "oracle": "SELECT LEAD(salary, 1, 0) OVER (ORDER BY hire_date) AS prev_sal FROM employees",
+            },
+        )
+        self.validate_identity("SELECT lagInFrame(x) OVER (PARTITION BY g ORDER BY t) FROM t")
+        self.validate_identity("SELECT leadInFrame(x, 2) OVER (ORDER BY t) FROM t")
+        self.assertIsInstance(
+            self.parse_one("SELECT lagInFrame(x) OVER (ORDER BY t) FROM t").selects[0].this,
+            exp.Lag,
         )
         self.validate_all(
             "SELECT CAST(STR_TO_DATE('05 12 2000', '%d %m %Y') AS Nullable(DATE))",

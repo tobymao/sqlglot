@@ -72,6 +72,20 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     )
 
 
+def _build_array_lambda_func(
+    exp_class: Type[E], name: str
+) -> t.Callable[[list], E | exp.Anonymous]:
+    def _builder(args: list) -> E | exp.Anonymous:
+        # Other dialects can't express arrayMap((x, y) -> x + y, arr1, arr2), which
+        # iterates over multiple arrays at once, so we keep it as an anonymous function
+        if len(args) > 2:
+            return exp.Anonymous(this=name, expressions=args)
+
+        return exp_class(this=seq_get(args, 1), expression=seq_get(args, 0))
+
+    return _builder
+
+
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
 # uses an extra mode argument to specify the first day of the week
 TIMESTAMP_TRUNC_UNITS = {
@@ -271,10 +285,8 @@ class ClickHouseParser(parser.Parser):
         "ARRAYMIN": exp.ArrayMin.from_arg_list,
         "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
         "ARRAYSLICE": exp.ArraySlice.from_arg_list,
-        "ARRAYFILTER": lambda args: exp.ArrayFilter(
-            this=seq_get(args, 1), expression=seq_get(args, 0)
-        ),
-        "ARRAYMAP": lambda args: exp.Transform(this=seq_get(args, 1), expression=seq_get(args, 0)),
+        "ARRAYFILTER": _build_array_lambda_func(exp.ArrayFilter, "arrayFilter"),
+        "ARRAYMAP": _build_array_lambda_func(exp.Transform, "arrayMap"),
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,

@@ -1871,6 +1871,13 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         self.validate_identity("arrayMap(x -> x + 1, arr)").assert_is(exp.Transform)
         self.validate_identity("arrayFilter(x -> x > 0, arr)").assert_is(exp.ArrayFilter)
+        self.validate_identity(
+            "SELECT arrayMap((a, b) -> a * b, [1, 2, 3], [10, 20, 30]) AS products"
+        ).expressions[0].this.assert_is(exp.Anonymous)
+        self.validate_identity("arrayMap((x, y, z) -> x + y + z, [1, 2], [3, 4], [5, 6])")
+        self.validate_identity("arrayFilter((x, y) -> y, [1, 2, 3], [1, 0, 1])").assert_is(
+            exp.Anonymous
+        )
 
     def test_array_offset(self):
         with self.assertLogs(helper_logger) as cm:

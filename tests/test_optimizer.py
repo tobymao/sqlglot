@@ -1141,6 +1141,21 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
 
+    def test_qualify_star_except_unmatched_qualifier(self):
+        invalid = {
+            "WITH r AS (SELECT 1 AS pk, 2 AS x) SELECT * EXCEPT (z.pk) FROM r": r"z\.pk",
+            (
+                "WITH r AS (SELECT 1 AS pk, 2 AS x), "
+                "d AS (SELECT 1 AS pk, 3 AS y) "
+                "SELECT r.* EXCEPT (d.pk) FROM r JOIN d ON r.pk = d.pk"
+            ): r"d\.pk",
+        }
+
+        for sql, column in invalid.items():
+            with self.subTest(sql):
+                with self.assertRaisesRegex(OptimizeError, rf"Unknown column: {column}$"):
+                    qualify(parse_one(sql, dialect="databricks"), dialect="databricks")
+
     def test_qualify_snowflake_positional_column_with_visible_schema(self):
         visible_schema = MappingSchema(
             {"t": {"hidden": "INT", "HAS SPACE": "INT"}},

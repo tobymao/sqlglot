@@ -867,7 +867,7 @@ def _expand_struct_stars_no_parens(
         taken_names.add(name)
 
         this = field.this.copy()
-        root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
+        root, *parts = (part.copy() for part in itertools.chain(dot_parts, [this]))
         new_column = exp.column(
             t.cast(exp.Identifier, root),
             table=dot_column.args.get("table"),
@@ -950,7 +950,6 @@ def _expand_stars(
     """Expand stars to lists of column selections"""
 
     new_selections: list[exp.Expr] = []
-    except_columns: dict[int, set[str]] = {}
     replace_columns: dict[int, dict[str, exp.Alias]] = {}
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
@@ -971,6 +970,7 @@ def _expand_stars(
         return
 
     for expression in scope_expression.selects:
+        except_columns: dict[int, set[str]] = {}
         tables: list[str] = []
         if isinstance(expression, exp.Star):
             # Only a string literal ILIKE pattern can filter the expansion at optimization time
@@ -1191,10 +1191,16 @@ def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, 
     if not except_:
         return
 
-    columns = {e.name for e in except_}
+    for exclusion in except_:
+        if isinstance(exclusion, exp.Column) and exclusion.table:
+            excluded_tables = [table for table in tables if table == exclusion.table]
+            if not excluded_tables:
+                raise OptimizeError(f"Unknown column: {exclusion.sql()}")
+        else:
+            excluded_tables = tables
 
-    for table in tables:
-        except_columns[id(table)] = columns
+        for table in excluded_tables:
+            except_columns.setdefault(id(table), set()).add(exclusion.name)
 
 
 def _add_rename_columns(

@@ -828,6 +828,18 @@ SELECT x.b AS b FROM t AS t JOIN x AS x ON t.a = x.a;
 SELECT a FROM t1 JOIN t2 USING(a);
 SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 
+# title: using join with a derived wildcard right source
+# dialect: snowflake
+# execute: false
+WITH b AS (SELECT * FROM external_tbl), a AS (SELECT 1 AS k) SELECT * FROM a JOIN b USING (k);
+WITH B AS (SELECT * FROM EXTERNAL_TBL AS EXTERNAL_TBL), A AS (SELECT 1 AS K) SELECT * FROM A AS A JOIN B AS B ON A.K = B.K;
+
+# title: using join with an unknown source in the accumulated left side
+# dialect: snowflake
+# execute: false
+WITH a AS (SELECT 1 AS x), c AS (SELECT 1 AS k) SELECT * FROM a JOIN external_tbl ON TRUE JOIN c USING (k);
+WITH A AS (SELECT 1 AS X), C AS (SELECT 1 AS K) SELECT * FROM A AS A JOIN EXTERNAL_TBL AS EXTERNAL_TBL ON TRUE JOIN C AS C ON EXTERNAL_TBL.K = C.K;
+
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
 WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;
 

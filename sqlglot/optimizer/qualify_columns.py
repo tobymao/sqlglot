@@ -210,7 +210,8 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
     columns = {}
 
     def _update_source_columns(source_name: str) -> None:
-        for column_name in resolver.get_source_columns(source_name):
+        source_columns = resolver.get_source_columns(source_name) or ("*",)
+        for column_name in source_columns:
             if column_name not in columns:
                 columns[column_name] = source_name
 
@@ -267,7 +268,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
             table = columns.get(identifier)
 
             if not table or identifier not in join_columns:
-                if (columns and "*" not in columns) and join_columns:
+                if columns and "*" not in columns and join_columns and "*" not in join_columns:
                     raise OptimizeError(f"Cannot automatically join: {identifier}")
 
             table = table or source_table

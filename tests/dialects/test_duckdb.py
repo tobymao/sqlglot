@@ -2999,3 +2999,37 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+    def test_duckdb_array_list_functions(self):
+        self.validate_all(
+            "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+            read={
+                "duckdb": "SELECT LIST_POSITION([1, 2, 3], 2)",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+                "snowflake": "SELECT ARRAY_POSITION(2, [1, 2, 3])",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+            read={
+                "duckdb": "SELECT LIST_INDEX([1, 2, 3], 2)",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_REVERSE([1, 2, 3])",
+            read={
+                "duckdb": "SELECT LIST_REVERSE([1, 2, 3])",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_REVERSE([1, 2, 3])",
+                "postgres": "SELECT ARRAY_REVERSE(ARRAY[1, 2, 3])",
+                "spark": "SELECT ARRAY_REVERSE(ARRAY(1, 2, 3))",
+            },
+        )

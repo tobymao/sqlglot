@@ -725,6 +725,14 @@ SELECT * EXCEPT(x.a) FROM x AS x;
 SELECT x.b AS b FROM x AS x;
 
 # execute: false
+SELECT * EXCEPT (y.b) FROM x AS x JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# execute: false
+SELECT * EXCEPT (b, y.c) FROM x AS x JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# execute: false
 # note: this query would fail in the engine level because there are 0 selected columns
 SELECT * EXCEPT (a, b) FROM x;
 SELECT * EXCEPT (a, b) FROM x AS x;

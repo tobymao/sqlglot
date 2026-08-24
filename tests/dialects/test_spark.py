@@ -1318,50 +1318,121 @@ TBLPROPERTIES (
                 "spark": "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl",
             },
         )
-        self.validate_all(
-            "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
-            write={
-                "presto": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
-                "trino": "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
-                "spark": "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
-            },
-        )
+
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.qualify import qualify
+
         expression = self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl")
         explode = expression.find(exp.Explode)
         assert explode
-        self.assertEqual("map", explode.args.get("kind"))
+        self.assertTrue(explode.this.is_type(exp.DType.MAP))
+
+        map_literal = self.parse_one("SELECT EXPLODE(MAP(1, 'a')) AS (k, v)")
+        explode = map_literal.find(exp.Explode)
+        assert explode
+        self.assertTrue(explode.this.is_type(exp.DType.MAP))
         self.assertEqual(
-            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", expression.sql("spark")
+            "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+            map_literal.copy().sql("presto"),
+        )
+        self.assertEqual(
+            "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+            map_literal.copy().sql("trino"),
+        )
+        self.assertEqual(
+            "SELECT UNNEST(MAP([1], ['a'])) AS (k, v)",
+            map_literal.copy().sql("duckdb"),
+        )
+        self.assertEqual(
+            "SELECT UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS (k, v)",
+            map_literal.copy().sql("postgres"),
+        )
+        self.assertEqual(
+            "SELECT IFF(_u.pos = _u_2.k, _u_2.v, NULL) AS v FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE(OBJECT_CONSTRUCT(1, 'a'))) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => OBJECT_CONSTRUCT(1, 'a'))) AS _u_2(seq, key, path, k, v, this) WHERE _u.pos = _u_2.k OR (_u.pos > (ARRAY_SIZE(OBJECT_CONSTRUCT(1, 'a')) - 1) AND _u_2.k = (ARRAY_SIZE(OBJECT_CONSTRUCT(1, 'a')) - 1))",
+            map_literal.copy().sql("snowflake"),
+        )
+        self.assertEqual(
+            "SELECT arrayJoin(map(1, 'a')) AS (k, v)",
+            map_literal.copy().sql("clickhouse"),
+        )
+        self.assertEqual(
+            "SELECT EXPLODE(MAP(1, 'a')) AS (k, v)",
+            map_literal.copy().sql("spark"),
         )
 
-        spark2_explode = parse_one(
-            "SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl", read="spark2"
-        ).find(exp.Explode)
-        assert spark2_explode
-        self.assertEqual("map", spark2_explode.args.get("kind"))
-
-        posexplode = self.parse_one("SELECT POSEXPLODE(cells) AS (pos, cell) FROM tbl").find(
-            exp.Posexplode
+        schema = {"tbl": {"cells": "MAP<INT, STRING>"}}
+        annotated_map_column = annotate_types(
+            qualify(
+                self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl"),
+                dialect="spark",
+                schema=schema,
+            ),
+            schema=schema,
+            dialect="spark",
         )
-        assert posexplode
-        self.assertIsNone(posexplode.args.get("kind"))
-
-        single_alias_explode = self.parse_one("SELECT EXPLODE(cells) AS cell FROM tbl").find(
-            exp.Explode
+        explode = annotated_map_column.find(exp.Explode)
+        assert explode
+        self.assertTrue(explode.is_type(exp.DType.MAP))
+        self.assertEqual(
+            'SELECT _u_2."cell_id" AS "cell_id", _u_2."cell_name" AS "cell_name" FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2("cell_id", "cell_name")',
+            annotated_map_column.copy().sql("presto"),
         )
-        assert single_alias_explode
-        self.assertIsNone(single_alias_explode.args.get("kind"))
-
-        explode_outer = self.parse_one("SELECT EXPLODE_OUTER(cells) AS (k, v) FROM tbl").find(
-            exp.Explode
+        self.assertEqual(
+            'SELECT _u_2."cell_id" AS "cell_id", _u_2."cell_name" AS "cell_name" FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2("cell_id", "cell_name")',
+            annotated_map_column.copy().sql("trino"),
         )
-        assert explode_outer
-        self.assertIsNone(explode_outer.args.get("kind"))
-        self.validate_all(
-            "SELECT CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, EXPLODE(cells) AS (cell_id, cell_name) FROM tbl)",
-            write={
-                "trino": "SELECT TRY_CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, _u_2.cell_id AS cell_id, _u_2.cell_name AS cell_name FROM tbl CROSS JOIN UNNEST(cells) AS _u_2(cell_id, cell_name))",
-            },
+
+        annotated_map_without_aliases = annotate_types(
+            qualify(
+                self.parse_one("SELECT EXPLODE(cells) FROM tbl"),
+                dialect="spark",
+                schema=schema,
+            ),
+            schema=schema,
+            dialect="spark",
+        )
+        self.assertEqual(
+            'SELECT _u_2.key AS key, _u_2.value AS value FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2(key, value)',
+            annotated_map_without_aliases.copy().sql("presto"),
+        )
+        self.assertEqual(
+            'SELECT _u_2.key AS key, _u_2.value AS value FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2(key, value)',
+            annotated_map_without_aliases.copy().sql("trino"),
+        )
+
+        array_schema = {"tbl": {"cells": "ARRAY<STRING>"}}
+        annotated_array_column = annotate_types(
+            qualify(
+                self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl"),
+                dialect="spark",
+                schema=array_schema,
+                validate_qualify_columns=False,
+            ),
+            schema=array_schema,
+            dialect="spark",
+        )
+        explode = annotated_array_column.find(exp.Explode)
+        assert explode
+        self.assertTrue(explode.is_type(exp.DType.TEXT))
+        self.assertEqual(
+            'SELECT IF(_u.pos = _u_2."cell_id", _u_2."cell_name") AS "cell_name" FROM "tbl" AS "tbl" CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY("tbl"."cells")))) AS _u(pos) CROSS JOIN UNNEST("tbl"."cells") WITH ORDINALITY AS _u_2("cell_name", "cell_id") WHERE _u.pos = _u_2."cell_id" OR (_u.pos > CARDINALITY("tbl"."cells") AND _u_2."cell_id" = CARDINALITY("tbl"."cells"))',
+            annotated_array_column.copy().sql("trino"),
+        )
+
+        nested_map_column = annotate_types(
+            qualify(
+                self.parse_one(
+                    "SELECT CAST(test_id AS BIGINT) AS test_id, cell_id, cell_name FROM (SELECT test_id, EXPLODE(cells) AS (cell_id, cell_name) FROM tbl)"
+                ),
+                dialect="spark",
+                schema={"tbl": {"test_id": "INT", "cells": "MAP<INT, STRING>"}},
+            ),
+            schema={"tbl": {"test_id": "INT", "cells": "MAP<INT, STRING>"}},
+            dialect="spark",
+        )
+        self.assertEqual(
+            'SELECT TRY_CAST("_0"."test_id" AS BIGINT) AS "test_id", "_0"."cell_id" AS "cell_id", "_0"."cell_name" AS "cell_name" FROM (SELECT "tbl"."test_id" AS "test_id", _u_2."cell_id" AS "cell_id", _u_2."cell_name" AS "cell_name" FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2("cell_id", "cell_name")) AS "_0"',
+            nested_map_column.copy().sql("trino"),
         )
         self.validate_all(
             "SELECT col, pos, POSEXPLODE(ARRAY(2, 3)) FROM _u",

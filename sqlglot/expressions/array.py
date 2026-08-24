@@ -236,7 +236,7 @@ class Generator(Expression, Func, UDTF):
 
 
 class Explode(Expression, Func, UDTF):
-    arg_types = {"this": True, "expressions": False, "kind": False}
+    arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
 
 

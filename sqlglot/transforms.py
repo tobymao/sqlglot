@@ -434,9 +434,15 @@ def explode_projection_to_unnest(
                 if explode:
                     if (
                         unnest_map
-                        and explode.args.get("kind") == "map"
-                        and isinstance(select, exp.Aliases)
-                        and len(select.aliases) == 2
+                        and (
+                            explode.is_type(exp.DType.MAP)
+                            or (explode.this and explode.this.is_type(exp.DType.MAP))
+                        )
+                        and (
+                            (isinstance(select, exp.Aliases) and len(select.aliases) == 2)
+                            or select is explode
+                            or (isinstance(select, exp.Alias) and select.this is explode)
+                        )
                     ):
                         # SELECT [...,] EXPLODE(map_col) AS (key_alias, value_alias) [, ...]
                         #
@@ -446,7 +452,11 @@ def explode_projection_to_unnest(
                         # multiple array explodes of possibly different lengths).
                         map_key_alias: t.Any
                         map_value_alias: t.Any
-                        map_key_alias, map_value_alias = select.aliases
+                        if isinstance(select, exp.Aliases):
+                            map_key_alias, map_value_alias = select.aliases
+                        else:
+                            map_key_alias = new_name(taken_select_names, "key")
+                            map_value_alias = new_name(taken_select_names, "value")
                         map_arg = explode.this
                         map_unnest_source = new_name(taken_source_names, "_u")
 

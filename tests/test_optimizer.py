@@ -2913,6 +2913,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         expression = annotate_types(parse_one("SELECT MAP('a', 'b')", read="spark"))
         self.assertEqual(expression.selects[0].type, exp.DataType.build("MAP(VARCHAR, VARCHAR)"))
 
+        expression = annotate_types(parse_one("SELECT EXPLODE(MAP('a', 'b'))", read="spark"))
+        explode = expression.find(exp.Explode)
+        assert explode
+        self.assertEqual(explode.type, exp.DataType.build("MAP(VARCHAR, VARCHAR)"))
+
     def test_union_annotation(self):
         for left, right, expected_type in (
             ("SELECT 1::INT AS c", "SELECT 2::BIGINT AS c", "BIGINT"),

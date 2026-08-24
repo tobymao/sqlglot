@@ -119,7 +119,7 @@ class Spark2Parser(HiveParser):
             and isinstance(this.this, exp.Explode)
             and not isinstance(this.this, (exp.Posexplode, exp.ExplodeOuter))
         ):
-            this.this.set("kind", "map")
+            this.this.this.type = exp.DType.MAP
 
         return this
 

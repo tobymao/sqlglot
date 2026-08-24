@@ -1191,10 +1191,15 @@ def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, 
     if not except_:
         return
 
-    columns = {e.name for e in except_}
-
     for table in tables:
-        except_columns[id(table)] = columns
+        columns = {
+            e.name
+            for e in except_
+            # A qualified exclusion only applies to the source it references
+            if not isinstance(e, exp.Column) or not e.table or e.table == table
+        }
+        if columns:
+            except_columns[id(table)] = columns
 
 
 def _add_rename_columns(

@@ -735,6 +735,18 @@ SELECT x.a AS a, x.b AS b, y.b AS b FROM x AS x LEFT JOIN x AS y ON x.a = y.a;
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.* EXCEPT (a) FROM x AS t1, x AS t2;
 SELECT COALESCE(CAST(t1.a AS VARCHAR), '') AS a, t2.b AS b FROM x AS t1, x AS t2;
 
+# title: Databricks qualified star EXCEPT preserves same-named columns from other sources
+# dialect: databricks
+# execute: false
+WITH r AS (SELECT 1 AS pk, 2 AS x), d AS (SELECT 1 AS pk, 3 AS y), j AS (SELECT * EXCEPT (r.pk) FROM r JOIN d ON r.pk = d.pk) SELECT j.pk FROM j;
+WITH r AS (SELECT 1 AS pk, 2 AS x), d AS (SELECT 1 AS pk, 3 AS y), j AS (SELECT r.x AS x, d.pk AS pk, d.y AS y FROM r AS r JOIN d AS d ON r.pk = d.pk) SELECT j.pk AS pk FROM j AS j;
+
+# title: Databricks nested star EXCEPT remains valid after struct qualification
+# dialect: databricks
+# execute: false
+WITH t AS (SELECT named_struct('x', 1, 'y', 2) AS s) SELECT * EXCEPT (s.x) FROM t;
+WITH t AS (SELECT STRUCT(1 AS x, 2 AS y) AS s) SELECT t.s AS s FROM t AS t;
+
 # execute: false
 SELECT * REPLACE(2 AS a) FROM x;
 SELECT 2 AS a, x.b AS b FROM x AS x;

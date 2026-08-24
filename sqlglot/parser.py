@@ -5127,6 +5127,16 @@ class Parser:
             this.set("ordinality", True)
             this.set("alias", self._parse_table_alias())
 
+        # TABLE(<tvf>) is parsed into a Table wrapping exp.TableFromRows, so we
+        # hoist the table args onto the latter and return it instead
+        if isinstance(this, exp.Table) and isinstance(this.this, exp.TableFromRows):
+            table_from_rows = this.this
+            for arg in exp.TableFromRows.arg_types:
+                if arg != "this":
+                    table_from_rows.set(arg, this.args.get(arg))
+
+            this = table_from_rows
+
         return this
 
     def _parse_version(self) -> exp.Version | None:

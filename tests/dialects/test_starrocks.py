@@ -136,6 +136,16 @@ class TestStarrocks(Validator):
             "WITH RECURSIVE _generated_dates(date_week) AS (SELECT CAST('2020-01-01' AS DATE) AS date_week UNION ALL SELECT CAST(DATE_ADD(date_week, INTERVAL 1 WEEK) AS DATE) FROM _generated_dates WHERE CAST(DATE_ADD(date_week, INTERVAL 1 WEEK) AS DATE) <= CAST('2020-02-01' AS DATE)) SELECT * FROM (SELECT date_week FROM _generated_dates) AS _generated_dates",
         )
 
+    def test_table_function(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
+        self.validate_identity("SELECT * FROM TABLE(GENERATE_SERIES(0, 10))").args[
+            "from_"
+        ].this.assert_is(exp.TableFromRows).this.assert_is(exp.GenerateSeries)
+        self.validate_identity("SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10, 2)) AS t")
+        self.validate_identity("SELECT x FROM TABLE(GENERATE_SERIES(0, 10)) AS t(x)")
+
+        self.validate_identity("SELECT * FROM t, GENERATE_SERIES(t.s, t.e)")
+
     def test_ddl(self):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

@@ -216,6 +216,16 @@ def qualify_tables(
                         for i in dialect.generate_values_aliases(udtf)
                     ]
                     table_alias.set("columns", column_aliases)
+                elif isinstance(udtf, exp.TableFromRows) and not table_alias.columns:
+                    default_columns = dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(udtf.this))
+                    if default_columns:
+                        table_alias.set(
+                            "columns",
+                            [
+                                normalize_identifiers(exp.to_identifier(c), dialect=dialect)
+                                for c in ensure_list(default_columns)
+                            ],
+                        )
 
         for table in scope.tables:
             if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):

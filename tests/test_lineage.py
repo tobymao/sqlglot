@@ -972,6 +972,41 @@ class TestLineage(unittest.TestCase):
             "DATABASE_NAME.SCHEMA_NAME.TABLE_NAME AS RAW",
         )
 
+    def test_table_udtf_starrocks(self) -> None:
+        # https://github.com/tobymao/sqlglot/issues/8244
+        sql = """
+        WITH t AS (
+          SELECT p.user_id, gs.n AS to_deposit_days
+          FROM tbl1 AS p
+          CROSS JOIN (
+            SELECT generate_series AS n FROM TABLE(generate_series(0, 8000))
+          ) AS gs
+        ),
+        t2 AS (
+          SELECT t.* FROM t
+        )
+        SELECT user_id, to_deposit_days FROM t2
+        """
+        schema = {"tbl1": {"user_id": "BIGINT"}}
+
+        node = lineage(
+            "to_deposit_days",
+            sql,
+            schema=schema,
+            dialect="starrocks",
+            expand_stars=True,
+            validate_qualify_columns=True,
+        )
+
+        self.assertEqual(node.name, "to_deposit_days")
+
+        leaves = [n for n in node.walk() if not n.downstream]
+        self.assertEqual([n.name for n in leaves], ["_0.generate_series"])
+        self.assertEqual(
+            leaves[0].source.sql("starrocks"),
+            "TABLE(GENERATE_SERIES(0, 8000)) AS _0(generate_series)",
+        )
+
     def test_pivot_with_subquery(self) -> None:
         schema = {
             "loan_ledger": {

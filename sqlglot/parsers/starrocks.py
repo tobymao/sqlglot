@@ -31,6 +31,9 @@ class StarRocksParser(MySQLParser):
         # StarRocks' MAP() is a variadic constructor: MAP(k1, v1, k2, v2, ...)
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/
         "MAP": parser.build_var_map,
+        # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
+        "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
     }
 
     PROPERTY_PARSERS = {

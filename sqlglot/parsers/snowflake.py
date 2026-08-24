@@ -1137,34 +1137,6 @@ class SnowflakeParser(parser.Parser):
 
         return table
 
-    def _parse_table(
-        self,
-        schema: bool = False,
-        joins: bool = False,
-        alias_tokens: Collection[TokenType] | None = None,
-        parse_bracket: bool = False,
-        is_db_reference: bool = False,
-        parse_partition: bool = False,
-        consume_pipe: bool = False,
-    ) -> exp.Expr | None:
-        table = super()._parse_table(
-            schema=schema,
-            joins=joins,
-            alias_tokens=alias_tokens,
-            parse_bracket=parse_bracket,
-            is_db_reference=is_db_reference,
-            parse_partition=parse_partition,
-        )
-        if isinstance(table, exp.Table) and isinstance(table.this, exp.TableFromRows):
-            table_from_rows = table.this
-            for arg in exp.TableFromRows.arg_types:
-                if arg != "this":
-                    table_from_rows.set(arg, table.args.get(arg))
-
-            table = table_from_rows
-
-        return table
-
     def _parse_function_call(
         self,
         functions: dict[str, t.Callable] | None = None,

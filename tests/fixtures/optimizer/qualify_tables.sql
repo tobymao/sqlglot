@@ -296,6 +296,21 @@ SELECT g FROM GENERATE_SERIES(1, 2) AS t(g);
 SELECT g FROM GENERATE_SERIES(1,2) AS t(g);
 SELECT g FROM GENERATE_SERIES(1, 2) AS _0(g);
 
+# title: Qualify TABLE(GENERATE_SERIES()) with its default column generate_series
+# dialect: starrocks
+SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10));
+SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10)) AS _0(generate_series);
+
+# title: Qualify TABLE(GENERATE_SERIES()) with a table alias, which does not rename the column
+# dialect: starrocks
+SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10)) AS t;
+SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10)) AS t(generate_series);
+
+# title: Qualify TABLE(GENERATE_SERIES()) with alias on table and columns
+# dialect: starrocks
+SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
+SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
+
 # title: Qualify JSONB_TO_RECORDSET with typed alias columns and canonicalize_table_aliases
 # dialect: postgres
 # canonicalize_table_aliases: true

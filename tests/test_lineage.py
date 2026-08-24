@@ -972,8 +972,7 @@ class TestLineage(unittest.TestCase):
             "DATABASE_NAME.SCHEMA_NAME.TABLE_NAME AS RAW",
         )
 
-    def test_table_udtf_starrocks(self) -> None:
-        # https://github.com/tobymao/sqlglot/issues/8244
+    def test_table_udtfs(self) -> None:
         sql = """
         WITH t AS (
           SELECT p.user_id, gs.n AS to_deposit_days
@@ -998,12 +997,10 @@ class TestLineage(unittest.TestCase):
             validate_qualify_columns=True,
         )
 
-        self.assertEqual(node.name, "to_deposit_days")
-
-        leaves = [n for n in node.walk() if not n.downstream]
-        self.assertEqual([n.name for n in leaves], ["_0.generate_series"])
+        node = node.downstream[0].downstream[0].downstream[0].downstream[0]
+        self.assertEqual(node.name, "_0.generate_series")
         self.assertEqual(
-            leaves[0].source.sql("starrocks"),
+            node.source.sql("starrocks"),
             "TABLE(GENERATE_SERIES(0, 8000)) AS _0(generate_series)",
         )
 

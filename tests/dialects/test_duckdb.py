@@ -11,6 +11,21 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_duckdb(self):
+        self.validate_all(
+            "SELECT list_position([10, 20, 30], 20)",
+            write={
+                "duckdb": "SELECT list_position([10, 20, 30], 20)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[10, 20, 30], 20)",
+                "snowflake": "SELECT ARRAY_POSITION(20, [10, 20, 30])",
+            },
+        )
+        self.validate_all(
+            "SELECT list_indexof([10, 20, 30], 20)",
+            write={
+                "duckdb": "SELECT list_position([10, 20, 30], 20)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[10, 20, 30], 20)",
+            },
+        )
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(
             "TRUNC(3.14159, 2)",

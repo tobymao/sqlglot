@@ -1176,9 +1176,6 @@ class Dialect(metaclass=_Dialect):
             try:
                 return parse_json_path(path_text, self)
             except (ParseError, TokenError) as e:
-                # A JSON path tokenization failure (e.g. an operand that is a plain string
-                # literal rather than a path) raises TokenError, which is a sibling of
-                # ParseError under SqlglotError. Both must fall back to the literal operand.
                 if self.STRICT_JSON_PATH_SYNTAX and not path_text.lstrip().startswith(
                     ("lax", "strict")
                 ):

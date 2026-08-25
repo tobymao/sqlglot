@@ -58,9 +58,11 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT JSON_EXTRACT(a, '$.k') FROM t")
         self.validate_identity("SELECT a -> '$.k' FROM t")
         self.validate_identity("SELECT a ->> '$.k' FROM t")
-        # A JSON key that isn't a path is a plain literal operand; the apostrophe must not
-        # abort tokenization of the surrounding statement
-        self.validate_identity("SELECT a -> 'it''s' FROM t")
+        with self.assertLogs(helper_logger, level="WARNING") as logs:
+            self.validate_identity("SELECT a -> 'it''s' FROM t")
+            self.validate_identity("SELECT a ->> 'it''s' FROM t")
+            self.assertEqual(len(logs.output), 2)
+            self.assertTrue(all("Invalid JSON path syntax" in message for message in logs.output))
         self.validate_identity("SELECT JSON_SET('{}', '$.x', JSON_EXTRACT(a, '$.k'))")
         self.validate_identity("SELECT JSON_EXTRACT(a, '$') FROM t")
         self.validate_identity("SELECT JSON_EXTRACT(a, b) FROM t")

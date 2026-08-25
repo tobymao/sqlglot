@@ -7453,6 +7453,11 @@ TEXT;
 DECODE(tbl.str_col, 'base64');
 VARBINARY;
 
+# dialect: postgres
+MAKE_TIME(tbl.int_col, tbl.int_col, tbl.double_col);
+TIME;
+
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

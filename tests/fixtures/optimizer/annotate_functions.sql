@@ -7509,6 +7509,13 @@ INT;
 BIT_AND(tbl.bigint_col);
 BIGINT;
 
+# dialect: postgres
+BIT_AND(tbl.smallint_col);
+SMALLINT;
+
+# dialect: postgres
+BIT_AND(tbl.bit_col);
+BIT;
 
 --------------------------------------
 -- Presto / Trino

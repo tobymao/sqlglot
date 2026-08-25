@@ -7501,6 +7501,14 @@ TEXT;
 MAKE_TIMESTAMP(tbl.int_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.double_col);
 TIMESTAMP;
 
+# dialect: postgres
+BIT_AND(tbl.int_col);
+INT;
+
+# dialect: postgres
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
 
 --------------------------------------
 -- Presto / Trino

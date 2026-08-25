@@ -46,5 +46,11 @@ EXPRESSION_METADATA = {
             exp.TimestampFromParts,
         }
     },
+    **{
+        expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+        for expr_type in {
+            exp.BitwiseAndAgg,
+        }
+    },
     exp.ToNumber: {"returns": exp.DType.DECIMAL},
 }

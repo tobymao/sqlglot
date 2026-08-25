@@ -12,7 +12,7 @@ from builtins import type as Type
 
 from sqlglot import exp
 from sqlglot.dialects import DIALECT_MODULE_NAMES
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, TokenError
 from sqlglot.generator import Generator, unsupported_args
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import (
@@ -1175,7 +1175,7 @@ class Dialect(metaclass=_Dialect):
                 path_text = f"[{path_text}]"
             try:
                 return parse_json_path(path_text, self)
-            except ParseError as e:
+            except (ParseError, TokenError) as e:
                 if self.STRICT_JSON_PATH_SYNTAX and not path_text.lstrip().startswith(
                     ("lax", "strict")
                 ):

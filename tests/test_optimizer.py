@@ -2310,6 +2310,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "timestamp_col": "TIMESTAMP",
                 "double_col": "DOUBLE",
                 "bigint_col": "BIGINT",
+                "smallint_col": "SMALLINT",
+                "bit_col": "BIT",
                 "obj_col": "OBJECT",
                 "int_col": "INT",
                 "bool_col": "BOOLEAN",

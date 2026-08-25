@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import typing as t
+from collections.abc import Collection
 
 from sqlglot import exp, parser
-from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     binary_from_function,
     build_default_decimal_type,
@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import seq_get
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
-from collections.abc import Collection
+from sqlglot.trie import new_trie
 
 
 def _build_sort_array_desc(args: list) -> exp.Expr:

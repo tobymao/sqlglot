@@ -25,6 +25,7 @@ EXPRESSION_METADATA = {
             exp.Hex,
             exp.SplitPart,
             exp.Normalize,
+            exp.RegexpReplace,
         }
     },
     **{

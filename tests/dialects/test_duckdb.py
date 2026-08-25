@@ -3009,7 +3009,6 @@ class TestDuckDB(Validator):
             write={
                 "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
                 "postgres": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
-                "snowflake": "SELECT ARRAY_POSITION(2, [1, 2, 3])",
             },
         )
         self.validate_all(

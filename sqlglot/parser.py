@@ -976,7 +976,6 @@ class Parser:
     TERM: t.ClassVar = {
         TokenType.DASH: exp.Sub,
         TokenType.PLUS: exp.Add,
-        TokenType.MOD: exp.Mod,
         TokenType.COLLATE: exp.Collate,
     }
 
@@ -984,6 +983,7 @@ class Parser:
         TokenType.DIV: exp.IntDiv,
         TokenType.LR_ARROW: exp.Distance,
         TokenType.LLRR_ARROW: exp.DistanceNd,
+        TokenType.MOD: exp.Mod,
         TokenType.SLASH: exp.Div,
         TokenType.STAR: exp.Mul,
     }
@@ -5276,7 +5276,7 @@ class Parser:
         else:
             expressions = None
             num = (
-                self._parse_factor()
+                self._parse_factor(parse_mod=False)
                 if self._match(TokenType.NUMBER, advance=False)
                 else self._parse_primary() or self._parse_placeholder()
             )
@@ -5775,16 +5775,7 @@ class Parser:
                 if self.dialect.SUPPORTS_LIMIT_ALL and self._match(TokenType.ALL):
                     return this
 
-                # Parsing LIMIT x% (i.e x PERCENT) as a term leads to an error, since
-                # we try to build an exp.Mod expr. For that matter, we backtrack and instead
-                # consume the factor plus parse the percentage separately
-                index = self._index
-                expression = self._try_parse(self._parse_term)
-                if isinstance(expression, exp.Mod):
-                    self._retreat(index)
-                    expression = self._parse_factor()
-                elif not expression:
-                    expression = self._parse_factor()
+                expression = self._parse_term(parse_mod=False)
             limit_options = self._parse_limit_options()
 
             if self._match(TokenType.COMMA):
@@ -6344,13 +6335,13 @@ class Parser:
 
         return this
 
-    def _parse_term(self) -> exp.Expr | None:
-        this = self._parse_factor()
+    def _parse_term(self, parse_mod: bool = True) -> exp.Expr | None:
+        this = self._parse_factor(parse_mod=parse_mod)
 
         while self._match_set(self.TERM):
             klass = self.TERM[self._prev.token_type]
             comments = self._prev_comments
-            expression = self._parse_factor()
+            expression = self._parse_factor(parse_mod=parse_mod)
 
             this = self.expression(klass(this=this, expression=expression), comments=comments)
 
@@ -6369,11 +6360,15 @@ class Parser:
             if isinstance(ident, exp.Identifier):
                 collate.set("expression", ident if ident.quoted else exp.var(ident.name))
 
-    def _parse_factor(self) -> exp.Expr | None:
+    def _parse_factor(self, parse_mod: bool = True) -> exp.Expr | None:
         parse_method = self._parse_factor_operand
         this = self._parse_at_time_zone(parse_method())
 
-        while self._match_set(self.FACTOR):
+        while self._match_set(self.FACTOR, advance=False):
+            if not parse_mod and self._curr.token_type == TokenType.MOD:
+                break
+
+            self._advance()
             klass = self.FACTOR[self._prev.token_type]
             comments = self._prev_comments
             expression = parse_method()

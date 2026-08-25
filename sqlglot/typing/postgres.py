@@ -40,5 +40,11 @@ EXPRESSION_METADATA = {
             exp.TimeFromParts,
         }
     },
+    **{
+        expr_type: {"returns": exp.DType.TIMESTAMP}
+        for expr_type in {
+            exp.TimestampFromParts,
+        }
+    },
     exp.ToNumber: {"returns": exp.DType.DECIMAL},
 }

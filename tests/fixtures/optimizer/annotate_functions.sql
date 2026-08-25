@@ -7457,6 +7457,10 @@ VARBINARY;
 MAKE_TIME(tbl.int_col, tbl.int_col, tbl.double_col);
 TIME;
 
+# dialect: postgres
+REGEXP_REPLACE(tbl.str_col, '[0-9]+', '');
+TEXT;
+
 
 --------------------------------------
 -- Presto / Trino

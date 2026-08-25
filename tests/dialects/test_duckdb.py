@@ -568,6 +568,9 @@ class TestDuckDB(Validator):
             "SELECT * FROM t1 WHERE NOT EXISTS(SELECT * FROM t2 WHERE t2.id = t1.id)",
         )
         self.validate_identity("x -> '$.family'")
+        # A JSON key that isn't a path is a plain literal operand; the apostrophe must not
+        # abort tokenization (STRICT_JSON_PATH_SYNTAX is relaxed for duckdb)
+        self.validate_identity("SELECT a -> 'it''s' FROM t")
         self.validate_identity("CREATE TABLE color (name ENUM('RED', 'GREEN', 'BLUE'))")
         self.validate_identity("SELECT * FROM foo WHERE bar > $baz AND bla = $bob")
         self.validate_identity("SUMMARIZE tbl").assert_is(exp.Summarize)

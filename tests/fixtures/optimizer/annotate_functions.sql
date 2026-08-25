@@ -7461,6 +7461,42 @@ TIME;
 REGEXP_REPLACE(tbl.str_col, '[0-9]+', '');
 TEXT;
 
+# dialect: postgres
+REGEXP_REPLACE(tbl.str_col, '[0-9]+', '', 'g');
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(tbl.str_col, '.', 'X', 3);
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(tbl.str_col, '.', 'X', 3, 2);
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(tbl.str_col, '.', 'X', 3, 2, 'i');
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX');
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX', flags => 'g');
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX', start => 1);
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX', start => 1, "N" => 2);
+TEXT;
+
+# dialect: postgres
+REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX', start => 1, "N" => 2, flags => 'i');
+TEXT;
+
 
 --------------------------------------
 -- Presto / Trino

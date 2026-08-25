@@ -3014,6 +3014,26 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT ARRAY_POSITION([1, 2, 3], 2)",
             read={
+                "duckdb": "SELECT LIST_INDEXOF([1, 2, 3], 2)",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+            read={
+                "duckdb": "SELECT ARRAY_INDEXOF([1, 2, 3], 2)",
+            },
+            write={
+                "duckdb": "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+                "postgres": "SELECT ARRAY_POSITION(ARRAY[1, 2, 3], 2)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_POSITION([1, 2, 3], 2)",
+            read={
                 "duckdb": "SELECT LIST_INDEX([1, 2, 3], 2)",
             },
             write={

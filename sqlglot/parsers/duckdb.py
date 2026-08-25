@@ -207,6 +207,8 @@ class DuckDBParser(parser.Parser):
             ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
         ),
         "APPROX_QUANTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
+        "LIST_INDEXOF": lambda self: exp.ArrayPosition.from_arg_list(self._parse_csv(self._parse_expression)),
+        "LIST_POSITION": lambda self: exp.ArrayPosition.from_arg_list(self._parse_csv(self._parse_expression)),
         "QUANTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
         "QUANTILE_CONT": lambda self: self._parse_distinct_arg_function(exp.PercentileCont),
         "QUANTILE_DISC": lambda self: self._parse_distinct_arg_function(exp.PercentileDisc),

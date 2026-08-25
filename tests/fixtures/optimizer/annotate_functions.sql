@@ -7497,6 +7497,10 @@ TEXT;
 REGEXP_REPLACE(string => tbl.str_col, pattern => 'l', replacement => 'XX', start => 1, "N" => 2, flags => 'i');
 TEXT;
 
+# dialect: postgres
+MAKE_TIMESTAMP(tbl.int_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.int_col, tbl.double_col);
+TIMESTAMP;
+
 
 --------------------------------------
 -- Presto / Trino

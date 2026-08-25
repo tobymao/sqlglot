@@ -33,5 +33,11 @@ EXPRESSION_METADATA = {
             exp.Decode,
         }
     },
+    **{
+        expr_type: {"returns": exp.DType.TIME}
+        for expr_type in {
+            exp.TimeFromParts,
+        }
+    },
     exp.ToNumber: {"returns": exp.DType.DECIMAL},
 }

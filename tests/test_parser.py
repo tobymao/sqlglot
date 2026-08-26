@@ -296,6 +296,24 @@ class TestParser(unittest.TestCase):
 
         assert "'ADD JAR s3://a'" in cm.output[0]
 
+    def test_grant_without_privileges(self):
+        # these used to raise ValueError out of exp.var(), not ParseError
+        for sql in (
+            "GRANT ON TABLE tbl TO bob",
+            "GRANT ON TABLE tbl TO ROLE analyst",
+            "GRANT ON tbl TO bob",
+            "REVOKE ON TABLE tbl FROM ROLE analyst",
+        ):
+            with self.subTest(sql=sql), self.assertRaisesRegex(ParseError, "privileges"):
+                parse_one(sql)
+
+        # the same defect on the other side of the statement reports the same way
+        with self.assertRaisesRegex(ParseError, "principals"):
+            parse_one("GRANT SELECT ON TABLE tbl TO")
+
+        self.assertIsInstance(parse_one("GRANT SELECT ON TABLE tbl TO bob"), exp.Grant)
+        self.assertIsInstance(parse_one("REVOKE SELECT ON TABLE tbl FROM bob"), exp.Revoke)
+
     def test_lambda_struct(self):
         expression = parse_one("FILTER(a.b, x -> x.id = id)")
         lambda_expr = expression.expression

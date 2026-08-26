@@ -737,7 +737,7 @@ class SnowflakeParser(parser.Parser):
         **parser.Parser.FUNCTION_PARSERS,
         "DATE_PART": lambda self: self._parse_date_part(),
         "DIRECTORY": lambda self: self._parse_directory(),
-        "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_json_object(),
+        "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_object_construct_keep_null(),
         "LISTAGG": lambda self: self._parse_string_agg(),
         "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
         "SUBSTR": lambda self: self._parse_substring(),
@@ -1056,6 +1056,15 @@ class SnowflakeParser(parser.Parser):
             expression.this.replace(expression.this.this)
 
         return expression
+
+    def _parse_object_construct_keep_null(self) -> exp.JSONObject:
+        index = self._index
+        column = self._parse_column()
+        if column and column.is_star:
+            return self.expression(exp.JSONObject(expressions=[column]))
+
+        self._retreat(index)
+        return self._parse_json_object(agg=False)
 
     # https://docs.snowflake.com/en/sql-reference/functions/date_part.html
     # https://docs.snowflake.com/en/sql-reference/functions-date-time.html#label-supported-date-time-parts

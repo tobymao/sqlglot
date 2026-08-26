@@ -791,6 +791,13 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
+        self.validate_identity("OBJECT_CONSTRUCT(t.*)")
+        self.validate_identity("OBJECT_CONSTRUCT_KEEP_NULL(*)")
+        self.validate_identity("OBJECT_CONSTRUCT_KEEP_NULL(t.*)")
+        self.validate_identity("OBJECT_CONSTRUCT_KEEP_NULL(t.* ILIKE 'col1%')")
+        self.validate_identity("OBJECT_CONSTRUCT_KEEP_NULL(t.* EXCLUDE (col1, col2))")
+        with self.assertRaises(ParseError):
+            parse_one("OBJECT_CONSTRUCT_KEEP_NULL(t.*, 'a', 1)", dialect="snowflake")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")
         self.validate_identity("SELECT HLL(*)")
         self.validate_identity("SELECT HLL(a)")

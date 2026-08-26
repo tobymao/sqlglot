@@ -373,6 +373,7 @@ class SQLiteGenerator(generator.Generator):
         if (
             expression.text("kind").upper() == "RANGE"
             and expression.text("start").upper() == "CURRENT ROW"
+            and not expression.text("end")
         ):
             return "RANGE CURRENT ROW"
 

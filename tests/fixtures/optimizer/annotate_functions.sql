@@ -7533,6 +7533,22 @@ SMALLINT;
 BIT_OR(tbl.bit_col);
 BIT;
 
+# dialect: postgres
+BIT_XOR(tbl.int_col);
+INT;
+
+# dialect: postgres
+BIT_XOR(tbl.bigint_col);
+BIGINT;
+
+# dialect: postgres
+BIT_XOR(tbl.smallint_col);
+SMALLINT;
+
+# dialect: postgres
+BIT_XOR(tbl.bit_col);
+BIT;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

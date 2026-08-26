@@ -10053,7 +10053,7 @@ class Parser:
         return self.expression(exp.GrantPrivilege(this=this, expressions=expressions))
 
     def _parse_grant_principal(self) -> exp.GrantPrincipal | None:
-        kind = self._match_texts(("ROLE", "GROUP")) and self._prev.text.upper()
+        kind = self._match_texts(("ROLE", "GROUP", "USER")) and self._prev.text.upper()
         principal = self._parse_id_var()
 
         if not principal:

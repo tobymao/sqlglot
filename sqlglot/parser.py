@@ -8411,6 +8411,16 @@ class Parser:
 
     def _parse_json_object(self, agg=False):
         star = self._parse_star()
+        if not star:
+            # Snowflake's OBJECT_CONSTRUCT[_KEEP_NULL] allows the wildcard to be qualified,
+            # e.g. OBJECT_CONSTRUCT_KEEP_NULL(t.*)
+            index = self._index
+            this = self._parse_column()
+            if this and this.is_star:
+                star = this
+            else:
+                self._retreat(index)
+
         expressions = (
             [star]
             if star

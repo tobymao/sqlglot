@@ -791,6 +791,8 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("INITCAP('iqamqinterestedqinqthisqtopic', 'q')")
         self.validate_identity("OBJECT_CONSTRUCT(*)")
+        self.validate_identity("SELECT OBJECT_CONSTRUCT_KEEP_NULL(t.*) FROM tbl AS t")
+        self.validate_identity("SELECT OBJECT_CONSTRUCT_KEEP_NULL(t.* ILIKE 'col1%') FROM tbl AS t")
         self.validate_identity("SELECT CAST('2021-01-01' AS DATE) + INTERVAL '1 DAY'")
         self.validate_identity("SELECT HLL(*)")
         self.validate_identity("SELECT HLL(a)")

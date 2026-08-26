@@ -10044,7 +10044,7 @@ class Parser:
             self._advance()
 
         if not privilege_parts:
-            # e.g. "GRANT ON TABLE tbl TO bob"
+            self.raise_error("Expected privilege")
             return None
 
         this = exp.var(" ".join(privilege_parts))

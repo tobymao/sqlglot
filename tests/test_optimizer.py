@@ -2180,6 +2180,39 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             level="warning",
         )
 
+    @patch("sqlglot.optimizer.scope.logger")
+    def test_traverse_union_invalid_operand(self, logger):
+        # A set operation operand that _traverse_scope can't build a scope for (e.g. malformed
+        # SQL leaving a bare Column where a Query was expected) used to silently corrupt the
+        # union's Scope graph instead of raising: the per-operand loop in _traverse_union shares
+        # its variable name with the function's own `scope` parameter, so a zero-yield loop left
+        # `scope` bound to the union's own outer scope, which then made `union_scopes`
+        # self-referential and caused unbounded recursion in Scope.external_columns.
+        with self.assertRaises(OptimizeError) as ctx:
+            qualify(parse_one("a UNION SELECT 1"))
+
+        self.assertIn("Cannot build a scope for set operation operand", str(ctx.exception))
+        assert_logger_contains(
+            "Cannot traverse scope %s with type '%s'",
+            logger,
+            level="warning",
+        )
+
+        # Legitimate non-Query operands -- the exact case called out in _traverse_union's own
+        # comment -- must keep working.
+        qualify(parse_one("VALUES (1) UNION ALL SELECT 1"))
+
+        # On redshift/mysql/bigquery specifically, VALUES (...) parses to exp.Anonymous rather
+        # than a Query, which used to hit the same corruption as the malformed-SQL case above.
+        for dialect in ("redshift", "mysql", "bigquery"):
+            with self.subTest(dialect):
+                with self.assertRaises(OptimizeError) as ctx:
+                    qualify(
+                        parse_one("VALUES (1) UNION ALL SELECT 1", dialect=dialect),
+                        dialect=dialect,
+                    )
+                self.assertIn("Cannot build a scope for set operation operand", str(ctx.exception))
+
     def test_annotate_types(self):
         for i, (meta, sql, expected) in enumerate(
             load_sql_fixture_pairs("optimizer/annotate_types.sql"), start=1

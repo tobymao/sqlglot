@@ -50,6 +50,7 @@ EXPRESSION_METADATA = {
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.BitwiseAndAgg,
+            exp.BitwiseOrAgg,
         }
     },
     exp.ToNumber: {"returns": exp.DType.DECIMAL},

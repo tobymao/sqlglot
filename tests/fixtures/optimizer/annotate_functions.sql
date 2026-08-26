@@ -7517,6 +7517,22 @@ SMALLINT;
 BIT_AND(tbl.bit_col);
 BIT;
 
+# dialect: postgres
+BIT_OR(tbl.int_col);
+INT;
+
+# dialect: postgres
+BIT_OR(tbl.bigint_col);
+BIGINT;
+
+# dialect: postgres
+BIT_OR(tbl.smallint_col);
+SMALLINT;
+
+# dialect: postgres
+BIT_OR(tbl.bit_col);
+BIT;
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

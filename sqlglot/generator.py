@@ -4622,6 +4622,11 @@ class Generator:
         this = expression.this
         expr = expression.expression
 
+        if expr is None and self.dialect.parser_class.LOG_DEFAULTS_TO_LN:
+            # A single-argument LOG is the base-10 logarithm, but the target dialect reads
+            # LOG(x) as the natural logarithm, so the base must be made explicit.
+            this, expr = exp.Literal.number(10), this
+
         if self.dialect.LOG_BASE_FIRST is False:
             this, expr = expr, this
         elif self.dialect.LOG_BASE_FIRST is None and expr:

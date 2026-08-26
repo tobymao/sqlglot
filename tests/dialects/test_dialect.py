@@ -3248,6 +3248,21 @@ SELECT
                 "sqlite": "LOG(x)",
                 "teradata": "LOG(x)",
             },
+            # A single-argument LOG is base 10, so it must not be emitted as a bare LOG(x) for
+            # dialects that read that as the natural logarithm (LOG_DEFAULTS_TO_LN).
+            write={
+                "duckdb": "LOG(x)",
+                "postgres": "LOG(x)",
+                "bigquery": "LOG(x, 10)",
+                "clickhouse": "LOG10(x)",
+                "databricks": "LOG(10, x)",
+                "dremio": "LOG(10, x)",
+                "drill": "LOG(10, x)",
+                "hive": "LOG(10, x)",
+                "mysql": "LOG(10, x)",
+                "spark": "LOG(10, x)",
+                "tsql": "LOG(x, 10)",
+            },
         )
         self.validate_all(
             "LN(x)",

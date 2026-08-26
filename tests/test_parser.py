@@ -272,7 +272,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expr.sql(dialect="clickhouse"), single_union)
 
     def test_mod_precedence(self):
-        expression = parse_one("SELECT 10 % 3 / 2", read="redshift").expressions[0]
+        expression = parse_one("SELECT 10 % 3 / 2").expressions[0]
 
         self.assertIsInstance(expression, exp.Div)
         self.assertIsInstance(expression.this, exp.Mod)
@@ -281,7 +281,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.expression.sql(), "2")
 
     def test_limit_percent_parses_without_modulo(self):
-        expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5", read="duckdb")
+        expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")
         limit = expression.args["limit"]
 
         self.assertIsNotNone(limit)
@@ -290,10 +290,7 @@ class TestParser(unittest.TestCase):
         self.assertTrue(limit.args["limit_options"].args["percent"])
 
     def test_tablesample_percent_parses_without_modulo(self):
-        table = parse_one(
-            "SELECT * FROM tbl TABLESAMPLE RESERVOIR (20%)",
-            read="duckdb",
-        ).find(exp.Table)
+        table = parse_one("SELECT * FROM tbl TABLESAMPLE RESERVOIR (20%)").find(exp.Table)
         sample = table.args["sample"]
 
         self.assertIsNotNone(sample)

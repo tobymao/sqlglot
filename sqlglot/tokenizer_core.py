@@ -276,6 +276,7 @@ class TokenType(IntEnum):
     DECLARE = auto()
     DEFAULT = auto()
     DELETE = auto()
+    DENY = auto()
     DESC = auto()
     DESCRIBE = auto()
     DETACH = auto()

@@ -16,6 +16,7 @@ class Trino(Presto):
             **Presto.Tokenizer.KEYWORDS,
             "REFRESH": TokenType.REFRESH,
             "DECLARE": TokenType.DECLARE,
+            "DENY": TokenType.DENY,
         }
         # Trino has no `SQL SECURITY` clause, only bare `SECURITY DEFINER`/`INVOKER`;
         # the merged base keyword otherwise eats the `SQL` in `LANGUAGE SQL SECURITY DEFINER`.

@@ -620,6 +620,15 @@ class Revoke(Expression):
     arg_types = {**Grant.arg_types, "cascade": False}
 
 
+class Deny(Expression):
+    arg_types = {
+        "privileges": True,
+        "kind": False,
+        "securable": True,
+        "principals": True,
+    }
+
+
 class Group(Expression):
     arg_types = {
         "expressions": False,

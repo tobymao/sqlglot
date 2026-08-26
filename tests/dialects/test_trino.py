@@ -7,6 +7,12 @@ class TestTrino(Validator):
     dialect = "trino"
 
     def test_trino(self):
+        self.validate_identity("DENY SELECT ON TABLE tbl TO bob")
+        self.validate_identity("DENY SELECT, INSERT ON TABLE tbl TO bob")
+        self.validate_identity("DENY ALL PRIVILEGES ON TABLE tbl TO bob")
+        self.validate_identity("DENY SELECT ON orders TO ROLE PUBLIC")
+        self.validate_identity("DENY DELETE ON SCHEMA finance TO bob")
+        self.validate_identity("DENY SELECT ON TABLE tbl TO bob, ROLE analyst")
         self.validate_identity("REFRESH MATERIALIZED VIEW mynamespace.test_view")
         self.validate_identity("JSON_QUERY(m.properties, 'lax $.area' OMIT QUOTES NULL ON ERROR)")
         self.validate_identity("JSON_EXTRACT(content, json_path)")

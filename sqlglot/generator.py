@@ -5777,7 +5777,7 @@ class Generator:
 
     def _grant_or_revoke_sql(
         self,
-        expression: exp.Grant | exp.Revoke,
+        expression: exp.Grant | exp.Revoke | exp.Deny,
         keyword: str,
         preposition: str,
         grant_option_prefix: str = "",
@@ -5809,6 +5809,9 @@ class Generator:
             preposition="TO",
             grant_option_suffix=" WITH GRANT OPTION",
         )
+
+    def deny_sql(self, expression: exp.Deny) -> str:
+        return self._grant_or_revoke_sql(expression, keyword="DENY", preposition="TO")
 
     def revoke_sql(self, expression: exp.Revoke) -> str:
         return self._grant_or_revoke_sql(

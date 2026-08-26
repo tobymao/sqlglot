@@ -1168,6 +1168,7 @@ class Parser:
         TokenType.DESCRIBE: lambda self: self._parse_describe(),
         TokenType.DROP: lambda self: self._parse_drop(),
         TokenType.GRANT: lambda self: self._parse_grant(),
+        TokenType.DENY: lambda self: self._parse_deny(),
         TokenType.REVOKE: lambda self: self._parse_revoke(),
         TokenType.INSERT: lambda self: self._parse_insert(),
         TokenType.KILL: lambda self: self._parse_kill(),
@@ -10097,6 +10098,28 @@ class Parser:
                 securable=securable,
                 principals=principals,
                 grant_option=grant_option,
+            )
+        )
+
+    def _parse_deny(self) -> exp.Deny | exp.Command:
+        start = self._prev
+
+        privileges, kind, securable = self._parse_grant_revoke_common()
+
+        if not securable or not self._match_text_seq("TO"):
+            return self._parse_as_command(start)
+
+        principals = self._parse_csv(self._parse_grant_principal)
+
+        if self._curr:
+            return self._parse_as_command(start)
+
+        return self.expression(
+            exp.Deny(
+                privileges=privileges,
+                kind=kind,
+                securable=securable,
+                principals=principals,
             )
         )
 

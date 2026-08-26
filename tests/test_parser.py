@@ -296,6 +296,17 @@ class TestParser(unittest.TestCase):
 
         assert "'ADD JAR s3://a'" in cm.output[0]
 
+    def test_grant_revoke_without_privileges(self):
+        for sql in (
+            "GRANT ON TABLE tbl TO bob",
+            "REVOKE ON TABLE tbl FROM bob",
+            "GRANT , SELECT ON TABLE tbl TO bob",
+            "GRANT SELECT, ON TABLE tbl TO bob",
+            "GRANT SELECT,,UPDATE ON TABLE tbl TO bob",
+        ):
+            with self.subTest(sql=sql), self.assertRaisesRegex(ParseError, "Expected privilege"):
+                parse_one(sql)
+
     def test_lambda_struct(self):
         expression = parse_one("FILTER(a.b, x -> x.id = id)")
         lambda_expr = expression.expression

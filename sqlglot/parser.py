@@ -10043,6 +10043,10 @@ class Parser:
             privilege_parts.append(self._curr.text.upper())
             self._advance()
 
+        if not privilege_parts:
+            self.raise_error("Expected privilege")
+            return None
+
         this = exp.var(" ".join(privilege_parts))
         expressions = (
             self._parse_wrapped_csv(self._parse_column)

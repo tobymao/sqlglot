@@ -4,6 +4,7 @@ import datetime
 import unittest
 from datetime import date, time
 from concurrent.futures import ProcessPoolExecutor
+from unittest import mock
 
 import duckdb
 import numpy as np
@@ -12,7 +13,7 @@ from pandas.testing import assert_frame_equal
 
 from sqlglot import exp, find_tables, parse_one, transpile
 from sqlglot.errors import ExecuteError
-from sqlglot.executor import execute
+from sqlglot.executor import env, execute
 from sqlglot.executor.python import Python, PythonExecutor
 from sqlglot.executor.table import Table, ensure_tables
 from sqlglot.optimizer import optimize
@@ -1114,7 +1115,22 @@ class TestExecutor(unittest.TestCase):
                 self.assertEqual(execute(sql, tables=tables).rows, rows)
 
     def test_scalar_functions(self):
-        now = datetime.datetime.now()
+        # CURRENT_TIMESTAMP / CURRENT_DATE are evaluated by the executor at run time,
+        # so pin its clock to a fixed instant; otherwise the YEAR/MONTH/DAY assertions
+        # below race a midnight (or month/year) rollover between capturing `now` here
+        # and each query's execution.
+        now = datetime.datetime(2020, 6, 15, 12, 0, 0)
+        patcher = mock.patch.dict(
+            env.ENV,
+            {
+                "CURRENTDATETIME": lambda: now,
+                "CURRENTTIMESTAMP": lambda: now,
+                "CURRENTTIME": lambda: now,
+                "CURRENTDATE": lambda: now.date(),
+            },
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
         for sql, expected in [
             ("CONCAT('a', 'b')", "ab"),

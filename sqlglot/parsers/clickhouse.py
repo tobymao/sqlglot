@@ -401,8 +401,6 @@ class ClickHouseParser(parser.Parser):
         "AND": lambda self: self._parse_connector_function(exp.and_),
         "OR": lambda self: self._parse_connector_function(exp.or_),
         "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
-        # https://clickhouse.com/docs/en/sql-reference/table-functions/view
-        # Turns a subquery into a table, e.g. cluster('name', view(SELECT ...))
         "VIEW": lambda self: self.expression(
             exp.Anonymous(this="view", expressions=[self._parse_select()])
         ),

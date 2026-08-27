@@ -1987,9 +1987,9 @@ LIFETIME(MIN 0 MAX 0)""",
         )
         self.validate_identity("SELECT * FROM file('path', Parquet) WHERE x > 1")
         self.validate_identity("SELECT * FROM file('path', Parquet)")
-        self.validate_identity("SELECT x FROM view(SELECT 1 AS x FROM t)")
+        self.validate_identity("SELECT x FROM view(SELECT 1 AS x)")
         self.validate_identity(
-            "SELECT country, sum(installs) AS installs FROM cluster('events', view(SELECT country, count() AS installs FROM events_internal GROUP BY country)) GROUP BY country"
+            "SELECT country, sum(installs) AS installs FROM cluster('default', view(SELECT 'US' AS country, count() AS installs FROM numbers(1) GROUP BY country)) GROUP BY country"
         )
 
     def test_sql_security(self):

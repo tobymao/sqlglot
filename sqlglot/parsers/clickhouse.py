@@ -348,6 +348,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.FILE,
         TokenType.OR,
         TokenType.SET,
+        TokenType.VIEW,
     }
 
     RESERVED_TOKENS = parser.Parser.RESERVED_TOKENS - {TokenType.SELECT}
@@ -400,6 +401,11 @@ class ClickHouseParser(parser.Parser):
         "AND": lambda self: self._parse_connector_function(exp.and_),
         "OR": lambda self: self._parse_connector_function(exp.or_),
         "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
+        # https://clickhouse.com/docs/en/sql-reference/table-functions/view
+        # Turns a subquery into a table, e.g. cluster('name', view(SELECT ...))
+        "VIEW": lambda self: self.expression(
+            exp.Anonymous(this="view", expressions=[self._parse_select()])
+        ),
     }
 
     PROPERTY_PARSERS = {

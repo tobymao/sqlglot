@@ -2180,6 +2180,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             level="warning",
         )
 
+    def test_traverse_union_invalid_operand(self):
+        for invalid_side, expression in (
+            ("left", exp.Union(this=exp.column("a"), expression=exp.select("1"))),
+            ("right", exp.Union(this=exp.select("1"), expression=exp.column("a"))),
+        ):
+            with self.subTest(invalid_side=invalid_side):
+                with patch("sqlglot.optimizer.scope.logger"):
+                    with self.assertRaisesRegex(
+                        OptimizeError, "Cannot build a scope for set operation operand"
+                    ):
+                        qualify(expression)
+
     def test_annotate_types(self):
         for i, (meta, sql, expected) in enumerate(
             load_sql_fixture_pairs("optimizer/annotate_types.sql"), start=1

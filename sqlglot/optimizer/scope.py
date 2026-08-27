@@ -797,17 +797,21 @@ def _traverse_union(scope: Scope) -> Iterator[Scope]:
             expression_stack.extend([expression.expression, expression.this])
             continue
 
-        for scope in _traverse_scope(new_scope):
-            yield scope
+        branch_scope: Scope | None = None
+        for branch_scope in _traverse_scope(new_scope):
+            yield branch_scope
+
+        if branch_scope is None:
+            raise OptimizeError(f"Cannot build a scope for set operation operand: {expression}")
 
         if prev_scope:
             union_scope_stack.pop()
-            union_scope.union_scopes = [prev_scope, scope]
+            union_scope.union_scopes = [prev_scope, branch_scope]
             prev_scope = union_scope
 
             yield union_scope
         else:
-            prev_scope = scope
+            prev_scope = branch_scope
 
 
 def _traverse_ctes(scope: Scope) -> Iterator[Scope]:

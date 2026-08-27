@@ -1197,6 +1197,32 @@ TBLPROPERTIES (
             write={"spark": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
 
+    def test_grouping_sets_not_group_by_element(self):
+        element_sql = "SELECT COUNT(1), d, h FROM t GROUP BY d, h, GROUPING SETS ((d, h), (d))"
+
+        for sql, expected_flag in (
+            (
+                "SELECT COUNT(1), d, h FROM t GROUP BY d, h GROUPING SETS ((d, h), (d))",
+                True,
+            ),
+            (element_sql, False),
+            (
+                "SELECT a FROM t GROUP BY a GROUPING SETS ((a)), GROUPING SETS ((a))",
+                True,
+            ),
+            (
+                "SELECT COUNT(1), d, h FROM t GROUP BY GROUPING SETS ((d, h), (d))",
+                False,
+            ),
+        ):
+            with self.subTest(sql=sql):
+                group = self.validate_identity(sql).args["group"]
+                self.assertIs(group.args.get("grouping_sets_not_group_by_element"), expected_flag)
+
+        without_flag = self.parse_one(element_sql)
+        without_flag.args["group"].args.pop("grouping_sets_not_group_by_element")
+        self.assertEqual(element_sql, without_flag.sql("spark"))
+
     def test_current_user(self):
         self.validate_all(
             "CURRENT_USER",

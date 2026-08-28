@@ -51,6 +51,14 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                 selected_sources: Sources = scope.selected_sources
                 join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
 
+                # a full join preserves the source FROM table, so it can't be filtered before it
+                if any(join.side == "FULL" for join in joins):
+                    selected_sources = {
+                        name: (node, source)
+                        for name, (node, source) in selected_sources.items()
+                        if not isinstance(node.find_ancestor(exp.Join, exp.From), exp.From)
+                    }
+
                 # a right join can only push down to itself and not the source FROM table
                 # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
                 pushdown_allowed = True

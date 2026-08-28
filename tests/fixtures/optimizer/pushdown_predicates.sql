@@ -111,3 +111,6 @@ SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3
 -- A FULL JOIN preserves both sides, so a WHERE predicate on either of them can't be pushed down
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
+
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x FULL JOIN y ON x.a = y.b WHERE x.a = 3;
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x FULL JOIN y ON x.a = y.b WHERE x.a = 3;

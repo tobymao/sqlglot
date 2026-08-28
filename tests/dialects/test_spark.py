@@ -1316,6 +1316,38 @@ TBLPROPERTIES (
             },
         )
 
+    def test_explode_map(self):
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.qualify import qualify
+
+        expression = annotate_types(self.parse_one("SELECT EXPLODE(MAP(1, 'a')) AS (k, v)"))
+        self.assertEqual(
+            expression.sql("presto"),
+            "SELECT _u_2.k AS k, _u_2.v AS v FROM UNNEST(MAP(ARRAY[1], ARRAY['a'])) AS _u_2(k, v)",
+        )
+
+        schema = {"tbl": {"cells": "MAP<INT, STRING>"}}
+        expression = qualify(
+            self.parse_one("SELECT EXPLODE(cells) AS (cell_id, cell_name) FROM tbl"),
+            dialect="spark",
+            schema=schema,
+        )
+        expression = annotate_types(expression, dialect="spark", schema=schema)
+        self.assertEqual(
+            expression.sql("trino"),
+            'SELECT _u_2."cell_id" AS "cell_id", _u_2."cell_name" AS "cell_name" FROM "tbl" AS "tbl" CROSS JOIN UNNEST("tbl"."cells") AS _u_2("cell_id", "cell_name")',
+        )
+
+        expression = annotate_types(
+            self.parse_one("SELECT EXPLODE(tbl.cells) FROM tbl"),
+            dialect="spark",
+            schema=schema,
+        )
+        self.assertEqual(
+            expression.sql("trino"),
+            "SELECT _u_2.key AS key, _u_2.value AS value FROM tbl CROSS JOIN UNNEST(tbl.cells) AS _u_2(key, value)",
+        )
+
     def test_strip_modifiers(self):
         without_modifiers = "SELECT * FROM t"
         with_modifiers = f"{without_modifiers} CLUSTER BY y DISTRIBUTE BY x SORT BY z"

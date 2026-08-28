@@ -401,6 +401,7 @@ def unnest_to_explode(
 
 def explode_projection_to_unnest(
     index_offset: int = 0,
+    unnest_map: bool = False,
 ) -> t.Callable[[exp.Expr], exp.Expr]:
     """Convert explode/posexplode projections into unnests."""
 
@@ -431,6 +432,46 @@ def explode_projection_to_unnest(
                 explode = select.find(exp.Explode)
 
                 if explode:
+                    if (
+                        unnest_map
+                        and type(explode) is exp.Explode
+                        and explode.this.is_type(exp.DType.MAP)
+                        and (select is explode or isinstance(select, exp.Aliases))
+                    ):
+                        map_key_alias: t.Any
+                        map_value_alias: t.Any
+                        if isinstance(select, exp.Aliases):
+                            map_key_alias, map_value_alias = select.aliases
+                        else:
+                            map_key_alias = new_name(taken_select_names, "key")
+                            map_value_alias = new_name(taken_select_names, "value")
+                        map_unnest_source = new_name(taken_source_names, "_u")
+
+                        map_key_select = select.replace(
+                            exp.column(map_key_alias, table=map_unnest_source).as_(map_key_alias)
+                        )
+
+                        expressions = expression.expressions
+                        expressions.insert(
+                            expressions.index(map_key_select) + 1,
+                            exp.column(map_value_alias, table=map_unnest_source).as_(
+                                map_value_alias
+                            ),
+                        )
+                        expression.set("expressions", expressions)
+
+                        unnest = exp.alias_(
+                            exp.Unnest(expressions=[explode.this.copy()]),
+                            map_unnest_source,
+                            table=[map_key_alias, map_value_alias],
+                        )
+                        if expression.args.get("from_"):
+                            expression.join(unnest, copy=False, join_type="CROSS")
+                        else:
+                            expression.from_(unnest, copy=False)
+
+                        continue
+
                     pos_alias: t.Any = ""
                     explode_alias: t.Any = ""
 

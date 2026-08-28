@@ -80,6 +80,8 @@ class Postgres(Dialect):
         HEREDOC_TAG_IS_IDENTIFIER = True
         HEREDOC_STRING_ALTERNATIVE = TokenType.PARAMETER
 
+        COMMANDS = {*tokens.Tokenizer.COMMANDS, TokenType.LOCK}
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "~": TokenType.RLIKE,

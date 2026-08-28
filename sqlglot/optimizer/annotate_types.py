@@ -974,8 +974,6 @@ class TypeAnnotator:
         input_type = expression.this.type
         if input_type and input_type.is_type(exp.DType.ARRAY):
             self._set_type(expression, seq_get(input_type.expressions, 0))
-        elif input_type and input_type.is_type(exp.DType.MAP):
-            self._set_type(expression, input_type)
         else:
             self._set_type(expression, None)
         return expression

@@ -434,22 +434,10 @@ def explode_projection_to_unnest(
                 if explode:
                     if (
                         unnest_map
-                        and (
-                            explode.is_type(exp.DType.MAP)
-                            or (explode.this and explode.this.is_type(exp.DType.MAP))
-                        )
-                        and (
-                            (isinstance(select, exp.Aliases) and len(select.aliases) == 2)
-                            or select is explode
-                            or (isinstance(select, exp.Alias) and select.this is explode)
-                        )
+                        and type(explode) is exp.Explode
+                        and explode.this.is_type(exp.DType.MAP)
+                        and (select is explode or isinstance(select, exp.Aliases))
                     ):
-                        # SELECT [...,] EXPLODE(map_col) AS (key_alias, value_alias) [, ...]
-                        #
-                        # Unlike an array, EXPLODE on a MAP already produces exactly one
-                        # (key, value) row per entry, so this doesn't need the
-                        # position-matching machinery below (which exists to align
-                        # multiple array explodes of possibly different lengths).
                         map_key_alias: t.Any
                         map_value_alias: t.Any
                         if isinstance(select, exp.Aliases):
@@ -457,7 +445,6 @@ def explode_projection_to_unnest(
                         else:
                             map_key_alias = new_name(taken_select_names, "key")
                             map_value_alias = new_name(taken_select_names, "value")
-                        map_arg = explode.this
                         map_unnest_source = new_name(taken_source_names, "_u")
 
                         map_key_select = select.replace(
@@ -474,7 +461,7 @@ def explode_projection_to_unnest(
                         expression.set("expressions", expressions)
 
                         unnest = exp.alias_(
-                            exp.Unnest(expressions=[map_arg.copy()]),
+                            exp.Unnest(expressions=[explode.this.copy()]),
                             map_unnest_source,
                             table=[map_key_alias, map_value_alias],
                         )

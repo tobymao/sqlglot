@@ -51,18 +51,31 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                 selected_sources: Sources = scope.selected_sources
                 join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
 
-                # a right join can only push down to itself and not the source FROM table
+                # A RIGHT or FULL join null-extends everything joined before it, and the
+                # outer predicate is what removed those rows, so a source can only be
+                # pushed into if no such join comes after it.
+                last_null_extending = -1
+                for i, join in enumerate(joins):
+                    if join.side in ("RIGHT", "FULL"):
+                        last_null_extending = i
+
                 # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
                 pushdown_allowed = True
+                reachable: dict[str, tuple[exp.Selectable, t.Union[exp.Table, Scope]]] = {}
                 for k, (node, source) in selected_sources.items():
                     parent = node.find_ancestor(exp.Join, exp.From)
                     if isinstance(parent, exp.Join):
-                        if parent.side == "RIGHT":
-                            selected_sources = {k: (node, source)}
-                            break
                         if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
+                        position = join_index.get(parent.alias_or_name, -1)
+                    else:
+                        position = -1
+
+                    if position >= last_null_extending:
+                        reachable[k] = (node, source)
+
+                selected_sources = reachable
 
                 if pushdown_allowed:
                     pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)

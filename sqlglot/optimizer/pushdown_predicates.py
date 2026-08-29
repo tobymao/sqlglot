@@ -61,7 +61,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
                 # presto, trino and athena don't support inner joins where the RHS is an UNNEST expression
                 pushdown_allowed = True
-                reachable: dict[str, tuple[exp.Selectable, t.Union[exp.Table, Scope]]] = {}
+                reachable: dict[str, tuple[exp.Selectable, exp.Table | Scope]] = {}
                 for k, (node, source) in selected_sources.items():
                     parent = node.find_ancestor(exp.Join, exp.From)
                     if isinstance(parent, exp.Join):

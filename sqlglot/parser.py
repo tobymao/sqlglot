@@ -5563,11 +5563,14 @@ class Parser:
         elif self._match(TokenType.DISTINCT):
             elements["all"] = False
 
-        if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
-            return self.expression(exp.Group(**elements), comments=comments)  # type: ignore
-
         while True:
             index = self._index
+
+            # Tokens such as LIMIT, OFFSET and WINDOW are valid identifiers, so they'd be
+            # consumed as grouping expressions if we didn't stop here. This also has to run
+            # on the first iteration, e.g. for GROUP BY ALL LIMIT 1
+            if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
+                break
 
             elements["expressions"].extend(
                 self._parse_csv(

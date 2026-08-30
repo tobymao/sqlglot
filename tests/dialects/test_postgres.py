@@ -978,6 +978,16 @@ FROM json_data, field_ids""",
         self.validate_identity(
             '1::"udt"', 'CAST(1 AS "udt")'
         ).to.this == exp.DataType.Type.USERDEFINED
+
+        # The one-byte "char" type is not CHAR, so its quotes have to be preserved
+        self.validate_identity('CAST(65 AS "char")')
+        self.validate_identity('65::"char"', 'CAST(65 AS "char")')
+        self.validate_identity('CAST(x AS "char"[])')
+        self.validate_identity('CAST(x AS "CHAR")', "CAST(x AS CHAR)")
+        self.assertEqual(
+            self.parse_one('CAST(65 AS "char")').to.this, exp.DataType.Type.USERDEFINED
+        )
+
         self.validate_identity(
             "COPY tbl (col1, col2) FROM 'file' WITH (FORMAT format, HEADER MATCH, FREEZE TRUE)"
         )

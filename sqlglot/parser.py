@@ -1943,6 +1943,11 @@ class Parser:
     # e.g. NTH_VALUE(x, 2) FROM LAST IGNORE NULLS OVER (...) (Oracle, Snowflake)
     SUPPORTS_NTH_VALUE_FROM_MODIFIER: t.ClassVar = False
 
+    # Type names that denote a different type when they're quoted, so quoting has to be
+    # preserved instead of resolving them into the built-in type of the same name. These
+    # are matched case sensitively, e.g. PostgreSQL's one-byte "char" is not CHAR
+    QUOTED_TYPES_TO_PRESERVE: t.ClassVar[set[str]] = set()
+
     SHOW_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE: t.ClassVar[dict] = new_trie(key.split(" ") for key in SET_PARSERS)
 
@@ -6504,19 +6509,26 @@ class Parser:
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if isinstance(identifier, exp.Identifier):
-                try:
-                    tokens = self.dialect.tokenize(identifier.name)
-                except TokenError:
-                    tokens = None
-
-                if tokens and (type_token := tokens[0].token_type) in self.TYPE_TOKENS:
-                    if len(tokens) > 1:
-                        return exp.DataType.from_str(identifier.name, dialect=self.dialect)
-                elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
-                    this = self._parse_user_defined_type(identifier)
+                if (
+                    identifier.quoted
+                    and self.dialect.SUPPORTS_USER_DEFINED_TYPES
+                    and identifier.name in self.QUOTED_TYPES_TO_PRESERVE
+                ):
+                    this = exp.DataType.build(identifier, udt=True)
                 else:
-                    self._retreat(self._index - 1)
-                    return None
+                    try:
+                        tokens = self.dialect.tokenize(identifier.name)
+                    except TokenError:
+                        tokens = None
+
+                    if tokens and (type_token := tokens[0].token_type) in self.TYPE_TOKENS:
+                        if len(tokens) > 1:
+                            return exp.DataType.from_str(identifier.name, dialect=self.dialect)
+                    elif self.dialect.SUPPORTS_USER_DEFINED_TYPES:
+                        this = self._parse_user_defined_type(identifier)
+                    else:
+                        self._retreat(self._index - 1)
+                        return None
             else:
                 return None
 

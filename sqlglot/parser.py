@@ -6511,11 +6511,7 @@ class Parser:
                 any_token=False, tokens=(TokenType.VAR,)
             )
             if isinstance(identifier, exp.Identifier):
-                if (
-                    identifier.quoted
-                    and self.dialect.SUPPORTS_USER_DEFINED_TYPES
-                    and identifier.name in self.QUOTED_TYPES_TO_PRESERVE
-                ):
+                if identifier.quoted and identifier.name in self.QUOTED_TYPES_TO_PRESERVE:
                     this = exp.DataType.build(identifier, udt=True)
                 else:
                     try:

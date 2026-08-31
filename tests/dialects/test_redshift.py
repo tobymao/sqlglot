@@ -770,6 +770,14 @@ FROM (
         with self.assertRaises(ParseError):
             parse_one('1::"udt"', read="redshift")
 
+        # Redshift has the one-byte "char" type, so its quotes have to be preserved
+        self.validate_identity('CAST(65 AS "char")')
+        self.validate_identity('65::"char"', 'CAST(65 AS "char")')
+        self.validate_identity('CAST(x AS "CHAR")', "CAST(x AS CHAR)")
+        self.assertEqual(
+            self.parse_one('CAST(65 AS "char")').to.this, exp.DataType.Type.USERDEFINED
+        )
+
     def test_fetch_to_limit(self):
         self.validate_all(
             "SELECT * FROM t FETCH FIRST 1 ROWS ONLY",

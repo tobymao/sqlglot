@@ -2,7 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
-from sqlglot.errors import UnsupportedError
+from sqlglot.errors import ErrorLevel, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -1198,15 +1198,50 @@ TBLPROPERTIES (
         )
 
     def test_grouping_sets_as_group_by_element(self):
+        suffix_sql = "SELECT COUNT(1), d, h FROM t GROUP BY d, h GROUPING SETS ((d, h), (d))"
+        element_sql = "SELECT COUNT(1), d, h FROM t GROUP BY d, h, GROUPING SETS ((d, h), (d))"
+
         for sql, expected_flag in (
-            ("SELECT COUNT(1), d, h FROM t GROUP BY d, h GROUPING SETS ((d, h), (d))", False),
-            ("SELECT COUNT(1), d, h FROM t GROUP BY d, h, GROUPING SETS ((d, h), (d))", True),
+            (suffix_sql, False),
+            (element_sql, True),
             ("SELECT a FROM t GROUP BY a GROUPING SETS ((a)), GROUPING SETS ((a))", False),
             ("SELECT COUNT(1), d, h FROM t GROUP BY GROUPING SETS ((d, h), (d))", True),
         ):
             with self.subTest(sql=sql):
                 group = self.validate_identity(sql).args["group"]
                 self.assertIs(group.args.get("grouping_sets_as_group_by_element"), expected_flag)
+
+        def assert_generation(expression, expected_sql, dialects, unsupported=False):
+            for dialect in dialects:
+                with self.subTest(dialect=dialect):
+                    self.assertEqual(
+                        expression.sql(
+                            dialect,
+                            unsupported_level=(
+                                ErrorLevel.IGNORE if unsupported else ErrorLevel.RAISE
+                            ),
+                        ),
+                        expected_sql,
+                    )
+                    if unsupported:
+                        with self.assertRaises(UnsupportedError):
+                            expression.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+
+        suffix_expression = self.parse_one(suffix_sql)
+        assert_generation(suffix_expression, suffix_sql, ("hive", "spark"))
+        assert_generation(
+            suffix_expression,
+            element_sql,
+            ("trino", "clickhouse"),
+            unsupported=True,
+        )
+
+        element_expression = self.parse_one(element_sql)
+        assert_generation(
+            element_expression,
+            element_sql,
+            ("hive", "clickhouse"),
+        )
 
     def test_current_user(self):
         self.validate_all(

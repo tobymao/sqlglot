@@ -974,6 +974,7 @@ def _expand_stars(
         return
 
     for expression in scope_expression.selects:
+        preserve_expression = False
         tables: list[str] = []
         if isinstance(expression, exp.Star):
             # Only a string literal ILIKE pattern can filter the expansion at optimization time
@@ -1039,6 +1040,11 @@ def _expand_stars(
                     source = scope.sources.get(source_table)
 
                 if source is None:
+                    if dialect.SUPPORTS_CORRELATED_STAR and scope.can_be_correlated:
+                        new_selections.append(expression)
+                        preserve_expression = True
+                        break
+
                     raise OptimizeError(f"Unknown table: {table}")
 
             columns = resolver.get_source_columns(source_table, only_visible=True)
@@ -1128,6 +1134,9 @@ def _expand_stars(
                         if alias_ != name
                         else selection_expr
                     )
+
+        if preserve_expression:
+            continue
 
         if annotated_ahead:
             # The star projection was replaced by the expansions above

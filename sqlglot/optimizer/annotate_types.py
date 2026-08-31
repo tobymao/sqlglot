@@ -472,7 +472,7 @@ class TypeAnnotator:
                     stack.append((child_expr, False))
                 continue
 
-            if scope and isinstance(expr, exp.Column) and expr.table:
+            if scope and isinstance(expr, exp.Column) and expr.table and not expr.is_star:
                 source = None
                 source_scope: Scope | None = scope
                 while source_scope and not source:

@@ -18,3 +18,9 @@ SELECT b FROM x INNER JOIN y ON x.a = y.c INNER JOIN z ON x.a = z.c;
 SELECT unpivotable.north FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
 SELECT u1.id FROM unpivotable UNPIVOT(zzz FOR m IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (zzz)) AS u2
 SELECT u2.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (b)) AS u2
+WITH a AS (SELECT 1 AS x), c AS (SELECT 1 AS k) SELECT * FROM a JOIN external_tbl ON TRUE JOIN c USING (unknown_key);
+WITH c AS (SELECT 1 AS k) SELECT missing FROM external_a JOIN external_b ON TRUE JOIN c USING (k);
+WITH c AS (SELECT 1 AS k) SELECT c.k FROM external_a JOIN external_b ON k = external_b.x JOIN c USING (k);
+WITH c AS (SELECT 1 AS k) SELECT bogus.k FROM external_a JOIN external_b ON TRUE JOIN c USING (k);
+WITH c AS (SELECT 1 AS k), external_d AS (SELECT 1 AS k) SELECT c.k FROM external_a JOIN external_b ON TRUE JOIN c USING (k) JOIN external_d ON k = external_d.k;
+WITH c AS (SELECT 1 AS a) SELECT c.a FROM external_a JOIN external_b ON TRUE JOIN c USING (a) JOIN x ON a = x.a;

@@ -130,10 +130,19 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
     all_unqualified_columns = []
     for scope in traverse_scope(expression):
         if isinstance(scope.expression, exp.Select):
-            unqualified_columns = scope.unqualified_columns
+            unqualified_columns = [
+                column
+                for column in scope.unqualified_columns
+                if not _can_leave_using_column_unqualified(scope, column)
+            ]
+            external_columns = [
+                column
+                for column in scope.external_columns
+                if not _can_leave_using_column_unqualified(scope, column)
+            ]
 
-            if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
-                column = scope.external_columns[0]
+            if external_columns and not scope.is_correlated_subquery and not scope.pivots:
+                column = external_columns[0]
                 for_table = f" for table: '{column.table}'" if column.table else ""
                 line = column.this.meta_get("line")
                 col = column.this.meta_get("col")
@@ -207,12 +216,18 @@ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
 
 
 def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
-    columns = {}
+    # Mapping of schema column names to an ordered set of source names (dict).
+    columns: dict[str, dict[str, None]] = {}
+    incomplete_sources: dict[str, None] = {}
 
     def _update_source_columns(source_name: str) -> None:
-        for column_name in resolver.get_source_columns(source_name):
-            if column_name not in columns:
-                columns[column_name] = source_name
+        source_columns = resolver.get_source_columns(source_name)
+        if not source_columns or "*" in source_columns:
+            incomplete_sources[source_name] = None
+
+        for column_name in source_columns:
+            if column_name != "*":
+                columns.setdefault(column_name, {})[source_name] = None
 
     joins = list(scope.find_all(exp.Join))
     if not joins:
@@ -226,28 +241,55 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
 
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: dict[str, dict[str, t.Any]] = {}
+    # Parent pointers for sources merged into the same logical output by expanded USING joins.
+    using_source_parents: dict[str, str] = {}
+
+    def _using_source_root(source_name: str) -> str:
+        while source_name in using_source_parents:
+            source_name = using_source_parents[source_name]
+        return source_name
+
+    def _merge_using_sources(source_name: str, join_name: str) -> None:
+        source_root = _using_source_root(source_name)
+        join_root = _using_source_root(join_name)
+        if source_root != join_root:
+            using_source_parents[join_root] = source_root
 
     if not any(join.args.get("using") or join.method == "NATURAL" for join in joins):
         return column_tables
+
+    non_output_sources = {join.alias_or_name for join in joins if join.is_semi_or_anti_join}
+    has_unqualified_star = any(
+        isinstance(selection, exp.Star)
+        for selection in t.cast(exp.Select, scope.expression).selects
+    )
+    output_sources = ordered + [
+        join.alias_or_name for join in joins if not join.is_semi_or_anti_join
+    ]
+    defer_using_for_star = has_unqualified_star and any(
+        not (source_columns := resolver.get_source_columns(source_name)) or "*" in source_columns
+        for source_name in output_sources
+    )
 
     for source_name in ordered:
         _update_source_columns(source_name)
 
     for i, join in enumerate(joins):
         source_table = ordered[-1]
-        if source_table:
+        if source_table and source_table not in non_output_sources:
             _update_source_columns(source_table)
 
         join_table = join.alias_or_name
         ordered.append(join_table)
 
         join_columns = resolver.get_source_columns(join_table)
+        join_columns_known = bool(join_columns) and "*" not in join_columns
 
         using = join.args.get("using")
         if using is None and join.method == "NATURAL":
             # A NATURAL JOIN is a USING join over the columns common to both sides; when
             # those can't be determined (unknown schema, no common columns), NATURAL stays
-            if columns and "*" not in columns and join_columns and "*" not in join_columns:
+            if columns and not incomplete_sources and join_columns_known:
                 using = [
                     exp.to_identifier(column_name)
                     for column_name in columns
@@ -257,6 +299,40 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
                     join.set("method", None)
         if not using:
             continue
+        for identifier in using:
+            if not incomplete_sources and identifier.name not in columns:
+                raise OptimizeError(f"Cannot automatically join: {identifier.name}")
+            if join_columns_known and identifier.name not in join_columns:
+                raise OptimizeError(f"Cannot automatically join: {identifier.name}")
+
+        using_tables = {}
+        can_expand = not defer_using_for_star
+        for identifier in using:
+            name = identifier.name
+            possible_owner_groups: dict[tuple[str, str], list[str]] = {}
+            known_tables = columns.get(name, {})
+            for table in known_tables:
+                possible_owner_groups.setdefault(("group", _using_source_root(table)), []).append(
+                    table
+                )
+            for table in incomplete_sources:
+                if table not in known_tables:
+                    owner_group = (
+                        ("group", _using_source_root(table))
+                        if table in column_tables.get(name, {})
+                        else ("source", table)
+                    )
+                    possible_owner_groups.setdefault(owner_group, []).append(table)
+
+            if len(possible_owner_groups) != 1:
+                can_expand = False
+                break
+
+            owner_group, possible_tables = next(iter(possible_owner_groups.items()))
+            using_tables[name] = possible_tables[0] if len(possible_tables) == 1 else owner_group[1]
+
+        if not can_expand:
+            continue
 
         conditions = []
         using_identifier_count = len(using)
@@ -264,14 +340,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
 
         for identifier in using:
             identifier = identifier.name
-            table = columns.get(identifier)
-
-            if not table or identifier not in join_columns:
-                if (columns and "*" not in columns) and join_columns:
-                    raise OptimizeError(f"Cannot automatically join: {identifier}")
-
-            table = table or source_table
-
+            table = using_tables[identifier]
             if i == 0 or using_identifier_count == 1:
                 lhs: exp.Expr = exp.column(identifier, table=table)
             else:
@@ -298,6 +367,10 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
                 if join_table not in tables:
                     tables[join_table] = None
 
+        if not is_semi_or_anti_join:
+            for table in using_tables.values():
+                _merge_using_sources(table, join_table)
+
         join.set("using", None)
         join.set("on", exp.and_(*conditions, copy=False))
 
@@ -320,6 +393,26 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
                 scope.replace(column, replacement)
 
     return column_tables
+
+
+def _can_leave_using_column_unqualified(
+    scope: Scope, column: exp.Column, require_join_condition_proof: bool = True
+) -> bool:
+    if column.table or column.meta_get("using_column_collision"):
+        return False
+
+    joins = scope.expression.args.get("joins") or []
+    join_ancestor = column.find_ancestor(exp.Join, exp.Select)
+    available_joins = joins
+    if isinstance(join_ancestor, exp.Join):
+        if require_join_condition_proof and not column.meta_get("using_column_non_collision"):
+            return False
+        available_joins = joins[: t.cast(int, join_ancestor.index)]
+
+    return any(
+        column.name in {identifier.name for identifier in join.args.get("using") or []}
+        for join in available_joins
+    )
 
 
 def _expand_alias_refs(
@@ -362,7 +455,13 @@ def _expand_alias_refs(
                 continue
 
             skip_replace = False
-            table = resolver.get_table(column.name) if resolve_table and not column.table else None
+            table = (
+                resolver.get_table(column.name)
+                if resolve_table
+                and not column.table
+                and not _can_leave_using_column_unqualified(scope, column)
+                else None
+            )
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
@@ -780,7 +879,32 @@ def _qualify_columns(
                 continue
 
             # column_table can be a '' because bigquery unnest has no table alias
+            if _can_leave_using_column_unqualified(
+                scope, column, require_join_condition_proof=False
+            ):
+                join_ancestor = column.find_ancestor(exp.Join, exp.Select)
+                if isinstance(join_ancestor, exp.Join):
+                    source_columns = resolver.get_source_columns(join_ancestor.alias_or_name)
+                    if column.name in source_columns:
+                        column.meta["using_column_collision"] = True
+                    elif source_columns and "*" not in source_columns:
+                        column.meta["using_column_non_collision"] = True
+                        continue
+                else:
+                    continue
             table = resolver.get_table(column)
+            if table and isinstance(
+                join_ancestor := column.find_ancestor(exp.Join, exp.Select), exp.Join
+            ):
+                joins = scope.expression.args.get("joins") or []
+                later_joins = joins[t.cast(int, join_ancestor.index) + 1 :]
+                if any(
+                    table.name == join.alias_or_name
+                    and column.name
+                    in {identifier.name for identifier in join.args.get("using") or []}
+                    for join in later_joins
+                ):
+                    table = None
 
             if (
                 table

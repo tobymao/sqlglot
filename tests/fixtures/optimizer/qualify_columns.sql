@@ -828,6 +828,62 @@ SELECT x.b AS b FROM t AS t JOIN x AS x ON t.a = x.a;
 SELECT a FROM t1 JOIN t2 USING(a);
 SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 
+# title: using join with a derived wildcard right source
+# dialect: snowflake
+# execute: false
+WITH b AS (SELECT * FROM external_tbl), a AS (SELECT 1 AS k) SELECT * FROM a JOIN b USING (k);
+WITH B AS (SELECT * FROM EXTERNAL_TBL AS EXTERNAL_TBL), A AS (SELECT 1 AS K) SELECT * FROM A AS A JOIN B AS B USING (K);
+
+# title: using join with an unknown source in the accumulated left side
+# dialect: snowflake
+# execute: false
+WITH a AS (SELECT 1 AS x), c AS (SELECT 1 AS k) SELECT * FROM a JOIN external_tbl ON TRUE JOIN c USING (k);
+WITH A AS (SELECT 1 AS X), C AS (SELECT 1 AS K) SELECT * FROM A AS A JOIN EXTERNAL_TBL AS EXTERNAL_TBL ON TRUE JOIN C AS C USING (K);
+
+# title: using join with an earlier unknown source in the accumulated left side
+# dialect: snowflake
+# execute: false
+WITH a AS (SELECT 1 AS x), c AS (SELECT 1 AS k) SELECT * FROM external_tbl JOIN a ON TRUE JOIN c USING (k);
+WITH A AS (SELECT 1 AS X), C AS (SELECT 1 AS K) SELECT * FROM EXTERNAL_TBL AS EXTERNAL_TBL JOIN A AS A ON TRUE JOIN C AS C USING (K);
+
+# title: explicit projection with a uniquely provable unknown left owner
+# dialect: snowflake
+# execute: false
+WITH a AS (SELECT 1 AS x), c AS (SELECT 1 AS k) SELECT a.x FROM external_tbl JOIN a ON TRUE JOIN c USING (k);
+WITH A AS (SELECT 1 AS X), C AS (SELECT 1 AS K) SELECT A.X AS X FROM EXTERNAL_TBL AS EXTERNAL_TBL JOIN A AS A ON TRUE JOIN C AS C ON EXTERNAL_TBL.K = C.K;
+
+# title: using join with multiple possible unknown left owners
+# dialect: snowflake
+# execute: false
+WITH c AS (SELECT 1 AS k, 2 AS x) SELECT c.x FROM external_a JOIN external_b ON TRUE JOIN c USING (k);
+WITH C AS (SELECT 1 AS K, 2 AS X) SELECT C.X AS X FROM EXTERNAL_A AS EXTERNAL_A JOIN EXTERNAL_B AS EXTERNAL_B ON TRUE JOIN C AS C USING (K);
+
+# title: projected retained using key with multiple unknown left owners
+# dialect: snowflake
+# execute: false
+WITH c AS (SELECT 1 AS k) SELECT k FROM external_a JOIN external_b ON TRUE JOIN c USING (k) WHERE k > 0 GROUP BY k HAVING k > 0 ORDER BY k;
+WITH C AS (SELECT 1 AS K) SELECT K AS K FROM EXTERNAL_A AS EXTERNAL_A JOIN EXTERNAL_B AS EXTERNAL_B ON TRUE JOIN C AS C USING (K) WHERE K > 0 GROUP BY K HAVING K > 0 ORDER BY K;
+
+# title: preserve all USING joins before an incomplete source under an unqualified star
+# execute: false
+WITH a AS (SELECT 1 AS k), b AS (SELECT 1 AS k) SELECT * FROM a JOIN b USING (k) JOIN external_tbl USING (k);
+WITH a AS (SELECT 1 AS k), b AS (SELECT 1 AS k) SELECT * FROM a AS a JOIN b AS b USING (k) JOIN external_tbl AS external_tbl USING (k);
+
+# title: defer USING with multiple complete accumulated left owners
+# execute: false
+WITH a AS (SELECT 1 AS k), b AS (SELECT 1 AS k), c AS (SELECT 1 AS k, 2 AS x) SELECT c.x FROM a JOIN b ON TRUE JOIN c USING (k);
+WITH a AS (SELECT 1 AS k), b AS (SELECT 1 AS k), c AS (SELECT 1 AS k, 2 AS x) SELECT c.x AS x FROM a AS a JOIN b AS b ON TRUE JOIN c AS c USING (k);
+
+# title: exclude semi join right sources from later USING ownership
+# execute: false
+WITH a AS (SELECT 1 AS k), c AS (SELECT 1 AS k, 2 AS x) SELECT c.x FROM a LEFT SEMI JOIN external_tbl ON TRUE JOIN c USING (k);
+WITH a AS (SELECT 1 AS k), c AS (SELECT 1 AS k, 2 AS x) SELECT c.x AS x FROM a AS a LEFT SEMI JOIN external_tbl AS external_tbl ON TRUE JOIN c AS c ON a.k = c.k;
+
+# title: do not merge unknown ownership across unrelated USING keys
+# execute: false
+WITH b AS (SELECT 1 AS k, 2 AS x), c AS (SELECT 2 AS x, 3 AS y) SELECT c.y FROM external_a JOIN b USING (k) JOIN c USING (x);
+WITH b AS (SELECT 1 AS k, 2 AS x), c AS (SELECT 2 AS x, 3 AS y) SELECT c.y AS y FROM external_a AS external_a JOIN b AS b ON external_a.k = b.k JOIN c AS c USING (x);
+
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
 WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;
 

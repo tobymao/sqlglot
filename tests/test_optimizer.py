@@ -1117,6 +1117,36 @@ class TestOptimizer(unittest.TestCase):
                 dialect="snowflake",
             )
 
+    def test_validate_columns_retained_using_join_key(self):
+        sql = """
+            WITH c AS (SELECT 1 AS k), external_d AS (SELECT 1 AS dk)
+            SELECT c.k
+            FROM external_a
+            JOIN external_b ON TRUE
+            JOIN c USING (k)
+            JOIN external_d ON k = external_d.dk
+        """
+
+        with self.assertRaisesRegex(OptimizeError, "Column 'k' could not be resolved"):
+            optimizer.qualify_columns.validate_qualify_columns(parse_one(sql))
+
+        qualified = optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=self.schema)
+        self.assertIn("JOIN external_d ON k = external_d.dk", qualified.sql())
+        self.assertIs(
+            optimizer.qualify_columns.validate_qualify_columns(qualified),
+            qualified,
+        )
+
+        collision_sql = sql.replace(
+            "external_d AS (SELECT 1 AS dk)",
+            "external_d AS (SELECT 1 AS k)",
+        ).replace("external_d.dk", "external_d.k")
+        with self.assertRaisesRegex(OptimizeError, "Column 'k' could not be resolved"):
+            qualified = optimizer.qualify_columns.qualify_columns(
+                parse_one(collision_sql), schema=self.schema
+            )
+            optimizer.qualify_columns.validate_qualify_columns(qualified)
+
     def test_qualify_columns_struct_star_expansion_types(self):
         # Struct star expansion annotates a scope and then replaces its projections; the
         # stale annotation caches must not prevent the new projections from being typed

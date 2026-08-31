@@ -152,7 +152,7 @@ class TestLineage(unittest.TestCase):
         )
         self.assertEqual(
             node.source.sql(),
-            "SELECT * FROM x AS x JOIN y AS y ON x.uid = y.uid",
+            "SELECT * FROM x AS x JOIN y AS y USING (uid)",
         )
         self.assertEqual(node.source_name, "")
         self.assertEqual(node.reference_node_name, "")

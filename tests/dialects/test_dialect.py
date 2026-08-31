@@ -1892,7 +1892,7 @@ class TestDialect(Validator):
                 "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "sqlite": "x ->> '$.y'",
-                "tsql": "ISNULL(JSON_QUERY(x, '$.y'), JSON_VALUE(x, '$.y'))",
+                "tsql": "JSON_VALUE(x, '$.y')",
             },
         )
         self.validate_all(
@@ -1945,7 +1945,7 @@ class TestDialect(Validator):
                 "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y[0].z')",
                 "spark": "GET_JSON_OBJECT(x, '$.y[0].z')",
                 "sqlite": "x ->> '$.y[0].z'",
-                "tsql": "ISNULL(JSON_QUERY(x, '$.y[0].z'), JSON_VALUE(x, '$.y[0].z'))",
+                "tsql": "JSON_VALUE(x, '$.y[0].z')",
             },
         )
         self.validate_all(

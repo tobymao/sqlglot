@@ -1559,23 +1559,39 @@ WHERE
         self.validate_all("ISNULL(x, y)", write={"spark": "COALESCE(x, y)"})
 
     def test_json(self):
+        # JSON_QUERY and JSON_VALUE round-trip as themselves. Only an extraction
+        # whose subtype is unknown needs the ISNULL(JSON_QUERY, JSON_VALUE) form,
+        # and that form is itself stable across a round-trip.
+        self.validate_identity("JSON_QUERY(x, '$.a')")
+        self.validate_identity("JSON_VALUE(x, '$.a')")
+        self.validate_identity("ISNULL(JSON_QUERY(x, '$.a'), JSON_VALUE(x, '$.a'))")
+        self.validate_all(
+            "JSON_EXTRACT(x, '$.a')",
+            write={"tsql": "ISNULL(JSON_QUERY(x, '$.a'), JSON_VALUE(x, '$.a'))"},
+        )
+        self.validate_all(
+            "JSON_QUERY(x, '$.a')",
+            read={"tsql": "JSON_QUERY(x, '$.a')"},
+            write={"trino": "JSON_QUERY(x, '$.a')"},
+        )
+
         self.validate_identity(
             """JSON_QUERY(REPLACE(REPLACE(x , '''', '"'), '""', '"'))""",
-            """ISNULL(JSON_QUERY(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'), JSON_VALUE(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$'))""",
+            """JSON_QUERY(REPLACE(REPLACE(x, '''', '"'), '""', '"'), '$')""",
         )
 
         self.validate_all(
             "JSON_QUERY(r.JSON, '$.Attr_INT')",
             write={
                 "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
-                "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
+                "tsql": "JSON_QUERY(r.JSON, '$.Attr_INT')",
             },
         )
         self.validate_all(
             "JSON_VALUE(r.JSON, '$.Attr_INT')",
             write={
                 "spark": "GET_JSON_OBJECT(r.JSON, '$.Attr_INT')",
-                "tsql": "ISNULL(JSON_QUERY(r.JSON, '$.Attr_INT'), JSON_VALUE(r.JSON, '$.Attr_INT'))",
+                "tsql": "JSON_VALUE(r.JSON, '$.Attr_INT')",
             },
         )
 

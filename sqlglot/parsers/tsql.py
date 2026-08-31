@@ -305,7 +305,12 @@ def _build_json_query(args: list, dialect: Dialect) -> exp.JSONExtract:
         # value for path, JSON_QUERY returns the input expression.
         args.append(exp.Literal.string("$"))
 
-    return parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
+    json_extract = parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
+
+    # Record that this came from JSON_QUERY, so it can round-trip as JSON_QUERY
+    json_extract.set("json_query", True)
+
+    return json_extract
 
 
 def _build_datetrunc(args: list) -> exp.TimestampTrunc:

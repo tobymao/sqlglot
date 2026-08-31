@@ -103,7 +103,15 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
 def _json_extract_sql(
     self: TSQLGenerator, expression: exp.JSONExtract | exp.JSONExtractScalar
 ) -> str:
+    # JSON_QUERY returns objects and arrays, JSON_VALUE returns scalars, so only a
+    # generic JSONExtract, whose subtype we don't know, needs to try both
+    if isinstance(expression, exp.JSONExtractScalar):
+        return self.func("JSON_VALUE", expression.this, expression.expression)
+
     json_query = self.func("JSON_QUERY", expression.this, expression.expression)
+    if expression.args.get("json_query"):
+        return json_query
+
     json_value = self.func("JSON_VALUE", expression.this, expression.expression)
     return self.func("ISNULL", json_query, json_value)
 

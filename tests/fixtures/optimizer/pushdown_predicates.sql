@@ -111,3 +111,14 @@ SELECT x.a, y.b FROM x FULL JOIN (SELECT b FROM y) AS y ON x.a = y.b AND y.b = 3
 -- A FULL JOIN preserves both sides, so a WHERE predicate on either of them can't be pushed down
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
 SELECT x.a, y.b FROM x FULL JOIN y ON x.a = y.b WHERE y.b = 3;
+
+-- That covers anything joined before the FULL JOIN too, not just the FROM source
+SELECT x.a, z.b FROM x JOIN z ON x.b = z.b FULL JOIN y ON x.b = y.b WHERE z.b = 3;
+SELECT x.a, z.b FROM x JOIN z ON x.b = z.b FULL JOIN y ON x.b = y.b WHERE z.b = 3;
+
+SELECT x.a, z.b FROM x JOIN (SELECT b FROM z) AS z ON x.b = z.b FULL JOIN y ON x.b = y.b WHERE z.b = 3;
+SELECT x.a, z.b FROM x JOIN (SELECT b FROM z) AS z ON x.b = z.b FULL JOIN y ON x.b = y.b WHERE z.b = 3;
+
+-- A later RIGHT JOIN null-extends the source of an earlier one
+SELECT x.a, z.b FROM x RIGHT JOIN z ON x.b = z.b RIGHT JOIN y ON x.b = y.b WHERE z.b = 3;
+SELECT x.a, z.b FROM x RIGHT JOIN z ON x.b = z.b RIGHT JOIN y ON x.b = y.b WHERE z.b = 3;

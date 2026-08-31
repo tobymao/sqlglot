@@ -128,7 +128,18 @@ class TeradataGenerator(generator.Generator):
         return self.prepend_ctes(expression, sql)
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        return self.binary(expression, "MOD")
+        sql = (
+            f"{self.sql(expression, 'this')}"
+            f" {self.maybe_comment('MOD', comments=expression.comments)} "
+            f"{self.sql(expression, 'expression')}"
+        )
+        parent = expression.parent
+        return (
+            f"({sql})"
+            if isinstance(parent, generator.MOD_PARENTHESES_PARENT_TYPES)
+            and parent.expression is expression
+            else sql
+        )
 
     def rangen_sql(self, expression: exp.RangeN) -> str:
         this = self.sql(expression, "this")

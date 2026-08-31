@@ -72,6 +72,8 @@ AFTER_HAVING_MODIFIER_TRANSFORMS: dict[str, t.Any] = {
     "qualify": lambda self, e: self.sql(e, "qualify"),
 }
 
+MOD_PARENTHESES_PARENT_TYPES = (exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)
+
 
 _DISPATCH_CACHE: dict[type[Generator], dict[type[exp.Expr], t.Callable[..., str]]] = {}
 
@@ -4603,7 +4605,17 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        return self.binary(expression, "%")
+        sql = (
+            f"{self.sql(expression, 'this')}"
+            f" {self.maybe_comment('%', comments=expression.comments)} "
+            f"{self.sql(expression, 'expression')}"
+        )
+        parent = expression.parent
+        return (
+            f"({sql})"
+            if isinstance(parent, MOD_PARENTHESES_PARENT_TYPES) and parent.expression is expression
+            else sql
+        )
 
     def mul_sql(self, expression: exp.Mul) -> str:
         return self.binary(expression, "*")

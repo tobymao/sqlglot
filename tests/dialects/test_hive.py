@@ -554,10 +554,10 @@ class TestHive(Validator):
             "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b GROUPING SETS ((a, b), a)"
         )
         self.validate_identity(
-            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, b GROUPING SETS ((t.a, b), a)"
+            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY t.a, b GROUPING SETS ((t.a, b), t.a)"
         )
         self.validate_identity(
-            "SELECT a, b, SUM(c) FROM tabl AS t GROUP BY a, FOO(b) GROUPING SETS ((a, FOO(b)), a)"
+            "SELECT a, ABS(b) AS b, SUM(c) FROM tabl AS t GROUP BY a, ABS(b) GROUPING SETS ((a, ABS(b)), a)"
         )
         self.validate_identity(
             "SELECT key, value, GROUPING__ID, COUNT(*) FROM T1 GROUP BY key, value WITH CUBE"

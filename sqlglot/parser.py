@@ -5597,10 +5597,9 @@ class Parser:
                 elements[key].append(cube_or_rollup)
             elif grouping_sets := self._parse_grouping_sets():
                 elements["grouping_sets"].append(grouping_sets)
-                # The first GROUPING SETS clause determines the separator from the GROUP BY expressions
-                elements.setdefault(
-                    "grouping_sets_as_group_by_element", grouping_sets_as_group_by_element
-                )
+                elements["grouping_sets_as_group_by_element"] = grouping_sets_as_group_by_element
+                if not grouping_sets_as_group_by_element:
+                    break
             elif self._match_text_seq("TOTALS"):
                 elements["totals"] = True  # type: ignore
 

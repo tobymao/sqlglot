@@ -41,6 +41,10 @@ class ZeroFillColumnConstraint(ColumnConstraint):
     arg_types = {}
 
 
+class BinaryColumnConstraint(ColumnConstraint):
+    arg_types = {}
+
+
 class PeriodForSystemTimeConstraint(Expression, ColumnConstraintKind):
     arg_types = {"this": True, "expression": True}
 

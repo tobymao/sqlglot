@@ -1243,56 +1243,36 @@ class TestOptimizer(unittest.TestCase):
         error_msg = str(ctx.exception)
         self.assertIn("Column 'a' could not be resolved", error_msg)
 
-    def test_qualify_columns_preserves_schema_blind_correlated_struct_star(self):
-        expression = optimizer.qualify.qualify(
-            parse_one(
+    def test_qualify_columns_preserves_schema_blind_correlated_struct_stars(self):
+        cases = [
+            (
                 "SELECT * REPLACE((SELECT AS STRUCT payload.* EXCEPT (x)) AS payload) "
                 "FROM my_table AS t",
-                read="bigquery",
+                "SELECT * REPLACE ((SELECT AS STRUCT `payload`.* EXCEPT (`x`)) AS `payload`) "
+                "FROM `my_table` AS `t`",
             ),
-            schema={},
-            dialect="bigquery",
-        )
-
-        self.assertEqual(
-            expression.sql(dialect="bigquery"),
-            "SELECT * REPLACE ((SELECT AS STRUCT `payload`.* EXCEPT (`x`)) AS `payload`) "
-            "FROM `my_table` AS `t`",
-        )
-
-    def test_qualify_columns_preserves_qualified_schema_blind_correlated_struct_star(self):
-        expression = optimizer.qualify.qualify(
-            parse_one(
+            (
                 "SELECT (SELECT AS STRUCT t.payload.* EXCEPT (x)) "
                 "FROM my_table AS t JOIN other AS o ON TRUE",
-                read="bigquery",
+                "SELECT (SELECT AS STRUCT `t`.`payload`.* EXCEPT (`x`)) AS `_col_0` "
+                "FROM `my_table` AS `t` JOIN `other` AS `o` ON TRUE",
             ),
-            schema={},
-            dialect="bigquery",
-        )
-
-        self.assertEqual(
-            expression.sql(dialect="bigquery"),
-            "SELECT (SELECT AS STRUCT `t`.`payload`.* EXCEPT (`x`)) AS `_col_0` "
-            "FROM `my_table` AS `t` JOIN `other` AS `o` ON TRUE",
-        )
-
-    def test_qualify_columns_preserves_nested_schema_blind_correlated_struct_star(self):
-        expression = optimizer.qualify.qualify(
-            parse_one(
+            (
                 "SELECT (SELECT AS STRUCT t.payload.child.* EXCEPT (x)) "
                 "FROM my_table AS t JOIN other AS o ON TRUE",
-                read="bigquery",
+                "SELECT (SELECT AS STRUCT `t`.`payload`.`child`.* EXCEPT (`x`)) AS `_col_0` "
+                "FROM `my_table` AS `t` JOIN `other` AS `o` ON TRUE",
             ),
-            schema={},
-            dialect="bigquery",
-        )
+        ]
 
-        self.assertEqual(
-            expression.sql(dialect="bigquery"),
-            "SELECT (SELECT AS STRUCT `t`.`payload`.`child`.* EXCEPT (`x`)) AS `_col_0` "
-            "FROM `my_table` AS `t` JOIN `other` AS `o` ON TRUE",
-        )
+        for sql, expected in cases:
+            with self.subTest(sql):
+                expression = optimizer.qualify.qualify(
+                    parse_one(sql, read="bigquery"),
+                    schema={},
+                    dialect="bigquery",
+                )
+                self.assertEqual(expression.sql(dialect="bigquery"), expected)
 
     def test_optimize_error_highlighting(self):
         # highlighting works with sql parameter

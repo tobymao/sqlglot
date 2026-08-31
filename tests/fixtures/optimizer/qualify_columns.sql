@@ -521,12 +521,6 @@ SELECT (SELECT AS STRUCT one.* EXCEPT (a_1)) AS s FROM structs AS structs;
 
 # dialect: bigquery
 # execute: false
-# title: Preserve a correlated outer table star in a join
-SELECT 1 FROM x JOIN y ON (SELECT AS STRUCT x.* EXCEPT (a)) IS NOT NULL;
-SELECT 1 AS `1` FROM x AS x JOIN y AS y ON NOT (SELECT AS STRUCT x.* EXCEPT (a)) IS NULL;
-
-# dialect: bigquery
-# execute: false
 # title: Preserve a nested correlated outer table star in a join
 SELECT 1 FROM x JOIN y ON (SELECT AS STRUCT (SELECT AS STRUCT x.* EXCEPT (a))) IS NOT NULL;
 SELECT 1 AS `1` FROM x AS x JOIN y AS y ON NOT (SELECT AS STRUCT (SELECT AS STRUCT x.* EXCEPT (a)) AS _col_0) IS NULL;

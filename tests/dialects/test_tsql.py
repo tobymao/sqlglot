@@ -1692,25 +1692,25 @@ WHERE
             },
         )
         self.validate_all(
-            "SELECT DATEPART(month, CAST('2017-03-01' AS DATE))",
+            "SELECT DATEPART(MONTH, CAST('2017-03-01' AS DATE))",
             read={
                 "postgres": "SELECT DATE_PART('month', '2017-03-01'::DATE)",
             },
             write={
-                "postgres": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
-                "spark": "SELECT EXTRACT(month FROM CAST('2017-03-01' AS DATE))",
-                "tsql": "SELECT DATEPART(month, CAST('2017-03-01' AS DATE))",
+                "postgres": "SELECT EXTRACT(MONTH FROM CAST('2017-03-01' AS DATE))",
+                "spark": "SELECT EXTRACT(MONTH FROM CAST('2017-03-01' AS DATE))",
+                "tsql": "SELECT DATEPART(MONTH, CAST('2017-03-01' AS DATE))",
             },
         )
         self.validate_all(
-            "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
+            "SELECT DATEPART(DAY, CAST('2017-01-02' AS DATE))",
             read={
                 "postgres": "SELECT DATE_PART('day', '2017-01-02'::DATE)",
             },
             write={
-                "postgres": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
-                "spark": "SELECT EXTRACT(day FROM CAST('2017-01-02' AS DATE))",
-                "tsql": "SELECT DATEPART(day, CAST('2017-01-02' AS DATE))",
+                "postgres": "SELECT EXTRACT(DAY FROM CAST('2017-01-02' AS DATE))",
+                "spark": "SELECT EXTRACT(DAY FROM CAST('2017-01-02' AS DATE))",
+                "tsql": "SELECT DATEPART(DAY, CAST('2017-01-02' AS DATE))",
             },
         )
         self.validate_identity(

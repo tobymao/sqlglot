@@ -2820,7 +2820,7 @@ class Generator:
             expression.expressions
             and groupings
             and groupings.strip() not in ("WITH CUBE", "WITH ROLLUP")
-            and (not grouping_sets or not expression.args.get("grouping_sets_not_group_by_element"))
+            and (not grouping_sets or expression.args.get("grouping_sets_as_group_by_element"))
         ):
             group_by = f"{group_by}{self.GROUPINGS_SEP}"
 

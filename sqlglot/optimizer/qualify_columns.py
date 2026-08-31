@@ -673,9 +673,11 @@ def _qualify_positional_column(
             ),
             None,
         )
+
     if pivots or scope_pivot or not source_columns or "*" in source_columns:
         if scope_pivot:
             column.set("table", exp.to_identifier(scope_pivot.alias))
+
         return True
 
     position_value = int(position.to_py())
@@ -723,6 +725,7 @@ def _qualify_positional_column(
     else:
         positional_identifier = exp.to_identifier(positional_name)
         resolver.dialect.quote_identifier(positional_identifier, identify=False)
+
     column.set("this", positional_identifier)
 
     return False

@@ -306,10 +306,7 @@ def _build_json_query(args: list, dialect: Dialect) -> exp.JSONExtract:
         args.append(exp.Literal.string("$"))
 
     json_extract = parser.build_extract_json_with_path(exp.JSONExtract)(args, dialect)
-
-    # Record that this came from JSON_QUERY, so it can round-trip as JSON_QUERY
     json_extract.set("json_query", True)
-
     return json_extract
 
 

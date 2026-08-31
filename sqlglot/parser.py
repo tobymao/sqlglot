@@ -5563,11 +5563,13 @@ class Parser:
         elif self._match(TokenType.DISTINCT):
             elements["all"] = False
 
-        if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
-            return self.expression(exp.Group(**elements), comments=comments)  # type: ignore
-
         while True:
             index = self._index
+
+            # Stop before consuming modifier tokens like LIMIT, OFFSET and WINDOW,
+            # which are also valid identifiers
+            if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
+                break
 
             elements["expressions"].extend(
                 self._parse_csv(

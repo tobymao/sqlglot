@@ -87,6 +87,7 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT xor(TRUE, FALSE)")
         self.validate_identity("CAST(['hello'], 'Array(Enum8(''hello'' = 1))')")
         self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS")
+        self.validate_identity("SELECT x, COUNT() FROM y GROUP BY x WITH TOTALS LIMIT 1")
         self.validate_identity("SELECT INTERVAL t.days DAY")
         self.validate_identity("SELECT match('abc', '([a-z]+)')")
         self.validate_identity("dictGet(x, 'y')")

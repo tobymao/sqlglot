@@ -239,6 +239,7 @@ class MySQLParser(parser.Parser):
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,
+        "BINARY": lambda self: self.expression(exp.BinaryColumnConstraint()),
         "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
         "INDEX": lambda self: self._parse_index_constraint(),
         "KEY": lambda self: self._parse_index_constraint(),

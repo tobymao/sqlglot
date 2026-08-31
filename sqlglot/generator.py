@@ -147,6 +147,7 @@ class Generator:
         exp.AssumeColumnConstraint: lambda self, e: f"ASSUME ({self.sql(e, 'this')})",
         exp.AutoRefreshProperty: lambda self, e: f"AUTO REFRESH {self.sql(e, 'this')}",
         exp.BackupProperty: lambda self, e: f"BACKUP {self.sql(e, 'this')}",
+        exp.BinaryColumnConstraint: lambda *_: "BINARY",
         exp.CaseSpecificColumnConstraint: lambda _, e: (
             f"{'NOT ' if e.args.get('not_') else ''}CASESPECIFIC"
         ),

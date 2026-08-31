@@ -25,6 +25,9 @@ SELECT_ALL = object()
 # variants are subclasses of Explode, so matching Explode covers them too.
 SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
 
+# GROUP BY constructs whose children are grouping items; a one-column set, e.g. ((1)), is a Paren
+GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)
+
 
 def _is_self_referencing_cte(scope: Scope) -> bool:
     cte = scope.expression.parent
@@ -173,8 +176,8 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     else:
         order_refs = set()
 
-    # Resolve bare GROUP BY ordinals before pruning
-    ordinal_refs = _bare_group_by_ordinal_refs(expression)
+    # Resolve GROUP BY ordinals before pruning
+    ordinal_refs = _group_by_ordinal_refs(expression)
     group_ordinal_selection_ids = {id(selection) for _, selection in ordinal_refs}
 
     # GROUP BY ALL with no explicit keys implicitly groups by every non-aggregate
@@ -237,7 +240,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
 
     expression.select(*new_selections, append=False, copy=False)
 
-    # Rewrite bare GROUP BY ordinals to their positions in the pruned SELECT list
+    # Rewrite GROUP BY ordinals to their positions in the pruned SELECT list
     if ordinal_refs:
         new_pos = {id(selection): i + 1 for i, selection in enumerate(new_selections)}
         for node, old_selection in ordinal_refs:
@@ -266,10 +269,11 @@ def _is_implicit_group_by_all(select: exp.Select) -> bool:
     )
 
 
-def _bare_group_by_ordinal_refs(
+def _group_by_ordinal_refs(
     select: exp.Select,
 ) -> list[tuple[exp.Literal, exp.Expr]]:
-    """Map each bare GROUP BY integer ordinal to its pre-prune projection."""
+    """Map each GROUP BY integer ordinal to its pre-prune projection, including the ordinals
+    nested in a grouping construct such as GROUPING SETS / CUBE / ROLLUP."""
     group = select.args.get("group")
     if not group:
         return []
@@ -278,10 +282,15 @@ def _bare_group_by_ordinal_refs(
     n = len(selects)
     refs: list[tuple[exp.Literal, exp.Expr]] = []
 
-    for node in group.expressions:
-        if node.is_int and isinstance(node, exp.Literal):
-            pos = int(node.this)
-            if 1 <= pos <= n:
-                refs.append((node, selects[pos - 1]))
+    def collect(nodes: t.Iterable[exp.Expr]) -> None:
+        for node in nodes:
+            if isinstance(node, GROUPING_CONSTRUCTS):
+                collect(node.iter_expressions())
+            elif node.is_int and isinstance(node, exp.Literal):
+                pos = int(node.this)
+                if 1 <= pos <= n:
+                    refs.append((node, selects[pos - 1]))
+
+    collect(group.iter_expressions())
 
     return refs

@@ -262,3 +262,25 @@ SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL CUBE (x.a, x
 
 SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL a, b) t;
 SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL x.a, x.b) AS t;
+
+--------------------------------------
+-- GROUP BY ordinals nested in GROUPING SETS / CUBE / ROLLUP reference projections
+-- positionally, so pruning must not shift what they point at
+--------------------------------------
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY GROUPING SETS (1, 2)) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY GROUPING SETS (1, 2)) AS t;
+
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY CUBE (1, 2)) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY CUBE (1, 2)) AS t;
+
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ROLLUP (1, 2)) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY ROLLUP (1, 2)) AS t;
+
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY GROUPING SETS (1, (1, 2))) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY GROUPING SETS (1, (1, 2))) AS t;
+
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY GROUPING SETS ((1), (2))) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY GROUPING SETS ((1), (2))) AS t;
+
+SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY (1), (2)) t;
+SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY (1), (2)) AS t;

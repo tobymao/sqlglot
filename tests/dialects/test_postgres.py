@@ -1961,6 +1961,12 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         for key_type in ("FOR SHARE", "FOR UPDATE", "FOR NO KEY UPDATE", "FOR KEY SHARE"):
             with self.subTest(f"Test lock type {key_type}"):
                 self.validate_identity(f"SELECT 1 FROM foo AS x {key_type} OF x")
+        self.validate_identity(
+            "LOCK TABLE foo, bar IN SHARE ROW EXCLUSIVE MODE", check_command_warning=True
+        )
+        self.validate_identity(
+            "LOCK foo IN ACCESS EXCLUSIVE MODE NOWAIT", check_command_warning=True
+        )
 
     def test_grant(self):
         grant_cmds = [

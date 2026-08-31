@@ -1864,7 +1864,9 @@ def trim_sql(self: Generator, expression: exp.Trim, default_trim_type: str = "")
 
 
 def concat_to_dpipe_sql(self: Generator, expression: exp.Concat) -> str:
-    return self.sql(reduce(lambda x, y: exp.DPipe(this=x, expression=y), expression.expressions))
+    return self.sql(
+        reduce(lambda x, y: exp.DPipe(this=x, expression=y), self.convert_concat_args(expression))
+    )
 
 
 def concat_ws_to_dpipe_sql(self: Generator, expression: exp.ConcatWs) -> str:

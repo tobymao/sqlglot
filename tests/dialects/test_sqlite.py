@@ -138,6 +138,25 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT MAX(a, b) FROM t",
             },
         )
+        # CONCAT skips NULL args in these dialects, but || propagates it, so the
+        # operands have to keep the COALESCE wrapping the other targets get.
+        self.validate_all(
+            "SELECT COALESCE(a, '') || COALESCE(b, '') FROM t",
+            read={
+                "duckdb": "SELECT CONCAT(a, b) FROM t",
+                "postgres": "SELECT CONCAT(a, b) FROM t",
+                "tsql": "SELECT CONCAT(a, b) FROM t",
+            },
+        )
+        # CONCAT propagates NULL in these dialects, so || already matches and the
+        # operands are left alone.
+        self.validate_all(
+            "SELECT a || b FROM t",
+            read={
+                "mysql": "SELECT CONCAT(a, b) FROM t",
+                "snowflake": "SELECT CONCAT(a, b) FROM t",
+            },
+        )
         self.validate_all(
             "SELECT JSON_GROUP_ARRAY(name) FROM t",
             read={

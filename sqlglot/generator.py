@@ -2835,7 +2835,7 @@ class Generator:
                     )
 
             if add_separator:
-                group_by += "," if grouping_sets else self.GROUPINGS_SEP
+                group_by = f"{group_by}{self.GROUPINGS_SEP}"
 
         return f"{group_by}{groupings}"
 

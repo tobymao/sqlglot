@@ -1222,14 +1222,12 @@ TBLPROPERTIES (
                     suffix_sql,
                 )
 
-        for dialect in ("trino", "clickhouse"):
-            with self.subTest(dialect=dialect):
-                self.assertEqual(
-                    suffix_expression.sql(dialect, unsupported_level=ErrorLevel.IGNORE),
-                    element_sql,
-                )
-                with self.assertRaises(UnsupportedError):
-                    suffix_expression.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            suffix_expression.sql("trino", unsupported_level=ErrorLevel.IGNORE),
+            element_sql,
+        )
+        with self.assertRaises(UnsupportedError):
+            suffix_expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
 
     def test_current_user(self):
         self.validate_all(

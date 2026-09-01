@@ -2,7 +2,7 @@ from unittest import mock
 
 from sqlglot import exp, parse_one
 from sqlglot.dialects.dialect import Dialects
-from sqlglot.errors import UnsupportedError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -1196,6 +1196,38 @@ TBLPROPERTIES (
             "SELECT a, LOGICAL_OR(b) FROM table GROUP BY a",
             write={"spark": "SELECT a, BOOL_OR(b) FROM table GROUP BY a"},
         )
+
+    def test_grouping_sets_as_group_by_element(self):
+        suffix_sql = "SELECT COUNT(1), d, h FROM t GROUP BY d, h GROUPING SETS ((d, h), (d))"
+        element_sql = "SELECT COUNT(1), d, h FROM t GROUP BY d, h, GROUPING SETS ((d, h), (d))"
+
+        for sql, expected_flag in (
+            (suffix_sql, False),
+            (element_sql, True),
+            ("SELECT a FROM t GROUP BY a, GROUPING SETS ((a)), GROUPING SETS ((a))", True),
+            ("SELECT COUNT(1), d, h FROM t GROUP BY GROUPING SETS ((d, h), (d))", True),
+        ):
+            with self.subTest(sql=sql):
+                group = self.validate_identity(sql).args["group"]
+                self.assertIs(group.args.get("grouping_sets_as_group_by_element"), expected_flag)
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT a FROM t GROUP BY a GROUPING SETS ((a)), GROUPING SETS ((a))")
+
+        suffix_expression = self.parse_one(suffix_sql)
+        for dialect in ("hive", "spark"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(
+                    suffix_expression.sql(dialect, unsupported_level=ErrorLevel.RAISE),
+                    suffix_sql,
+                )
+
+        self.assertEqual(
+            suffix_expression.sql("trino", unsupported_level=ErrorLevel.IGNORE),
+            element_sql,
+        )
+        with self.assertRaises(UnsupportedError):
+            suffix_expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
 
     def test_current_user(self):
         self.validate_all(

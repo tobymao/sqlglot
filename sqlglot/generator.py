@@ -353,6 +353,9 @@ class Generator:
     # The separator for grouping sets and rollups
     GROUPINGS_SEP = ","
 
+    # Whether GROUPING SETS can follow GROUP BY expressions without a comma
+    SUPPORTS_GROUPING_SETS_AS_SUFFIX = False
+
     # The string used for creating an index on a table
     INDEX_ON = "ON"
 
@@ -2821,7 +2824,18 @@ class Generator:
             and groupings
             and groupings.strip() not in ("WITH CUBE", "WITH ROLLUP")
         ):
-            group_by = f"{group_by}{self.GROUPINGS_SEP}"
+            add_separator = True
+
+            if grouping_sets and not expression.args.get("grouping_sets_as_group_by_element"):
+                if self.SUPPORTS_GROUPING_SETS_AS_SUFFIX:
+                    add_separator = False
+                else:
+                    self.unsupported(
+                        "GROUPING SETS without a comma after GROUP BY expressions is not supported"
+                    )
+
+            if add_separator:
+                group_by = f"{group_by}{self.GROUPINGS_SEP}"
 
         return f"{group_by}{groupings}"
 

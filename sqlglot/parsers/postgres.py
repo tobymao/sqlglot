@@ -326,7 +326,7 @@ class PostgresParser(parser.Parser):
         value = self._parse_bitwise()
 
         if part and isinstance(part, (exp.Column, exp.Literal)):
-            part = exp.var(part.name)
+            part = exp.var(part.name.upper())
 
         return self.expression(exp.Extract(this=part, expression=value))
 

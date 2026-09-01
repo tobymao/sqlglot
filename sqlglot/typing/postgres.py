@@ -44,6 +44,7 @@ EXPRESSION_METADATA = {
         expr_type: {"returns": exp.DType.TIMESTAMP}
         for expr_type in {
             exp.TimestampFromParts,
+            exp.Localtimestamp,
         }
     },
     **{

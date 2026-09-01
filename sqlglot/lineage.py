@@ -193,6 +193,45 @@ def lineage(
     return result
 
 
+def _struct_field_source(value: exp.Expression, field: str) -> t.Optional[exp.Expression]:
+    """Resolve one field of a struct-producing expression to the expression it
+    flows from, so `struct_col.field` lineage narrows to that field instead of
+    the whole struct.
+
+    Handles the two shapes that lose field lineage today:
+      * `STRUCT(<expr> AS field, ...)` -> the field's own expression.
+      * a whole-row aggregate/pick such as `ARRAY_AGG(t ORDER BY ... LIMIT 1)[OFFSET(0)]`
+        (BigQuery's "one row per group" idiom) -> `t.field`; the aggregate's
+        ORDER BY/LIMIT are row selectors, not data sources for the field.
+    Returns None when `value` is not a struct this can narrow (callers fall back
+    to whole-expression lineage).
+    """
+    node = value
+    if isinstance(node, exp.Bracket) and len(node.expressions) == 1:
+        node = node.this
+    if isinstance(node, exp.ArrayAgg):
+        node = node.this
+    while isinstance(node, (exp.Order, exp.Limit)):
+        node = node.this
+
+    if isinstance(node, exp.Struct):
+        for member in node.expressions:
+            if isinstance(member, exp.PropertyEQ) and member.name == field:
+                return member.expression
+            if isinstance(member, exp.Alias) and member.alias == field:
+                return member.this
+        return None
+
+    # A whole-row reference (e.g. the table alias `t` aggregated as a row, which
+    # qualify rewrites to a TableColumn): the field is that row's column.
+    if isinstance(node, exp.TableColumn) and node.name:
+        return exp.column(field, table=node.name)
+    if isinstance(node, exp.Column) and not node.args.get("table") and node.name:
+        return exp.column(field, table=node.name)
+
+    return None
+
+
 def to_node(
     column: str | int,
     scope: Scope,
@@ -206,8 +245,9 @@ def to_node(
     _cache: dict[tuple, Node] | None = None,
     _scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] | None = None,
     on_node: t.Callable[[Node], None] | None = None,
+    struct_field: str | None = None,
 ) -> Node:
-    cache_key = (column, id(scope), scope_name, source_name, reference_node_name)
+    cache_key = (column, id(scope), scope_name, source_name, reference_node_name, struct_field)
 
     if _cache is not None and cache_key in _cache:
         cached_node = _cache[cache_key]
@@ -361,7 +401,18 @@ def to_node(
                 on_node(star_node)
 
     # Find all columns that went into creating this one to list their lineage nodes.
-    source_columns = set(find_all_in_scope(select, exp.Column))
+    # When this column was reached as a struct field (`struct_col.field`), narrow to
+    # the expression that produced that field so its lineage doesn't collapse into the
+    # whole struct (or into a row aggregate's ORDER BY key).
+    lineage_expr: exp.Expression = select
+    if struct_field:
+        field_source = _struct_field_source(
+            select.unalias() if isinstance(select, exp.Alias) else select, struct_field
+        )
+        if field_source is not None:
+            lineage_expr = field_source
+
+    source_columns = set(find_all_in_scope(lineage_expr, exp.Column))
 
     # If the source is a UDTF find columns used in the UDTF to generate the table
     if isinstance(source, exp.UDTF):
@@ -396,6 +447,13 @@ def to_node(
         table = c.table
         col_source: exp.Table | Scope | None = scope.sources.get(table)
 
+        # If this column is the root of a struct field access (`c.field`), carry the
+        # field into the recursion so the upstream scope narrows to that field.
+        next_struct_field: str | None = None
+        dot_parent = c.parent
+        if isinstance(dot_parent, exp.Dot) and dot_parent.this is c:
+            next_struct_field = dot_parent.expression.name or None
+
         if isinstance(col_source, Scope):
             reference_node_name = None
             if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
@@ -418,6 +476,7 @@ def to_node(
                 _cache=_cache,
                 _scope_meta=_scope_meta,
                 on_node=on_node,
+                struct_field=next_struct_field,
             )
         elif pivots and pivots[-1].alias_or_name == c.table:
             # Only the last operator in a chain names the resulting source

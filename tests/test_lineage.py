@@ -1299,3 +1299,35 @@ class TestLineage(unittest.TestCase):
                 seen.add(id(node))
         for nid in seen:
             self.assertEqual(counts.get(nid, 0), 1)
+
+    def test_struct_field_lineage(self) -> None:
+        schema = {"tbl": {"k": "STRING", "a": "STRING", "b": "STRING", "ts": "TIMESTAMP"}}
+
+        def leaves(column: str, sql: str) -> set[str]:
+            node = lineage(column, sql, schema=schema, dialect="bigquery")
+            found: set[str] = set()
+            stack = [node]
+            while stack:
+                current = stack.pop()
+                if not current.downstream:
+                    found.add(current.name)
+                stack.extend(current.downstream)
+            return found
+
+        # A struct field selected via `struct.*` must narrow to the field's own
+        # source column, not to every column of the struct.
+        struct_sql = "SELECT s.* FROM (SELECT STRUCT(t.a AS a, t.b AS b) AS s FROM tbl AS t)"
+        self.assertEqual(leaves("a", struct_sql), {"t.a"})
+        self.assertEqual(leaves("b", struct_sql), {"t.b"})
+
+        # BigQuery "one row per group" (e.g. dbt_utils.deduplicate): a whole row is
+        # packed with ARRAY_AGG(...)[OFFSET(0)] and selected via `row.*`. Each field
+        # must trace to the row's column -- NOT to the aggregate's ORDER BY key.
+        dedup_sql = (
+            "SELECT unique.* FROM ("
+            "  SELECT ARRAY_AGG(t ORDER BY ts DESC LIMIT 1)[OFFSET(0)] AS unique"
+            "  FROM tbl AS t GROUP BY k"
+            ")"
+        )
+        self.assertEqual(leaves("a", dedup_sql), {"t.a"})
+        self.assertEqual(leaves("ts", dedup_sql), {"t.ts"})

@@ -30,7 +30,6 @@ def eliminate_subqueries(expression: E, metadata: dict[str, int] | None = None) 
 
     Args:
         expression (sqlglot.Expr): expression
-        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: expression
     """

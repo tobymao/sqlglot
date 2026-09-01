@@ -1590,3 +1590,9 @@ SELECT
   ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY
     "T"."ID") OVER (PARTITION BY "T"."GRP") AS "_COL_0"
 FROM "T" AS "T";
+
+# title: eliminated join leaves its subquery-turned-CTE orphaned for eliminate_ctes
+SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b;
+SELECT
+  "x"."a" AS "a"
+FROM "x" AS "x";

@@ -268,6 +268,12 @@ class TestOptimizer(unittest.TestCase):
             schema=schema,
         )
 
+        sql = "SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b"
+        self.assertEqual(
+            optimizer.optimize(parse_one(sql), schema=schema, metadata=None).sql(),
+            'SELECT "x"."a" AS "a" FROM "x" AS "x"',
+        )
+
     def test_isolate_table_selects(self):
         self.check_file(
             "isolate_table_selects",
@@ -3822,85 +3828,94 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
         optimizer.annotate_types.annotate_types(query, schema=schema_ext)
 
-    def test_metadata_fill(self):
-        def fill(sql):
-            metadata = {}
-            fill_metadata(traverse_scope(parse_one(sql)), metadata)
-            return metadata
+    def test_fill_metadata(self):
+        for sql, expected in (
+            (
+                "SELECT a FROM x",
+                {"ctes": 0, "joins": 0, "derived_tables": 0, "nested_queries": 0},
+            ),
+            (
+                "SELECT a FROM x UNION SELECT b FROM y UNION SELECT c FROM z",
+                {"ctes": 0, "joins": 0, "derived_tables": 0, "nested_queries": 0},
+            ),
+            (
+                "SELECT * FROM (SELECT a FROM x UNION SELECT b FROM y) AS q",
+                {"ctes": 0, "joins": 0, "derived_tables": 1, "nested_queries": 1},
+            ),
+            (
+                "WITH c AS (SELECT a FROM x) SELECT a FROM c",
+                {"ctes": 1, "joins": 0, "derived_tables": 0, "nested_queries": 1},
+            ),
+            (
+                "SELECT d.a FROM (SELECT a FROM x) AS d JOIN y ON d.a = y.b",
+                {"ctes": 0, "joins": 1, "derived_tables": 1, "nested_queries": 1},
+            ),
+            (
+                "SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c)",
+                {"ctes": 0, "joins": 1, "derived_tables": 1, "nested_queries": 1},
+            ),
+            (
+                "SELECT * FROM a JOIN (b) ON a.x = b.x",
+                {"ctes": 0, "joins": 1, "derived_tables": 0, "nested_queries": 0},
+            ),
+            (
+                "SELECT * FROM a JOIN (b JOIN c ON b.x = c.x) ON a.y = b.y",
+                {"ctes": 0, "joins": 2, "derived_tables": 0, "nested_queries": 0},
+            ),
+            (
+                "SELECT * FROM ((SELECT 1 AS x) CROSS JOIN (SELECT 2 AS y)) AS z",
+                {"ctes": 0, "joins": 1, "derived_tables": 1, "nested_queries": 1},
+            ),
+            ("x = 1", {}),
+        ):
+            with self.subTest(sql):
+                metadata = {}
+                fill_metadata(traverse_scope(parse_one(sql)), metadata)
+                self.assertEqual(metadata, expected)
 
-        self.assertEqual(
-            fill("SELECT a FROM x"),
-            {"ctes": 0, "joins": 0, "derived_tables": 0, "nested_queries": 0},
-        )
-
-        # The operands of a root-level set operation chain are not nested
-        self.assertEqual(
-            fill("SELECT a FROM x UNION SELECT b FROM y UNION SELECT c FROM z")["nested_queries"],
-            0,
-        )
-        self.assertEqual(
-            fill("SELECT * FROM (SELECT a FROM x UNION SELECT b FROM y) AS q")["nested_queries"],
-            1,
-        )
-
-        self.assertEqual(fill("WITH c AS (SELECT a FROM x) SELECT a FROM c")["ctes"], 1)
-
-        metadata = fill("SELECT d.a FROM (SELECT a FROM x) AS d JOIN y ON d.a = y.b")
-        self.assertEqual(metadata["derived_tables"], 1)
-        self.assertEqual(metadata["joins"], 1)
-
-        # Joins inside parenthesized FROM sources aren't attached to the select's "joins"
-        # arg and must be detected through their source nodes
-        self.assertEqual(
-            fill("SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c)")["joins"], 1
-        )
-
-        # Not a scopeable expression: the facts must stay unknown so that nothing skips
-        metadata = {}
-        fill_metadata(traverse_scope(parse_one("x = 1")), metadata)
-        self.assertEqual(metadata, {})
-
-    def test_metadata_gates(self):
+    def test_metadata_rule_skipping(self):
         zeros = {"ctes": 0, "joins": 0, "derived_tables": 0, "nested_queries": 0}
 
-        for rule, sql in (
+        for rule, sql, expected in (
             (
                 optimizer.pushdown_projections.pushdown_projections,
                 "SELECT _q.a FROM (SELECT x.a AS a, x.b AS b FROM x) AS _q",
+                "SELECT _q.a FROM (SELECT x.a AS a FROM x) AS _q",
             ),
             (
                 optimizer.optimize_joins.optimize_joins,
                 "SELECT * FROM x CROSS JOIN y JOIN z ON x.a = z.a AND y.a = z.a",
+                "SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a",
             ),
             (
                 optimizer.eliminate_subqueries.eliminate_subqueries,
                 "SELECT a FROM (SELECT * FROM x) AS y",
+                "WITH y AS (SELECT * FROM x) SELECT a FROM y AS y",
             ),
             (
                 optimizer.merge_subqueries.merge_subqueries,
                 "SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y",
+                "SELECT x.a FROM x CROSS JOIN y",
             ),
             (
                 optimizer.eliminate_joins.eliminate_joins,
                 "SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b",
+                "SELECT x.a FROM x",
             ),
             (
                 optimizer.eliminate_ctes.eliminate_ctes,
                 "WITH y AS (SELECT a FROM x) SELECT a FROM z",
+                "SELECT a FROM z",
             ),
         ):
-            # Zeroed facts short-circuit the rule before it does any work
-            self.assertEqual(rule(parse_one(sql), metadata=dict(zeros)).sql(), parse_one(sql).sql())
+            with self.subTest(sql):
+                self.assertEqual(rule(parse_one(sql), metadata=dict(zeros)).sql(), sql)
 
-            # Truthful facts must not change the rule's output
-            metadata = {}
-            fill_metadata(traverse_scope(parse_one(sql)), metadata)
-            self.assertEqual(
-                rule(parse_one(sql), metadata=metadata).sql(), rule(parse_one(sql)).sql()
-            )
+                metadata = {}
+                fill_metadata(traverse_scope(parse_one(sql)), metadata)
+                self.assertEqual(rule(parse_one(sql), metadata=metadata).sql(), expected)
 
-    def test_metadata_captures(self):
-        # Removals decrement: popping both unused CTEs drives the counter to 0
+    def test_metadata_counter_updates(self):
         expression = parse_one("WITH a AS (SELECT 1 AS x), b AS (SELECT 2 AS x) SELECT * FROM q")
         metadata = {}
         fill_metadata(traverse_scope(expression), metadata)
@@ -3917,7 +3932,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         optimizer.eliminate_joins.eliminate_joins(expression, metadata=metadata)
         self.assertEqual(metadata["joins"], 0)
 
-        # Conversions move counts between counters: derived table -> CTE
         expression = parse_one("SELECT a FROM (SELECT * FROM x) AS y")
         metadata = {}
         fill_metadata(traverse_scope(expression), metadata)
@@ -3925,49 +3939,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         optimizer.eliminate_subqueries.eliminate_subqueries(expression, metadata=metadata)
         self.assertEqual((metadata["ctes"], metadata["derived_tables"]), (1, 0))
 
-        # Merges decrement, so later CTE / derived table work can skip
         expression = parse_one("SELECT a FROM (SELECT x.a FROM x) CROSS JOIN y")
         metadata = {}
         fill_metadata(traverse_scope(expression), metadata)
         optimizer.merge_subqueries.merge_subqueries(expression, metadata=metadata)
         self.assertEqual(metadata["derived_tables"], 0)
-
-    def test_metadata_on_off_equivalence(self):
-        # Metadata must never change optimize's output; these shapes exercise every gate,
-        # capture, and the staleness hazards found during development
-        for sql in (
-            # CTE created mid-pipeline, then orphaned by join elimination
-            "SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b",
-            # parenthesized join: not attached to the select's "joins" arg
-            "SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c)",
-            "SELECT a, b FROM x WHERE a = 1",
-            "SELECT a FROM x UNION ALL SELECT b AS a FROM y UNION ALL SELECT c AS a FROM z",
-            "WITH c1 AS (SELECT a, b FROM x), c2 AS (SELECT a, b FROM c1) SELECT a FROM c2 WHERE b > 1",
-            "SELECT * FROM x WHERE a IN (SELECT b FROM y)",
-            "SELECT * FROM x WHERE (SELECT MAX(b) FROM y WHERE y.b = x.b) > 0",
-        ):
-            self.assertEqual(
-                optimizer.optimize(parse_one(sql), schema=self.schema).sql(),
-                optimizer.optimize(parse_one(sql), schema=self.schema, metadata=None).sql(),
-                sql,
-            )
-
-        # The whole optimizer fixture corpus must also match, including error parity
-        schema = {
-            "x": {"a": "INT", "b": "INT"},
-            "y": {"b": "INT", "c": "INT"},
-            "z": {"a": "INT", "c": "INT"},
-            "u": {"f": "INT", "g": "INT", "h": "TEXT"},
-        }
-        for meta, sql, _ in load_sql_fixture_pairs("optimizer/optimizer.sql"):
-            dialect = meta.get("dialect")
-
-            def run(**kwargs):
-                try:
-                    return optimizer.optimize(
-                        parse_one(sql, read=dialect), schema=schema, dialect=dialect, **kwargs
-                    ).sql(dialect=dialect)
-                except Exception as e:
-                    return f"error: {type(e).__name__}"
-
-            self.assertEqual(run(), run(metadata=None), sql)

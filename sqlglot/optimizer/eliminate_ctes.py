@@ -27,7 +27,6 @@ def eliminate_ctes(
 
     Args:
         expression (sqlglot.Expr): expression to optimize
-        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: optimized expression
     """

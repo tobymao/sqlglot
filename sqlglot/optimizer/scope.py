@@ -706,15 +706,7 @@ def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
     for scope in scopes:
         ctes += len(scope.ctes)
         derived_tables += len(scope.derived_tables)
-
-        # A join's right-hand source is always a table, derived table or UDTF, so
-        # counting bucketed sources that hang under a Join counts every join,
-        # including those inside parenthesized FROM sources.
-        joins += sum(
-            1
-            for node in itertools.chain(scope.tables, scope.derived_tables, scope.udtfs)
-            if isinstance(node.parent, exp.Join)
-        )
+        joins += _count_joins(scope.expression)
 
         parent = scope.expression.parent
         if parent and not isinstance(parent, exp.SetOperation):
@@ -724,6 +716,33 @@ def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
     metadata["joins"] = joins
     metadata["derived_tables"] = derived_tables
     metadata["nested_queries"] = nested_queries
+
+
+def _count_joins(expression: exp.Expr) -> int:
+    """
+    Counts the joins under `expression` by following only FROM source nodes: `joins`
+    lists, join sources and wrapped (non-query) groups. Bare queries are excluded
+    because they are counted by their own scope, but the joins of an aliased wrapped
+    group can be reachable from two scopes, so the total across scopes is an upper
+    bound rather than an exact count.
+    """
+    count = 0
+    stack = [expression]
+    while stack:
+        node = stack.pop()
+        joins = node.args.get("joins")
+        if joins:
+            count += len(joins)
+            stack.extend(join.this for join in joins if join.this)
+        if isinstance(node, exp.Select):
+            from_ = node.args.get("from_")
+            if from_:
+                stack.append(from_.this)
+        elif isinstance(node, (exp.Subquery, exp.Paren)) and not isinstance(
+            node.this, exp.UNWRAPPED_QUERIES
+        ):
+            stack.append(node.this)
+    return count
 
 
 def _traverse_scope(scope: Scope) -> Iterator[Scope]:

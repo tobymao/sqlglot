@@ -25,7 +25,6 @@ def eliminate_joins(expression: E, metadata: dict[str, int] | None = None) -> E:
 
     Args:
         expression: expression to optimize
-        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
 
     Returns:
         The optimized expression

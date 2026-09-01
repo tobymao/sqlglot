@@ -41,7 +41,6 @@ def merge_subqueries(
     Args:
         expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
-        metadata: optional structural facts, see `sqlglot.optimizer.scope.fill_metadata`
     Returns:
         sqlglot.Expr: optimized expression
     """

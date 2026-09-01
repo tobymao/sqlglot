@@ -57,7 +57,7 @@ class TestSpark(Validator):
                 "presto": "CREATE TABLE db.example_table (col_a ARRAY(INTEGER), col_b ARRAY(ARRAY(INTEGER)))",
                 "hive": "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
                 "spark": "CREATE TABLE db.example_table (col_a ARRAY<INT>, col_b ARRAY<ARRAY<INT>>)",
-                "snowflake": "CREATE TABLE db.example_table (col_a ARRAY, col_b ARRAY)",
+                "snowflake": "CREATE TABLE db.example_table (col_a ARRAY(INT), col_b ARRAY(ARRAY(INT)))",
             },
         )
         self.validate_all(

@@ -34,6 +34,18 @@ logger = logging.getLogger("sqlglot")
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
+APOSTROPHE_UNSAFE_LEGACY_JSON_FUNCTIONS = {
+    exp.JSONExtract: "JSON_QUERY",
+    exp.JSONExtractArray: "JSON_QUERY_ARRAY",
+    exp.JSONExtractScalar: "JSON_VALUE",
+}
+
+
+def _has_apostrophe_json_path(expression: JSON_EXTRACT_TYPE) -> bool:
+    path = expression.expression
+    return isinstance(path, exp.JSONPath) and any(
+        isinstance(part, exp.JSONPathKey) and "'" in part.name for part in path.expressions
+    )
 
 
 def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Values) -> str:
@@ -232,15 +244,19 @@ def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) ->
     name = expression.meta_get("name") or expression.sql_name()
     upper = name.upper()
 
+    if _has_apostrophe_json_path(expression):
+        upper = APOSTROPHE_UNSAFE_LEGACY_JSON_FUNCTIONS.get(type(expression), upper)
+
     dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
 
-    if dquote_escaping:
-        self._quote_json_path_key_using_brackets = False
+    try:
+        if dquote_escaping:
+            self._quote_json_path_key_using_brackets = False
 
-    sql = rename_func(upper)(self, expression)
-
-    if dquote_escaping:
-        self._quote_json_path_key_using_brackets = True
+        sql = rename_func(upper)(self, expression)
+    finally:
+        if dquote_escaping:
+            self._quote_json_path_key_using_brackets = True
 
     return sql
 

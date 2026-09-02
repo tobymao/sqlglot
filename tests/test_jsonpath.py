@@ -47,6 +47,15 @@ class TestJsonpath(unittest.TestCase):
             with self.subTest(f"{selector} -> {expected}"):
                 self.assertEqual(parse(selector).sql(), f"'{expected}'")
 
+    def test_apostrophe_escaping_is_scoped_to_keys(self):
+        for selector, expected in (
+            ("$['it\\'s']", "$[\"it''s\"]"),
+            ("$[?@.a=='b']", "$[?@.a=='b']"),
+            ("$[?!(@.a=='b')]", "$[?!(@.a=='b')]"),
+        ):
+            with self.subTest(selector):
+                self.assertEqual(parse(selector).sql(), f"'{expected}'")
+
     def test_union_preserves_falsey_members(self):
         for selector, expected in (
             ("$[1,0]", exp.JSONPathUnion(expressions=[1, 0])),
@@ -74,7 +83,7 @@ class TestJsonpath(unittest.TestCase):
             """$['a']""": """$.a""",
             """$['c']""": """$.c""",
             """$[' ']""": """$[" "]""",
-            """$['\\'']""": """$["\'"]""",
+            """$['\\'']""": """$["''"]""",
             """$['\\\\']""": """$["\\\\"]""",
             """$['\\/']""": """$["\\/"]""",
             """$['\\b']""": """$["\\b"]""",

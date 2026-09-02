@@ -101,6 +101,7 @@ class DatabricksGenerator(SparkGenerator):
         path = super().jsonpath_sql(expression)
 
         if isinstance(expression.parent, exp.JSONExtractScalar):
+            path = self.escape_str(path)
             return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
         return path

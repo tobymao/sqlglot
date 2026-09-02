@@ -23,6 +23,9 @@ def unnest_subqueries(expression: E, metadata: dict[str, int] | None = None) -> 
     Returns:
         sqlglot.Expr: unnested expression
     """
+    if metadata and not metadata["nested_queries"]:
+        return expression
+
     next_alias_name = name_sequence("_u_")
 
     for scope in traverse_scope(expression):

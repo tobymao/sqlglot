@@ -1592,7 +1592,9 @@ SELECT
 FROM "T" AS "T";
 
 # title: eliminated join leaves its subquery-turned-CTE orphaned for eliminate_ctes
-SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b;
+SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b ORDER BY x.a;
 SELECT
   "x"."a" AS "a"
-FROM "x" AS "x";
+FROM "x" AS "x"
+ORDER BY
+  "x"."a";

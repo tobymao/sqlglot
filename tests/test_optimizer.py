@@ -3916,6 +3916,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "WITH y AS (SELECT a FROM x) SELECT a FROM z",
                 "SELECT a FROM z",
             ),
+            (
+                optimizer.unnest_subqueries.unnest_subqueries,
+                "SELECT * FROM x AS x WHERE x.a IN (SELECT y.a AS a FROM y AS y)",
+                "SELECT * FROM x AS x LEFT JOIN (SELECT y.a AS a FROM y AS y GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL",
+            ),
         ):
             with self.subTest(sql):
                 self.assertEqual(rule(parse_one(sql), metadata=dict(zeros)).sql(), sql)
@@ -3984,3 +3989,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             self.assertEqual((metadata["joins"], metadata["derived_tables"]), (0, 0))
             optimizer.unnest_subqueries.unnest_subqueries(expression, metadata=metadata)
             self.assertEqual((metadata["joins"], metadata["derived_tables"]), (1, 1), sql)
+
+        metadata = {}
+        expression = optimizer.optimize(
+            parse_one("SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT y.b FROM y) AS y ON x.b = y.b"),
+            schema=self.schema,
+            metadata=metadata,
+        )
+        self.assertEqual(expression.sql(), 'SELECT "x"."a" AS "a" FROM "x" AS "x"')
+        self.assertEqual(
+            metadata, {"ctes": 0, "joins": 0, "derived_tables": 0, "nested_queries": 2}
+        )

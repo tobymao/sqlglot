@@ -284,3 +284,39 @@ SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x 
 
 SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY (1), (2)) t;
 SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY (1), (2)) AS t;
+
+--------------------------------------
+-- Spark's SORT BY / DISTRIBUTE BY / CLUSTER BY reference output columns like ORDER BY does
+--------------------------------------
+
+# dialect: spark
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x SORT BY s) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x SORT BY s) AS t;
+
+# dialect: spark
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x DISTRIBUTE BY s) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x DISTRIBUTE BY s) AS t;
+
+# dialect: spark
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x CLUSTER BY s) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x CLUSTER BY s) AS t;
+
+# dialect: spark
+# title: an output reference nested in a SORT BY expression still keeps its projection
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x SORT BY s + 1) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x SORT BY s + 1) AS t;
+
+# dialect: spark
+# title: a trailing SORT BY applies to the whole set operation, so both arms keep the projection
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x UNION ALL SELECT b, b + 2 AS s FROM y SORT BY s) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x UNION ALL SELECT y.b AS b, y.b + 2 AS s FROM y AS y SORT BY s) AS t;
+
+# dialect: spark
+# title: a trailing CLUSTER BY applies to the whole set operation, so both arms keep the projection
+SELECT t.a FROM (SELECT a, b + 1 AS s FROM x UNION ALL SELECT b, b + 2 AS s FROM y CLUSTER BY s) t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b + 1 AS s FROM x AS x UNION ALL SELECT y.b AS b, y.b + 2 AS s FROM y AS y CLUSTER BY s) AS t;
+
+# dialect: spark
+# title: a qualified SORT BY reference is not an output reference, even when it matches a projection alias
+SELECT t.a FROM (SELECT a, b + 1 AS b FROM x SORT BY x.b) t;
+SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x SORT BY x.b) AS t;

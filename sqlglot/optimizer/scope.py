@@ -703,10 +703,11 @@ def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
         return
 
     ctes = joins = derived_tables = nested_queries = 0
+    scope_expressions = {id(scope.expression) for scope in scopes}
     for scope in scopes:
         ctes += len(scope.ctes)
         derived_tables += len(scope.derived_tables)
-        joins += _count_joins(scope.expression)
+        joins += _count_joins(scope.expression, scope_expressions)
 
         parent = scope.expression.parent
         if parent and not isinstance(parent, exp.SetOperation):
@@ -718,18 +719,21 @@ def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
     metadata["nested_queries"] = nested_queries
 
 
-def _count_joins(expression: exp.Expr) -> int:
+def _count_joins(expression: exp.Expr, scope_expressions: set[int]) -> int:
     """
-    Counts the joins under `expression` by following only FROM source nodes: `joins`
-    lists, join sources and wrapped (non-query) groups. Bare queries are excluded
-    because they are counted by their own scope, but the joins of an aliased wrapped
-    group can be reachable from two scopes, so the total across scopes is an upper
-    bound rather than an exact count.
+    Counts the joins owned by the scope rooted at `expression` by following only FROM
+    source nodes: `joins` lists, join sources, wrapped groups and set operands. The
+    descent stops at any node that is another scope's expression, since that scope
+    counts its own joins; nodes that no scope owns are counted by whichever scope
+    reaches them.
     """
     count = 0
     stack = [expression]
     while stack:
         node = stack.pop()
+        if node is not expression and id(node) in scope_expressions:
+            continue
+
         joins = node.args.get("joins")
         if joins:
             count += len(joins)
@@ -738,10 +742,10 @@ def _count_joins(expression: exp.Expr) -> int:
             from_ = node.args.get("from_")
             if from_:
                 stack.append(from_.this)
-        elif isinstance(node, (exp.Subquery, exp.Paren)) and not isinstance(
-            node.this, exp.UNWRAPPED_QUERIES
-        ):
+        elif isinstance(node, (exp.Subquery, exp.Paren)):
             stack.append(node.this)
+        elif isinstance(node, exp.SetOperation):
+            stack.extend((node.this, node.expression))
     return count
 
 

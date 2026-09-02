@@ -3866,6 +3866,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "SELECT * FROM ((SELECT 1 AS x) CROSS JOIN (SELECT 2 AS y)) AS z",
                 {"ctes": 0, "joins": 1, "derived_tables": 1, "nested_queries": 1},
             ),
+            (
+                "SELECT * FROM (tbl1 CROSS JOIN tbl2) AS t",
+                {"ctes": 0, "joins": 1, "derived_tables": 1, "nested_queries": 1},
+            ),
+            (
+                "SELECT * FROM ((SELECT 1 AS x) CROSS JOIN (SELECT p.a AS a FROM p JOIN q ON p.i = q.i)) AS z",
+                {"ctes": 0, "joins": 2, "derived_tables": 1, "nested_queries": 1},
+            ),
             ("x = 1", {}),
         ):
             with self.subTest(sql):
@@ -3944,3 +3952,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         fill_metadata(traverse_scope(expression), metadata)
         optimizer.merge_subqueries.merge_subqueries(expression, metadata=metadata)
         self.assertEqual(metadata["derived_tables"], 0)
+
+        expression = parse_one("WITH q AS (SELECT x.a AS a FROM x) SELECT q.a AS a FROM q")
+        metadata = {}
+        fill_metadata(traverse_scope(expression), metadata)
+        self.assertEqual(metadata["ctes"], 1)
+        optimizer.merge_subqueries.merge_subqueries(expression, metadata=metadata)
+        self.assertEqual(metadata["ctes"], 0)
+
+        for sql in (
+            "SELECT * FROM x WHERE x.a IN (SELECT y.a FROM y)",
+            "SELECT * FROM x WHERE (SELECT MAX(y.b) FROM y WHERE y.a = x.a) > 0",
+        ):
+            expression = parse_one(sql)
+            metadata = {}
+            fill_metadata(traverse_scope(expression), metadata)
+            self.assertEqual((metadata["joins"], metadata["derived_tables"]), (0, 0))
+            optimizer.unnest_subqueries.unnest_subqueries(expression, metadata=metadata)
+            self.assertEqual((metadata["joins"], metadata["derived_tables"]), (1, 1), sql)

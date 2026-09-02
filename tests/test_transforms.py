@@ -9,6 +9,7 @@ from sqlglot.transforms import (
     eliminate_window_clause,
     inherit_struct_field_names,
     remove_precision_parameterized_types,
+    remove_unique_constraints,
 )
 
 
@@ -146,6 +147,33 @@ class TestTransforms(unittest.TestCase):
             remove_precision_parameterized_types,
             "SELECT CAST(1 AS DECIMAL(10, 2)), CAST('13' AS VARCHAR(10))",
             "SELECT CAST(1 AS DECIMAL), CAST('13' AS VARCHAR)",
+        )
+
+    def test_remove_unique_constraints(self):
+        for sql, target in (
+            ("CREATE TABLE t (a INT UNIQUE)", "CREATE TABLE t (a INT)"),
+            ("CREATE TABLE t (a INT, CONSTRAINT c UNIQUE (a))", "CREATE TABLE t (a INT)"),
+            ("CREATE TABLE t (a INT, b INT, UNIQUE (a))", "CREATE TABLE t (a INT, b INT)"),
+            (
+                "CREATE TABLE t (a INT, b INT, UNIQUE (a), UNIQUE (b))",
+                "CREATE TABLE t (a INT, b INT)",
+            ),
+            (
+                "CREATE TABLE t (a INT, UNIQUE (a), PRIMARY KEY (a), FOREIGN KEY (a) REFERENCES u (b))",
+                "CREATE TABLE t (a INT, PRIMARY KEY (a), FOREIGN KEY (a) REFERENCES u (b))",
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(remove_unique_constraints(parse_one(sql)).sql(), target)
+
+        self.assertEqual(
+            remove_unique_constraints(
+                parse_one(
+                    "CREATE TABLE t (a INT, b INT, UNIQUE KEY (a), UNIQUE INDEX idx (b))",
+                    read="mysql",
+                )
+            ).sql(dialect="mysql"),
+            "CREATE TABLE t (a INT, b INT)",
         )
 
     def test_eliminate_join_marks(self):

@@ -31,6 +31,17 @@ class TestSpark(Validator):
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
 
         self.validate_all(
+            "CREATE TABLE t (a INT, b STRING, UNIQUE (a))",
+            write={
+                "databricks": "CREATE TABLE t (a INT, b STRING)",
+                "hive": "CREATE TABLE t (a INT, b STRING)",
+                "materialize": "CREATE TABLE t (a INT, b TEXT)",
+                "spark": "CREATE TABLE t (a INT, b STRING)",
+                "spark2": "CREATE TABLE t (a INT, b STRING)",
+                "duckdb": "CREATE TABLE t (a INT, b TEXT, UNIQUE (a))",
+            },
+        )
+        self.validate_all(
             "CREATE TABLE db.example_table (col_a struct<struct_col_a:int, struct_col_b:string>)",
             write={
                 "duckdb": "CREATE TABLE db.example_table (col_a STRUCT(struct_col_a INT, struct_col_b TEXT))",

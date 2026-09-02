@@ -2285,15 +2285,15 @@ def json_extract_segments(
 
         segments = []
         for segment in path.expressions:
-            escape = segment.args.get("quoted")
             path = self.sql(segment)
             if path:
                 if isinstance(segment, exp.JSONPathPart) and (
                     quoted_index or not isinstance(segment, exp.JSONPathSubscript)
                 ):
-                    if escape:
-                        path = self.escape_str(path)
-
+                    # Always escape path segments when wrapping them as SQL string literals,
+                    # regardless of whether the key was quoted in the JSON path syntax.
+                    # This ensures characters like single quotes are properly escaped for SQL.
+                    path = self.escape_str(path)
                     path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
                 segments.append(path)

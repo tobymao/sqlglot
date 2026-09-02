@@ -3840,7 +3840,7 @@ class Generator:
 
         if self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
             escaped = expression.replace("'", "\\'")
-            escaped = f"\\'{expression}\\'"
+            escaped = f"\\'{escaped}\\'"
         else:
             escaped = expression.replace('"', '\\"')
             escaped = f'"{escaped}"'
@@ -5401,10 +5401,9 @@ class Generator:
 
         this = self.json_path_part(this)
 
-        if quoted and self.QUOTE_JSON_PATH:
-            # The whole path is rendered as a single quoted string literal, so the bracketed key
-            # (which may itself contain backslash-escaped quotes, e.g. ["x \"y\"z"]) must be
-            # escaped again for the outer string literal (-> ["x \\"y\\"z"]).
+        if self.QUOTE_JSON_PATH and not (
+            self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE
+        ):
             this = self.escape_str(this)
 
         return (

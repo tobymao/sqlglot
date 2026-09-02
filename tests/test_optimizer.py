@@ -3874,6 +3874,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "SELECT * FROM ((SELECT 1 AS x) CROSS JOIN (SELECT p.a AS a FROM p JOIN q ON p.i = q.i)) AS z",
                 {"ctes": 0, "joins": 2, "derived_tables": 1, "nested_queries": 1},
             ),
+            ("WITH a AS (SELECT * FROM b) UPDATE a SET col = 1", {}),
             ("x = 1", {}),
         ):
             with self.subTest(sql):
@@ -3922,6 +3923,19 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 metadata = {}
                 fill_metadata(traverse_scope(parse_one(sql)), metadata)
                 self.assertEqual(rule(parse_one(sql), metadata=metadata).sql(), expected)
+
+        with self.assertRaises(OptimizeError):
+            optimizer.pushdown_projections.pushdown_projections(
+                parse_one("SELECT x.a AS a FROM x UNION SELECT y.b AS b, y.c AS c FROM y"),
+                schema=self.schema,
+                metadata=dict(zeros),
+            )
+
+        sql = "WITH a AS (SELECT * FROM b) UPDATE a SET col = 1"
+        self.assertEqual(
+            optimizer.optimize(parse_one(sql), schema={"b": {"col": "INT"}}).sql(),
+            'UPDATE "a" SET "col" = 1',
+        )
 
     def test_metadata_counter_updates(self):
         expression = parse_one("WITH a AS (SELECT 1 AS x), b AS (SELECT 2 AS x) SELECT * FROM q")

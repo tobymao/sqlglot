@@ -698,8 +698,12 @@ def fill_metadata(scopes: list[Scope], metadata: dict[str, int]) -> None:
     a counter is 0. Rules that declare a `metadata` argument uphold this by incrementing
     counters for any construct they may introduce (decrementing is allowed only for
     definite removals). An empty dict means the facts are unknown.
+
+    A scope tree that does not include the root expression (e.g. DML or DDL, where only
+    the inner queries are scoped) can't see constructs attached to the root, so the
+    facts are left unknown.
     """
-    if not scopes:
+    if not any(scope.expression.parent is None for scope in scopes):
         return
 
     ctes = joins = derived_tables = nested_queries = 0

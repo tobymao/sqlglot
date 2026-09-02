@@ -79,13 +79,17 @@ def pushdown_projections(
     """
     scopes = traverse_scope(expression)
 
-    # This is the first rule of the default pipeline that builds the scope tree, so it
-    # doubles as the collector of the structural facts shared with the later rules.
     if metadata is not None and not metadata:
         fill_metadata(scopes, metadata)
 
-    # Projections can only be pushed down into nested queries and CTEs.
-    if metadata and not metadata["nested_queries"] and not metadata["ctes"]:
+    # Projections can only be pushed down into nested queries and CTEs. A root-level set
+    # operation must still be visited, since its operands' widths are validated here.
+    if (
+        metadata
+        and not metadata["nested_queries"]
+        and not metadata["ctes"]
+        and not isinstance(expression, exp.SetOperation)
+    ):
         return expression
 
     schema = ensure_schema(schema, dialect=dialect)

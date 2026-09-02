@@ -122,6 +122,8 @@ def __getattr__(name):
     if module_name:
         with _import_lock:
             module = importlib.import_module(f"sqlglot.dialects.{module_name}")
-        return getattr(module, name)
+        attr = getattr(module, name)
+        globals()[name] = attr
+        return attr
 
     raise AttributeError(f"module {__name__} has no attribute {name}")

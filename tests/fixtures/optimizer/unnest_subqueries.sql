@@ -35,6 +35,62 @@ SELECT * FROM x LEFT JOIN (SELECT SUM(y.a) AS a, y.a AS _u_1, ARRAY_AGG(y.b) AS 
 SELECT * FROM x WHERE EXISTS (SELECT y.a AS a, y.b AS b FROM y WHERE x.a = y.a);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL;
 
+# title: EXISTS over a scalar aggregate always matches, it returns exactly one row
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: NOT EXISTS over a scalar aggregate never matches
+SELECT * FROM x WHERE NOT EXISTS (SELECT SUM(y.b) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE NOT TRUE;
+
+# title: EXISTS over a scalar aggregate with a HAVING is not rewritten
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
+
+# title: EXISTS over a windowed aggregate is not a scalar aggregate
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE y.a = x.a);
+SELECT * FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: EXISTS is not folded when the aggregate belongs to a derived table inside it
+SELECT * FROM x WHERE EXISTS (SELECT * FROM (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) AS t WHERE t.c > 5);
+SELECT * FROM x WHERE EXISTS(SELECT * FROM (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) AS t WHERE t.c > 5);
+
+# title: EXISTS is not folded when the aggregate belongs to a CTE inside it
+SELECT * FROM x WHERE EXISTS (WITH t AS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) SELECT t.c AS c FROM t WHERE t.c > 5);
+SELECT * FROM x WHERE EXISTS(WITH t AS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) SELECT t.c AS c FROM t WHERE t.c > 5);
+
+# title: EXISTS is not folded when the aggregate is only one branch of a set operation
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+
+# title: a correlated branch of a set operation is not decorrelated, it can't be hoisted out
+SELECT * FROM x WHERE EXISTS (SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+SELECT * FROM x WHERE EXISTS(SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+
+# title: EXISTS over a scalar aggregate with a QUALIFY is not rewritten
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a QUALIFY ROW_NUMBER() OVER () = 2);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a QUALIFY ROW_NUMBER() OVER () = 2);
+
+# title: an aggregate in a window spec still groups the subquery into a single row
+SELECT * FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY SUM(y.b)) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: a parenthesized aggregate in a window spec still groups the subquery
+SELECT * FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY (SUM(y.b))) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: an aggregate in the arguments of a windowed function still groups the subquery
+SELECT * FROM x WHERE EXISTS (SELECT LAG(SUM(y.b)) OVER (ORDER BY 1) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: a FILTER between the window and the aggregate leaves it windowed
+SELECT * FROM x WHERE EXISTS (SELECT SUM(y.b) FILTER(WHERE y.b > 1) OVER () FROM y WHERE y.a = x.a);
+SELECT * FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: EXISTS over a scalar aggregate is folded inside an outer window function
+SELECT COUNT(CASE WHEN EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a) THEN 1 END) OVER () FROM x;
+SELECT COUNT(CASE WHEN TRUE THEN 1 END) OVER () FROM x;
+
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
 

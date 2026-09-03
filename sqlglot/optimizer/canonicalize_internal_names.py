@@ -270,13 +270,13 @@ def canonicalize_internal_names(expression: E) -> E:
                         sel.set("alias", exp.to_identifier(new_name, quoted=True))
 
                     output_map[old_alias] = new_name
-        elif isinstance(scope_expr, exp.SetOperation) and scope.union_scopes:
+        elif isinstance(scope_expr, exp.SetOperation) and scope.set_operation_scopes:
             # Regular UNION names come from the left branch. UNION BY NAME folds
             # in right-branch names too (any column unique to the right still
             # appears in the output).
-            output_map = scope_outputs.get(id(scope.union_scopes[0].expression), {}).copy()
+            output_map = scope_outputs.get(id(scope.set_operation_scopes[0].expression), {}).copy()
             if scope_expr.args.get("by_name"):
-                right_out = scope_outputs.get(id(scope.union_scopes[1].expression), {})
+                right_out = scope_outputs.get(id(scope.set_operation_scopes[1].expression), {})
                 for k, v in right_out.items():
                     output_map.setdefault(k, v)
         elif scope.is_udtf and scope.subquery_scopes:
@@ -295,7 +295,7 @@ def canonicalize_internal_names(expression: E) -> E:
         # the right branch's canonicals to the left's. No-op when both branches
         # preserved their aliases (top-level UBN).
         if isinstance(scope_expr, exp.SetOperation) and scope_expr.args.get("by_name"):
-            left_scope, right_scope = scope.union_scopes
+            left_scope, right_scope = scope.set_operation_scopes
             left_out = scope_outputs.get(id(left_scope.expression), {})
             right_out = scope_outputs.get(id(right_scope.expression), {})
 

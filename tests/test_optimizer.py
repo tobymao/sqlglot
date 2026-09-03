@@ -2180,7 +2180,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             level="warning",
         )
 
-    def test_traverse_union_invalid_operand(self):
+    def test_traverse_set_operation_invalid_operand(self):
         for invalid_side, expression in (
             ("left", exp.Union(this=exp.column("a"), expression=exp.select("1"))),
             ("right", exp.Union(this=exp.select("1"), expression=exp.column("a"))),

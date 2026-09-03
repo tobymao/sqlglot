@@ -286,7 +286,7 @@ def _mergeable(
             and inner_select.args.get("where")
             and any(j.side in ("FULL", "RIGHT") for j in outer_args.get("joins", []))
         )
-        or (inner_select.args.get("order") and outer_scope.is_union)
+        or (inner_select.args.get("order") and outer_scope.is_set_operation)
         or isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
     ):
         return False

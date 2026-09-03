@@ -22,7 +22,6 @@ from sqlglot.schema import Schema, ensure_schema
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-    from sqlglot.optimizer.resolver import _StarExpansionContext
     from collections.abc import Iterable
 
 
@@ -948,7 +947,7 @@ def _resolve_correlated_star(
     scope: Scope,
     parts: tuple[exp.Identifier, ...],
     resolver: Resolver,
-) -> _StarExpansionContext | None:
+) -> tuple[str, exp.Identifier, exp.DataType] | None:
     parent = scope.parent
     if not parent or not scope.can_be_correlated or scope.is_cte:
         return None
@@ -960,14 +959,16 @@ def _resolve_correlated_star(
 
 
 def _expand_correlated_struct_star(
-    context: _StarExpansionContext,
+    source_name: str,
+    path: exp.Identifier,
+    struct_type: exp.DataType,
     columns_to_exclude: set[str],
     replaced_columns: dict[str, exp.Alias],
     renamed_columns: dict[str, str],
     ilike_pattern: str | None,
 ) -> list[exp.Expr]:
     new_selections: list[exp.Expr] = []
-    for field in context.struct_type.expressions:
+    for field in struct_type.expressions:
         identifier = t.cast(exp.Identifier, t.cast(exp.ColumnDef, field).this)
         name = identifier.name
         if name in columns_to_exclude:
@@ -977,8 +978,8 @@ def _expand_correlated_struct_star(
         alias_ = renamed_columns.get(name, name)
 
         selection = replaced_columns.get(name) or exp.column(
-            context.path.copy(),
-            table=context.source_name,
+            path.copy(),
+            table=source_name,
             fields=[identifier.copy()],
         )
         new_selections.append(alias(selection, alias_, copy=False) if alias_ != name else selection)
@@ -1105,11 +1106,14 @@ def _expand_stars(
                         new_selections.append(expression)
                         preserve_expression = True
                         break
+                    source_name, path, struct_type = context
 
                     expanded_outer_star = True
                     new_selections.extend(
                         _expand_correlated_struct_star(
-                            context,
+                            source_name,
+                            path,
+                            struct_type,
                             columns_to_exclude,
                             replaced_columns,
                             renamed_columns,

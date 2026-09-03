@@ -14,12 +14,6 @@ if t.TYPE_CHECKING:
     from collections.abc import Sequence, Mapping
 
 
-class _StarExpansionContext(t.NamedTuple):
-    source_name: str
-    path: exp.Identifier
-    struct_type: exp.DataType
-
-
 class Resolver:
     """
     Helper for resolving columns.
@@ -102,7 +96,7 @@ class Resolver:
     def resolve_star(
         self,
         parts: t.Sequence[exp.Identifier],
-    ) -> _StarExpansionContext | None:
+    ) -> tuple[str, exp.Identifier, exp.DataType] | None:
         if not parts:
             return None
 
@@ -155,11 +149,7 @@ class Resolver:
         ):
             return None
 
-        return _StarExpansionContext(
-            source_name=source_name,
-            path=column,
-            struct_type=struct_type,
-        )
+        return source_name, column, struct_type
 
     def _get_source_column_type(
         self,

@@ -1929,7 +1929,7 @@ def binary_from_function(expr_type: Type[B]) -> t.Callable[[BuilderArgs], B]:
 
 # Used to represent DATE_TRUNC in Doris, Postgres and Starrocks dialects
 def build_timestamp_trunc(args: BuilderArgs) -> exp.TimestampTrunc:
-    return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0))
+    return exp.TimestampTrunc(this=seq_get(args, 1), unit=seq_get(args, 0), zone=seq_get(args, 2))
 
 
 def build_trunc(

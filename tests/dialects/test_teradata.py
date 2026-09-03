@@ -192,6 +192,8 @@ class TestTeradata(Validator):
 
     def test_mod(self):
         self.validate_all("a MOD b", write={"teradata": "a MOD b", "mysql": "a % b"})
+        self.validate_identity("SELECT MOD(8, 5)", "SELECT 8 MOD 5")
+        self.validate_identity("SELECT 2 ** MOD(8, 5)", "SELECT 2 ** (8 MOD 5)")
 
     def test_power(self):
         self.validate_all("a ** b", write={"teradata": "a ** b", "mysql": "POWER(a, b)"})

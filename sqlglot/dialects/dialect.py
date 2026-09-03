@@ -606,7 +606,7 @@ class Dialect(metaclass=_Dialect):
 
     SUPPORTS_CORRELATED_STAR = False
     """
-    Whether a star expression in a subquery can reference a source or struct in an outer scope.
+    Whether a star expression in a subquery can reference a struct column in its parent scope.
     """
 
     SUPPORTS_STRUCT_STAR_EXPANSION = False

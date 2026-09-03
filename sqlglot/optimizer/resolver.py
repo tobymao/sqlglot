@@ -7,7 +7,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get, SingleValuedMapping
-from sqlglot.optimizer.scope import Scope, walk_in_scope
+from sqlglot.optimizer.scope import Scope
 
 if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
@@ -15,23 +15,9 @@ if t.TYPE_CHECKING:
 
 
 class _StarExpansionContext(t.NamedTuple):
-    source: Scope | exp.Table
     source_name: str
-    path: tuple[exp.Identifier, ...]
-    columns: tuple[str, ...] | None
-    struct_type: exp.DataType | None
-
-
-# `matched=False` allows outer-scope lookup to continue. A match is terminal: a context
-# permits expansion, while `context=None` preserves the nearest binding.
-class _StarResolution(t.NamedTuple):
-    matched: bool
-    context: _StarExpansionContext | None
-
-
-class _JoinBranchPrefix(t.NamedTuple):
-    source_names: tuple[str, ...]
-    joins: tuple[exp.Join, ...]
+    path: exp.Identifier
+    struct_type: exp.DataType
 
 
 class Resolver:
@@ -51,7 +37,6 @@ class Resolver:
         self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
-        self._joins: tuple[exp.Join, ...] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -117,89 +102,46 @@ class Resolver:
     def resolve_star(
         self,
         parts: t.Sequence[exp.Identifier],
-        join_context: exp.Join | None = None,
-        only_visible: bool = True,
-    ) -> _StarResolution:
+    ) -> _StarExpansionContext | None:
         if not parts:
-            return _StarResolution(matched=False, context=None)
+            return None
 
         selected_sources = self.scope.selected_sources
-        join_prefix = self._get_join_branch_prefix(join_context) if join_context else None
-        source_columns = (
-            {
-                source_name: self.get_source_columns(source_name, only_visible)
-                for source_name in join_prefix.source_names
-            }
-            if join_prefix
-            else {
-                source_name: self.get_source_columns(source_name, only_visible)
-                for source_name in selected_sources
-            }
-        )
+        source_columns = {
+            source_name: self.get_source_columns(source_name, only_visible=True)
+            for source_name in selected_sources
+        }
         source_name = parts[0].name
 
         if source_name in selected_sources:
-            selected_node, source = selected_sources[source_name]
-            columns = source_columns.get(source_name)
+            if len(parts) != 2:
+                return None
 
-            if len(parts) == 1:
-                if not columns or "*" in columns or len(columns) != len(set(columns)):
-                    return _StarResolution(matched=True, context=None)
-                if not self._can_expand_star_source(
-                    source_name, selected_node, join_prefix=join_prefix
-                ):
-                    return _StarResolution(matched=True, context=None)
-
-                return _StarResolution(
-                    matched=True,
-                    context=_StarExpansionContext(
-                        source=source,
-                        source_name=source_name,
-                        path=(),
-                        columns=tuple(columns),
-                        struct_type=None,
-                    ),
-                )
-
-            path = tuple(parts[1:])
-        else:
-            source_name = self._get_unambiguous_columns(source_columns).get(parts[0].name) or ""
-            if not source_name:
-                matched = any(parts[0].name in columns for columns in source_columns.values())
-                if not matched:
-                    matched = any(
-                        isinstance(selected_sources[name][1], exp.Table)
-                        and (not columns or "*" in columns)
-                        for name, columns in source_columns.items()
-                    )
-                return _StarResolution(matched=matched, context=None)
             source = selected_sources[source_name][1]
             columns = source_columns[source_name]
-            path = tuple(parts)
+            column = parts[1]
+        else:
+            if len(parts) != 1:
+                return None
 
-        root_name = path[0].name
-        if not columns or "*" in columns or sum(column == root_name for column in columns) != 1:
-            return _StarResolution(matched=True, context=None)
+            source_name = self._get_unambiguous_columns(source_columns).get(parts[0].name) or ""
+            if not source_name:
+                return None
 
-        struct_type = self._get_source_column_type(source_name, source, path[0])
-        for part in path[1:]:
-            if not struct_type or not struct_type.is_type(exp.DType.STRUCT):
-                return _StarResolution(matched=True, context=None)
+            source = selected_sources[source_name][1]
+            columns = source_columns[source_name]
+            column = parts[0]
 
-            matching_fields = [
-                field
-                for field in struct_type.expressions
-                if isinstance(field, exp.ColumnDef)
-                and isinstance(field.this, exp.Identifier)
-                and field.name == part.name
-            ]
-            if len(matching_fields) != 1 or not isinstance(matching_fields[0].kind, exp.DataType):
-                return _StarResolution(matched=True, context=None)
+        if (
+            not columns
+            or "*" in columns
+            or sum(source_column == column.name for source_column in columns) != 1
+        ):
+            return None
 
-            struct_type = matching_fields[0].kind
-
+        struct_type = self._get_source_column_type(source_name, source, column)
         if not struct_type or not struct_type.is_type(exp.DType.STRUCT):
-            return _StarResolution(matched=True, context=None)
+            return None
 
         field_names = [
             field.name
@@ -211,68 +153,13 @@ class Resolver:
             or len(field_names) != len(struct_type.expressions)
             or len(field_names) != len(set(field_names))
         ):
-            return _StarResolution(matched=True, context=None)
+            return None
 
-        return _StarResolution(
-            matched=True,
-            context=_StarExpansionContext(
-                source=source,
-                source_name=source_name,
-                path=path,
-                columns=None,
-                struct_type=struct_type,
-            ),
+        return _StarExpansionContext(
+            source_name=source_name,
+            path=column,
+            struct_type=struct_type,
         )
-
-    def _can_expand_star_source(
-        self,
-        source_name: str,
-        selected_node: exp.Selectable,
-        join_prefix: _JoinBranchPrefix | None,
-    ) -> bool:
-        """Return whether child-first expansion can reproduce this outer table star."""
-
-        if selected_node.args.get("pivots") or isinstance(selected_node, exp.UDTF):
-            return False
-
-        all_joins = self._get_joins()
-        joins = join_prefix.joins if join_prefix else all_joins
-
-        if not joins:
-            return True
-        if any(join.method == "NATURAL" for join in joins):
-            return False
-        if not any(join.args.get("using") for join in joins):
-            return True
-        # Mirror only _expand_using's source attribution so affected table targets can be
-        # rejected. The child scope must not attempt to reproduce the operator output.
-
-        join_names = {join.alias_or_name for join in all_joins if join.alias_or_name}
-        ordered_sources = [name for name in self.scope.selected_sources if name not in join_names]
-        if not ordered_sources:
-            return False
-
-        column_sources: dict[str, str] = {}
-        for name in ordered_sources:
-            for column in self.get_source_columns(name):
-                column_sources.setdefault(column, name)
-
-        for join in joins:
-            join_table = join.alias_or_name
-            if not join_table:
-                continue
-
-            source_table = ordered_sources[-1]
-            for column in self.get_source_columns(source_table):
-                column_sources.setdefault(column, source_table)
-
-            ordered_sources.append(join_table)
-            for identifier in join.args.get("using") or []:
-                table = column_sources.get(identifier.name) or source_table
-                if source_name == table or source_name == join_table:
-                    return False
-
-        return True
 
     def _get_source_column_type(
         self,
@@ -474,56 +361,6 @@ class Resolver:
             return join_ancestor
 
         return None
-
-    def _get_joins(self) -> tuple[exp.Join, ...]:
-        if self._joins is None:
-            self._joins = tuple(self.scope.find_all(exp.Join))
-        return self._joins
-
-    def _get_join_branch_prefix(self, join_context: exp.Join) -> _JoinBranchPrefix:
-        branch = join_context.parent
-        if not branch:
-            return _JoinBranchPrefix(source_names=(), joins=())
-
-        branch_joins = t.cast(list[exp.Join], branch.args.get("joins") or [])
-        context_index = t.cast(int, join_context.index)
-        prefix_joins = tuple(branch_joins[: context_index + 1])
-        selected_source_names = {}
-        for name, (node, _) in self.scope.selected_sources.items():
-            if isinstance(node, exp.Query):
-                while isinstance(node.parent, exp.Subquery):
-                    node = node.parent
-            selected_source_names[id(node)] = name
-        # Restrict resolution to the branch's initial source and joins through this condition;
-        # later join sources are not visible yet.
-        initial_source_nodes = (
-            walk_in_scope(self.scope.expression.args["from_"])
-            if branch is self.scope.expression
-            else walk_in_scope(branch, prune=lambda node: isinstance(node, exp.Join))
-        )
-        source_nodes = itertools.chain(
-            initial_source_nodes,
-            *(walk_in_scope(join) for join in prefix_joins),
-        )
-        source_names = tuple(
-            source_name
-            for node in source_nodes
-            if (source_name := selected_source_names.get(id(node)))
-        )
-        # Include nested joins only when their top-level branch is already visible.
-        visible_join_ids = {id(join) for join in prefix_joins}
-        joins = []
-
-        for join in self._get_joins():
-            join_root: exp.Expr = join
-            while join_root.parent and join_root.parent is not branch:
-                join_root = join_root.parent
-            if join_root.parent is branch and (
-                not isinstance(join_root, exp.Join) or id(join_root) in visible_join_ids
-            ):
-                joins.append(join)
-
-        return _JoinBranchPrefix(source_names=source_names, joins=tuple(joins))
 
     def _get_available_source_columns(self, join_ancestor: exp.Join) -> dict[str, Sequence[str]]:
         """

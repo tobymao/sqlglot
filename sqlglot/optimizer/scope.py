@@ -41,7 +41,7 @@ class ScopeType(Enum):
     SUBQUERY = auto()
     DERIVED_TABLE = auto()
     CTE = auto()
-    UNION = auto()
+    SET_OPERATION = auto()
     UDTF = auto()
 
 
@@ -74,7 +74,7 @@ class Scope:
         derived_table_scopes: List of all child scopes for derived_tables
         udtf_scopes: List of all child scopes for user defined tabular functions
         table_scopes: derived_table_scopes + udtf_scopes, in the order that they're defined
-        union_scopes: If this Scope is for a Union expression, this will be
+        set_operation_scopes: If this Scope is for a SetOperation expression, this will be
             a list of the left and right child scopes.
     """
 
@@ -122,7 +122,7 @@ class Scope:
         self.derived_table_scopes: list[Scope] = []
         self.table_scopes: list[Scope] = []
         self.cte_scopes: list[Scope] = []
-        self.union_scopes: list[Scope] = []
+        self.set_operation_scopes: list[Scope] = []
         self.udtf_scopes: list[Scope] = []
         self.can_be_correlated = can_be_correlated
         self.clear_cache()
@@ -470,7 +470,7 @@ class Scope:
         """
         if self._external_columns is None:
             if isinstance(self.expression, exp.SetOperation):
-                left, right = self.union_scopes
+                left, right = self.set_operation_scopes
                 self._external_columns = left.external_columns + right.external_columns
             else:
                 local_source_names = {name for name, _ in self.references}
@@ -556,9 +556,9 @@ class Scope:
         return self.scope_type == ScopeType.DERIVED_TABLE
 
     @property
-    def is_union(self) -> bool:
-        """Determine if this scope is a union"""
-        return self.scope_type == ScopeType.UNION
+    def is_set_operation(self) -> bool:
+        """Determine if this scope is a set operation"""
+        return self.scope_type == ScopeType.SET_OPERATION
 
     @property
     def is_cte(self) -> bool:
@@ -614,7 +614,7 @@ class Scope:
             stack.extend(
                 itertools.chain(
                     scope.cte_scopes,
-                    scope.union_scopes,
+                    scope.set_operation_scopes,
                     scope.table_scopes,
                     scope.subquery_scopes,
                 )
@@ -695,7 +695,7 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         yield from _traverse_select(scope)
     elif isinstance(expression, exp.SetOperation):
         yield from _traverse_ctes(scope)
-        yield from _traverse_union(scope)
+        yield from _traverse_set_operation(scope)
         return
     elif isinstance(expression, exp.Subquery):
         if scope.is_root:
@@ -770,9 +770,9 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
     yield from _traverse_subqueries(scope)
 
 
-def _traverse_union(scope: Scope) -> Iterator[Scope]:
+def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     prev_scope: Scope | None = None
-    union_scope_stack: list[Scope] = [scope]
+    set_op_scope_stack: list[Scope] = [scope]
 
     set_op = scope.expression
     assert isinstance(set_op, exp.SetOperation)
@@ -782,18 +782,18 @@ def _traverse_union(scope: Scope) -> Iterator[Scope]:
 
     while expression_stack:
         expression = expression_stack.pop()
-        union_scope = union_scope_stack[-1]
+        set_op_scope = set_op_scope_stack[-1]
 
-        new_scope = union_scope.branch(
+        new_scope = set_op_scope.branch(
             expression,
-            outer_columns=union_scope.outer_columns,
-            scope_type=ScopeType.UNION,
+            outer_columns=set_op_scope.outer_columns,
+            scope_type=ScopeType.SET_OPERATION,
         )
 
         if isinstance(expression, exp.SetOperation):
             yield from _traverse_ctes(new_scope)
 
-            union_scope_stack.append(new_scope)
+            set_op_scope_stack.append(new_scope)
             expression_stack.extend([expression.expression, expression.this])
             continue
 
@@ -805,11 +805,11 @@ def _traverse_union(scope: Scope) -> Iterator[Scope]:
             raise OptimizeError(f"Cannot build a scope for set operation operand: {expression}")
 
         if prev_scope:
-            union_scope_stack.pop()
-            union_scope.union_scopes = [prev_scope, branch_scope]
-            prev_scope = union_scope
+            set_op_scope_stack.pop()
+            set_op_scope.set_operation_scopes = [prev_scope, branch_scope]
+            prev_scope = set_op_scope
 
-            yield union_scope
+            yield set_op_scope
         else:
             prev_scope = branch_scope
 

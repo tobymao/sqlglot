@@ -43,6 +43,8 @@ class TeradataGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+    MOD_OPERATOR = "MOD"
+    MOD_PAREN_PARENT_TYPES = (*generator.Generator.MOD_PAREN_PARENT_TYPES, exp.Pow)
 
     LIMIT_IS_TOP = True
     JOIN_HINTS = False
@@ -126,9 +128,6 @@ class TeradataGenerator(generator.Generator):
         where_sql = self.sql(expression, "where")
         sql = f"UPDATE {this}{from_sql} SET {set_sql}{where_sql}"
         return self.prepend_ctes(expression, sql)
-
-    def mod_sql(self, expression: exp.Mod) -> str:
-        return self.binary(expression, "MOD")
 
     def rangen_sql(self, expression: exp.RangeN) -> str:
         this = self.sql(expression, "this")

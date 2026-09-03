@@ -353,6 +353,9 @@ class Generator:
     # The separator for grouping sets and rollups
     GROUPINGS_SEP = ","
 
+    # Whether GROUPING SETS can follow GROUP BY expressions without a comma
+    SUPPORTS_GROUPING_SETS_AS_SUFFIX = False
+
     # The string used for creating an index on a table
     INDEX_ON = "ON"
 
@@ -851,6 +854,16 @@ class Generator:
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.ClassVar[set[type[exp.Expr]]] = set()
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = ()
+
+    MOD_OPERATOR = "%"
+
+    # Infix operators that bind at least as tightly as %, so a Mod on their right side needs parentheses
+    MOD_PAREN_PARENT_TYPES: t.ClassVar[tuple[type[exp.Expr], ...]] = (
+        exp.Mul,
+        exp.Div,
+        exp.IntDiv,
+        exp.Mod,
+    )
 
     SAFE_JSON_PATH_KEY_RE: t.ClassVar = exp.SAFE_IDENTIFIER_RE
 
@@ -2821,7 +2834,18 @@ class Generator:
             and groupings
             and groupings.strip() not in ("WITH CUBE", "WITH ROLLUP")
         ):
-            group_by = f"{group_by}{self.GROUPINGS_SEP}"
+            add_separator = True
+
+            if grouping_sets and not expression.args.get("grouping_sets_as_group_by_element"):
+                if self.SUPPORTS_GROUPING_SETS_AS_SUFFIX:
+                    add_separator = False
+                else:
+                    self.unsupported(
+                        "GROUPING SETS without a comma after GROUP BY expressions is not supported"
+                    )
+
+            if add_separator:
+                group_by = f"{group_by}{self.GROUPINGS_SEP}"
 
         return f"{group_by}{groupings}"
 
@@ -4589,7 +4613,15 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        return self.binary(expression, "%")
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        sql = f"{this} {self.maybe_comment(self.MOD_OPERATOR, comments=expression.comments)} {expr}"
+
+        parent = expression.parent
+        if isinstance(parent, self.MOD_PAREN_PARENT_TYPES) and parent.expression is expression:
+            return f"({sql})"
+
+        return sql
 
     def mul_sql(self, expression: exp.Mul) -> str:
         return self.binary(expression, "*")

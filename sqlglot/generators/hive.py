@@ -223,6 +223,7 @@ class HiveGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
+    SUPPORTS_GROUPING_SETS_AS_SUFFIX = True
     SUPPORTS_DECODE_CASE = False
     LIMIT_FETCH = "LIMIT"
     TABLESAMPLE_WITH_METHOD = False

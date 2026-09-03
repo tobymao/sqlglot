@@ -7549,6 +7549,11 @@ SMALLINT;
 BIT_XOR(tbl.bit_col);
 BIT;
 
+# dialect: postgres
+LOCALTIMESTAMP;
+TIMESTAMP;
+
+
 --------------------------------------
 -- Presto / Trino
 --------------------------------------

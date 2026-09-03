@@ -4429,6 +4429,9 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE TABLE EXAMPLE_DB.DEMO.USERS (ID DECIMAL(38, 0) NOT NULL, PRIMARY KEY (ID), FOREIGN KEY (CITY_CODE) REFERENCES EXAMPLE_DB.DEMO.CITIES (CITY_CODE))"
         )
         self.validate_identity(
+            "CREATE TABLE t (a ARRAY(INT), b ARRAY(ARRAY(INT)), c OBJECT(x INT), d MAP(VARCHAR, INT))"
+        )
+        self.validate_identity(
             "CREATE ICEBERG TABLE my_iceberg_table (amount ARRAY(INT)) CATALOG='SNOWFLAKE' EXTERNAL_VOLUME='my_external_volume' BASE_LOCATION='my/relative/path/from/extvol'"
         )
         self.validate_identity(

@@ -97,25 +97,6 @@ def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _flatten_structured_types_unless_iceberg(expression: exp.Expr) -> exp.Expr:
-    assert isinstance(expression, exp.Create)
-
-    def _flatten_structured_type(expression: exp.Expr) -> exp.Expr:
-        if isinstance(expression, exp.DataType) and expression.this in exp.DataType.NESTED_TYPES:
-            expression.set("expressions", None)
-        return expression
-
-    props = expression.args.get("properties")
-    if isinstance(expression.this, exp.Schema) and not (props and props.find(exp.IcebergProperty)):
-        for schema_expression in expression.this.expressions:
-            if isinstance(schema_expression, exp.ColumnDef):
-                column_type = schema_expression.kind
-                if isinstance(column_type, exp.DataType):
-                    column_type.transform(_flatten_structured_type, copy=False)
-
-    return expression
-
-
 def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     generate_date_array = unnest.expressions[0]
     start = generate_date_array.args.get("start")
@@ -438,7 +419,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.BitwiseNot: rename_func("BITNOT"),
         exp.BitwiseLeftShift: rename_func("BITSHIFTLEFT"),
         exp.BitwiseRightShift: rename_func("BITSHIFTRIGHT"),
-        exp.Create: transforms.preprocess([_flatten_structured_types_unless_iceberg]),
         exp.CurrentTimestamp: lambda self, e: (
             self.func("SYSDATE") if e.args.get("sysdate") else self.function_fallback_sql(e)
         ),

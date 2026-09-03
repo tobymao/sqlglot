@@ -43,6 +43,7 @@ class TestPostgres(Validator):
         self.validate_identity("||/ x", "CBRT(x)")
         self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
+        self.validate_identity("SELECT DATE_TRUNC('DAY', x, 'America/New_York')")
         self.validate_identity("STRING_TO_ARRAY('xx~^~yy~^~zz', '~^~', 'yy')")
         self.validate_identity("SELECT x FROM t WHERE CAST($1 AS TEXT) = 'ok'")
         self.validate_identity("SELECT * FROM t TABLESAMPLE SYSTEM (50) REPEATABLE (55)")
@@ -231,6 +232,10 @@ class TestPostgres(Validator):
         self.validate_identity(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",
             "SELECT EXTRACT(CAST('isodow' AS VARCHAR(6)) FROM CURRENT_DATE)",
+        )
+        self.validate_identity(
+            "SELECT DATE_PART('isoyear', ts)",
+            "SELECT EXTRACT(ISOYEAR FROM ts)",
         )
         self.validate_identity(
             "END WORK AND NO CHAIN",
@@ -697,17 +702,17 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT DATE_PART('minute', timestamp '2023-01-04 04:05:06.789')",
             write={
-                "postgres": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "redshift": "SELECT EXTRACT(minute FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "snowflake": "SELECT DATE_PART(minute, CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "postgres": "SELECT EXTRACT(MINUTE FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "redshift": "SELECT EXTRACT(MINUTE FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "snowflake": "SELECT DATE_PART(MINUTE, CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT DATE_PART('month', date '20220502')",
             write={
-                "postgres": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
-                "redshift": "SELECT EXTRACT(month FROM CAST('20220502' AS DATE))",
-                "snowflake": "SELECT DATE_PART(month, CAST('20220502' AS DATE))",
+                "postgres": "SELECT EXTRACT(MONTH FROM CAST('20220502' AS DATE))",
+                "redshift": "SELECT EXTRACT(MONTH FROM CAST('20220502' AS DATE))",
+                "snowflake": "SELECT DATE_PART(MONTH, CAST('20220502' AS DATE))",
             },
         )
         self.validate_all(

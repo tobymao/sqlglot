@@ -381,6 +381,7 @@ class Scope:
                     exp.Select,
                     exp.Qualify,
                     exp.Order,
+                    exp.Cluster,
                     exp.Having,
                     exp.Hint,
                     exp.Table,
@@ -393,7 +394,7 @@ class Scope:
                     or isinstance(ancestor, exp.Select)
                     or (isinstance(ancestor, exp.Table) and not isinstance(ancestor.this, exp.Func))
                     or (
-                        isinstance(ancestor, (exp.Order, exp.Distinct))
+                        isinstance(ancestor, (exp.Order, exp.Cluster, exp.Distinct))
                         and (
                             isinstance(ancestor.parent, (exp.Window, exp.WithinGroup))
                             or not isinstance(ancestor.parent, exp.Select)

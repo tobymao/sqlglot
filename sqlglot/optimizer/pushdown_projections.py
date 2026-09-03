@@ -32,10 +32,6 @@ GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tu
 # are Order subclasses, so ORDER BY and its two Spark cousins are all covered by Order
 OUTPUT_REFERENCING_MODIFIERS = (exp.Order, exp.Cluster)
 
-# These trail the last arm of a set operation but apply to its whole result, and the parser
-# attaches them to that arm, so they're hoisted onto the set operation before pruning
-TRAILING_MODIFIERS = (exp.Sort, exp.Distribute, exp.Cluster)
-
 
 def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
     # Assume columns without a qualified table are references to output columns
@@ -132,11 +128,6 @@ def pushdown_projections(
             if not by_name and len(le.selects) != len(re.selects):
                 scope_sql = scope_expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
-
-            for arg, node in list(re.args.items()):
-                if isinstance(node, TRAILING_MODIFIERS):
-                    re.set(arg, None)
-                    scope_expression.set(arg, node)
 
             # Columns referenced by ORDER BY and friends need to be kept too
             if SELECT_ALL not in parent_selections:

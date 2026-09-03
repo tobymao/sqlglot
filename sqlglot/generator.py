@@ -3840,7 +3840,7 @@ class Generator:
 
         if self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
             escaped = expression.replace("'", "\\'")
-            escaped = f"\\'{expression}\\'"
+            escaped = f"\\'{escaped}\\'"
         else:
             escaped = expression.replace('"', '\\"')
             escaped = f'"{escaped}"'
@@ -5401,10 +5401,19 @@ class Generator:
 
         this = self.json_path_part(this)
 
-        if quoted and self.QUOTE_JSON_PATH:
-            # The whole path is rendered as a single quoted string literal, so the bracketed key
-            # (which may itself contain backslash-escaped quotes, e.g. ["x \"y\"z"]) must be
-            # escaped again for the outer string literal (-> ["x \\"y\\"z"]).
+        # json_path_part's single-quote branch (used when this dialect brackets keys with
+        # single quotes, e.g. Hive/Spark/BigQuery) already backslash-escapes any single quote
+        # in the key for that bracket delimiter, and that same backslash-escape is also how
+        # those dialects escape a quote in an ordinary outer SQL string literal -- so the key
+        # is already safe there and re-escaping would double the backslashes. Every other case
+        # brackets/quotes the key with double quotes, which the outer single-quoted literal
+        # does nothing to protect, so it must be escaped here for that outer literal (this has
+        # to happen whenever the key reaches this point, i.e. it didn't take the safe/bare-key
+        # early return above, regardless of whether the parser marked it "quoted": the key's
+        # raw content, not that flag, determines what the enclosing SQL literal needs escaped).
+        if self.QUOTE_JSON_PATH and not (
+            self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE
+        ):
             this = self.escape_str(this)
 
         return (

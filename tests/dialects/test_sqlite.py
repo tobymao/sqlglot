@@ -75,6 +75,15 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT JSON_SET('{}', '$.x', JSON_EXTRACT(a, '$.k'))")
         self.validate_identity("SELECT JSON_EXTRACT(a, '$') FROM t")
         self.validate_identity("SELECT JSON_EXTRACT(a, b) FROM t")
+        # https://github.com/tobymao/sqlglot/issues/8251
+        # A single quote inside a JSON path key must be escaped for the enclosing SQL
+        # literal (unlike the non-JSON-path 'it''s' case above, this *is* a valid path,
+        # so it round-trips through the JSONPath AST rather than falling back to a bare
+        # string literal).
+        expression = self.validate_identity(
+            """SELECT JSON_EXTRACT(doc, '$."Customer''s department"') FROM t"""
+        )
+        self.assertIsInstance(expression.selects[0].expression, exp.JSONPath)
         fn = (
             self.parse_one("SELECT JSON_EXTRACT(a, '$.k') FROM t")
             .selects[0]

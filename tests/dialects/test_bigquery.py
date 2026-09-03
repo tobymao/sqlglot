@@ -3060,6 +3060,13 @@ OPTIONS (
                 f"{func}(doc, '$. a b c .d')", f"""{func}(doc, '$[\\' a b c \\'].d')"""
             )
 
+        # https://github.com/tobymao/sqlglot/issues/8251
+        # A single quote *inside* a JSON path key must be escaped for the enclosing SQL
+        # literal, not left to break out of it -- regardless of the double-quote-bracket
+        # syntax the key itself needed for the path (JSON_VALUE/JSON_QUERY family).
+        for func in ("JSON_VALUE", "JSON_QUERY", "JSON_QUERY_ARRAY"):
+            self.validate_identity(f"""{func}(doc, '$."it\\'s"')""")
+
     def test_json_extract_array(self):
         for func in ("JSON_QUERY_ARRAY", "JSON_EXTRACT_ARRAY"):
             with self.subTest(f"Testing BigQuery's {func}"):

@@ -595,6 +595,19 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT JSON_EXTRACT_PATH(x, 'k1', k2) FROM t")
         self.validate_identity("SELECT JSON_EXTRACT_PATH_TEXT(x, k1, 'k2') FROM t")
 
+        # https://github.com/tobymao/sqlglot/issues/8251
+        # A JSON path key containing a single quote must be escaped for the enclosing
+        # SQL literal segment, otherwise the generated call is unparseable.
+        self.validate_identity(
+            """SELECT JSON_EXTRACT_PATH_TEXT(doc, 'Customer''s department') FROM t"""
+        )
+        self.validate_all(
+            """SELECT JSON_EXTRACT_PATH_TEXT(doc, 'Customer''s department') FROM t""",
+            read={
+                "sqlite": """SELECT JSON_EXTRACT(doc, '$."Customer''s department"') FROM t""",
+            },
+        )
+
         # A root-only JSON path ($) has no keys, so pass an empty variadic array.
         self.validate_all(
             "SELECT JSON_EXTRACT_PATH(a, VARIADIC '{}') FROM t",

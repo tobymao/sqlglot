@@ -101,7 +101,10 @@ class DatabricksGenerator(SparkGenerator):
         path = super().jsonpath_sql(expression)
 
         if isinstance(expression.parent, exp.JSONExtractScalar):
-            return f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
+            # QUOTE_JSON_PATH is False for this dialect, so the individual keys weren't escaped
+            # for an enclosing literal above -- but this branch wraps the whole path in one
+            # anyway, so it has to escape it here itself.
+            return f"{self.dialect.QUOTE_START}{self.escape_str(path)}{self.dialect.QUOTE_END}"
 
         return path
 

@@ -22,6 +22,8 @@ class _StarExpansionContext(t.NamedTuple):
     struct_type: exp.DataType | None
 
 
+# `matched=False` allows outer-scope lookup to continue. A match is terminal: a context
+# permits expansion, while `context=None` preserves the nearest binding.
 class _StarResolution(t.NamedTuple):
     matched: bool
     context: _StarExpansionContext | None
@@ -49,7 +51,7 @@ class Resolver:
         self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
-        self._joins = tuple(scope.find_all(exp.Join))
+        self._joins: tuple[exp.Join, ...] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -74,10 +76,7 @@ class Resolver:
                 # catch OptimizeError if column is still ambiguous and try to resolve with schema inference below
                 try:
                     table_name = self._get_table_name_from_sources(
-                        column_name,
-                        self._get_available_source_columns(
-                            self._get_join_branch_prefix(join_context)
-                        ),
+                        column_name, self._get_available_source_columns(join_context)
                     )
                 except OptimizeError:
                     pass
@@ -127,7 +126,10 @@ class Resolver:
         selected_sources = self.scope.selected_sources
         join_prefix = self._get_join_branch_prefix(join_context) if join_context else None
         source_columns = (
-            self._get_available_source_columns(join_prefix, only_visible)
+            {
+                source_name: self.get_source_columns(source_name, only_visible)
+                for source_name in join_prefix.source_names
+            }
             if join_prefix
             else {
                 source_name: self.get_source_columns(source_name, only_visible)
@@ -233,7 +235,8 @@ class Resolver:
         if selected_node.args.get("pivots") or isinstance(selected_node, exp.UDTF):
             return False
 
-        joins = join_prefix.joins if join_prefix else self._joins
+        all_joins = self._get_joins()
+        joins = join_prefix.joins if join_prefix else all_joins
 
         if not joins:
             return True
@@ -244,7 +247,7 @@ class Resolver:
         # Mirror only _expand_using's source attribution so affected table targets can be
         # rejected. The child scope must not attempt to reproduce the operator output.
 
-        join_names = {join.alias_or_name for join in self._joins if join.alias_or_name}
+        join_names = {join.alias_or_name for join in all_joins if join.alias_or_name}
         ordered_sources = [name for name in self.scope.selected_sources if name not in join_names]
         if not ordered_sources:
             return False
@@ -278,6 +281,8 @@ class Resolver:
         column: exp.Identifier,
     ) -> exp.DataType | None:
         if isinstance(source, Scope):
+            # Derived output types are positional, so duplicate names cannot identify one
+            # projection safely.
             source_columns = self.get_source_columns(source_name)
             indexes = [
                 index
@@ -470,6 +475,11 @@ class Resolver:
 
         return None
 
+    def _get_joins(self) -> tuple[exp.Join, ...]:
+        if self._joins is None:
+            self._joins = tuple(self.scope.find_all(exp.Join))
+        return self._joins
+
     def _get_join_branch_prefix(self, join_context: exp.Join) -> _JoinBranchPrefix:
         branch = join_context.parent
         if not branch:
@@ -484,6 +494,8 @@ class Resolver:
                 while isinstance(node.parent, exp.Subquery):
                     node = node.parent
             selected_source_names[id(node)] = name
+        # Restrict resolution to the branch's initial source and joins through this condition;
+        # later join sources are not visible yet.
         initial_source_nodes = (
             walk_in_scope(self.scope.expression.args["from_"])
             if branch is self.scope.expression
@@ -498,10 +510,11 @@ class Resolver:
             for node in source_nodes
             if (source_name := selected_source_names.get(id(node)))
         )
+        # Include nested joins only when their top-level branch is already visible.
         visible_join_ids = {id(join) for join in prefix_joins}
         joins = []
 
-        for join in self._joins:
+        for join in self._get_joins():
             join_root: exp.Expr = join
             while join_root.parent and join_root.parent is not branch:
                 join_root = join_root.parent
@@ -512,9 +525,7 @@ class Resolver:
 
         return _JoinBranchPrefix(source_names=source_names, joins=tuple(joins))
 
-    def _get_available_source_columns(
-        self, join_prefix: _JoinBranchPrefix, only_visible: bool = False
-    ) -> dict[str, Sequence[str]]:
+    def _get_available_source_columns(self, join_ancestor: exp.Join) -> dict[str, Sequence[str]]:
         """
         Get the source columns that are available at the point where a column is referenced.
 
@@ -532,10 +543,16 @@ class Resolver:
         join i.e t_1, ..., t_n, contain a column named `c`.
 
         """
-        return {
-            source_name: self.get_source_columns(source_name, only_visible)
-            for source_name in join_prefix.source_names
-        }
+        args = self.scope.expression.args
+
+        # Collect tables in order: FROM clause tables + joined tables up to current join
+        from_name = args["from_"].alias_or_name
+        available_sources = {from_name: self.get_source_columns(from_name)}
+
+        for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
+            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+
+        return available_sources
 
     def _get_unambiguous_columns(
         self, source_columns: dict[str, Sequence[str]]

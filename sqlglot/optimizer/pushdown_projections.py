@@ -100,7 +100,7 @@ def pushdown_projections(
                 # syntax (e.g INNER UNION ALL BY NAME) which changes the semantics of the operation
                 continue
 
-            left, right = scope.union_scopes
+            left, right = scope.set_operation_scopes
             le = left.expression
             re = right.expression
 

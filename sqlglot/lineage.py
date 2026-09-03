@@ -286,7 +286,7 @@ def to_node(
         if index == -1:
             raise ValueError(f"Could not find {column} in {scope.expression}")
 
-        for s in scope.union_scopes:
+        for s in scope.set_operation_scopes:
             to_node(
                 index,
                 scope=s,

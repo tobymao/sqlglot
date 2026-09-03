@@ -72,8 +72,6 @@ AFTER_HAVING_MODIFIER_TRANSFORMS: dict[str, t.Any] = {
     "qualify": lambda self, e: self.sql(e, "qualify"),
 }
 
-MOD_PARENTHESES_PARENT_TYPES = (exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)
-
 
 _DISPATCH_CACHE: dict[type[Generator], dict[type[exp.Expr], t.Callable[..., str]]] = {}
 
@@ -856,6 +854,16 @@ class Generator:
     EXPRESSIONS_WITHOUT_NESTED_CTES: t.ClassVar[set[type[exp.Expr]]] = set()
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = ()
+
+    MOD_OPERATOR = "%"
+
+    # Infix operators that bind at least as tightly as %, so a Mod on their right side needs parentheses
+    MOD_PAREN_PARENT_TYPES: t.ClassVar[tuple[type[exp.Expr], ...]] = (
+        exp.Mul,
+        exp.Div,
+        exp.IntDiv,
+        exp.Mod,
+    )
 
     SAFE_JSON_PATH_KEY_RE: t.ClassVar = exp.SAFE_IDENTIFIER_RE
 
@@ -4605,17 +4613,15 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
-        sql = (
-            f"{self.sql(expression, 'this')}"
-            f" {self.maybe_comment('%', comments=expression.comments)} "
-            f"{self.sql(expression, 'expression')}"
-        )
+        this = self.sql(expression, "this")
+        expr = self.sql(expression, "expression")
+        sql = f"{this} {self.maybe_comment(self.MOD_OPERATOR, comments=expression.comments)} {expr}"
+
         parent = expression.parent
-        return (
-            f"({sql})"
-            if isinstance(parent, MOD_PARENTHESES_PARENT_TYPES) and parent.expression is expression
-            else sql
-        )
+        if isinstance(parent, self.MOD_PAREN_PARENT_TYPES) and parent.expression is expression:
+            return f"({sql})"
+
+        return sql
 
     def mul_sql(self, expression: exp.Mul) -> str:
         return self.binary(expression, "*")

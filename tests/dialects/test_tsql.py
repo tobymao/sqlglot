@@ -1587,7 +1587,7 @@ WHERE
         self.validate_all(
             "JSON_QUERY(x, '$.a')",
             read={"tsql": "JSON_QUERY(x, '$.a')"},
-            write={"trino": "JSON_QUERY(x, '$.a')"},
+            write={"trino": "JSON_QUERY(x, 'lax $.a')"},
         )
 
         self.validate_identity(

@@ -353,16 +353,21 @@ def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
 
 
 def _is_windowed(agg: exp.Expr) -> bool:
+    # a window applies to exactly one function, its `this`; an aggregate anywhere else groups
     node = agg
+    parent = node.parent
 
-    while (
-        node.arg_key == "this"
-        and node.parent is not None
-        and not isinstance(node.parent, (exp.Window, exp.Func))
-    ):
-        node = node.parent
+    # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
+    while parent is not None and parent.this is node:
+        if isinstance(parent, exp.Window):
+            return True
 
-    return isinstance(node.parent, exp.Window) and node.arg_key == "this"
+        if isinstance(parent, exp.Func):
+            return False
+
+        node, parent = parent, parent.parent
+
+    return False
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:

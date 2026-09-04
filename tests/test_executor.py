@@ -949,6 +949,14 @@ class TestExecutor(unittest.TestCase):
                 "SELECT a FROM x WHERE EXISTS (SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z)",
                 [],
             ),
+            (
+                "SELECT a FROM x WHERE EXISTS ((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z))",
+                [2],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS ((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z))",
+                [2],
+            ),
         ):
             with self.subTest(sql):
                 self.assertEqual(

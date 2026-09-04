@@ -47,6 +47,10 @@ SELECT * FROM x WHERE NOT TRUE;
 SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
 SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
 
+# title: EXISTS over a scalar aggregate with a FETCH is not rewritten, it can return no rows
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a FETCH FIRST 0 ROWS ONLY);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a FETCH FIRST 0 ROWS ONLY);
+
 # title: EXISTS over a windowed aggregate is not a scalar aggregate
 SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE y.a = x.a);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
@@ -66,6 +70,13 @@ SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSE
 # title: a correlated branch of a set operation is not decorrelated, it can't be hoisted out
 SELECT * FROM x WHERE EXISTS (SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
 SELECT * FROM x WHERE EXISTS(SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+
+# title: a parenthesized correlated branch of a set operation is not decorrelated either
+SELECT * FROM x WHERE EXISTS ((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z));
+SELECT * FROM x WHERE EXISTS((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z));
+
+SELECT * FROM x WHERE EXISTS ((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z));
+SELECT * FROM x WHERE EXISTS((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z));
 
 # title: EXISTS over a scalar aggregate with a QUALIFY is not rewritten
 SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a QUALIFY ROW_NUMBER() OVER () = 2);

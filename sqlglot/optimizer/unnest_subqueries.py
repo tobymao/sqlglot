@@ -31,7 +31,9 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
         if scope.external_columns:
-            decorrelate(select, parent, scope.external_columns, next_alias_name)
+            # a correlated set operation branch can't be hoisted out on its own
+            if scope.scope_type != ScopeType.SET_OPERATION:
+                decorrelate(select, parent, scope.external_columns, next_alias_name)
         elif scope.scope_type == ScopeType.SUBQUERY:
             unnest(select, parent, next_alias_name)
 
@@ -148,12 +150,7 @@ def unnest(select, parent_select, next_alias_name):
 def decorrelate(select, parent_select, external_columns, next_alias_name):
     where = select.args.get("where")
 
-    if (
-        not where
-        or where.find(exp.Or)
-        or select.find(exp.Limit, exp.Offset)
-        or isinstance(select.parent, exp.SetOperation)
-    ):
+    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset, exp.Fetch):
         return
 
     parent_predicate = select.find_ancestor(exp.Predicate)

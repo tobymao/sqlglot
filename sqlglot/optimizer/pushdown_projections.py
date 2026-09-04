@@ -28,17 +28,13 @@ SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
 # GROUP BY constructs whose children are grouping items; a one-column set, e.g. ((1)), is a Paren
 GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)
 
-# Query modifiers that can reference output columns; Sort (SORT BY) and Distribute (DISTRIBUTE BY)
-# are Order subclasses, so ORDER BY and its two Spark cousins are all covered by Order
-OUTPUT_REFERENCING_MODIFIERS = (exp.Order, exp.Cluster)
-
 
 def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
-    # Assume columns without a qualified table are references to output columns
     refs: set[str] = set()
 
-    for node in expression.args.values():
-        if isinstance(node, OUTPUT_REFERENCING_MODIFIERS):
+    for arg in ("order", "sort", "distribute", "cluster"):
+        node = expression.args.get(arg)
+        if node:
             columns = find_all_in_scope(node, exp.Column) if scoped else node.find_all(exp.Column)
             refs.update(c.name for c in columns if not c.table)
 

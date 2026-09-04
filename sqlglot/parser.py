@@ -5569,8 +5569,6 @@ class Parser:
             elements["all"] = False
 
         while True:
-            index = self._index
-
             # Stop before consuming modifier tokens like LIMIT, OFFSET and WINDOW,
             # which are also valid identifiers
             if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
@@ -5579,35 +5577,29 @@ class Parser:
             elements["expressions"].extend(
                 self._parse_csv(
                     lambda: (
-                        None
-                        if self._match_set((TokenType.CUBE, TokenType.ROLLUP), advance=False)
-                        else self._parse_disjunction()
+                        self._parse_grouping_sets()
+                        or self._parse_cube_or_rollup()
+                        or self._parse_disjunction()
                     )
                 )
             )
-            grouping_sets_as_group_by_element = (
-                not elements["expressions"] or self._prev.token_type == TokenType.COMMA
-            )
 
             before_with_index = self._index
-            with_prefix = self._match(TokenType.WITH)
 
-            if cube_or_rollup := self._parse_cube_or_rollup(with_prefix=with_prefix):
+            if self._match(TokenType.WITH) and (
+                cube_or_rollup := self._parse_cube_or_rollup(with_prefix=True)
+            ):
                 key = "rollup" if isinstance(cube_or_rollup, exp.Rollup) else "cube"
                 elements[key].append(cube_or_rollup)
             elif grouping_sets := self._parse_grouping_sets():
+                # Hive-style suffix syntax: GROUP BY a, b GROUPING SETS (...)
                 elements["grouping_sets"].append(grouping_sets)
-                elements["grouping_sets_as_group_by_element"] = grouping_sets_as_group_by_element
-                if not grouping_sets_as_group_by_element:
-                    break
+                break
             elif self._match_text_seq("TOTALS"):
                 elements["totals"] = True  # type: ignore
 
             if before_with_index <= self._index <= before_with_index + 1:
                 self._retreat(before_with_index)
-                break
-
-            if index == self._index:
                 break
 
         return self.expression(exp.Group(**elements), comments=comments)  # type: ignore

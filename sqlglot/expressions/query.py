@@ -624,7 +624,6 @@ class Group(Expression):
     arg_types = {
         "expressions": False,
         "grouping_sets": False,
-        "grouping_sets_as_group_by_element": False,
         "cube": False,
         "rollup": False,
         "totals": False,

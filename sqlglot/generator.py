@@ -2836,7 +2836,7 @@ class Generator:
         ):
             add_separator = True
 
-            if grouping_sets and not expression.args.get("grouping_sets_as_group_by_element"):
+            if grouping_sets:
                 if self.SUPPORTS_GROUPING_SETS_AS_SUFFIX:
                     add_separator = False
                 else:

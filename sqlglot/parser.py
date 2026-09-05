@@ -1866,7 +1866,7 @@ class Parser:
 
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_SET_OP: t.ClassVar = True
-    SET_OP_MODIFIERS: t.ClassVar = {"order", "limit", "offset"}
+    SET_OP_MODIFIERS: t.ClassVar = {"order", "limit", "offset", "sort", "distribute", "cluster"}
 
     # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS: t.ClassVar = True

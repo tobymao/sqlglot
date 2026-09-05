@@ -93,6 +93,88 @@ class Resolver:
             }
         return self._all_columns
 
+    def resolve_star(
+        self,
+        parts: t.Sequence[exp.Identifier],
+    ) -> tuple[str, exp.Identifier, exp.DataType] | None:
+        if not parts:
+            return None
+
+        selected_sources = self.scope.selected_sources
+        source_columns = {
+            source_name: self.get_source_columns(source_name, only_visible=True)
+            for source_name in selected_sources
+        }
+        source_name = parts[0].name
+
+        if source_name in selected_sources:
+            if len(parts) != 2:
+                return None
+
+            source = selected_sources[source_name][1]
+            columns = source_columns[source_name]
+            column = parts[1]
+        else:
+            if len(parts) != 1:
+                return None
+
+            source_name = self._get_unambiguous_columns(source_columns).get(parts[0].name) or ""
+            if not source_name:
+                return None
+
+            source = selected_sources[source_name][1]
+            columns = source_columns[source_name]
+            column = parts[0]
+
+        if (
+            not columns
+            or "*" in columns
+            or sum(source_column == column.name for source_column in columns) != 1
+        ):
+            return None
+
+        struct_type = self._get_source_column_type(source_name, source, column)
+        if not struct_type or not struct_type.is_type(exp.DType.STRUCT):
+            return None
+
+        field_names = [
+            field.name
+            for field in struct_type.expressions
+            if isinstance(field, exp.ColumnDef) and isinstance(field.this, exp.Identifier)
+        ]
+        if (
+            not field_names
+            or len(field_names) != len(struct_type.expressions)
+            or len(field_names) != len(set(field_names))
+        ):
+            return None
+
+        return source_name, column, struct_type
+
+    def _get_source_column_type(
+        self,
+        source_name: str,
+        source: Scope | exp.Table,
+        column: exp.Identifier,
+    ) -> exp.DataType | None:
+        if isinstance(source, Scope):
+            # Derived output types are positional, so duplicate names cannot identify one
+            # projection safely.
+            source_columns = self.get_source_columns(source_name)
+            indexes = [
+                index
+                for index, source_column in enumerate(source_columns)
+                if source_column == column.name
+            ]
+            if len(indexes) == 1:
+                selection = seq_get(source.expression.assert_is(exp.Selectable).selects, indexes[0])
+                if selection and selection.type and not selection.type.is_type(exp.DType.UNKNOWN):
+                    return selection.type
+
+                return None
+
+        return self._get_column_type_from_scope(source, exp.Column(this=column.copy()))
+
     def get_source_columns_from_set_op(self, expression: exp.Expr) -> list[str]:
         if isinstance(expression, exp.Select):
             return expression.named_selects

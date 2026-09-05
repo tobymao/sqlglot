@@ -943,6 +943,50 @@ def _expand_struct_stars_with_parens(expression: exp.Dot) -> list[exp.Alias]:
     return new_selections
 
 
+def _resolve_correlated_star(
+    scope: Scope,
+    parts: tuple[exp.Identifier, ...],
+    resolver: Resolver,
+) -> tuple[str, exp.Identifier, exp.DataType] | None:
+    parent = scope.parent
+    if not parent or not scope.can_be_correlated or scope.is_cte:
+        return None
+
+    if isinstance(scope.expression.find_ancestor(exp.Join, exp.Select), exp.Join):
+        return None
+
+    return Resolver(parent, resolver.schema, infer_schema=False).resolve_star(parts)
+
+
+def _expand_correlated_struct_star(
+    source_name: str,
+    path: exp.Identifier,
+    struct_type: exp.DataType,
+    columns_to_exclude: set[str],
+    replaced_columns: dict[str, exp.Alias],
+    renamed_columns: dict[str, str],
+    ilike_pattern: str | None,
+) -> list[exp.Expr]:
+    new_selections: list[exp.Expr] = []
+    for field in struct_type.expressions:
+        identifier = t.cast(exp.Identifier, t.cast(exp.ColumnDef, field).this)
+        name = identifier.name
+        if name in columns_to_exclude:
+            continue
+        if ilike_pattern and not re.fullmatch(ilike_pattern, name, re.IGNORECASE):
+            continue
+        alias_ = renamed_columns.get(name, name)
+
+        selection = replaced_columns.get(name) or exp.column(
+            path.copy(),
+            table=source_name,
+            fields=[identifier.copy()],
+        )
+        new_selections.append(alias(selection, alias_, copy=False) if alias_ != name else selection)
+
+    return new_selections
+
+
 def _expand_stars(
     scope: Scope,
     resolver: Resolver,
@@ -953,6 +997,8 @@ def _expand_stars(
     """Expand stars to lists of column selections"""
 
     new_selections: list[exp.Expr] = []
+    replaced_expressions: list[exp.Expr] = []
+    expanded_outer_star = False
     except_columns: dict[int, set[str]] = {}
     replace_columns: dict[int, dict[str, exp.Alias]] = {}
     rename_columns: dict[int, dict[str, str]] = {}
@@ -974,32 +1020,18 @@ def _expand_stars(
         return
 
     for expression in scope_expression.selects:
+        preserve_expression = False
         tables: list[str] = []
+        star: exp.Star | None = None
         if isinstance(expression, exp.Star):
-            # Only a string literal ILIKE pattern can filter the expansion at optimization time
-            ilike = expression.args.get("ilike")
-            if ilike and not ilike.is_string:
-                new_selections.append(expression)
-                continue
-
+            star = expression
             tables.extend(scope.selected_sources)
-            _add_except_columns(expression, tables, except_columns)
-            _add_replace_columns(expression, tables, replace_columns)
-            _add_rename_columns(expression, tables, rename_columns)
-            ilike_pattern = _add_ilike_columns(expression, dialect)
         elif expression.is_star:
             if isinstance(expression, exp.Column):
-                ilike = expression.this.args.get("ilike")
-                if ilike and not ilike.is_string:
-                    new_selections.append(expression)
-                    continue
-
+                star = expression.this
                 tables.append(expression.table)
-                _add_except_columns(expression.this, tables, except_columns)
-                _add_replace_columns(expression.this, tables, replace_columns)
-                _add_rename_columns(expression.this, tables, rename_columns)
-                ilike_pattern = _add_ilike_columns(expression.this, dialect)
             elif isinstance(expression, exp.Dot):
+                struct_fields: list[exp.Alias]
                 if dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
                     struct_fields = _expand_struct_stars_with_parens(expression)
                 elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
@@ -1008,18 +1040,39 @@ def _expand_stars(
                     struct_fields = []
 
                 if struct_fields:
-                    if annotated_ahead:
-                        annotator.uncache(expression)
-
+                    replaced_expressions.append(expression)
                     new_selections.extend(struct_fields)
                     continue
 
         if not tables:
             new_selections.append(expression)
             continue
+        star = t.cast(exp.Star, star)
+        ilike = star.args.get("ilike")
+        if ilike and not ilike.is_string:
+            new_selections.append(expression)
+            continue
+
+        _add_except_columns(star, tables, except_columns)
+        _add_replace_columns(star, tables, replace_columns)
+        _add_rename_columns(star, tables, rename_columns)
+        ilike_pattern = _add_ilike_columns(star, dialect)
 
         for table in tables:
+            table_id = id(table)
+            columns_to_exclude = except_columns.get(table_id) or set()
+            renamed_columns = rename_columns.get(table_id, {})
+            replaced_columns = replace_columns.get(table_id, {})
+
+            # Correlated scopes can expose outer sources through `scope.sources`;
+            # `selected_sources` alone establishes that the star is local to this scope.
             source = scope.sources.get(table)
+            if (
+                dialect.SUPPORTS_CORRELATED_STAR
+                and scope.can_be_correlated
+                and table not in scope.selected_sources
+            ):
+                source = None
             pivots: list[exp.Pivot] | None = None
             source_table = table
 
@@ -1039,7 +1092,35 @@ def _expand_stars(
                     source = scope.sources.get(source_table)
 
                 if source is None:
-                    raise OptimizeError(f"Unknown table: {table}")
+                    if not (dialect.SUPPORTS_CORRELATED_STAR and scope.can_be_correlated):
+                        raise OptimizeError(f"Unknown table: {table}")
+
+                    parts = t.cast(
+                        tuple[exp.Identifier, ...],
+                        tuple(t.cast(exp.Column, expression).parts[:-1]),
+                    )
+                    context = _resolve_correlated_star(scope, parts, resolver)
+                    # BigQuery may resolve this path using metadata unavailable to SQLGlot, so
+                    # preserve the projection rather than rejecting or partially expanding it.
+                    if context is None:
+                        new_selections.append(expression)
+                        preserve_expression = True
+                        break
+                    source_name, path, struct_type = context
+
+                    expanded_outer_star = True
+                    new_selections.extend(
+                        _expand_correlated_struct_star(
+                            source_name,
+                            path,
+                            struct_type,
+                            columns_to_exclude,
+                            replaced_columns,
+                            renamed_columns,
+                            ilike_pattern,
+                        )
+                    )
+                    continue
 
             columns = resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns
@@ -1052,11 +1133,6 @@ def _expand_stars(
             # projections, so we leave it unexpanded.
             if not columns or "*" in columns or len(columns) != len(set(columns)):
                 return
-
-            table_id = id(table)
-            columns_to_exclude = except_columns.get(table_id) or set()
-            renamed_columns = rename_columns.get(table_id, {})
-            replaced_columns = replace_columns.get(table_id, {})
 
             # Preserve case-sensitivity of quoted source columns when expanding stars,
             # so the generated alias isn't folded by dialect normalization
@@ -1115,11 +1191,11 @@ def _expand_stars(
                         alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                     )
                 else:
-                    alias_ = renamed_columns.get(name, name)
                     quoted = name in quoted_columns or (
                         # if it has characters that the dialect would have changed, infer that it was quoted.
                         isinstance(source, exp.Table) and dialect.case_sensitive(name)
                     )
+                    alias_ = renamed_columns.get(name, name)
                     selection_expr = replaced_columns.get(name) or exp.column(
                         name, table=table, quoted=quoted
                     )
@@ -1129,17 +1205,30 @@ def _expand_stars(
                         else selection_expr
                     )
 
-        if annotated_ahead:
-            # The star projection was replaced by the expansions above
-            annotator.uncache(expression)
+        if preserve_expression:
+            continue
+
+        # The star projection was replaced by the expansions above
+        replaced_expressions.append(expression)
 
     # Ensures we don't overwrite the initial selections with an empty list
-    if new_selections and isinstance(scope_expression, exp.Select):
-        if annotated_ahead:
+    if replaced_expressions and new_selections and isinstance(scope_expression, exp.Select):
+        if annotated_ahead or expanded_outer_star:
+            for expression in replaced_expressions:
+                annotator.uncache(expression)
+
             # The mutation below would otherwise be skipped by the final annotation pass
             annotator.uncache(scope_expression, deep=False)
-
         scope_expression.set("expressions", new_selections)
+
+        # Generated outer-column references change this scope's external columns and every
+        # ancestor's cached column classification.
+        if expanded_outer_star:
+            scope.clear_cache()
+            parent_scope = scope.parent
+            while parent_scope:
+                parent_scope.clear_column_cache()
+                parent_scope = parent_scope.parent
 
 
 def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:

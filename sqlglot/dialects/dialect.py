@@ -604,6 +604,11 @@ class Dialect(metaclass=_Dialect):
         SELECT t FROM my_table AS t  -- Returns entire row as a struct
     """
 
+    SUPPORTS_CORRELATED_STAR = False
+    """
+    Whether a star expression in a subquery can reference a struct column in its parent scope.
+    """
+
     SUPPORTS_STRUCT_STAR_EXPANSION = False
     """
     Whether the dialect supports expanding struct fields using star notation (e.g., struct_col.*).

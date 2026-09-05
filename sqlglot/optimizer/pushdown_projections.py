@@ -19,12 +19,6 @@ if t.TYPE_CHECKING:
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
-# Set-returning (table) functions multiply the rows of the entire query, so a projection
-# containing one affects the cardinality of every output column and must never be pruned,
-# even when the projection itself is otherwise unreferenced. Posexplode and the *Outer
-# variants are subclasses of Explode, so matching Explode covers them too.
-SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
-
 # GROUP BY constructs whose children are grouping items; a one-column set, e.g. ((1)), is a Paren
 GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)
 
@@ -207,11 +201,9 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         ):
             new_selections.append(selection)
             alias_count -= 1
-        elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
-            # A set-returning function multiplies the rows of the whole query, so this
-            # projection affects the cardinality of every output column and must be kept
-            # even though it is otherwise unreferenced. It is not a positional alias slot,
-            # so alias_count is left untouched.
+        # UDTFs multiply rows, so unreferenced projections containing them must be kept.
+        # Anonymous functions are conservatively treated as potentially set-returning.
+        elif find_in_scope(selection, (exp.Anonymous, exp.UDTF)):
             new_selections.append(selection)
         else:
             if selection.is_star:

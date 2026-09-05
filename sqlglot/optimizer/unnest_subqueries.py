@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import ScopeType, find_all_in_scope, find_in_scope, traverse_scope
 from sqlglot._typing import E
 
 
@@ -31,7 +31,9 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
         if scope.external_columns:
-            decorrelate(select, parent, scope.external_columns, next_alias_name)
+            # a correlated set operation branch can't be hoisted out on its own
+            if scope.scope_type != ScopeType.SET_OPERATION:
+                decorrelate(select, parent, scope.external_columns, next_alias_name)
         elif scope.scope_type == ScopeType.SUBQUERY:
             unnest(select, parent, next_alias_name)
 
@@ -148,8 +150,22 @@ def unnest(select, parent_select, next_alias_name):
 def decorrelate(select, parent_select, external_columns, next_alias_name):
     where = select.args.get("where")
 
-    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset):
+    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset, exp.Fetch):
         return
+
+    parent_predicate = select.find_ancestor(exp.Predicate)
+
+    # find_ancestor crosses query boundaries, so the predicate can belong to another query
+    if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
+        return
+
+    if isinstance(parent_predicate, exp.Exists) and not select.args.get("group"):
+        if select.args.get("having") or select.args.get("qualify"):
+            return
+
+        if _has_aggregate_projection(select):
+            _replace(parent_predicate, exp.true())
+            return
 
     table_alias = next_alias_name()
     keys = []
@@ -206,8 +222,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             # so that we don't do a many to many join
             if isinstance(predicate, exp.EQ) and key not in group_by:
                 group_by.append(key)
-
-    parent_predicate = select.find_ancestor(exp.Predicate)
 
     # When the subquery is embedded inside a function (e.g. COALESCE, TRIM) in the SELECT list,
     # the ancestor chain contains no Predicate node AND the subquery is not a direct projection.
@@ -336,6 +350,32 @@ def _is_negated(expression: exp.Expression) -> bool:
 
 def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
     return expression.replace(exp.condition(condition))
+
+
+def _is_windowed(agg: exp.Expr) -> bool:
+    # a window applies to exactly one function, its `this`; an aggregate anywhere else groups
+    node = agg
+    parent = node.parent
+
+    # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
+    while parent is not None and parent.this is node:
+        if isinstance(parent, exp.Window):
+            return True
+
+        if isinstance(parent, exp.Func):
+            return False
+
+        node, parent = parent, parent.parent
+
+    return False
+
+
+def _has_aggregate_projection(select: exp.Select) -> bool:
+    return any(
+        not _is_windowed(agg)
+        for projection in select.selects
+        for agg in find_all_in_scope(projection, exp.AggFunc)
+    )
 
 
 def _other_operand(expression: object) -> exp.Expr | None:

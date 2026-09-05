@@ -862,6 +862,110 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+    def test_correlated_exists_over_scalar_aggregate(self):
+        tables = {"x": [{"a": 1}, {"a": 2}, {"a": None}], "y": [{"b": 2}, {"b": 3}]}
+        schema = {"x": {"a": "int"}, "y": {"b": "int"}}
+        all_rows = [1, 2, None]
+
+        for sql, expected in (
+            ("SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE b = x.a)", all_rows),
+            ("SELECT a FROM x WHERE NOT EXISTS (SELECT COUNT(*) FROM y WHERE b = x.a)", []),
+            ("SELECT a FROM x WHERE EXISTS (SELECT SUM(b) FROM y WHERE b = x.a)", all_rows),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT MAX(b) FROM y WHERE b = x.a AND 1 = 2)",
+                all_rows,
+            ),
+            ("SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE b > x.a)", all_rows),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT DISTINCT COUNT(*) FROM y WHERE b = x.a)",
+                all_rows,
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT (SELECT COUNT(*) FROM y) FROM y WHERE b = x.a)",
+                [2],
+            ),
+            ("SELECT a FROM x WHERE EXISTS (SELECT 1, COUNT(*) FROM y WHERE b = x.a)", all_rows),
+            ("SELECT a FROM x WHERE EXISTS (SELECT 1, 2 FROM y WHERE b = x.a)", [2]),
+            ("SELECT a FROM x WHERE NOT EXISTS (SELECT 1, 2 FROM y WHERE b = x.a)", [1, None]),
+            ("SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE b = x.a)", [2]),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY SUM(b)) FROM y WHERE b = x.a)",
+                all_rows,
+            ),
+            ("SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE b = x.a GROUP BY b)", [2]),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY (SUM(b))) FROM y WHERE b = x.a)",
+                all_rows,
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT LAG(SUM(b)) OVER (ORDER BY 1) FROM y WHERE b = x.a)",
+                all_rows,
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT SUM(b) FILTER (WHERE b > 1) OVER () FROM y WHERE b = x.a)",
+                [2],
+            ),
+            # a HAVING is declined, so the executor evaluates the subquery per outer row
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE b = x.a HAVING COUNT(*) = 0)",
+                [1, None],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE b = x.a HAVING COUNT(*) > 0)",
+                [2],
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    sorted(
+                        (row[0] for row in execute(sql, tables=tables, schema=schema).rows), key=str
+                    ),
+                    sorted(expected, key=str),
+                )
+
+    def test_correlated_exists_over_a_nested_scalar_aggregate(self):
+        # the aggregate belongs to a nested query, so the EXISTS is still conditional
+        tables = {
+            "x": [{"a": 1}, {"a": 2}, {"a": None}],
+            "y": [{"a": 2, "b": 20}, {"a": 3, "b": 30}],
+            "z": [{"a": 1}],
+        }
+        schema = {"x": {"a": "int"}, "y": {"a": "int", "b": "int"}, "z": {"a": "int"}}
+
+        for sql, expected in (
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT * FROM (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) AS t WHERE t.c > 5)",
+                [],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (WITH t AS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) SELECT t.c AS c FROM t WHERE t.c > 5)",
+                [],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z)",
+                [2],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS (SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z)",
+                [],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS ((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z))",
+                [2],
+            ),
+            (
+                "SELECT a FROM x WHERE EXISTS ((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z))",
+                [2],
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    sorted(
+                        (row[0] for row in execute(sql, tables=tables, schema=schema).rows), key=str
+                    ),
+                    sorted(expected, key=str),
+                )
+
     def test_table_depth_mismatch(self):
         tables = {"table": []}
         schema = {"db": {"table": {"col": "VARCHAR"}}}

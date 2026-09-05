@@ -231,17 +231,13 @@ def _levenshtein_sql(self: BigQueryGenerator, expression: exp.Levenshtein) -> st
 def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) -> str:
     name = expression.meta_get("name") or expression.sql_name()
     upper = name.upper()
-
     dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS
 
     if dquote_escaping:
         self._quote_json_path_key_using_brackets = False
-
     sql = rename_func(upper)(self, expression)
-
     if dquote_escaping:
         self._quote_json_path_key_using_brackets = True
-
     return sql
 
 
@@ -298,6 +294,17 @@ class BigQueryGenerator(generator.Generator):
         exp.TsOrDsToTime,
         exp.TsOrDsToDate,
     )
+
+    def json_path_part(self, expression: int | str | exp.JSONPathPart) -> str:
+        if (
+            isinstance(expression, str)
+            and self._quote_json_path_key_using_brackets
+            and self.JSON_PATH_SINGLE_QUOTE_ESCAPE
+        ):
+            escaped = expression.replace("'", "\\'")
+            return self.escape_str(f"'{escaped}'")
+
+        return super().json_path_part(expression)
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,

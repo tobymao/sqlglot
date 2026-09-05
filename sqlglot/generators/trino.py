@@ -133,7 +133,7 @@ class TrinoGenerator(PrestoGenerator):
         # Trino's JSON_QUERY requires the path to start with a mode specifier. Paths coming from
         # dialects that don't have one (e.g. T-SQL) are parsed into a JSONPath, so we prefix the
         # standard default mode. Paths that failed to parse stay literals and keep their own mode.
-        if isinstance(expression.args.get("expression"), exp.JSONPath):
+        if isinstance(expression.expression, exp.JSONPath):
             quote = self.dialect.QUOTE_START
             json_path = f"{quote}lax {json_path.removeprefix(quote)}"
 

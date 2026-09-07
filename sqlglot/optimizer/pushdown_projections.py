@@ -29,6 +29,18 @@ SET_RETURNING_FUNCTIONS = (exp.Explode, exp.Inline, exp.Unnest)
 GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)
 
 
+def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
+    refs: set[str] = set()
+
+    for arg in ("order", "sort", "distribute", "cluster"):
+        node = expression.args.get(arg)
+        if node:
+            columns = find_all_in_scope(node, exp.Column) if scoped else node.find_all(exp.Column)
+            refs.update(c.name for c in columns if not c.table)
+
+    return refs
+
+
 def _is_self_referencing_cte(scope: Scope) -> bool:
     cte = scope.expression.parent
     return (
@@ -113,12 +125,11 @@ def pushdown_projections(
                 scope_sql = scope_expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
 
-            # Columns in ORDER BY need to be kept too
-            order = scope_expression.args.get("order")
-            if order and SELECT_ALL not in parent_selections:
-                order_refs = {c.name for c in find_all_in_scope(order, exp.Column) if not c.table}
-                if order_refs:
-                    parent_selections = parent_selections | order_refs
+            # Columns referenced by ORDER BY and friends need to be kept too
+            if SELECT_ALL not in parent_selections:
+                output_refs = _output_column_refs(scope_expression, scoped=True)
+                if output_refs:
+                    parent_selections = parent_selections | output_refs
 
             referenced_columns[left] = parent_selections
 
@@ -168,13 +179,7 @@ def pushdown_projections(
 
 def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):
     expression = scope.expression
-    order = expression.args.get("order")
-
-    if order:
-        # Assume columns without a qualified table are references to output columns
-        order_refs = {c.name for c in order.find_all(exp.Column) if not c.table}
-    else:
-        order_refs = set()
+    output_refs = _output_column_refs(expression, scoped=False)
 
     # Resolve GROUP BY ordinals before pruning
     ordinal_refs = _group_by_ordinal_refs(expression)
@@ -200,7 +205,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         if (
             select_all
             or name in parent_selections
-            or name in order_refs
+            or name in output_refs
             or alias_count > 0
             or id(selection) in group_ordinal_selection_ids
             or (implicit_group_by_all and not is_agg_selection)

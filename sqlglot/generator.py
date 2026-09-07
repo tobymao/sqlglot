@@ -3822,6 +3822,7 @@ class Generator:
         path = self.expressions(expression, sep="", flat=True).lstrip(".")
 
         if self.QUOTE_JSON_PATH:
+            path = self.escape_str(path)
             path = f"{self.dialect.QUOTE_START}{path}{self.dialect.QUOTE_END}"
 
         return path
@@ -3840,7 +3841,7 @@ class Generator:
 
         if self._quote_json_path_key_using_brackets and self.JSON_PATH_SINGLE_QUOTE_ESCAPE:
             escaped = expression.replace("'", "\\'")
-            escaped = f"\\'{expression}\\'"
+            escaped = f"'{escaped}'"
         else:
             escaped = expression.replace('"', '\\"')
             escaped = f'"{escaped}"'
@@ -5400,12 +5401,6 @@ class Generator:
             return f".{this}"
 
         this = self.json_path_part(this)
-
-        if quoted and self.QUOTE_JSON_PATH:
-            # The whole path is rendered as a single quoted string literal, so the bracketed key
-            # (which may itself contain backslash-escaped quotes, e.g. ["x \"y\"z"]) must be
-            # escaped again for the outer string literal (-> ["x \\"y\\"z"]).
-            this = self.escape_str(this)
 
         return (
             f"[{this}]"

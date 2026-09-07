@@ -472,17 +472,7 @@ class TypeAnnotator:
                     stack.append((child_expr, False))
                 continue
 
-            if (
-                scope
-                and isinstance(expr, exp.Column)
-                and expr.table
-                and not (
-                    expr.is_star
-                    and self.dialect.SUPPORTS_CORRELATED_STAR
-                    and scope.can_be_correlated
-                    and expr.table not in scope.selected_sources
-                )
-            ):
+            if scope and isinstance(expr, exp.Column) and expr.table:
                 source = None
                 source_scope: Scope | None = scope
                 while source_scope and not source:

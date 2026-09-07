@@ -295,17 +295,6 @@ class BigQueryGenerator(generator.Generator):
         exp.TsOrDsToDate,
     )
 
-    def json_path_part(self, expression: int | str | exp.JSONPathPart) -> str:
-        if (
-            isinstance(expression, str)
-            and self._quote_json_path_key_using_brackets
-            and self.JSON_PATH_SINGLE_QUOTE_ESCAPE
-        ):
-            escaped = expression.replace("'", "\\'")
-            return self.escape_str(f"'{escaped}'")
-
-        return super().json_path_part(expression)
-
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
         exp.AIEmbed: rename_func("EMBED"),

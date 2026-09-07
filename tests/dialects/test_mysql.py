@@ -73,6 +73,8 @@ class TestMySQL(Validator):
             "ALTER TABLE t CHANGE COLUMN a b BIGINT NOT NULL",
         )
         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
+        self.validate_identity("ALTER TABLE t COMMENT='hi'")
+        self.validate_identity("ALTER TABLE t COMMENT 'hi'", "ALTER TABLE t COMMENT='hi'")
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(

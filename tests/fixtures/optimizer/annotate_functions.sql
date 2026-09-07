@@ -7553,6 +7553,9 @@ BIT;
 LOCALTIMESTAMP;
 TIMESTAMP;
 
+# dialect: postgres
+REPLACE(tbl.str_col, tbl.str_col, tbl.str_col);
+TEXT;
 
 --------------------------------------
 -- Presto / Trino

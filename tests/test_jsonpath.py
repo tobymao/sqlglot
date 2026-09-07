@@ -156,4 +156,5 @@ class TestJsonpath(unittest.TestCase):
                         pass
                 else:
                     path = parse(selector)
-                    self.assertEqual(path.sql(), f"'{overrides.get(selector, selector)}'")
+                    expected = overrides.get(selector, selector).replace("'", "''")
+                    self.assertEqual(path.sql(), f"'{expected}'")

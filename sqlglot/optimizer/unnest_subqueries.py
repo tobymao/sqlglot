@@ -262,23 +262,24 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             select.select(exp.alias_(key, key_aliases[key]), copy=False)
 
     array_keys = [key for key in key_aliases if key not in group_by]
+    use_struct = len(array_keys) > 1
 
-    if len(array_keys) > 1:
+    if array_keys:
         # Multiple keys are collected as one struct per row, so that all of their predicates are
         # checked against the same row below
-        array_alias = next_alias_name()
-        struct = exp.Struct(
-            expressions=[
-                exp.PropertyEQ(this=exp.to_identifier(key_aliases[key]), expression=key.copy())
-                for key in array_keys
-            ]
+        array_alias = next_alias_name() if use_struct else key_aliases[array_keys[0]]
+        array_item = (
+            exp.Struct(
+                expressions=[
+                    exp.PropertyEQ(this=exp.to_identifier(key_aliases[key]), expression=key.copy())
+                    for key in array_keys
+                ]
+            )
+            if use_struct
+            else array_keys[0].copy()
         )
-        select.select(exp.alias_(exp.ArrayAgg(this=struct), array_alias, quoted=False), copy=False)
-    elif array_keys:
-        array_alias = key_aliases[array_keys[0]]
         select.select(
-            exp.alias_(exp.ArrayAgg(this=array_keys[0].copy()), array_alias, quoted=False),
-            copy=False,
+            exp.alias_(exp.ArrayAgg(this=array_item), array_alias, quoted=False), copy=False
         )
 
     alias = exp.column(value.alias, table_alias)
@@ -338,9 +339,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             key.replace(exp.column(key_aliases[key], table_alias))
         else:
             key.replace(
-                exp.column(key_aliases[key], "_x")
-                if len(array_keys) > 1
-                else exp.to_identifier("_x")
+                exp.column(key_aliases[key], "_x") if use_struct else exp.to_identifier("_x")
             )
             array_predicates.append(predicate)
 

@@ -1206,6 +1206,16 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(result.columns, ("_col_0",))
         self.assertEqual(result.rows, [(3,)])
 
+    def test_first(self):
+        tables = {"t": [{"g": 1, "a": 5}, {"g": 1, "a": 1}, {"g": 2, "a": 3}]}
+
+        for sql, rows in (
+            ("SELECT FIRST(a) FROM t", [(5,)]),
+            ("SELECT g, FIRST(a) FROM t GROUP BY g", [(1, 5), (2, 3)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables, dialect="hive").rows, rows)
+
     def test_in_any_subquery_without_a_from(self):
         tables = {"x": [{"a": 1}, {"a": 2}, {"a": None}]}
 

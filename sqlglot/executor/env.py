@@ -241,6 +241,7 @@ ENV = {
     "ARRAYUNIQUEAGG": filter_nulls(lambda acc: list(set(acc))),
     "AVG": filter_nulls(statistics.fmean if PYTHON_VERSION >= (3, 8) else statistics.mean),  # type: ignore
     "COUNT": filter_nulls(lambda acc: sum(1 for _ in acc), False),
+    "FIRST": lambda acc: next(iter(acc), None),
     "MAX": filter_nulls(max),
     "MIN": filter_nulls(min),
     "SUM": filter_nulls(sum),

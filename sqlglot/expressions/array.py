@@ -240,7 +240,7 @@ class Explode(Expression, Func, UDTF):
     is_var_len_args = True
 
 
-class Inline(Expression, Func):
+class Inline(Expression, Func, UDTF):
     pass
 
 

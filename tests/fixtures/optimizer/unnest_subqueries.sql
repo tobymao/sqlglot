@@ -231,3 +231,15 @@ SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y W
 # title: exists with a non-equality key that is also the projected value
 SELECT x.a FROM x WHERE EXISTS (SELECT y.b AS b FROM y WHERE y.a = x.a AND y.b > x.b);
 SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y WHERE TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE (NOT _u_0._u_1 IS NULL AND ARRAY_ANY(_u_0._u_2, _x -> _x > x.b));
+
+# title: exists with a non-equality predicate on an equality key checks it on the join
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.a > x.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a AND _u_0._u_1 > x.c WHERE NOT _u_0._u_1 IS NULL;
+
+# title: predicate with an inner column on the outer side is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b + y.c);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b + y.c);
+
+# title: predicate with an outer column on the key side is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a + x.b = x.a);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a + x.b = x.a);

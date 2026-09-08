@@ -170,6 +170,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     table_alias = next_alias_name()
     keys = []
     eq_count = 0
+    external_ids = set()
 
     # for all external columns in the where statement, find the relevant predicate
     # keys to convert it into a join
@@ -197,6 +198,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             return
 
         keys.append((key, column, predicate))
+        external_ids.add(id(column))
         eq_count += isinstance(predicate, exp.EQ)
 
     # Non-EQ predicates are replaced with TRUE in the subquery, so they no longer filter the rows
@@ -217,6 +219,14 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     group_by = []
 
     for key, _, predicate in keys:
+        # The key is projected by the subquery and the other side is moved out of it, so
+        # neither can reference columns from the opposite scope
+        other = predicate.right if key is predicate.left else predicate.left
+        if any(id(c) in external_ids for c in key.find_all(exp.Column)) or any(
+            id(c) not in external_ids for c in other.find_all(exp.Column)
+        ):
+            return
+
         # if we filter on the value of the subquery, it needs to be unique
         if key == value.this and isinstance(predicate, exp.EQ):
             key_aliases[key] = value.alias
@@ -358,7 +368,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     parent_select.join(
         select.group_by(*group_by, copy=False),
-        on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
+        # A grouped key is constant per group, so any predicate on it can be checked in the join
+        on=[predicate for key, _, predicate in keys if key in group_by],
         join_type="LEFT",
         join_alias=table_alias,
         copy=False,

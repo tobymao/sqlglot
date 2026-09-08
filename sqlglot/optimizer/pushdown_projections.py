@@ -19,6 +19,9 @@ if t.TYPE_CHECKING:
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
+# UDTF: functions that multiply rows.  Anonymous: unknown functions may be set-returning.
+SET_RETURNING_FUNCTIONS = (exp.Anonymous, exp.UDTF, exp.ExplodingGenerateSeries)
+
 # GROUP BY constructs whose children are grouping items; a one-column set, e.g. ((1)), is a Paren
 GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)
 
@@ -206,9 +209,8 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         ):
             new_selections.append(selection)
             alias_count -= 1
-        # UDTFs multiply rows, so unreferenced projections containing them must be kept.
-        # Anonymous functions are conservatively treated as potentially set-returning.
-        elif find_in_scope(selection, (exp.Anonymous, exp.UDTF)):
+        # keep projections containing these functions
+        elif find_in_scope(selection, *SET_RETURNING_FUNCTIONS):
             new_selections.append(selection)
         else:
             if selection.is_star:

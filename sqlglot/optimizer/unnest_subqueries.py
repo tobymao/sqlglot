@@ -259,7 +259,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     for key in group_by:
         # add all keys to the projections of the subquery so that we can use it as a join key
         if isinstance(parent_predicate, exp.Exists) or key != value.this:
-            select.select(exp.alias_(key, key_aliases[key], copy=False), copy=False)
+            select.select(exp.alias_(key, key_aliases[key]), copy=False)
 
     array_keys = [key for key in key_aliases if key not in group_by]
 

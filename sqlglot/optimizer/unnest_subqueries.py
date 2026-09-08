@@ -342,7 +342,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     array_predicates = []
 
-    for key, column, predicate in keys:
+    for key, _, predicate in keys:
         predicate.replace(exp.true())
 
         if key in group_by:

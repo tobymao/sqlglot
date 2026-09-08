@@ -338,17 +338,36 @@ class SQLiteGenerator(generator.Generator):
         separator = expression.args.get("separator")
         return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
 
-    def least_sql(self, expression: exp.Least) -> str:
-        if expression.expressions:
-            return rename_func("MIN")(self, expression)
+    def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
+        if not expression.expressions:
+            return self.sql(expression, "this")
 
-        return self.sql(expression, "this")
+        if not expression.args.get("ignore_nulls"):
+            name = "MAX" if isinstance(expression, exp.Greatest) else "MIN"
+            return rename_func(name)(self, expression)
+
+        # GREATEST/LEAST ignore NULLs, but SQLite's multi-argument MAX/MIN
+        # return NULL if any argument is NULL. Emit a rotation of COALESCE
+        # calls so that every argument is the first argument of exactly one
+        # COALESCE, which then returns it if it's non-NULL. Comparing all of
+        # those yields the ignored-NULLs result, and an all-NULL input still
+        # yields NULL:
+        # GREATEST(a, b, c) -> MAX(COALESCE(a, b, c), COALESCE(b, c, a), COALESCE(c, a, b)).
+        args = [expression.this, *expression.expressions]
+        aggregate = exp.Max if isinstance(expression, exp.Greatest) else exp.Min
+
+        coalesces = []
+        for i in range(len(args)):
+            rotated = args[i:] + args[:i]
+            coalesces.append(exp.Coalesce(this=rotated[0], expressions=rotated[1:]))
+
+        return self.sql(aggregate(expressions=coalesces))
 
     def greatest_sql(self, expression: exp.Greatest) -> str:
-        if expression.expressions:
-            return rename_func("MAX")(self, expression)
+        return self._greatest_least_sql(expression)
 
-        return self.sql(expression, "this")
+    def least_sql(self, expression: exp.Least) -> str:
+        return self._greatest_least_sql(expression)
 
     def transaction_sql(self, expression: exp.Transaction) -> str:
         this = expression.this

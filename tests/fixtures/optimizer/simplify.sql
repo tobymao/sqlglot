@@ -1072,6 +1072,24 @@ COALESCE(x, 1) = 2;
 2 = COALESCE(x, 1);
 NOT x IS NULL AND x = 2;
 
+1 < COALESCE(x, 0);
+NOT x IS NULL AND x > 1;
+
+0 >= COALESCE(x, 1);
+NOT x IS NULL AND x <= 0;
+
+-1 < COALESCE(x, 0);
+x > -1 OR x IS NULL;
+
+1 < COALESCE(x, y, 0);
+COALESCE(x, y) > 1 AND NOT COALESCE(x, y) IS NULL;
+
+0 >= COALESCE(x, y, 1);
+COALESCE(x, y) <= 0 AND NOT COALESCE(x, y) IS NULL;
+
+1 < COALESCE(x, 0, 5);
+NOT x IS NULL AND x > 1;
+
 COALESCE(x, 1, 1) = 1 + 1;
 NOT x IS NULL AND x = 2;
 

@@ -164,7 +164,12 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             return
 
         group = select.args.get("group")
-        if not group:
+
+        # GROUP BY ALL groups by the non-aggregate projections, so without any it's a no-op
+        if not group or (
+            group.args.get("all")
+            and all(find_in_scope(projection, exp.AggFunc) for projection in select.selects)
+        ):
             if _has_aggregate_projection(select):
                 _replace(parent_predicate, exp.true())
                 return

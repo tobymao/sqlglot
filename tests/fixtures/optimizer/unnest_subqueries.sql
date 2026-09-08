@@ -283,3 +283,15 @@ SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ROLLUP (
 # title: exists with an empty grouping set is not unnested
 SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());
 SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());
+
+# title: exists with group by all and only aggregate projections is always true
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x WHERE TRUE;
+
+# title: exists with group by all and only windowed aggregate projections is a row check
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with group by all and a non-aggregate projection drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT y.c, COUNT(*) FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;

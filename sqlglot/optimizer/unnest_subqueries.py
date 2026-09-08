@@ -159,12 +159,16 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
         return
 
-    if isinstance(parent_predicate, exp.Exists) and not select.args.get("group"):
+    if isinstance(parent_predicate, exp.Exists):
         if select.args.get("having") or select.args.get("qualify"):
             return
 
-        if _has_aggregate_projection(select):
-            _replace(parent_predicate, exp.true())
+        group = select.args.get("group")
+        if not group:
+            if _has_aggregate_projection(select):
+                _replace(parent_predicate, exp.true())
+                return
+        elif not _is_plain_group(group):
             return
 
     table_alias = next_alias_name()
@@ -265,6 +269,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     # all selects will be added by the optimizer and only used for join keys
     if isinstance(parent_predicate, exp.Exists):
         select.set("expressions", [])
+        # These can't change whether any row is returned, but a GROUP BY would break the
+        # uniqueness of the join keys below, which is what prevents the join from fanning out
+        select.set("group", None)
+        select.set("distinct", None)
+        select.set("order", None)
 
     for key in group_by:
         # add all keys to the projections of the subquery so that we can use it as a join key
@@ -403,6 +412,17 @@ def _is_windowed(agg: exp.Expr) -> bool:
         node, parent = parent, parent.parent
 
     return False
+
+
+def _is_plain_group(group: exp.Group) -> bool:
+    # Grouping sets produce a row for the grand total even when no rows pass the WHERE
+    return not any(
+        group.args.get(arg) for arg in ("grouping_sets", "cube", "rollup", "totals")
+    ) and not any(
+        isinstance(e, (exp.Rollup, exp.Cube, exp.GroupingSets))
+        or (isinstance(e, exp.Tuple) and not e.expressions)
+        for e in group.expressions
+    )
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:

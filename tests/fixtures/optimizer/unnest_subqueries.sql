@@ -243,3 +243,43 @@ SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b + y
 # title: predicate with an outer column on the key side is not unnested
 SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a + x.b = x.a);
 SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a + x.b = x.a);
+
+# title: exists with a group by drops it so that the join stays unique on its keys
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: not exists with a group by
+SELECT x.a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT NOT _u_0._u_1 IS NULL;
+
+# title: exists with an aggregate projection and a group by is not always true
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with distinct drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT DISTINCT y.c FROM y WHERE y.a = x.a);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with an order by drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a ORDER BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with a group by and having is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c HAVING COUNT(*) > 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c HAVING COUNT(*) > 1);
+
+# title: exists with a group by and qualify is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c QUALIFY ROW_NUMBER() OVER (ORDER BY y.c) = 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c QUALIFY ROW_NUMBER() OVER (ORDER BY y.c) = 1);
+
+# title: exists with a non-equality key and having is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b GROUP BY y.a HAVING COUNT(*) > 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b GROUP BY y.a HAVING COUNT(*) > 1);
+
+# title: exists with a rollup is not unnested since it returns a row even for empty input
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY ROLLUP (y.c));
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ROLLUP (y.c));
+
+# title: exists with an empty grouping set is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());

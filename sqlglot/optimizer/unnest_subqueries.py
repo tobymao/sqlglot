@@ -169,6 +169,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
     table_alias = next_alias_name()
     keys = []
+    eq_count = 0
+    external_ids = set()
 
     # for all external columns in the where statement, find the relevant predicate
     # keys to convert it into a join
@@ -196,8 +198,14 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             return
 
         keys.append((key, column, predicate))
+        external_ids.add(id(column))
+        eq_count += isinstance(predicate, exp.EQ)
 
-    if not any(isinstance(predicate, exp.EQ) for *_, predicate in keys):
+    # Non-EQ predicates are replaced with TRUE in the subquery, so they no longer filter the rows
+    # feeding its projections. Their keys are instead collected with ARRAY_AGG per EQ group and
+    # re-checked in the outer query with ARRAY_ANY, which is only correct for EXISTS: a projected
+    # value like SUM would otherwise be computed over the unfiltered rows
+    if not eq_count or (len(keys) > eq_count and not isinstance(parent_predicate, exp.Exists)):
         return
 
     is_subquery_projection = any(
@@ -211,8 +219,16 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     group_by = []
 
     for key, _, predicate in keys:
+        # The key is projected by the subquery and the other side is moved out of it, so
+        # neither can reference columns from the opposite scope
+        other = predicate.right if key is predicate.left else predicate.left
+        if any(id(c) in external_ids for c in key.find_all(exp.Column)) or any(
+            id(c) not in external_ids for c in other.find_all(exp.Column)
+        ):
+            return
+
         # if we filter on the value of the subquery, it needs to be unique
-        if key == value.this:
+        if key == value.this and isinstance(predicate, exp.EQ):
             key_aliases[key] = value.alias
             group_by.append(key)
         else:
@@ -250,21 +266,38 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if isinstance(parent_predicate, exp.Exists):
         select.set("expressions", [])
 
-    for key, alias in key_aliases.items():
-        if key in group_by:
-            # add all keys to the projections of the subquery
-            # so that we can use it as a join key
-            if isinstance(parent_predicate, exp.Exists) or key != value.this:
-                select.select(f"{key} AS {alias}", copy=False)
-        else:
-            select.select(exp.alias_(agg_func(this=key.copy()), alias, quoted=False), copy=False)
+    for key in group_by:
+        # add all keys to the projections of the subquery so that we can use it as a join key
+        if isinstance(parent_predicate, exp.Exists) or key != value.this:
+            select.select(exp.alias_(key, key_aliases[key]), copy=False)
+
+    array_keys = [key for key in key_aliases if key not in group_by]
+    use_struct = len(array_keys) > 1
+
+    if array_keys:
+        # Multiple keys are collected as one struct per row, so that all of their predicates are
+        # checked against the same row below
+        array_alias = next_alias_name() if use_struct else key_aliases[array_keys[0]]
+        array_item = (
+            exp.Struct(
+                expressions=[
+                    exp.PropertyEQ(this=exp.to_identifier(key_aliases[key]), expression=key.copy())
+                    for key in array_keys
+                ]
+            )
+            if use_struct
+            else array_keys[0].copy()
+        )
+        select.select(
+            exp.alias_(exp.ArrayAgg(this=array_item), array_alias, quoted=False), copy=False
+        )
 
     alias = exp.column(value.alias, table_alias)
     other = _other_operand(parent_predicate)
     op_type = type(parent_predicate.parent) if parent_predicate else None
 
     if isinstance(parent_predicate, exp.Exists):
-        alias = exp.column(list(key_aliases.values())[0], table_alias)
+        alias = exp.column(next(key_aliases[key] for key in group_by), table_alias)
         parent_predicate = _replace(parent_predicate, f"NOT {alias} IS NULL")
     elif isinstance(parent_predicate, exp.All):
         assert issubclass(op_type, exp.Binary)
@@ -307,34 +340,36 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         select.parent.replace(alias)
 
-    for key, column, predicate in keys:
-        predicate.replace(exp.true())
-        nested = exp.column(key_aliases[key], table_alias)
+    array_predicates = []
 
-        if is_subquery_projection:
-            key.replace(nested)
-            if not isinstance(predicate, exp.EQ):
-                parent_select.where(predicate, copy=False)
-            continue
+    for key, _, predicate in keys:
+        predicate.replace(exp.true())
 
         if key in group_by:
-            key.replace(nested)
+            key.replace(exp.column(key_aliases[key], table_alias))
         else:
-            # Built as AST rather than a SQL string, because dialect-specific operators such as
-            # Postgres' `@>` can't be round-tripped through the default dialect's parser.
-            key.replace(exp.to_identifier("_x"))
-            right = exp.ArrayAny(
-                this=nested,
-                expression=exp.Lambda(this=predicate.copy(), expressions=[exp.to_identifier("_x")]),
+            key.replace(
+                exp.column(key_aliases[key], "_x") if use_struct else exp.to_identifier("_x")
             )
-            parent_predicate = _replace(
-                parent_predicate,
-                exp.paren(exp.and_(parent_predicate.copy(), right, copy=False)),
-            )
+            array_predicates.append(predicate)
+
+    if array_predicates:
+        # Built as AST rather than a SQL string, because dialect-specific operators such as
+        # Postgres' `@>` can't be round-tripped through the default dialect's parser.
+        right = exp.ArrayAny(
+            this=exp.column(array_alias, table_alias),
+            expression=exp.Lambda(
+                this=exp.and_(*array_predicates, copy=False), expressions=[exp.to_identifier("_x")]
+            ),
+        )
+        parent_predicate = _replace(
+            parent_predicate, exp.paren(exp.and_(parent_predicate.copy(), right, copy=False))
+        )
 
     parent_select.join(
         select.group_by(*group_by, copy=False),
-        on=[predicate for *_, predicate in keys if isinstance(predicate, exp.EQ)],
+        # A grouped key is constant per group, so any predicate on it can be checked in the join
+        on=[predicate for key, _, predicate in keys if key in group_by],
         join_type="LEFT",
         join_alias=table_alias,
         copy=False,

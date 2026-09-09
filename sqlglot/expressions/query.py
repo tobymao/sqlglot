@@ -12,6 +12,7 @@ from sqlglot.expressions.core import (
     Condition,
     Distinct,
     Dot,
+    DynamicIdentifier,
     Expr,
     Expression,
     Func,
@@ -966,6 +967,8 @@ class Table(Expression, Selectable):
 
     @property
     def name(self) -> str:
+        if isinstance(self.this, DynamicIdentifier):
+            return self.this.name
         if not self.this or isinstance(self.this, Func):
             return ""
         return self.this.name

@@ -1828,6 +1828,10 @@ class Identifier(Expression):
 class DynamicIdentifier(Expression, Func):
     arg_types = {"this": True, "expressions": False}
 
+    @property
+    def name(self) -> str:
+        return self.this.name if self.this else ""
+
 
 class Opclass(Expression):
     arg_types = {"this": True, "expression": True}

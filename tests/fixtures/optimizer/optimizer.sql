@@ -1223,6 +1223,34 @@ SELECT
   `_0`.`fruitstruct`.`value` AS `value`
 FROM `_0` AS `_0`;
 
+# title: derived table with GENERATE_SERIES cannot be merged
+# dialect: postgres
+# execute: false
+SELECT t.a FROM (SELECT a, GENERATE_SERIES(1, 3) AS s FROM x) AS t;
+WITH "t" AS (
+  SELECT
+    "x"."a" AS "a",
+    GENERATE_SERIES(1, 3) AS "s"
+  FROM "x" AS "x"
+)
+SELECT
+  "t"."a" AS "a"
+FROM "t" AS "t";
+
+# title: derived table with INLINE cannot be merged
+# dialect: spark
+# execute: false
+SELECT t.a FROM (SELECT a, INLINE(b) AS s FROM x) AS t;
+WITH `t` AS (
+  SELECT
+    `x`.`a` AS `a`,
+    INLINE(`x`.`b`) AS `s`
+  FROM `x` AS `x`
+)
+SELECT
+  `t`.`a` AS `a`
+FROM `t` AS `t`;
+
 # title: mysql is case-sensitive by default
 # dialect: mysql
 # execute: false

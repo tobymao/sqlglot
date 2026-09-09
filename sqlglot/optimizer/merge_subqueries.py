@@ -75,6 +75,11 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
+# An inner projection of one of these types blocks the merge. A set-returning function
+# multiplies the inner rows, so merging drops a projection the outer row count depends on.
+UNMERGABLE_PROJECTIONS = (exp.AggFunc, exp.Select, exp.UDTF, exp.ExplodingGenerateSeries)
+
+
 def merge_ctes(
     expression: E,
     leave_tables_isolated: bool = False,
@@ -303,7 +308,7 @@ def _mergeable(
         if s.unalias().is_number:
             number_literal_aliases.add(name)
         for node in s.walk():
-            if isinstance(node, (exp.AggFunc, exp.Select, exp.Explode)):
+            if isinstance(node, UNMERGABLE_PROJECTIONS):
                 return False
             if isinstance(node, exp.Window):
                 window_aliases.add(name)

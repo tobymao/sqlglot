@@ -603,13 +603,15 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if isinstance(column, exp.Dot):
             continue
 
+        is_star = isinstance(column.this, exp.Star)
         column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
             and column_table not in scope.selected_sources
             and (
-                not scope.parent
+                is_star
+                or not scope.parent
                 or column_table not in scope.parent.sources
                 or not scope.is_correlated_subquery
             )
@@ -620,9 +622,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             # Unlike columns, correlated stars can't be deferred to the outer scopes, since they
             # must be expanded in this one, so they're resolved against those scopes as well
             resolvers: t.Iterable[Resolver] = (
-                itertools.chain((resolver,), resolver.outer_resolvers())
-                if isinstance(column.this, exp.Star)
-                else (resolver,)
+                itertools.chain((resolver,), resolver.outer_resolvers()) if is_star else (resolver,)
             )
             for source_resolver in resolvers:
                 selected_sources = source_resolver.scope.selected_sources
@@ -637,26 +637,14 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                     was_qualified = True
                     break
 
-                # A nearer scope blocks outer resolution if ownership is ambiguous.
-                matching_source_count = 0
-                if isinstance(column.this, exp.Star):
-                    has_unknown_columns = False
-                    for source_name in itertools.chain(
-                        selected_sources, source_resolver.scope.lateral_sources
-                    ):
-                        columns = source_resolver.get_source_columns(source_name)
-                        if not columns or "*" in columns:
-                            has_unknown_columns = True
-                            break
-
-                        if root.name in columns:
-                            matching_source_count += 1
-                            if matching_source_count > 1:
-                                break
-
-                    if has_unknown_columns or matching_source_count > 1:
-                        column_table = None
-                        break
+                if (
+                    is_star
+                    and root.name not in source_resolver.all_columns
+                    and source_resolver.has_unknown_sources
+                ):
+                    # An unknown source may own the star, so it's preserved instead of inferred
+                    column_table = None
+                    break
 
                 column_table = source_resolver.get_table(root.name)
                 if column_table:
@@ -1081,31 +1069,19 @@ def _expand_stars(
                     source_table = parent.alias_or_name
                     source = scope.sources.get(source_table)
 
-                # Expand from an outer scope only if local schemas are complete and contain no same-named column.
-                if source is None and scope.can_be_correlated:
-                    preserve = False
-                    for local_source_name in itertools.chain(
-                        scope.selected_sources, scope.lateral_sources
-                    ):
-                        local_columns = resolver.get_source_columns(local_source_name)
-                        if not local_columns or "*" in local_columns or table in local_columns:
-                            preserve = True
-                            break
-
-                    if preserve:
-                        new_selections.append(expression)
-                        break
-
                 if source is None:
                     # Correlated stars, e.g. (SELECT AS STRUCT x.* EXCEPT (a)), expand an outer source
-                    for outer_resolver in resolver.outer_resolvers():
-                        source = outer_resolver.scope.sources.get(table)
-                        if source:
-                            source_resolver = outer_resolver
+                    for source_resolver in itertools.chain((resolver,), resolver.outer_resolvers()):
+                        source = source_resolver.scope.sources.get(table)
+                        if source or source_resolver.has_unknown_sources:
                             break
+                    else:
+                        raise OptimizeError(f"Unknown table: {table}")
 
                 if source is None:
-                    raise OptimizeError(f"Unknown table: {table}")
+                    # An unknown source may own the star, so it's preserved instead of expanded
+                    new_selections.append(expression)
+                    break
 
             columns = source_resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns

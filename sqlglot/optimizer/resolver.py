@@ -92,6 +92,13 @@ class Resolver:
             yield Resolver(scope, self.schema, self._infer_schema)
 
     @property
+    def has_unknown_sources(self) -> bool:
+        """Whether some source's columns can't be determined, e.g. a table missing from the schema."""
+        return any(
+            not columns or "*" in columns for columns in self._get_all_source_columns().values()
+        )
+
+    @property
     def all_columns(self) -> set[str]:
         """All available columns of all sources in this scope"""
         if self._all_columns is None:

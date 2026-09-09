@@ -134,6 +134,11 @@ class TestOptimizer(unittest.TestCase):
                 "a": "INT",
                 "b": "INT",
             },
+            # non-nullable columns, for rewrites that are only valid when a value can't be NULL
+            "nn": {
+                "a": exp.DataType.build("INT", nullable=False),
+                "b": exp.DataType.build("INT", nullable=False),
+            },
             "y": {
                 "b": "INT",
                 "c": "INT",

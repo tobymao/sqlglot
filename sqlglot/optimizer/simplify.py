@@ -199,7 +199,13 @@ def propagate_constants(expression, root=True):
 
                 # TODO: create a helper that can be used to detect nested literal expressions such
                 # as CAST(123456 AS BIGINT), since we usually want to treat those as literals too
-                if isinstance(l, exp.Column) and isinstance(r, exp.Literal):
+                # Substituting the constant is only an identity when the column can't be NULL:
+                # for a NULL x, `x = 1 AND x + 1 = 0` is NULL, not FALSE
+                if (
+                    isinstance(l, exp.Column)
+                    and isinstance(r, exp.Literal)
+                    and l.meta_get("nonnull") is True
+                ):
                     constant_mapping[l] = (id(l), r)
 
         if constant_mapping:

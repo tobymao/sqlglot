@@ -1508,29 +1508,42 @@ CAST(y AS DATE) = x - INTERVAL '1' DAY;
 --------------------------------------
 -- Constant Propagation
 --------------------------------------
+-- constants only propagate through columns that can't be NULL (nn in the test schema)
+SELECT nn.a = 5 AND nn.b = nn.a AS r FROM nn;
+SELECT nn.a = 5 AND nn.b = 5 AS r FROM nn;
+
+SELECT nn.a = 5 AND nn.b > nn.a AS r FROM nn;
+SELECT nn.a = 5 AND nn.b > 5 AS r FROM nn;
+
+SELECT nn.a = 5 AND nn.a + nn.b = 7 AS r FROM nn;
+SELECT nn.a = 5 AND nn.b = 2 AS r FROM nn;
+
+SELECT nn.a = 5 AND nn.a = 6 AS r FROM nn;
+SELECT FALSE AS r FROM nn;
+
 x = 5 AND y = x;
-x = 5 AND y = 5;
+x = 5 AND x = y;
 
 5 = x AND y = x;
-x = 5 AND y = 5;
+x = 5 AND x = y;
 
 x = 5 OR y = x;
 x = 5 OR x = y;
 
 (x = 5 AND y = x) OR y = 1;
-(x = 5 AND y = 5) OR y = 1;
+(x = 5 AND x = y) OR y = 1;
 
 t.x = 5 AND y = x;
 t.x = 5 AND x = y;
 
 t.x = 'a' AND y = CONCAT_WS('-', t.x, 'b');
-t.x = 'a' AND y = 'a-b';
+t.x = 'a' AND y = CONCAT_WS('-', t.x, 'b');
 
 x = 5 AND y = x AND y + 1 < 5;
-FALSE;
+x = 5 AND x = y AND y < 4;
 
 x = 5 AND x = 6;
-FALSE;
+x = 5 AND x = 6;
 
 x = 5 AND (y = x OR z = 1);
 x = 5 AND (x = y OR z = 1);
@@ -1545,25 +1558,25 @@ x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
 (SELECT z = 5 FROM t WHERE y = 1) AND x = 1 AND y > 0;
 
 x = 1 AND x = y AND (SELECT z FROM t WHERE a AND (b OR c));
-(SELECT z FROM t WHERE a AND (b OR c)) AND x = 1 AND y = 1;
+(SELECT z FROM t WHERE a AND (b OR c)) AND x = 1 AND x = y;
 
 t1.a = 39 AND t2.b = t1.a AND t3.c = t2.b;
-t1.a = 39 AND t2.b = 39 AND t3.c = 39;
+t1.a = 39 AND t1.a = t2.b AND t2.b = t3.c;
 
 x = 1 AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
-x = 1;
+CASE WHEN x = 5 THEN FALSE ELSE TRUE END AND x = 1;
 
 x = 1 AND IF(x = 5, FALSE, TRUE);
-x = 1;
+CASE WHEN x = 5 THEN FALSE ELSE TRUE END AND x = 1;
 
 x = 1 AND CASE x WHEN 5 THEN FALSE ELSE TRUE END;
-x = 1;
+CASE WHEN x = 5 THEN FALSE ELSE TRUE END AND x = 1;
 
 x = y AND CASE WHEN x = 5 THEN FALSE ELSE TRUE END;
 CASE WHEN x = 5 THEN FALSE ELSE TRUE END AND x = y;
 
 x = 1 AND CASE WHEN y = 5 THEN x = z END;
-CASE WHEN y = 5 THEN z = 1 END AND x = 1;
+CASE WHEN y = 5 THEN x = z END AND x = 1;
 
 --------------------------------------
 -- Simplify Conditionals

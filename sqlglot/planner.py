@@ -123,32 +123,40 @@ class Step:
             join.source_name = step.name
             join.add_dependency(step)
             step = join
+
+        def make_operand_extractor(prefix: str):
+            # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
+            operands: dict[exp.Expr, str] = {}
+            aggregations: dict[exp.Expr, None] = {}
+            next_operand_name = name_sequence(prefix)
+
+            def extract_agg_operands(expression: exp.Expr) -> bool:
+                agg_funcs = tuple(find_all_in_scope(expression, exp.AggFunc))
+                if agg_funcs:
+                    aggregations[expression] = None
+
+                for agg in agg_funcs:
+                    for operand in agg.unnest_operands():
+                        if isinstance(operand, exp.Column):
+                            continue
+                        if operand not in operands:
+                            operands[operand] = next_operand_name()
+
+                        operand.replace(exp.column(operands[operand], quoted=True))
+
+                return bool(agg_funcs)
+
+            def set_ops_and_aggs(step) -> None:
+                step.operands = tuple(
+                    alias(operand, alias_) for operand, alias_ in operands.items()
+                )
+                step.aggregations = list(aggregations)
+
+            return extract_agg_operands, set_ops_and_aggs, aggregations
+
         # final selects in this chain of steps representing a select
         projections: list[exp.Expr] = []
-        # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
-        operands: dict[exp.Expr, str] = {}
-        aggregations: dict[exp.Expr, None] = {}
-        next_operand_name = name_sequence("_a_")
-
-        def extract_agg_operands(expression: exp.Expr) -> bool:
-            agg_funcs = tuple(find_all_in_scope(expression, exp.AggFunc))
-            if agg_funcs:
-                aggregations[expression] = None
-
-            for agg in agg_funcs:
-                for operand in agg.unnest_operands():
-                    if isinstance(operand, exp.Column):
-                        continue
-                    if operand not in operands:
-                        operands[operand] = next_operand_name()
-
-                    operand.replace(exp.column(operands[operand], quoted=True))
-
-            return bool(agg_funcs)
-
-        def set_ops_and_aggs(step) -> None:
-            step.operands = tuple(alias(operand, alias_) for operand, alias_ in operands.items())
-            step.aggregations = list(aggregations)
+        extract_agg_operands, set_ops_and_aggs, aggregations = make_operand_extractor("_a_")
 
         for e in expression.expressions:
             if find_in_scope(e, exp.AggFunc):
@@ -224,23 +232,48 @@ class Step:
         order: exp.Order | None = expression.args.get("order")
 
         if order is not None:
-            if aggregate is not None and step is aggregate:
+            if aggregate is not None:
                 for i, ordered in enumerate(order.expressions):
                     if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
-                        ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
+                        ordered.this.replace(exp.column(f"_o_{i}", aggregate.name, quoted=True))
 
                 set_ops_and_aggs(aggregate)
-            elif distinct is not None:
-                # not a DISTINCT output: FIRST() picks a row per group, like duckdb/sqlite
+
+            if distinct is not None:
+                extract_distinct_operands, set_distinct_ops_and_aggs, _ = make_operand_extractor(
+                    "_a_"
+                )
                 next_distinct_order_name = name_sequence("_o_")
 
                 for ordered in order.expressions:
-                    if ordered.this.name not in distinct.group:
-                        name = next_distinct_order_name()
-                        distinct.aggregations.append(
-                            exp.alias_(exp.First(this=ordered.this.copy()), name, quoted=True)
-                        )
-                        ordered.this.replace(exp.column(name, step.name, quoted=True))
+                    # already exactly one of DISTINCT's own group expressions
+                    if ordered.this in distinct.group.values():
+                        continue
+
+                    # a bare column is a reference to an output name, never a qualified one
+                    if (
+                        isinstance(ordered.this, exp.Column)
+                        and not ordered.this.table
+                        and ordered.this.name in distinct.group
+                    ):
+                        continue
+
+                    this = ordered.this.copy()
+
+                    # requalify a bare reference to an output name (eg "a" in "a + 1")
+                    for node in this.walk():
+                        if (
+                            isinstance(node, exp.Column)
+                            and not node.table
+                            and node.name in distinct.group
+                        ):
+                            node.replace(distinct.group[node.name].copy())
+
+                    name = next_distinct_order_name()
+                    extract_distinct_operands(exp.alias_(exp.First(this=this), name, quoted=True))
+                    ordered.this.replace(exp.column(name, step.name, quoted=True))
+
+                set_distinct_ops_and_aggs(distinct)
 
             sort = Sort()
             sort.name = step.name

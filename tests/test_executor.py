@@ -479,6 +479,33 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
 
+    def test_distinct_order_by_computed_expression(self):
+        tables = {"x": [{"a": 1}, {"a": 3}, {"a": 2}, {"a": 3}]}
+        sql = "SELECT DISTINCT a FROM x ORDER BY a + 1 DESC"
+        self.assertEqual(execute(sql, tables=tables).rows, [(3,), (2,), (1,)])
+
+    def test_distinct_group_by_order_by_aggregate(self):
+        tables = {
+            "x": [
+                {"a": 1, "b": 10},
+                {"a": 2, "b": 20},
+                {"a": 3, "b": 28},
+                {"a": 2, "b": 25},
+                {"a": 1, "b": 40},
+            ]
+        }
+        sql = "SELECT DISTINCT a FROM x GROUP BY a ORDER BY AVG(b)"
+        self.assertEqual(execute(sql, tables=tables).rows, [(2,), (1,), (3,)])
+
+    def test_distinct_order_by_column_from_different_table(self):
+        schema = {"x": {"a": "int", "id": "int"}, "y": {"a": "int", "id": "int"}}
+        tables = {
+            "x": [{"a": 1, "id": 1}, {"a": 2, "id": 2}],
+            "y": [{"a": 100, "id": 1}, {"a": 50, "id": 2}],
+        }
+        sql = "SELECT DISTINCT x.a FROM x JOIN y ON x.id = y.id ORDER BY y.a"
+        self.assertEqual(execute(sql, schema, tables=tables).rows, [(2,), (1,)])
+
     def test_offset_order_by(self):
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}
         tables = {"x": [{"a": a} for a in (3, 1, 5, 2, 4)], "y": [{"b": 7}, {"b": 6}]}

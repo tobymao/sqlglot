@@ -637,6 +637,27 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                     was_qualified = True
                     break
 
+                # A nearer scope blocks outer resolution if ownership is ambiguous.
+                matching_source_count = 0
+                if isinstance(column.this, exp.Star):
+                    has_unknown_columns = False
+                    for source_name in itertools.chain(
+                        selected_sources, source_resolver.scope.lateral_sources
+                    ):
+                        columns = source_resolver.get_source_columns(source_name)
+                        if not columns or "*" in columns:
+                            has_unknown_columns = True
+                            break
+
+                        if root.name in columns:
+                            matching_source_count += 1
+                            if matching_source_count > 1:
+                                break
+
+                    if has_unknown_columns or matching_source_count > 1:
+                        column_table = None
+                        break
+
                 column_table = source_resolver.get_table(root.name)
                 if column_table:
                     break
@@ -1059,6 +1080,21 @@ def _expand_stars(
                     pivots = chain
                     source_table = parent.alias_or_name
                     source = scope.sources.get(source_table)
+
+                # Expand from an outer scope only if local schemas are complete and contain no same-named column.
+                if source is None and scope.can_be_correlated:
+                    preserve = False
+                    for local_source_name in itertools.chain(
+                        scope.selected_sources, scope.lateral_sources
+                    ):
+                        local_columns = resolver.get_source_columns(local_source_name)
+                        if not local_columns or "*" in local_columns or table in local_columns:
+                            preserve = True
+                            break
+
+                    if preserve:
+                        new_selections.append(expression)
+                        break
 
                 if source is None:
                     # Correlated stars, e.g. (SELECT AS STRUCT x.* EXCEPT (a)), expand an outer source

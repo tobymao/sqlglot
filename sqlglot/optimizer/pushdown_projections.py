@@ -38,6 +38,41 @@ def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
     return refs
 
 
+def _has_forced_keeps(expression: exp.Expr, parent_selections: set) -> bool:
+    """Return True when this branch will keep columns beyond parent_selections."""
+    if SELECT_ALL in parent_selections:
+        return False
+
+    # Recurse on subqueries
+    if isinstance(expression, exp.Subquery):
+        return _has_forced_keeps(expression.this, parent_selections)
+
+    # Potentially recurse on set ops
+    if isinstance(expression, exp.SetOperation):
+        if expression.args.get("distinct") or isinstance(expression, (exp.Intersect, exp.Except)):
+            return True
+        # Plain UNION ALL: forced if either child is forced (by_name aligns columns differently)
+        if not expression.args.get("by_name"):
+            return _has_forced_keeps(expression.left, parent_selections) or _has_forced_keeps(
+                expression.right, parent_selections
+            )
+        return False
+
+    # non Select node type — conservatively assume no forced keeps
+    if not isinstance(expression, exp.Select):
+        return False
+
+    # ORDER BY / SORT BY col not in parent forces that col to stay
+    if _output_column_refs(expression, scoped=False) - parent_selections:
+        return True
+
+    # set-returning function outside parent's needed cols forces the projection to stay
+    return any(
+        sel.alias_or_name not in parent_selections and find_in_scope(sel, *SET_RETURNING_FUNCTIONS)
+        for sel in expression.selects
+    )
+
+
 def _is_self_referencing_cte(scope: Scope) -> bool:
     cte = scope.expression.parent
     return (
@@ -142,6 +177,21 @@ def pushdown_projections(
                         for i, select in enumerate(le.selects)
                         if select.alias_or_name in parent_selections
                     }
+
+            # If either branch will force-keep columns beyond parent_selections,
+            # #give both branches SELECT_ALL so their widths stay aligned.
+            if (
+                SELECT_ALL not in parent_selections
+                and not by_name
+                and not le.is_star
+                and not re.is_star
+                and (
+                    _has_forced_keeps(le, referenced_columns[left])
+                    or _has_forced_keeps(re, referenced_columns.get(right, {SELECT_ALL}))
+                )
+            ):
+                referenced_columns[left] = {SELECT_ALL}
+                referenced_columns[right] = {SELECT_ALL}
 
         if isinstance(scope_expression, exp.Select):
             if remove_unused_selections:

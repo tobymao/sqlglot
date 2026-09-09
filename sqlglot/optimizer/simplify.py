@@ -428,6 +428,26 @@ def extract_interval(expression: exp.Expr) -> relativedelta | None:
         return None
 
 
+def _is_exact_interval_move(op: exp.Expr, literal: exp.Expr, interval: exp.Interval) -> bool:
+    delta = extract_interval(interval)
+    value = extract_date(literal)
+
+    if delta is None or value is None:
+        return False
+
+    if not (delta.months or delta.years):
+        return True
+
+    if isinstance(op, (exp.Sub, exp.DateSub, exp.DatetimeSub)):
+        delta = -delta
+
+    moved = value - delta
+
+    # Exact iff `moved` is the only x with x + delta = value: it must map back onto `value`, and the
+    # next day must not, since clamping folds the last days of a longer month onto the same date
+    return moved + delta == value and moved + timedelta(days=1) + delta != value
+
+
 def extract_type(*expressions: exp.Expr):
     target_type = None
     for expression in expressions:
@@ -1177,6 +1197,9 @@ class Simplifier:
                     )
                 a, b = b, a
             else:
+                return expression
+
+            if isinstance(b, exp.Interval) and not _is_exact_interval_move(l, r, b):
                 return expression
 
             return expression.__class__(

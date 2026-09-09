@@ -1344,6 +1344,10 @@ class Simplifier:
         # since we already remove COALESCE at the top of this function.
         this: exp.Expr = coalesce if coalesce.expressions else coalesce.this
 
+        # The constant takes the COALESCE's side of the comparison
+        substituted = expression.copy()
+        substituted.set("this" if coalesce is expression.left else "expression", arg.copy())
+
         # This expression is more complex than when we started, but it will get simplified further
         return exp.paren(
             exp.or_(
@@ -1352,11 +1356,7 @@ class Simplifier:
                     expression.copy(),
                     copy=False,
                 ),
-                exp.and_(
-                    this.is_(exp.null()),
-                    type(expression)(this=arg.copy(), expression=other.copy()),
-                    copy=False,
-                ),
+                exp.and_(this.is_(exp.null()), substituted, copy=False),
                 copy=False,
             ),
             copy=False,

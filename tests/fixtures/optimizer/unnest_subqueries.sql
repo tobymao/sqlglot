@@ -30,10 +30,77 @@ SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y WHERE y.b = x.a);
 SELECT * FROM x LEFT JOIN (SELECT ARRAY_AGG(y.a) AS a, y.b AS _u_1 FROM y WHERE TRUE GROUP BY y.b) AS _u_0 ON _u_0._u_1 = x.a WHERE ARRAY_ANY(_u_0.a, _x -> _x = x.a);
 
 SELECT * FROM x WHERE x.a < (SELECT SUM(y.a) AS a FROM y WHERE y.a = x.a and y.a = x.b and y.b <> x.d);
-SELECT * FROM x LEFT JOIN (SELECT SUM(y.a) AS a, y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y WHERE TRUE AND TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a AND _u_0._u_1 = x.b WHERE (x.a < _u_0.a AND ARRAY_ANY(_u_0._u_2, _x -> _x <> x.d));
+SELECT * FROM x WHERE x.a < (SELECT SUM(y.a) AS a FROM y WHERE y.a = x.a AND y.a = x.b AND y.b <> x.d);
 
 SELECT * FROM x WHERE EXISTS (SELECT y.a AS a, y.b AS b FROM y WHERE x.a = y.a);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL;
+
+# title: EXISTS over a scalar aggregate always matches, it returns exactly one row
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: NOT EXISTS over a scalar aggregate never matches
+SELECT * FROM x WHERE NOT EXISTS (SELECT SUM(y.b) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE NOT TRUE;
+
+# title: EXISTS over a scalar aggregate with a HAVING is not rewritten
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a HAVING COUNT(*) = 0);
+
+# title: EXISTS over a scalar aggregate with a FETCH is not rewritten, it can return no rows
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a FETCH FIRST 0 ROWS ONLY);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a FETCH FIRST 0 ROWS ONLY);
+
+# title: EXISTS over a windowed aggregate is not a scalar aggregate
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE y.a = x.a);
+SELECT * FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: EXISTS is not folded when the aggregate belongs to a derived table inside it
+SELECT * FROM x WHERE EXISTS (SELECT * FROM (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) AS t WHERE t.c > 5);
+SELECT * FROM x WHERE EXISTS(SELECT * FROM (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) AS t WHERE t.c > 5);
+
+# title: EXISTS is not folded when the aggregate belongs to a CTE inside it
+SELECT * FROM x WHERE EXISTS (WITH t AS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) SELECT t.c AS c FROM t WHERE t.c > 5);
+SELECT * FROM x WHERE EXISTS(WITH t AS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) SELECT t.c AS c FROM t WHERE t.c > 5);
+
+# title: EXISTS is not folded when the aggregate is only one branch of a set operation
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) AS c FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+
+# title: a correlated branch of a set operation is not decorrelated, it can't be hoisted out
+SELECT * FROM x WHERE EXISTS (SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+SELECT * FROM x WHERE EXISTS(SELECT y.a AS a FROM y WHERE y.a = x.a INTERSECT SELECT z.a AS a FROM z);
+
+# title: a parenthesized correlated branch of a set operation is not decorrelated either
+SELECT * FROM x WHERE EXISTS ((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z));
+SELECT * FROM x WHERE EXISTS((SELECT COUNT(*) AS c FROM y WHERE y.a = x.a) INTERSECT (SELECT z.a AS a FROM z));
+
+SELECT * FROM x WHERE EXISTS ((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z));
+SELECT * FROM x WHERE EXISTS((SELECT y.a AS a FROM y WHERE y.a = x.a) EXCEPT (SELECT z.a AS a FROM z));
+
+# title: EXISTS over a scalar aggregate with a QUALIFY is not rewritten
+SELECT * FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a QUALIFY ROW_NUMBER() OVER () = 2);
+SELECT * FROM x WHERE EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a QUALIFY ROW_NUMBER() OVER () = 2);
+
+# title: an aggregate in a window spec still groups the subquery into a single row
+SELECT * FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY SUM(y.b)) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: a parenthesized aggregate in a window spec still groups the subquery
+SELECT * FROM x WHERE EXISTS (SELECT RANK() OVER (ORDER BY (SUM(y.b))) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: an aggregate in the arguments of a windowed function still groups the subquery
+SELECT * FROM x WHERE EXISTS (SELECT LAG(SUM(y.b)) OVER (ORDER BY 1) FROM y WHERE y.a = x.a);
+SELECT * FROM x WHERE TRUE;
+
+# title: a FILTER between the window and the aggregate leaves it windowed
+SELECT * FROM x WHERE EXISTS (SELECT SUM(y.b) FILTER(WHERE y.b > 1) OVER () FROM y WHERE y.a = x.a);
+SELECT * FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: EXISTS over a scalar aggregate is folded inside an outer window function
+SELECT COUNT(CASE WHEN EXISTS(SELECT COUNT(*) FROM y WHERE y.a = x.a) THEN 1 END) OVER () FROM x;
+SELECT COUNT(CASE WHEN TRUE THEN 1 END) OVER () FROM x;
 
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y LIMIT 10);
@@ -70,7 +137,7 @@ SELECT x.a > (SELECT SUM(y.a) AS b FROM y) FROM x;
 SELECT x.a > _u_0.b FROM x CROSS JOIN (SELECT SUM(y.a) AS b FROM y) AS _u_0;
 
 SELECT (SELECT MAX(t2.c1) AS c1 FROM t2 WHERE t2.c2 = t1.c2 AND t2.c3 <= TRUNC(t1.c3)) AS c FROM t1;
-SELECT _u_0.c1 AS c FROM t1 LEFT JOIN (SELECT MAX(t2.c1) AS c1, t2.c2 AS _u_1, MAX(t2.c3) AS _u_2 FROM t2 WHERE TRUE AND TRUE GROUP BY t2.c2) AS _u_0 ON _u_0._u_1 = t1.c2 WHERE _u_0._u_2 <= TRUNC(t1.c3);
+SELECT (SELECT MAX(t2.c1) AS c1 FROM t2 WHERE t2.c2 = t1.c2 AND t2.c3 <= TRUNC(t1.c3)) AS c FROM t1;
 
 SELECT s.t AS t FROM s WHERE 1 IN (SELECT t.a AS a FROM t WHERE t.b > 1);
 SELECT s.t AS t FROM s LEFT JOIN (SELECT t.a AS a FROM t WHERE t.b > 1 GROUP BY t.a) AS _u_0 ON 1 = _u_0.a WHERE NOT _u_0.a IS NULL;
@@ -144,3 +211,87 @@ SELECT x.id FROM x WHERE NOT EXISTS(SELECT 1 FROM y WHERE NOT (y.id = x.id));
 # title: positive equality with NOT operand is unnested
 SELECT x.flag FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.flag = (NOT x.flag));
 SELECT x.flag FROM x LEFT JOIN (SELECT y.flag AS _u_1 FROM y WHERE TRUE GROUP BY y.flag) AS _u_0 ON _u_0._u_1 = (NOT x.flag) WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with a single non-equality key is unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y WHERE TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE (NOT _u_0._u_1 IS NULL AND ARRAY_ANY(_u_0._u_2, _x -> _x > x.b));
+
+# title: exists with multiple non-equality keys pairs them in a struct
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b AND y.c < x.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(STRUCT(y.b AS _u_2, y.c AS _u_3)) AS _u_4 FROM y WHERE TRUE AND TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE (NOT _u_0._u_1 IS NULL AND ARRAY_ANY(_u_0._u_4, _x -> _x._u_2 > x.b AND _x._u_3 < x.c));
+
+# title: in with a non-equality key is not unnested
+SELECT x.a FROM x WHERE x.c IN (SELECT y.c FROM y WHERE y.a = x.a AND y.b > x.b);
+SELECT x.a FROM x WHERE x.c IN (SELECT y.c FROM y WHERE y.a = x.a AND y.b > x.b);
+
+# title: exists with multiple non-equality predicates on the same key
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b AND y.b < x.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y WHERE TRUE AND TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE (NOT _u_0._u_1 IS NULL AND ARRAY_ANY(_u_0._u_2, _x -> _x > x.b AND _x < x.c));
+
+# title: exists with a non-equality key that is also the projected value
+SELECT x.a FROM x WHERE EXISTS (SELECT y.b AS b FROM y WHERE y.a = x.a AND y.b > x.b);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1, ARRAY_AGG(y.b) AS _u_2 FROM y WHERE TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE (NOT _u_0._u_1 IS NULL AND ARRAY_ANY(_u_0._u_2, _x -> _x > x.b));
+
+# title: exists with a non-equality predicate on an equality key checks it on the join
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.a > x.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE AND TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a AND _u_0._u_1 > x.c WHERE NOT _u_0._u_1 IS NULL;
+
+# title: predicate with an inner column on the outer side is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b + y.c);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b + y.c);
+
+# title: predicate with an outer column on the key side is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a + x.b = x.a);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a + x.b = x.a);
+
+# title: exists with a group by drops it so that the join stays unique on its keys
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: not exists with a group by
+SELECT x.a FROM x WHERE NOT EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT NOT _u_0._u_1 IS NULL;
+
+# title: exists with an aggregate projection and a group by is not always true
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a GROUP BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with distinct drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT DISTINCT y.c FROM y WHERE y.a = x.a);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with an order by drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a ORDER BY y.c);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with a group by and having is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c HAVING COUNT(*) > 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c HAVING COUNT(*) > 1);
+
+# title: exists with a group by and qualify is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c QUALIFY ROW_NUMBER() OVER (ORDER BY y.c) = 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY y.c QUALIFY ROW_NUMBER() OVER (ORDER BY y.c) = 1);
+
+# title: exists with a non-equality key and having is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b GROUP BY y.a HAVING COUNT(*) > 1);
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a AND y.b > x.b GROUP BY y.a HAVING COUNT(*) > 1);
+
+# title: exists with a rollup is not unnested since it returns a row even for empty input
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY ROLLUP (y.c));
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ROLLUP (y.c));
+
+# title: exists with an empty grouping set is not unnested
+SELECT x.a FROM x WHERE EXISTS (SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());
+SELECT x.a FROM x WHERE EXISTS(SELECT 1 FROM y WHERE y.a = x.a GROUP BY ());
+
+# title: exists with group by all and only aggregate projections is always true
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x WHERE TRUE;
+
+# title: exists with group by all and only windowed aggregate projections is a row check
+SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) OVER () FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: exists with group by all and a non-aggregate projection drops it
+SELECT x.a FROM x WHERE EXISTS (SELECT y.c, COUNT(*) FROM y WHERE y.a = x.a GROUP BY ALL);
+SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;

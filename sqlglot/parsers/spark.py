@@ -53,6 +53,17 @@ def _build_dateadd(args: list) -> exp.Expr:
 
 
 class SparkParser(Spark2Parser):
+    ID_VAR_TOKENS = Spark2Parser.ID_VAR_TOKENS | {TokenType.VALUES}
+    TABLE_ALIAS_TOKENS = Spark2Parser.TABLE_ALIAS_TOKENS | {TokenType.VALUES}
+    ALIAS_TOKENS = Spark2Parser.ALIAS_TOKENS | {TokenType.VALUES}
+    VALUES_IDENTIFIER_FOLLOW_TOKENS = Spark2Parser.TABLE_TERMINATORS | {
+        TokenType.ALIAS,
+        TokenType.DOT,
+        TokenType.PIVOT,
+        TokenType.TABLE_SAMPLE,
+        TokenType.UNPIVOT,
+    }
+
     NO_PAREN_FUNCTIONS = {
         **Spark2Parser.NO_PAREN_FUNCTIONS,
         TokenType.SESSION_USER: exp.SessionUser,
@@ -110,6 +121,20 @@ class SparkParser(Spark2Parser):
         **Spark2Parser.PLACEHOLDER_PARSERS,
         TokenType.L_BRACE: lambda self: self._parse_query_parameter(),
     }
+
+    def _parse_statement(self) -> exp.Expr | None:
+        if self._match(TokenType.VALUES, advance=False):
+            values = super()._parse_derived_table_values()
+            return self._parse_query_modifiers(self._parse_set_operations(values))
+        return super()._parse_statement()
+
+    def _parse_derived_table_values(self) -> exp.Values | None:
+        if (
+            self._curr.token_type == TokenType.VALUES
+            and self._next.token_type in self.VALUES_IDENTIFIER_FOLLOW_TOKENS
+        ):
+            return None
+        return super()._parse_derived_table_values()
 
     def _parse_query_parameter(self) -> exp.Expr | None:
         this = self._parse_id_var()

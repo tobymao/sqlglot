@@ -281,6 +281,52 @@ TBLPROPERTIES (
             },
         )
 
+    def test_values_as_identifier(self):
+        self.validate_all(
+            "SELECT values.transaction_id FROM (SELECT 1 AS transaction_id) AS values",
+            read={
+                "spark": "SELECT values.transaction_id FROM (SELECT 1 AS transaction_id) AS values",
+                "databricks": "SELECT values.transaction_id FROM (SELECT 1 AS transaction_id) AS values",
+            },
+        )
+        self.validate_all(
+            "WITH values AS (SELECT 1) SELECT * FROM values",
+            read={
+                "spark": "WITH values AS (SELECT 1) SELECT * FROM values",
+                "databricks": "WITH values AS (SELECT 1) SELECT * FROM values",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS x) SELECT * FROM t AS values",
+            read={
+                "spark": "WITH t AS (SELECT 1 AS x) SELECT * FROM t values",
+                "databricks": "WITH t AS (SELECT 1 AS x) SELECT * FROM t values",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 AS values",
+            read={
+                "spark": "SELECT 1 values",
+                "databricks": "SELECT 1 values",
+            },
+        )
+        self.validate_all(
+            "WITH values AS (SELECT 1 AS x) SELECT * FROM values TABLESAMPLE (10 PERCENT)",
+            read={
+                "spark": "WITH values AS (SELECT 1 AS x) SELECT * FROM values TABLESAMPLE (10 PERCENT)",
+                "databricks": "WITH values AS (SELECT 1 AS x) SELECT * FROM values TABLESAMPLE (10 PERCENT)",
+            },
+        )
+
+    def test_values_statement_without_parentheses(self):
+        self.validate_all(
+            "VALUES (1)",
+            read={
+                "spark": "VALUES 1",
+                "databricks": "VALUES 1",
+            },
+        )
+
     def test_spark(self):
         # COLLATE on CHAR/VARCHAR should be preserved when the type is rewritten to STRING
         self.validate_identity(

@@ -1193,6 +1193,9 @@ TBLPROPERTIES (
             },
         )
 
+        self.validate_identity("WITH union AS (SELECT 1 AS x) SELECT * FROM union")
+        self.validate_identity("WITH t AS (SELECT 1 AS union) SELECT union FROM t")
+
     def test_named_struct(self):
         self.validate_all(
             "SELECT named_struct('a', 1, 'b', 'x')",

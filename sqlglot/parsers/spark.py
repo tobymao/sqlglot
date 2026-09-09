@@ -53,6 +53,11 @@ def _build_dateadd(args: list) -> exp.Expr:
 
 
 class SparkParser(Spark2Parser):
+    ID_VAR_TOKENS = {
+        *Spark2Parser.ID_VAR_TOKENS,
+        TokenType.UNION,
+    }
+
     NO_PAREN_FUNCTIONS = {
         **Spark2Parser.NO_PAREN_FUNCTIONS,
         TokenType.SESSION_USER: exp.SessionUser,

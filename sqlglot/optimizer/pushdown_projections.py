@@ -38,27 +38,30 @@ def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
     return refs
 
 
-def _has_forced_keeps(expression: exp.Expr, parent_selections: set) -> bool:
-    """Return True when this branch will keep columns beyond parent_selections."""
+def _setop_forces_all_columns(expression: exp.SetOperation) -> bool:
+    return bool(expression.args.get("distinct")) or isinstance(
+        expression, (exp.Intersect, exp.Except)
+    )
+
+
+def _arm_stays_wide(expression: exp.Expr, parent_selections: set) -> bool:
+    """Return True when this arm will produce more columns than parent_selections requires."""
     if SELECT_ALL in parent_selections:
         return False
 
-    # Recurse on subqueries
     if isinstance(expression, exp.Subquery):
-        return _has_forced_keeps(expression.this, parent_selections)
+        return _arm_stays_wide(expression.this, parent_selections)
 
-    # Potentially recurse on set ops
     if isinstance(expression, exp.SetOperation):
-        if expression.args.get("distinct") or isinstance(expression, (exp.Intersect, exp.Except)):
+        if _setop_forces_all_columns(expression):
             return True
-        # Plain UNION ALL: forced if either child is forced (by_name aligns columns differently)
+        # Plain UNION ALL: wide if either child is wide (by_name aligns columns differently)
         if not expression.args.get("by_name"):
-            return _has_forced_keeps(expression.left, parent_selections) or _has_forced_keeps(
+            return _arm_stays_wide(expression.left, parent_selections) or _arm_stays_wide(
                 expression.right, parent_selections
             )
         return False
 
-    # non Select node type — conservatively assume no forced keeps
     if not isinstance(expression, exp.Select):
         return False
 
@@ -143,8 +146,11 @@ def pushdown_projections(
         # can't remove any columns, otherwise we risk changing the query's semantics. Also, we
         # conservatively skip pruning on recursive CTEs that read their own output for now.
         if (
-            scope_expression.args.get("distinct")
-            or isinstance(scope_expression, (exp.Intersect, exp.Except))
+            (
+                isinstance(scope_expression, exp.SetOperation)
+                and _setop_forces_all_columns(scope_expression)
+            )
+            or scope_expression.args.get("distinct")
             or _is_self_referencing_cte(scope)
         ):
             parent_selections = {SELECT_ALL}
@@ -197,8 +203,8 @@ def pushdown_projections(
                 and not le.is_star
                 and not re.is_star
                 and (
-                    _has_forced_keeps(le, referenced_columns[left])
-                    or _has_forced_keeps(re, referenced_columns.get(right, {SELECT_ALL}))
+                    _arm_stays_wide(le, referenced_columns[left])
+                    or _arm_stays_wide(re, referenced_columns.get(right, {SELECT_ALL}))
                 )
             ):
                 referenced_columns[left] = {SELECT_ALL}

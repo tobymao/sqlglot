@@ -62,8 +62,19 @@ def _has_forced_keeps(expression: exp.Expr, parent_selections: set) -> bool:
     if not isinstance(expression, exp.Select):
         return False
 
+    # DISTINCT dedup uses the full row, so all columns must stay
+    if expression.args.get("distinct"):
+        return True
+
     # ORDER BY / SORT BY col not in parent forces that col to stay
     if _output_column_refs(expression, scoped=False) - parent_selections:
+        return True
+
+    # Implicit GROUP BY ALL keeps every non-aggregate projection as a grouping key
+    if _is_implicit_group_by_all(expression) and any(
+        sel.alias_or_name not in parent_selections and not find_in_scope(sel, exp.AggFunc)
+        for sel in expression.selects
+    ):
         return True
 
     # set-returning function outside parent's needed cols forces the projection to stay

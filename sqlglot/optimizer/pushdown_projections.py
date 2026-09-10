@@ -163,7 +163,10 @@ def pushdown_projections(
                     if scope.pivots or isinstance(select, exp.QueryTransform):
                         columns: set[object] = {SELECT_ALL}
                     else:
-                        columns = selects.get(name) or set()
+                        unqualified = selects.get("", set())
+                        columns = (
+                            {SELECT_ALL} if name in unqualified else (selects.get(name) or set())
+                        )
 
                     referenced_columns[source].update(columns)
 

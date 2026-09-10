@@ -394,7 +394,7 @@ def cast_as_datetime(
         return None
 
 
-def cast_value(value: datetime | date | str, to: exp.DataType) -> date | date | None:
+def cast_value(value: datetime | date | str, to: exp.DataType) -> date | None:
     if not value:
         return None
     if to.is_type(exp.DType.DATE):
@@ -404,7 +404,7 @@ def cast_value(value: datetime | date | str, to: exp.DataType) -> date | date | 
     return None
 
 
-def extract_date(cast: exp.Expr) -> date | date | None:
+def extract_date(cast: exp.Expr) -> date | None:
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):

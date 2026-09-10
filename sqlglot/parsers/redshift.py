@@ -31,6 +31,8 @@ def _build_date_delta(expr_type: Type[E]) -> t.Callable[[list], E]:
 
 
 class RedshiftParser(PostgresParser):
+    ID_VAR_TOKENS = {*PostgresParser.ID_VAR_TOKENS, TokenType.QUALIFY}
+
     FUNCTIONS = {
         **{k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "GET_BIT"},
         "ADD_MONTHS": lambda args: exp.TsOrDsAdd(

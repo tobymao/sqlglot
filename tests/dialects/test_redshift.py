@@ -521,6 +521,9 @@ ORDER BY
         self.validate_identity("SELECT * FROM (SELECT 1 AS EXCLUDE) AS t")
         self.validate_identity("SELECT 1 AS EXCLUDE, 2 AS foo")
 
+        self.validate_identity("WITH qualify AS (SELECT 1 AS x) SELECT * FROM qualify")
+        self.validate_identity("SELECT qualify FROM t")
+
     def test_values(self):
         # Test crazy-sized VALUES clause to UNION ALL conversion to ensure we don't get RecursionError
         values = [str(v) for v in range(0, 10000)]

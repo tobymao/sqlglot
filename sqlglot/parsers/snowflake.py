@@ -348,9 +348,12 @@ class SnowflakeParser(parser.Parser):
         TokenType.POLICY,
         TokenType.POOL,
         TokenType.ROLE,
+        TokenType.ROLLBACK,
         TokenType.RULE,
         TokenType.VOLUME,
     }
+
+    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.ROLLBACK}
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
         TokenType.INTEGRATION,

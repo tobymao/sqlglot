@@ -506,6 +506,22 @@ class TestExecutor(unittest.TestCase):
         sql = "SELECT DISTINCT x.a FROM x JOIN y ON x.id = y.id ORDER BY y.a"
         self.assertEqual(execute(sql, schema, tables=tables).rows, [(2,), (1,)])
 
+    def test_distinct_order_by_aliased_projection(self):
+        tables = {"x": [{"a": 1}, {"a": 3}, {"a": 2}, {"a": 3}]}
+
+        for sql, expected in (
+            ("SELECT DISTINCT a AS z FROM x ORDER BY a DESC", [(3,), (2,), (1,)]),
+            ("SELECT DISTINCT a AS z FROM x ORDER BY x.a DESC", [(3,), (2,), (1,)]),
+            ("SELECT DISTINCT a + 1 AS z FROM x ORDER BY a + 1 DESC", [(4,), (3,), (2,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, expected)
+
+    def test_distinct_order_by_unaliased_projection(self):
+        tables = {"x": [{"c": "a"}, {"c": "c"}, {"c": "b"}, {"c": "c"}]}
+        sql = "SELECT DISTINCT UPPER(c) FROM x ORDER BY UPPER(c) DESC"
+        self.assertEqual(execute(sql, tables=tables).rows, [("C",), ("B",), ("A",)])
+
     def test_offset_order_by(self):
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}
         tables = {"x": [{"a": a} for a in (3, 1, 5, 2, 4)], "y": [{"b": 7}, {"b": 6}]}

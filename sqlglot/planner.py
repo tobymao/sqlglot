@@ -246,8 +246,13 @@ class Step:
                 next_distinct_order_name = name_sequence("_o_")
 
                 for ordered in order.expressions:
-                    # already exactly one of DISTINCT's own group expressions
-                    if ordered.this in distinct.group.values():
+                    # already exactly one of DISTINCT's own group expressions -- point at its
+                    # output name instead, since the source it was read from won't survive
+                    group_name = next(
+                        (name for name, e in distinct.group.items() if e == ordered.this), None
+                    )
+                    if group_name:
+                        ordered.this.replace(exp.column(group_name, step.name, quoted=True))
                         continue
 
                     # a bare column is a reference to an output name, never a qualified one
@@ -260,14 +265,17 @@ class Step:
 
                     this = ordered.this.copy()
 
-                    # requalify a bare reference to an output name (eg "a" in "a + 1")
-                    for node in this.walk():
-                        if (
-                            isinstance(node, exp.Column)
-                            and not node.table
-                            and node.name in distinct.group
-                        ):
-                            node.replace(distinct.group[node.name].copy())
+                    # requalify a bare reference to an output name (eg "a" in "a + 1");
+                    # collect matches before replacing so we don't mutate mid-walk
+                    to_requalify = [
+                        node
+                        for node in this.walk()
+                        if isinstance(node, exp.Column)
+                        and not node.table
+                        and node.name in distinct.group
+                    ]
+                    for node in to_requalify:
+                        node.replace(distinct.group[node.name].copy())
 
                     name = next_distinct_order_name()
                     extract_distinct_operands(exp.alias_(exp.First(this=this), name, quoted=True))

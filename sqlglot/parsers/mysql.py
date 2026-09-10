@@ -397,6 +397,17 @@ class MySQLParser(parser.Parser):
         index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
         expressions = self._parse_wrapped_csv(self._parse_ordered)
 
+        return self.expression(
+            exp.IndexColumnConstraint(
+                this=this,
+                expressions=expressions,
+                kind=kind,
+                index_type=index_type,
+                options=self._parse_index_constraint_options(),
+            )
+        )
+
+    def _parse_index_constraint_options(self) -> list[exp.IndexConstraintOption]:
         options = []
         while True:
             if self._match_text_seq("KEY_BLOCK_SIZE"):
@@ -426,15 +437,16 @@ class MySQLParser(parser.Parser):
 
             options.append(opt)
 
-        return self.expression(
-            exp.IndexColumnConstraint(
-                this=this,
-                expressions=expressions,
-                kind=kind,
-                index_type=index_type,
-                options=options,
-            )
-        )
+        return options
+
+    def _parse_unique(self) -> exp.UniqueColumnConstraint:
+        unique = super()._parse_unique()
+
+        # UNIQUE [INDEX | KEY] [index_name] (key_part,...) [index_option] ...
+        if isinstance(unique.this, exp.Schema):
+            unique.set("options", self._parse_index_constraint_options())
+
+        return unique
 
     def _parse_show_mysql(
         self,

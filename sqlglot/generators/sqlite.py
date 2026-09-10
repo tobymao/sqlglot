@@ -347,12 +347,7 @@ class SQLiteGenerator(generator.Generator):
         if not expression.args.get("ignore_nulls"):
             return rename_func(name)(self, expression)
 
-        # GREATEST/LEAST ignore NULLs, but SQLite's multi-argument MAX/MIN
-        # return NULL if any argument is NULL. Emit a rotation of COALESCE
-        # calls so that every argument is the first argument of exactly one
-        # COALESCE, which then returns it if it's non-NULL. Comparing all of
-        # those yields the ignored-NULLs result, and an all-NULL input still
-        # yields NULL:
+        # SQLite's multi-argument MAX/MIN return NULL if any argument is NULL.
         # GREATEST(a, b, c) -> MAX(COALESCE(a, b, c), COALESCE(b, c, a), COALESCE(c, a, b)).
         args = [expression.this, *expression.expressions]
 

@@ -967,11 +967,10 @@ class Table(Expression, Selectable):
 
     @property
     def name(self) -> str:
-        if isinstance(self.this, DynamicIdentifier):
-            return self.this.name
-        if not self.this or isinstance(self.this, Func):
+        this = self.this
+        if not this or (isinstance(this, Func) and not isinstance(this, DynamicIdentifier)):
             return ""
-        return self.this.name
+        return this.name
 
     @property
     def db(self) -> str:

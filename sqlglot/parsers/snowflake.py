@@ -361,6 +361,7 @@ class SnowflakeParser(parser.Parser):
         TokenType.POLICY,
         TokenType.POOL,
         TokenType.ROLE,
+        TokenType.ROLLBACK,
         TokenType.RULE,
         TokenType.VOLUME,
     }
@@ -374,6 +375,7 @@ class SnowflakeParser(parser.Parser):
             TokenType.POLICY,
             TokenType.POOL,
             TokenType.ROLE,
+            TokenType.ROLLBACK,
             TokenType.RULE,
             TokenType.SEMI,
             TokenType.VOLUME,

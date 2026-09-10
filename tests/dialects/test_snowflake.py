@@ -4563,6 +4563,11 @@ class TestSnowflake(Validator):
             "WITH rollback(rollback) AS (SELECT 1) SELECT rollback.rollback FROM rollback"
         )
         self.validate_identity("SELECT ROLLBACK(3)")
+        self.validate_identity("SELECT 1 rollback", "SELECT 1 AS rollback")
+        self.validate_identity(
+            "SELECT rollback.x FROM (SELECT 1 AS x) rollback",
+            "SELECT rollback.x FROM (SELECT 1 AS x) AS rollback",
+        )
         self.assertIsInstance(self.parse_one("ROLLBACK WORK"), exp.Rollback)
 
     def test_stored_procedures(self):

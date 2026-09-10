@@ -183,6 +183,10 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD INDEX `i` (`c`)",
         )
         self.validate_identity(
+            "ALTER TABLE t ADD UNIQUE KEY uq (a) USING BTREE COMMENT 'why' INVISIBLE",
+            "ALTER TABLE t ADD UNIQUE uq (a) USING BTREE COMMENT 'why' INVISIBLE",
+        )
+        self.validate_identity(
             "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
             "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
         )
@@ -201,6 +205,10 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE t (a INT, UNIQUE KEY `Key` (a))",
             "CREATE TABLE t (a INT, UNIQUE `Key` (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE foo (a BIGINT, UNIQUE KEY b (a) USING BTREE COMMENT 'c' VISIBLE, UNIQUE KEY d (a) KEY_BLOCK_SIZE=8)",
+            "CREATE TABLE foo (a BIGINT, UNIQUE b (a) USING BTREE COMMENT 'c' VISIBLE, UNIQUE d (a) KEY_BLOCK_SIZE = 8)",
         )
         self.validate_identity(
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
@@ -1885,6 +1893,18 @@ COMMENT='客户账户表'"""
 
         expr = self.parse_one("ALTER TABLE t ADD COLUMN c INT INVISIBLE")
         self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))
+
+    def test_unique_key_index_options(self):
+        unique = self.parse_one(
+            "CREATE TABLE t (a INT, UNIQUE KEY u (a) INVISIBLE)"
+        ).this.expressions[1]
+        self.assertIs(unique.args["options"][0].args["visible"], False)
+
+        columns = self.parse_one(
+            "CREATE TABLE t (a INT UNIQUE COMMENT 'c', b INT UNIQUE INVISIBLE)"
+        ).this.expressions
+        self.assertIsInstance(columns[0].constraints[1].kind, exp.CommentColumnConstraint)
+        self.assertIsInstance(columns[1].constraints[1].kind, exp.InvisibleColumnConstraint)
 
     def test_alter_table_auto_increment(self):
         prop = self.parse_one("ALTER TABLE t AUTO_INCREMENT=3000000000").find(

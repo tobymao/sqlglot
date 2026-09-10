@@ -165,6 +165,16 @@ class TestSQLite(Validator):
             "SELECT MIN(COALESCE(3, NULL, 1), COALESCE(NULL, 1, 3), COALESCE(1, 3, NULL))",
             read={"postgres": "SELECT LEAST(3, NULL, 1)"},
         )
+        # MySQL GREATEST/LEAST propagate NULLs (same as SQLite), so no COALESCE
+        # rotation is needed -- just rename to MAX/MIN.
+        self.validate_all(
+            "SELECT MAX(a, b) FROM t",
+            read={"mysql": "SELECT GREATEST(a, b) FROM t"},
+        )
+        self.validate_all(
+            "SELECT MIN(a, b) FROM t",
+            read={"mysql": "SELECT LEAST(a, b) FROM t"},
+        )
         # CONCAT skips NULL args in these dialects, but || propagates it, so the
         # operands have to keep the COALESCE wrapping the other targets get.
         self.validate_all(

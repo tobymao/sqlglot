@@ -342,8 +342,9 @@ class SQLiteGenerator(generator.Generator):
         if not expression.expressions:
             return self.sql(expression, "this")
 
+        name = "MAX" if isinstance(expression, exp.Greatest) else "MIN"
+
         if not expression.args.get("ignore_nulls"):
-            name = "MAX" if isinstance(expression, exp.Greatest) else "MIN"
             return rename_func(name)(self, expression)
 
         # GREATEST/LEAST ignore NULLs, but SQLite's multi-argument MAX/MIN
@@ -354,14 +355,13 @@ class SQLiteGenerator(generator.Generator):
         # yields NULL:
         # GREATEST(a, b, c) -> MAX(COALESCE(a, b, c), COALESCE(b, c, a), COALESCE(c, a, b)).
         args = [expression.this, *expression.expressions]
-        aggregate = exp.Max if isinstance(expression, exp.Greatest) else exp.Min
 
         coalesces = []
         for i in range(len(args)):
             rotated = args[i:] + args[:i]
             coalesces.append(exp.Coalesce(this=rotated[0], expressions=rotated[1:]))
 
-        return self.sql(aggregate(expressions=coalesces))
+        return self.func(name, *coalesces)
 
     def greatest_sql(self, expression: exp.Greatest) -> str:
         return self._greatest_least_sql(expression)

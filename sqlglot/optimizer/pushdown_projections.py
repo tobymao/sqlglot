@@ -49,42 +49,50 @@ def _arm_stays_wide(expression: exp.Expr, parent_selections: set) -> bool:
     if SELECT_ALL in parent_selections:
         return False
 
-    if isinstance(expression, exp.Subquery):
-        return _arm_stays_wide(expression.this, parent_selections)
+    stack = [expression]
+    while stack:
+        node = stack.pop()
 
-    if isinstance(expression, exp.SetOperation):
-        if _setop_forces_all_columns(expression):
+        if isinstance(node, exp.Subquery):
+            stack.append(node.this)
+            continue
+
+        if isinstance(node, exp.SetOperation):
+            if _setop_forces_all_columns(node):
+                return True
+            # Plain UNION ALL: wide if either child is wide (by_name aligns columns differently)
+            if not node.args.get("by_name"):
+                stack.append(node.left)
+                stack.append(node.right)
+            continue
+
+        if not isinstance(node, exp.Select):
+            continue
+
+        # DISTINCT dedup uses the full row, so all columns must stay
+        if node.args.get("distinct"):
             return True
-        # Plain UNION ALL: wide if either child is wide (by_name aligns columns differently)
-        if not expression.args.get("by_name"):
-            return _arm_stays_wide(expression.left, parent_selections) or _arm_stays_wide(
-                expression.right, parent_selections
-            )
-        return False
 
-    if not isinstance(expression, exp.Select):
-        return False
+        # ORDER BY / SORT BY col not in parent forces that col to stay
+        if _output_column_refs(node, scoped=False) - parent_selections:
+            return True
 
-    # DISTINCT dedup uses the full row, so all columns must stay
-    if expression.args.get("distinct"):
-        return True
+        # Implicit GROUP BY ALL keeps every non-aggregate projection as a grouping key
+        if _is_implicit_group_by_all(node) and any(
+            sel.alias_or_name not in parent_selections and not find_in_scope(sel, exp.AggFunc)
+            for sel in node.selects
+        ):
+            return True
 
-    # ORDER BY / SORT BY col not in parent forces that col to stay
-    if _output_column_refs(expression, scoped=False) - parent_selections:
-        return True
+        # set-returning function outside parent's needed cols forces the projection to stay
+        if any(
+            sel.alias_or_name not in parent_selections
+            and find_in_scope(sel, *SET_RETURNING_FUNCTIONS)
+            for sel in node.selects
+        ):
+            return True
 
-    # Implicit GROUP BY ALL keeps every non-aggregate projection as a grouping key
-    if _is_implicit_group_by_all(expression) and any(
-        sel.alias_or_name not in parent_selections and not find_in_scope(sel, exp.AggFunc)
-        for sel in expression.selects
-    ):
-        return True
-
-    # set-returning function outside parent's needed cols forces the projection to stay
-    return any(
-        sel.alias_or_name not in parent_selections and find_in_scope(sel, *SET_RETURNING_FUNCTIONS)
-        for sel in expression.selects
-    )
+    return False
 
 
 def _is_self_referencing_cte(scope: Scope) -> bool:

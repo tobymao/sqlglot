@@ -124,19 +124,16 @@ class TestSQLite(Validator):
         self.validate_all(
             "SELECT LIKE('%y%', 'xyz', '')", write={"sqlite": "SELECT 'xyz' LIKE '%y%' ESCAPE ''"}
         )
+        # LEAST/GREATEST from other dialects is covered by test_least_greatest,
+        # because whether the arguments need NULL compensation depends on the
+        # source dialect's semantics.
         self.validate_all(
             "SELECT MIN(a, b) FROM t",
-            read={
-                "postgres": "SELECT LEAST(a, b) FROM t",
-                "sqlite": "SELECT MIN(a, b) FROM t",
-            },
+            read={"sqlite": "SELECT MIN(a, b) FROM t"},
         )
         self.validate_all(
             "SELECT MAX(a, b) FROM t",
-            read={
-                "postgres": "SELECT GREATEST(a, b) FROM t",
-                "sqlite": "SELECT MAX(a, b) FROM t",
-            },
+            read={"sqlite": "SELECT MAX(a, b) FROM t"},
         )
         # CONCAT skips NULL args in these dialects, but || propagates it, so the
         # operands have to keep the COALESCE wrapping the other targets get.
@@ -345,6 +342,48 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT STRFTIME('%Y-%m-%d', CURRENT_TIMESTAMP)",
             },
         )
+
+    def test_least_greatest(self):
+        # SQLite's multi-argument MIN/MAX return NULL if any argument is NULL,
+        # so a dialect that ignores NULLs needs its arguments compensated.
+        self.validate_all(
+            "SELECT MAX(COALESCE(a, b), COALESCE(b, a))",
+            read={
+                "postgres": "SELECT GREATEST(a, b)",
+                "duckdb": "SELECT GREATEST(a, b)",
+                "spark": "SELECT GREATEST(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN(COALESCE(a, b), COALESCE(b, a))",
+            read={
+                "postgres": "SELECT LEAST(a, b)",
+                "duckdb": "SELECT LEAST(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT MAX(COALESCE(a, b, c), COALESCE(b, c, a), COALESCE(c, a, b))",
+            read={"postgres": "SELECT GREATEST(a, b, c)"},
+        )
+
+        # Dialects whose GREATEST/LEAST are already NULL-if-any agree with
+        # SQLite's MIN/MAX and must not be rewritten.
+        self.validate_all(
+            "SELECT MAX(a, b)",
+            read={
+                "bigquery": "SELECT GREATEST(a, b)",
+                "mysql": "SELECT GREATEST(a, b)",
+                "presto": "SELECT GREATEST(a, b)",
+            },
+        )
+        self.validate_all(
+            "SELECT MIN(a, b)",
+            read={"bigquery": "SELECT LEAST(a, b)", "mysql": "SELECT LEAST(a, b)"},
+        )
+
+        # A single argument is the value itself, in either direction.
+        self.validate_all("SELECT a", read={"postgres": "SELECT GREATEST(a)"})
+        self.validate_all("SELECT a", read={"bigquery": "SELECT LEAST(a)"})
 
     def test_datediff(self):
         self.validate_all(

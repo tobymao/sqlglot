@@ -338,17 +338,35 @@ class SQLiteGenerator(generator.Generator):
         separator = expression.args.get("separator")
         return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
 
-    def least_sql(self, expression: exp.Least) -> str:
-        if expression.expressions:
-            return rename_func("MIN")(self, expression)
+    def _min_max_sql(self, expression: exp.Least | exp.Greatest, name: str) -> str:
+        if not expression.expressions:
+            return self.sql(expression, "this")
 
-        return self.sql(expression, "this")
+        if not expression.args.get("ignore_nulls"):
+            # The source dialect and SQLite agree: NULL if any argument is NULL.
+            return rename_func(name)(self, expression)
+
+        # SQLite's multi-argument MIN/MAX return NULL if any argument is NULL,
+        # while the source dialect ignores NULLs. Falling each argument back to
+        # the others keeps every operand non-NULL unless all of them are, which
+        # is exactly the source semantics.
+        args = [expression.this, *expression.expressions]
+        return self.func(
+            name,
+            *(
+                exp.Coalesce(
+                    this=arg.copy(),
+                    expressions=[other.copy() for other in args[index + 1 :] + args[:index]],
+                )
+                for index, arg in enumerate(args)
+            ),
+        )
+
+    def least_sql(self, expression: exp.Least) -> str:
+        return self._min_max_sql(expression, "MIN")
 
     def greatest_sql(self, expression: exp.Greatest) -> str:
-        if expression.expressions:
-            return rename_func("MAX")(self, expression)
-
-        return self.sql(expression, "this")
+        return self._min_max_sql(expression, "MAX")
 
     def transaction_sql(self, expression: exp.Transaction) -> str:
         this = expression.this

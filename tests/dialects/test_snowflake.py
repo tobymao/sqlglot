@@ -782,6 +782,15 @@ class TestSnowflake(Validator):
         self.validate_identity("WITH x AS (SELECT 1 AS foo) SELECT IDENTIFIER('foo') FROM x")
         self.validate_identity("SELECT IDENTIFIER($my_function_name)()")
         self.validate_identity("SELECT IDENTIFIER('speed_of_light')()")
+
+        for sql, name in (
+            ("SELECT * FROM IDENTIFIER(:tbl)", "tbl"),
+            ("SELECT * FROM IDENTIFIER($tbl)", "tbl"),
+            ("SELECT * FROM IDENTIFIER('mytable')", "mytable"),
+        ):
+            table = self.validate_identity(sql).find(exp.Table)
+            self.assertIsInstance(table.this, exp.DynamicIdentifier)
+            self.assertEqual(table.name, name)
         self.validate_all(
             "SELECT IDENTIFIER('my_func')(1, 2)",
             write={

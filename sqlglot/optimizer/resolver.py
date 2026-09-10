@@ -84,6 +84,20 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
+    def outer_resolvers(self) -> t.Iterator[Resolver]:
+        """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
+        scope = self.scope
+        while scope.can_be_correlated and scope.parent:
+            scope = scope.parent
+            yield Resolver(scope, self.schema, self._infer_schema)
+
+    @property
+    def has_unknown_sources(self) -> bool:
+        """Whether some source's columns can't be determined, e.g. a table missing from the schema."""
+        return any(
+            not columns or "*" in columns for columns in self._get_all_source_columns().values()
+        )
+
     @property
     def all_columns(self) -> set[str]:
         """All available columns of all sources in this scope"""

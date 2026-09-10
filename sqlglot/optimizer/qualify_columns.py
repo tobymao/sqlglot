@@ -603,27 +603,52 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if isinstance(column, exp.Dot):
             continue
 
+        is_star = isinstance(column.this, exp.Star)
         column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
-            and column_table not in scope.selected_sources
+            and (column_table not in scope.selected_sources or (is_star and column.db))
             and (
-                not scope.parent
+                is_star
+                or not scope.parent
                 or column_table not in scope.parent.sources
                 or not scope.is_correlated_subquery
             )
         ):
             root, *parts = column.parts
+            was_qualified = False
 
-            if isinstance(root, exp.Identifier) and root.name in scope.selected_sources:
-                # The struct is already qualified, but we still need to change the AST
-                column_table = root
-                root, *parts = parts
-                was_qualified = True
-            else:
-                column_table = resolver.get_table(root.name)
-                was_qualified = False
+            # Unlike columns, correlated stars can't be deferred to the outer scopes, since they
+            # must be expanded in this one, so they're resolved against those scopes as well
+            resolvers: t.Iterable[Resolver] = (
+                itertools.chain((resolver,), resolver.outer_resolvers()) if is_star else (resolver,)
+            )
+            for source_resolver in resolvers:
+                selected_sources = source_resolver.scope.selected_sources
+                if not column.db and column.table in selected_sources:
+                    # The star is over a table, so it's expanded as is
+                    column_table = None
+                    break
+                if isinstance(root, exp.Identifier) and root.name in selected_sources:
+                    # The struct is already qualified, but we still need to change the AST
+                    column_table = root
+                    root, *parts = parts
+                    was_qualified = True
+                    break
+
+                if (
+                    is_star
+                    and root.name not in source_resolver.all_columns
+                    and source_resolver.has_unknown_sources
+                ):
+                    # An unknown source may own the star, so it's preserved instead of inferred
+                    column_table = None
+                    break
+
+                column_table = source_resolver.get_table(root.name)
+                if column_table:
+                    break
 
             if column_table:
                 converted = True
@@ -1011,7 +1036,12 @@ def _expand_stars(
                     if annotated_ahead:
                         annotator.uncache(expression)
 
-                    new_selections.extend(struct_fields)
+                    star = expression.expression
+                    excluded = {e.name for e in star.args.get("except_") or []}
+                    replaced = {e.alias: e for e in star.args.get("replace") or []}
+                    new_selections.extend(
+                        replaced.get(f.alias) or f for f in struct_fields if f.alias not in excluded
+                    )
                     continue
 
         if not tables:
@@ -1020,6 +1050,7 @@ def _expand_stars(
 
         for table in tables:
             source = scope.sources.get(table)
+            source_resolver = resolver
             pivots: list[exp.Pivot] | None = None
             source_table = table
 
@@ -1039,9 +1070,20 @@ def _expand_stars(
                     source = scope.sources.get(source_table)
 
                 if source is None:
-                    raise OptimizeError(f"Unknown table: {table}")
+                    # Correlated stars, e.g. (SELECT AS STRUCT x.* EXCEPT (a)), expand an outer source
+                    for source_resolver in itertools.chain((resolver,), resolver.outer_resolvers()):
+                        source = source_resolver.scope.sources.get(table)
+                        if source or source_resolver.has_unknown_sources:
+                            break
+                    else:
+                        raise OptimizeError(f"Unknown table: {table}")
 
-            columns = resolver.get_source_columns(source_table, only_visible=True)
+                if source is None:
+                    # An unknown source may own the star, so it's preserved instead of expanded
+                    new_selections.append(expression)
+                    break
+
+            columns = source_resolver.get_source_columns(source_table, only_visible=True)
             columns = columns or scope.outer_columns
 
             if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
@@ -1140,6 +1182,8 @@ def _expand_stars(
             annotator.uncache(scope_expression, deep=False)
 
         scope_expression.set("expressions", new_selections)
+        # The parent scope sees this scope's columns, so they must reflect the expansions
+        scope.clear_cache()
 
 
 def _output_identifier(selection: exp.Expr | None) -> exp.Identifier | None:

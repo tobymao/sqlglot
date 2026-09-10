@@ -608,7 +608,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         dot_parts = column.meta.pop("dot_parts", [])
         if (
             column_table
-            and column_table not in scope.selected_sources
+            and (column_table not in scope.selected_sources or (is_star and column.db))
             and (
                 is_star
                 or not scope.parent
@@ -626,7 +626,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
             )
             for source_resolver in resolvers:
                 selected_sources = source_resolver.scope.selected_sources
-                if column.table in selected_sources:
+                if not column.db and column.table in selected_sources:
                     # The star is over a table, so it's expanded as is
                     column_table = None
                     break

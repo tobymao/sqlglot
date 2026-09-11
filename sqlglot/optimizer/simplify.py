@@ -988,31 +988,36 @@ class Simplifier:
                     # python won't compare date and datetime, but many engines will upcast
                     l, r = cast_as_datetime(l), cast_as_datetime(r)
 
+                false = (
+                    exp.false()
+                    if left.meta_get("nonnull") is True and right.meta_get("nonnull") is True
+                    else None
+                )
+
                 for (a, av), (b, bv) in itertools.permutations(((left, l), (right, r))):
                     if isinstance(a, self.LT_LTE) and isinstance(b, self.LT_LTE):
                         return left if (av > bv if or_ else av <= bv) else right
                     if isinstance(a, self.GT_GTE) and isinstance(b, self.GT_GTE):
                         return left if (av < bv if or_ else av >= bv) else right
 
-                    # we can't ever shortcut to true because the column could be null
                     if not or_:
                         if isinstance(a, exp.LT) and isinstance(b, self.GT_GTE):
                             if av <= bv:
-                                return exp.false()
+                                return false
                         elif isinstance(a, exp.GT) and isinstance(b, self.LT_LTE):
                             if av >= bv:
-                                return exp.false()
+                                return false
                         elif isinstance(a, exp.EQ):
                             if isinstance(b, exp.LT):
-                                return exp.false() if av >= bv else a
+                                return false if av >= bv else a
                             if isinstance(b, exp.LTE):
-                                return exp.false() if av > bv else a
+                                return false if av > bv else a
                             if isinstance(b, exp.GT):
-                                return exp.false() if av <= bv else a
+                                return false if av <= bv else a
                             if isinstance(b, exp.GTE):
-                                return exp.false() if av < bv else a
+                                return false if av < bv else a
                             if isinstance(b, exp.NEQ):
-                                return exp.false() if av == bv else a
+                                return false if av == bv else a
         return None
 
     @annotate_types_on_change

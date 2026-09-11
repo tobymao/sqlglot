@@ -154,6 +154,8 @@ def pushdown_projections(
             selects: dict[str, set[object]] = defaultdict(set)
             for col in scope.columns:
                 selects[col.table].add(col.name)
+            for table_column in scope.table_columns:
+                selects[table_column.name].add(SELECT_ALL)
 
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():

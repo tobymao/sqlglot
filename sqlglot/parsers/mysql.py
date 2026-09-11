@@ -389,13 +389,26 @@ class MySQLParser(parser.Parser):
         self._match_r_paren()
         return self.expression(exp.ColumnPrefix(this=this, expression=expression))
 
+    def _parse_index_constraint_part(self) -> exp.Expr | None:
+        # key_part: {col_name [(length)] | (expr)}, so only a prefixed column is followed by "("
+        if (
+            not self._match(TokenType.L_PAREN, advance=False)
+            and self._next
+            and self._next.token_type == TokenType.L_PAREN
+        ):
+            return self._parse_primary_key_part()
+
+        return self._parse_disjunction()
+
     def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         if kind:
             self._match_texts(("INDEX", "KEY"))
 
         this = self._parse_id_var(any_token=False)
         index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
-        expressions = self._parse_wrapped_csv(self._parse_ordered)
+        expressions = self._parse_wrapped_csv(
+            lambda: self._parse_ordered(self._parse_index_constraint_part)
+        )
 
         return self.expression(
             exp.IndexColumnConstraint(
@@ -440,13 +453,31 @@ class MySQLParser(parser.Parser):
         return options
 
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
-        unique = super()._parse_unique()
+        self._match_texts(("KEY", "INDEX"))
+        this = self._parse_unique_key()
+        index_type = self._parse_index_type()
 
-        # UNIQUE [INDEX | KEY] [index_name] (key_part,...) [index_option] ...
-        if isinstance(unique.this, exp.Schema):
-            unique.set("options", self._parse_index_constraint_options())
+        # UNIQUE [INDEX | KEY] [index_name] [index_type] (key_part,...) [index_option] ...
+        if not self._match(TokenType.L_PAREN, advance=False):
+            return self.expression(exp.UniqueColumnConstraint(this=this, index_type=index_type))
 
-        return unique
+        expressions = self._parse_wrapped_csv(
+            lambda: self._parse_ordered(self._parse_index_constraint_part)
+        )
+
+        return self.expression(
+            exp.UniqueColumnConstraint(
+                this=self.expression(exp.Schema(this=this, expressions=expressions)),
+                index_type=index_type or self._parse_index_type(),
+                options=self._parse_index_constraint_options(),
+            )
+        )
+
+    def _parse_index_type(self) -> str | None:
+        if self._match(TokenType.USING) and self._advance_any():
+            return self._prev.text
+
+        return None
 
     def _parse_show_mysql(
         self,

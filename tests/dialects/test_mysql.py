@@ -187,6 +187,22 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD UNIQUE uq (a) USING BTREE COMMENT 'why' INVISIBLE",
         )
         self.validate_identity(
+            "ALTER TABLE t ADD UNIQUE KEY u USING BTREE (c)",
+            "ALTER TABLE t ADD UNIQUE u (c) USING BTREE",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY u USING BTREE (a))",
+            "CREATE TABLE t (a INT, UNIQUE u (a) USING BTREE)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE USING BTREE (a))",
+            "CREATE TABLE t (a INT, UNIQUE (a) USING BTREE)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, UNIQUE KEY `using` (a) USING BTREE)",
+            "CREATE TABLE t (a INT, UNIQUE `using` (a) USING BTREE)",
+        )
+        self.validate_identity(
             "CREATE TABLE `foo` (`id` char(36) NOT NULL DEFAULT (uuid()), PRIMARY KEY (`id`), UNIQUE KEY `id` (`id`))",
             "CREATE TABLE `foo` (`id` CHAR(36) NOT NULL DEFAULT (UUID()), PRIMARY KEY (`id`), UNIQUE `id` (`id`))",
         )
@@ -209,6 +225,22 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CREATE TABLE foo (a BIGINT, UNIQUE KEY b (a) USING BTREE COMMENT 'c' VISIBLE, UNIQUE KEY d (a) KEY_BLOCK_SIZE=8)",
             "CREATE TABLE foo (a BIGINT, UNIQUE b (a) USING BTREE COMMENT 'c' VISIBLE, UNIQUE d (a) KEY_BLOCK_SIZE = 8)",
+        )
+        self.validate_identity("CREATE TABLE t (c VARCHAR(64), PRIMARY KEY (c(20)))")
+        self.validate_identity("CREATE TABLE t (d INT, INDEX k ((d + 1)))")
+        self.validate_identity(
+            "CREATE TABLE t (c VARCHAR(64), KEY k (c(20)))",
+            "CREATE TABLE t (c VARCHAR(64), INDEX k (c(20)))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (c VARCHAR(64), UNIQUE KEY u (c(20) DESC))",
+            "CREATE TABLE t (c VARCHAR(64), UNIQUE u (c(20) DESC))",
+        )
+        self.validate_identity("ALTER TABLE t ADD INDEX k (c(20))")
+        self.validate_identity("ALTER TABLE t ADD PRIMARY KEY (c(20))")
+        self.validate_identity(
+            "ALTER TABLE t ADD UNIQUE KEY u (c(20))",
+            "ALTER TABLE t ADD UNIQUE u (c(20))",
         )
         self.validate_identity(
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",

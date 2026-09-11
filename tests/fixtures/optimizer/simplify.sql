@@ -874,16 +874,16 @@ x > 3;
 x > 0;
 
 x > 1 AND x < 2 AND x > 3;
-FALSE;
+x < 2 AND x > 3;
 
 x > 1 AND x < 1;
-FALSE;
+x < 1 AND x > 1;
 
 x < 2 AND x > 1;
 x < 2 AND x > 1;
 
 x = 1 AND x < 1;
-FALSE;
+x < 1 AND x = 1;
 
 x = 1 AND x < 1.1;
 x = 1;
@@ -892,25 +892,49 @@ x = 1 AND x <= 1;
 x = 1;
 
 x = 1 AND x <= 0.9;
-FALSE;
+x <= 0.9 AND x = 1;
 
 x = 1 AND x > 0.9;
 x = 1;
 
 x = 1 AND x > 1;
-FALSE;
+x = 1 AND x > 1;
 
 x = 1 AND x >= 1;
 x = 1;
 
 x = 1 AND x >= 2;
-FALSE;
+x = 1 AND x >= 2;
 
 x = 1 AND x <> 2;
 x = 1;
 
 x <> 1 AND x = 1;
-FALSE;
+x <> 1 AND x = 1;
+
+SELECT nn.a > 1 AND nn.a < 1 AS r FROM nn;
+SELECT FALSE AS r FROM nn;
+
+SELECT nn.a = 1 AND nn.a <> 1 AS r FROM nn;
+SELECT FALSE AS r FROM nn;
+
+SELECT nn.a > 1 AND nn.a < 2 AND nn.a > 3 AS r FROM nn;
+SELECT FALSE AS r FROM nn;
+
+SELECT nn.a = 1 AND nn.a >= 2 AS r FROM nn;
+SELECT FALSE AS r FROM nn;
+
+SELECT nn.a FROM nn WHERE NOT (nn.a < 1 AND nn.a > 3);
+SELECT nn.a FROM nn;
+
+SELECT x.a FROM x WHERE NOT (x.a < 1 AND x.a > 3);
+SELECT x.a FROM x WHERE x.a <= 3 OR x.a >= 1;
+
+SELECT nn.a, COALESCE(nn.a < 1 AND nn.a > 3, TRUE) AS r FROM nn;
+SELECT nn.a, FALSE AS r FROM nn;
+
+SELECT x.a, COALESCE(x.a < 1 AND x.a > 3, TRUE) AS r FROM x;
+SELECT x.a, COALESCE(x.a < 1 AND x.a > 3, TRUE) AS r FROM x;
 
 x BETWEEN 0 AND 5 AND x > 3;
 x <= 5 AND x > 3;
@@ -1024,7 +1048,7 @@ CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 CAST(CAST(CAST(1 AS INT) AS BOOLEAN) AS INT) = 1;
 
 x > CAST('2023-01-01' AS DATE) AND x < CAST('2023-01-01' AS DATETIME);
-FALSE;
+x < CAST('2023-01-01' AS DATETIME) AND x > CAST('2023-01-01' AS DATE);
 
 CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
 CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
@@ -1033,7 +1057,7 @@ CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
 CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
 
 CAST(x AS INT) < -500 AND CAST(x AS INT) >= -1;
-FALSE;
+CAST(x AS INT) < -500 AND CAST(x AS INT) >= -1;
 
 0 > CAST(x AS INT) AND -500 <= CAST(x AS INT);
 CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
@@ -1042,7 +1066,7 @@ CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
 CAST(x AS INT) < -1 AND CAST(x AS INT) >= -500;
 
 -500 > CAST(x AS INT) AND -1 <= CAST(x AS INT);
-FALSE;
+CAST(x AS INT) < -500 AND CAST(x AS INT) >= -1;
 
 CAST(x AS INT) < 1000 AND CAST(x AS INT) >= - -500;
 CAST(x AS INT) < 1000 AND CAST(x AS INT) >= 500;

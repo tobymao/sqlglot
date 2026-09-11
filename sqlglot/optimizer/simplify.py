@@ -655,15 +655,6 @@ class Simplifier:
 
     SAFE_CONNECTOR_ELIMINATION_RESULT: t.ClassVar = (exp.Connector, exp.Boolean)
 
-    # A CROSS JOIN is empty as soon as either side is empty, whereas an outer join keeps the rows
-    # of its outer side and pads them with NULLs: `x LEFT JOIN y ON TRUE` returns x's rows when y
-    # is empty and `x RIGHT JOIN y ON TRUE` returns y's rows when x is empty. Only inner joins can
-    # be rewritten to CROSS.
-    JOINS: t.ClassVar = {
-        ("", ""),
-        ("", "INNER"),
-    }
-
     def simplify(
         self,
         expression: exp.Expr,
@@ -722,11 +713,16 @@ class Simplifier:
             if always_true(where.this):
                 where.pop()
         for join in joins:
+            # Only an inner join can become a CROSS JOIN: a cross join is empty as soon as either
+            # side is empty, whereas an outer join keeps the rows of its outer side and pads them
+            # with NULLs (`x LEFT JOIN y ON TRUE` returns x's rows when y is empty, `x RIGHT JOIN y
+            # ON TRUE` returns y's rows when x is empty).
             if (
                 always_true(join.args.get("on"))
                 and not join.args.get("using")
                 and not join.args.get("method")
-                and (join.side, join.kind) in self.JOINS
+                and not join.side
+                and join.kind in ("", "INNER")
             ):
                 join.args["on"].pop()
                 join.set("side", None)

@@ -1020,6 +1020,20 @@ class Table(Expression, Selectable):
         return col
 
 
+def _is_star(expression: Expr) -> bool:
+    stack = [expression]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, SetOperation):
+            stack.append(node.this)
+            stack.append(node.expression)
+        elif isinstance(node, Subquery):
+            stack.append(node.this)
+        elif node.is_star:
+            return True
+    return False
+
+
 class SetOperation(Expression, Query):
     arg_types = {
         "with_": False,
@@ -1062,7 +1076,7 @@ class SetOperation(Expression, Query):
 
     @property
     def is_star(self) -> bool:
-        return self.this.is_star or self.expression.is_star
+        return _is_star(self)
 
     @property
     def selects(self) -> list[Expr]:
@@ -1720,7 +1734,7 @@ class Subquery(Expression, DerivedTable, Query):
 
     @property
     def is_star(self) -> bool:
-        return self.this.is_star
+        return _is_star(self)
 
     @property
     def output_name(self) -> str:

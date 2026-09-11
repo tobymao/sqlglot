@@ -154,6 +154,8 @@ def pushdown_projections(
             selects: dict[str, set[object]] = defaultdict(set)
             for col in scope.columns:
                 selects[col.table].add(col.name)
+            for table_column in scope.table_columns:
+                selects[table_column.name].add(SELECT_ALL)
 
             # Push the selected columns down to the next scope
             for name, (node, source) in scope.selected_sources.items():
@@ -163,7 +165,10 @@ def pushdown_projections(
                     if scope.pivots or isinstance(select, exp.QueryTransform):
                         columns: set[object] = {SELECT_ALL}
                     else:
-                        columns = selects.get(name) or set()
+                        unqualified = selects.get("", set())
+                        columns = (
+                            {SELECT_ALL} if name in unqualified else (selects.get(name) or set())
+                        )
 
                     referenced_columns[source].update(columns)
 

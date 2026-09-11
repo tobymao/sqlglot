@@ -4557,6 +4557,19 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
         )
 
+    def test_rollback_as_identifier(self):
+        self.validate_identity("SELECT rollback FROM t")
+        self.validate_identity(
+            "WITH rollback(rollback) AS (SELECT 1) SELECT rollback.rollback FROM rollback"
+        )
+        self.validate_identity("SELECT ROLLBACK(3)")
+        self.validate_identity("SELECT 1 rollback", "SELECT 1 AS rollback")
+        self.validate_identity(
+            "SELECT rollback.x FROM (SELECT 1 AS x) rollback",
+            "SELECT rollback.x FROM (SELECT 1 AS x) AS rollback",
+        )
+        self.assertIsInstance(self.parse_one("ROLLBACK WORK"), exp.Rollback)
+
     def test_stored_procedures(self):
         self.validate_identity("CALL a.b.c(x, y)", check_command_warning=True)
         self.validate_identity(

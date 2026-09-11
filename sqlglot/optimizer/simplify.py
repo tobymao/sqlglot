@@ -655,14 +655,13 @@ class Simplifier:
 
     SAFE_CONNECTOR_ELIMINATION_RESULT: t.ClassVar = (exp.Connector, exp.Boolean)
 
-    # CROSS joins result in an empty table if the right table is empty.
-    # So we can only simplify certain types of joins to CROSS.
-    # Or in other words, LEFT JOIN x ON TRUE != CROSS JOIN x
+    # A CROSS JOIN is empty as soon as either side is empty, whereas an outer join keeps the rows
+    # of its outer side and pads them with NULLs: `x LEFT JOIN y ON TRUE` returns x's rows when y
+    # is empty and `x RIGHT JOIN y ON TRUE` returns y's rows when x is empty. Only inner joins can
+    # be rewritten to CROSS.
     JOINS: t.ClassVar = {
         ("", ""),
         ("", "INNER"),
-        ("RIGHT", ""),
-        ("RIGHT", "OUTER"),
     }
 
     def simplify(

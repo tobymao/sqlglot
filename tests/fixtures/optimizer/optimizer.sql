@@ -1535,7 +1535,8 @@ SELECT
 FROM "t1" AS "t1"
 RIGHT JOIN "t2" AS "t2"
   ON "t1"."id1" = "t2"."id2"
-CROSS JOIN "t3" AS "t3";
+RIGHT JOIN "t3" AS "t3"
+  ON TRUE;
 
 # title: subquery in GENERATE_SERIES stays untouched
 # execute: false

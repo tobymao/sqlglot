@@ -144,7 +144,7 @@ def pushdown_projections(
                     }
 
         if isinstance(scope_expression, exp.Select):
-            if remove_unused_selections:
+            if remove_unused_selections and SELECT_ALL not in parent_selections:
                 _remove_unused_selections(scope, parent_selections, schema, alias_count, journal)
 
             if scope.scans_all_subscope_columns:
@@ -191,8 +191,6 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     star = False
     is_agg = False
 
-    select_all = SELECT_ALL in parent_selections
-
     for selection in expression.selects:
         name = selection.alias_or_name
         is_agg_selection = (implicit_group_by_all or not is_agg) and find_in_scope(
@@ -200,8 +198,7 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
         ) is not None
 
         if (
-            select_all
-            or name in parent_selections
+            name in parent_selections
             or name in output_refs
             or alias_count > 0
             or id(selection) in group_ordinal_selection_ids

@@ -242,6 +242,14 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD UNIQUE KEY u (c(20))",
             "ALTER TABLE t ADD UNIQUE u (c(20))",
         )
+        self.validate_all(
+            "CREATE TABLE t (a INT, b INT, CONSTRAINT u UNIQUE (a, b))",
+            write={
+                "mysql": "CREATE TABLE t (a INT, b INT, CONSTRAINT u UNIQUE (a, b))",
+                "postgres": "CREATE TABLE t (a INT, b INT, CONSTRAINT u UNIQUE (a, b))",
+                "duckdb": "CREATE TABLE t (a INT, b INT, CONSTRAINT u UNIQUE (a, b))",
+            },
+        )
         self.validate_identity(
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMPTZ, ts_ltz TIMESTAMPLTZ)",
             "CREATE TABLE test (ts TIMESTAMP, ts_tz TIMESTAMP, ts_ltz TIMESTAMP)",

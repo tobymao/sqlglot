@@ -400,15 +400,19 @@ class MySQLParser(parser.Parser):
 
         return self._parse_disjunction()
 
+    def _parse_index_key_part(self) -> exp.Expr | None:
+        # Only keep the Ordered wrapper for an explicit ASC/DESC, otherwise the implicit
+        # nulls_first leaks into other dialects as NULLS FIRST
+        ordered = self._parse_ordered(self._parse_index_constraint_part)
+        return ordered.this if ordered and ordered.args.get("desc") is None else ordered
+
     def _parse_index_constraint(self, kind: str | None = None) -> exp.IndexColumnConstraint:
         if kind:
             self._match_texts(("INDEX", "KEY"))
 
         this = self._parse_id_var(any_token=False)
         index_type = self._match(TokenType.USING) and self._advance_any() and self._prev.text
-        expressions = self._parse_wrapped_csv(
-            lambda: self._parse_ordered(self._parse_index_constraint_part)
-        )
+        expressions = self._parse_wrapped_csv(self._parse_index_key_part)
 
         return self.expression(
             exp.IndexColumnConstraint(
@@ -461,9 +465,7 @@ class MySQLParser(parser.Parser):
         if not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(exp.UniqueColumnConstraint(this=this, index_type=index_type))
 
-        expressions = self._parse_wrapped_csv(
-            lambda: self._parse_ordered(self._parse_index_constraint_part)
-        )
+        expressions = self._parse_wrapped_csv(self._parse_index_key_part)
 
         return self.expression(
             exp.UniqueColumnConstraint(

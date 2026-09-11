@@ -38,6 +38,63 @@ def _output_column_refs(expression: exp.Expr, scoped: bool) -> set[str]:
     return refs
 
 
+def _setop_forces_all_columns(expression: exp.SetOperation) -> bool:
+    return bool(expression.args.get("distinct")) or isinstance(
+        expression, (exp.Intersect, exp.Except)
+    )
+
+
+def _arm_stays_wide(expression: exp.Expr, parent_selections: set) -> bool:
+    """Return True when this arm will produce more columns than parent_selections requires."""
+    if SELECT_ALL in parent_selections:
+        return False
+
+    stack = [expression]
+    while stack:
+        node = stack.pop()
+
+        if isinstance(node, exp.Subquery):
+            stack.append(node.this)
+            continue
+
+        if isinstance(node, exp.SetOperation):
+            if _setop_forces_all_columns(node):
+                return True
+            # Plain UNION ALL: wide if either child is wide (by_name aligns columns differently)
+            if not node.args.get("by_name"):
+                stack.append(node.left)
+                stack.append(node.right)
+            continue
+
+        if not isinstance(node, exp.Select):
+            continue
+
+        # DISTINCT dedup uses the full row, so all columns must stay
+        if node.args.get("distinct"):
+            return True
+
+        # ORDER BY / SORT BY col not in parent forces that col to stay
+        if _output_column_refs(node, scoped=False) - parent_selections:
+            return True
+
+        # Implicit GROUP BY ALL keeps every non-aggregate projection as a grouping key
+        if _is_implicit_group_by_all(node) and any(
+            sel.alias_or_name not in parent_selections and not find_in_scope(sel, exp.AggFunc)
+            for sel in node.selects
+        ):
+            return True
+
+        # set-returning function outside parent's needed cols forces the projection to stay
+        if any(
+            sel.alias_or_name not in parent_selections
+            and find_in_scope(sel, *SET_RETURNING_FUNCTIONS)
+            for sel in node.selects
+        ):
+            return True
+
+    return False
+
+
 def _is_self_referencing_cte(scope: Scope) -> bool:
     cte = scope.expression.parent
     return (
@@ -97,8 +154,11 @@ def pushdown_projections(
         # can't remove any columns, otherwise we risk changing the query's semantics. Also, we
         # conservatively skip pruning on recursive CTEs that read their own output for now.
         if (
-            scope_expression.args.get("distinct")
-            or isinstance(scope_expression, (exp.Intersect, exp.Except))
+            (
+                isinstance(scope_expression, exp.SetOperation)
+                and _setop_forces_all_columns(scope_expression)
+            )
+            or scope_expression.args.get("distinct")
             or _is_self_referencing_cte(scope)
         ):
             parent_selections = {SELECT_ALL}
@@ -142,6 +202,21 @@ def pushdown_projections(
                         for i, select in enumerate(le.selects)
                         if select.alias_or_name in parent_selections
                     }
+
+            # If either branch will force-keep columns beyond parent_selections,
+            # #give both branches SELECT_ALL so their widths stay aligned.
+            if (
+                SELECT_ALL not in parent_selections
+                and not by_name
+                and not le.is_star
+                and not re.is_star
+                and (
+                    _arm_stays_wide(le, referenced_columns[left])
+                    or _arm_stays_wide(re, referenced_columns.get(right, {SELECT_ALL}))
+                )
+            ):
+                referenced_columns[left] = {SELECT_ALL}
+                referenced_columns[right] = {SELECT_ALL}
 
         if isinstance(scope_expression, exp.Select):
             if remove_unused_selections:

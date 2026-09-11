@@ -208,9 +208,14 @@ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
 
 def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
     columns = {}
+    unresolved_sources: dict[str, None] = {}
 
-    def _update_source_columns(source_name: str) -> None:
-        for column_name in resolver.get_source_columns(source_name):
+    def _update_source_columns(source_name: str, track_unresolved: bool = True) -> None:
+        source_columns = resolver.get_source_columns(source_name)
+        if track_unresolved and (not source_columns or "*" in source_columns):
+            unresolved_sources[source_name] = None
+
+        for column_name in source_columns:
             if column_name not in columns:
                 columns[column_name] = source_name
 
@@ -235,8 +240,12 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
 
     for i, join in enumerate(joins):
         source_table = ordered[-1]
+
+        # Track for initial FROM source and RHS sources accumulated through non-SEMI/ANTI joins.
+        should_track_unresolved = i == 0 or not joins[i - 1].is_semi_or_anti_join
+
         if source_table:
-            _update_source_columns(source_table)
+            _update_source_columns(source_table, track_unresolved=should_track_unresolved)
 
         join_table = join.alias_or_name
         ordered.append(join_table)
@@ -265,12 +274,17 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
         for identifier in using:
             identifier = identifier.name
             table = columns.get(identifier)
+            left_known_absent = table is None and not unresolved_sources
+            right_known_absent = (
+                bool(join_columns) and identifier not in join_columns and "*" not in join_columns
+            )
 
-            if not table or identifier not in join_columns:
-                if (columns and "*" not in columns) and join_columns:
-                    raise OptimizeError(f"Cannot automatically join: {identifier}")
+            if left_known_absent or right_known_absent:
+                raise OptimizeError(f"Cannot automatically join: {identifier}")
 
-            table = table or source_table
+            # If we haven't resolved the identifier's table, use the first unresolved left source.
+            if table is None:
+                table = next(iter(unresolved_sources))
 
             if i == 0 or using_identifier_count == 1:
                 lhs: exp.Expr = exp.column(identifier, table=table)

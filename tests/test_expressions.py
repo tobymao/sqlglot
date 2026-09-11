@@ -1226,6 +1226,18 @@ FROM foo""",
         assert parse_one("SELECT 1 AS x UNION SELECT * FROM bla").is_star
         assert parse_one("SELECT 1 AS x UNION SELECT 1 AS x UNION SELECT * FROM foo").is_star
 
+        # Deeply nested set operations / subqueries must not hit the recursion limit
+        deep_union = exp.select("1")
+        deep_subquery = exp.select("1")
+        for _ in range(5000):
+            deep_union = exp.Union(this=deep_union, expression=exp.select("1"))
+            deep_subquery = exp.Subquery(this=deep_subquery)
+
+        assert not deep_union.is_star
+        assert not deep_subquery.is_star
+        assert exp.Union(this=deep_union, expression=exp.select("*")).is_star
+        assert exp.Subquery(this=exp.Union(this=deep_union, expression=exp.select("*"))).is_star
+
     def test_set_metadata(self):
         ast = parse_one("SELECT foo.col FROM foo")
 

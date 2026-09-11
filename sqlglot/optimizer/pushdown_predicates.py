@@ -276,6 +276,9 @@ def nodes_for_predicate(
     return nodes
 
 
+OPERATOR_EXPRESSIONS = (exp.Binary, exp.Unary, exp.Predicate)
+
+
 def replace_aliases(source: exp.Select, predicate: exp.Expr) -> exp.Expr:
     aliases: dict[str, exp.Expr] = {}
 
@@ -287,7 +290,12 @@ def replace_aliases(source: exp.Select, predicate: exp.Expr) -> exp.Expr:
 
     def _replace_alias(column: exp.Expr) -> exp.Expr:
         if isinstance(column, exp.Column) and column.name in aliases:
-            return aliases[column.name].copy()
+            replaced = aliases[column.name].copy()
+            if isinstance(replaced, OPERATOR_EXPRESSIONS) and isinstance(
+                column.parent, OPERATOR_EXPRESSIONS
+            ):
+                replaced = exp.paren(replaced, copy=False)
+            return replaced
         return column
 
     return predicate.transform(_replace_alias)

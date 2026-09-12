@@ -443,6 +443,85 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
 
+    def test_distinct_order_by(self):
+        schema = {"x": {"a": "int", "b": "int"}, "n": {"a": "int"}}
+        tables = {
+            "x": [{"a": 1, "b": 5}, {"a": 3, "b": 6}, {"a": 2, "b": 7}, {"a": 3, "b": 6}],
+            "n": [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}],
+        }
+
+        for sql, expected in (
+            ("SELECT DISTINCT a FROM x ORDER BY a", [(1,), (2,), (3,)]),
+            ("SELECT DISTINCT a FROM x ORDER BY a DESC", [(3,), (2,), (1,)]),
+            ("SELECT DISTINCT a FROM x ORDER BY a DESC LIMIT 1", [(3,)]),
+            ("SELECT DISTINCT a FROM x ORDER BY a DESC LIMIT 1 OFFSET 1", [(2,)]),
+            ("SELECT DISTINCT a, b FROM x ORDER BY b DESC", [(2, 7), (3, 6), (1, 5)]),
+            ("SELECT DISTINCT a + 1 AS c FROM x ORDER BY c DESC", [(4,), (3,), (2,)]),
+            (
+                "SELECT DISTINCT a, SUM(b) AS s FROM x GROUP BY a ORDER BY a DESC",
+                [(3, 12), (2, 7), (1, 5)],
+            ),
+            ("SELECT DISTINCT a FROM n ORDER BY a NULLS FIRST", [(None,), (1,), (3,)]),
+            ("SELECT DISTINCT a FROM n ORDER BY a DESC NULLS LAST", [(3,), (1,), (None,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
+    def test_distinct_order_by_column_outside_select_list(self):
+        # duckdb/sqlite pick an arbitrary row's value here instead of rejecting like postgres
+        schema = {"x": {"a": "int", "b": "int"}}
+        tables = {"x": [{"a": 5, "b": 10}, {"a": 1, "b": 10}, {"a": 3, "b": 20}]}
+
+        for sql, expected in (
+            ("SELECT DISTINCT b FROM x ORDER BY a", [(20,), (10,)]),
+            ("SELECT DISTINCT b FROM x ORDER BY a DESC", [(10,), (20,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, schema, tables=tables).rows, expected)
+
+    def test_distinct_order_by_computed_expression(self):
+        tables = {"x": [{"a": 1}, {"a": 3}, {"a": 2}, {"a": 3}]}
+        sql = "SELECT DISTINCT a FROM x ORDER BY a + 1 DESC"
+        self.assertEqual(execute(sql, tables=tables).rows, [(3,), (2,), (1,)])
+
+    def test_distinct_group_by_order_by_aggregate(self):
+        tables = {
+            "x": [
+                {"a": 1, "b": 10},
+                {"a": 2, "b": 20},
+                {"a": 3, "b": 28},
+                {"a": 2, "b": 25},
+                {"a": 1, "b": 40},
+            ]
+        }
+        sql = "SELECT DISTINCT a FROM x GROUP BY a ORDER BY AVG(b)"
+        self.assertEqual(execute(sql, tables=tables).rows, [(2,), (1,), (3,)])
+
+    def test_distinct_order_by_column_from_different_table(self):
+        schema = {"x": {"a": "int", "id": "int"}, "y": {"a": "int", "id": "int"}}
+        tables = {
+            "x": [{"a": 1, "id": 1}, {"a": 2, "id": 2}],
+            "y": [{"a": 100, "id": 1}, {"a": 50, "id": 2}],
+        }
+        sql = "SELECT DISTINCT x.a FROM x JOIN y ON x.id = y.id ORDER BY y.a"
+        self.assertEqual(execute(sql, schema, tables=tables).rows, [(2,), (1,)])
+
+    def test_distinct_order_by_aliased_projection(self):
+        tables = {"x": [{"a": 1}, {"a": 3}, {"a": 2}, {"a": 3}]}
+
+        for sql, expected in (
+            ("SELECT DISTINCT a AS z FROM x ORDER BY a DESC", [(3,), (2,), (1,)]),
+            ("SELECT DISTINCT a AS z FROM x ORDER BY x.a DESC", [(3,), (2,), (1,)]),
+            ("SELECT DISTINCT a + 1 AS z FROM x ORDER BY a + 1 DESC", [(4,), (3,), (2,)]),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(execute(sql, tables=tables).rows, expected)
+
+    def test_distinct_order_by_unaliased_projection(self):
+        tables = {"x": [{"c": "a"}, {"c": "c"}, {"c": "b"}, {"c": "c"}]}
+        sql = "SELECT DISTINCT UPPER(c) FROM x ORDER BY UPPER(c) DESC"
+        self.assertEqual(execute(sql, tables=tables).rows, [("C",), ("B",), ("A",)])
+
     def test_offset_order_by(self):
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}
         tables = {"x": [{"a": a} for a in (3, 1, 5, 2, 4)], "y": [{"b": 7}, {"b": 6}]}

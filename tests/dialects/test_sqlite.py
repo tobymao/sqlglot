@@ -1,6 +1,8 @@
+import sqlite3
+
 from tests.dialects.test_dialect import Validator
 
-from sqlglot import exp
+from sqlglot import exp, transpile
 from sqlglot.helper import logger as helper_logger
 
 
@@ -194,6 +196,36 @@ class TestSQLite(Validator):
                 "snowflake": "SELECT CONCAT(a, b) FROM t",
             },
         )
+        # SQLite's CONCAT skips NULL args and returns '' if all of them are NULL,
+        # unlike || which propagates NULL, so the operands keep the COALESCE
+        # wrapping to preserve that semantics on the sqlite -> sqlite round-trip:
+        # https://github.com/tobymao/sqlglot/issues/8343
+        self.validate_all(
+            "SELECT COALESCE(a, '') || COALESCE(b, '') FROM t",
+            read={"sqlite": "SELECT CONCAT(a, b) FROM t"},
+        )
+        self.validate_all(
+            "SELECT COALESCE(NULL, '') || COALESCE(b, '')",
+            read={"sqlite": "SELECT CONCAT(NULL, b)"},
+        )
+        self.validate_all(
+            "SELECT COALESCE(NULL, '') || COALESCE(NULL, '')",
+            read={"sqlite": "SELECT CONCAT(NULL, NULL)"},
+        )
+        self.validate_all(
+            "SELECT '' || COALESCE(b, '')",
+            read={"sqlite": "SELECT CONCAT('', b)"},
+        )
+        # String/literal operands need no COALESCE and || is left as-is.
+        self.validate_all(
+            "SELECT 'a' || 'b'",
+            read={"sqlite": "SELECT CONCAT('a', 'b')"},
+            write={"sqlite": "SELECT 'a' || 'b'"},
+        )
+        self.validate_identity("SELECT a || b FROM t")
+        # CONCAT_WS keeps its own semantics and is untouched.
+        self.validate_identity("SELECT CONCAT_WS('-', a, b)")
+        self.validate_identity("SELECT CONCAT_WS('-', NULL, b)")
         self.validate_all(
             "SELECT JSON_GROUP_ARRAY(name) FROM t",
             read={
@@ -576,6 +608,27 @@ class TestSQLite(Validator):
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")
         self.validate_identity("ANALYZE schma.tbl")
+
+    def test_concat_null_roundtrip(self):
+        # https://github.com/tobymao/sqlglot/issues/8343
+        # CONCAT() requires SQLite 3.44+, so skip on older bundled sqlite3.
+        if sqlite3.sqlite_version_info < (3, 44):
+            self.skipTest("SQLite CONCAT() requires SQLite 3.44+")
+
+        source = "SELECT CONCAT(NULL, NULL), CONCAT('a', NULL), CONCAT(NULL, 'b'), CONCAT('a', 'b')"
+        generated = transpile(source, read="sqlite", write="sqlite")[0]
+
+        conn = sqlite3.connect(":memory:")
+        try:
+            source_rows = conn.execute(source).fetchall()
+            generated_rows = conn.execute(generated).fetchall()
+        finally:
+            conn.close()
+
+        # SQLite's CONCAT skips NULL args and returns '' if all are NULL; the
+        # transpiled || form must not turn those NULLs into NULL results.
+        self.assertEqual(source_rows, generated_rows)
+        self.assertEqual(source_rows, [("", "a", "b", "ab")])
 
     def test_create_trigger(self):
         """Test that SQLite CREATE TRIGGER statements fall back to Command parsing."""

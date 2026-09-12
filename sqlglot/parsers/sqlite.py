@@ -23,6 +23,18 @@ def _build_dpipe(
     )
 
 
+def _build_concat(args: list, dialect: t.Any) -> exp.Concat:
+    # SQLite's CONCAT skips NULL args and returns '' only if all of them are NULL, unlike
+    # || which propagates NULL (https://www.sqlite.org/lang_corefunc.html#concat). Mark
+    # the expression as coalescing so the generator's convert_concat_args machinery
+    # preserves this semantics when emitting ||.
+    return exp.Concat(
+        expressions=args,
+        safe=not dialect.STRICT_STRING_CONCAT,
+        coalesce=True,
+    )
+
+
 def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSONExtractScalar:
     # Single-path json_extract() returns an SQL representation like ->>, except
     # that object/array results keep the JSON subtype (json_subtype); the
@@ -68,6 +80,7 @@ class SQLiteParser(parser.Parser):
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
+        "CONCAT": _build_concat,
         "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
         "EDITDIST3": exp.Levenshtein.from_arg_list,
         "JSON_EXTRACT": _build_json_extract,

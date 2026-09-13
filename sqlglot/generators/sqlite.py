@@ -250,6 +250,20 @@ class SQLiteGenerator(generator.Generator):
         modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
         return self.func("DATE", expression.this, modifier)
 
+    def add_sql(self, expression: exp.Add) -> str:
+        interval = expression.expression
+        if isinstance(interval, exp.Interval):
+            # SQLite has no INTERVAL type, so rewrite date + interval into the
+            # date-function modifier form, e.g. DATE('2025-01-01', '5 DAY').
+            # https://github.com/tobymao/sqlglot/issues/8347
+            this = expression.this
+            if isinstance(this, exp.Cast) and this.is_type("date"):
+                this = this.this
+            return self.dateadd_sql(
+                exp.DateAdd(this=this.copy(), expression=interval.copy())
+            )
+        return super().add_sql(expression)
+
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):
             return self.func("DATE", expression.this)

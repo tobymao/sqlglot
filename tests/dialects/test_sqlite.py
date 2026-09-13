@@ -43,6 +43,13 @@ class TestSQLite(Validator):
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
             },
         )
+        self.validate_all(
+            "SELECT DATE('2025-01-01', '5 DAY')",
+            read={
+                "duckdb": "SELECT DATE '2025-01-01' + INTERVAL '5' DAY",
+                "postgres": "SELECT DATE '2025-01-01' + INTERVAL '5' DAY",
+            },
+        )
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")
         self.validate_identity("SELECT DATETIME(1092941466, 'auto')")
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch', 'localtime')")

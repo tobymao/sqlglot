@@ -313,7 +313,7 @@ class SQLiteGenerator(generator.Generator):
         elif unit == "MICROSECOND":
             sql = f"{sql} * 86400000000.0"
         elif unit == "NANOSECOND":
-            sql = f"{sql} * 8640000000000.0"
+            sql = f"{sql} * 86400000000000.0"
         else:
             self.unsupported(f"DATEDIFF unsupported for '{unit}'.")
 

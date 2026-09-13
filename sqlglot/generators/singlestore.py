@@ -34,6 +34,18 @@ class SingleStoreGenerator(MySQLGenerator):
 
     UNICODE_SUBSTITUTE: t.ClassVar[t.Any] = staticmethod(_unicode_substitute)
 
+    def ordered_sql(self, expression: exp.Ordered) -> str:
+        order = expression.parent
+        within_group = order.parent if isinstance(order, exp.Order) else None
+        if isinstance(within_group, exp.WithinGroup) and isinstance(
+            within_group.this, (exp.PercentileCont, exp.PercentileDisc)
+        ):
+            # SingleStore includes trailing NULLs in percentile calculations, although
+            # percentile aggregates should ignore NULLs regardless of their position.
+            expression = expression.copy()
+            expression.set("nulls_first", True)
+        return super().ordered_sql(expression)
+
     SUPPORTED_JSON_PATH_PARTS = {
         exp.JSONPathKey,
         exp.JSONPathRoot,

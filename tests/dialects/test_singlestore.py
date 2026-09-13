@@ -31,6 +31,29 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
 
+    def test_percentile_null_ordering(self):
+        for function in ("PERCENTILE_CONT", "PERCENTILE_DISC"):
+            for direction in ("", " ASC", " DESC"):
+                target_order = " DESC NULLS FIRST" if direction == " DESC" else direction
+                for nulls in ("", " NULLS FIRST", " NULLS LAST"):
+                    for window in ("", " OVER (PARTITION BY g)"):
+                        source = f"SELECT {function}(0.75) WITHIN GROUP (ORDER BY x{direction}{nulls}){window} FROM t"
+                        target = f"SELECT {function}(0.75) WITHIN GROUP (ORDER BY x{target_order}){window} FROM t"
+                        with self.subTest(source=source):
+                            self.validate_all(
+                                target,
+                                read={"postgres": source, "singlestore": source},
+                            )
+
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t ORDER BY x NULLS LAST",
+            read={
+                "postgres": "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t ORDER BY x",
+            },
+        )
+        self.validate_identity("SELECT ROW_NUMBER() OVER (ORDER BY x NULLS LAST) FROM t")
+        self.validate_identity("SELECT JSON_AGG(x ORDER BY x NULLS LAST) FROM t")
+
     def test_national_strings(self):
         self.validate_all(
             "SELECT 'text'", read={"": "SELECT N'text'", "singlestore": "SELECT 'text'"}

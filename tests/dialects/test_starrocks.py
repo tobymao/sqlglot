@@ -27,6 +27,16 @@ class TestStarrocks(Validator):
 
         self.validate_identity("CURRENT_VERSION()")
 
+        self.validate_all(
+            "SELECT DATE_DIFF('DAY', x, y)",
+            read={
+                "starrocks": "SELECT DATEDIFF(DAY, y, x)",
+            },
+            write={
+                "duckdb": "SELECT DATE_DIFF('DAY', y, x)",
+            },
+        )
+
         self.validate_identity("SELECT t1.id FROM t1 LEFT ANTI JOIN t2 ON t1.id = t2.id")
         self.validate_identity("SELECT t1.id FROM t1 LEFT SEMI JOIN t2 ON t1.id = t2.id")
 

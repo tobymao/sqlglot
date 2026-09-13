@@ -124,6 +124,21 @@ def build_extract_json_with_path(
     return _builder
 
 
+def build_datediff(args: BuilderArgs) -> exp.DateDiff:
+    """
+    Default builder for DATEDIFF/DATE_DIFF, covering both common signatures so that
+    dialects which don't define their own builder don't parse foreign syntax into a
+    scrambled AST:
+    - 2-arg: DATEDIFF(end, start), e.g. mysql, hive, spark, starrocks
+    - 3-arg: DATEDIFF(unit, start, end), e.g. tsql, snowflake, duckdb, spark3
+    """
+    if len(args) == 3:
+        return exp.DateDiff(
+            this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0)
+        )
+    return exp.DateDiff(this=seq_get(args, 0), expression=seq_get(args, 1))
+
+
 def build_mod(args: BuilderArgs) -> exp.Mod:
     this = seq_get(args, 0)
     expression = seq_get(args, 1)

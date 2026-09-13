@@ -105,8 +105,12 @@ class MySQLParser(parser.Parser):
         "CURDATE": exp.CurrentDate.from_arg_list,
         "CURTIME": exp.CurrentTime.from_arg_list,
         "DATE": lambda args: exp.TsOrDsToDate(this=seq_get(args, 0)),
-        "DATEDIFF": lambda args: exp.DateDiff(
-            this=seq_get(args, 0), expression=seq_get(args, 1), date_part_boundary=True
+        "DATEDIFF": lambda args: (
+            parser.build_datediff(args)
+            if len(args) == 3
+            else exp.DateDiff(
+                this=seq_get(args, 0), expression=seq_get(args, 1), date_part_boundary=True
+            )
         ),
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd),
         "DATE_FORMAT": lambda args: exp.TimeToStr(

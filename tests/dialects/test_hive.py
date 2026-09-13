@@ -412,6 +412,9 @@ class TestHive(Validator):
         )
         self.validate_all(
             "DATEDIFF(a, b)",
+            read={
+                "hive": "DATEDIFF(day, b, a)",
+            },
             write={
                 "duckdb": "DATE_DIFF('DAY', CAST(b AS DATE), CAST(a AS DATE))",
                 "presto": "DATE_DIFF('DAY', CAST(CAST(b AS TIMESTAMP) AS DATE), CAST(CAST(a AS TIMESTAMP) AS DATE))",

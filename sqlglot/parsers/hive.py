@@ -82,9 +82,13 @@ class HiveParser(parser.Parser):
             dialect,
         ),
         "DATE_SUB": _build_date_add,
-        "DATEDIFF": lambda args: exp.DateDiff(
-            this=exp.TsOrDsToDate(this=seq_get(args, 0)),
-            expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
+        "DATEDIFF": lambda args: (
+            parser.build_datediff(args)
+            if len(args) == 3
+            else exp.DateDiff(
+                this=exp.TsOrDsToDate(this=seq_get(args, 0)),
+                expression=exp.TsOrDsToDate(this=seq_get(args, 1)),
+            )
         ),
         "DAY": lambda args: exp.Day(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "FIRST": build_with_ignore_nulls(exp.First),

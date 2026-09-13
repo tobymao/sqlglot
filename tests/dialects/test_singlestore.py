@@ -31,6 +31,18 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
 
+    def test_within_group_null_ordering(self):
+        # An explicit NULLS LAST inside WITHIN GROUP makes SingleStore return
+        # NULL for ordered-set aggregates, so it is dropped there.
+        # https://github.com/tobymao/sqlglot/issues/8349
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t",
+            read={
+                "postgres": "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t",
+            },
+        )
+        self.validate_identity("SELECT * FROM t ORDER BY x NULLS LAST")
+
     def test_national_strings(self):
         self.validate_all(
             "SELECT 'text'", read={"": "SELECT N'text'", "singlestore": "SELECT 'text'"}

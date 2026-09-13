@@ -1425,6 +1425,17 @@ class SingleStoreGenerator(MySQLGenerator):
         "zone",
     }
 
+    def ordered_sql(self, expression: exp.Ordered) -> str:
+        sql = super().ordered_sql(expression)
+        # SingleStore returns NULL for ordered-set aggregates such as
+        # PERCENTILE_CONT when the WITHIN GROUP ordering carries an explicit
+        # NULLS LAST, even though NULL inputs are ignored by the aggregate.
+        # Drop the explicit null ordering in that context.
+        # https://github.com/tobymao/sqlglot/issues/8349
+        if expression.find_ancestor(exp.WithinGroup) and sql.endswith(" NULLS LAST"):
+            sql = sql[: -len(" NULLS LAST")]
+        return sql
+
     def jsonextractscalar_sql(self, expression: exp.JSONExtractScalar) -> str:
         json_type = expression.args.get("json_type")
         func_name = "JSON_EXTRACT_JSON" if json_type is None else f"JSON_EXTRACT_{json_type}"

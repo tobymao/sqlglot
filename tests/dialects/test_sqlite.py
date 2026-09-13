@@ -393,6 +393,26 @@ class TestSQLite(Validator):
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 24.0 AS INTEGER)"},
         )
         self.validate_all(
+            "DATEDIFF(a, b, 'minute')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 1440.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'second')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'millisecond')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400000.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'microsecond')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400000000.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "DATEDIFF(a, b, 'nanosecond')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400000000000.0 AS INTEGER)"},
+        )
+        self.validate_all(
             "DATEDIFF(a, b, 'year')",
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) / 365.0 AS INTEGER)"},
         )

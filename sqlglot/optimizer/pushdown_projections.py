@@ -107,7 +107,7 @@ def pushdown_projections(
     #
     #   SELECT t.a FROM ((SELECT DISTINCT a, b FROM x) UNION ALL SELECT b, c FROM y) AS t
     #
-    # If we trimmed the the right branch of the union operation to just b, we would get
+    # If we trimmed the right branch of the union operation to just b, we would get
     # an "unequal number of projections" error, since the left branch can't be pruned.
     #
     # The following state helps us revert these pruning decisions after the fact.

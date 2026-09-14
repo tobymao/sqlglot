@@ -8,7 +8,7 @@ from tests.helpers import load_sql_fixtures
 
 import sqlglot.expressions.core as _core_module
 
-_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith(".so")
+_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith((".so", ".pyd"))
 
 
 if not _EXPRESSION_IS_COMPILED:

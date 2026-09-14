@@ -20,7 +20,7 @@ from sqlglot.parsers.snowflake import SnowflakeParser
 from collections.abc import Iterable
 import sqlglot.parsers.base as _base_module
 
-_PARSER_IS_COMPILED = getattr(_base_module, "__file__", "").endswith(".so")
+_PARSER_IS_COMPILED = getattr(_base_module, "__file__", "").endswith((".so", ".pyd"))
 
 
 class Validator(unittest.TestCase):

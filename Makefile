@@ -7,7 +7,7 @@ else
 endif
 
 SO_BACKUP := /tmp/sqlglot_so_backup
-FIND_SO := find sqlglot -name "*.so"
+FIND_SO := find sqlglot \( -name "*.so" -o -name "*.pyd" \)
 NPROC := $(shell python -c "import os; print(os.cpu_count() or 1)")
 
 hidec:

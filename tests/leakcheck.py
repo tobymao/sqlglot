@@ -39,6 +39,8 @@ import sys
 import unittest
 from collections import Counter
 
+from tests.helpers import is_compiled
+
 
 # Built-in bookkeeping types whose counts fluctuate for reasons unrelated to
 # the workload (stack frames come and go, tracebacks get created lazily,
@@ -338,12 +340,12 @@ def main():
     # caller opt in explicitly by pre-exporting ``SKIP_INTEGRATION=0``.
     os.environ.setdefault("SKIP_INTEGRATION", "1")
 
-    # Detect whether we're running against the compiled extension. The .so
-    # is resolved by the normal import machinery (it wins over the co-located
+    # Detect whether we're running against the compiled extension. The extension
+    # module is resolved by the normal import machinery (it wins over the co-located
     # .py), so probing any mypyc-compiled module's __file__ is sufficient.
     import sqlglot.expressions.core as _ec
 
-    compiled = _ec.__file__.endswith(".so")
+    compiled = is_compiled(_ec)
     print(f"build: {'sqlglotc (compiled)' if compiled else 'pure python'}")
     print(f"debug Python: {'yes' if hasattr(sys, 'gettotalrefcount') else 'no'}")
     print(f"workload: unittest discover {args.top} pattern {args.pattern}")

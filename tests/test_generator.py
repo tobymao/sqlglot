@@ -3,10 +3,11 @@ import unittest
 from sqlglot import exp, parse_one
 from sqlglot.expressions import Expression, Func
 from sqlglot.parsers.snowflake import SnowflakeParser
+from tests.helpers import is_compiled
 
 import sqlglot.expressions.core as _core_module
 
-_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith((".so", ".pyd"))
+_EXPRESSION_IS_COMPILED = is_compiled(_core_module)
 
 
 class TestGenerator(unittest.TestCase):

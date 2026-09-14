@@ -6,6 +6,9 @@ from sqlglot import exp, parser
 from sqlglot.parser import binary_range_parser
 from sqlglot.tokens import TokenType
 
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import Dialect
+
 
 def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
@@ -23,7 +26,7 @@ def _build_dpipe(
     )
 
 
-def _build_concat(args: list, dialect: t.Any) -> exp.Concat:
+def _build_concat(args: list, dialect: Dialect) -> exp.Concat:
     # SQLite's CONCAT skips NULL args and returns '' only if all of them are NULL, unlike
     # || which propagates NULL (https://www.sqlite.org/lang_corefunc.html#concat). Mark
     # the expression as coalescing so the generator's convert_concat_args machinery

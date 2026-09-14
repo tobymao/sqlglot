@@ -31,6 +31,30 @@ class TestSingleStore(Validator):
         self.validate_identity("SELECT e'text'")
         self.validate_identity("SELECT E'text'", "SELECT e'text'")
 
+    def test_percentile_null_ordering(self):
+        for func in ("PERCENTILE_CONT", "PERCENTILE_DISC"):
+            self.validate_all(
+                f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x) FROM t",
+                read={
+                    "postgres": f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x) FROM t",
+                    "singlestore": f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x NULLS LAST) FROM t",
+                },
+            )
+            self.validate_all(
+                f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x DESC NULLS FIRST) OVER (PARTITION BY g) FROM t",
+                read={
+                    "postgres": f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x DESC) OVER (PARTITION BY g) FROM t",
+                    "singlestore": f"SELECT {func}(0.75) WITHIN GROUP (ORDER BY x DESC NULLS LAST) OVER (PARTITION BY g) FROM t",
+                },
+            )
+
+        self.validate_all(
+            "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t ORDER BY x NULLS LAST",
+            read={
+                "postgres": "SELECT PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY x) FROM t ORDER BY x",
+            },
+        )
+
     def test_national_strings(self):
         self.validate_all(
             "SELECT 'text'", read={"": "SELECT N'text'", "singlestore": "SELECT 'text'"}

@@ -4,6 +4,10 @@ FILE_DIR = os.path.dirname(__file__)
 FIXTURES_DIR = os.path.join(FILE_DIR, "fixtures")
 
 
+def is_compiled(module):
+    return not getattr(module, "__file__", ".py").endswith(".py")
+
+
 def _filter_comments(s):
     return "\n".join([line for line in s.splitlines() if line and not line.startswith("--")])
 

@@ -17,10 +17,11 @@ from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
 from sqlglot.parsers.snowflake import SnowflakeParser
+from tests.helpers import is_compiled
 from collections.abc import Iterable
 import sqlglot.parsers.base as _base_module
 
-_PARSER_IS_COMPILED = getattr(_base_module, "__file__", "").endswith(".so")
+_PARSER_IS_COMPILED = is_compiled(_base_module)
 
 
 class Validator(unittest.TestCase):

@@ -1454,6 +1454,17 @@ class SingleStoreGenerator(MySQLGenerator):
 
         return self.sql(res)
 
+    def withingroup_sql(self, expression: exp.WithinGroup) -> str:
+        # SingleStore includes trailing NULLs in percentile calculations, so we sort them first
+        if isinstance(expression.this, (exp.PercentileCont, exp.PercentileDisc)) and isinstance(
+            expression.expression, exp.Order
+        ):
+            expression = expression.copy()
+            for ordered in expression.expression.expressions:
+                ordered.set("nulls_first", True)
+
+        return super().withingroup_sql(expression)
+
     def all_sql(self, expression: exp.All) -> str:
         self.unsupported("ALL subquery predicate is not supported in SingleStore")
         return super().all_sql(expression)

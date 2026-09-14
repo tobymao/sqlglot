@@ -4,11 +4,11 @@ import unittest
 
 from sqlglot import exp, parse_one
 from sqlglot.optimizer.annotate_types import annotate_types
-from tests.helpers import load_sql_fixtures
+from tests.helpers import is_compiled, load_sql_fixtures
 
 import sqlglot.expressions.core as _core_module
 
-_EXPRESSION_IS_COMPILED = getattr(_core_module, "__file__", "").endswith(".so")
+_EXPRESSION_IS_COMPILED = is_compiled(_core_module)
 
 
 if not _EXPRESSION_IS_COMPILED:

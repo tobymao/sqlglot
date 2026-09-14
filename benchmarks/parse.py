@@ -349,7 +349,7 @@ def _bench_sqlglot(results, mode="parse"):
     """Benchmark sqlglot (or sqlglotc if .so loaded) and add to results."""
     import sqlglot.expressions.core as _ec
 
-    prefix = "sqlglotc" if _ec.__file__.endswith(".so") else "sqlglot"
+    prefix = "sqlglot" if _ec.__file__.endswith(".py") else "sqlglotc"
     fn = sqlglot_transpile if mode == "transpile" else sqlglot_parse
     for query_name, sql in QUERIES.items():
         key = f"{prefix}:{query_name}"
@@ -432,7 +432,10 @@ def _print_table(base_parser, all_parsers, results):
 def _has_so_files():
     import glob
 
-    return bool(glob.glob("sqlglot/**/*.so", recursive=True))
+    return bool(
+        glob.glob("sqlglot/**/*.so", recursive=True)
+        or glob.glob("sqlglot/**/*.pyd", recursive=True)
+    )
 
 
 def _run_subprocess():

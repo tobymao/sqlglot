@@ -7,6 +7,44 @@ from sqlglot.helper import logger as helper_logger
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_dateadd_expression(self):
+        self.validate_all(
+            "SELECT DATE(d, (n) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (n + 1) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n + 1) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (-n) || ' MONTH') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (-n) MONTH) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (NULL) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (NULL) DAY) FROM t",
+            },
+        )
+        self.assertEqual(
+            exp.DateAdd(this=exp.column("d"), expression=-exp.column("n"), unit=exp.var("DAY")).sql(
+                "sqlite"
+            ),
+            "DATE(d, (-n) || ' DAY')",
+        )
+        self.assertEqual(
+            exp.DateAdd(
+                this=exp.column("d"), expression=-exp.Literal.number(1), unit=exp.var("DAY")
+            ).sql("sqlite"),
+            "DATE(d, '-1 DAY')",
+        )
+
     def test_sqlite(self):
         # Range operators (IN/LIKE) are left-associative and can be chained.
         self.validate_identity("SELECT 1 IN (0) IN (1)")

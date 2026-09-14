@@ -396,6 +396,17 @@ class TestSQLite(Validator):
             "DATEDIFF(a, b, 'year')",
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) / 365.0 AS INTEGER)"},
         )
+        self.validate_all(
+            "DATEDIFF(a, b, 'nanosecond')",
+            write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400000000000.0 AS INTEGER)"},
+        )
+        self.validate_all(
+            "CAST((JULIANDAY(a) - JULIANDAY(b)) * 86400000000000.0 AS INTEGER)",
+            read={
+                "snowflake": "DATEDIFF(NANOSECOND, b, a)",
+                "tsql": "DATEDIFF_BIG(NANOSECOND, b, a)",
+            },
+        )
 
     def test_hexadecimal_literal(self):
         self.validate_all(

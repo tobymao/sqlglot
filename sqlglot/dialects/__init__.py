@@ -70,6 +70,7 @@ DIALECTS = [
     "ClickHouse",
     "Databricks",
     "DAX",
+    "DB2",
     "Doris",
     "Dremio",
     "Drill",

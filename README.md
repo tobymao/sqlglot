@@ -587,42 +587,43 @@ x + interval '1' month
 
 ## Supported Dialects
 
-| Dialect | Support Level |
-|---------|---------------|
-| Athena | Official |
-| BigQuery | Official |
-| ClickHouse | Official |
-| Databricks | Official |
-| DAX | Community |
-| Doris | Community |
-| Dremio | Community |
-| Drill | Community |
-| Druid | Community |
-| DuckDB | Official |
-| Dune | Community |
-| Exasol | Community |
-| Fabric | Community |
-| Hive | Official |
+| Dialect     | Support Level |
+|-------------|---------------|
+| Athena      | Official |
+| BigQuery    | Official |
+| ClickHouse  | Official |
+| Databricks  | Official |
+| DAX         | Community |
+| DB2         | Community |
+| Doris       | Community |
+| Dremio      | Community |
+| Drill       | Community |
+| Druid       | Community |
+| DuckDB      | Official |
+| Dune        | Community |
+| Exasol      | Community |
+| Fabric      | Community |
+| Hive        | Official |
 | Materialize | Community |
-| MySQL | Official |
-| Oracle | Official |
-| Postgres | Official |
-| Presto | Official |
-| PRQL | Community |
-| Redshift | Official |
-| RisingWave | Community |
+| MySQL       | Official |
+| Oracle      | Official |
+| Postgres    | Official |
+| Presto      | Official |
+| PRQL        | Community |
+| Redshift    | Official |
+| RisingWave  | Community |
 | SingleStore | Community |
-| Snowflake | Official |
-| Solr | Community |
-| Spark | Official |
-| SQLite | Official |
-| StarRocks | Official |
-| Tableau | Official |
-| Teradata | Community |
-| Trino | Official |
-| TSQL | Official |
-| YDB | [Plugin](https://pypi.org/project/ydb-sqlglot-plugin) |
-| MaxCompute | [Plugin](https://pypi.org/project/sqlglot-maxcompute) |
+| Snowflake   | Official |
+| Solr        | Community |
+| Spark       | Official |
+| SQLite      | Official |
+| StarRocks   | Official |
+| Tableau     | Official |
+| Teradata    | Community |
+| Trino       | Official |
+| TSQL        | Official |
+| YDB         | [Plugin](https://pypi.org/project/ydb-sqlglot-plugin) |
+| MaxCompute  | [Plugin](https://pypi.org/project/sqlglot-maxcompute) |
 
 **Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
 

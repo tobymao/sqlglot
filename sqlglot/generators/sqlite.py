@@ -6,7 +6,6 @@ from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_sql,
-    concat_to_dpipe_sql,
     count_if_to_sum,
     no_ilike_sql,
     no_pivot_sql,
@@ -151,7 +150,6 @@ class SQLiteGenerator(generator.Generator):
         **generator.Generator.TRANSFORMS,
         exp.AnyValue: any_value_to_max_sql,
         exp.Chr: rename_func("CHAR"),
-        exp.Concat: concat_to_dpipe_sql,
         exp.CountIf: count_if_to_sum,
         exp.Create: transforms.preprocess([_transform_create]),
         exp.CurrentDate: lambda *_: "CURRENT_DATE",

@@ -175,24 +175,48 @@ class TestSQLite(Validator):
             "SELECT MIN(a, b) FROM t",
             read={"mysql": "SELECT LEAST(a, b) FROM t"},
         )
-        # CONCAT skips NULL args in these dialects, but || propagates it, so the
-        # operands have to keep the COALESCE wrapping the other targets get.
+        # CONCAT and CONCAT_WS skip NULL args in SQLite, like in these dialects
         self.validate_all(
-            "SELECT COALESCE(a, '') || COALESCE(b, '') FROM t",
+            "SELECT CONCAT(a, b) FROM t",
             read={
                 "duckdb": "SELECT CONCAT(a, b) FROM t",
                 "postgres": "SELECT CONCAT(a, b) FROM t",
                 "tsql": "SELECT CONCAT(a, b) FROM t",
             },
+            write={
+                "duckdb": "SELECT CONCAT(a, b) FROM t",
+                "mysql": "SELECT CONCAT(COALESCE(a, ''), COALESCE(b, '')) FROM t",
+                "postgres": "SELECT CONCAT(a, b) FROM t",
+                "snowflake": "SELECT CONCAT(COALESCE(a, ''), COALESCE(b, '')) FROM t",
+                "sqlite": "SELECT CONCAT(a, b) FROM t",
+            },
         )
-        # CONCAT propagates NULL in these dialects, so || already matches and the
-        # operands are left alone.
+        self.validate_all(
+            "SELECT CONCAT_WS(',', a, b) FROM t",
+            read={
+                "duckdb": "SELECT CONCAT_WS(',', a, b) FROM t",
+                "mysql": "SELECT CONCAT_WS(',', a, b) FROM t",
+                "postgres": "SELECT CONCAT_WS(',', a, b) FROM t",
+            },
+            write={
+                "duckdb": "SELECT CONCAT_WS(',', a, b) FROM t",
+                "mysql": "SELECT CONCAT_WS(',', a, b) FROM t",
+                "postgres": "SELECT CONCAT_WS(',', a, b) FROM t",
+                "snowflake": "SELECT CONCAT_WS(',', COALESCE(a, ''), COALESCE(b, '')) FROM t",
+                "sqlite": "SELECT CONCAT_WS(',', a, b) FROM t",
+            },
+        )
+        # CONCAT propagates NULL in these dialects, so || already matches
         self.validate_all(
             "SELECT a || b FROM t",
             read={
                 "mysql": "SELECT CONCAT(a, b) FROM t",
                 "snowflake": "SELECT CONCAT(a, b) FROM t",
             },
+        )
+        self.validate_all(
+            "SELECT CASE WHEN ',' IS NULL OR a IS NULL OR b IS NULL THEN NULL ELSE CONCAT_WS(',', a, b) END FROM t",
+            read={"snowflake": "SELECT CONCAT_WS(',', a, b) FROM t"},
         )
         self.validate_all(
             "SELECT JSON_GROUP_ARRAY(name) FROM t",

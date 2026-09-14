@@ -26,6 +26,7 @@ class MySQL(Dialect):
 
     TIME_FORMAT = "'%Y-%m-%d %T'"
     DPIPE_IS_STRING_CONCAT = False
+    CONCAT_WS_COALESCE = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False

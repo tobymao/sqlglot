@@ -1,3 +1,4 @@
+from sqlglot import exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -96,6 +97,34 @@ class TestDoris(Validator):
         self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
         self.validate_identity("DROP TABLE my_table FORCE")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+
+        # Doris 4.1 reserves these (grammar: DorisLexer.g4 keywords minus
+        # DorisParser.g4 nonReserved; each verified against a live 4.1 FE —
+        # bare use is a parse error) but they were missing from
+        # RESERVED_KEYWORDS, so identifiers with these names rendered unquoted
+        for keyword in (
+            "analyzer",
+            "asof",
+            "both",
+            "char_filter",
+            "dump",
+            "layout",
+            "leading",
+            "match_condition",
+            "no_use_mv",
+            "play",
+            "token_filter",
+            "tokenizer",
+            "trailing",
+            "try_cast",
+            "use_mv",
+        ):
+            with self.subTest(f"Doris reserved keyword: {keyword}"):
+                self.validate_identity(f"SELECT `{keyword}` FROM t")
+                self.assertEqual(
+                    exp.select(keyword).from_("t").sql(dialect="doris"),
+                    f"SELECT `{keyword}` FROM t",
+                )
         self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM x")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS example_tbl_unique (user_id BIGINT NOT NULL, user_name VARCHAR(50) NOT NULL, city VARCHAR(20), age SMALLINT, sex TINYINT) UNIQUE KEY (user_id, user_name) DISTRIBUTED BY HASH (user_id) BUCKETS 10 PROPERTIES ('enable_unique_key_merge_on_write'='true')"

@@ -123,6 +123,7 @@ class Step:
             join.source_name = step.name
             join.add_dependency(step)
             step = join
+
         # final selects in this chain of steps representing a select
         projections: list[exp.Expr] = []
         # intermediate computations of agg funcs eg x + 1 in SUM(x + 1)
@@ -207,15 +208,60 @@ class Step:
         else:
             aggregate = None
 
+        # Plan DISTINCT before ORDER BY, since Aggregate sorts by its own group key
+        if isinstance(expression, exp.Select) and expression.args.get("distinct"):
+            distinct = Aggregate()
+            distinct.source = step.name
+            distinct.name = step.name
+            distinct.group = {
+                e.alias_or_name: e.unalias() for e in projections or expression.expressions
+            }
+            projections = [exp.column(name, step.name, quoted=True) for name in distinct.group]
+            distinct.add_dependency(step)
+            step = distinct
+        else:
+            distinct = None
+
         order: exp.Order | None = expression.args.get("order")
 
         if order is not None:
-            if aggregate is not None and isinstance(step, Aggregate):
+            if aggregate is not None:
                 for i, ordered in enumerate(order.expressions):
                     if extract_agg_operands(exp.alias_(ordered.this, f"_o_{i}", quoted=True)):
-                        ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
+                        ordered.this.replace(exp.column(f"_o_{i}", aggregate.name, quoted=True))
 
                 set_ops_and_aggs(aggregate)
+
+            if distinct is not None:
+                for i, ordered in enumerate(order.expressions):
+                    key = ordered.this
+                    group_name = next((n for n, e in distinct.group.items() if e == key), None)
+                    if group_name:
+                        key.replace(exp.column(group_name, step.name, quoted=True))
+                        continue
+
+                    # a bare column is a reference to an output name
+                    if isinstance(key, exp.Column) and not key.table and key.name in distinct.group:
+                        continue
+
+                    key = key.copy()
+                    for node in [
+                        n
+                        for n in key.walk()
+                        if isinstance(n, exp.Column) and not n.table and n.name in distinct.group
+                    ]:
+                        node.replace(distinct.group[node.name].copy())
+
+                    # the key has no single value once DISTINCT collapses rows; follow
+                    # duckdb/sqlite and take an arbitrary one
+                    if not isinstance(key, exp.Column):
+                        distinct.operands += (alias(key, f"_a_{i}"),)
+                        key = exp.column(f"_a_{i}", quoted=True)
+
+                    distinct.aggregations.append(
+                        exp.alias_(exp.First(this=key), f"_o_{i}", quoted=True)
+                    )
+                    ordered.this.replace(exp.column(f"_o_{i}", step.name, quoted=True))
 
             sort = Sort()
             sort.name = step.name
@@ -224,17 +270,6 @@ class Step:
             step = sort
 
         step.projections = projections
-
-        if isinstance(expression, exp.Select) and expression.args.get("distinct"):
-            distinct = Aggregate()
-            distinct.source = step.name
-            distinct.name = step.name
-            distinct.group = {
-                e.alias_or_name: exp.column(col=e.alias_or_name, table=step.name)
-                for e in projections or expression.expressions
-            }
-            distinct.add_dependency(step)
-            step = distinct
 
         limit: exp.Limit | None = expression.args.get("limit")
 

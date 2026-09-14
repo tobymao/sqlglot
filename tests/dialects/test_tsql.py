@@ -2078,6 +2078,13 @@ WHERE
         self.validate_identity("SELECT FORMAT(EndOfDayRate, 'N', 'en-us')")
         self.validate_identity("SELECT FORMAT('01-01-1991', 'd.mm.yyyy')")
         self.validate_identity("SELECT FORMAT(12345, '###.###.###')")
+
+        self.validate_all(
+            "SELECT FORMAT(a, 'ffffff')",
+            write={
+                "mysql": "SELECT DATE_FORMAT(a, '%f')",
+            },
+        )
         self.validate_identity("SELECT FORMAT(1234567, 'f')")
 
         self.validate_all(

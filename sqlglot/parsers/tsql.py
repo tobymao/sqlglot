@@ -157,7 +157,10 @@ def _build_format(args: list) -> exp.NumberToStr | exp.TimeToStr:
     fmt = seq_get(args, 1)
     culture = seq_get(args, 2)
 
-    number_fmt = fmt and (fmt.name in TRANSPILE_SAFE_NUMBER_FMT or not DATE_FMT_RE.search(fmt.name))
+    number_fmt = fmt and (
+        fmt.name in TRANSPILE_SAFE_NUMBER_FMT
+        or not (DATE_FMT_RE.search(fmt.name) or fmt.name == "ffffff")
+    )
 
     if number_fmt:
         return exp.NumberToStr(this=this, format=fmt, culture=culture)

@@ -656,6 +656,11 @@ def traverse_scope(expression: exp.Expr) -> list[Scope]:
     names within a subquery. Returns a list because a generator could result in
     incomplete properties which is confusing.
 
+    Scopes are returned in depth-first post-order. For each scope, its descendants
+    occupy consecutive entries in the returned list immediately before it. A scope
+    is a descendant of another scope if following its `parent` links eventually
+    reaches that other scope.
+
     Examples:
         >>> import sqlglot
         >>> expression = sqlglot.parse_one("SELECT a FROM (SELECT a FROM x) AS y")

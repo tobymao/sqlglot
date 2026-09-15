@@ -19,14 +19,14 @@ def record(journal: Journal, node: exp.Expr, arg_key: str) -> None:
     journal.append((node, arg_key, list(value) if type(value) is list else value))
 
 
-def revert(journal: Journal) -> None:
-    """Restores every recorded argument, newest first, and empties the journal.
+def revert(journal: Journal, start: int = 0) -> None:
+    """Restores every argument recorded from `start` onwards, newest first, and drops those entries.
 
     `set` reattaches the restored expressions (their `parent`, `arg_key` and `index`),
     so rules that only detach or reorder nodes leave the tree exactly as it was before
     they ran. Rules that replace nodes with new ones can't be reverted this way.
     """
-    for node, arg_key, value in reversed(journal):
+    for node, arg_key, value in reversed(journal[start:]):
         node.set(arg_key, value)
 
-    journal.clear()
+    del journal[start:]

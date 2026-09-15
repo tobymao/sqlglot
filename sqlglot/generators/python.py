@@ -90,6 +90,13 @@ def _dpipe_sql(self: generator.Generator, e: exp.DPipe) -> str:
     return self.func("SAFECONCAT" if e.args.get("safe") else "CONCAT", e.this, e.expression)
 
 
+def _distinct_sql(self, e: exp.Distinct) -> str:
+    if len(e.expressions) != 1:
+        raise ValueError(f"Unsupported multi-expression DISTINCT: {e.sql()}")
+
+    return f"set({self.sql(e.expressions[0])})"
+
+
 class PythonGenerator(generator.Generator):
     TRANSFORMS = {
         **{klass: _rename for klass in subclasses(exp.__name__, exp.Binary)},
@@ -105,7 +112,7 @@ class PythonGenerator(generator.Generator):
         exp.Concat: lambda self, e: self.func(
             "SAFECONCAT" if e.args.get("safe") else "CONCAT", *e.expressions
         ),
-        exp.Distinct: lambda self, e: f"set({self.sql(e, 'this')})",
+        exp.Distinct: _distinct_sql,
         exp.Div: _div_sql,
         exp.DPipe: _dpipe_sql,
         exp.Extract: lambda self, e: f"EXTRACT('{e.name.lower()}', {self.sql(e, 'expression')})",

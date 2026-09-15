@@ -1698,3 +1698,18 @@ class TestExecutor(unittest.TestCase):
             {"id": 2, "product": "Shoes", "price": 60.0},
         ]
         self.assertEqual(table.to_pylist(), expected)
+
+    def test_count_distinct(self):
+        rows = [{"a": "x", "v": 1}, {"a": "x", "v": 1}, {"a": "x", "v": 2}, {"a": "y", "v": None}]
+        schema = {"t": {"a": "VARCHAR", "v": "INT"}}
+
+        for sql, expected in (
+            ("SELECT COUNT(DISTINCT v) AS c FROM t", [(2,)]),
+            ("SELECT COUNT(v) AS c FROM t", [(3,)]),
+            ("SELECT COUNT(*) AS c FROM t", [(4,)]),
+            ("SELECT SUM(DISTINCT v) AS c FROM t", [(3,)]),
+            ("SELECT a, COUNT(DISTINCT v) AS c FROM t GROUP BY a", [("x", 2), ("y", 0)]),
+        ):
+            with self.subTest(sql):
+                result = execute(sql, schema=schema, tables={"t": rows})
+                self.assertEqual(sorted(result.rows), sorted(expected))

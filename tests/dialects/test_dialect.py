@@ -2096,6 +2096,26 @@ class TestDialect(Validator):
             },
         )
 
+        # an offset is a reason to nest on its own, or it binds to the last branch
+        self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 OFFSET 1",
+                "tsql": "SELECT * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS",
+            },
+        )
+
+        # an offset left behind in the derived table would skip rows before the order by
+        self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1 OFFSET 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1 OFFSET 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 ORDER BY x NULLS FIRST LIMIT 1 OFFSET 1",
+                "tsql": "SELECT * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY x OFFSET 1 ROWS FETCH FIRST 1 ROWS ONLY",
+            },
+        )
+
         self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b",
             read={

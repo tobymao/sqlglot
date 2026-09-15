@@ -12,15 +12,15 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS DATETIME)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS DECIMAL)", "CAST(x AS DECIMAL)")
         self.validate_identity("CAST(x AS DOUBLE)", "CAST(x AS FLOAT)")
-        self.validate_identity("CAST(x AS IMAGE)", "CAST(x AS VARBINARY)")
+        self.validate_identity("CAST(x AS IMAGE)", "CAST(x AS VARBINARY(MAX))")
         self.validate_identity("CAST(x AS INT)", "CAST(x AS INT)")
         self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR)")
-        self.validate_identity("CAST(x AS MONEY)", "CAST(x AS DECIMAL)")
+        self.validate_identity("CAST(x AS MONEY)", "CAST(x AS DECIMAL(19, 4))")
         self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS CHAR)")
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR)")
         self.validate_identity("CAST(x AS ROWVERSION)", "CAST(x AS ROWVERSION)")
         self.validate_identity("CAST(x AS SMALLDATETIME)", "CAST(x AS DATETIME2(6))")
-        self.validate_identity("CAST(x AS SMALLMONEY)", "CAST(x AS DECIMAL)")
+        self.validate_identity("CAST(x AS SMALLMONEY)", "CAST(x AS DECIMAL(10, 4))")
         self.validate_identity("CAST(x AS TEXT)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS TIMESTAMP)", "CAST(x AS DATETIME2(6))")
         self.validate_identity("CAST(x AS TIMESTAMPNTZ)", "CAST(x AS DATETIME2(6))")
@@ -28,7 +28,17 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS UTINYINT)", "CAST(x AS SMALLINT)")
         self.validate_identity("CAST(x AS UUID)", "CAST(x AS UNIQUEIDENTIFIER)")
         self.validate_identity("CAST(x AS VARIANT)", "CAST(x AS SQL_VARIANT)")
-        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS XML)", "CAST(x AS VARCHAR(MAX))")
+
+    def test_lossy_type_mappings_keep_precision(self):
+        # A bare DECIMAL is DECIMAL(18, 0) and a bare VARCHAR / VARBINARY column is
+        # length 1, so an unsized replacement silently truncates the stored data
+        self.validate_all(
+            "CREATE TABLE t (a DECIMAL(19, 4), b DECIMAL(10, 4), c VARCHAR(MAX), d VARBINARY(MAX))",
+            read={
+                "tsql": "CREATE TABLE t (a MONEY, b SMALLMONEY, c XML, d IMAGE)",
+            },
+        )
 
     def test_precision_capping(self):
         """Test that TIME, DATETIME2 & DATETIMEOFFSET precision is capped at 6 digits"""

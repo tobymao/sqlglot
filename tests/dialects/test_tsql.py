@@ -2095,6 +2095,13 @@ WHERE
             },
         )
         self.validate_all(
+            "SELECT FORMAT(a, 'ffffff')",
+            write={
+                "mysql": "SELECT DATE_FORMAT(a, '%f')",
+                "tsql": "SELECT FORMAT(a, 'ffffff')",
+            },
+        )
+        self.validate_all(
             "SELECT FORMAT('01-01-1991', 'dd.mm.yyyy')",
             write={
                 "spark": "SELECT DATE_FORMAT('01-01-1991', 'dd.mm.yyyy')",

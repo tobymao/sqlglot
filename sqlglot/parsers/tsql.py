@@ -46,7 +46,7 @@ DATE_DELTA_INTERVAL = {
     "d": "day",
 }
 
-DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})")
+DATE_FMT_RE = re.compile("([dD]{1,2})|([mM]{1,2})|([yY]{1,4})|([hH]{1,2})|([sS]{1,2})|([fF]{2,7})")
 
 # N = Numeric, C=Currency
 TRANSPILE_SAFE_NUMBER_FMT = {"N", "C"}

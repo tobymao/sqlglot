@@ -55,7 +55,7 @@ class FabricGenerator(TSQLGenerator):
         exp.DType.DECIMAL: "DECIMAL",
         exp.DType.IMAGE: "VARBINARY(MAX)",
         exp.DType.INT: "INT",
-        exp.DType.JSON: "VARCHAR",
+        exp.DType.JSON: "VARCHAR(MAX)",
         exp.DType.MONEY: "DECIMAL(19, 4)",
         exp.DType.NCHAR: "CHAR",
         exp.DType.NVARCHAR: "VARCHAR",

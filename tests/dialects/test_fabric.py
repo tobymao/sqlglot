@@ -14,7 +14,7 @@ class TestFabric(Validator):
         self.validate_identity("CAST(x AS DOUBLE)", "CAST(x AS FLOAT)")
         self.validate_identity("CAST(x AS IMAGE)", "CAST(x AS VARBINARY(MAX))")
         self.validate_identity("CAST(x AS INT)", "CAST(x AS INT)")
-        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR)")
+        self.validate_identity("CAST(x AS JSON)", "CAST(x AS VARCHAR(MAX))")
         self.validate_identity("CAST(x AS MONEY)", "CAST(x AS DECIMAL(19, 4))")
         self.validate_identity("CAST(x AS NCHAR)", "CAST(x AS CHAR)")
         self.validate_identity("CAST(x AS NVARCHAR)", "CAST(x AS VARCHAR)")
@@ -34,9 +34,9 @@ class TestFabric(Validator):
         # A bare DECIMAL is DECIMAL(18, 0) and a bare VARCHAR / VARBINARY column is
         # length 1, so an unsized replacement silently truncates the stored data
         self.validate_all(
-            "CREATE TABLE t (a DECIMAL(19, 4), b DECIMAL(10, 4), c VARCHAR(MAX), d VARBINARY(MAX))",
+            "CREATE TABLE t (a DECIMAL(19, 4), b DECIMAL(10, 4), c VARCHAR(MAX), d VARBINARY(MAX), e VARCHAR(MAX))",
             read={
-                "tsql": "CREATE TABLE t (a MONEY, b SMALLMONEY, c XML, d IMAGE)",
+                "tsql": "CREATE TABLE t (a MONEY, b SMALLMONEY, c XML, d IMAGE, e JSON)",
             },
         )
 

@@ -43,6 +43,36 @@ class TestSQLite(Validator):
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
             },
         )
+        self.validate_all(
+            "SELECT DATE(d, '-1 DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (-1) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (n) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (n + 1) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n + 1) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (-n) || ' MONTH') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (-n) MONTH) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (NULL) || ' DAY') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (NULL) DAY) FROM t",
+            },
+        )
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")
         self.validate_identity("SELECT DATETIME(1092941466, 'auto')")
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch', 'localtime')")

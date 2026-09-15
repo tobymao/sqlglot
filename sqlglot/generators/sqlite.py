@@ -244,6 +244,21 @@ class SQLiteGenerator(generator.Generator):
         if isinstance(modifier, exp.Interval):
             unit = unit or modifier.unit
             modifier = modifier.this
+
+        modifier = modifier.unnest()
+        if (
+            unit
+            and not isinstance(modifier, exp.Literal)
+            and not (isinstance(modifier, exp.Neg) and modifier.this.is_number)
+        ):
+            return self.func(
+                "DATE",
+                expression.this,
+                exp.DPipe(
+                    this=exp.paren(modifier),
+                    expression=exp.Literal.string(f" {unit.name}"),
+                ),
+            )
         modifier = modifier.name if modifier.is_string else self.sql(modifier)
         modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
         return self.func("DATE", expression.this, modifier)

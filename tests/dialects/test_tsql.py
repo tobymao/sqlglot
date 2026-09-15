@@ -165,6 +165,16 @@ class TestTSQL(Validator):
                 "": "SELECT x FROM t1 UNION ALL SELECT x FROM t2 LIMIT 1",
             },
         )
+        # only the offset gets attached to the set operation, so the order and the limit have to
+        # come out with it
+        self.validate_identity(
+            "SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 ROWS",
+            "SELECT * FROM (SELECT a FROM x UNION SELECT a FROM y) AS _l_0 ORDER BY a OFFSET 1 ROWS",
+        )
+        self.validate_identity(
+            "SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+            "SELECT * FROM (SELECT a FROM x UNION SELECT a FROM y) AS _l_0 ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+        )
         self.validate_all(
             "WITH t(c) AS (SELECT 1) SELECT * INTO foo FROM (SELECT c AS c FROM t) AS temp",
             read={

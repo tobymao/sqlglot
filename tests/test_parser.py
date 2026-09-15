@@ -1235,6 +1235,18 @@ class TestParser(unittest.TestCase):
 
         self.assertIn("Found multiple 'START WITH' clauses. Line 1, Col: 65.", str(ctx.exception))
 
+        sql = "SELECT a FROM x OFFSET 1 LIMIT 2, 3"
+
+        with self.assertRaises(ParseError) as ctx:
+            parse_one(sql)
+
+        self.assertIn("Found multiple 'OFFSET' clauses. Line 1, Col: 30.", str(ctx.exception))
+
+        self.assertEqual(
+            parse_one(sql, error_level=ErrorLevel.IGNORE).sql(),
+            "SELECT a FROM x LIMIT 3 OFFSET 2",
+        )
+
     def test_window_clause_without_from(self):
         # https://github.com/tobymao/sqlglot/issues/7438
         for dialect in (None, "sqlite", "postgres", "mysql", "duckdb", "bigquery"):

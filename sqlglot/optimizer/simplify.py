@@ -1362,7 +1362,7 @@ class Simplifier:
 
         # Find the first non-NULL constant arg
         for arg_index, arg in enumerate(coalesce.expressions):
-            if _is_constant(arg) and not is_null(arg):
+            if _is_nonnull_constant(arg):
                 break
         else:
             return expression

@@ -1405,6 +1405,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_coalesce_null_fallback(self):
+        for predicate in (
+            "COALESCE(a, NULL, 1) = 1",
+            "1 = COALESCE(a, NULL, 1)",
+            "0 < COALESCE(a, NULL, -1)",
+            "COALESCE(a, NULL, b, 3) = 3",
+            "COALESCE(a, NULL, NULL, 1) = 1",
+            "COALESCE(a, NULL) = 1",
+        ):
+            with self.subTest(predicate=predicate):
+                sql = f"SELECT {predicate} FROM x"
+                simplified = simplify(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    self.conn.execute(sql).fetchall(),
+                    self.conn.execute(simplified.sql(dialect="duckdb")).fetchall(),
+                )
+
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1

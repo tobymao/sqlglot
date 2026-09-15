@@ -1360,9 +1360,9 @@ class Simplifier:
         if not _is_constant(other):
             return expression
 
-        # Find the first constant arg
+        # Find the first non-NULL constant arg
         for arg_index, arg in enumerate(coalesce.expressions):
-            if _is_constant(arg):
+            if _is_nonnull_constant(arg):
                 break
         else:
             return expression

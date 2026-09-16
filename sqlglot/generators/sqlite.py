@@ -333,9 +333,11 @@ class SQLiteGenerator(generator.Generator):
         return f"CAST({sql} AS INTEGER)"
 
     # https://www.sqlite.org/lang_aggfunc.html#group_concat
+    # ORDER BY is valid since 3.44.0 (2023-11-01).
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this
         distinct = find_in_scope(expression, exp.Distinct)
+        order = this if isinstance(this, exp.Order) else None
 
         if distinct:
             this = distinct.expressions[0]
@@ -343,13 +345,15 @@ class SQLiteGenerator(generator.Generator):
         else:
             distinct_sql = ""
 
-        if isinstance(expression.this, exp.Order):
-            self.unsupported("SQLite GROUP_CONCAT doesn't support ORDER BY.")
-            if expression.this.this and not distinct:
-                this = expression.this.this
+        if order:
+            if order.this and not distinct:
+                this = order.this
+            order_sql = self.op_expressions(" ORDER BY", order, flat=True)
+        else:
+            order_sql = ""
 
         separator = expression.args.get("separator")
-        return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)})"
+        return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)}{order_sql})"
 
     def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
         if not expression.expressions:

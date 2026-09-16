@@ -1,7 +1,27 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA
+
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
+
+def _annotate_date_trunc(
+    self: TypeAnnotator, expression: exp.DateTrunc | exp.TimestampTrunc
+) -> exp.Expr:
+    if expression.this.is_type(
+        exp.DType.DATE,
+        exp.DType.TIMESTAMP_S,
+        exp.DType.TIMESTAMP_MS,
+        exp.DType.TIMESTAMP_NS,
+    ):
+        return self._set_type(expression, exp.DType.TIMESTAMP)
+
+    return self._set_type(expression, expression.this.type)
+
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
@@ -57,7 +77,9 @@ EXPRESSION_METADATA = {
         }
     },
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
+    exp.DateTrunc: {"annotator": _annotate_date_trunc},
     exp.PercentileDisc: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
+    exp.TimestampTrunc: {"annotator": _annotate_date_trunc},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},
     exp.ToDays: {"returns": exp.DType.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DType.TIME},

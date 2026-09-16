@@ -4378,6 +4378,11 @@ class Parser:
                             expression.set("offset", None)
 
                             if offset:
+                                if this.args.get("offset"):
+                                    self.raise_error(
+                                        "Found multiple 'OFFSET' clauses", token=modifier_token
+                                    )
+
                                 offset = exp.Offset(expression=offset)
                                 this.set("offset", offset)
 

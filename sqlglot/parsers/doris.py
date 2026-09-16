@@ -40,7 +40,8 @@ class DorisParser(MySQLParser):
     }
 
     FUNCTION_PARSERS = {
-        k: v for k, v in MySQLParser.FUNCTION_PARSERS.items() if k != "GROUP_CONCAT"
+        **MySQLParser.FUNCTION_PARSERS,
+        "GROUP_CONCAT": lambda self: self._parse_doris_group_concat(),
     }
 
     NO_PAREN_FUNCTIONS = {
@@ -114,6 +115,19 @@ class DorisParser(MySQLParser):
 
         part_range = self.expression(exp.PartitionRange(this=name, expressions=values))
         return self.expression(exp.Partition(expressions=[part_range]))
+
+    def _parse_doris_group_concat(self) -> exp.GroupConcat:
+        this = self._parse_lambda()
+        separator = None
+
+        if self._match(TokenType.COMMA):
+            separator = self._parse_bitwise()
+            if not isinstance(this, exp.Order):
+                this = self._parse_order(this=this)
+        elif self._match(TokenType.SEPARATOR):
+            separator = self._parse_field()
+
+        return self.expression(exp.GroupConcat(this=this, separator=separator))
 
     def _parse_build_property(self) -> exp.BuildProperty:
         return self.expression(exp.BuildProperty(this=self._parse_var(upper=True)))

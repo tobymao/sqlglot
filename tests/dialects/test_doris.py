@@ -57,6 +57,18 @@ class TestDoris(Validator):
                 "postgres": "SELECT STRING_AGG('aa', ',')",
             },
         )
+        # ORDER BY must not absorb the separator as another sort key (that
+        # form grows on every round-trip: ORDER BY a, ',', ',', ...).
+        self.validate_identity(
+            "SELECT GROUP_CONCAT(a ORDER BY a)",
+            "SELECT GROUP_CONCAT(a ORDER BY a SEPARATOR ',')",
+        )
+        self.validate_identity("SELECT GROUP_CONCAT(a ORDER BY a SEPARATOR '|')")
+        self.validate_identity("SELECT GROUP_CONCAT(a, '|')")
+        self.validate_identity(
+            "SELECT GROUP_CONCAT(DISTINCT a ORDER BY a DESC)",
+            "SELECT GROUP_CONCAT(DISTINCT a ORDER BY a DESC SEPARATOR ',')",
+        )
         self.validate_all(
             "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
             read={

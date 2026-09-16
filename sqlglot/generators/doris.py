@@ -22,6 +22,17 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
+def _groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+    this = expression.this
+    separator = expression.args.get("separator") or exp.Literal.string(",")
+    # With ORDER BY, the separator must use the SEPARATOR keyword. Passing it
+    # as another func() argument renders `ORDER BY a, ','`, which re-parses as
+    # extra sort keys and grows on every round-trip.
+    if isinstance(this, exp.Order):
+        return f"GROUP_CONCAT({self.sql(this)} SEPARATOR {self.sql(separator)})"
+    return self.func("GROUP_CONCAT", this, separator)
+
+
 class DorisGenerator(MySQLGenerator):
     LAST_DAY_SUPPORTS_DATE_PART = False
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
@@ -62,9 +73,7 @@ class DorisGenerator(MySQLGenerator):
             "DATE_TRUNC", e.this, weekstart_unit_to_str(self, e)
         ),
         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
-        exp.GroupConcat: lambda self, e: self.func(
-            "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
-        ),
+        exp.GroupConcat: _groupconcat_sql,
         exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
         exp.Lag: _lag_lead_sql,
         exp.Lead: _lag_lead_sql,

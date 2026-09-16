@@ -1645,7 +1645,7 @@ WHERE
             (("MILLISECOND", "ms"), "MILLISECOND"),
             (("MICROSECOND", "mcs"), "MICROSECOND"),
             (("NANOSECOND", "ns"), "NANOSECOND"),
-            (("WEEKDAY", "dw"), "WEEKDAY"),
+            (("WEEKDAY", "dw", "dow"), "WEEKDAY"),
             (("TZOFFSET", "tz"), "TZOFFSET"),
             (("MONTH", "mm", "m"), "MONTH"),
             (("DAYOFYEAR", "dy", "y"), "DAYOFYEAR"),
@@ -1716,6 +1716,17 @@ WHERE
         self.validate_identity(
             'SELECT DATEPART("dd", x)',
             "SELECT DATEPART(DAY, x)",
+        )
+        # EXTRACT(DOW/DW) must canonicalize in one step, matching DATEPART(dw).
+        self.validate_identity("SELECT EXTRACT(DOW FROM x)", "SELECT DATEPART(WEEKDAY, x)")
+        self.validate_identity("SELECT EXTRACT(DW FROM x)", "SELECT DATEPART(WEEKDAY, x)")
+        self.validate_identity("SELECT EXTRACT(WEEKDAY FROM x)", "SELECT DATEPART(WEEKDAY, x)")
+        self.validate_all(
+            "SELECT DATEPART(WEEKDAY, x)",
+            read={
+                "postgres": "SELECT EXTRACT(DOW FROM x)",
+                "tsql": "SELECT DATEPART(DOW, x)",
+            },
         )
 
     def test_convert(self):

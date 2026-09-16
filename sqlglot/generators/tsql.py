@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     date_delta_sql,
     datestrtodate_sql,
     generatedasidentitycolumnconstraint_sql,
+    map_date_part,
     max_or_greatest,
     min_or_least,
     remove_ts_or_ds_to_date,
@@ -342,7 +343,7 @@ class TSQLGenerator(generator.Generator):
         )
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        part = expression.this
+        part = map_date_part(expression.this, self.dialect)
         name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
 
         return self.func("DATEPART", name, expression.expression)

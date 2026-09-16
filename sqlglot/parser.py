@@ -10481,22 +10481,17 @@ class Parser:
         return expr
 
     def _parse_operator(self, this: exp.Expr | None) -> exp.Expr | None:
-        while True:
-            if not self._match(TokenType.L_PAREN):
-                break
+        if not self._match(TokenType.L_PAREN):
+            self._retreat(self._index - 1)
+            return None
 
-            op = ""
-            while self._curr and not self._match(TokenType.R_PAREN):
-                op += self._curr.text
-                self._advance()
+        op = ""
+        while self._curr and not self._match(TokenType.R_PAREN):
+            op += self._curr.text
+            self._advance()
 
-            comments = self._prev_comments
-            this = self.expression(
-                exp.Operator(this=this, operator=op, expression=self._parse_bitwise()),
-                comments=comments,
-            )
-
-            if not self._match(TokenType.OPERATOR):
-                break
-
-        return this
+        comments = self._prev_comments
+        return self.expression(
+            exp.Operator(this=this, operator=op, expression=self._parse_bitwise()),
+            comments=comments,
+        )

@@ -5358,6 +5358,10 @@ FROM subquery2""",
         self.validate_identity("SELECT 1 OPERATOR(+) 2")
         self.validate_identity("SELECT 1 OPERATOR(+) /* foo */ 2")
         self.validate_identity("SELECT 1 OPERATOR(pg_catalog.+) 2")
+        self.validate_identity("SELECT 1 operator", "SELECT 1 AS operator")
+        self.validate_identity(
+            "SELECT 1 OPERATOR(+) 2 operator", "SELECT 1 OPERATOR(+) 2 AS operator"
+        )
 
     def test_json_keys(self):
         self.validate_all(

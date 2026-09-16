@@ -66,6 +66,9 @@ class TestDatabricks(Validator):
         self.validate_identity("CREATE TABLE target SHALLOW CLONE source")
         self.validate_identity("INSERT INTO a REPLACE WHERE cond VALUES (1), (2)")
         self.validate_identity("CREATE FUNCTION a.b(x INT) RETURNS INT RETURN x + 1")
+        self.validate_identity(
+            "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC RETURN col"
+        )
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")

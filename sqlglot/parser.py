@@ -2920,6 +2920,9 @@ class Parser:
         if self._match_text_seq("PARAMETER", "STYLE", "PANDAS"):
             return self.expression(exp.ParameterStyleProperty(this="PANDAS"))
 
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
         index = self._index
 
         seq_props = self._parse_sequence_properties()

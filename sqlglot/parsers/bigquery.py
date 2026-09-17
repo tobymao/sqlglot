@@ -544,12 +544,6 @@ class BigQueryParser(parser.Parser):
             )
         )
 
-    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
-        if self._match_text_seq("NOT", "DETERMINISTIC"):
-            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
-
-        return super()._parse_property()
-
     @t.overload
     def _parse_json_object(self, agg: t.Literal[False]) -> exp.JSONObject: ...
 

@@ -315,6 +315,26 @@ def _parenthesize_nested_connector(expression: exp.Expr, parent: exp.Expr | None
     return expression
 
 
+OPERATOR_EXPRESSIONS = (exp.Binary, exp.Unary, exp.Predicate)
+
+
+def _parenthesize_on_conditional_collapse(
+    expression: exp.Expr, parent: exp.Expr | None
+) -> exp.Expr:
+    """
+    Collapsing a CASE/IF to one of its branches replaces an atomic operand with a compound
+    expression. The generator only emits grouping for Paren nodes, so if the branch is placed
+    as an operand of another operator expression it must be wrapped to preserve its grouping
+    (e.g. x * CASE ... a - b END -> x * (a - b)). Paren nodes already preserve the grouping,
+    so they are left as-is; simplify_parens prunes any redundant wrappers afterwards.
+    """
+    if isinstance(expression, OPERATOR_EXPRESSIONS) and not isinstance(expression, exp.Paren):
+        if isinstance(parent, OPERATOR_EXPRESSIONS) and not isinstance(parent, exp.Paren):
+            return exp.paren(expression, copy=False)
+
+    return expression
+
+
 def always_true(expression: object) -> bool:
     return (isinstance(expression, exp.Boolean) and expression.this) or (
         isinstance(expression, exp.Literal) and expression.is_number and not is_zero(expression)
@@ -1445,17 +1465,25 @@ class Simplifier:
                     cond = cond.replace(this.pop().eq(cond))
 
                 if always_true(cond):
-                    return case.args["true"]
+                    return _parenthesize_on_conditional_collapse(
+                        case.args["true"], expression.parent
+                    )
 
                 if always_false(cond):
                     case.pop()
                     if not expression.args["ifs"]:
-                        return expression.args.get("default") or exp.null()
+                        return _parenthesize_on_conditional_collapse(
+                            expression.args.get("default") or exp.null(), expression.parent
+                        )
         elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
             if always_true(expression.this):
-                return expression.args["true"]
+                return _parenthesize_on_conditional_collapse(
+                    expression.args["true"], expression.parent
+                )
             if always_false(expression.this):
-                return expression.args.get("false") or exp.null()
+                return _parenthesize_on_conditional_collapse(
+                    expression.args.get("false") or exp.null(), expression.parent
+                )
 
         return expression
 

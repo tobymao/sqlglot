@@ -1422,6 +1422,36 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     self.conn.execute(simplified.sql(dialect="duckdb")).fetchall(),
                 )
 
+    def test_simplify_conditional_collapse_preserves_grouping(self):
+        for sql, expected in [
+            # A CASE collapsed to a branch of an arithmetic operator must keep the
+            # branch parenthesized so operator precedence doesn't change its meaning
+            (
+                "SELECT x * CASE WHEN FALSE THEN NULL ELSE a - b END FROM t",
+                "SELECT x * (a - b) FROM t",
+            ),
+            (
+                "SELECT x * (CASE WHEN 1 IS NULL THEN NULL ELSE 1 - b END) FROM t",
+                "SELECT x * (1 - b) FROM t",
+            ),
+            (
+                "SELECT x - CASE WHEN TRUE THEN a + b ELSE c END FROM t",
+                "SELECT x - (a + b) FROM t",
+            ),
+            (
+                "SELECT CASE WHEN FALSE THEN NULL ELSE a - b END * x FROM t",
+                "SELECT (a - b) * x FROM t",
+            ),
+            # IF collapse is affected the same way
+            ("SELECT x * IF(TRUE, a - b, c) FROM t", "SELECT x * (a - b) FROM t"),
+            # simple branches don't need grouping
+            ("SELECT x * IF(TRUE, a, c) FROM t", "SELECT x * a FROM t"),
+        ]:
+            with self.subTest(sql):
+                self.assertEqual(
+                    simplify(parse_one(sql, read="duckdb")).sql(dialect="duckdb"), expected
+                )
+
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1

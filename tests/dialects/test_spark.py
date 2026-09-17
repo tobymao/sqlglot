@@ -29,6 +29,12 @@ class TestSpark(Validator):
             "CREATE TABLE foo (col STRING) CLUSTERED BY (col) SORTED BY (col) INTO 10 BUCKETS"
         )
         self.validate_identity("TRUNCATE TABLE t1 PARTITION(age = 10, name = 'test', address)")
+        self.validate_identity(
+            "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC RETURN col"
+        )
+        self.validate_identity(
+            "CREATE FUNCTION f(col STRING) RETURNS STRING NOT DETERMINISTIC RETURN col"
+        )
 
         self.validate_all(
             "CREATE TABLE t (a INT, b STRING, UNIQUE (a))",

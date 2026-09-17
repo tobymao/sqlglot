@@ -333,7 +333,7 @@ class TSQLParser(parser.Parser):
     }
 
     QUERY_MODIFIER_PARSERS = {
-        **parser.Parser.QUERY_MODIFIER_PARSERS,
+        **{k: v for k, v in parser.Parser.QUERY_MODIFIER_PARSERS.items() if k != TokenType.FETCH},
         TokenType.OPTION: lambda self: ("options", self._parse_options()),
         TokenType.FOR: lambda self: ("for_", self._parse_for()),
     }
@@ -459,13 +459,25 @@ class TSQLParser(parser.Parser):
         ),
     }
 
-    SET_OP_MODIFIERS = {"offset"}
+    SET_OP_MODIFIERS = {"order", "offset"}
 
     ODBC_DATETIME_LITERALS = {
         "d": exp.Date,
         "t": exp.Time,
         "ts": exp.Timestamp,
     }
+
+    def _parse_set_operations(self, this: exp.Expr | None) -> exp.Expr | None:
+        this = super()._parse_set_operations(this)
+
+        # Parse FETCH after the set operation so it can coexist with a branch TOP clause
+        if isinstance(this, exp.Query) and self._match(TokenType.FETCH, advance=False):
+            if this.args.get("limit"):
+                self.raise_error("Found multiple 'FETCH' clauses")
+
+            this.set("limit", self._parse_limit())
+
+        return this
 
     def _parse_execute(self) -> exp.Execute:
         return_status = None

@@ -150,7 +150,6 @@ class TSQLGenerator(generator.Generator):
     SUPPORTS_SELECT_INTO = True
     JSON_PATH_BRACKETED_KEY_SUPPORTED = False
     SUPPORTS_TO_NUMBER = False
-    SET_OP_MODIFIERS = False
     COPY_PARAMS_EQ_REQUIRED = True
     PARSE_JSON_NAME: str | None = None
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -274,6 +273,33 @@ class TSQLGenerator(generator.Generator):
         return f"{scope_name}::{rhs}"
 
     def select_sql(self, expression: exp.Select) -> str:
+        self._prepare_limit_offset(expression)
+        return super().select_sql(expression)
+
+    def set_operations(self, expression: exp.SetOperation) -> str:
+        limit = expression.args.get("limit")
+        offset = expression.args.get("offset")
+        order = expression.args.get("order")
+
+        if (isinstance(limit, exp.Limit) and not offset) or (
+            not order and (offset or isinstance(limit, exp.Fetch))
+        ):
+            select = self._move_ctes_to_top_level(
+                exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+            )
+            if limit:
+                select.set("limit", limit.pop())
+            if offset:
+                select.set("offset", offset.pop())
+            if order:
+                select.set("order", order.pop())
+
+            return self.sql(select)
+
+        self._prepare_limit_offset(expression)
+        return super().set_operations(expression)
+
+    def _prepare_limit_offset(self, expression: exp.Query) -> None:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
 
@@ -294,8 +320,6 @@ class TSQLGenerator(generator.Generator):
                 # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                 # we replace here because otherwise TOP would be generated in select_sql
                 limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
-
-        return super().select_sql(expression)
 
     def convert_sql(self, expression: exp.Convert) -> str:
         name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

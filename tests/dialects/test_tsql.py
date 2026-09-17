@@ -8,6 +8,108 @@ from tests.dialects.test_dialect import Validator
 class TestTSQL(Validator):
     dialect = "tsql"
 
+    def test_set_operation_unordered_pagination(self):
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            for limit in ("", " LIMIT 2"):
+                with self.subTest(op=op, limit=limit):
+                    sql = f"SELECT * FROM (SELECT a FROM x {op} SELECT a FROM y) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS"
+                    if limit:
+                        sql += " FETCH FIRST 2 ROWS ONLY"
+                    self.validate_all(
+                        sql,
+                        read={"": f"SELECT a FROM x {op} SELECT a FROM y{limit} OFFSET 1"},
+                    )
+                    self.validate_identity(sql)
+
+        for source, expected in (
+            (
+                "SELECT CAST('<a/>' AS XML) AS x UNION ALL SELECT CAST('<b/>' AS XML) AS x OFFSET 1",
+                "SELECT * FROM (SELECT CAST('<a/>' AS XML) AS x UNION ALL SELECT CAST('<b/>' AS XML) AS x) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS",
+            ),
+            (
+                "WITH t AS (SELECT 1 AS a) SELECT a FROM t UNION ALL SELECT a FROM t OFFSET 1",
+                "WITH t AS (SELECT 1 AS a) SELECT * FROM (SELECT a FROM t UNION ALL SELECT a FROM t) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS",
+            ),
+            (
+                "SELECT a FROM x UNION ALL (SELECT a FROM y LIMIT 1) OFFSET 1",
+                "SELECT * FROM (SELECT a FROM x UNION ALL (SELECT TOP 1 a FROM y)) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS",
+            ),
+            (
+                "SELECT * FROM (SELECT a FROM x UNION ALL SELECT a FROM y OFFSET 1) AS u LIMIT 1",
+                "SELECT TOP 1 * FROM (SELECT * FROM (SELECT a FROM x UNION ALL SELECT a FROM y) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS) AS u",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(expected, read={"": source})
+                expression = self.validate_identity(expected)
+                self.validate_identity(expression.sql("tsql", pretty=True), pretty=True)
+
+        expression = self.parse_one("SELECT a FROM x UNION ALL SELECT TOP 1 a FROM y").offset(1)
+        sql = "SELECT * FROM (SELECT a FROM x UNION ALL SELECT TOP 1 a FROM y) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS"
+        self.assertEqual(expression.sql("tsql"), sql)
+        self.validate_identity(sql)
+
+    def test_set_operation_pagination(self):
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            with self.subTest(op=op):
+                self.validate_identity(
+                    f"SELECT a FROM x {op} SELECT a FROM y ORDER BY a OFFSET 1 ROWS"
+                )
+                self.validate_identity(
+                    f"SELECT a FROM x {op} SELECT a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
+                )
+                self.validate_identity(
+                    f"SELECT a FROM x {op} SELECT TOP 1 a FROM y ORDER BY a OFFSET 1 ROWS"
+                )
+                self.validate_identity(
+                    f"SELECT a FROM x {op} SELECT TOP 1 a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
+                )
+
+        expression = self.validate_identity(
+            "SELECT -1 AS x UNION ALL SELECT TOP 2 x FROM (VALUES (2), (1), (0)) AS t(x) ORDER BY x OFFSET 0 ROWS FETCH FIRST 1 ROWS ONLY"
+        )
+        self.assertIsInstance(expression.args["limit"], exp.Fetch)
+        self.assertIsInstance(expression.expression.args["limit"], exp.Limit)
+        for sql in (
+            "SELECT TOP 2 x FROM t ORDER BY x OFFSET 0 ROWS FETCH FIRST 1 ROWS ONLY",
+            "SELECT x FROM t ORDER BY x OFFSET 0 ROWS FETCH FIRST 1 ROWS ONLY FETCH FIRST 2 ROWS ONLY",
+        ):
+            with self.assertRaises(ParseError):
+                parse_one(sql, read="tsql")
+
+        self.validate_all(
+            "SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+            write={
+                "": "SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 FETCH NEXT 2 ROWS ONLY",
+                "clickhouse": "SELECT * FROM (SELECT a FROM x UNION DISTINCT SELECT a FROM y) AS _l_0 ORDER BY a NULLS FIRST OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM x UNION ALL SELECT TOP 1 a FROM y ORDER BY a OFFSET 1 ROWS",
+            write={
+                "clickhouse": "SELECT * FROM (SELECT a FROM x UNION ALL SELECT a FROM y LIMIT 1) AS _l_0 ORDER BY a NULLS FIRST OFFSET 1",
+            },
+        )
+        self.validate_identity(
+            "SELECT x.a FROM x UNION ALL SELECT y.a FROM y ORDER BY x.a OFFSET 1 ROWS"
+        )
+        self.validate_identity("SELECT 1 UNION ALL SELECT 2 ORDER BY 1 OFFSET 1 ROWS")
+        self.validate_identity(
+            "SELECT a, a FROM x UNION ALL SELECT a, a FROM y ORDER BY 1 OFFSET 1 ROWS"
+        )
+        self.validate_identity(
+            "SELECT a FROM x UNION ALL SELECT TOP 50 PERCENT a FROM y ORDER BY a OFFSET 1 ROWS"
+        )
+        self.validate_identity(
+            "SELECT a FROM x UNION SELECT a FROM y UNION SELECT a FROM z ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
+        )
+        self.validate_identity(
+            "SELECT a FROM x UNION SELECT a FROM (SELECT a AS a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY) AS t ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
+        )
+        self.validate_identity(
+            "WITH x(a) AS (SELECT 1), y(a) AS (SELECT 2) SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
+        )
+
     def test_tsql(self):
         self.validate_all(
             "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",

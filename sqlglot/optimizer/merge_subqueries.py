@@ -6,7 +6,6 @@ from collections import defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.pushdown_projections import SET_RETURNING_FUNCTIONS
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -304,7 +303,7 @@ def _mergeable(
         if s.unalias().is_number:
             number_literal_aliases.add(name)
         for node in s.walk():
-            if isinstance(node, (exp.AggFunc, exp.Select, *SET_RETURNING_FUNCTIONS)):
+            if isinstance(node, (exp.AggFunc, exp.Select, *exp.SET_RETURNING_FUNCTIONS)):
                 return False
             if isinstance(node, exp.Window):
                 window_aliases.add(name)

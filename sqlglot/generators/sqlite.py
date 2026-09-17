@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_sql,
     count_if_to_sum,
+    groupconcat_sql,
     no_ilike_sql,
     no_pivot_sql,
     no_tablesample_sql,
@@ -15,7 +16,6 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.tokens import TokenType
 
 
@@ -332,34 +332,23 @@ class SQLiteGenerator(generator.Generator):
 
         return f"CAST({sql} AS INTEGER)"
 
-    # https://www.sqlite.org/lang_aggfunc.html#group_concat
-    # ORDER BY is valid since 3.44.0 (2023-11-01).
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
-        this = expression.this
-        distinct = find_in_scope(expression, exp.Distinct)
-        order = this if isinstance(this, exp.Order) else None
+        node = expression.parent if isinstance(expression.parent, exp.Filter) else expression
+        window = node.parent
 
-        if distinct:
-            this = distinct.expressions[0]
-            distinct_sql = "DISTINCT "
-        else:
-            distinct_sql = ""
+        if (
+            isinstance(expression.this, exp.Order)
+            and isinstance(window, exp.Window)
+            and window.this is node
+        ):
+            self.unsupported(
+                "SQLite GROUP_CONCAT window functions do not support argument ORDER BY"
+            )
+            expression.set("this", expression.this.this)
 
-        if order:
-            if order.this and not distinct:
-                this = order.this
-            if isinstance(expression.parent, exp.Window):
-                self.unsupported(
-                    "SQLite GROUP_CONCAT window functions do not support argument ORDER BY"
-                )
-                order_sql = ""
-            else:
-                order_sql = self.op_expressions(" ORDER BY", order, flat=True)
-        else:
-            order_sql = ""
-
-        separator = expression.args.get("separator")
-        return f"GROUP_CONCAT({distinct_sql}{self.format_args(this, separator)}{order_sql})"
+        return groupconcat_sql(
+            self, expression, func_name="GROUP_CONCAT", sep=None, within_group=False
+        )
 
     def _greatest_least_sql(self, expression: exp.Greatest | exp.Least) -> str:
         if not expression.expressions:

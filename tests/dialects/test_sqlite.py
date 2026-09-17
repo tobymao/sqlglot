@@ -38,6 +38,15 @@ class TestSQLite(Validator):
             "SELECT GROUP_CONCAT(x, ',' ORDER BY y) OVER (PARTITION BY z)",
             write={"sqlite": UnsupportedError},
         )
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x, ',') FILTER(WHERE y > 0) OVER (PARTITION BY z)",
+            read={
+                "duckdb": "SELECT STRING_AGG(x, ',' ORDER BY y) FILTER (WHERE y > 0) OVER (PARTITION BY z)",
+            },
+        )
+        self.validate_identity(
+            "SELECT SUM(z) OVER (PARTITION BY GROUP_CONCAT(x ORDER BY y)) FROM t GROUP BY z"
+        )
         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity(
             "SELECT RANK() OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM tbl"

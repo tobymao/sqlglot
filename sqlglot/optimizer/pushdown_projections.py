@@ -98,7 +98,7 @@ def pushdown_projections(
         The optimized expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-    source_column_alias_count: dict[exp.Expr | Scope, int] = {}
+    source_column_alias_count: dict[Scope, int] = {}
 
     # Map of Scope to all columns being selected by outer queries.
     referenced_columns: defaultdict[Scope, set[str | object]] = defaultdict(set)
@@ -120,7 +120,7 @@ def pushdown_projections(
     for scope in reversed(traverse_scope(expression)):
         scope_expression = scope.expression
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
-        alias_count = source_column_alias_count.get(scope, 0)
+        alias_count = max(source_column_alias_count.get(scope, 0), len(scope.outer_columns))
         widened = False
 
         # Do not optimize this set operation if it's using the BigQuery-specific kind / side
@@ -179,6 +179,11 @@ def pushdown_projections(
                 continue
 
             by_name = scope_expression.args.get("by_name")
+
+            if alias_count and by_name:
+                # The aliases name the merged output, which doesn't map onto operand positions
+                widened = SELECT_ALL not in parent_selections
+                parent_selections = {SELECT_ALL}
 
             if not by_name and len(le.selects) != len(re.selects):
                 scope_sql = scope_expression.sql(dialect=dialect)
@@ -260,9 +265,11 @@ def pushdown_projections(
 
                     referenced_columns[source].update(columns)
 
-                column_aliases = node.alias_column_names
-                if column_aliases:
-                    source_column_alias_count[source] = len(column_aliases)
+                    column_aliases = node.alias_column_names
+                    if column_aliases:
+                        source_column_alias_count[source] = max(
+                            source_column_alias_count.get(source, 0), len(column_aliases)
+                        )
 
     return expression
 

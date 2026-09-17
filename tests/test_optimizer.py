@@ -3128,6 +3128,47 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(set(scope_t.cte_sources), {"t"})
         self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
 
+    def test_pushdown_projections_keeps_positionally_aliased_columns(self):
+        # A column list on a derived table, CTE or LATERAL names the source's columns by
+        # position, so the projections it covers can't be pruned or the names would shift
+        for sql, expected in (
+            (
+                "SELECT t.c FROM (SELECT a, b FROM x) AS t(c, d)",
+                "SELECT t.c FROM (SELECT a, b FROM x) AS t(c, d)",
+            ),
+            (
+                "SELECT t.c FROM ((SELECT a, b FROM x)) AS t(c, d)",
+                "SELECT t.c FROM ((SELECT a, b FROM x)) AS t(c, d)",
+            ),
+            (
+                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL SELECT b, c FROM y) AS t(c, d)",
+                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL SELECT b, c FROM y) AS t(c, d)",
+            ),
+            (
+                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT c FROM t",
+                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT c FROM t",
+            ),
+            (
+                "SELECT t.c FROM LATERAL (SELECT a, b FROM x) AS t(c, d)",
+                "SELECT t.c FROM LATERAL (SELECT a, b FROM x) AS t(c, d)",
+            ),
+            # BY NAME merges the operands by column name, so positions don't map onto them
+            (
+                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) AS t(c)",
+                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) AS t(c)",
+            ),
+            # Columns beyond the list keep their own names and are pruned as usual
+            (
+                "SELECT t.c FROM (SELECT a, b FROM x) AS t(c)",
+                "SELECT t.c FROM (SELECT a FROM x) AS t(c)",
+            ),
+        ):
+            with self.subTest(sql):
+                expression = optimizer.pushdown_projections.pushdown_projections(
+                    parse_one(sql), schema=self.schema
+                )
+                self.assertEqual(expression.sql(), expected)
+
     def test_pushdown_projections_keeps_recursive_cte_self_referenced_columns(self):
         # The recursive term joins on t.link, which the outer query never
         # selects; pruning it used to corrupt the CTE and crash merge_subqueries

@@ -284,3 +284,11 @@ SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x 
 
 SELECT t.a, t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY (1), (2)) t;
 SELECT t.a AS a, t.s AS s FROM (SELECT x.a AS a, x.b AS b, SUM(x.b) AS s FROM x AS x GROUP BY (1), (2)) AS t;
+
+# title: recursive cte column list is kept by qualify, so its columns can't be pruned
+WITH RECURSIVE t(c, d) AS (SELECT a, b FROM x) SELECT c FROM t;
+WITH RECURSIVE t(c, d) AS (SELECT x.a AS c, x.b AS d FROM x AS x) SELECT t.c AS c FROM t AS t;
+
+# title: recursive cte column list applies to every set operation operand
+WITH RECURSIVE t(c, d) AS (SELECT a, b FROM x UNION ALL SELECT b, c FROM y) SELECT c FROM t;
+WITH RECURSIVE t(c, d) AS (SELECT x.a AS c, x.b AS d FROM x AS x UNION ALL SELECT y.b AS c, y.c AS d FROM y AS y) SELECT t.c AS c FROM t AS t;

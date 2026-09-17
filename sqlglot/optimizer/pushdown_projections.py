@@ -98,7 +98,7 @@ def pushdown_projections(
         The optimized expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
-    source_column_alias_count: dict[exp.Expr | Scope, int] = {}
+    source_column_alias_count: dict[Scope, int] = {}
 
     # Map of Scope to all columns being selected by outer queries.
     referenced_columns: defaultdict[Scope, set[str | object]] = defaultdict(set)
@@ -180,6 +180,14 @@ def pushdown_projections(
 
             by_name = scope_expression.args.get("by_name")
 
+            if alias_count and by_name:
+                # The aliases name the merged output, which doesn't map onto operand positions
+                widened = SELECT_ALL not in parent_selections
+                parent_selections = {SELECT_ALL}
+            elif alias_count:
+                # Positional aliases name every operand's columns too
+                source_column_alias_count[left] = source_column_alias_count[right] = alias_count
+
             if not by_name and len(le.selects) != len(re.selects):
                 scope_sql = scope_expression.sql(dialect=dialect)
                 raise OptimizeError(f"Invalid set operation due to column mismatch: {scope_sql}.")
@@ -260,11 +268,30 @@ def pushdown_projections(
 
                     referenced_columns[source].update(columns)
 
-                column_aliases = node.alias_column_names
-                if column_aliases:
-                    source_column_alias_count[source] = len(column_aliases)
+                    alias_count = _alias_column_count(node, source)
+                    if alias_count:
+                        source_column_alias_count[source] = max(
+                            source_column_alias_count.get(source, 0), alias_count
+                        )
 
     return expression
+
+
+def _alias_column_count(node: exp.Expr, source: Scope) -> int:
+    """
+    The number of the source's output columns that a TableAlias names positionally, either where
+    it's referenced (e.g., `FROM cte AS cte(a)`), or where it's defined (e.g., `AS t(a, b)` on a
+    derived table, LATERAL subquery or CTE).
+    """
+    declaration = source.expression.parent
+    while isinstance(declaration, (exp.Subquery, exp.Paren)) and not declaration.args.get("alias"):
+        declaration = declaration.parent
+
+    declared = 0
+    if isinstance(declaration, exp.DerivedTable):
+        declared = len(declaration.alias_column_names)
+
+    return max(len(node.alias_column_names), declared)
 
 
 def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):

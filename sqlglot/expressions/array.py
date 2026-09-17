@@ -244,6 +244,11 @@ class Inline(Expression, Func, UDTF):
     pass
 
 
+class Stack(Expression, Func, UDTF):
+    arg_types = {"this": True, "expressions": True}
+    is_var_len_args = True
+
+
 @trait
 class ExplodeOuter(Expr):
     pass

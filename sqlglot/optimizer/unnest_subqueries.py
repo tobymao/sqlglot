@@ -1,7 +1,13 @@
 from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.scope import ScopeType, find_all_in_scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import (
+    ScopeType,
+    find_all_in_scope,
+    find_in_scope,
+    is_windowed_aggregate,
+    traverse_scope,
+)
 from sqlglot._typing import E
 
 
@@ -401,24 +407,6 @@ def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
     return expression.replace(exp.condition(condition))
 
 
-def _is_windowed(agg: exp.Expr) -> bool:
-    # a window applies to exactly one function, its `this`; an aggregate anywhere else groups
-    node = agg
-    parent = node.parent
-
-    # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
-    while parent is not None and parent.this is node:
-        if isinstance(parent, exp.Window):
-            return True
-
-        if isinstance(parent, exp.Func):
-            return False
-
-        node, parent = parent, parent.parent
-
-    return False
-
-
 def _is_plain_group(group: exp.Group) -> bool:
     # Grouping sets produce a row for the grand total even when no rows pass the WHERE
     return not any(
@@ -432,7 +420,7 @@ def _is_plain_group(group: exp.Group) -> bool:
 
 def _has_aggregate_projection(select: exp.Select) -> bool:
     return any(
-        not _is_windowed(agg)
+        not is_windowed_aggregate(agg)
         for projection in select.selects
         for agg in find_all_in_scope(projection, exp.AggFunc)
     )

@@ -274,13 +274,15 @@ class Resolver:
 
         join_ancestor = column.find_ancestor(exp.Join, exp.Select)
 
-        if (
-            isinstance(join_ancestor, exp.Join)
-            and join_ancestor.alias_or_name in self.scope.selected_sources
-        ):
-            # Ensure that the found ancestor is a join that contains an actual source,
-            # e.g in Clickhouse `b` is an array expression in `a ARRAY JOIN b`
-            return join_ancestor
+        if isinstance(join_ancestor, exp.Join):
+            join_name = join_ancestor.alias_or_name
+            if (
+                join_name in self.scope.selected_sources
+                or join_name in self.scope.semi_or_anti_join_tables
+            ):
+                # Ensure that the found ancestor is a join that contains an actual source,
+                # e.g in Clickhouse `b` is an array expression in `a ARRAY JOIN b`
+                return join_ancestor
 
         return None
 

@@ -78,6 +78,11 @@ class SQLiteParser(parser.Parser):
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
     }
 
+    FUNCTION_PARSERS: t.ClassVar = {
+        **parser.Parser.FUNCTION_PARSERS,
+        "GROUP_CONCAT": lambda self: self._parse_string_agg(),
+    }
+
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
         "USING": lambda self, **kwargs: self._parse_module_property(),

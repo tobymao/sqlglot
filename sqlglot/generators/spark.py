@@ -128,6 +128,9 @@ class SparkGenerator(Spark2Generator):
             exp.SafeMultiply: rename_func("TRY_MULTIPLY"),
             exp.SafeSubtract: rename_func("TRY_SUBTRACT"),
             exp.StartsWith: rename_func("STARTSWITH"),
+            exp.StabilityProperty: lambda self, e: (
+                "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
+            ),
             exp.TimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.TimeSub: date_delta_to_binary_interval_op(cast=False),
             exp.TsOrDsAdd: _dateadd_sql,

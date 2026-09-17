@@ -69,6 +69,9 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC RETURN col"
         )
+        self.validate_identity(
+            "CREATE FUNCTION f(col STRING) RETURNS STRING NOT DETERMINISTIC RETURN col"
+        )
         self.validate_identity("CREATE FUNCTION a AS b")
         self.validate_identity("SELECT ${x} FROM ${y} WHERE ${z} > 1")
         self.validate_identity("CREATE TABLE foo (x DATE GENERATED ALWAYS AS (CAST(y AS DATE)))")

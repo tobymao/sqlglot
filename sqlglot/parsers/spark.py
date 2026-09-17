@@ -53,6 +53,12 @@ def _build_dateadd(args: list) -> exp.Expr:
 
 
 class SparkParser(Spark2Parser):
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("NOT", "DETERMINISTIC"):
+            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
+
+        return super()._parse_property()
+
     NO_PAREN_FUNCTIONS = {
         **Spark2Parser.NO_PAREN_FUNCTIONS,
         TokenType.SESSION_USER: exp.SessionUser,

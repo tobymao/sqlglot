@@ -1114,13 +1114,6 @@ class TestHive(Validator):
         quantile_expr.this.assert_is(exp.Column)
         quantile_expr.args.get("quantile").assert_is(exp.Literal)
 
-    def test_create_function_deterministic(self):
-        # Hive/Spark/Databricks accept DETERMINISTIC, not PostgreSQL's IMMUTABLE.
-        self.validate_identity(
-            "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC RETURN col",
-            "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC AS RETURN col",
-        )
-
     def test_create_function_using(self):
         # USING JAR
         self.validate_identity(

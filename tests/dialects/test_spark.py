@@ -32,6 +32,9 @@ class TestSpark(Validator):
         self.validate_identity(
             "CREATE FUNCTION f(col STRING) RETURNS STRING DETERMINISTIC RETURN col"
         )
+        self.validate_identity(
+            "CREATE FUNCTION f(col STRING) RETURNS STRING NOT DETERMINISTIC RETURN col"
+        )
 
         self.validate_all(
             "CREATE TABLE t (a INT, b STRING, UNIQUE (a))",

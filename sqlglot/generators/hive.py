@@ -294,9 +294,6 @@ class HiveGenerator(generator.Generator):
         exp.DiToDate: lambda self, e: (
             f"TO_DATE(CAST({self.sql(e, 'this')} AS STRING), {HIVE_DATEINT_FORMAT})"
         ),
-        exp.StabilityProperty: lambda self, e: (
-            "DETERMINISTIC" if e.name == "IMMUTABLE" else "NOT DETERMINISTIC"
-        ),
         exp.StorageHandlerProperty: lambda self, e: f"STORED BY {self.sql(e, 'this')}",
         exp.FromBase64: rename_func("UNBASE64"),
         exp.GenerateSeries: sequence_sql,

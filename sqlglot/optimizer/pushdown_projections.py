@@ -73,7 +73,6 @@ def default_selection(is_agg: bool) -> exp.Alias:
 def pushdown_projections(
     expression: E,
     schema: dict[str, object] | Schema | None = None,
-    remove_unused_selections: bool = True,
     dialect: DialectType = None,
     journal: Journal | None = None,
 ) -> E:
@@ -90,7 +89,6 @@ def pushdown_projections(
     Args:
         expression: the expression to optimize, mutated in place.
         schema: the database schema, used to expand `*` projections.
-        remove_unused_selections: whether to drop projections that no outer query references.
         dialect: the dialect of the expression.
         journal: if given, records every mutation so that `revert(journal)` undoes this rule.
 
@@ -164,11 +162,7 @@ def pushdown_projections(
             parent_selections = {SELECT_ALL}
 
         if isinstance(scope_expression, exp.SetOperation) and not unsupported_set_operation:
-            if (
-                not pruning_stack
-                and remove_unused_selections
-                and SELECT_ALL not in parent_selections
-            ):
+            if not pruning_stack and SELECT_ALL not in parent_selections:
                 pruning_stack.append(PruningFrame({scope}, set(), False, len(pruning_journal)))
 
             left, right = scope.set_operation_scopes
@@ -211,11 +205,7 @@ def pushdown_projections(
                         if select.alias_or_name in parent_selections
                     }
 
-        if (
-            isinstance(scope_expression, exp.Select)
-            and remove_unused_selections
-            and SELECT_ALL not in parent_selections
-        ):
+        if isinstance(scope_expression, exp.Select) and SELECT_ALL not in parent_selections:
             widened = _remove_unused_selections(
                 scope,
                 parent_selections,

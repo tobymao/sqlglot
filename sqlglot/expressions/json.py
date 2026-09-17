@@ -241,7 +241,7 @@ class OpenJSON(Expression, Func):
 
 
 class FromJson(Expression, Func):
-    arg_types = {"this": True, "expression": False, "options": False}
+    arg_types = {"this": True, "expression": True, "options": False}
 
 
 class ParseJSON(Expression, Func):

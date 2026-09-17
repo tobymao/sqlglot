@@ -535,6 +535,12 @@ class Generator:
     # True means limit 1 happens after the set op, False means it it happens on y.
     SET_OP_MODIFIERS = True
 
+    # Whether a SELECT operand can have a branch-local LIMIT/TOP without parentheses.
+    SET_OP_LIMITS = False
+
+    # Whether set operation operands can be parenthesized without a SELECT wrapper.
+    SET_OP_PARENTHESIZED_OPERANDS = True
+
     # Whether parameters from COPY statement are wrapped in parentheses
     COPY_PARAMS_ARE_WRAPPED = True
 
@@ -1932,6 +1938,14 @@ class Generator:
                 )
                 stack.append(node.this)
             else:
+                if (
+                    not self.SET_OP_LIMITS
+                    and isinstance(node, exp.Select)
+                    and isinstance(node.args.get("limit"), exp.Limit)
+                ):
+                    node = node.subquery(copy=False)
+                    if not self.SET_OP_PARENTHESIZED_OPERANDS:
+                        node = exp.select("*").from_(node, copy=False)
                 sqls.append(self.sql(node))
 
         this = self.sep().join(sqls)
@@ -3327,8 +3341,8 @@ class Generator:
             self.sql(expression, "order"),
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
-            self.options_modifier(expression),
             self.sql(expression, "for_"),
+            self.options_modifier(expression),
             sep="",
         )
 

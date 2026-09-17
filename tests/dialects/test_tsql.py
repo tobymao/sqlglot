@@ -110,6 +110,91 @@ class TestTSQL(Validator):
             "WITH x(a) AS (SELECT 1), y(a) AS (SELECT 2) SELECT a FROM x UNION SELECT a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY"
         )
 
+    def test_set_operation_trailing_clauses(self):
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            for pagination in ("", " OFFSET 0 ROWS", " OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY"):
+                for clause in (
+                    "OPTION(RECOMPILE)",
+                    "FOR JSON PATH",
+                    "FOR XML PATH",
+                    "FOR JSON PATH OPTION(RECOMPILE)",
+                    "FOR XML PATH OPTION(RECOMPILE)",
+                ):
+                    with self.subTest(op=op, pagination=pagination, clause=clause):
+                        expression = self.validate_identity(
+                            f"SELECT 1 AS x {op} SELECT 2 AS x ORDER BY x{pagination} {clause}"
+                        )
+                        for arg in ("for_", "options"):
+                            self.assertNotIn(arg, expression.expression.args)
+                        if clause.startswith("FOR"):
+                            self.assertIsInstance(expression.args["for_"], exp.ForClause)
+                        if "OPTION" in clause:
+                            self.assertEqual(len(expression.args["options"]), 1)
+
+        self.validate_identity("SELECT 1 AS x ORDER BY x FOR JSON PATH OPTION(RECOMPILE)")
+
+        for clause in ("OPTION(RECOMPILE)", "FOR JSON PATH OPTION(RECOMPILE)"):
+            with self.subTest(clause=clause):
+                expression = self.parse_one(f"SELECT 1 AS x UNION ALL SELECT 2 AS x {clause}")
+                for paginated, expected in (
+                    (
+                        expression.limit(1),
+                        f"SELECT TOP 1 * FROM (SELECT 1 AS x UNION ALL SELECT 2 AS x) AS _l_0 {clause}",
+                    ),
+                    (
+                        expression.offset(1),
+                        f"SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 AS x) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS {clause}",
+                    ),
+                ):
+                    self.assertEqual(paginated.sql("tsql"), expected)
+                    self.validate_identity(expected)
+
+    def test_set_operation_branch_limits(self):
+        self.validate_all(
+            "SELECT TOP 1 a FROM x UNION ALL SELECT TOP 1 a FROM y",
+            write={
+                "clickhouse": "SELECT a FROM x LIMIT 1 UNION ALL SELECT a FROM y LIMIT 1",
+                "teradata": "SELECT TOP 1 a FROM x UNION ALL SELECT TOP 1 a FROM y",
+                "tsql": "SELECT TOP 1 a FROM x UNION ALL SELECT TOP 1 a FROM y",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 AS x UNION ALL SELECT 2 AS x ORDER BY x",
+            read={
+                "clickhouse": "SELECT 1 AS x UNION ALL SELECT 2 AS x ORDER BY x NULLS FIRST",
+            },
+        )
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            with self.subTest(op=op):
+                self.validate_all(
+                    f"SELECT TOP 1 a FROM x {op} SELECT TOP 2 a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+                    write={
+                        "tsql": f"SELECT TOP 1 a FROM x {op} SELECT TOP 2 a FROM y ORDER BY a OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY",
+                        "duckdb": f"(SELECT a FROM x LIMIT 1) {op} (SELECT a FROM y LIMIT 2) ORDER BY a NULLS FIRST LIMIT 2 OFFSET 1",
+                        "postgres": f"(SELECT a FROM x LIMIT 1) {op} (SELECT a FROM y LIMIT 2) ORDER BY a NULLS FIRST OFFSET 1 FETCH NEXT 2 ROWS ONLY",
+                        "sqlite": f"SELECT * FROM (SELECT a FROM x LIMIT 1) {op} SELECT * FROM (SELECT a FROM y LIMIT 2) ORDER BY a LIMIT 2 OFFSET 1",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT 1 AS x UNION ALL SELECT TOP 1 x FROM (VALUES (2), (3)) AS t(x) ORDER BY x",
+            write={
+                "duckdb": "SELECT 1 AS x UNION ALL (SELECT x FROM (VALUES (2), (3)) AS t(x) LIMIT 1) ORDER BY x NULLS FIRST",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM x UNION ALL SELECT TOP 1 a FROM y UNION ALL SELECT a FROM z",
+            write={
+                "duckdb": "SELECT a FROM x UNION ALL (SELECT a FROM y LIMIT 1) UNION ALL SELECT a FROM z",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM x UNION ALL SELECT TOP 1 a FROM y",
+            write={
+                "duckdb": "SELECT a FROM x UNION ALL (SELECT a FROM y LIMIT 1)",
+            },
+        )
+
     def test_tsql(self):
         self.validate_all(
             "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",

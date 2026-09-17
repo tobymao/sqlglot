@@ -30,6 +30,8 @@ DATE_PART_UNMAPPING = {
 
 BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
 
+SET_OP_MODIFIERS = ("limit", "offset", "order", "for_", "options")
+
 
 def _format_sql(self: TSQLGenerator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = expression.args["format"]
@@ -136,6 +138,7 @@ class TSQLGenerator(generator.Generator):
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     LIMIT_IS_TOP = True
+    SET_OP_LIMITS = True
     QUERY_HINTS = False
     RETURNING_END = False
     NVL2_SUPPORTED = False
@@ -287,12 +290,11 @@ class TSQLGenerator(generator.Generator):
             select = self._move_ctes_to_top_level(
                 exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
             )
-            if limit:
-                select.set("limit", limit.pop())
-            if offset:
-                select.set("offset", offset.pop())
-            if order:
-                select.set("order", order.pop())
+            for arg in SET_OP_MODIFIERS:
+                value = expression.args.get(arg)
+                if value:
+                    expression.set(arg, None)
+                    select.set(arg, value)
 
             return self.sql(select)
 

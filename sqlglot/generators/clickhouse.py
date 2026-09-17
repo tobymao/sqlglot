@@ -186,6 +186,7 @@ class ClickHouseGenerator(generator.Generator):
     TABLE_HINTS = False
     GROUPINGS_SEP = ""
     SET_OP_MODIFIERS = False
+    SET_OP_LIMITS = True
     ARRAY_SIZE_NAME = "LENGTH"
     WRAP_DERIVED_VALUES = False
     AUTO_REFRESH_BARE_INTERVALS = True

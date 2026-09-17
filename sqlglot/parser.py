@@ -6003,7 +6003,8 @@ class Parser:
                 for arg in self.SET_OP_MODIFIERS:
                     expr = expression.args.get(arg)
                     if expr:
-                        this.set(arg, expr.pop())
+                        expression.set(arg, None)
+                        this.set(arg, expr)
 
         return this
 

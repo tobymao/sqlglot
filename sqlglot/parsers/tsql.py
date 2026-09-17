@@ -459,7 +459,7 @@ class TSQLParser(parser.Parser):
         ),
     }
 
-    SET_OP_MODIFIERS = {"order", "offset"}
+    SET_OP_MODIFIERS = {"order", "offset", "options", "for_"}
 
     ODBC_DATETIME_LITERALS = {
         "d": exp.Date,

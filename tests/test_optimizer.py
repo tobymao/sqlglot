@@ -3154,8 +3154,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ),
             # BY NAME merges the operands by column name, so positions don't map onto them
             (
-                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) AS t(c)",
-                "SELECT t.c FROM (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) AS t(c)",
+                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT c FROM t",
+                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT c FROM t",
             ),
             # Columns beyond the list keep their own names and are pruned as usual
             (

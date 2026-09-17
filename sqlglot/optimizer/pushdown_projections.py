@@ -120,7 +120,7 @@ def pushdown_projections(
     for scope in reversed(traverse_scope(expression)):
         scope_expression = scope.expression
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
-        alias_count = source_column_alias_count.get(scope, 0)
+        alias_count = max(source_column_alias_count.get(scope, 0), len(scope.outer_columns))
         widened = False
 
         # Do not optimize this set operation if it's using the BigQuery-specific kind / side
@@ -184,9 +184,6 @@ def pushdown_projections(
                 # The aliases name the merged output, which doesn't map onto operand positions
                 widened = SELECT_ALL not in parent_selections
                 parent_selections = {SELECT_ALL}
-            elif alias_count:
-                # Positional aliases name every operand's columns too
-                source_column_alias_count[left] = source_column_alias_count[right] = alias_count
 
             if not by_name and len(le.selects) != len(re.selects):
                 scope_sql = scope_expression.sql(dialect=dialect)
@@ -268,30 +265,13 @@ def pushdown_projections(
 
                     referenced_columns[source].update(columns)
 
-                    alias_count = _alias_column_count(node, source)
-                    if alias_count:
+                    column_aliases = node.alias_column_names
+                    if column_aliases:
                         source_column_alias_count[source] = max(
-                            source_column_alias_count.get(source, 0), alias_count
+                            source_column_alias_count.get(source, 0), len(column_aliases)
                         )
 
     return expression
-
-
-def _alias_column_count(node: exp.Expr, source: Scope) -> int:
-    """
-    The number of the source's output columns that a TableAlias names positionally, either where
-    it's referenced (e.g., `FROM cte AS cte(a)`), or where it's defined (e.g., `AS t(a, b)` on a
-    derived table, LATERAL subquery or CTE).
-    """
-    declaration = source.expression.parent
-    while isinstance(declaration, (exp.Subquery, exp.Paren)) and not declaration.args.get("alias"):
-        declaration = declaration.parent
-
-    declared = 0
-    if isinstance(declaration, exp.DerivedTable):
-        declared = len(declaration.alias_column_names)
-
-    return max(len(node.alias_column_names), declared)
 
 
 def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):

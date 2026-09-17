@@ -292,3 +292,7 @@ WITH RECURSIVE t(c, d) AS (SELECT x.a AS c, x.b AS d FROM x AS x) SELECT t.c AS 
 # title: recursive cte column list applies to every set operation operand
 WITH RECURSIVE t(c, d) AS (SELECT a, b FROM x UNION ALL SELECT b, c FROM y) SELECT c FROM t;
 WITH RECURSIVE t(c, d) AS (SELECT x.a AS c, x.b AS d FROM x AS x UNION ALL SELECT y.b AS c, y.c AS d FROM y AS y) SELECT t.c AS c FROM t AS t;
+
+# title: a source referenced with column lists of different lengths keeps the longest prefix
+WITH t AS (SELECT a, b FROM x) SELECT t1.r, t2.p FROM t AS t1(q, r) CROSS JOIN t AS t2(p);
+WITH t AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT t1.r AS r, t2.p AS p FROM t AS t1(q, r) CROSS JOIN t AS t2(p);

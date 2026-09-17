@@ -1,7 +1,6 @@
-from tests.dialects.test_dialect import Validator
-
-from sqlglot import exp
+from sqlglot import UnsupportedError, exp
 from sqlglot.helper import logger as helper_logger
+from tests.dialects.test_dialect import Validator
 
 
 class TestSQLite(Validator):
@@ -27,6 +26,18 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT GROUP_CONCAT(x ORDER BY y)")
         self.validate_identity("SELECT GROUP_CONCAT(x, ',' ORDER BY y)")
         self.validate_identity("SELECT GROUP_CONCAT(DISTINCT x ORDER BY y DESC)")
+        self.validate_identity("SELECT GROUP_CONCAT(x, ',') OVER (PARTITION BY z ORDER BY y)")
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x, ',' ORDER BY y)",
+            write={
+                "mysql": "SELECT GROUP_CONCAT(x ORDER BY y SEPARATOR ',')",
+                "tsql": "SELECT STRING_AGG(x, ',') WITHIN GROUP (ORDER BY y)",
+            },
+        )
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x, ',' ORDER BY y) OVER (PARTITION BY z)",
+            write={"sqlite": UnsupportedError},
+        )
         self.validate_identity("SELECT RANK() OVER (RANGE CURRENT ROW) FROM tbl")
         self.validate_identity(
             "SELECT RANK() OVER (RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM tbl"

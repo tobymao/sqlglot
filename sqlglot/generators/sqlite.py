@@ -348,7 +348,13 @@ class SQLiteGenerator(generator.Generator):
         if order:
             if order.this and not distinct:
                 this = order.this
-            order_sql = self.op_expressions(" ORDER BY", order, flat=True)
+            if isinstance(expression.parent, exp.Window):
+                self.unsupported(
+                    "SQLite GROUP_CONCAT window functions do not support argument ORDER BY"
+                )
+                order_sql = ""
+            else:
+                order_sql = self.op_expressions(" ORDER BY", order, flat=True)
         else:
             order_sql = ""
 

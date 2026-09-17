@@ -64,12 +64,6 @@ class TrinoParser(PrestoParser):
             )
         )
 
-    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
-        if self._match_text_seq("NOT", "DETERMINISTIC"):
-            return self.expression(exp.StabilityProperty(this=exp.Literal.string("VOLATILE")))
-
-        return super()._parse_property()
-
     def _parse_cte(self) -> exp.CTE | exp.FunctionSpecification | None:
         # A `WITH` clause entry that starts with `FUNCTION <name>` is an inline SQL UDF
         # specification (https://trino.io/docs/current/udf/sql.html), as opposed to a

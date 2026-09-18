@@ -179,7 +179,6 @@ class DatabricksParser(SparkParser):
         if self._match_text_seq("AS"):
             return self.expression(exp.Alias(this=condition, alias=self._parse_id_var()))
 
-        # Don't let a bare alias swallow the ON COLUMN / USING COLUMNS clause heads
         index = self._index
         if self._match_text_seq("ON", "COLUMN") or self._match_text_seq("USING", "COLUMNS"):
             self._retreat(index)

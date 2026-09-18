@@ -880,24 +880,6 @@ def _is_from_or_join(expression: exp.Expr) -> bool:
     return type(parent) in (exp.From, exp.Join)
 
 
-def is_windowed_aggregate(agg: exp.Expr) -> bool:
-    # a window applies to exactly one function, its `this`; an aggregate anywhere else groups
-    node = agg
-    parent = node.parent
-
-    # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
-    while parent is not None and parent.this is node:
-        if isinstance(parent, exp.Window):
-            return True
-
-        if isinstance(parent, exp.Func):
-            return False
-
-        node, parent = parent, parent.parent
-
-    return False
-
-
 def _traverse_tables(scope: Scope) -> Iterator[Scope]:
     sources: dict[str, exp.Table | Scope] = {}
 

@@ -10,7 +10,6 @@ from sqlglot.optimizer.scope import (
     Scope,
     find_all_in_scope,
     find_in_scope,
-    is_windowed_aggregate,
     traverse_scope,
 )
 from sqlglot.schema import ensure_schema
@@ -269,6 +268,52 @@ def pushdown_projections(
     return expression
 
 
+def _named_window_has_aggregate(
+    name: str,
+    named_windows: dict[str, exp.Window],
+    cache: dict[str, bool],
+) -> bool:
+    # a bare aggregate in a referenced named window's spec makes the whole (ungrouped) scope
+    # aggregate, even though this AggFunc is itself windowed
+    visited: set[str] = set()
+    has_aggregate = False
+
+    while name and name not in visited:
+        if name in cache:
+            has_aggregate = cache[name]
+            break
+
+        visited.add(name)
+        window = named_windows.get(name)
+        if not window:
+            break
+
+        if any(not aggregate.is_windowed for aggregate in find_all_in_scope(window, exp.AggFunc)):
+            has_aggregate = True
+            break
+
+        name = window.alias
+
+    for name in visited:
+        cache[name] = has_aggregate
+
+    return has_aggregate
+
+
+def _projection_has_aggregate(
+    projection: exp.Expression,
+    named_windows: dict[str, exp.Window],
+    cache: dict[str, bool],
+) -> bool:
+    if any(not agg.is_windowed for agg in find_all_in_scope(projection, exp.AggFunc)):
+        return True
+
+    return any(
+        window.alias and _named_window_has_aggregate(window.alias, named_windows, cache)
+        for window in find_all_in_scope(projection, exp.Window)
+    )
+
+
 def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):
     expression = scope.expression
     output_refs = _output_column_refs(expression, scoped=False)
@@ -287,12 +332,19 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     star = False
     is_agg = False
 
+    # names are already dialect normalized
+    named_windows = {
+        window.name: window
+        for window in expression.args.get("windows") or []
+        if isinstance(window, exp.Window)
+    }
+    named_window_aggregate_cache: dict[str, bool] = {}
+
     for selection in expression.selects:
         name = selection.alias_or_name
         referenced = name in parent_selections
-        is_agg_selection = (implicit_group_by_all or not is_agg) and any(
-            not is_windowed_aggregate(aggregate)
-            for aggregate in find_all_in_scope(selection, exp.AggFunc)
+        is_agg_selection = (implicit_group_by_all or not is_agg) and _projection_has_aggregate(
+            selection, named_windows, named_window_aggregate_cache
         )
 
         if (

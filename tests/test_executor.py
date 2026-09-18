@@ -1713,3 +1713,18 @@ class TestExecutor(unittest.TestCase):
             with self.subTest(sql):
                 result = execute(sql, schema=schema, tables={"t": rows})
                 self.assertEqual(sorted(result.rows), sorted(expected))
+
+    def test_count_distinct_multiple_columns(self):
+        rows = [
+            {"a": "x", "b": 1},
+            {"a": "x", "b": 1},
+            {"a": "x", "b": 2},
+            {"a": None, "b": 1},
+            {"a": "y", "b": None},
+        ]
+        schema = {"t": {"a": "VARCHAR", "b": "INT"}}
+
+        result = execute(
+            "SELECT COUNT(DISTINCT a, b) AS c FROM t", schema=schema, tables={"t": rows}
+        )
+        self.assertEqual(result.rows, [(2,)])

@@ -91,10 +91,11 @@ def _dpipe_sql(self: generator.Generator, e: exp.DPipe) -> str:
 
 
 def _distinct_sql(self, e: exp.Distinct) -> str:
-    if len(e.expressions) != 1:
-        raise ValueError(f"Unsupported multi-expression DISTINCT: {e.sql()}")
+    if len(e.expressions) == 1:
+        return f"set({self.sql(e.expressions[0])})"
 
-    return f"set({self.sql(e.expressions[0])})"
+    args = ", ".join(self.sql(expression) for expression in e.expressions)
+    return f"set(ZIPNOTNULL({args}))"
 
 
 class PythonGenerator(generator.Generator):

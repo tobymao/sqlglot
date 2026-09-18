@@ -7,6 +7,118 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_from_json(self):
+        for value, schema, target_type in (
+            ("'{\"a\":1.0}'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'[1, null, 3]'", "ARRAY<INT>", "ARRAY(INTEGER)"),
+            ("'[true, false, null]'", "ARRAY<BOOLEAN>", "ARRAY(BOOLEAN)"),
+            ("'[1, 2]'", "ARRAY<TINYINT>", "ARRAY(TINYINT)"),
+            ("'[1, 2]'", "ARRAY<SMALLINT>", "ARRAY(SMALLINT)"),
+            ("'[1, 2]'", "ARRAY<BIGINT>", "ARRAY(BIGINT)"),
+            ("'[1.5, 2.5]'", "ARRAY<FLOAT>", "ARRAY(REAL)"),
+            ('\'["a", null, "b"]\'', "ARRAY<STRING>", "ARRAY(VARCHAR)"),
+            ("'{\"a\":[1.5,null]}'", "map<string,array<double>>", "MAP(VARCHAR, ARRAY(DOUBLE))"),
+            (
+                "'[{\"a\":[true,null]},null]'",
+                "ARRAY<MAP<STRING,ARRAY<BOOLEAN>>>",
+                "ARRAY(MAP(VARCHAR, ARRAY(BOOLEAN)))",
+            ),
+            ("'[[1], [], null]'", "ARRAY<ARRAY<INTEGER>>", "ARRAY(ARRAY(INTEGER))"),
+            ("'{}'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'[]'", "ARRAY<INT>", "ARRAY(INTEGER)"),
+            ("NULL", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'null'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'{\"a\":null}'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'bad'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'{\"a\":1'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ('\'{"a":1,"b":"bad"}\'', "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'[1, 2]'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            # Trino accepts these coercions but Spark returns NULL: never silently translate.
+            ('\'{"a":"1.5"}\'', "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+            ("'{\"a\":true}'", "MAP<STRING,DOUBLE>", "MAP(VARCHAR, DOUBLE)"),
+        ):
+            source = f"SELECT FROM_JSON({value}, '{schema}')"
+            target = f"SELECT TRY(CAST(JSON_PARSE({value}) AS {target_type}))"
+            with self.subTest(source=source):
+                self.validate_all(target, read={"spark": source})
+                with self.assertLogs(generator_logger) as logs:
+                    self.assertEqual(parse_one(source, read="spark").sql("trino"), target)
+                self.assertTrue(any("FROM_JSON in Trino is approximate" in x for x in logs.output))
+                expression = parse_one(source, read="spark")
+                original = expression.copy()
+                self.assertIsInstance(expression.expressions[0], exp.FromJson)
+                self.assertEqual(
+                    expression.sql("trino", unsupported_level=ErrorLevel.IGNORE), target
+                )
+                for level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+                    with self.assertRaisesRegex(
+                        UnsupportedError, "FROM_JSON in Trino is approximate"
+                    ):
+                        expression.sql("trino", unsupported_level=level)
+                self.assertEqual(expression, original)
+                self.assertEqual(expression.sql("spark"), source)
+
+        source = "SELECT FROM_JSON(t.payload, 'MAP<STRING,DOUBLE>') FROM t"
+        self.assertEqual(
+            parse_one(source, read="spark").sql("trino", unsupported_level=ErrorLevel.IGNORE),
+            "SELECT TRY(CAST(JSON_PARSE(t.payload) AS MAP(VARCHAR, DOUBLE))) FROM t",
+        )
+
+    def test_from_json_unsupported(self):
+        for schema in (
+            "schema_column",
+            "SCHEMA_OF_JSON('{}')",
+            "'STRUCT<a:INT,b:INT>'",
+            "'ARRAY<STRUCT<a:INT>>'",
+            "'MAP<STRING,STRUCT<a:DOUBLE>>'",
+            "'a INT, b STRING'",
+            "'MAP<INT,DOUBLE>'",
+            "'MAP<STRING,DECIMAL(10,2)>'",
+            "'ARRAY<DATE>'",
+            "'ARRAY<TIMESTAMP>'",
+            "'ARRAY<BINARY>'",
+            "'ARRAY<VARIANT>'",
+            "'ARRAY<UNKNOWN>'",
+            "'DOUBLE'",
+            "'MAP<STRING>'",
+            "'MAP<STRING,DOUBLE> trailing'",
+            "'MAP<STRING,DOUBLE>; ARRAY<INT>'",
+            "'ARRAY<INT'",
+            "'ARRAY<`x>'",
+            "'MAP<STRING, DOUBLE /*'",
+            "''",
+            '\'{"a":"DOUBLE"}\'',
+        ):
+            source = f"SELECT FROM_JSON('{{}}', {schema})"
+            with self.subTest(schema=schema):
+                expression = parse_one(source, read="spark")
+                with self.assertLogs(generator_logger) as logs:
+                    self.assertEqual(expression.sql("trino"), source)
+                self.assertIn("FROM_JSON", logs.output[0])
+                with self.assertRaises(UnsupportedError):
+                    expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
+                self.assertEqual(expression.sql("spark"), source)
+
+        for options in (
+            "MAP('mode', 'FAILFAST')",
+            "MAP('mode', 'PERMISSIVE')",
+            "MAP('mode', 'DROPMALFORMED')",
+            "MAP('allowSingleQuotes', 'false')",
+            "MAP('columnNameOfCorruptRecord', '_bad')",
+            "MAP()",
+            "opts",
+        ):
+            source = f"SELECT FROM_JSON('{{}}', 'MAP<STRING,DOUBLE>', {options})"
+            expression = parse_one(source, read="spark")
+            with self.subTest(options=options):
+                with self.assertRaisesRegex(UnsupportedError, "FROM_JSON options"):
+                    expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
+                self.assertEqual(expression.sql("spark"), source)
+                # Unsupported options must not be dropped from best-effort output.
+                self.assertIn(
+                    "FROM_JSON(", expression.sql("trino", unsupported_level=ErrorLevel.IGNORE)
+                )
+
     def test_concat_ws(self):
         self.validate_identity("SELECT CONCAT_WS('-', ARRAY['a', NULL, 'b'])")
         self.validate_identity("SELECT CONCAT_WS('-', CAST(NULL AS ARRAY(VARCHAR)))")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from sqlglot import exp, transforms
+from sqlglot import exp, parse_one, transforms
+from sqlglot.errors import ParseError, TokenError
 from sqlglot.dialects.dialect import (
     merge_without_target_sql,
     trim_sql,
@@ -51,6 +52,61 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathRoot,
         exp.JSONPathSubscript,
     }
+
+    def fromjson_sql(self, expression: exp.FromJson) -> str:
+        """Best-effort conversion of Spark's literal MAP/ARRAY schemas; see posts/spark_from_json.md."""
+        schema = expression.expression
+        if expression.args.get("options") is not None:
+            self.unsupported("FROM_JSON options are not supported in Trino.")
+            return self.function_fallback_sql(expression)
+
+        if not schema.is_string:
+            self.unsupported("FROM_JSON requires a literal Spark MAP or ARRAY schema in Trino.")
+            return self.function_fallback_sql(expression)
+
+        try:
+            # from_str deliberately ignores parse errors; schema validation must not do so.
+            dtype = parse_one(schema.name, read="spark", into=exp.DataType)
+        except (ParseError, TokenError):
+            self.unsupported("Cannot parse FROM_JSON schema as a Spark data type.")
+            return self.function_fallback_sql(expression)
+
+        if not dtype.is_type(exp.DType.MAP, exp.DType.ARRAY) or not self._fromjson_type_supported(
+            dtype
+        ):
+            self.unsupported(
+                "Unsupported FROM_JSON schema in Trino: expected a MAP or ARRAY "
+                "of boolean, integer, floating-point or string types."
+            )
+            return self.function_fallback_sql(expression)
+
+        self.unsupported(
+            "FROM_JSON in Trino is approximate: JSON parsing and type coercion differ from Spark."
+        )
+        # TRY_CAST would not catch JSON_PARSE failures. TRY covers both parsing and casting.
+        return self.sql(exp.Try(this=exp.cast(exp.ParseJSON(this=expression.this), dtype)))
+
+    def _fromjson_type_supported(self, dtype: exp.DataType) -> bool:
+        children = dtype.expressions
+        if dtype.is_type(exp.DType.ARRAY):
+            return len(children) == 1 and self._fromjson_type_supported(children[0])
+        if dtype.is_type(exp.DType.MAP):
+            return (
+                len(children) == 2
+                and children[0].is_type(exp.DType.TEXT)
+                and not children[0].expressions
+                and self._fromjson_type_supported(children[1])
+            )
+        return not children and dtype.is_type(
+            exp.DType.BOOLEAN,
+            exp.DType.TINYINT,
+            exp.DType.SMALLINT,
+            exp.DType.INT,
+            exp.DType.BIGINT,
+            exp.DType.FLOAT,
+            exp.DType.DOUBLE,
+            exp.DType.TEXT,
+        )
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         if expression.args.get("flatten"):

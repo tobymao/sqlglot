@@ -6,7 +6,13 @@ from collections import defaultdict
 from sqlglot import alias, exp
 from sqlglot.optimizer.journal import Journal, record, revert
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import (
+    Scope,
+    find_all_in_scope,
+    find_in_scope,
+    projection_has_aggregate,
+    traverse_scope,
+)
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
@@ -281,12 +287,20 @@ def _remove_unused_selections(scope, parent_selections, schema, alias_count, jou
     star = False
     is_agg = False
 
+    # names are already dialect normalized
+    named_windows = {
+        window.name: window
+        for window in expression.args.get("windows") or []
+        if isinstance(window, exp.Window)
+    }
+    named_window_aggregate_cache: dict[str, bool] = {}
+
     for selection in expression.selects:
         name = selection.alias_or_name
         referenced = name in parent_selections
-        is_agg_selection = (implicit_group_by_all or not is_agg) and find_in_scope(
-            selection, exp.AggFunc
-        ) is not None
+        is_agg_selection = (implicit_group_by_all or not is_agg) and projection_has_aggregate(
+            selection, named_windows, named_window_aggregate_cache
+        )
 
         if (
             referenced

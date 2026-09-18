@@ -1490,7 +1490,11 @@ class Simplifier:
 
         if isinstance(expression, self.DATETRUNCS):
             this = expression.this
-            trunc_type = extract_type(this)
+            trunc_type = (
+                expression.type
+                if expression.is_type(*exp.DataType.TEMPORAL_TYPES)
+                else extract_type(this)
+            )
             date = extract_date(this)
             if date and expression.unit:
                 return date_literal(

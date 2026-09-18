@@ -151,23 +151,20 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     ):
         return expression
 
-    if isinstance(this, exp.Predicate) and (
-        not (
+    if isinstance(this, (exp.Predicate, exp.Not)):
+        if (
             parent_is_predicate
             # unary operators that bind tighter than the predicate, unlike NOT
             or isinstance(parent, (exp.Neg, exp.BitwiseNot))
             or (isinstance(parent, exp.Binary) and not isinstance(parent, exp.Connector))
-        )
-    ):
+        ):
+            return expression
         return this
 
     if (
         not isinstance(parent, (exp.Condition, exp.Binary))
         or isinstance(parent, exp.Paren)
-        or (
-            not isinstance(this, exp.Binary)
-            and not (isinstance(this, (exp.Not, exp.Is)) and parent_is_predicate)
-        )
+        or not isinstance(this, exp.Binary)
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
         or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
@@ -1416,7 +1413,7 @@ class Simplifier:
 
         new_args = []
         for is_string_group, group in itertools.groupby(
-            expressions or expression.flatten(), lambda e: e.is_string
+            expressions or expression.flatten(unnest=False), lambda e: e.is_string
         ):
             if is_string_group:
                 new_args.append(exp.Literal.string(sep.join(string.name for string in group)))
@@ -1445,17 +1442,17 @@ class Simplifier:
                     cond = cond.replace(this.pop().eq(cond))
 
                 if always_true(cond):
-                    return case.args["true"]
+                    return exp.paren(case.args["true"], copy=False)
 
                 if always_false(cond):
                     case.pop()
                     if not expression.args["ifs"]:
-                        return expression.args.get("default") or exp.null()
+                        return exp.paren(expression.args.get("default") or exp.null(), copy=False)
         elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
             if always_true(expression.this):
-                return expression.args["true"]
+                return exp.paren(expression.args["true"], copy=False)
             if always_false(expression.this):
-                return expression.args.get("false") or exp.null()
+                return exp.paren(expression.args.get("false") or exp.null(), copy=False)
 
         return expression
 

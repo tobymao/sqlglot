@@ -4365,6 +4365,16 @@ class Parser:
             while True:
                 if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
                     modifier_token = self._curr
+
+                    # Defer LIMIT/FETCH after TOP until a set op is built so it applies to the whole result
+                    # e.g., SELECT 1 AS x UNION ALL SELECT TOP 2 2 AS x LIMIT 1 -> limit applies to union
+                    if (
+                        modifier_token.token_type in (TokenType.LIMIT, TokenType.FETCH)
+                        and (limit := this.args.get("limit"))
+                        and limit.meta.get("top")
+                    ):
+                        break
+
                     parser = self.QUERY_MODIFIER_PARSERS[modifier_token.token_type]
                     key, expression = parser(self)
 
@@ -5808,6 +5818,9 @@ class Parser:
                 comments=comments,
             )
 
+            if top:
+                limit_exp.meta["top"] = True
+
             return limit_exp
 
         if self._match(TokenType.FETCH):
@@ -6002,9 +6015,13 @@ class Parser:
             if expression:
                 for arg in self.SET_OP_MODIFIERS:
                     expr = expression.args.get(arg)
-                    if expr:
+                    if expr and not (arg == "limit" and expr.meta.get("top")):
                         expression.set(arg, None)
                         this.set(arg, expr)
+
+            # A trailing LIMIT/FETCH can coexist with TOP on the final operand.
+            if self._curr.token_type in (TokenType.LIMIT, TokenType.FETCH):
+                this = self._parse_query_modifiers(this)
 
         return this
 

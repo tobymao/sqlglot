@@ -89,6 +89,22 @@ class TriggerProperties(Expression):
     }
 
 
+class PolicyProperties(Expression):
+    arg_types = {
+        "scope_kind": True,
+        "scope_name": True,
+        "kind": True,
+        "function": True,
+        "to": True,
+        "except_": False,
+        "when": False,
+        "match_columns": False,
+        "on_column": False,
+        "using_columns": False,
+        "comment": False,
+    }
+
+
 class TriggerExecute(Expression):
     pass
 

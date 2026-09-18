@@ -756,6 +756,7 @@ class Generator:
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedOfProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PolicyProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,

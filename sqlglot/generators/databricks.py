@@ -125,3 +125,33 @@ class DatabricksGenerator(SparkGenerator):
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
         return f"CLUSTER BY {this}"
+
+    def policyproperties_sql(self, expression: exp.PolicyProperties) -> str:
+        parts = [f"ON {expression.args['scope_kind']} {self.sql(expression, 'scope_name')}"]
+
+        if comment := expression.args.get("comment"):
+            parts.append(f"COMMENT {self.sql(comment)}")
+
+        parts.append(f"{expression.args['kind']} {self.sql(expression, 'function')}")
+        parts.append(f"TO {self.expressions(expression, key='to', flat=True)}")
+
+        if expression.args.get("except_"):
+            parts.append(f"EXCEPT {self.expressions(expression, key='except_', flat=True)}")
+
+        parts.append("FOR TABLES")
+
+        if when := expression.args.get("when"):
+            parts.append(f"WHEN {self.sql(when)}")
+
+        if expression.args.get("match_columns"):
+            columns = self.expressions(expression, key="match_columns", flat=True)
+            parts.append(f"MATCH COLUMNS {columns}")
+
+        if on_column := expression.args.get("on_column"):
+            parts.append(f"ON COLUMN {self.sql(on_column)}")
+
+        if expression.args.get("using_columns"):
+            columns = self.expressions(expression, key="using_columns", flat=True)
+            parts.append(f"USING COLUMNS ({columns})")
+
+        return self.sep().join(parts)

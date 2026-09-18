@@ -4,7 +4,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
 from sqlglot.helper import seq_get
 from sqlglot.parsers.spark import SparkParser
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 
 
 class DatabricksParser(SparkParser):
@@ -74,3 +74,114 @@ class DatabricksParser(SparkParser):
         if self._match_texts(("AUTO", "NONE")):
             return self.expression(exp.ClusterProperty(this=self._prev.text.upper()))
         return super()._parse_cluster_property()
+
+    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-policy
+    def _parse_create(self) -> exp.Create | exp.Command:
+        start = self._prev
+        index = self._index
+        replace = self._match_pair(TokenType.OR, TokenType.REPLACE)
+
+        if not self._match_text_seq("POLICY"):
+            self._retreat(index)
+            return super()._parse_create()
+
+        return self._parse_create_policy(start, replace)
+
+    def _parse_create_policy(self, start: Token, replace: bool) -> exp.Create | exp.Command:
+        this = self._parse_id_var()
+
+        if (
+            not this
+            or not self._match(TokenType.ON)
+            or not self._match_texts(("CATALOG", "SCHEMA", "TABLE"))
+        ):
+            return self._parse_as_command(start)
+
+        scope_kind = self._prev.text.upper()
+        scope_name = self._parse_table_parts()
+
+        comment = self._match(TokenType.COMMENT) and self._parse_string()
+
+        if self._match_text_seq("ROW", "FILTER"):
+            kind = "ROW FILTER"
+        elif self._match_text_seq("COLUMN", "MASK"):
+            kind = "COLUMN MASK"
+        else:
+            # e.g. an ABAC GRANT/DENY policy body, which isn't supported here
+            return self._parse_as_command(start)
+
+        function = self._parse_table_parts()
+
+        if not self._match_text_seq("TO"):
+            self.raise_error("Expected TO after the policy's function name")
+
+        to = self._parse_csv(self._parse_policy_principal)
+
+        except_ = (
+            self._parse_csv(self._parse_policy_principal)
+            if self._match_text_seq("EXCEPT")
+            else None
+        )
+
+        if not self._match_text_seq("FOR", "TABLES"):
+            self.raise_error("Expected FOR TABLES in policy definition")
+
+        when = self._parse_disjunction() if self._match_text_seq("WHEN") else None
+
+        match_columns = (
+            self._parse_csv(self._parse_policy_match_column)
+            if self._match_text_seq("MATCH", "COLUMNS")
+            else None
+        )
+
+        on_column = self._parse_id_var() if self._match_text_seq("ON", "COLUMN") else None
+
+        if kind == "COLUMN MASK" and not on_column:
+            self.raise_error("Expected ON COLUMN for a COLUMN MASK policy")
+
+        using_columns = (
+            self._parse_wrapped_csv(self._parse_conjunction)
+            if self._match_text_seq("USING", "COLUMNS")
+            else None
+        )
+
+        policy_properties = self.expression(
+            exp.PolicyProperties(
+                scope_kind=scope_kind,
+                scope_name=scope_name,
+                kind=kind,
+                function=function,
+                to=to,
+                except_=except_,
+                when=when,
+                match_columns=match_columns,
+                on_column=on_column,
+                using_columns=using_columns,
+                comment=comment,
+            )
+        )
+
+        return self.expression(
+            exp.Create(
+                this=this,
+                kind="POLICY",
+                replace=replace,
+                properties=exp.Properties(expressions=[policy_properties]),
+            )
+        )
+
+    def _parse_policy_principal(self) -> exp.Expr | None:
+        return self._parse_string() or self._parse_id_var(any_token=True)
+
+    def _parse_policy_match_column(self) -> exp.Expr | None:
+        condition = self._parse_disjunction()
+        if condition is None:
+            return None
+
+        # Every documented example spells out AS explicitly; requiring it here avoids
+        # ambiguity with the following ON COLUMN / USING COLUMNS keywords, since a bare
+        # alias would otherwise be indistinguishable from either of those clause heads.
+        if not self._match_text_seq("AS"):
+            return condition
+
+        return self.expression(exp.Alias(this=condition, alias=self._parse_id_var()))

@@ -12,6 +12,8 @@ from sqlglot.typing.tsql import EXPRESSION_METADATA
 
 
 class TSQL(Dialect):
+    # https://learn.microsoft.com/en-us/sql/t-sql/language-elements/set-operators-except-and-intersect-transact-sql
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     # Week truncation follows @@DATEFIRST, which defaults to 7 (Sunday)
     WEEK_OFFSET = -1
 

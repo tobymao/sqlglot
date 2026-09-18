@@ -10,6 +10,7 @@ from sqlglot.typing.spark import EXPRESSION_METADATA
 
 
 class Spark(Spark2):
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_LIMIT_ALL = True
     SUPPORTS_NULL_TYPE = True

@@ -9,6 +9,8 @@ from sqlglot.typing.postgres import EXPRESSION_METADATA
 
 
 class Postgres(Dialect):
+    # https://www.postgresql.org/docs/current/queries-union.html
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
     ASCII_ONLY_NORMALIZATION = True

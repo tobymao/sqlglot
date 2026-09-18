@@ -8,6 +8,7 @@ from sqlglot.tokens import TokenType
 
 
 class Teradata(Dialect):
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     TYPED_DIVISION = True
 
     TIME_MAPPING = {

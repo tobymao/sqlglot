@@ -14,6 +14,7 @@ from sqlglot.typing.duckdb import EXPRESSION_METADATA
 
 
 class DuckDB(Dialect):
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
     INDEX_OFFSET = 1

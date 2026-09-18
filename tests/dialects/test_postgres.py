@@ -1857,6 +1857,69 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         self.validate_identity("ANALYZE VERBOSE SKIP_LOCKED TBL(col1, col2)")
         self.validate_identity("ANALYZE BUFFER_USAGE_LIMIT 1337 TBL")
 
+    def test_set_op_intersect_precedence(self):
+        # https://www.postgresql.org/docs/current/queries-union.html
+        # INTERSECT binds more tightly than UNION and EXCEPT, so no parentheses are needed
+        self.validate_identity("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3")
+        self.validate_identity("SELECT 1 INTERSECT SELECT 2 UNION SELECT 3")
+        self.validate_identity("SELECT 1 EXCEPT SELECT 2 INTERSECT SELECT 3")
+        self.validate_identity("SELECT 1 UNION SELECT 2 UNION SELECT 3")
+        self.validate_identity("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 UNION SELECT 4")
+        self.validate_identity("(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3")
+
+        expr = self.parse_one("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3")
+        self.assertIsInstance(expr, exp.Union)
+        self.assertIsInstance(expr.expression, exp.Intersect)
+        self.assertEqual(expr.expression.this.sql(), "SELECT 2")
+
+        # Dialects where INTERSECT binds more tightly parse the same way as Postgres
+        for dialect in (
+            "redshift",
+            "duckdb",
+            "mysql",
+            "snowflake",
+            "spark",
+            "databricks",
+            "tsql",
+            "teradata",
+            "trino",
+        ):
+            expr = parse_one("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3", dialect=dialect)
+            self.assertIsInstance(expr, exp.Union, msg=dialect)
+            self.assertIsInstance(expr.expression, exp.Intersect, msg=dialect)
+            self.assertEqual(expr.sql(dialect), "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3")
+
+        expr = parse_one("SELECT 1 UNION ALL SELECT 2 INTERSECT SELECT 3", dialect="clickhouse")
+        self.assertIsInstance(expr, exp.Union)
+        self.assertIsInstance(expr.expression, exp.Intersect)
+        self.assertEqual(expr.sql("clickhouse"), "SELECT 1 UNION ALL SELECT 2 INTERSECT SELECT 3")
+
+        # Dialects where all set operators have equal precedence keep the left-to-right parse
+        for dialect in ("oracle", "sqlite", "presto", "hive", "spark2"):
+            expr = parse_one("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3", dialect=dialect)
+            self.assertIsInstance(expr, exp.Intersect, msg=dialect)
+            self.assertIsInstance(expr.this, exp.Union, msg=dialect)
+
+        expr = parse_one(
+            "SELECT 1 UNION ALL SELECT 2 INTERSECT DISTINCT SELECT 3", dialect="bigquery"
+        )
+        self.assertIsInstance(expr, exp.Intersect)
+        self.assertIsInstance(expr.this, exp.Union)
+        self.assertEqual(
+            expr.sql("bigquery"), "SELECT 1 UNION ALL SELECT 2 INTERSECT DISTINCT SELECT 3"
+        )
+
+        # Equal-precedence dialects require parentheses to preserve the grouping
+        self.assertEqual(
+            self.parse_one("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3").sql("sqlite"),
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+        )
+        # A set operation on the left side is already grouped correctly without parentheses
+        self.assertEqual(
+            self.parse_one("SELECT 1 INTERSECT SELECT 2 UNION SELECT 3").sql("sqlite"),
+            "SELECT 1 INTERSECT SELECT 2 UNION SELECT 3",
+        )
+
     def test_recursive_cte(self):
         for kind in ("BREADTH", "DEPTH"):
             self.validate_identity(

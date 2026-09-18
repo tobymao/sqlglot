@@ -740,6 +740,16 @@ class Dialect(metaclass=_Dialect):
     must be explicitly specified.
     """
 
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = False
+    """
+    Whether the INTERSECT operator binds more tightly than the UNION and EXCEPT operators.
+
+    When disabled, all set operators have the same precedence and are evaluated from left to right,
+    e.g. as is the case in Oracle and SQLite. When enabled, INTERSECT is evaluated before UNION and
+    EXCEPT, e.g. as is the case in PostgreSQL and MySQL, so that `a UNION b INTERSECT c` is
+    equivalent to `a UNION (b INTERSECT c)`.
+    """
+
     CREATABLE_KIND_MAPPING: dict[str, str] = {}
     """
     Helper for dialects that use a different name for the same creatable kind. For example, the Clickhouse

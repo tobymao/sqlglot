@@ -13,6 +13,8 @@ from sqlglot.typing.clickhouse import EXPRESSION_METADATA
 
 
 class ClickHouse(Dialect):
+    # https://clickhouse.com/docs/sql-reference/statements/select/union
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     INDEX_OFFSET = 1
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"

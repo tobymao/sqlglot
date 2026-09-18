@@ -12,6 +12,8 @@ from sqlglot.typing.mysql import EXPRESSION_METADATA
 
 
 class MySQL(Dialect):
+    # https://dev.mysql.com/doc/refman/8.0/en/set-operations.html
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     PROMOTE_TO_INFERRED_DATETIME_TYPE = True
 
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html

@@ -1921,19 +1921,46 @@ class Generator:
             node = stack.pop()
 
             if isinstance(node, exp.SetOperation):
-                stack.append(node.expression)
+                stack.append(self._set_operation_operand(node.expression, node))
                 stack.append(
                     self.maybe_comment(
                         self.set_operation(node), comments=node.comments, separated=True
                     )
                 )
-                stack.append(node.this)
+                stack.append(self._set_operation_operand(node.this, node))
             else:
-                sqls.append(self.sql(node))
+                sqls.append(node if isinstance(node, str) else self.sql(node))
 
         this = self.sep().join(sqls)
         this = self.query_modifiers(expression, this)
         return self.prepend_ctes(expression, this)
+
+    def _set_operation_operand(self, operand: exp.Expr, parent: exp.SetOperation) -> str | exp.Expr:
+        if isinstance(operand, exp.SetOperation) and self._set_operation_needs_parentheses(
+            operand, parent
+        ):
+            return self.wrap(operand)
+
+        return operand
+
+    def _set_operation_needs_parentheses(
+        self, operand: exp.SetOperation, parent: exp.SetOperation
+    ) -> bool:
+        operand_precedence = self._set_operation_precedence(operand)
+        parent_precedence = self._set_operation_precedence(parent)
+
+        return (operand is parent.expression and operand_precedence <= parent_precedence) or (
+            operand is parent.this and operand_precedence < parent_precedence
+        )
+
+    def _set_operation_precedence(self, expression: exp.SetOperation) -> int:
+        if (
+            isinstance(expression, exp.Intersect)
+            and self.dialect.SET_OP_INTERSECT_HIGHER_PRECEDENCE
+        ):
+            return 2
+
+        return 1
 
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")

@@ -7,6 +7,8 @@ from sqlglot.tokens import TokenType
 
 
 class Trino(Presto):
+    # https://trino.io/docs/current/sql/select.html
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
     CONCAT_WS_COALESCE = True

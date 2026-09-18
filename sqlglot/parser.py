@@ -5982,10 +5982,18 @@ class Parser:
         )
 
     def _parse_set_operations(self, this: exp.Expr | None) -> exp.Expr | None:
+        if self.dialect.SET_OP_INTERSECT_HIGHER_PRECEDENCE:
+            this = self._parse_intersect_chain(this)
+
         while this:
             setop = self.parse_set_operation(this)
             if not setop:
                 break
+
+            if self.dialect.SET_OP_INTERSECT_HIGHER_PRECEDENCE and not isinstance(
+                setop, exp.Intersect
+            ):
+                setop.set("expression", self._parse_intersect_chain(setop.expression))
             this = setop
 
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
@@ -5996,6 +6004,15 @@ class Parser:
                     expr = expression.args.get(arg)
                     if expr:
                         this.set(arg, expr.pop())
+
+        return this
+
+    def _parse_intersect_chain(self, this: exp.Expr | None) -> exp.Expr | None:
+        while this and self._match_set((TokenType.INTERSECT,), advance=False):
+            setop = self.parse_set_operation(this)
+            if not setop:
+                break
+            this = setop
 
         return this
 

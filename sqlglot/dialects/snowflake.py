@@ -14,6 +14,8 @@ from sqlglot.typing.snowflake import EXPRESSION_METADATA
 
 
 class Snowflake(Dialect):
+    # https://docs.snowflake.com/en/sql-reference/operators-query
+    SET_OP_INTERSECT_HIGHER_PRECEDENCE = True
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
     # https://docs.snowflake.com/en/sql-reference/data-types-text#escape-sequences

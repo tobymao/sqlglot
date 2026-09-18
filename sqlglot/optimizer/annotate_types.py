@@ -99,7 +99,7 @@ def _coerce_date_literal(l: exp.Expr, unit: exp.Expr | None) -> exp.DType:
 
 
 def _coerce_date(l: exp.Expr, unit: exp.Expr | None) -> exp.DataType | exp.DType:
-    if not is_date_unit(unit):
+    if l.is_type(exp.DType.DATE) and not is_date_unit(unit):
         return exp.DType.DATETIME
     return l.type or exp.DType.UNKNOWN
 

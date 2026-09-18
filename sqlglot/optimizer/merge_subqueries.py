@@ -303,7 +303,7 @@ def _mergeable(
         if s.unalias().is_number:
             number_literal_aliases.add(name)
         for node in s.walk():
-            if isinstance(node, (exp.AggFunc, exp.Select, exp.Explode)):
+            if isinstance(node, (exp.AggFunc, exp.Select, *exp.SET_RETURNING_FUNCTIONS)):
                 return False
             if isinstance(node, exp.Window):
                 window_aliases.add(name)

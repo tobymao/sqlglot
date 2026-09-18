@@ -19,8 +19,7 @@ if t.TYPE_CHECKING:
 # Sentinel value that means an outer query selecting ALL columns
 SELECT_ALL = object()
 
-# UDTF: functions that multiply rows.  Anonymous: unknown functions may be set-returning.
-SET_RETURNING_FUNCTIONS = (exp.Anonymous, exp.UDTF, exp.ExplodingGenerateSeries)
+SET_RETURNING_FUNCTIONS = exp.SET_RETURNING_FUNCTIONS
 
 # GROUP BY constructs whose children are grouping items; a one-column set, e.g. ((1)), is a Paren
 GROUPING_CONSTRUCTS = (exp.Cube, exp.GroupingSets, exp.Paren, exp.Rollup, exp.Tuple)

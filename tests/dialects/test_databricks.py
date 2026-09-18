@@ -575,4 +575,87 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE VARIABLE myvar INT DEFAULT 1", "DECLARE myvar INT = 1")
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
         self.validate_identity("DECLARE x INT = 1")
+
+    def test_create_policy(self):
+        # https://github.com/tobymao/sqlglot/issues/8378
+        self.validate_identity(
+            "CREATE OR REPLACE POLICY mask_pii_strings "
+            "ON CATALOG my_catalog "
+            "COLUMN MASK my_catalog.governance.mask_pii_string "
+            "TO `account users` "
+            "EXCEPT `some_exempt_group` "
+            "FOR TABLES "
+            "MATCH COLUMNS HAS_TAG_VALUE('pii_string', 'true') AS c "
+            "ON COLUMN c"
+        )
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES WHEN HAS_TAG_VALUE('sensitivity', 'high')"
+        )
+        self.validate_identity("CREATE POLICY p ON SCHEMA s.t ROW FILTER f TO analysts FOR TABLES")
+        self.validate_identity("CREATE POLICY p ON CATALOG c ROW FILTER f TO analysts FOR TABLES")
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t COMMENT 'a comment' ROW FILTER f TO analysts FOR TABLES"
+        )
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('region') AS region "
+            "USING COLUMNS (region, 1)"
+        )
+        self.validate_identity("CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES")
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO 'All Users', `account users` "
+            "EXCEPT 'HR admins', contractors "
+            "FOR TABLES"
+        )
+
+        # Verbatim examples from https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-policy
+        self.validate_identity(
+            "CREATE POLICY ssn_mask "
+            "ON CATALOG employees "
+            "COLUMN MASK ssn_to_last_nr "
+            "TO 'All Users' EXCEPT 'HR admins' "
+            "FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('ssn') AS ssn "
+            "ON COLUMN ssn "
+            "USING COLUMNS (4)"
+        )
+        self.validate_identity(
+            "CREATE POLICY hide_eu_customers "
+            "ON SCHEMA prod.customers "
+            "COMMENT 'Hide European customers from sensitive tables' "
+            "ROW FILTER non_eu_region "
+            "TO analysts "
+            "FOR TABLES "
+            "WHEN HAS_TAG_VALUE('sensitivity', 'high') "
+            "MATCH COLUMNS HAS_TAG('geo_region') AS region "
+            "USING COLUMNS (region)"
+        )
+
+        # ABAC GRANT/DENY policies aren't supported; they should fall back to exp.Command
+        grant_policy = parse_one(
+            "CREATE POLICY grant_anthropic_model_services "
+            "ON SCHEMA system.ai "
+            "COMMENT 'Grant EXECUTE on Anthropic model services' "
+            "TO data_scientists "
+            "EXCEPT contractors "
+            "GRANT EXECUTE FOR MODEL SERVICES "
+            "WHEN HAS_TAG_VALUE('ai.model_creator', 'anthropic')",
+            read="databricks",
+        )
+        self.assertIsInstance(grant_policy, exp.Command)
+
+        # Mixing ROW FILTER and COLUMN MASK in one statement is invalid: after the ROW FILTER's
+        # function name, TO is expected, not another body's keyword
+        with self.assertRaises(ParseError):
+            parse_one(
+                "CREATE POLICY p ON TABLE t ROW FILTER f COLUMN MASK g TO analysts FOR TABLES",
+                read="databricks",
+            )
+
+        # ON COLUMN is mandatory for COLUMN MASK policies
+        with self.assertRaises(ParseError):
+            parse_one(
+                "CREATE POLICY p ON TABLE t COLUMN MASK f TO analysts FOR TABLES",
+                read="databricks",
+            )
         self.validate_identity("DECLARE OR REPLACE x INT = 1")

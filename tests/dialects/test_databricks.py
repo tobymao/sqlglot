@@ -577,7 +577,6 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE x INT = 1")
 
     def test_create_policy(self):
-        # https://github.com/tobymao/sqlglot/issues/8378
         self.validate_identity(
             "CREATE OR REPLACE POLICY mask_pii_strings "
             "ON CATALOG my_catalog "
@@ -591,6 +590,7 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES WHEN HAS_TAG_VALUE('sensitivity', 'high')"
         )
+        self.validate_identity("CREATE POLICY p ON SCHEMA s ROW FILTER f TO analysts FOR TABLES")
         self.validate_identity("CREATE POLICY p ON SCHEMA s.t ROW FILTER f TO analysts FOR TABLES")
         self.validate_identity("CREATE POLICY p ON CATALOG c ROW FILTER f TO analysts FOR TABLES")
         self.validate_identity(

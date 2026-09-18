@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlglot import exp, parse_one, transforms
+from sqlglot import Dialect, exp, transforms
 from sqlglot.errors import ParseError, TokenError
 from sqlglot.dialects.dialect import (
     merge_without_target_sql,
@@ -66,13 +66,16 @@ class TrinoGenerator(PrestoGenerator):
 
         try:
             # from_str deliberately ignores parse errors; schema validation must not do so.
-            dtype = parse_one(schema.name, read="spark", into=exp.DataType)
+            parsed = Dialect.get_or_raise("spark").parse_into(exp.DataType, schema.name)
         except (ParseError, TokenError):
             self.unsupported("Cannot parse FROM_JSON schema as a Spark data type.")
             return self.function_fallback_sql(expression)
 
-        if not dtype.is_type(exp.DType.MAP, exp.DType.ARRAY) or not self._fromjson_type_supported(
-            dtype
+        dtype = parsed[0] if len(parsed) == 1 else None
+        if (
+            not isinstance(dtype, exp.DataType)
+            or not dtype.is_type(exp.DType.MAP, exp.DType.ARRAY)
+            or not self._fromjson_type_supported(dtype)
         ):
             self.unsupported(
                 "Unsupported FROM_JSON schema in Trino: expected a MAP or ARRAY "

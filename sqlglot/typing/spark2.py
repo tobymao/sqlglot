@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
+from sqlglot.errors import ParseError, TokenError
 from sqlglot.helper import ensure_list
 from sqlglot.typing.hive import EXPRESSION_METADATA as HIVE_EXPRESSION_METADATA
 
@@ -40,6 +41,39 @@ def _annotate_by_similar_args(self: TypeAnnotator, expression: E, *arg_keys: str
         result = exp.DType.UNKNOWN
 
     self._set_type(expression, result)
+    return expression
+
+
+def _annotate_from_json(self: TypeAnnotator, expression: E) -> E:
+    schema = expression.expression
+    if schema.is_string:
+        try:
+            parsed = self.dialect.parse_into(exp.DataType, schema.name)
+            dtype = parsed[0] if len(parsed) == 1 else None
+            if isinstance(dtype, exp.DataType) and (
+                (dtype.is_type(exp.DType.MAP) and len(dtype.expressions) == 2)
+                or (dtype.is_type(exp.DType.ARRAY) and len(dtype.expressions) == 1)
+                or dtype.is_type(exp.DType.STRUCT)
+            ):
+                self._set_type(expression, dtype)
+                return expression
+        except (ParseError, TokenError):
+            pass
+    self._set_type(expression, exp.DType.UNKNOWN)
+    return expression
+
+
+def _annotate_map_keys(self: TypeAnnotator, expression: E) -> E:
+    dtype = expression.this.type
+    if dtype and dtype.is_type(exp.DType.MAP) and len(dtype.expressions) == 2:
+        self._set_type(
+            expression,
+            exp.DataType(
+                this=exp.DType.ARRAY, expressions=[dtype.expressions[0].copy()], nested=True
+            ),
+        )
+        return expression
+    self._set_type(expression, exp.DType.UNKNOWN)
     return expression
 
 
@@ -81,6 +115,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
     },
     exp.AtTimeZone: {"returns": exp.DType.TIMESTAMP},
     exp.Concat: {"annotator": lambda self, e: _annotate_by_similar_args(self, e, "expressions")},
+    exp.FromJson: {"annotator": _annotate_from_json},
+    exp.MapKeys: {"annotator": _annotate_map_keys},
     exp.NextDay: {"returns": exp.DType.DATE},
     exp.Pad: {
         "annotator": lambda self, e: _annotate_by_similar_args(self, e, "this", "fill_pattern")

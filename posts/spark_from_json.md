@@ -3,6 +3,9 @@
 Trino generation recognizes the existing `FromJson` expression and parses its literal
 schema with SQLGlot's Spark data-type parser. The original schema and options remain in
 the AST, so generating Spark SQL preserves them. Other target dialects are unchanged.
+Spark type annotation also derives the result type from a literal schema and propagates
+map key types through `MAP_KEYS`. This lets `SORT_ARRAY(MAP_KEYS(FROM_JSON(...)))`
+retain its array type when used by functions such as `CONCAT_WS`.
 
 With the default `unsupported_level=ErrorLevel.WARN`:
 

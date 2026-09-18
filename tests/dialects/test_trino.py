@@ -64,6 +64,43 @@ class TestTrino(Validator):
             "SELECT TRY(CAST(JSON_PARSE(t.payload) AS MAP(VARCHAR, DOUBLE))) FROM t",
         )
 
+    def test_from_json_types(self):
+        for schema, expected in (
+            ("'MAP<STRING,DOUBLE>'", "MAP<TEXT, DOUBLE>"),
+            ("'ARRAY<MAP<STRING,INT>>'", "ARRAY<MAP<TEXT, INT>>"),
+            ("'STRUCT<a:INT>'", "STRUCT<a INT>"),
+            ("SCHEMA_OF_JSON('{}')", "UNKNOWN"),
+            ("schema_column", "UNKNOWN"),
+            ("'MAP<STRING>'", "UNKNOWN"),
+            ("'ARRAY<`x>'", "UNKNOWN"),
+        ):
+            with self.subTest(schema=schema):
+                expression = annotate_types(
+                    parse_one(f"FROM_JSON(payload, {schema})", read="spark"), dialect="spark"
+                )
+                self.assertEqual(expression.type, exp.DataType.from_str(expected))
+
+        for source in ("MAP_KEYS(payload)", "MAP_KEYS(FROM_JSON(payload, schema_column))"):
+            expression = annotate_types(parse_one(source, read="spark"), dialect="spark")
+            self.assertTrue(expression.is_type(exp.DType.UNKNOWN))
+
+        source = (
+            "SELECT NULLIF(CONCAT_WS(' + ', SORT_ARRAY(MAP_KEYS("
+            "FROM_JSON(payload, 'MAP<STRING,DOUBLE>')))), '') FROM t"
+        )
+        expression = annotate_types(
+            parse_one(source, read="spark"), schema={"t": {"payload": "STRING"}}, dialect="spark"
+        )
+        for node in expression.find_all(exp.MapKeys, exp.SortArray):
+            self.assertTrue(node.is_type("ARRAY<TEXT>"))
+        self.assertEqual(
+            expression.sql("trino", unsupported_level=ErrorLevel.IGNORE),
+            "SELECT NULLIF(CONCAT_WS(' + ', COALESCE(CAST(ARRAY_SORT(MAP_KEYS("
+            "TRY(CAST(JSON_PARSE(payload) AS MAP(VARCHAR, DOUBLE))))) AS ARRAY(VARCHAR)), "
+            "ARRAY[])), '') FROM t",
+        )
+        self.assertEqual(expression.sql("spark"), source)
+
     def test_from_json_unsupported(self):
         for schema in (
             "schema_column",

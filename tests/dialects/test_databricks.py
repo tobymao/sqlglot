@@ -631,6 +631,29 @@ class TestDatabricks(Validator):
             "USING COLUMNS (region)"
         )
 
+        # MATCH COLUMNS accepts a bare alias (AS is optional); make sure it isn't confused
+        # with a following ON COLUMN / USING COLUMNS clause head, or with end of statement
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t COLUMN MASK f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('ssn') ssn ON COLUMN ssn",
+            "CREATE POLICY p ON TABLE t COLUMN MASK f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('ssn') AS ssn ON COLUMN ssn",
+        )
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('region') region "
+            "USING COLUMNS (region, 1)",
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('region') AS region "
+            "USING COLUMNS (region, 1)",
+        )
+        self.validate_identity(
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('region') region",
+            "CREATE POLICY p ON TABLE t ROW FILTER f TO analysts FOR TABLES "
+            "MATCH COLUMNS HAS_TAG('region') AS region",
+        )
+
         # ABAC GRANT/DENY policies aren't supported; they should fall back to exp.Command
         grant_policy = parse_one(
             "CREATE POLICY grant_anthropic_model_services "

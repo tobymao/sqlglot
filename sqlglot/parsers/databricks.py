@@ -176,10 +176,14 @@ class DatabricksParser(SparkParser):
         if condition is None:
             return None
 
-        # Every documented example spells out AS explicitly; requiring it here avoids
-        # ambiguity with the following ON COLUMN / USING COLUMNS keywords, since a bare
-        # alias would otherwise be indistinguishable from either of those clause heads.
-        if not self._match_text_seq("AS"):
+        if self._match_text_seq("AS"):
+            return self.expression(exp.Alias(this=condition, alias=self._parse_id_var()))
+
+        # Don't let a bare alias swallow the ON COLUMN / USING COLUMNS clause heads
+        index = self._index
+        if self._match_text_seq("ON", "COLUMN") or self._match_text_seq("USING", "COLUMNS"):
+            self._retreat(index)
             return condition
 
-        return self.expression(exp.Alias(this=condition, alias=self._parse_id_var()))
+        alias = self._parse_id_var(any_token=True)
+        return self.expression(exp.Alias(this=condition, alias=alias)) if alias else condition

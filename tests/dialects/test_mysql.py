@@ -1042,6 +1042,26 @@ class TestMySQL(Validator):
             write_sql="SELECT CAST('2023-01-01 13:14:15.1+00:00' AS DATETIME(3))",
         )
 
+    def test_date_delta_preserves_date_cast(self):
+        self.validate_all(
+            "SELECT DATE_ADD(DATE(dt), INTERVAL (HOUR(dt)) HOUR) FROM t",
+            read={"mysql": "SELECT DATE_ADD(DATE(dt), INTERVAL HOUR(dt) HOUR) FROM t"},
+            write={
+                "mysql": "SELECT DATE_ADD(DATE(dt), INTERVAL (HOUR(dt)) HOUR) FROM t",
+                "duckdb": "SELECT CAST(dt AS DATE) + INTERVAL (HOUR(dt)) HOUR FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_SUB(DATE(dt), INTERVAL '1' DAY) FROM t",
+            read={"mysql": "SELECT DATE_SUB(DATE(dt), INTERVAL 1 DAY) FROM t"},
+            write={"mysql": "SELECT DATE_SUB(DATE(dt), INTERVAL '1' DAY) FROM t"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(DATE(dt), INTERVAL '1' MONTH) FROM t",
+            read={"mysql": "SELECT DATE_ADD(DATE(dt), INTERVAL 1 MONTH) FROM t"},
+            write={"mysql": "SELECT DATE_ADD(DATE(dt), INTERVAL '1' MONTH) FROM t"},
+        )
+
     def test_mysql(self):
         for func in ("CHAR_LENGTH", "CHARACTER_LENGTH"):
             with self.subTest(f"Testing MySQL's {func}"):

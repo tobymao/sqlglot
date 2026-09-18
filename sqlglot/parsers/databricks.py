@@ -75,7 +75,6 @@ class DatabricksParser(SparkParser):
             return self.expression(exp.ClusterProperty(this=self._prev.text.upper()))
         return super()._parse_cluster_property()
 
-    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-policy
     def _parse_create(self) -> exp.Create | exp.Command:
         start = self._prev
         index = self._index

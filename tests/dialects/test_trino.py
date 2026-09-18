@@ -1,10 +1,113 @@
-from sqlglot import exp, parse_one
+from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
 class TestTrino(Validator):
     dialect = "trino"
+
+    def test_concat_ws(self):
+        self.validate_identity("SELECT CONCAT_WS('-', ARRAY['a', NULL, 'b'])")
+        self.validate_identity("SELECT CONCAT_WS('-', CAST(NULL AS ARRAY(VARCHAR)))")
+
+        for source, target in (
+            (
+                "CONCAT_WS('', ARRAY('a', 'b'))",
+                "CONCAT_WS('', COALESCE(CAST(ARRAY['a', 'b'] AS ARRAY(VARCHAR)), ARRAY[]))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('a', NULL, '', 'b'))",
+                "CONCAT_WS('-', COALESCE(CAST(ARRAY['a', NULL, '', 'b'] AS ARRAY(VARCHAR)), ARRAY[]))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY())",
+                "CONCAT_WS('-', COALESCE(CAST(ARRAY[] AS ARRAY(VARCHAR)), ARRAY[]))",
+            ),
+            (
+                "CONCAT_WS('-', CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS('-', COALESCE(TRY_CAST(NULL AS ARRAY(VARCHAR)), ARRAY[]))",
+            ),
+            (
+                "CONCAT_WS(NULL, CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS(NULL, COALESCE(TRY_CAST(NULL AS ARRAY(VARCHAR)), ARRAY[]))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), 'ghi')",
+                "CONCAT_WS('-', CONCAT(COALESCE(CAST(ARRAY['abc', 'def'] AS ARRAY(VARCHAR)), "
+                "ARRAY[]), ARRAY[CAST('ghi' AS VARCHAR)]))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), ARRAY('bla', 'bob'))",
+                "CONCAT_WS('-', CONCAT(COALESCE(CAST(ARRAY['abc', 'def'] AS ARRAY(VARCHAR)), "
+                "ARRAY[]), COALESCE(CAST(ARRAY['bla', 'bob'] AS ARRAY(VARCHAR)), ARRAY[])))",
+            ),
+            (
+                "CONCAT_WS('-', 'x', ARRAY(), ARRAY(NULL), CAST(NULL AS ARRAY<STRING>), NULL, 'y')",
+                "CONCAT_WS('-', CONCAT(ARRAY[CAST('x' AS VARCHAR)], "
+                "COALESCE(CAST(ARRAY[] AS ARRAY(VARCHAR)), ARRAY[]), "
+                "COALESCE(CAST(ARRAY[NULL] AS ARRAY(VARCHAR)), ARRAY[]), "
+                "COALESCE(TRY_CAST(NULL AS ARRAY(VARCHAR)), ARRAY[]), "
+                "ARRAY[CAST(NULL AS VARCHAR)], ARRAY[CAST('y' AS VARCHAR)]))",
+            ),
+            (
+                "CONCAT_WS('-', 1, NULL, 'a')",
+                "CONCAT_WS('-', CAST(1 AS VARCHAR), CAST(NULL AS VARCHAR), CAST('a' AS VARCHAR))",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {target}", read={"spark": f"SELECT {source}"})
+                parse_one(source, read="spark").sql("trino", unsupported_level=ErrorLevel.RAISE)
+
+    def test_concat_ws_typed(self):
+        for a_type, b_type, expected in (
+            (
+                "ARRAY<STRING>",
+                "STRING",
+                "CONCAT_WS(t.sep, CONCAT(COALESCE(CAST(t.a AS ARRAY(VARCHAR)), ARRAY[]), "
+                "ARRAY[CAST(t.b AS VARCHAR)]))",
+            ),
+            (
+                "ARRAY<STRING>",
+                "ARRAY<STRING>",
+                "CONCAT_WS(t.sep, CONCAT(COALESCE(CAST(t.a AS ARRAY(VARCHAR)), ARRAY[]), "
+                "COALESCE(CAST(t.b AS ARRAY(VARCHAR)), ARRAY[])))",
+            ),
+            (
+                "ARRAY<INT>",
+                "INT",
+                "CONCAT_WS(t.sep, CONCAT(COALESCE(CAST(t.a AS ARRAY(VARCHAR)), ARRAY[]), "
+                "ARRAY[CAST(t.b AS VARCHAR)]))",
+            ),
+        ):
+            with self.subTest(a_type=a_type, b_type=b_type):
+                expression = annotate_types(
+                    parse_one("SELECT CONCAT_WS(t.sep, t.a, t.b) FROM t", read="spark"),
+                    schema={"t": {"sep": "STRING", "a": a_type, "b": b_type}},
+                    dialect="spark",
+                )
+                self.assertEqual(
+                    expression.sql("trino", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT {expected} FROM t",
+                )
+
+    def test_concat_ws_unknown_types(self):
+        for sql in (
+            "SELECT CONCAT_WS('-', t.a, t.b) FROM t",
+            "SELECT CONCAT_WS('-', ARRAY('a'), t.b) FROM t",
+        ):
+            for annotated in (False, True):
+                with self.subTest(sql=sql, annotated=annotated):
+                    expression = parse_one(sql, read="spark")
+                    if annotated:
+                        expression = annotate_types(expression, dialect="spark")
+
+                    with self.assertLogs(generator_logger) as logs:
+                        expression.sql("trino")
+                    self.assertIn("CONCAT_WS with unknown argument types", logs.output[0])
+
+                    with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
+                        expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
 
     def test_trino(self):
         self.validate_identity("REFRESH MATERIALIZED VIEW mynamespace.test_view")

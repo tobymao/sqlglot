@@ -71,6 +71,9 @@ class HiveParser(parser.Parser):
         "BASE64": exp.ToBase64.from_arg_list,
         "COLLECT_LIST": lambda args: exp.ArrayAgg(this=seq_get(args, 0), nulls_excluded=True),
         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
+        "CONCAT_WS": lambda args: exp.ConcatWs(
+            expressions=args, safe=True, coalesce=True, flatten=True
+        ),
         "DATE_ADD": lambda args: exp.TsOrDsAdd(
             this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
         ),

@@ -32,6 +32,7 @@ class Concat(Expression, Func):
 
 
 class ConcatWs(Concat):
+    arg_types = {**Concat.arg_types, "flatten": False}
     _sql_names = ["CONCAT_WS"]
 
 

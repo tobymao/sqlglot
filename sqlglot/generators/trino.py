@@ -52,6 +52,39 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathSubscript,
     }
 
+    def concatws_sql(self, expression: exp.ConcatWs) -> str:
+        if expression.args.get("flatten"):
+            arrays = []
+            has_array = False
+            has_unknown = False
+
+            for arg in expression.expressions[1:]:
+                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY):
+                    has_array = True
+                    arg = exp.func("COALESCE", exp.cast(arg, "ARRAY<TEXT>"), exp.array())
+                else:
+                    if (not arg.type or arg.is_type(exp.DType.UNKNOWN)) and not isinstance(
+                        arg, exp.CONSTANTS
+                    ):
+                        has_unknown = True
+
+                    arg = exp.array(exp.cast(arg, exp.DType.TEXT))
+
+                arrays.append(arg)
+
+            if has_unknown:
+                self.unsupported("Cannot transpile CONCAT_WS with unknown argument types to Trino.")
+
+            if has_array:
+                array = (
+                    exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
+                    if len(arrays) > 1
+                    else arrays[0]
+                )
+                return self.func("CONCAT_WS", expression.expressions[0], array)
+
+        return super().concatws_sql(expression)
+
     def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
         characteristics = expression.args.get("characteristics")
         characteristics_sql = (

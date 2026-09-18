@@ -106,7 +106,6 @@ class DatabricksParser(SparkParser):
         elif self._match_text_seq("COLUMN", "MASK"):
             kind = "COLUMN MASK"
         else:
-            # e.g. an ABAC GRANT/DENY policy body, which isn't supported here
             return self._parse_as_command(start)
 
         function = self._parse_table_parts()

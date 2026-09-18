@@ -1,7 +1,12 @@
 from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.scope import ScopeType, find_all_in_scope, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import (
+    ScopeType,
+    find_in_scope,
+    projection_has_aggregate,
+    traverse_scope,
+)
 from sqlglot._typing import E
 
 
@@ -413,10 +418,15 @@ def _is_plain_group(group: exp.Group) -> bool:
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:
+    named_windows = {
+        window.name: window
+        for window in select.args.get("windows") or []
+        if isinstance(window, exp.Window)
+    }
+    cache: dict[str, bool] = {}
+
     return any(
-        not agg.is_windowed
-        for projection in select.selects
-        for agg in find_all_in_scope(projection, exp.AggFunc)
+        projection_has_aggregate(projection, named_windows, cache) for projection in select.selects
     )
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     merge_without_target_sql,
@@ -51,6 +53,47 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathRoot,
         exp.JSONPathSubscript,
     }
+
+    def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
+        path = expression.expression
+        parts = []
+        if path.is_string and path.name.startswith("$"):
+            remaining = path.name[1:]
+            while remaining:
+                match = re.match(
+                    r"\.([A-Za-z_][A-Za-z_0-9]*)|\['([^'\\]+)'\]|\[([0-9]+)\]", remaining
+                )
+                if not match:
+                    break
+                key, quoted_key, index = match.groups()
+                if quoted_key == "*" or (index and (len(index) > 10 or int(index) > 2147483647)):
+                    break
+                parts.append(
+                    f"[{int(index)}]"
+                    if index
+                    else '."' + (key or quoted_key).replace('"', '""') + '"'
+                )
+                remaining = remaining[match.end() :]
+            if not remaining:
+                # Spark suppresses null object members, but returns 'null' for a root
+                # or indexed array null. Filtering before unquoting preserves "null".
+                json_path = "strict $" + "".join(parts)
+                if parts and not parts[-1].startswith("["):
+                    json_path += " ? (@ != null)"
+                return self.sql(
+                    exp.JSONExtract(
+                        this=expression.this,
+                        expression=exp.Literal.string(json_path),
+                        json_query=True,
+                        quote=exp.JSONExtractQuote(option=exp.var("OMIT")),
+                    )
+                )
+
+        self.unsupported(
+            "GET_JSON_OBJECT to Trino requires a literal path containing only object keys "
+            "and nonnegative array indices; dynamic, wildcard and other paths are unsupported"
+        )
+        return self.function_fallback_sql(expression)
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         if expression.args.get("flatten"):

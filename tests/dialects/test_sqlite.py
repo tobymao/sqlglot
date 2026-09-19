@@ -67,6 +67,13 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE('2025-01-01', '5 DAY')",
+            read={
+                "duckdb": "SELECT DATE '2025-01-01' + INTERVAL '5' DAY",
+                "postgres": "SELECT DATE '2025-01-01' + INTERVAL '5' DAY",
+            },
+        )
+        self.validate_all(
             "SELECT DATE(d, '-1 DAY') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL (-1) DAY) FROM t",

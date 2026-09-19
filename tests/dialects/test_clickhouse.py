@@ -154,6 +154,41 @@ class TestClickhouse(Validator):
         self.validate_identity(
             "SELECT * FROM foo ORDER BY bar OFFSET 0 ROWS FETCH NEXT 10 ROWS WITH TIES"
         )
+        self.validate_all(
+            "SELECT 1 AS x LIMIT 1",
+            read={"postgres": "SELECT 1 AS x FETCH FIRST ROW ONLY"},
+        )
+        self.validate_all(
+            "SELECT 1 AS x LIMIT 2 OFFSET 1",
+            read={"postgres": "SELECT 1 AS x OFFSET 1 ROW FETCH FIRST 2 ROWS ONLY"},
+        )
+        self.validate_all(
+            "SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY UNION ALL SELECT 2 AS x",
+            write={
+                "clickhouse": "SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY UNION ALL SELECT 2 AS x",
+                "duckdb": "(SELECT 1 AS x ORDER BY x NULLS FIRST LIMIT 1) UNION ALL SELECT 2 AS x",
+                "postgres": "(SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY) UNION ALL SELECT 2 AS x",
+                "sqlite": "SELECT * FROM (SELECT 1 AS x ORDER BY x LIMIT 1) UNION ALL SELECT 2 AS x",
+                "tsql": "SELECT * FROM (SELECT 1 AS x ORDER BY x OFFSET 0 ROWS FETCH FIRST 1 ROWS ONLY) AS _l_0 UNION ALL SELECT 2 AS x",
+            },
+        )
+        self.validate_all(
+            "SELECT 2 AS x UNION ALL SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY",
+            write={
+                "clickhouse": "SELECT 2 AS x UNION ALL SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY",
+                "duckdb": "SELECT 2 AS x UNION ALL (SELECT 1 AS x ORDER BY x NULLS FIRST LIMIT 1)",
+                "postgres": "SELECT 2 AS x UNION ALL (SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY)",
+                "sqlite": "SELECT 2 AS x UNION ALL SELECT * FROM (SELECT 1 AS x ORDER BY x LIMIT 1)",
+                "tsql": "SELECT 2 AS x UNION ALL SELECT * FROM (SELECT 1 AS x ORDER BY x OFFSET 0 ROWS FETCH FIRST 1 ROWS ONLY) AS _l_0",
+            },
+        )
+
+        self.validate_all(
+            "SELECT 1 AS x ORDER BY x NULLS FIRST LIMIT 1 OFFSET 1 UNION ALL SELECT 2 AS x",
+            write={
+                "tsql": "SELECT * FROM (SELECT 1 AS x ORDER BY x OFFSET 1 ROWS FETCH FIRST 1 ROWS ONLY) AS _l_0 UNION ALL SELECT 2 AS x"
+            },
+        )
         self.validate_identity(
             "SELECT DATE_BIN(toDateTime('2023-01-01 14:45:00'), INTERVAL '1' MINUTE, toDateTime('2023-01-01 14:35:30'), 'UTC')",
         )

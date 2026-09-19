@@ -30,6 +30,8 @@ DATE_PART_UNMAPPING = {
 
 BIT_TYPES = {exp.EQ, exp.NEQ, exp.Is, exp.In, exp.Select, exp.Alias}
 
+SET_OP_MODIFIERS = ("limit", "offset", "order", "for_", "options")
+
 
 def _format_sql(self: TSQLGenerator, expression: exp.NumberToStr | exp.TimeToStr) -> str:
     fmt = expression.args["format"]
@@ -136,6 +138,7 @@ class TSQLGenerator(generator.Generator):
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     LIMIT_IS_TOP = True
+    SET_OP_LIMITS = True
     QUERY_HINTS = False
     RETURNING_END = False
     NVL2_SUPPORTED = False
@@ -150,7 +153,6 @@ class TSQLGenerator(generator.Generator):
     SUPPORTS_SELECT_INTO = True
     JSON_PATH_BRACKETED_KEY_SUPPORTED = False
     SUPPORTS_TO_NUMBER = False
-    SET_OP_MODIFIERS = False
     COPY_PARAMS_EQ_REQUIRED = True
     PARSE_JSON_NAME: str | None = None
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
@@ -274,6 +276,64 @@ class TSQLGenerator(generator.Generator):
         return f"{scope_name}::{rhs}"
 
     def select_sql(self, expression: exp.Select) -> str:
+        self._prepare_limit_offset(expression)
+
+        # Handles transpiling a query like the following to T-SQL:
+        #   SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY UNION ALL SELECT 2 AS x
+        if isinstance(expression.parent, exp.SetOperation) and isinstance(
+            expression.args.get("limit"), exp.Fetch
+        ):
+            return self.sql(
+                exp.select("*").from_(expression.subquery("_l_0", copy=False), copy=False)
+            )
+
+        return super().select_sql(expression)
+
+    def set_operations(self, expression: exp.SetOperation) -> str:
+        limit = expression.args.get("limit")
+        offset = expression.args.get("offset")
+        order = expression.args.get("order")
+
+        # Set operations cannot order by the CASE used to emulate null ordering,
+        # or by expressions that aren't in their select list.
+        wrap_order = False
+        if order:
+            selects = {select.unalias().unnest() for select in expression.selects}
+            for ordered in order.expressions:
+                this = ordered.this.unnest()
+                if this.is_int:
+                    continue
+
+                desc = ordered.args.get("desc")
+                nulls_first = ordered.args.get("nulls_first")
+
+                emulate_null_ordering = (desc and nulls_first) or (not desc and not nulls_first)
+                if emulate_null_ordering or (
+                    not isinstance(this, exp.Column) and this not in selects
+                ):
+                    wrap_order = True
+                    break
+
+        if (
+            wrap_order
+            or (isinstance(limit, exp.Limit) and not offset)
+            or (not order and (offset or isinstance(limit, exp.Fetch)))
+        ):
+            select = self._move_ctes_to_top_level(
+                exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+            )
+            for arg in SET_OP_MODIFIERS:
+                value = expression.args.get(arg)
+                if value:
+                    expression.set(arg, None)
+                    select.set(arg, value)
+
+            return self.sql(select)
+
+        self._prepare_limit_offset(expression)
+        return super().set_operations(expression)
+
+    def _prepare_limit_offset(self, expression: exp.Query) -> None:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
 
@@ -294,8 +354,6 @@ class TSQLGenerator(generator.Generator):
                 # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                 # we replace here because otherwise TOP would be generated in select_sql
                 limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
-
-        return super().select_sql(expression)
 
     def convert_sql(self, expression: exp.Convert) -> str:
         name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

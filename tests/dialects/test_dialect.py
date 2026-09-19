@@ -2088,6 +2088,29 @@ class TestDialect(Validator):
 
     def test_set_operators(self):
         self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 OFFSET 1",
+                "tsql": "SELECT * FROM (SELECT * FROM a UNION SELECT * FROM b) AS _l_0 ORDER BY (SELECT NULL) OFFSET 1 ROWS",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1 OFFSET 1",
+            write={
+                "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1 OFFSET 1",
+                "clickhouse": "SELECT * FROM (SELECT * FROM a UNION DISTINCT SELECT * FROM b) AS _l_0 ORDER BY x NULLS FIRST LIMIT 1 OFFSET 1",
+                "tsql": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x OFFSET 1 ROWS FETCH FIRST 1 ROWS ONLY",
+            },
+        )
+        self.validate_all(
+            "SELECT a FROM x UNION SELECT a FROM y FETCH FIRST 2 ROWS ONLY",
+            write={
+                "clickhouse": "SELECT * FROM (SELECT a FROM x UNION DISTINCT SELECT a FROM y) AS _l_0 LIMIT 2",
+                "tsql": "SELECT * FROM (SELECT a FROM x UNION SELECT a FROM y) AS _l_0 ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH FIRST 2 ROWS ONLY",
+            },
+        )
+        self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",
             write={
                 "": "SELECT * FROM a UNION SELECT * FROM b ORDER BY x LIMIT 1",

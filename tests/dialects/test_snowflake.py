@@ -13,6 +13,44 @@ class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
 
+    def test_set_operation_top(self):
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            with self.subTest(op=op):
+                self.validate_all(
+                    f"SELECT TOP 1 1 AS x {op} SELECT TOP 1 2 AS x",
+                    write={
+                        "snowflake": f"(SELECT 1 AS x LIMIT 1) {op} (SELECT 2 AS x LIMIT 1)",
+                        "duckdb": f"(SELECT 1 AS x LIMIT 1) {op} (SELECT 2 AS x LIMIT 1)",
+                        "tsql": f"SELECT TOP 1 1 AS x {op} SELECT TOP 1 2 AS x",
+                    },
+                )
+
+        for source, expected in (
+            (
+                "SELECT TOP 1 1 AS x UNION ALL SELECT TOP 1 2 AS x UNION ALL SELECT TOP 1 3 AS x",
+                "(SELECT 1 AS x LIMIT 1) UNION ALL (SELECT 2 AS x LIMIT 1) UNION ALL (SELECT 3 AS x LIMIT 1)",
+            ),
+            (
+                "SELECT 1 AS x UNION ALL SELECT TOP 0 2 AS x",
+                "SELECT 1 AS x UNION ALL (SELECT 2 AS x LIMIT 0)",
+            ),
+            (
+                "SELECT TOP 1 1 AS x UNION ALL SELECT TOP 1 2 AS x ORDER BY x DESC LIMIT 1 OFFSET 1",
+                "(SELECT 1 AS x LIMIT 1) UNION ALL (SELECT 2 AS x LIMIT 1) ORDER BY x DESC LIMIT 1 OFFSET 1",
+            ),
+            (
+                "SELECT TOP 1 1 AS x UNION ALL SELECT TOP 1 2 AS x FETCH FIRST 1 ROW ONLY",
+                "(SELECT 1 AS x LIMIT 1) UNION ALL (SELECT 2 AS x LIMIT 1) FETCH FIRST 1 ROWS ONLY",
+            ),
+            (
+                "SELECT TOP 1 1 AS x UNION ALL SELECT 2 AS x LIMIT 1",
+                "(SELECT 1 AS x LIMIT 1) UNION ALL SELECT 2 AS x LIMIT 1",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_identity(source, expected)
+                self.validate_identity(expected)
+
     def test_snowflake(self):
         ast = parse_one("BLA(x) FILTER (WHERE x = 5)")
         self.assertEqual(

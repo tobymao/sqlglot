@@ -2349,6 +2349,22 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_timestamps_with_time_zone_precision(self):
+        for timestamp_type in ("TIMESTAMP_TZ", "TIMESTAMP_LTZ"):
+            for precision in ("", "(0)", "(3)", "(6)", "(9)"):
+                self.validate_all(
+                    "CREATE TABLE table1 (ts TIMESTAMPTZ)",
+                    read={
+                        "snowflake": f"CREATE TABLE table1 (ts {timestamp_type}{precision})",
+                    },
+                )
+                self.validate_all(
+                    "SELECT CAST(NULL AS TIMESTAMPTZ)",
+                    read={
+                        "snowflake": f"SELECT CAST(NULL AS {timestamp_type}{precision})",
+                    },
+                )
+
     def test_timestamps_with_units(self):
         self.validate_all(
             "SELECT w::TIMESTAMP_S, x::TIMESTAMP_MS, y::TIMESTAMP_US, z::TIMESTAMP_NS",

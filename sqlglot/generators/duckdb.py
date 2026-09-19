@@ -656,8 +656,10 @@ def _datatype_sql(self: DuckDBGenerator, expression: exp.DataType) -> str:
         return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
 
     # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
-    if expression.is_type(exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ):
-        return expression.this.value
+    if expression.is_type(
+        exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ
+    ):
+        return self.TYPE_MAPPING.get(expression.this, expression.this.value)
 
     return self.datatype_sql(expression)
 

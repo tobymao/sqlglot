@@ -1734,6 +1734,46 @@ CASE WHEN x = y THEN z END;
 CASE x1 + x2 WHEN x3 THEN x4 WHEN x5 + x6 THEN x7 ELSE x8 END;
 CASE WHEN x3 = (x1 + x2) THEN x4 WHEN (x1 + x2) = (x5 + x6) THEN x7 ELSE x8 END;
 
+-- collapsing a CASE under an operator must preserve the grouping of the branch
+x * CASE WHEN FALSE THEN NULL ELSE a - b END;
+x * (a - b);
+
+x * (CASE WHEN 1 IS NULL THEN NULL ELSE 1 - b END);
+x * (1 - b);
+
+x - CASE WHEN TRUE THEN a + b ELSE c END;
+x - (a + b);
+
+CASE WHEN FALSE THEN NULL ELSE a - b END * x;
+(a - b) * x;
+
+x / CASE WHEN FALSE THEN 1 ELSE a * b END;
+x / (a * b);
+
+x + CASE WHEN TRUE THEN a * b ELSE c END;
+x + a * b;
+
+x * IF(TRUE, a - b, c);
+x * (a - b);
+
+x * IF(FALSE, c, a - b);
+x * (a - b);
+
+x * CASE WHEN TRUE THEN IF(FALSE, c, a - b) ELSE c END;
+x * (a - b);
+
+CASE WHEN TRUE THEN NOT p ELSE FALSE END || 'x';
+(NOT p) || 'x';
+
+IF(FALSE, FALSE, NOT p) || 'x';
+(NOT p) || 'x';
+
+NOT CASE WHEN TRUE THEN a AND b ELSE c END;
+NOT a OR NOT b;
+
+-CASE WHEN TRUE THEN a + b ELSE c END;
+-(a + b);
+
 --------------------------------------
 -- Simplify STARTSWITH
 --------------------------------------
@@ -1825,4 +1865,3 @@ SELECT 100;
 # dialect: snowflake
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;
-

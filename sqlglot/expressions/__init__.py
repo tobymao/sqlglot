@@ -50,6 +50,5 @@ ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name__, Expr)}
 
-# Functions that can return multiple rows; merging subqueries containing these alters row counts.
-# exp.Anonymous is included conservatively: any unrecognized function may be set-returning.
+# Functions that can return multiple rows. We include anonymous functions conservatively.
 SET_RETURNING_FUNCTIONS = (Anonymous, UDTF, ExplodingGenerateSeries)

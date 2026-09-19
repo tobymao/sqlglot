@@ -651,19 +651,6 @@ def _struct_sql(self: DuckDBGenerator, expression: exp.Struct) -> str:
     return f"ROW({csv_args})" if is_bq_inline_struct else f"{{{csv_args}}}"
 
 
-def _datatype_sql(self: DuckDBGenerator, expression: exp.DataType) -> str:
-    if expression.is_type("array"):
-        return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
-
-    # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
-    if expression.is_type(
-        exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ
-    ):
-        return self.TYPE_MAPPING.get(expression.this, expression.this.value)
-
-    return self.datatype_sql(expression)
-
-
 def _json_format_sql(self: DuckDBGenerator, expression: exp.JSONFormat) -> str:
     sql = self.func("TO_JSON", expression.this, expression.args.get("options"))
     return f"CAST({sql} AS TEXT)"
@@ -1667,7 +1654,6 @@ class DuckDBGenerator(generator.Generator):
             if e.args.get("abbreviated")
             else self.func("MONTHNAME", e.this)
         ),
-        exp.DataType: _datatype_sql,
         exp.Date: _date_sql,
         exp.DateAdd: _date_delta_to_binary_interval_op(),
         exp.DateFromParts: _date_from_parts_sql,
@@ -2309,6 +2295,18 @@ class DuckDBGenerator(generator.Generator):
     # Ref: https://docs.snowflake.com/en/sql-reference/date-time-input-output#date-formats
     _TRYCAST_DATE_SLASH_FMT = "%m/%d/%Y"
     _TRYCAST_DATE_MON_FMT = "%d-%b-%Y"
+
+    def datatype_sql(self, expression: exp.DataType) -> str:
+        if expression.is_type(exp.DType.ARRAY):
+            return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
+
+        # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
+        if expression.is_type(
+            exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ
+        ):
+            expression.set("expressions", None)
+
+        return super().datatype_sql(expression)
 
     def _array_bag_sql(self, condition: exp.Expr, arr1: exp.Expr, arr2: exp.Expr) -> str:
         cond = exp.Paren(this=exp.replace_placeholders(condition, arr1=arr1, arr2=arr2))

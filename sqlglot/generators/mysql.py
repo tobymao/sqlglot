@@ -81,9 +81,19 @@ def date_add_sql(
     kind: str,
 ) -> t.Callable[[generator.Generator, exp.Expr], str]:
     def func(self: generator.Generator, expression: exp.Expr) -> str:
+        this = expression.this
+        # Parsed DATE(...) calls have source metadata; synthetic wrappers from
+        # other dialects should keep the existing MySQL normalization.
+        if (
+            isinstance(this, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp))
+            and not this.args.get("format")
+            and not this.meta
+        ):
+            this = this.this
+
         return self.func(
             f"DATE_{kind}",
-            expression.this,
+            this,
             exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
         )
 
@@ -153,9 +163,9 @@ class MySQLGenerator(generator.Generator):
         exp.DateDiff: remove_ts_or_ds_to_date(
             lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
         ),
-        exp.DateAdd: remove_ts_or_ds_to_date(date_add_sql("ADD")),
+        exp.DateAdd: date_add_sql("ADD"),
         exp.DateStrToDate: datestrtodate_sql,
-        exp.DateSub: remove_ts_or_ds_to_date(date_add_sql("SUB")),
+        exp.DateSub: date_add_sql("SUB"),
         exp.DateTrunc: _date_trunc_sql,
         exp.Day: remove_ts_or_ds_to_date(),
         exp.DayOfMonth: remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),

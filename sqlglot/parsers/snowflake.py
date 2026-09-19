@@ -1249,12 +1249,12 @@ class SnowflakeParser(parser.Parser):
         return self.expression(exp.Undrop(this=this, kind=kind.name, rename=rename))
 
     def _parse_put(self) -> exp.Put | exp.Command:
-        if self._curr.token_type != TokenType.STRING:
+        if self._curr.token_type not in (TokenType.STRING, TokenType.URI_START):
             return self._parse_as_command(self._prev)
 
         return self.expression(
             exp.Put(
-                this=self._parse_string(),
+                this=self._parse_string() or exp.Literal.string(self._parse_location_path().name),
                 target=self._parse_location_path(),
                 properties=self._parse_properties(),
             )

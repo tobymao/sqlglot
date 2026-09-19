@@ -3544,7 +3544,9 @@ class TestSnowflake(Validator):
             "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')"
         )
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
+        self.validate_identity(
+            "PUT file:///dir/tmp.csv @%table", "PUT 'file:///dir/tmp.csv' @%table"
+        )
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
@@ -5775,12 +5777,15 @@ SINGLE = TRUE""",
         # validate identity for different args and properties
         self.validate_identity("PUT 'file:///dir/tmp.csv' @s1/test")
 
-        # the unquoted URI variant is not fully supported yet
-        self.validate_identity("PUT file:///dir/tmp.csv @%table", check_command_warning=True)
+        ast = self.validate_identity(
+            "PUT file:///dir/tmp.csv @%table", "PUT 'file:///dir/tmp.csv' @%table"
+        ).assert_is(exp.Put)
+        self.assertEqual(ast.this, exp.Literal.string("file:///dir/tmp.csv"))
+        self.assertEqual(ast.args["target"], exp.Var(this="@%table"))
         self.validate_identity(
             "PUT file:///dir/tmp.csv @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE",
-            check_command_warning=True,
-        )
+            "PUT 'file:///dir/tmp.csv' @s1/test PARALLEL=1 AUTO_COMPRESS=FALSE source_compression=gzip OVERWRITE=TRUE",
+        ).assert_is(exp.Put)
 
     def test_get_from_stage(self):
         self.validate_identity('GET @"my_DB"."schEMA1"."MYstage" \'file:///dir/tmp.csv\'')

@@ -8,6 +8,31 @@ from tests.dialects.test_dialect import Validator
 class TestTSQL(Validator):
     dialect = "tsql"
 
+    def test_set_operation_order(self):
+        for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
+            with self.subTest(op=op):
+                self.validate_all(
+                    f"SELECT * FROM (SELECT a FROM x {op} SELECT a FROM y) AS _l_0 ORDER BY CASE WHEN a IS NULL THEN 1 ELSE 0 END, a",
+                    read={
+                        dialect: f"SELECT a FROM x {op} SELECT a FROM y ORDER BY a"
+                        for dialect in ("postgres", "snowflake", "duckdb", "trino")
+                    },
+                )
+                self.validate_all(
+                    f"SELECT * FROM (SELECT a FROM x {op} SELECT a FROM y) AS _l_0 ORDER BY a + 1",
+                    read={"mysql": f"SELECT a FROM x {op} SELECT a FROM y ORDER BY a + 1"},
+                )
+                self.validate_identity(
+                    f"SELECT a + 1 FROM x {op} SELECT a + 1 FROM y ORDER BY a + 1"
+                )
+
+        self.validate_all(
+            "SELECT * FROM (SELECT a FROM x UNION ALL SELECT a FROM y) AS _l_0 ORDER BY CASE WHEN a IS NULL THEN 1 ELSE 0 END DESC, a DESC OFFSET 1 ROWS FETCH FIRST 2 ROWS ONLY",
+            read={
+                "postgres": "SELECT a FROM x UNION ALL SELECT a FROM y ORDER BY a DESC LIMIT 2 OFFSET 1"
+            },
+        )
+
     def test_set_operation_unordered_pagination(self):
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             for limit in ("", " LIMIT 2"):
@@ -50,6 +75,13 @@ class TestTSQL(Validator):
         self.validate_identity(sql)
 
     def test_set_operation_pagination(self):
+        for sql in (
+            "SELECT (SELECT x FROM t ORDER BY x OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY FOR JSON PATH) AS y",
+            "(SELECT x FROM (VALUES (1), (2)) AS t(x)) ORDER BY x OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY",
+            "(SELECT 1 AS x UNION ALL SELECT 2 AS x) ORDER BY x OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY",
+        ):
+            self.validate_identity(sql)
+
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             with self.subTest(op=op):
                 self.validate_identity(

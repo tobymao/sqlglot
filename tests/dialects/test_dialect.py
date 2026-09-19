@@ -2106,7 +2106,7 @@ class TestDialect(Validator):
         self.validate_all(
             "SELECT a FROM x UNION SELECT a FROM y FETCH FIRST 2 ROWS ONLY",
             write={
-                "clickhouse": "SELECT * FROM (SELECT a FROM x UNION DISTINCT SELECT a FROM y) AS _l_0 FETCH FIRST 2 ROWS ONLY",
+                "clickhouse": "SELECT * FROM (SELECT a FROM x UNION DISTINCT SELECT a FROM y) AS _l_0 LIMIT 2",
                 "tsql": "SELECT * FROM (SELECT a FROM x UNION SELECT a FROM y) AS _l_0 ORDER BY (SELECT NULL) OFFSET 0 ROWS FETCH FIRST 2 ROWS ONLY",
             },
         )

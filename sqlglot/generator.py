@@ -1941,7 +1941,7 @@ class Generator:
                 if (
                     not self.SET_OP_LIMITS
                     and isinstance(node, exp.Select)
-                    and isinstance(node.args.get("limit"), exp.Limit)
+                    and node.args.get("limit")
                 ):
                     node = node.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:

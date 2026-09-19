@@ -277,6 +277,16 @@ class TSQLGenerator(generator.Generator):
 
     def select_sql(self, expression: exp.Select) -> str:
         self._prepare_limit_offset(expression)
+
+        # Handles transpiling a query like the following to T-SQL:
+        #   SELECT 1 AS x ORDER BY x NULLS FIRST FETCH FIRST 1 ROWS ONLY UNION ALL SELECT 2 AS x
+        if isinstance(expression.parent, exp.SetOperation) and isinstance(
+            expression.args.get("limit"), exp.Fetch
+        ):
+            return self.sql(
+                exp.select("*").from_(expression.subquery("_l_0", copy=False), copy=False)
+            )
+
         return super().select_sql(expression)
 
     def set_operations(self, expression: exp.SetOperation) -> str:
@@ -284,8 +294,29 @@ class TSQLGenerator(generator.Generator):
         offset = expression.args.get("offset")
         order = expression.args.get("order")
 
-        if (isinstance(limit, exp.Limit) and not offset) or (
-            not order and (offset or isinstance(limit, exp.Fetch))
+        # Set operations cannot order by the CASE used to emulate null ordering,
+        # or by expressions that aren't in their select list.
+        wrap_order = False
+        if order:
+            selects = {select.unalias() for select in expression.selects}
+            for ordered in order.expressions:
+                if ordered.this.is_int:
+                    continue
+
+                desc = ordered.args.get("desc")
+                nulls_first = ordered.args.get("nulls_first")
+
+                emulate_null_ordering = (desc and nulls_first) or (not desc and not nulls_first)
+                if emulate_null_ordering or (
+                    not isinstance(ordered.this, exp.Column) and ordered.this not in selects
+                ):
+                    wrap_order = True
+                    break
+
+        if (
+            wrap_order
+            or (isinstance(limit, exp.Limit) and not offset)
+            or (not order and (offset or isinstance(limit, exp.Fetch)))
         ):
             select = self._move_ctes_to_top_level(
                 exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)

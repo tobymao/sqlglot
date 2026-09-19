@@ -1915,12 +1915,9 @@ class Generator:
                     exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
                 )
 
-                if limit:
-                    select.set("limit", limit.pop())
-                if order:
-                    select = select.order_by(order.pop(), copy=False)
-                if offset:
-                    select = select.offset(offset.pop(), copy=False)
+                for arg in ("limit", "order", "offset"):
+                    if value := expression.args.get(arg):
+                        select.set(arg, value.pop())
                 return self.sql(select)
 
         sqls: list[str] = []

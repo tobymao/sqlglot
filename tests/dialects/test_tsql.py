@@ -9,6 +9,12 @@ class TestTSQL(Validator):
     dialect = "tsql"
 
     def test_set_operation_order(self):
+        self.validate_identity(
+            "SELECT t.x FROM (VALUES (1)) AS t(x) UNION ALL SELECT 2 ORDER BY (t.x)"
+        )
+        self.validate_identity(
+            "SELECT (t.x + 1) FROM (VALUES (1)) AS t(x) UNION ALL SELECT 2 ORDER BY t.x + 1"
+        )
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             with self.subTest(op=op):
                 self.validate_all(

@@ -298,9 +298,10 @@ class TSQLGenerator(generator.Generator):
         # or by expressions that aren't in their select list.
         wrap_order = False
         if order:
-            selects = {select.unalias() for select in expression.selects}
+            selects = {select.unalias().unnest() for select in expression.selects}
             for ordered in order.expressions:
-                if ordered.this.is_int:
+                this = ordered.this.unnest()
+                if this.is_int:
                     continue
 
                 desc = ordered.args.get("desc")
@@ -308,7 +309,7 @@ class TSQLGenerator(generator.Generator):
 
                 emulate_null_ordering = (desc and nulls_first) or (not desc and not nulls_first)
                 if emulate_null_ordering or (
-                    not isinstance(ordered.this, exp.Column) and ordered.this not in selects
+                    not isinstance(this, exp.Column) and this not in selects
                 ):
                     wrap_order = True
                     break

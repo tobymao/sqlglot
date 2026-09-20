@@ -91,11 +91,12 @@ def _dpipe_sql(self: generator.Generator, e: exp.DPipe) -> str:
 
 
 def _distinct_sql(self, e: exp.Distinct) -> str:
-    if len(e.expressions) == 1:
-        return f"set({self.sql(e.expressions[0])})"
+    this = self.expressions(e, flat=True)
 
-    args = ", ".join(self.sql(expression) for expression in e.expressions)
-    return f"set(ZIPNOTNULL({args}))"
+    if len(e.expressions) == 1:
+        return f"set({this})"
+
+    return f"set(ZIPNOTNULL({this}))"
 
 
 class PythonGenerator(generator.Generator):

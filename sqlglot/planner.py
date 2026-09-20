@@ -138,12 +138,17 @@ class Step:
 
             for agg in agg_funcs:
                 for operand in agg.unnest_operands():
-                    if isinstance(operand, exp.Column):
-                        continue
-                    if operand not in operands:
-                        operands[operand] = next_operand_name()
+                    targets = (
+                        operand.expressions if isinstance(operand, exp.Distinct) else [operand]
+                    )
 
-                    operand.replace(exp.column(operands[operand], quoted=True))
+                    for target in targets:
+                        if isinstance(target, exp.Column):
+                            continue
+                        if target not in operands:
+                            operands[target] = next_operand_name()
+
+                        target.replace(exp.column(operands[target], quoted=True))
 
             return bool(agg_funcs)
 

@@ -692,6 +692,15 @@ class MySQLGenerator(generator.Generator):
         global_ = " GLOBAL" if expression.args.get("global_") else ""
 
         target = self.sql(expression, "target")
+
+        # SHOW CREATE ... takes a possibly qualified name, it has no FROM clause
+        # https://dev.mysql.com/doc/refman/8.4/en/show-create-table.html
+        if expression.name.startswith("CREATE") and (db_id := self.sql(expression, "db")):
+            target = f"{db_id}.{target}"
+            db = ""
+        else:
+            db = self._prefixed_sql("FROM", expression, "db")
+
         target = f" {target}" if target else ""
         if expression.name in ("COLUMNS", "INDEX"):
             target = f" FROM{target}"
@@ -701,8 +710,6 @@ class MySQLGenerator(generator.Generator):
             target = f" ON{target}" if target else ""
         elif expression.name == "PROJECTIONS":
             target = f" ON TABLE{target}" if target else ""
-
-        db = self._prefixed_sql("FROM", expression, "db")
 
         like = self._prefixed_sql("LIKE", expression, "like")
         where = self.sql(expression, "where")

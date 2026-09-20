@@ -365,8 +365,11 @@ class TestSingleStore(Validator):
             "SELECT SUM(CASE WHEN age > 18 THEN 1 ELSE 0 END) FROM `users`",
             read={
                 "singlestore": "SELECT SUM(CASE WHEN age > 18 THEN 1 ELSE 0 END) FROM `users`",
-                "": "SELECT COUNT_IF(age > 18) FROM users",
             },
+        )
+        self.validate_all(
+            "SELECT SUM(IF(age > 18, 1, 0)) FROM `users`",
+            read={"": "SELECT COUNT_IF(age > 18) FROM users"},
         )
         self.validate_all(
             "SELECT MAX(ABS(age > 18)) FROM `users`",

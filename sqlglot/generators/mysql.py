@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     no_pivot_sql,
     no_tablesample_sql,
     no_trycast_sql,
+    if_sql,
     remove_ts_or_ds_to_date,
     rename_func,
     strposition_sql,
@@ -165,6 +166,9 @@ class MySQLGenerator(generator.Generator):
             f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})"""
         ),
         exp.ILike: no_ilike_sql,
+        # IF is native and takes exactly three arguments, so a missing branch is NULL
+        # https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+        exp.If: if_sql(false_value="NULL"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
         exp.Length: length_or_char_length_sql,
         exp.LogicalOr: rename_func("MAX"),

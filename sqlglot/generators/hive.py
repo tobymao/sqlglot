@@ -106,6 +106,9 @@ TIME_DIFF_FACTOR = {
     "HOUR": " / 3600",
 }
 
+# Sub-day units aren't expressible with the day-based DATE_ADD.
+TIME_DELTA_UNITS = {"HOUR", "MINUTE", "SECOND"}
+
 DIFF_MONTH_SWITCH = ("YEAR", "QUARTER", "MONTH")
 
 HIVE_TS_OR_DS_EXPRESSIONS: tuple[type[exp.Expr], ...] = (
@@ -121,6 +124,19 @@ def _add_date_sql(self: HiveGenerator, expression: DATE_ADD_OR_SUB) -> str:
         return self.func("DATE_ADD", expression.this, expression.expression)
 
     unit = expression.text("unit").upper()
+
+    if unit in TIME_DELTA_UNITS:
+        # DATE_ADD is day-based, so a sub-day unit has to be added as an interval
+        # instead -- otherwise e.g. HOUR would silently be treated as DAY.
+        value = expression.expression
+        if isinstance(value, exp.Neg) and value.this.is_number:
+            value = exp.Literal.string(f"-{value.this.name}")
+        elif isinstance(value, exp.Literal) and value.is_number:
+            value = exp.Literal.string(value.name)
+        interval = exp.Interval(this=value, unit=exp.var(unit))
+        op = exp.Sub if isinstance(expression, exp.DateSub) else exp.Add
+        return self.sql(op(this=expression.this, expression=interval))
+
     func, multiplier = DATE_DELTA_INTERVAL.get(unit, ("DATE_ADD", 1))
 
     if isinstance(expression, exp.DateSub):

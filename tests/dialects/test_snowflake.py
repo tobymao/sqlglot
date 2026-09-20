@@ -3757,6 +3757,28 @@ class TestSnowflake(Validator):
                 "snowflake": "DATEADD(DAY, 5, CAST('2008-12-25' AS DATE))",
             },
         )
+        # Sub-day units must become interval arithmetic in Hive/Spark, not a day-based DATE_ADD.
+        self.validate_all(
+            "DATEADD(HOUR, 5, col)",
+            read={
+                "presto": "DATE_ADD('HOUR', 5, col)",
+            },
+            write={
+                "snowflake": "DATEADD(HOUR, 5, col)",
+                "databricks": "DATEADD(HOUR, 5, col)",
+                "hive": "col + INTERVAL '5' HOUR",
+                "spark": "col + INTERVAL '5' HOUR",
+                "spark2": "col + INTERVAL '5' HOUR",
+            },
+        )
+        self.validate_all(
+            "DATEADD(MINUTE, -30, col)",
+            write={
+                "hive": "col + INTERVAL '-30' MINUTE",
+                "spark": "col + INTERVAL '-30' MINUTE",
+                "databricks": "DATEADD(MINUTE, -30, col)",
+            },
+        )
         self.validate_identity(
             "DATEDIFF(DAY, CAST('2007-12-25' AS DATE), CAST('2008-12-25' AS DATE))"
         )

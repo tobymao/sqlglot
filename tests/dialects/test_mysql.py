@@ -1453,6 +1453,21 @@ COMMENT='客户账户表'"""
             "SHOW CREATE TABLE foo FROM db_name", "SHOW CREATE TABLE db_name.foo"
         )
 
+    def test_if(self):
+        self.validate_identity("SELECT IF(a, 1, 2)")
+        self.validate_identity("SELECT IF(a, 1, IF(b, 2, 3))")
+
+        # a CASE that was written as one stays a CASE
+        self.validate_identity("SELECT CASE WHEN a THEN 1 ELSE 2 END")
+
+        self.validate_all(
+            "SELECT IF(a, 1, 2)",
+            read={"bigquery": "SELECT IF(a, 1, 2)", "tsql": "SELECT IIF(a, 1, 2)"},
+        )
+
+        # IF takes exactly three arguments, so a missing branch becomes NULL
+        self.validate_all("SELECT IF(a, 1, NULL)", read={"spark": "SELECT IF(a, 1)"})
+
     def test_show_grants(self):
         show = self.validate_identity("SHOW GRANTS FOR foo")
         self.assertIsInstance(show, exp.Show)

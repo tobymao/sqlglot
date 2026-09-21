@@ -2,7 +2,7 @@ from sqlglot import exp
 from sqlglot.optimizer.scope import find_all_in_scope
 
 
-def agg_func_is_windowed(agg_func: exp.AggFunc) -> bool:
+def _agg_func_is_windowed(agg_func: exp.AggFunc) -> bool:
     from sqlglot.expressions.query import Window
 
     node: exp.Expr = agg_func
@@ -21,7 +21,7 @@ def agg_func_is_windowed(agg_func: exp.AggFunc) -> bool:
     return False
 
 
-def named_window_has_aggregate(
+def _named_window_has_aggregate(
     name: str,
     named_windows: dict[str, exp.Window],
     cache: dict[str, bool],
@@ -42,7 +42,7 @@ def named_window_has_aggregate(
             break
 
         if any(
-            not agg_func_is_windowed(aggregate)
+            not _agg_func_is_windowed(aggregate)
             for aggregate in find_all_in_scope(window, exp.AggFunc)
         ):
             has_aggregate = True
@@ -61,12 +61,12 @@ def projection_has_aggregate(
     named_windows: dict[str, exp.Window],
     cache: dict[str, bool],
 ) -> bool:
-    if any(not agg_func_is_windowed(agg) for agg in find_all_in_scope(projection, exp.AggFunc)):
+    if any(not _agg_func_is_windowed(agg) for agg in find_all_in_scope(projection, exp.AggFunc)):
         return True
 
     # this projection's aggregate(s) are windowed (e.g. COUNT(*) OVER w), but the
     # referenced named window may still contain an aggregate that isn't
     return any(
-        window.alias and named_window_has_aggregate(window.alias, named_windows, cache)
+        window.alias and _named_window_has_aggregate(window.alias, named_windows, cache)
         for window in find_all_in_scope(projection, exp.Window)
     )

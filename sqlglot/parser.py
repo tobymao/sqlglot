@@ -6049,7 +6049,7 @@ class Parser:
             this = setop
         return this
 
-    # Parse next query and all immedialy following INTERSECTs
+    # Parse next query and all immediately following INTERSECTs
     def _parse_intersection_operand(self) -> exp.Expr | None:
         return self._parse_intersection_chain(
             self._parse_select(nested=True, parse_set_operation=False, consume_pipe=False)

@@ -5942,6 +5942,21 @@ class Parser:
         set_operations_to_parse: set[TokenType] | None = None,
         right_operand_parser: t.Callable[[], exp.Expr | None] | None = None,
     ) -> exp.Expr | None:
+        """Parses a single UNION/EXCEPT/INTERSECT operator plus its right-hand operand.
+
+        Args:
+            this: The already-parsed left-hand operand.
+            consume_pipe: Whether the right-hand operand may consume a trailing pipe operator.
+            set_operations_to_parse: Token types eligible to match here; defaults to
+                `SET_OPERATIONS`. Callers restrict this to implement operator precedence
+                (e.g. matching only INTERSECT, or only UNION/EXCEPT).
+            right_operand_parser: Parses the right-hand operand; defaults to a plain nested
+                SELECT. Callers substitute a custom parser to recurse into a tighter-binding
+                operator tier before returning control here.
+
+        Returns:
+            The combined SetOperation, or None if no eligible operator was matched.
+        """
         if set_operations_to_parse is None:
             set_operations_to_parse = self.SET_OPERATIONS
 

@@ -1115,6 +1115,12 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "WITH x AS (SELECT 1 AS id), y AS (SELECT 2 AS id) SELECT COALESCE(x.id, y.id) AS id FROM x LEFT JOIN y ON x.id = y.id UNION ALL SELECT COALESCE(x.id, y.id) AS id FROM x RIGHT JOIN y ON x.id = y.id WHERE NOT EXISTS(SELECT 1 FROM x WHERE x.id = y.id) ORDER BY 1 LIMIT 1 OFFSET 1",
+            read={
+                "postgres": "WITH x AS (SELECT 1 AS id), y AS (SELECT 2 AS id) SELECT COALESCE(x.id, y.id) AS id FROM x FULL JOIN y ON x.id = y.id ORDER BY 1 LIMIT 1 OFFSET 1",
+            },
+        )
+        self.validate_all(
             # MySQL doesn't support FULL OUTER joins
             "SELECT * FROM t1 LEFT OUTER JOIN t2 ON t1.x = t2.x UNION ALL SELECT * FROM t1 RIGHT OUTER JOIN t2 ON t1.x = t2.x WHERE NOT EXISTS(SELECT 1 FROM t1 WHERE t1.x = t2.x)",
             read={

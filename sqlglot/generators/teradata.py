@@ -47,6 +47,7 @@ class TeradataGenerator(generator.Generator):
     MOD_PAREN_PARENT_TYPES = (*generator.Generator.MOD_PAREN_PARENT_TYPES, exp.Pow)
 
     LIMIT_IS_TOP = True
+    SET_OP_LIMITS = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     QUERY_HINTS = False

@@ -186,6 +186,7 @@ class ClickHouseGenerator(generator.Generator):
     TABLE_HINTS = False
     GROUPINGS_SEP = ""
     SET_OP_MODIFIERS = False
+    SET_OP_LIMITS = True
     ARRAY_SIZE_NAME = "LENGTH"
     WRAP_DERIVED_VALUES = False
     AUTO_REFRESH_BARE_INTERVALS = True
@@ -444,6 +445,15 @@ class ClickHouseGenerator(generator.Generator):
             )
 
         return self.func("groupConcat", this)
+
+    def select_sql(self, expression: exp.Select) -> str:
+        limit = expression.args.get("limit")
+        if isinstance(limit, exp.Fetch) and not expression.args.get("order"):
+            count = limit.args.get("count")
+            expression.set(
+                "limit", exp.Limit(expression=count if count is not None else exp.Literal.number(1))
+            )
+        return super().select_sql(expression)
 
     def offset_sql(self, expression: exp.Offset) -> str:
         offset = super().offset_sql(expression)

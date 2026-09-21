@@ -535,6 +535,12 @@ class Generator:
     # True means limit 1 happens after the set op, False means it it happens on y.
     SET_OP_MODIFIERS = True
 
+    # Whether a SELECT operand can have a branch-local LIMIT/TOP without parentheses.
+    SET_OP_LIMITS = False
+
+    # Whether set operation operands can be parenthesized without a SELECT wrapper.
+    SET_OP_PARENTHESIZED_OPERANDS = True
+
     # Whether parameters from COPY statement are wrapped in parentheses
     COPY_PARAMS_ARE_WRAPPED = True
 
@@ -1902,16 +1908,16 @@ class Generator:
         if not self.SET_OP_MODIFIERS:
             limit = expression.args.get("limit")
             order = expression.args.get("order")
+            offset = expression.args.get("offset")
 
-            if limit or order:
+            if limit or order or offset:
                 select = self._move_ctes_to_top_level(
                     exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
                 )
 
-                if limit:
-                    select = select.limit(limit.pop(), copy=False)
-                if order:
-                    select = select.order_by(order.pop(), copy=False)
+                for arg in ("limit", "order", "offset"):
+                    if value := expression.args.get(arg):
+                        select.set(arg, value.pop())
                 return self.sql(select)
 
         sqls: list[str] = []
@@ -1929,6 +1935,14 @@ class Generator:
                 )
                 stack.append(node.this)
             else:
+                if (
+                    not self.SET_OP_LIMITS
+                    and isinstance(node, exp.Select)
+                    and node.args.get("limit")
+                ):
+                    node = node.subquery(copy=False)
+                    if not self.SET_OP_PARENTHESIZED_OPERANDS:
+                        node = exp.select("*").from_(node, copy=False)
                 sqls.append(self.sql(node))
 
         this = self.sep().join(sqls)
@@ -3324,8 +3338,8 @@ class Generator:
             self.sql(expression, "order"),
             *self.offset_limit_modifiers(expression, isinstance(limit, exp.Fetch), limit),
             *self.after_limit_modifiers(expression),
-            self.options_modifier(expression),
             self.sql(expression, "for_"),
+            self.options_modifier(expression),
             sep="",
         )
 

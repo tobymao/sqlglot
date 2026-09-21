@@ -1467,7 +1467,8 @@ COMMENT='客户账户表'"""
 
         # IF takes exactly three arguments, so a missing branch becomes NULL
         self.validate_all("SELECT IF(a, 1, NULL)", read={"spark": "SELECT IF(a, 1)"})
-
+        # IF takes exactly three arguments, so a missing branch becomes NULL
+        self.validate_all("SELECT IF(a, 1, NULL)", read={"presto": "SELECT IF(a, 1)"})
     def test_show_grants(self):
         show = self.validate_identity("SHOW GRANTS FOR foo")
         self.assertIsInstance(show, exp.Show)

@@ -292,6 +292,24 @@ class StarRocksGenerator(MySQLGenerator):
         "with",
     }
 
+    def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
+        # IGNORE NULLS follows the first argument, e.g. LAG(x IGNORE NULLS, 1, 0)
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/Window_function/
+        func = expression.this
+        if isinstance(func, (exp.FirstValue, exp.LastValue, exp.Lag, exp.Lead)):
+            return self.func(
+                func.sql_name(),
+                f"{self.sql(func, 'this')} IGNORE NULLS",
+                func.args.get("offset"),
+                func.args.get("default"),
+            )
+
+        return super().ignorenulls_sql(expression)
+
+    def respectnulls_sql(self, expression: exp.RespectNulls) -> str:
+        # RESPECT NULLS is the default behavior, and StarRocks rejects the keyword
+        return self.sql(expression, "this")
+
     def create_sql(self, expression: exp.Create) -> str:
         # Starrocks' primary key is defined outside of the schema, so we need to move it there
         schema = expression.this

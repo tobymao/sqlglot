@@ -355,6 +355,31 @@ class TestStarrocks(Validator):
                     },
                 )
 
+    def test_ignore_respect_nulls(self):
+        for func in ("FIRST_VALUE", "LAST_VALUE", "LAG", "LEAD"):
+            with self.subTest(func=func):
+                self.validate_identity(f"SELECT {func}(x IGNORE NULLS) OVER (ORDER BY t)")
+
+        for func in ("LAG", "LEAD"):
+            with self.subTest(func=func):
+                self.validate_identity(f"SELECT {func}(x IGNORE NULLS, 2, 0) OVER (ORDER BY t)")
+
+        # IGNORE NULLS follows the first argument, wherever the source puts it
+        self.validate_identity(
+            "SELECT LAG(x, 1, 0) IGNORE NULLS OVER (ORDER BY t)",
+            "SELECT LAG(x IGNORE NULLS, 1, 0) OVER (ORDER BY t)",
+        )
+        self.validate_all(
+            "SELECT LEAD(x IGNORE NULLS, 1, 0) OVER (ORDER BY t)",
+            read={"bigquery": "SELECT LEAD(x, 1, 0 IGNORE NULLS) OVER (ORDER BY t)"},
+        )
+
+        # RESPECT NULLS is the default behavior, and StarRocks rejects the keyword
+        self.validate_all(
+            "SELECT LAST_VALUE(x) OVER (ORDER BY t)",
+            read={"bigquery": "SELECT LAST_VALUE(x RESPECT NULLS) OVER (ORDER BY t)"},
+        )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE TBL(c1, c2) PROPERTIES ('prop1'=val1)")
         self.validate_identity("ANALYZE FULL TABLE TBL(c1, c2) PROPERTIES ('prop1'=val1)")

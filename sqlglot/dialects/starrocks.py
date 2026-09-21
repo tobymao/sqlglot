@@ -17,7 +17,9 @@ class StarRocks(MySQL):
 
     class Tokenizer(MySQL.Tokenizer):
         KEYWORDS = {
-            **MySQL.Tokenizer.KEYWORDS,
+            # IGNORE isn't a keyword here (no INSERT IGNORE or index hints), and tokenizing it
+            # as one keeps the parser from seeing IGNORE NULLS
+            **{k: v for k, v in MySQL.Tokenizer.KEYWORDS.items() if k != "IGNORE"},
             "LARGEINT": TokenType.INT128,
             "REFRESH": TokenType.REFRESH,
         }

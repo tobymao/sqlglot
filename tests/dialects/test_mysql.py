@@ -1440,6 +1440,19 @@ COMMENT='客户账户表'"""
             self.assertEqual(show.name, key)
             self.assertEqual(show.text("target"), "foo")
 
+    def test_show_create_qualified(self):
+        for key in ["CREATE TABLE", "CREATE VIEW", "CREATE FUNCTION", "CREATE PROCEDURE"]:
+            with self.subTest(create_stmt=key):
+                show = self.validate_identity(f"SHOW {key} db_name.foo")
+                self.assertIsInstance(show, exp.Show)
+                self.assertEqual(show.text("db"), "db_name")
+                self.assertEqual(show.text("target"), "foo")
+
+        # SHOW CREATE has no FROM clause, the database is part of the name
+        self.validate_identity(
+            "SHOW CREATE TABLE foo FROM db_name", "SHOW CREATE TABLE db_name.foo"
+        )
+
     def test_show_grants(self):
         show = self.validate_identity("SHOW GRANTS FOR foo")
         self.assertIsInstance(show, exp.Show)

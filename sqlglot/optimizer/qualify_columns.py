@@ -1311,7 +1311,11 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
                 alias_identifier = exp.to_identifier(f"_col_{i}")
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
-        elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+        elif (
+            not isinstance(selection, (exp.Alias, exp.Aliases))
+            and not selection.is_star
+            and not isinstance(selection, exp.SET_RETURNING_FUNCTIONS)
+        ):
             unwrapped = selection.unnest()
             if isinstance(unwrapped, exp.Column):
                 source_identifier = unwrapped.this

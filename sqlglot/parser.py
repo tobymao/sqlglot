@@ -1008,6 +1008,13 @@ class Parser:
         TokenType.INTERSECT,
         TokenType.EXCEPT,
     }
+    INTERSECT_SET_OPERATIONS: t.ClassVar = {
+        TokenType.INTERSECT,
+    }
+    UNION_EXCEPT_SET_OPERATIONS: t.ClassVar = {
+        TokenType.UNION,
+        TokenType.EXCEPT,
+    }
 
     JOIN_METHODS: t.ClassVar = {
         TokenType.ASOF,
@@ -1867,6 +1874,9 @@ class Parser:
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_SET_OP: t.ClassVar = True
     SET_OP_MODIFIERS: t.ClassVar = {"order", "limit", "offset", "sort", "distribute", "cluster"}
+
+    # Whether INTERSECT binds more tightly than UNION and EXCEPT
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT: t.ClassVar = False
 
     # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS: t.ClassVar = True
@@ -5926,15 +5936,22 @@ class Parser:
         return locks
 
     def parse_set_operation(
-        self, this: exp.Expr | None, consume_pipe: bool = False
+        self,
+        this: exp.Expr | None,
+        consume_pipe: bool = False,
+        set_operations_to_parse: set[TokenType] | None = None,
+        right_operand_parser: t.Callable[[], exp.Expr | None] | None = None,
     ) -> exp.Expr | None:
+        if set_operations_to_parse is None:
+            set_operations_to_parse = self.SET_OPERATIONS
+
         start = self._index
         _, side_token, kind_token = self._parse_join_parts()
 
         side = side_token.text if side_token else None
         kind = kind_token.text if kind_token else None
 
-        if not self._match_set(self.SET_OPERATIONS):
+        if not self._match_set(set_operations_to_parse):
             self._retreat(start)
             return None
 
@@ -5972,8 +5989,12 @@ class Parser:
         if by_name and self._match_texts(("ON", "BY")):
             on_column_list = self._parse_wrapped_csv(self._parse_column)
 
-        expression = self._parse_select(
-            nested=True, parse_set_operation=False, consume_pipe=consume_pipe
+        expression = (
+            right_operand_parser()
+            if right_operand_parser
+            else self._parse_select(
+                nested=True, parse_set_operation=False, consume_pipe=consume_pipe
+            )
         )
 
         # Wrap VALUES operands in selects, both for consistency with the CTE canonicalization
@@ -6002,9 +6023,37 @@ class Parser:
             comments=comments,
         )
 
-    def _parse_set_operations(self, this: exp.Expr | None) -> exp.Expr | None:
+    # Parse subsequent INTERSECT operations using `this` as the first operand
+    def _parse_intersection_chain(self, this: exp.Expr | None) -> exp.Expr | None:
         while this:
-            setop = self.parse_set_operation(this)
+            setop = self.parse_set_operation(
+                this, set_operations_to_parse=self.INTERSECT_SET_OPERATIONS
+            )
+            if not setop:
+                break
+            this = setop
+        return this
+
+    # Parse next query and all immedialy following INTERSECTs
+    def _parse_intersection_operand(self) -> exp.Expr | None:
+        return self._parse_intersection_chain(
+            self._parse_select(nested=True, parse_set_operation=False, consume_pipe=False)
+        )
+
+    def _parse_set_operations(self, this: exp.Expr | None) -> exp.Expr | None:
+        set_operations_to_parse = None
+        right_operand_parser = None
+        if self.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT:
+            this = self._parse_intersection_chain(this)
+            set_operations_to_parse = self.UNION_EXCEPT_SET_OPERATIONS
+            right_operand_parser = self._parse_intersection_operand
+
+        while this:
+            setop = self.parse_set_operation(
+                this,
+                set_operations_to_parse=set_operations_to_parse,
+                right_operand_parser=right_operand_parser,
+            )
             if not setop:
                 break
             this = setop
@@ -6012,12 +6061,17 @@ class Parser:
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             expression = this.expression
 
-            if expression:
+            # There may be nested right-hand operands, so we hoist their modifiers to the root set operation
+            while expression:
                 for arg in self.SET_OP_MODIFIERS:
-                    expr = expression.args.get(arg)
-                    if expr and not (arg == "limit" and expr.meta.get("top")):
-                        expression.set(arg, None)
-                        this.set(arg, expr)
+                    if not this.args.get(arg):
+                        expr = expression.args.get(arg)
+                        if expr and not (arg == "limit" and expr.meta.get("top")):
+                            expression.set(arg, None)
+                            this.set(arg, expr)
+                if not isinstance(expression, exp.SetOperation):
+                    break
+                expression = expression.expression
 
             # A trailing LIMIT/FETCH can coexist with TOP on the final operand.
             if self._curr.token_type in (TokenType.LIMIT, TokenType.FETCH):

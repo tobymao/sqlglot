@@ -85,6 +85,7 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 class PostgresParser(parser.Parser):
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = True
 
     # The one-byte "char" type is distinct from CHAR, and it can only be referenced by
     # quoting it: https://www.postgresql.org/docs/current/datatype-character.html

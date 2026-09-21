@@ -4,15 +4,10 @@ import typing as t
 from collections import defaultdict
 
 from sqlglot import alias, exp
+from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.journal import Journal, record, revert
 from sqlglot.optimizer.qualify_columns import Resolver
-from sqlglot.optimizer.scope import (
-    Scope,
-    find_all_in_scope,
-    find_in_scope,
-    projection_has_aggregate,
-    traverse_scope,
-)
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
 from sqlglot.schema import ensure_schema
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get

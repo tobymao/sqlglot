@@ -1111,54 +1111,6 @@ def find_in_scope(
     return next(find_all_in_scope(expression, *expression_types), None)
 
 
-def named_window_has_aggregate(
-    name: str,
-    named_windows: dict[str, exp.Window],
-    cache: dict[str, bool],
-) -> bool:
-    # the referenced window's PARTITION BY / ORDER BY may contain an un-windowed aggregate
-    # that forces the whole (ungrouped) scope to aggregate
-    visited: set[str] = set()
-    has_aggregate = False
-
-    while name and name not in visited:
-        if name in cache:
-            has_aggregate = cache[name]
-            break
-
-        visited.add(name)
-        window = named_windows.get(name)
-        if not window:
-            break
-
-        if any(not aggregate.is_windowed for aggregate in find_all_in_scope(window, exp.AggFunc)):
-            has_aggregate = True
-            break
-
-        name = window.alias
-
-    for name in visited:
-        cache[name] = has_aggregate
-
-    return has_aggregate
-
-
-def projection_has_aggregate(
-    projection: exp.Expr,
-    named_windows: dict[str, exp.Window],
-    cache: dict[str, bool],
-) -> bool:
-    if any(not agg.is_windowed for agg in find_all_in_scope(projection, exp.AggFunc)):
-        return True
-
-    # this projection's aggregate(s) are windowed (e.g. COUNT(*) OVER w), but the
-    # referenced named window may still contain an aggregate that isn't
-    return any(
-        window.alias and named_window_has_aggregate(window.alias, named_windows, cache)
-        for window in find_all_in_scope(projection, exp.Window)
-    )
-
-
 def _get_source_alias(expression: exp.Expr) -> str:
     alias_arg = expression.args.get("alias")
     alias_name = expression.alias

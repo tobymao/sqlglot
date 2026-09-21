@@ -1695,24 +1695,7 @@ class Func(Condition):
 
 @trait
 class AggFunc(Func):
-    @property
-    def is_windowed(self) -> bool:
-        from sqlglot.expressions.query import Window
-
-        node: Expr = self
-        parent = node.parent
-
-        # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
-        while parent is not None and parent.this is node:
-            if isinstance(parent, Window):
-                return True
-
-            if isinstance(parent, Func):
-                return False
-
-            node, parent = parent, parent.parent
-
-        return False
+    pass
 
 
 class Column(Expression, Condition):

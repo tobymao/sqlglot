@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import typing as t
+from collections.abc import Sequence
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
@@ -11,7 +12,12 @@ from sqlglot.optimizer.scope import Scope
 
 if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
-    from collections.abc import Sequence, Mapping
+    from collections.abc import Mapping
+
+
+class SourceColumns(t.NamedTuple):
+    columns: Sequence[str]
+    complete: bool
 
 
 class Resolver:
@@ -21,15 +27,14 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
+    def __init__(self, scope: Scope, schema: Schema) -> None:
         self.scope: Scope = scope
         self.schema: Schema = schema
         self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
-        self._infer_schema: bool = infer_schema
-        self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
+        self._get_source_columns_cache: dict[tuple[str, bool], SourceColumns] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
@@ -39,35 +44,63 @@ class Resolver:
         Args:
             column: The column expression (or column name) to find the table for.
         Returns:
-            The table name if it can be found/inferred.
+            The table name if it can be resolved without assuming unknown columns are absent.
         """
         column_name = column if isinstance(column, str) else column.name
 
-        table_name = self._get_table_name_from_sources(column_name)
+        source_columns = None
+        if isinstance(column, exp.Column):
+            function = column.find_ancestor(exp.UDTF, exp.Select)
+            if isinstance(function, exp.UDTF):
+                # A lateral function can read preceding sources, but not its own output.
+                available: dict[str, Sequence[str]] = {}
+                for name, (_, source) in self.scope.selected_sources.items():
+                    if isinstance(source, Scope) and source.expression is function:
+                        source_columns = available
+                        break
+                    available[name] = self.get_source_columns(name)
 
-        if not table_name and isinstance(column, exp.Column):
-            # Fall-back case: If we couldn't find the `table_name` from ALL of the sources,
-            # attempt to disambiguate the column based on other characteristics e.g if this column is in a join condition,
-            # we may be able to disambiguate based on the source order.
-            if join_context := self._get_column_join_context(column):
-                # In this case, the return value will be the join that _may_ be able to disambiguate the column
-                # and we can use the source columns available at that join to get the table name
-                # catch OptimizeError if column is still ambiguous and try to resolve with schema inference below
-                try:
-                    table_name = self._get_table_name_from_sources(
-                        column_name, self._get_available_source_columns(join_context)
-                    )
-                except OptimizeError:
-                    pass
+        if source_columns is None:
+            source_columns = self._get_all_source_columns()
+        if (
+            source_columns is self._source_columns
+            and isinstance(column, exp.Column)
+            and (join_context := self._get_column_join_context(column))
+        ):
+            try:
+                source_columns = self._get_available_source_columns(join_context)
+            except OptimizeError:
+                pass
+        table_name = self._get_table_name_from_sources(
+            column_name, None if source_columns is self._source_columns else source_columns
+        )
 
-        if not table_name and self._infer_schema:
-            sources_without_schema = tuple(
-                source
-                for source, columns in self._get_all_source_columns().items()
-                if not columns or "*" in columns
+        if table_name is None and len(source_columns) == 1:
+            source_name = next(iter(source_columns))
+            projection = (
+                column.find_ancestor(exp.Alias, exp.Select)
+                if isinstance(column, exp.Column)
+                else None
             )
-            if len(sources_without_schema) == 1:
-                table_name = sources_without_schema[0]
+            if (
+                not self.get_source_columns_info(source_name).complete
+                and column_name != source_name
+                and not (
+                    isinstance(self.scope.expression, exp.Select)
+                    and any(
+                        select.alias == column_name and select is not projection
+                        for select in self.scope.expression.selects
+                    )
+                )
+                and not self._can_be_external(column_name)
+            ):
+                table_name = source_name
+
+        for name in source_columns:
+            if name != table_name and not self.get_source_columns_info(name).complete:
+                raise OptimizeError(
+                    f"Cannot resolve column '{column_name}': source '{name}' has unknown columns"
+                )
 
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
@@ -84,18 +117,48 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
+    def _can_be_external(self, column_name: str) -> bool:
+        scope = self.scope
+        # Derived tables can be implicitly lateral in some dialects. Set operations
+        # don't introduce a correlation boundary between their branches and parent.
+        while scope.parent and (
+            scope.can_be_correlated or scope.is_derived_table or scope.is_set_operation
+        ):
+            parent = scope.parent
+            if parent.pivots:
+                return True
+            # Some dialects allow correlated references to outer projection aliases.
+            enclosing_alias = scope.expression.find_ancestor(exp.Alias, exp.Select)
+            if isinstance(parent.expression, exp.Select) and any(
+                select.alias == column_name and select is not enclosing_alias
+                for select in parent.expression.selects
+            ):
+                return True
+            resolver = Resolver(parent, self.schema)
+            for name in itertools.chain(parent.selected_sources, parent.lateral_sources):
+                if parent.sources[name] is scope:
+                    continue
+                if name == column_name:
+                    return True
+                info = resolver.get_source_columns_info(name)
+                if not info.complete or column_name in info.columns:
+                    return True
+            scope = parent
+        return False
+
     def outer_resolvers(self) -> t.Iterator[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
         scope = self.scope
         while scope.can_be_correlated and scope.parent:
             scope = scope.parent
-            yield Resolver(scope, self.schema, self._infer_schema)
+            yield Resolver(scope, self.schema)
 
     @property
     def has_unknown_sources(self) -> bool:
-        """Whether some source's columns can't be determined, e.g. a table missing from the schema."""
+        """Whether some source's columns can't be determined, e.g. a table function."""
         return any(
-            not columns or "*" in columns for columns in self._get_all_source_columns().values()
+            not self.get_source_columns_info(name).complete
+            for name in self._get_all_source_columns()
         )
 
     @property
@@ -146,6 +209,10 @@ class Resolver:
 
     def get_source_columns(self, name: str, only_visible: bool = False) -> Sequence[str]:
         """Resolve the source columns for a given source `name`."""
+        return self.get_source_columns_info(name, only_visible).columns
+
+    def get_source_columns_info(self, name: str, only_visible: bool = False) -> SourceColumns:
+        """Return known column names and whether they describe the complete output."""
         cache_key = (name, only_visible)
         if cache_key not in self._get_source_columns_cache:
             if name not in self.scope.sources:
@@ -164,8 +231,30 @@ class Resolver:
             ):
                 source = self.scope.cte_sources[source.name]
 
+            complete: bool | None = None
+            source_expr = source.expression if isinstance(source, Scope) else source
             if isinstance(source, exp.Table):
-                columns = self.schema.column_names(source, only_visible)
+                if isinstance(source.this, exp.Identifier):
+                    columns = list(self.schema.column_names(source, only_visible))
+                    complete = "*" not in columns
+                    if not columns and not (only_visible and self.schema.column_names(source)):
+                        raise OptimizeError(f"Table not found in schema: {exp.table_name(source)}")
+                else:
+                    columns = []
+                    complete = False
+                    if isinstance(source.this, exp.GenerateSeries):
+                        columns = [
+                            "range"
+                            if source.this.args.get("is_end_exclusive")
+                            else "generate_series"
+                        ]
+                        complete = True
+
+            elif isinstance(source_expr, exp.TableFromRows) and isinstance(
+                source_expr.this, exp.Generator
+            ):
+                columns = []
+                complete = True
             elif isinstance(source, Scope) and isinstance(
                 source_expr := source.expression, (exp.Values, exp.Unnest, exp.Lateral)
             ):
@@ -186,6 +275,19 @@ class Resolver:
                                 source_expr.type = col_type.copy()
 
                     columns.extend(self._struct_field_names(source_expr.type))
+                    complete = bool(
+                        source_expr.type and not source_expr.type.is_type(exp.DType.UNKNOWN)
+                    )
+                elif isinstance(source_expr, exp.Unnest):
+                    complete = len(columns) >= len(source_expr.expressions) + bool(
+                        source_expr.args.get("offset")
+                    ) and all(
+                        arg.type
+                        and arg.is_type(exp.DType.ARRAY)
+                        and arg.type.expressions
+                        and not arg.type.expressions[0].is_type(exp.DType.STRUCT, exp.DType.UNKNOWN)
+                        for arg in source_expr.expressions
+                    )
                 elif isinstance(source_expr, exp.Lateral) and isinstance(
                     source_expr.this, exp.Explode
                 ):
@@ -201,6 +303,8 @@ class Resolver:
                     source_expr.this, exp.Query
                 ):
                     columns = source_expr.this.named_selects
+                elif isinstance(source_expr, exp.Lateral):
+                    complete = False
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
             else:
@@ -214,6 +318,9 @@ class Resolver:
                 else:
                     columns = selectable.named_selects
 
+            if complete is None:
+                complete = bool(columns) and "*" not in columns
+
             node, _ = self.scope.selected_sources.get(name) or (None, None)
             if isinstance(node, Scope):
                 column_aliases = node.expression.alias_column_names
@@ -223,14 +330,22 @@ class Resolver:
                 column_aliases = []
 
             if column_aliases:
+                if complete and len(column_aliases) > len(
+                    self.get_source_columns(name) if only_visible else columns
+                ):
+                    raise OptimizeError(f"Too many column aliases for source '{name}'")
                 # If the source's columns are aliased, their aliases shadow the corresponding column names.
                 # This can be expensive if there are lots of columns, so only do this if column_aliases exist.
-                columns = [
-                    alias or name
-                    for (name, alias) in itertools.zip_longest(columns, column_aliases)
-                ]
+                columns = (
+                    list(column_aliases)
+                    if "*" in columns
+                    else [
+                        alias or name
+                        for (name, alias) in itertools.zip_longest(columns, column_aliases)
+                    ]
+                )
 
-            self._get_source_columns_cache[cache_key] = columns
+            self._get_source_columns_cache[cache_key] = SourceColumns(columns, complete)
 
         return self._get_source_columns_cache[cache_key]
 
@@ -247,7 +362,7 @@ class Resolver:
     def _get_table_name_from_sources(
         self, column_name: str, source_columns: dict[str, Sequence[str]] | None = None
     ) -> str | None:
-        if not source_columns:
+        if source_columns is None:
             # If not supplied, get all sources to calculate unambiguous columns
             if self._unambiguous_columns is None:
                 self._unambiguous_columns = self._get_unambiguous_columns(
@@ -398,7 +513,7 @@ class Resolver:
             table_name = column.table
         else:
             # use the parent scope's resolver to disambiguate the column
-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+            parent_resolver = Resolver(scope, self.schema)
             table_identifier = parent_resolver.get_table(column)
             if not table_identifier:
                 return None

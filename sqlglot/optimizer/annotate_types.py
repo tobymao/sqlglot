@@ -306,6 +306,8 @@ class TypeAnnotator:
 
             if isinstance(source, Scope):
                 selects = self._get_source_scope_selects(source)
+            elif isinstance(source, exp.Table) and not isinstance(source.this, exp.Identifier):
+                selects = {}
             else:
                 pivots = (
                     source.args.get("pivots", []) if isinstance(source, exp.Table) else scope.pivots
@@ -481,8 +483,10 @@ class TypeAnnotator:
                         source_scope = source_scope.parent
 
                 if isinstance(source, exp.Table):
-                    table_col_type: exp.DataType | exp.DType | None = self.schema.get_column_type(
-                        source, expr
+                    table_col_type: exp.DataType | exp.DType | None = (
+                        self.schema.get_column_type(source, expr)
+                        if isinstance(source.this, exp.Identifier)
+                        else exp.DType.UNKNOWN
                     )
                     if (
                         isinstance(table_col_type, exp.DataType)
@@ -749,6 +753,8 @@ class TypeAnnotator:
         # The first agg_cols_offset entries are source columns that pass through the PIVOT unchanged;
         # the rest are the aggregated columns, one per combination of IN value and aggregate function.
         output_to_src = pivot.output_columns(src_types)
+        if not output_to_src:
+            return {}
 
         agg_types = [
             agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions

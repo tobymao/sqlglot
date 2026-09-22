@@ -16,7 +16,7 @@ from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.pushdown_predicates import pushdown_predicates
 from sqlglot.optimizer.pushdown_projections import pushdown_projections
 from sqlglot.optimizer.qualify import qualify
-from sqlglot.optimizer.qualify_columns import quote_identifiers
+from sqlglot.optimizer.qualify_columns import quote_identifiers, validate_qualify_columns
 from sqlglot.optimizer.simplify import simplify
 from sqlglot.optimizer.unnest_subqueries import unnest_subqueries
 from sqlglot.schema import ensure_schema
@@ -71,12 +71,15 @@ def optimize(
     Args:
         expression: expression to optimize
         schema: database schema.
-            This can either be an instance of `sqlglot.optimizer.Schema` or a mapping in one of
+            This can either be an instance of `sqlglot.schema.Schema` or a mapping in one of
             the following forms:
                 1. {table: {col: type}}
                 2. {db: {table: {col: type}}}
                 3. {catalog: {db: {table: {col: type}}}}
-            If no schema is provided then the default schema defined at `sqlgot.schema` will be used
+            If no schema is provided then the default schema defined at `sqlglot.schema` will be used.
+            Qualification requires complete schemas for physical tables whose columns it needs.
+            Columns of unknown function outputs require unambiguous source attribution.
+            Unresolved columns and unexpanded projection stars are rejected after qualification.
         db: specify the default database, as might be set by a `USE DATABASE db` statement
         catalog: specify the default catalog, as might be set by a `USE CATALOG c` statement
         dialect: The dialect to parse the sql string.
@@ -110,5 +113,7 @@ def optimize(
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }
         optimized = rule(optimized, **rule_kwargs)
+        if rule is qualify:
+            validate_qualify_columns(optimized, sql=sql, require_expanded_stars=True)
 
     return optimized

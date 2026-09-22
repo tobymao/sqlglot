@@ -107,7 +107,9 @@ def lineage(
     Args:
         column: The column to build the lineage for. Pass None to get all output columns.
         sql: The SQL string or expression.
-        schema: The schema of tables.
+        schema: Complete schemas for physical tables whose columns qualification needs.
+            Tables expanded through `sources` derive their outputs from those queries.
+            Columns of unknown function outputs require unambiguous source attribution.
         sources: A mapping of queries which will be used to continue building lineage.
         dialect: The dialect of input SQL.
         scope: A pre-created scope to use instead.

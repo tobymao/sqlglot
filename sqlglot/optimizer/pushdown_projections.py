@@ -78,6 +78,9 @@ def pushdown_projections(
     """
     Rewrite sqlglot AST to remove unused columns projections.
 
+    Dependencies on subqueries must already be qualified. Unresolved dependencies raise
+    OptimizeError before pruning; call qualify with complete source schemas first.
+
     Example:
         >>> import sqlglot
         >>> sql = "SELECT y.a AS a FROM (SELECT x.a AS a, x.b AS b FROM x) AS y"
@@ -95,6 +98,17 @@ def pushdown_projections(
         The optimized expression.
     """
     schema = ensure_schema(schema, dialect=dialect)
+    scopes = traverse_scope(expression)
+    for scope in scopes:
+        if (
+            isinstance(scope.expression, exp.Select)
+            and not scope.scans_all_subscope_columns
+            and any(isinstance(source, Scope) for _, source in scope.selected_sources.values())
+            and any(c.name not in scope.selected_sources for c in scope.unqualified_columns)
+        ):
+            raise OptimizeError(
+                "Cannot push down projections with unresolved columns. Run qualify first."
+            )
     source_column_alias_count: dict[Scope, int] = {}
 
     # Map of Scope to all columns being selected by outer queries.
@@ -114,7 +128,7 @@ def pushdown_projections(
     # We build the scope tree (which is traversed in DFS postorder), then iterate
     # over the result in reverse order. This should ensure that the set of selected
     # columns for a particular scope are completely build by the time we get to it.
-    for scope in reversed(traverse_scope(expression)):
+    for scope in reversed(scopes):
         scope_expression = scope.expression
         parent_selections = referenced_columns.get(scope, {SELECT_ALL})
         alias_count = max(source_column_alias_count.get(scope, 0), len(scope.outer_columns))

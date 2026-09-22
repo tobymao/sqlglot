@@ -8,10 +8,12 @@ SELECT "a" FROM x;
 SELECT x."a" AS "a" FROM x AS x;
 
 # execute: false
+#schema: {"zz": {"a": "int"}}
 SELECT a FROM zz GROUP BY a ORDER BY a;
 SELECT zz.a AS a FROM zz AS zz GROUP BY zz.a ORDER BY a;
 
 # execute: false
+#schema: {"xx": {"x": "int"}, "yy": {"p": "int"}}
 SELECT x, p FROM (SELECT x from xx) xx CROSS JOIN yy;
 SELECT xx.x AS x, yy.p AS p FROM (SELECT xx.x AS x FROM xx AS xx) AS xx CROSS JOIN yy AS yy;
 
@@ -104,11 +106,13 @@ SELECT TRUE AS a FROM x AS x GROUP BY 1;
 
 # execute: false
 # dialect: oracle
+#schema: {"tbl": {"\"col\"": "int"}}
 SELECT t."col" FROM tbl t;
 SELECT T."col" AS "col" FROM TBL T;
 
 # execute: false
 # dialect: oracle
+#schema: {"dual": {"dummy": "text"}}
 WITH base AS (SELECT x.dummy AS COL_1 FROM dual x) SELECT b."COL_1" FROM base b;
 WITH BASE AS (SELECT X.DUMMY AS COL_1 FROM DUAL X) SELECT B."COL_1" AS "COL_1" FROM BASE B;
 
@@ -128,8 +132,8 @@ SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
 # execute: false
-SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
-SELECT (SELECT MIN(_0.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _0) AS f FROM x AS x GROUP BY 1;
+SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS u(v)) AS f FROM x GROUP BY 1;
+SELECT (SELECT MIN(x.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS u(v)) AS f FROM x AS x GROUP BY 1;
 
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
@@ -197,8 +201,8 @@ SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
 # execute: false
-SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
-SELECT _0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _0;
+SELECT r.x FROM READ_PARQUET('path.parquet', hive_partition=1) AS r;
+SELECT r.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS r;
 
 # execute: false
 select * from (values (1, 2));
@@ -209,12 +213,9 @@ select * from (values (1, 2)) x;
 SELECT x._col_0 AS _col_0, x._col_1 AS _col_1 FROM (VALUES (1, 2)) AS x(_col_0, _col_1);
 
 # execute: false
+#schema: {"t": {"data": "int"}}
 SELECT SOME_UDF(data).* FROM t;
 SELECT SOME_UDF(t.data).* FROM t AS t;
-
-# execute: false
-SELECT p.* FROM p UNION ALL SELECT p2.* FROM p2;
-SELECT p.* FROM p AS p UNION ALL SELECT p2.* FROM p2 AS p2;
 
 # execute: false
 # allow_partial_qualification: true
@@ -224,6 +225,7 @@ SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
 
 # execute: false
 # dialect: clickhouse
+#schema: {"arrays_test": {"s": "text", "arr1": "array<int>", "arr2": "array<int>"}}
 SELECT s, arr1, arr2 FROM arrays_test LEFT ARRAY JOIN arr1, arrays_test.arr2;
 SELECT arrays_test.s AS s, arrays_test.arr1 AS arr1, arrays_test.arr2 AS arr2 FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr1, arrays_test.arr2;
 
@@ -279,7 +281,7 @@ WITH T1 AS (SELECT 1 AS C1, 1 AS C2, 'Y' AS TOP_PARENT_INDICATOR, 1 AS ID FROM D
 # execute: false
 # dialect: postgres
 SELECT * FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
-SELECT t.a AS a, t.b AS b FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
+SELECT * FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 
 # execute: false
 # dialect: clickhouse
@@ -288,10 +290,12 @@ SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(gen
 
 # execute: false
 # dialect: snowflake
-SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
-SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0 ORDER BY _0.EMPID;
+#schema: {"quarterly_sales": {"empid": "int", "amount": "int", "quarter": "text"}}
+SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) AS p ORDER BY p.empid;
+SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS P ORDER BY P.EMPID;
 
 # execute: false
+#schema: {"t": {"x": "double"}}
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) AS x FROM t;
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.x) AS x FROM t AS t;
 
@@ -302,6 +306,7 @@ WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) AS _col_0 FROM t AS t;
 
 # execute: false
 # dialect: bigquery
+#schema: {"t": {"col1": "date", "col2": "int"}}
 SELECT DATE_TRUNC(col1, WEEK(MONDAY)), col2 FROM t;
 SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
 
@@ -481,8 +486,9 @@ SELECT _1.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _1 WHERE _1.a IN (SELECT 
 
 # dialect: mysql
 # execute: false
+#schema: {"table_a": {"col1": "int"}, "table_b": {"col2": "int"}}
 SELECT * FROM table_a as A WHERE A.col1 IN (SELECT MAX(B.col2) FROM table_b as B UNION ALL SELECT MAX(C.col2) FROM table_b as C);
-SELECT * FROM table_a AS `A` WHERE `A`.col1 IN (SELECT MAX(`B`.col2) AS _col_0 FROM table_b AS `B` UNION ALL SELECT MAX(`C`.col2) AS _col_0 FROM table_b AS `C`);
+SELECT `A`.col1 AS col1 FROM table_a AS `A` WHERE `A`.col1 IN (SELECT MAX(`B`.col2) AS _col_0 FROM table_b AS `B` UNION ALL SELECT MAX(`C`.col2) AS _col_0 FROM table_b AS `C`);
 
 # Title: Unnest deep subquery
 select * from x where b in ((((select b from y))));
@@ -504,21 +510,25 @@ SELECT a FROM x AS i WHERE b IN (SELECT b FROM y AS j WHERE j.b IN (SELECT c FRO
 SELECT i.a AS a FROM x AS i WHERE i.b IN (SELECT j.b AS b FROM y AS j WHERE j.b IN (SELECT k.c AS c FROM y AS k WHERE k.b = j.b));
 
 # execute: false
+#schema: {"m": {"id": "int"}, "n": {"a": "int", "id": "int"}}
 SELECT (SELECT n.a FROM n WHERE n.id = m.id) FROM m AS m;
 SELECT (SELECT n.a AS a FROM n AS n WHERE n.id = m.id) AS _col_0 FROM m AS m;
 
 # title: correlated aggregate resolves to local source without schema
 # execute: false
+#schema: {"t": {"id": "int", "name": "text"}, "u": {"id": "int", "name": "text"}}
 SELECT id FROM t WHERE id > (SELECT AVG(id) FROM u WHERE u.name = t.name);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.id) AS _col_0 FROM u AS u WHERE u.name = t.name);
 
 # title: correlated aggregate with self-correlation via alias
 # execute: false
+#schema: {"t": {"id": "int", "k": "int"}}
 SELECT id FROM t WHERE id > (SELECT AVG(id) FROM t AS t2 WHERE t2.k = t.k);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(t2.id) AS _col_0 FROM t AS t2 WHERE t2.k = t.k);
 
 # title: correlated aggregate where inner column name matches outer table
 # execute: false
+#schema: {"t": {"id": "int", "k": "int"}, "u": {"u": "int", "k": "int"}}
 SELECT id FROM t WHERE id > (SELECT AVG(u) FROM u WHERE u.k = t.k);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.u) AS _col_0 FROM u AS u WHERE u.k = t.k);
 
@@ -553,10 +563,12 @@ SELECT * FROM (SELECT * FROM x) AS s(a, b);
 SELECT s.a AS a, s.b AS b FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS s;
 
 # execute: false
+#schema: {"t": {"a": "int", "b": "int"}}
 SELECT * FROM (SELECT * FROM t) AS s(a, b);
 SELECT s.a AS a, s.b AS b FROM (SELECT t.a AS a, t.b AS b FROM t AS t) AS s;
 
 # execute: false
+#schema: {"t1": {"b": "int"}, "t2": {"b": "int"}}
 SELECT * FROM (SELECT * FROM t1 UNION ALL SELECT * FROM t2) AS s(b);
 SELECT s.b AS b FROM (SELECT t1.b AS b FROM t1 AS t1 UNION ALL SELECT t2.b AS b FROM t2 AS t2) AS s;
 
@@ -696,10 +708,12 @@ WITH RECURSIVE cte(x) AS (SELECT 1), cte2(y) AS (SELECT 2) SELECT * FROM cte, ct
 WITH RECURSIVE cte(x) AS (SELECT 1 AS x), cte2(y) AS (SELECT 2 AS y) SELECT cte.x AS x, cte2.y AS y FROM cte AS cte, cte2 AS cte2;
 
 # execute: false
+#schema: {"players": {"player": "struct<name text, asset struct<info text>>"}}
 WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
 # execute: false
+#schema: {"t1": {"c1": "int"}}
 WITH tesT AS (SELECT c1 FROM t1) SELECT c1 FROM test;
 WITH test AS (SELECT t1.c1 AS c1 FROM t1 AS t1) SELECT test.c1 AS c1 FROM test AS test;
 
@@ -774,6 +788,7 @@ SELECT x.b FROM x JOIN y USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
 # execute: false
+#schema: {"tbl1": {"a": "int"}, "tbl2": {"g": "int"}}
 WITH cte AS (SELECT a.b.c.d.f.g FROM tbl1) SELECT g FROM (SELECT g FROM tbl2) tbl2 JOIN cte USING(g);
 WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte AS cte ON tbl2.g = cte.g;
 
@@ -813,18 +828,21 @@ SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z 
 SELECT * FROM y JOIN z USING(b, c) WHERE b = 2 AND c = 3;
 SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.b = z.b AND y.c = z.c WHERE COALESCE(y.b, z.b) = 2 AND COALESCE(y.c, z.c) = 3;
 
--- We can safely convert `b` to `x.b` in the following two queries, because the original queries
--- would be invalid if `b` also existed in `t`'s schema (which we don't know), due to ambiguity.
+-- `b` only exists in `x`, so it's safe to qualify it as `x.b` in the following two queries;
+-- if `b` also existed in `t`, the original queries would be invalid due to ambiguity.
 
 # execute: false
+#schema: {"x": {"a": "int", "b": "int"}, "t": {"a": "int"}}
 SELECT b FROM x JOIN t USING(a);
 SELECT x.b AS b FROM x AS x JOIN t AS t ON x.a = t.a;
 
 # execute: false
+#schema: {"x": {"a": "int", "b": "int"}, "t": {"a": "int"}}
 SELECT b FROM t JOIN x USING(a);
 SELECT x.b AS b FROM t AS t JOIN x AS x ON t.a = x.a;
 
 # execute: false
+#schema: {"t1": {"a": "int"}, "t2": {"a": "int"}}
 SELECT a FROM t1 JOIN t2 USING(a);
 SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
 
@@ -875,17 +893,6 @@ SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z 
 SELECT a, d FROM x NATURAL LEFT JOIN w;
 SELECT x.a AS a, w.d AS d FROM x AS x NATURAL LEFT JOIN w AS w;
 
--- An unknown schema on either side makes the common columns unknowable.
-# execute: false
-# validate_qualify_columns: false
-SELECT * FROM x NATURAL JOIN unknown_table;
-SELECT * FROM x AS x NATURAL JOIN unknown_table AS unknown_table;
-
-# execute: false
-# validate_qualify_columns: false
-SELECT * FROM unknown_table NATURAL JOIN x;
-SELECT * FROM unknown_table AS unknown_table NATURAL JOIN x AS x;
-
 --------------------------------------
 -- Hint with table reference
 --------------------------------------
@@ -901,6 +908,7 @@ SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
 SELECT _0.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) _0 AS c;
 
 # execute: false
+#schema: {"xx": {"a": "array<int>"}}
 SELECT c FROM xx LATERAL VIEW EXPLODE (a) AS c;
 SELECT _0.c AS c FROM xx AS xx LATERAL VIEW EXPLODE(xx.a) _0 AS c;
 
@@ -929,11 +937,13 @@ SELECT x AS x, y AS y FROM UNNEST([1, 2]) AS x WITH OFFSET AS y;
 
 # dialect: bigquery
 # execute: false
+#schema: {"m": {"z": "int"}}
 select x, a, x.a from unnest([STRUCT(1 AS a)]) as x CROSS JOIN m;
 SELECT x AS x, a AS a, x.a AS a FROM UNNEST([STRUCT(1 AS a)]) AS x CROSS JOIN m AS m;
 
 # dialect: bigquery
 # execute: false
+#schema: {"n": {"z": "int"}}
 WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) select a, x, m.a from cte, UNNEST(x) AS m CROSS JOIN n;
 WITH cte AS (SELECT [STRUCT(1 AS a)] AS x) SELECT a AS a, cte.x AS x, m.a AS a FROM cte AS cte CROSS JOIN UNNEST(cte.x) AS m CROSS JOIN n AS n;
 
@@ -947,7 +957,7 @@ SELECT _0.c AS c FROM (SELECT 1 AS a) AS x LATERAL VIEW EXPLODE(x.a) _0 AS c;
 
 # execute: false
 SELECT * FROM foo(bar) AS t(c1, c2, c3);
-SELECT t.c1 AS c1, t.c2 AS c2, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
+SELECT * FROM FOO(bar) AS t(c1, c2, c3);
 
 # execute: false
 SELECT c1, c3 FROM foo(bar) AS t(c1, c2, c3);
@@ -955,6 +965,7 @@ SELECT t.c1 AS c1, t.c3 AS c3 FROM FOO(bar) AS t(c1, c2, c3);
 
 # dialect: redshift
 # execute: false
+#schema: {"a": {"b": {"f": "varchar", "d": "varchar"}}}
 SELECT c.f::VARCHAR(MAX) AS f, e AS e FROM a.b AS c, c.d AS e;
 SELECT CAST(c.f AS VARCHAR(MAX)) AS f, e AS e FROM a.b AS c, c.d AS e;
 
@@ -1068,6 +1079,7 @@ SELECT COALESCE(COUNT(DISTINCT x.a)) AS a FROM x AS x;
 # title: Oracle does not support lateral alias expansion
 # dialect: oracle
 # execute: false
+#schema: {"c": {"a": "int", "b": "int"}}
 SELECT a AS b, b AS a FROM c;
 SELECT C.A AS B, C.B AS A FROM C C;
 
@@ -1085,23 +1097,27 @@ WITH RECURSIVE t(c) AS (SELECT 1 AS c UNION ALL SELECT _0.c AS c FROM (SELECT t.
 -- Wrapped tables / join constructs
 --------------------------------------
 # execute: false
+#schema: {"tbl": {"col": "int"}}
 SELECT * FROM ((tbl));
-SELECT * FROM ((tbl AS tbl));
+SELECT tbl.col AS col FROM ((tbl AS tbl));
 
 SELECT a, c FROM (x LEFT JOIN y ON a = c);
 SELECT x.a AS a, y.c AS c FROM (x AS x LEFT JOIN y AS y ON x.a = y.c);
 
 # execute: false
+#schema: {"a": {"a1": "int"}, "b": {"b1": "int"}, "c": {"c1": "int"}, "d": {"d1": "int"}, "e": {"e1": "int"}}
 SELECT * FROM ((a CROSS JOIN ((b CROSS JOIN c) CROSS JOIN (d CROSS JOIN e))));
-SELECT * FROM ((a AS a CROSS JOIN ((b AS b CROSS JOIN c AS c) CROSS JOIN (d AS d CROSS JOIN e AS e))));
+SELECT a.a1 AS a1, b.b1 AS b1, c.c1 AS c1, d.d1 AS d1, e.e1 AS e1 FROM ((a AS a CROSS JOIN ((b AS b CROSS JOIN c AS c) CROSS JOIN (d AS d CROSS JOIN e AS e))));
 
 # execute: false
+#schema: {"tbl": {"col": "int"}}
 SELECT * FROM ((SELECT * FROM tbl));
-SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _0);
+SELECT _0.col AS col FROM ((SELECT tbl.col AS col FROM tbl AS tbl) AS _0);
 
 # execute: false
+#schema: {"t1": {"c": "int"}, "t2": {"d": "int"}}
 SELECT * FROM ((SELECT c FROM t1) CROSS JOIN t2);
-SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
+SELECT t2.d AS d, _0.c AS c FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
 
 # execute: false
 SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c);
@@ -1320,21 +1336,3 @@ WITH T AS (SELECT 1 AS X), S AS (SELECT 1 AS ID, 2 AS V, 'a' AS K) SELECT T.X AS
 # dialect: snowflake
 SELECT x.$1, x.$2 FROM x AS x(alias_name);
 SELECT X.ALIAS_NAME AS ALIAS_NAME, X.B AS B FROM X AS X(ALIAS_NAME);
-
-# title: preserve Snowflake positional reference from unknown source
-# execute: false
-# dialect: snowflake
-SELECT t.$1 FROM source AS t;
-SELECT T.$1 AS _COL_0 FROM SOURCE AS T;
-
-# title: preserve Snowflake positional reference from star source
-# execute: false
-# dialect: snowflake
-WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t;
-WITH T AS (SELECT * FROM SOURCE AS SOURCE) SELECT T.$1 AS _COL_0 FROM T AS T;
-
-# title: preserve Snowflake positional reference beyond partial table alias list
-# execute: false
-# dialect: snowflake
-SELECT x.$2 FROM unknown AS x(alias_name);
-SELECT X.$2 AS _COL_0 FROM UNKNOWN AS X(ALIAS_NAME);

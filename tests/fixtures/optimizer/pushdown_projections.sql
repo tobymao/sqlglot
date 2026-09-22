@@ -49,15 +49,19 @@ WITH z AS (SELECT x.a AS a FROM x AS x) SELECT z.a AS a FROM z AS z UNION SELECT
 SELECT b FROM (SELECT a, SUM(b) AS b FROM x GROUP BY a);
 SELECT _0.b AS b FROM (SELECT SUM(x.b) AS b FROM x AS x GROUP BY x.a) AS _0;
 
+#schema: {"t": {"c": "int", "d": "int"}}
 WITH x AS (SELECT 0 AS c, SUM(d) AS s FROM t GROUP BY 1) SELECT s FROM x;
 WITH x AS (SELECT 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY 1) SELECT x.s AS s FROM x AS x;
 
+#schema: {"t": {"z": "int", "a": "int", "d": "int"}}
 WITH x AS (SELECT z, 0 AS c, a, SUM(d) AS s FROM t GROUP BY z, 2, a) SELECT c, a, s FROM x;
 WITH x AS (SELECT 0 AS c, t.a AS a, SUM(t.d) AS s FROM t AS t GROUP BY t.z, 1, t.a) SELECT x.c AS c, x.a AS a, x.s AS s FROM x AS x;
 
+#schema: {"t": {"a": "int", "b": "int", "d": "int"}}
 WITH x AS (SELECT a, b, 0 AS c, SUM(d) AS s FROM t GROUP BY 1, 2, 3) SELECT a, s FROM x;
 WITH x AS (SELECT t.a AS a, 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY t.a, t.b, 2) SELECT x.a AS a, x.s AS s FROM x AS x;
 
+#schema: {"t": {"z": "int", "d": "int"}}
 WITH x AS (SELECT z, 0 AS c, SUM(d) AS s FROM t GROUP BY z, 2, 2) SELECT c, s FROM x;
 WITH x AS (SELECT 0 AS c, SUM(t.d) AS s FROM t AS t GROUP BY t.z, 1, 1) SELECT x.c AS c, x.s AS s FROM x AS x;
 
@@ -79,6 +83,7 @@ SELECT q.x AS x FROM (VALUES (1, 2)) AS q(x, y);
 SELECT i.a FROM x AS i LEFT JOIN (SELECT a, b FROM (SELECT a, b FROM x)) AS j ON i.a = j.a;
 SELECT i.a AS a FROM x AS i LEFT JOIN (SELECT _0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _0) AS j ON i.a = j.a;
 
+#schema: {"source": {"a": "int", "id": "int", "timestamp": "timestamp"}}
 WITH cte AS (SELECT source.a AS a, ROW_NUMBER() OVER (PARTITION BY source.id, source.timestamp ORDER BY source.a DESC) AS index FROM source AS source QUALIFY index) SELECT cte.a AS a FROM cte;
 WITH cte AS (SELECT source.a AS a FROM source AS source QUALIFY ROW_NUMBER() OVER (PARTITION BY source.id, source.timestamp ORDER BY source.a DESC)) SELECT cte.a AS a FROM cte AS cte;
 
@@ -100,36 +105,45 @@ WITH y AS (SELECT MAX(1) AS _ FROM x AS x) SELECT 1 AS "1" FROM y AS y;
 WITH y AS (SELECT a FROM x GROUP BY a) SELECT 1 FROM y;
 WITH y AS (SELECT 1 AS _ FROM x AS x GROUP BY x.a) SELECT 1 AS "1" FROM y AS y;
 
+#schema: {"t": {"col": "array<int>"}}
 WITH cte AS (SELECT col FROM t) SELECT IF(1 IN UNNEST(col), 1, 0) AS col FROM cte;
 WITH cte AS (SELECT t.col AS col FROM t AS t) SELECT CASE WHEN 1 IN (SELECT UNNEST(cte.col)) THEN 1 ELSE 0 END AS col FROM cte AS cte;
 
 --------------------------------------
--- Unknown Star Expansion
+-- Star Expansion
 --------------------------------------
 
+#schema: {"zz": {"a": "int", "b": "int"}}
 SELECT a FROM (SELECT * FROM zz) WHERE b = 1;
 SELECT _0.a AS a FROM (SELECT zz.a AS a, zz.b AS b FROM zz AS zz) AS _0 WHERE _0.b = 1;
 
+#schema: {"aa": {"a": "int"}, "bb": {"a": "int"}, "cc": {"a": "int"}}
 SELECT a FROM (SELECT * FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
 SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _0;
 
+#schema: {"aa": {"a": "int"}, "bb": {"a": "int"}, "cc": {"a": "int"}}
 SELECT a FROM (SELECT a FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
 SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _0;
 
+#schema: {"aa": {"a": "int"}, "bb": {"b": "int"}}
 SELECT a FROM (SELECT * FROM aa CROSS JOIN bb);
-SELECT _0.a AS a FROM (SELECT a AS a FROM aa AS aa CROSS JOIN bb AS bb) AS _0;
+SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa CROSS JOIN bb AS bb) AS _0;
 
+#schema: {"aa": {"a": "int"}}
 SELECT a FROM (SELECT aa.* FROM aa);
 SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _0;
 
+#schema: {"aa": {"a": "int"}}
 SELECT a FROM (SELECT * FROM (SELECT * FROM aa));
 SELECT _1.a AS a FROM (SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _0) AS _1;
 
+#schema: {"tb": {"cola": "int", "colb": "int"}, "tb2": {"colc": "int", "cold": "int"}}
 with cte1 as (SELECT cola, colb FROM tb UNION ALL SELECT colc, cold FROM tb2) SELECT cola FROM cte1;
 WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS colc FROM tb2 AS tb2) SELECT cte1.cola AS cola FROM cte1 AS cte1;
 
+#schema: {"t1": {"c": "int"}, "t2": {"d": "int"}}
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0, t2 AS t2);
+SELECT t2.d AS d, _0.c AS c FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0, t2 AS t2);
 
 SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 6 c, 7 d, 8 a, 9 e);
 SELECT _0.a AS a, _0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT 7 AS d, 8 AS a) AS _0;

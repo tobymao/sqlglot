@@ -30,7 +30,6 @@ def qualify_columns(
     schema: dict[str, object] | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
-    infer_schema: bool | None = None,
     allow_partial_qualification: bool = False,
     dialect: DialectType = None,
 ) -> E:
@@ -51,7 +50,6 @@ def qualify_columns(
         expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether to infer the schema if missing.
         allow_partial_qualification: Whether to allow partial qualification.
 
     Returns:
@@ -63,7 +61,6 @@ def qualify_columns(
     """
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
-    infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
@@ -76,12 +73,12 @@ def qualify_columns(
 
         _separate_pseudocolumns(scope, pseudocolumns)
 
-        resolver = Resolver(scope, schema, infer_schema=infer_schema)
+        resolver = Resolver(scope, schema)
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
         using_column_tables = _expand_using(scope, resolver)
 
-        if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
+        if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
             _expand_alias_refs(
                 scope,
                 resolver,
@@ -99,7 +96,7 @@ def qualify_columns(
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
-        if not schema.empty and expand_alias_refs:
+        if expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
         if is_select:
@@ -119,17 +116,23 @@ def qualify_columns(
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
         _expand_order_by_and_distinct_on(scope, resolver)
 
-        if dialect.ANNOTATE_ALL_SCOPES:
+        if dialect.ANNOTATE_ALL_SCOPES or isinstance(scope_expression, exp.Unnest):
             annotator.annotate_scope(scope)
 
     return expression
 
 
-def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
-    """Raise an `OptimizeError` if any columns aren't qualified"""
+def validate_qualify_columns(
+    expression: E, sql: str | None = None, require_expanded_stars: bool = False
+) -> E:
+    """Raise for unresolved columns and, optionally, unexpanded projection stars."""
     all_unqualified_columns = []
     for scope in traverse_scope(expression):
         if isinstance(scope.expression, exp.Select):
+            if require_expanded_stars and scope.expression.is_star:
+                raise OptimizeError(
+                    "Cannot optimize an unexpanded star: provide complete source column schemas"
+                )
             unqualified_columns = scope.unqualified_columns
 
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
@@ -201,6 +204,8 @@ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
     for derived_table in derived_tables:
         if isinstance(derived_table.parent, exp.With) and derived_table.parent.recursive:
             continue
+        if isinstance(derived_table.this, exp.Query) and derived_table.this.is_star:
+            continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
             table_alias.set("columns", None)
@@ -210,6 +215,8 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
     columns = {}
 
     def _update_source_columns(source_name: str) -> None:
+        if not resolver.get_source_columns_info(source_name).complete:
+            raise OptimizeError(f"Cannot expand join: source '{source_name}' has unknown columns")
         for column_name in resolver.get_source_columns(source_name):
             if column_name not in columns:
                 columns[column_name] = source_name
@@ -242,6 +249,8 @@ def _expand_using(scope: Scope, resolver: Resolver) -> dict[str, t.Any]:
         ordered.append(join_table)
 
         join_columns = resolver.get_source_columns(join_table)
+        if not resolver.get_source_columns_info(join_table).complete:
+            raise OptimizeError(f"Cannot expand join: source '{join_table}' has unknown columns")
 
         using = join.args.get("using")
         if using is None and join.method == "NATURAL":
@@ -406,8 +415,10 @@ def _expand_alias_refs(
                         column.replace(simplified)
                         column = simplified
 
-                    if resolve_table and resolver.schema.empty:
-                        # resolve alias spliced into QUALIFY/HAVING with unqualified columns
+                    if resolve_table:
+                        # An alias spliced into QUALIFY/HAVING before columns are qualified
+                        # brings unqualified columns with it; resolve them here, or a later
+                        # pass will expand them as alias references again (#8050)
                         for inner in walk_in_scope(column):
                             if (
                                 isinstance(inner, exp.Column)
@@ -768,7 +779,8 @@ def _qualify_columns(
 
         if column_table and column_table in scope.sources:
             column_source = scope.sources[column_table]
-            source_columns = resolver.get_source_columns(column_table)
+            source_info = resolver.get_source_columns_info(column_table)
+            source_columns = source_info.columns
             pivots = (
                 column_source.args.get("pivots", []) if isinstance(column_source, exp.Table) else []
             )
@@ -791,6 +803,7 @@ def _qualify_columns(
             column_name = column.name
             if (
                 not allow_partial_qualification
+                and source_info.complete
                 and source_columns
                 and column_name not in source_columns
                 and "*" not in source_columns
@@ -799,6 +812,26 @@ def _qualify_columns(
 
         if not column_table:
             if scope.pivots and not column.find_ancestor(exp.Pivot):
+                pivot_parent = None
+                pivot_columns: t.Sequence[str] = []
+                for pivot in scope.pivots:
+                    if pivot.parent is not pivot_parent:
+                        pivot_parent = pivot.parent
+                        assert pivot_parent is not None
+                        source_name = next(
+                            (
+                                p.alias
+                                for p in reversed(scope.pivots)
+                                if p.parent is pivot_parent and p.alias in scope.sources
+                            ),
+                            pivot_parent.alias_or_name,
+                        )
+                        pivot_columns = resolver.get_source_columns(source_name)
+                    pivot_columns = list(pivot.output_columns(pivot_columns))
+                    if not pivot_columns or resolver.has_unknown_sources:
+                        raise OptimizeError(
+                            f"Cannot resolve column '{column_name}': pivot has unknown columns"
+                        )
                 # If the column is under the Pivot expression, we need to qualify it
                 # using the name of the pivoted source instead of the pivot's alias
                 column.set("table", exp.to_identifier(scope.pivots[-1].alias))
@@ -806,6 +839,11 @@ def _qualify_columns(
 
             # column_table can be a '' because bigquery unnest has no table alias
             table = resolver.get_table(column)
+            if table is None and scope.is_udtf:
+                for outer_resolver in resolver.outer_resolvers():
+                    table = outer_resolver.get_table(column)
+                    if table is not None:
+                        break
 
             if (
                 table
@@ -1083,7 +1121,12 @@ def _expand_stars(
                     new_selections.append(expression)
                     break
 
-            columns = source_resolver.get_source_columns(source_table, only_visible=True)
+            source_columns = source_resolver.get_source_columns_info(
+                source_table, only_visible=True
+            )
+            if not source_columns.complete:
+                return
+            columns = source_columns.columns
             columns = columns or scope.outer_columns
 
             if pseudocolumns and dialect.EXCLUDES_PSEUDOCOLUMNS_FROM_STAR:
@@ -1134,13 +1177,17 @@ def _expand_stars(
                 for pivot in pivots:
                     pivot_columns = pivot.output_columns(pivot_columns) or pivot.alias_column_names
 
-                if pivot_columns:
-                    new_selections.extend(
-                        alias(exp.column(name, table=pivots[-1].alias or None), name, copy=False)
-                        for name in pivot_columns
-                        if name not in columns_to_exclude
-                    )
-                    continue
+                if not pivot_columns:
+                    # The operator's output columns aren't knowable, so the star is preserved
+                    # instead of being expanded to the columns the operator consumed
+                    return
+
+                new_selections.extend(
+                    alias(exp.column(name, table=pivots[-1].alias or None), name, copy=False)
+                    for name in pivot_columns
+                    if name not in columns_to_exclude
+                )
+                continue
 
             for name in columns:
                 if name in columns_to_exclude or name in coalesced_columns:
@@ -1301,7 +1348,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
     new_selections = []
 
     for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(expression.selects, scope.outer_columns)
+        itertools.zip_longest(expression.selects, [] if expression.is_star else scope.outer_columns)
     ):
         if selection is None or isinstance(selection, exp.QueryTransform):
             break

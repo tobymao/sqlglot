@@ -7,6 +7,7 @@ WITH cte1 AS (SELECT b FROM y) CREATE TABLE s AS WITH cte2 AS (SELECT b FROM cte
 WITH cte1 AS (SELECT y.b AS b FROM y AS y) CREATE TABLE s AS WITH cte2 AS (SELECT cte1.b AS b FROM cte1 AS cte1) SELECT cte2.b AS b FROM cte2 AS cte2;
 
 # title: Create without CTE
+#schema: {"tbl": {"a": "int"}}
 CREATE TABLE foo AS SELECT a FROM tbl;
 CREATE TABLE foo AS SELECT tbl.a AS a FROM tbl AS tbl;
 
@@ -36,5 +37,6 @@ WITH cte AS (SELECT b FROM y) INSERT INTO s SELECT * FROM cte;
 WITH cte AS (SELECT y.b AS b FROM y AS y) INSERT INTO s SELECT cte.b AS b FROM cte AS cte;
 
 # title: Insert without CTE
+#schema: {"tbl": {"a": "int"}}
 INSERT INTO foo SELECT a FROM tbl;
 INSERT INTO foo SELECT tbl.a AS a FROM tbl AS tbl;

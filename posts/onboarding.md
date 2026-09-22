@@ -320,6 +320,37 @@ A schema provides information required by other SQLGlot modules (most importantl
 
 Schema information is used to enrich ASTs with actions like replacing stars (`SELECT *`) with the names of the columns being selected from the upstream tables.
 
+Column schemas describe the complete output of a source. When a scope has exactly one source, whose output is unknown, SQLGlot can attribute an unqualified column to it only if no accessible outer scope could supply the column. For example, a top-level query:
+
+```sql
+SELECT a FROM READ_PARQUET('f.parquet')
+```
+
+can be qualified without knowing the file's schema. This establishes attribution, not a schema: the column's existence and type remain unknown, and its use does not supply enough information to expand `*`.
+
+An unknown source can also make a known column ambiguous or shadow a reference to an outer query. If an outer source could supply the column, or its output is unknown, qualification raises `OptimizeError` rather than choosing between local and correlated references. This applies even if `validate_qualify_columns=False`.
+
+For physical tables, supply the complete column mapping when qualification needs their columns. Types can be `UNKNOWN` when only column names are available. Explicit projections in CTEs and derived tables supply their own output names. A positional alias list names columns but does not establish that an opaque source has no additional columns.
+
+To disambiguate table functions whose output columns are unknown, qualify column references explicitly or name the columns with a table alias list. Use explicit projections to expose those names to enclosing queries. For example, either query can be optimized without a schema:
+
+```Python
+from sqlglot.optimizer import optimize
+
+optimize(
+    "SELECT a FROM (SELECT r.a, r.b FROM READ_PARQUET('f.parquet') AS r) WHERE b = 1",
+    dialect="duckdb",
+)
+optimize(
+    "SELECT a FROM (SELECT a, b FROM READ_PARQUET('f.parquet') AS r(a, b)) WHERE b = 1",
+    dialect="duckdb",
+)
+```
+
+These names establish column attribution, not types or a complete output schema. SQLGlot does not inspect files or contact a database. If another source with unknown columns could also supply an unqualified column, qualify the reference explicitly.
+
+An explicitly qualified reference such as `r.a` from an opaque function can be preserved without verifying its existence or type. `qualify()` can also preserve an opaque `*`, but `optimize()` rejects remaining projection stars after qualification. Standalone projection pushdown rejects unresolved dependencies on subqueries before pruning. Parsing, rendering, and rules such as boolean simplification do not require these source schemas.
+
 ## Optimizer
 The optimizer module in SQLGlot (`optimizer.py`) is responsible for producing canonicalized and efficient SQL queries by applying a series of optimization rules.
 
@@ -450,7 +481,7 @@ node = lineage(
 )
 ```
 
-The `lineage()` function’s `sql` argument takes the target query, the `sources` argument takes a dictionary of source table names and the query that produces each table, and the `schema` argument takes the column names/types of the graph’s root tables.
+The `lineage()` function’s `sql` argument takes the target query, the `sources` argument takes a dictionary of source table names and the query that produces each table, and the `schema` argument takes the column names/types of the graph’s root tables. Qualification raises an `OptimizeError` if a physical table whose columns it needs is absent from the schema. Tables substituted through `sources` derive their outputs from those queries; their underlying physical tables still need schemas.
 
 ### Implementation details
 This section describes how SQLGlot traces the lineage in the previous example.

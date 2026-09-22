@@ -1849,6 +1849,11 @@ class Pivot(Expression):
             if not outputs:
                 outputs = [c.alias_or_name for c in self.expressions]
 
+                # An unaliased aggregate has no statically knowable output name, e.g. when
+                # the pivot values aren't enumerated: PIVOT(SUM(x) FOR y IN (ANY))
+                if not all(outputs):
+                    return {}
+
         if not excluded or not outputs:
             return {}
 

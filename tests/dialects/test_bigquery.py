@@ -3446,8 +3446,11 @@ OPTIONS (
     def test_override_normalization_strategy(self):
         sql = "SELECT * FROM p.d.t"
         ast = self.parse_one(sql)
-        qualified = qualify(ast.copy(), dialect="bigquery,normalization_strategy=uppercase")
-        self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
+        schema = {"p": {"d": {"t": {"c": "int64"}}}}
+        qualified = qualify(
+            ast.copy(), schema=schema, dialect="bigquery,normalization_strategy=uppercase"
+        )
+        self.assertEqual(qualified.sql("bigquery"), "SELECT `T`.`C` AS `C` FROM `P`.`D`.`T` AS `T`")
 
         from sqlglot.dialects import BigQuery
         from sqlglot.dialects.dialect import NormalizationStrategy
@@ -3455,8 +3458,12 @@ OPTIONS (
         try:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
 
-            qualified = qualify(ast.copy(), dialect="bigquery,normalization_strategy=uppercase")
-            self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
+            qualified = qualify(
+                ast.copy(), schema=schema, dialect="bigquery,normalization_strategy=uppercase"
+            )
+            self.assertEqual(
+                qualified.sql("bigquery"), "SELECT `T`.`C` AS `C` FROM `P`.`D`.`T` AS `T`"
+            )
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 

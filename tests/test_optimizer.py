@@ -1,4 +1,7 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from unittest.mock import patch
@@ -37,7 +40,6 @@ def qualify_then_canonicalize(expression, **qualify_kwargs):
 def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
     expression = optimizer.qualify.qualify(
         expression,
-        infer_schema=True,
         validate_qualify_columns=validate_qualify_columns,
         identify=False,
         **kwargs,
@@ -47,7 +49,7 @@ def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
 
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
+    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
     expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
     return expression
 
@@ -203,8 +205,13 @@ class TestOptimizer(unittest.TestCase):
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
                 canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
+                case_schema = meta.get("schema")
 
                 func_kwargs = kwargs.copy()
+
+                if case_schema:
+                    # The exact tables this fixture reads, in place of the file's base schema
+                    func_kwargs["schema"] = json.loads(case_schema)
 
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
@@ -267,7 +274,6 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "optimizer",
             optimizer.optimize,
-            infer_schema=True,
             pretty=True,
             execute=True,
             schema=schema,
@@ -304,10 +310,11 @@ class TestOptimizer(unittest.TestCase):
                 parse_one("WITH tesT AS (SELECT * FROM t1) SELECT * FROM test", "bigquery"),
                 db="db",
                 catalog="catalog",
+                schema={"catalog": {"db": {"t1": {"c": "int64"}}}},
                 dialect="bigquery",
                 quote_identifiers=False,
             ).sql("bigquery"),
-            "WITH test AS (SELECT * FROM catalog.db.t1 AS t1) SELECT * FROM test AS test",
+            "WITH test AS (SELECT t1.c AS c FROM catalog.db.t1 AS t1) SELECT test.c AS c FROM test AS test",
         )
 
         self.assertEqual(
@@ -430,6 +437,7 @@ class TestOptimizer(unittest.TestCase):
                     "SELECT `my_db.my_table`.`my_column` FROM `my_db.my_table`",
                     read="bigquery",
                 ),
+                schema={"my_db": {"my_table": {"my_column": "INT64"}}},
                 dialect="bigquery",
             ).sql(dialect="bigquery"),
             "SELECT `my_table`.`my_column` AS `my_column` FROM `my_db.my_table` AS `my_table`",
@@ -479,7 +487,8 @@ class TestOptimizer(unittest.TestCase):
                         distinct=False,
                         side="LEFT",
                     ).subquery("s")
-                )
+                ),
+                schema={"x": {"a": "int"}},
             )
 
         self.assertEqual(
@@ -536,7 +545,6 @@ class TestOptimizer(unittest.TestCase):
                     "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT x + 1 FROM t AS child WHERE x < 10) SELECT * FROM t"
                 ),
                 schema={},
-                infer_schema=False,
             ).sql(),
             "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT child.x + 1 AS _col_0 FROM t AS child WHERE child.x < 10) SELECT t.x AS x FROM t",
         )
@@ -554,19 +562,12 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one("WITH x AS (SELECT a FROM db.y) SELECT z FROM db.x"),
                 schema={"db": {"x": {"z": "int"}, "y": {"a": "int"}}},
-                infer_schema=False,
             ).sql(),
             "WITH x AS (SELECT y.a AS a FROM db.y) SELECT x.z AS z FROM db.x",
         )
 
-        self.assertEqual(
-            optimizer.qualify_columns.qualify_columns(
-                parse_one("select y from x"),
-                schema={},
-                infer_schema=False,
-            ).sql(),
-            "SELECT y AS y FROM x",
-        )
+        with self.assertRaisesRegex(OptimizeError, "Table not found in schema: x"):
+            optimizer.qualify_columns.qualify_columns(parse_one("select y from x"), schema={})
 
         # Aliases derived from quoted projections keep their exact spelling, even for
         # dialects that fold quoted identifiers (e.g. Trino), so that running this rule
@@ -574,21 +575,19 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one('SELECT "C1" FROM t', read="trino"),
-                schema={},
-                infer_schema=False,
+                schema=MappingSchema({"t": {"C1": "int"}}, dialect="trino", normalize=False),
                 dialect="trino",
             ).sql(dialect="trino"),
-            'SELECT "C1" AS "C1" FROM t',
+            'SELECT t."C1" AS "C1" FROM t',
         )
 
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one('SELECT ("C1") FROM t', read="trino"),
-                schema={},
-                infer_schema=False,
+                schema=MappingSchema({"t": {"C1": "int"}}, dialect="trino", normalize=False),
                 dialect="trino",
             ).sql(dialect="trino"),
-            'SELECT ("C1") AS "C1" FROM t',
+            'SELECT (t."C1") AS "C1" FROM t',
         )
 
         self.assertEqual(
@@ -605,11 +604,10 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT Cc FROM (SELECT Cc FROM t) AS s", read="snowflake"),
-                schema={},
-                infer_schema=False,
+                schema=MappingSchema({"t": {"Cc": "int"}}, dialect="snowflake", normalize=False),
                 dialect="snowflake",
             ).sql(dialect="snowflake"),
-            "SELECT s.Cc AS Cc FROM (SELECT Cc AS Cc FROM t) AS s",
+            "SELECT s.Cc AS Cc FROM (SELECT t.Cc AS Cc FROM t) AS s",
         )
 
         self.assertEqual(
@@ -618,6 +616,7 @@ class TestOptimizer(unittest.TestCase):
                     "WITH X AS (SELECT Y.A FROM DB.y CROSS JOIN a.b.INFORMATION_SCHEMA.COLUMNS) SELECT `A` FROM X",
                     read="bigquery",
                 ),
+                schema={"DB": {"y": {"A": "INT64"}}},
                 dialect="bigquery",
             ).sql(),
             'WITH "x" AS (SELECT "y"."a" AS "a" FROM "DB"."y" AS "y" CROSS JOIN "a"."b"."INFORMATION_SCHEMA.COLUMNS" AS "columns") SELECT "x"."a" AS "a" FROM "x" AS "x"',
@@ -814,6 +813,7 @@ class TestOptimizer(unittest.TestCase):
                 parse_one(
                     "SELECT 1 FROM dbo.a JOIN dbo.b ON dbo.b.id = dbo.a.id JOIN dbo.b AS x ON x.id = dbo.a.id"
                 ),
+                schema={"dbo": {"a": {"id": "int"}, "b": {"id": "int"}}},
             ).sql(),
             'SELECT 1 AS "1" FROM "dbo"."a" AS "a" JOIN "dbo"."b" AS "b" ON "b"."id" = "a"."id" JOIN "dbo"."b" AS "x" ON "x"."id" = "a"."id"',
         )
@@ -871,35 +871,42 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
-    def test_unpivot_unknown_schema(self):
+    def test_unpivot_column_resolution(self):
+        schema = {"my_table": {"a": "int", "b": "int", "c1": "text", "c2": "text"}}
+
+        # A column the operator doesn't consume passes through
         self.assertEqual(
             qualify(
                 parse_one(
-                    "SELECT i.other_col FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
+                    "SELECT i.c1 FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
                     dialect="snowflake",
                 ),
+                schema=schema,
                 dialect="snowflake",
             ).sql(dialect="snowflake"),
-            'SELECT "I"."OTHER_COL" AS "OTHER_COL" FROM "MY_TABLE" AS "I" '
+            'SELECT "I"."C1" AS "C1" FROM "MY_TABLE" AS "I" '
             'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
         )
-        self.assertEqual(
+
+        # A consumed column is no longer exposed by the operator's output
+        with self.assertRaisesRegex(OptimizeError, "Unknown column: A"):
             qualify(
                 parse_one(
                     "SELECT i.a FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
                     dialect="snowflake",
                 ),
+                schema=schema,
                 dialect="snowflake",
-            ).sql(dialect="snowflake"),
-            'SELECT "I"."A" AS "A" FROM "MY_TABLE" AS "I" '
-            'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
-        )
+            )
+
+        # The alias list renames the operator's output columns positionally
         self.assertEqual(
             qualify(
                 parse_one(
                     "SELECT i.z FROM my_table AS i UNPIVOT(v FOR k IN (a, b)) AS i(w, x, y, z)",
                     dialect="snowflake",
                 ),
+                schema=schema,
                 dialect="snowflake",
             ).sql(dialect="snowflake"),
             'SELECT "I"."Z" AS "Z" FROM "MY_TABLE" AS "I" '
@@ -1044,7 +1051,7 @@ class TestOptimizer(unittest.TestCase):
         ):
             optimizer.qualify.qualify(
                 parse_one("select foo from x"),
-                schema={"foo": {"y": "int"}},
+                schema={"x": {"y": "int"}},
             )
 
         # Test ambiguous columns error with PIVOT (which skips "could not be resolved" check)
@@ -1112,7 +1119,7 @@ class TestOptimizer(unittest.TestCase):
 
         # Resolving an unqualified lateral column whose table is missing from the schema must
         # raise instead of recursing infinitely
-        with self.assertRaisesRegex(OptimizeError, "Column 'ITEMS' could not be resolved"):
+        with self.assertRaisesRegex(OptimizeError, "Table not found in schema: MY_DB.RAW.EVENTS"):
             optimizer.qualify.qualify(
                 parse_one(
                     "SELECT f.value AS v FROM my_db.raw.events, LATERAL FLATTEN(items) AS f",
@@ -1201,6 +1208,350 @@ class TestOptimizer(unittest.TestCase):
             "WITH T AS (SELECT 1 AS A) SELECT T.$2 AS _COL_0 FROM T AS T",
         )
 
+    def test_qualify_positional_column_from_missing_table(self):
+        # A positional reference can't be resolved against a table the schema doesn't define,
+        # and `allow_partial_qualification` only covers unknown columns of known tables
+        for sql in (
+            "SELECT t.$1 FROM source AS t",
+            "WITH t AS (SELECT * FROM source) SELECT t.$1 FROM t",
+            "SELECT x.$2 FROM unknown AS x(alias_name)",
+        ):
+            for allow_partial_qualification in (False, True):
+                with self.subTest(f"{sql} ({allow_partial_qualification=})"):
+                    with self.assertRaisesRegex(OptimizeError, "Table not found in schema"):
+                        qualify(
+                            parse_one(sql, dialect="snowflake"),
+                            dialect="snowflake",
+                            allow_partial_qualification=allow_partial_qualification,
+                        )
+
+    def test_missing_table_in_schema(self):
+        # The raise is lazy: it only fires when a scope needs the table's columns
+        for sql, expected in (
+            ("SELECT 1 FROM x", 'SELECT 1 AS "1" FROM x AS x'),
+            ("SELECT COUNT(*) FROM x", "SELECT COUNT(*) AS _col_0 FROM x AS x"),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(qualify(parse_one(sql), identify=False).sql(), expected)
+
+        cases = (
+            # no schema at all
+            ("SELECT a FROM x", None, "x"),
+            ("SELECT * FROM x", None, "x"),
+            # partial schema: the error names the table that's missing
+            ("SELECT b FROM x JOIN t USING (a)", {"x": {"a": "int", "b": "int"}}, "t"),
+            ("SELECT y.b FROM x, y", {"x": {"a": "int"}}, "y"),
+            # an unqualified column in a JOIN ON must not swallow the error
+            ("SELECT 1 FROM x JOIN y ON a = b", {"x": {"a": "int"}}, "y"),
+        )
+        for sql, schema, table in cases:
+            with self.subTest(sql):
+                with self.assertRaisesRegex(OptimizeError, f"Table not found in schema: {table}"):
+                    qualify(parse_one(sql), schema=schema)
+
+        # allow_partial_qualification covers unknown columns of known tables, not missing tables
+        with self.assertRaisesRegex(OptimizeError, "Table not found in schema: y"):
+            qualify(
+                parse_one("SELECT a FROM y"),
+                schema={"x": {"a": "int"}},
+                allow_partial_qualification=True,
+            )
+
+    def test_qualify_without_physical_tables(self):
+        # Sources that carry their own columns don't need a schema
+        for sql, expected, dialect in (
+            (
+                "WITH t AS (SELECT 1 AS c) SELECT c FROM t",
+                "WITH t AS (SELECT 1 AS c) SELECT t.c AS c FROM t AS t",
+                None,
+            ),
+            (
+                "SELECT col FROM (VALUES (1), (2)) AS t(col)",
+                "SELECT t.col AS col FROM (VALUES (1), (2)) AS t(col)",
+                None,
+            ),
+            (
+                "SELECT x FROM UNNEST([1, 2]) AS x",
+                "SELECT x AS x FROM UNNEST([1, 2]) AS x",
+                "bigquery",
+            ),
+            # A table function's columns are never looked up in the schema
+            (
+                "SELECT f.value FROM TABLE(FLATTEN(input => [1, 2])) AS f",
+                "SELECT F.VALUE AS VALUE FROM TABLE(FLATTEN(input => [1, 2])) AS F",
+                "snowflake",
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    qualify(parse_one(sql, read=dialect), dialect=dialect, identify=False).sql(
+                        dialect=dialect
+                    ),
+                    expected,
+                )
+
+    def test_correlated_column_is_not_guessed(self):
+        # The complete inner output is known, so `a` belongs to the outer scope.
+        self.assertEqual(
+            qualify(
+                parse_one("SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS u(v)) AS f FROM x"),
+                schema={"x": {"a": "int", "b": "int"}},
+                identify=False,
+            ).sql(),
+            "SELECT (SELECT MIN(x.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS u(v)) AS f FROM x AS x",
+        )
+
+        # An inner source that does have the column still wins over the outer one
+        self.assertEqual(
+            qualify(
+                parse_one("SELECT (SELECT SUM(a) FROM y) AS s FROM x"),
+                schema={"x": {"a": "int"}, "y": {"a": "int"}},
+                identify=False,
+            ).sql(),
+            "SELECT (SELECT SUM(y.a) AS _col_0 FROM y AS y) AS s FROM x AS x",
+        )
+
+    def test_unknown_source_columns(self):
+        for sql in (
+            "SELECT a FROM x, READ_PARQUET('f.parquet') AS r",
+            "SELECT (SELECT MIN(a) FROM READ_PARQUET('f.parquet')) FROM x",
+            "SELECT b FROM x, READ_PARQUET('f.parquet') AS r(a)",
+            "SELECT (SELECT MIN(b) FROM READ_PARQUET('f.parquet') AS r(a)) FROM x",
+            "SELECT a FROM (SELECT * FROM READ_PARQUET('f.parquet')) AS r(c), x",
+            "SELECT a FROM x, LATERAL unknown_function() AS r(c)",
+        ):
+            for validate in (False, True):
+                with self.subTest(sql=sql, validate=validate):
+                    with self.assertRaisesRegex(OptimizeError, "has unknown columns"):
+                        qualify(
+                            parse_one(sql, read="duckdb"),
+                            schema=self.schema,
+                            dialect="duckdb",
+                            validate_qualify_columns=validate,
+                        )
+
+        for sql in (
+            "SELECT r.b FROM READ_PARQUET('f.parquet') AS r(a)",
+            "SELECT a FROM READ_PARQUET('f.parquet') AS r(a)",
+            "SELECT (SELECT MIN(x.a) FROM READ_PARQUET('f.parquet')) FROM x",
+            "SELECT x.a FROM x JOIN y ON a = c CROSS JOIN READ_PARQUET('f.parquet') AS r",
+        ):
+            with self.subTest(sql):
+                expression = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                self.assertTrue(all(c.table for c in expression.find_all(exp.Column)))
+
+    def test_single_unknown_source_attribution(self):
+        for sql in (
+            "SELECT value FROM READ_PARQUET('f.parquet') AS r",
+            "SELECT value FROM READ_PARQUET('f.parquet') AS r(other)",
+            "SELECT value AS value FROM READ_PARQUET('f.parquet') AS r",
+            "SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r LIMIT 1) AS value",
+            "SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM x",
+            "SELECT (SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM y) FROM x",
+            "SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM (SELECT 1 AS a) AS t",
+            "SELECT 1 FROM x CROSS JOIN LATERAL (SELECT value FROM READ_PARQUET('f.parquet') AS r) AS t",
+            "SELECT 1 FROM x CROSS JOIN (SELECT value FROM READ_PARQUET('f.parquet') AS r) AS t",
+            "WITH t AS (SELECT value FROM READ_PARQUET('f.parquet') AS r) SELECT 1 FROM x, t",
+            "SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r UNION ALL SELECT 1) FROM x",
+        ):
+            with self.subTest(sql):
+                expression = qualify(
+                    parse_one(sql, read="duckdb"), schema=self.schema, dialect="duckdb"
+                )
+                columns = list(expression.find_all(exp.Column))
+                self.assertTrue(columns)
+                self.assertTrue(all(c.table == "r" for c in columns))
+
+        expression = optimizer.optimize(
+            "SELECT a FROM READ_PARQUET('f.parquet') AS r", dialect="duckdb"
+        )
+        self.assertEqual(
+            expression.sql("duckdb"),
+            'SELECT "r"."a" AS "a" FROM READ_PARQUET(\'f.parquet\') AS "r"',
+        )
+        self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+    def test_unknown_source_may_shadow_outer_column(self):
+        for sql in (
+            "SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM x",
+            "SELECT (SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM y) FROM x",
+            "SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM READ_PARQUET('g.parquet') AS s",
+            "SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM READ_PARQUET('g.parquet') AS s(b)",
+            "SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM (SELECT * FROM READ_PARQUET('g.parquet')) AS s",
+            "SELECT 1 FROM x CROSS JOIN LATERAL (SELECT a FROM READ_PARQUET('f.parquet') AS r) AS t",
+            "SELECT 1 FROM x CROSS JOIN (SELECT a FROM READ_PARQUET('f.parquet') AS r) AS t",
+            "SELECT (SELECT a FROM READ_PARQUET('f.parquet') AS r UNION ALL SELECT 1) FROM x",
+            "SELECT 10 AS a, (SELECT a FROM READ_PARQUET('f.parquet') AS r LIMIT 1) AS s",
+            "SELECT (SELECT x FROM READ_PARQUET('f.parquet') AS r LIMIT 1) FROM x",
+            "SELECT (SELECT value FROM READ_PARQUET('f.parquet') AS r LIMIT 1) "
+            "FROM x PIVOT(SUM(b) FOR a IN (1 AS value)) AS p",
+            "SELECT value FROM x, READ_PARQUET('f.parquet') AS r",
+        ):
+            for validate in (False, True):
+                with self.subTest(sql=sql, validate=validate):
+                    with self.assertRaisesRegex(OptimizeError, "has unknown columns"):
+                        qualify(
+                            parse_one(sql, read="duckdb"),
+                            schema=self.schema,
+                            dialect="duckdb",
+                            validate_qualify_columns=validate,
+                        )
+
+        with self.assertRaisesRegex(OptimizeError, "Table not found in schema: missing"):
+            qualify(
+                parse_one("SELECT (SELECT a FROM READ_PARQUET('f.parquet')) FROM missing"),
+                schema=self.schema,
+            )
+
+    def test_table_function_column_references(self):
+        for sql in (
+            "SELECT a FROM (SELECT r.a, r.b FROM READ_PARQUET('f.parquet') AS r) WHERE b = 1",
+            "SELECT a FROM (SELECT a, b FROM READ_PARQUET('f.parquet') AS r(a, b)) WHERE b = 1",
+        ):
+            with self.subTest(sql):
+                expression = optimizer.optimize(sql, dialect="duckdb")
+                self.assertEqual(
+                    expression.sql("duckdb"),
+                    'SELECT "r"."a" AS "a" FROM READ_PARQUET(\'f.parquet\') AS "r"'
+                    + ('("a", "b")' if "r(a, b)" in sql else "")
+                    + ' WHERE "r"."b" = 1',
+                )
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+        for sql in (
+            "SELECT c FROM LATERAL unknown_function() AS r(c)",
+            "SELECT r.c FROM LATERAL unknown_function() AS r",
+            "SELECT c FROM TABLE(unknown_function()) AS r(c)",
+            "SELECT r.c FROM TABLE(unknown_function()) AS r",
+        ):
+            with self.subTest(sql):
+                expression = optimizer.optimize(sql, dialect="snowflake")
+                self.assertEqual(expression.named_selects, ["C"])
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+    def test_unknown_source_projection_alias(self):
+        for sql in (
+            "SELECT a + 1 AS b FROM READ_PARQUET('f.parquet') GROUP BY b",
+            "SELECT a AS b FROM READ_PARQUET('f.parquet') WHERE b > 1",
+            "SELECT a AS b, b + 1 AS c FROM READ_PARQUET('f.parquet')",
+        ):
+            with self.subTest(sql):
+                with self.assertRaisesRegex(OptimizeError, "has unknown columns"):
+                    optimizer.optimize(sql, dialect="duckdb")
+
+    def test_opaque_stars_require_complete_schema(self):
+        for sql in (
+            "SELECT * FROM READ_PARQUET('f.parquet')",
+            "SELECT * FROM READ_PARQUET('f.parquet') AS r(a)",
+            "SELECT r.* FROM READ_PARQUET('f.parquet') AS r(a, b)",
+            "SELECT * FROM LATERAL unknown_function() AS r(a)",
+            "SELECT * FROM UNNEST(ARRAY(1, 2), ARRAY(3, 4)) AS r(a)",
+            "SELECT * FROM UNNEST(ARRAY(STRUCT(1 AS a, 2 AS b))) AS r(a)",
+        ):
+            with self.subTest(sql):
+                self.assertTrue(qualify(parse_one(sql), identify=False).is_star)
+                with self.assertRaisesRegex(OptimizeError, "unexpanded star"):
+                    optimizer.optimize(sql)
+
+        with self.assertRaisesRegex(OptimizeError, "unexpanded star"):
+            optimizer.optimize(
+                "SELECT a FROM (SELECT * FROM READ_PARQUET('f.parquet')) WHERE b = 1"
+            )
+
+        with self.assertRaisesRegex(OptimizeError, "has unknown columns"):
+            optimizer.optimize(
+                "SELECT a FROM x, UNNEST(arr) AS u",
+                schema={"x": {"a": "INT", "arr": "UNKNOWN"}},
+                dialect="bigquery",
+            )
+
+        pivot_sql = "SELECT empid FROM sales PIVOT(SUM(amount) FOR quarter IN (ANY)) AS p"
+        pivot_schema = {"sales": {"empid": "INT", "amount": "INT", "quarter": "TEXT"}}
+        with self.assertRaisesRegex(OptimizeError, "pivot has unknown columns"):
+            optimizer.optimize(pivot_sql, schema=pivot_schema, dialect="snowflake")
+        optimizer.optimize(
+            pivot_sql.replace("SELECT empid", "SELECT p.empid"),
+            schema=pivot_schema,
+            dialect="snowflake",
+        )
+
+        for join in (
+            "JOIN READ_PARQUET('f.parquet') AS r(a) USING (a)",
+            "NATURAL JOIN READ_PARQUET('f.parquet') AS r(a)",
+        ):
+            with self.subTest(join):
+                with self.assertRaisesRegex(OptimizeError, "Cannot expand join"):
+                    qualify(parse_one(f"SELECT x.a FROM x {join}"), schema=self.schema)
+
+    def test_pushdown_projections_rejects_unresolved_dependencies(self):
+        for sql in (
+            "SELECT a FROM (SELECT * FROM READ_PARQUET('f.parquet')) WHERE b = 1",
+            "SELECT a FROM (SELECT a, b FROM x) AS t",
+            "SELECT generate_series FROM (SELECT * FROM GENERATE_SERIES(1, 3) AS g) AS t",
+        ):
+            with self.subTest(sql):
+                expression = parse_one(sql)
+                original = expression.copy()
+                with self.assertRaisesRegex(OptimizeError, "unresolved columns"):
+                    optimizer.pushdown_projections.pushdown_projections(expression)
+                self.assertEqual(expression, original)
+
+    def test_table_function_optimization_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory) / "f.parquet")
+            self.conn.execute(
+                "COPY (SELECT * FROM (VALUES (10, 1), (20, 0), (30, 1)) AS r(a, b)) "
+                "TO ? (FORMAT PARQUET)",
+                [path],
+            )
+            for sql in (
+                f"SELECT t.d, t.z FROM (SELECT *, 1 AS z FROM READ_PARQUET('{path}')) AS t(c, d)",
+                f"WITH t(c, d) AS (SELECT *, 1 AS z FROM READ_PARQUET('{path}')) SELECT t.d, t.z FROM t",
+            ):
+                with self.subTest(sql):
+                    qualified = qualify(parse_one(sql, read="duckdb"), dialect="duckdb")
+                    self.assertEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(qualified.sql("duckdb")).fetchall(),
+                    )
+            for sql in (
+                f"SELECT a FROM READ_PARQUET('{path}') WHERE b = 1",
+                f"SELECT a FROM (SELECT a, b FROM READ_PARQUET('{path}')) WHERE b = 1",
+                f"SELECT (SELECT a FROM READ_PARQUET('{path}') ORDER BY a LIMIT 1) FROM y",
+                f"SELECT a FROM (SELECT r.a, r.b FROM READ_PARQUET('{path}') AS r) WHERE b = 1",
+                f"SELECT a FROM (SELECT a, b FROM READ_PARQUET('{path}') AS r(a, b)) WHERE b = 1",
+                f"SELECT (SELECT MIN(r.a) FROM READ_PARQUET('{path}') AS r) AS a FROM x",
+                f"SELECT (SELECT MIN(a) FROM READ_PARQUET('{path}') AS r(a, b)) AS a FROM x",
+                f"SELECT c, r.b FROM READ_PARQUET('{path}') AS r(c)",
+                "SELECT generate_series FROM (SELECT * FROM GENERATE_SERIES(1, 3) AS g)",
+                "SELECT range FROM (SELECT * FROM RANGE(1, 3) AS g)",
+            ):
+                with self.subTest(sql):
+                    optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                    self.assertEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                    )
+
+            other_path = str(Path(directory) / "g.parquet")
+            self.conn.execute("COPY (SELECT 1 AS b) TO ? (FORMAT PARQUET)", [other_path])
+            # Identical SQL binds `a` locally or externally depending on the file's columns.
+            for file_path, table, expected in ((path, "r", 10), (other_path, "x", 7)):
+                sql = (
+                    f"SELECT (SELECT a FROM READ_PARQUET('{file_path}') AS r LIMIT 1) "
+                    "FROM (VALUES (7)) AS x(a)"
+                )
+                with self.subTest(sql):
+                    self.assertEqual(self.conn.execute(sql).fetchall(), [(expected,)])
+                    with self.assertRaisesRegex(OptimizeError, "has unknown columns"):
+                        optimizer.optimize(sql, dialect="duckdb")
+                    optimized = optimizer.optimize(
+                        sql.replace("SELECT a", f"SELECT {table}.a"), dialect="duckdb"
+                    )
+                    self.assertEqual(
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(), [(expected,)]
+                    )
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)
@@ -1240,6 +1591,8 @@ class TestOptimizer(unittest.TestCase):
 
         with self.assertRaises(OptimizeError) as ctx:
             schema = MappingSchema()
+            schema.add_table("table1", ["a"])
+            schema.add_table("table2", ["id"])
             schema.add_table("table3", ["a"])
 
             expression = optimizer.qualify_columns.qualify_columns(parse_one(sql), schema=schema)
@@ -1455,21 +1808,22 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT -99 AS "e" GROUP BY 1',
         )
 
-        # check order of lateral expansion with no schema
+        # check order of lateral expansion
         self.assertEqual(
-            optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),
+            optimizer.optimize(
+                "SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e",
+                schema=self.schema,
+            ).sql(),
             'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE ("x"."a" + 2) > 1 GROUP BY "x"."a" + 1 + 1',
         )
 
+        # A schema that doesn't cover the query's tables is an error, not a no-op
         unused_schema = {"l": {"c": "int"}}
-        self.assertEqual(
+        with self.assertRaisesRegex(OptimizeError, "Table not found in schema: z"):
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT CAST(x AS INT) AS y FROM z AS z"),
                 schema=unused_schema,
-                infer_schema=False,
-            ).sql(),
-            "SELECT CAST(x AS INT) AS y FROM z AS z",
-        )
+            )
 
         # BigQuery expands overlapping alias only for GROUP BY + HAVING
         sql = "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) SELECT id AS my_id, CONCAT(id, name) AS full_name FROM data WHERE my_id = 1 GROUP BY my_id, full_name HAVING my_id = 1"
@@ -1504,7 +1858,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(
             optimizer.qualify_columns.qualify_columns(
                 parse_one(sql, dialect="bigquery"),
-                schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
+                schema=MappingSchema(schema={"x": self.schema["x"]}, dialect="bigquery"),
             ).sql(),
             "SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 HAVING x > 1",
         )
@@ -1601,6 +1955,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 """,
                 dialect="duckdb",
             ),
+            schema={"t": {"z": "int", "d": "int"}},
             dialect="duckdb",
             identify=False,
         )
@@ -1917,7 +2272,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # In T-SQL and Redshift, SELECT a + b can produce a NULL, so we can't transpile it
         # into a CONCAT in Postgres, because that coalesces NULL values with empty strings
-        ast = optimize("SELECT CAST(a AS TEXT) + CAST(b AS TEXT) FROM t", dialect="tsql")
+        ast = optimize(
+            "SELECT CAST(a AS TEXT) + CAST(b AS TEXT) FROM t",
+            dialect="tsql",
+            schema={"t": {"a": "int", "b": "int"}},
+        )
         self.assertEqual(
             ast.sql("postgres"),
             'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
@@ -1941,9 +2300,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(
             optimizer.optimize(
                 "SELECT * FROM foo",
+                schema={"bar": {"c": "int"}},
                 on_qualify=lambda table: table.replace(exp.to_table("bar")),
             ).sql(),
-            'SELECT * FROM "bar"',
+            'SELECT "bar"."c" AS "c" FROM "bar"',
         )
 
     def test_scope(self):
@@ -2851,7 +3211,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 SELECT a, a.b, a.b.c FROM x, UNNEST(x.a) AS a
                 """,
                     read="bigquery",
-                )
+                ),
+                schema={"x": {"a": "ARRAY<STRUCT<b STRUCT<c int>>>"}},
+                dialect="bigquery",
             ),
             schema={"x": {"a": "ARRAY<STRUCT<b STRUCT<c int>>>"}},
         )
@@ -2863,9 +3225,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             annotate_types(
                 optimizer.qualify.qualify(
                     parse_one(
-                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x"
-                    )
-                )
+                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x",
+                        read="bigquery",
+                    ),
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
             )
             .selects[0]
             .type,
@@ -2876,13 +3241,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             annotate_types(
                 optimizer.qualify.qualify(
                     parse_one(
-                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x"
-                    )
-                )
+                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x",
+                        read="bigquery",
+                    ),
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
             )
             .selects[0]
             .type,
-            exp.DataType.build("timestamp"),
+            exp.DataType.build("timestamp", dialect="bigquery"),
         )
 
     def test_unnest_struct_field_annotation(self):
@@ -3145,17 +3513,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "SELECT t.c FROM (SELECT a, b FROM x UNION ALL SELECT b, c FROM y) AS t(c, d)",
             ),
             (
-                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT c FROM t",
-                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT c FROM t",
+                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT t.c FROM t",
+                "WITH t(c, d) AS (SELECT a, b FROM x) SELECT t.c FROM t",
             ),
             (
-                "SELECT t.c FROM LATERAL (SELECT a, b FROM x) AS t(c, d)",
-                "SELECT t.c FROM LATERAL (SELECT a, b FROM x) AS t(c, d)",
+                "SELECT t.c FROM LATERAL (SELECT x.a, x.b FROM x) AS t(c, d)",
+                "SELECT t.c FROM LATERAL (SELECT x.a, x.b FROM x) AS t(c, d)",
             ),
             # BY NAME merges the operands by column name, so positions don't map onto them
             (
-                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT c FROM t",
-                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT c FROM t",
+                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT t.c FROM t",
+                "WITH t(c) AS (SELECT a, b FROM x UNION ALL BY NAME SELECT b, a FROM x) SELECT t.c FROM t",
             ),
             # Columns beyond the list keep their own names and are pruned as usual
             (
@@ -3297,7 +3665,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_semistructured(self):
         query = parse_one("select a.b:c from d", read="snowflake")
-        qualified = optimizer.qualify.qualify(query)
+        qualified = optimizer.qualify.qualify(query, schema={"d": {"a": "variant"}})
         self.assertEqual(qualified.expressions[0].alias, "c")
 
     def test_gen(self):

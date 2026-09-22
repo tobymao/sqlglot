@@ -24,7 +24,6 @@ def qualify(
     schema: dict[str, object] | Schema | None = None,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
-    infer_schema: bool | None = None,
     isolate_tables: bool = False,
     qualify_columns: bool = True,
     allow_partial_qualification: bool = False,
@@ -51,16 +50,18 @@ def qualify(
         expression: Expr to qualify.
         db: Default database name for tables.
         catalog: Default catalog name for tables.
-        schema: Schema to infer column names and types.
+        schema: Schema with the column names and types of every physical table the query reads.
+            Qualification raises if a table it needs to resolve columns for is missing.
+            Columns of unknown function outputs require unambiguous source attribution.
         expand_alias_refs: Whether to expand references to aliases.
         expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether to infer the schema if missing.
         isolate_tables: Whether to isolate table selects.
         qualify_columns: Whether to qualify columns.
         allow_partial_qualification: Whether to allow partial qualification.
-        validate_qualify_columns: Whether to validate columns.
+        validate_qualify_columns: Whether to validate remaining unresolved columns. Disabling
+            this does not permit guessing ownership when a source's columns are unknown.
         quote_identifiers: Whether to run the quote_identifiers step.
             This step is necessary to ensure correctness for case sensitive queries.
             But this flag is provided in case this step is performed at a later time.
@@ -100,7 +101,6 @@ def qualify(
             schema,
             expand_alias_refs=expand_alias_refs,
             expand_stars=expand_stars,
-            infer_schema=infer_schema,
             allow_partial_qualification=allow_partial_qualification,
         )
 

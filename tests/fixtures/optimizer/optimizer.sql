@@ -18,6 +18,7 @@ FROM UNNEST(ARRAY(1, 2)) AS "q"("x", "y");
 # title: explode_outer
 # dialect: spark
 # execute: false
+#schema: {"boo": {"object_pointstext": "string"}}
 CREATE OR REPLACE TEMPORARY VIEW latest_boo AS
 SELECT
     TRIM(split(points, ':')[0]) as points_type,
@@ -418,6 +419,7 @@ FROM "x" AS "x";
 
 # title: unqualified struct element is selected in the outer query
 # execute: false
+#schema: {"tbl": {"value": "string"}}
 WITH "cte" AS (
   SELECT
     FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
@@ -429,6 +431,7 @@ FROM "tbl" AS "tbl";
 
 # title: qualified struct element is selected in the outer query
 # execute: false
+#schema: {"tbl": {"value": "string"}}
 WITH "cte" AS (
   SELECT
     FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: INTEGER>, STRUCT<f3: STRING>>') AS "struct"
@@ -441,6 +444,7 @@ FROM "tbl" AS "tbl";
 
 # title: left join doesnt push down predicate to join in merge subqueries
 # execute: false
+#schema: {"company_table": {"id": "int", "score": "int"}, "unlocked": {"company_id": "int"}}
 SELECT
   main_query.id,
   main_query.score
@@ -491,13 +495,16 @@ JOIN "alias_2" AS "alias_2"
 
 # title: db.table alias clash
 # execute: false
+#schema: {"db1": {"tbl": {"c": "int"}}, "db2": {"tbl": {"c": "int"}}}
 select * from db1.tbl, db2.tbl;
 SELECT
-  *
+  "tbl"."c" AS "c",
+  "tbl_2"."c" AS "c"
 FROM "db1"."tbl" AS "tbl"
 CROSS JOIN "db2"."tbl" AS "tbl_2";
 
 # execute: false
+#schema: {"unioned": {"uploaded_at": "date", "source_system": "text", "unique_filter_key": "text"}}
 SELECT
 *,
 IFF(
@@ -526,9 +533,11 @@ OR (
 	1
 ) = 1;
 SELECT
-  *,
+  "unioned"."uploaded_at" AS "uploaded_at",
+  "unioned"."source_system" AS "source_system",
+  "unioned"."unique_filter_key" AS "unique_filter_key",
   IFF(
-    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= '2022-06-16', 'workday', 'bamboohr'),
+    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS DATE), 'workday', 'bamboohr'),
     1,
     0
   ) AS "sort_order"
@@ -538,11 +547,16 @@ WHERE
 QUALIFY
   ROW_NUMBER() OVER (
     PARTITION BY "unioned"."unique_filter_key"
-    ORDER BY "unioned"."sort_order" DESC, 1
+    ORDER BY IFF(
+      IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS DATE), 'workday', 'bamboohr') = "unioned"."source_system",
+      1,
+      0
+    ) DESC, 1
   ) = 1;
 
 # title: pivoted source with explicit selections
 # execute: false
+#schema: {"sc": {"tb": {"a": "int", "b": "text", "c": "int"}}}
 SELECT * FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
 SELECT
   "_1"."a" AS "a",
@@ -561,6 +575,7 @@ PIVOT(SUM("_0"."c") FOR "_0"."b" IN ('x', 'y', 'z')) AS "_1";
 # title: pivoted source with explicit selections where one of them is excluded & selected at the same time
 # note: we need to respect the exclude when selecting * from pivoted source and not include the computed column twice
 # execute: false
+#schema: {"sc": {"tb": {"a": "int", "b": "text", "c": "int"}}}
 SELECT * EXCEPT (x), CAST(x AS TEXT) AS x FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
 SELECT
   "_1"."a" AS "a",
@@ -663,6 +678,7 @@ FROM (
 # title: selecting all columns from a pivoted source, pivot has column aliases
 # execute: false
 # dialect: snowflake
+#schema: {"DB_NAME": {"SCHEMA_NAME": {"TABLE_NAME": {"id": "int", "key": "text", "value": "int", "timestamp_1": "timestamp", "timestamp_2": "timestamp"}}}}
 WITH source AS (
   SELECT
     id,
@@ -696,6 +712,7 @@ PIVOT(MAX("SOURCE"."VALUE") FOR "SOURCE"."KEY" IN ('a', 'b', 'c')) AS "FINAL"("I
 # title: unpivoted table source with a single value column, unpivot columns can't be qualified
 # execute: false
 # dialect: snowflake
+#schema: {"m_sales": {"empid": "int", "dept": "text", "jan": "int", "feb": "int"}}
 SELECT * FROM m_sales AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
 SELECT
   "M_SALES"."EMPID" AS "EMPID",
@@ -709,6 +726,7 @@ ORDER BY
 
 # title: unpivoted table source, unpivot has column aliases
 # execute: false
+#schema: {"m_sales": {"empid": "int", "dept": "text", "jan": "int", "feb": "int"}}
 SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) AS unpiv(a, b, c, d);
 SELECT
   "unpiv"."a" AS "a",
@@ -728,6 +746,7 @@ UNPIVOT("sales" FOR "month" IN ("m_sales"."jan", "m_sales"."feb")) AS "unpiv"("a
 # title: unpivoted derived table source with a single value column
 # execute: false
 # dialect: snowflake
+#schema: {"m_sales": {"empid": "int", "dept": "text", "jan": "int", "feb": "int"}}
 SELECT * FROM (SELECT * FROM m_sales) AS m_sales(empid, dept, jan, feb) UNPIVOT(sales FOR month IN (jan, feb)) ORDER BY empid;
 SELECT
   "_0"."EMPID" AS "EMPID",
@@ -750,6 +769,7 @@ ORDER BY
 # execute: false
 # dialect: bigquery
 # note: the named columns aren not supported by BQ but we add them here to avoid defining a schema
+#schema: {"produce": {"product": "text", "q1": "int", "q2": "int", "q3": "int", "q4": "int"}}
 SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));
 SELECT
   `produce`.`product` AS `product`,
@@ -761,6 +781,7 @@ UNPIVOT(`sales` FOR `quarter` IN (`produce`.`q1`, `produce`.`q2`, `produce`.`q3`
 # title: unpivoted table source with multiple value columns
 # execute: false
 # dialect: bigquery
+#schema: {"produce": {"product": "text", "q1": "int", "q2": "int", "q3": "int", "q4": "int"}}
 SELECT * FROM produce AS produce(product, q1, q2, q3, q4) UNPIVOT((first_half_sales, second_half_sales) FOR semesters IN ((Q1, Q2) AS 'semester_1', (Q3, Q4) AS 'semester_2'));
 SELECT
   `produce`.`product` AS `product`,
@@ -800,6 +821,7 @@ FROM "foO" AS "foO";
 # title: lateral subquery
 # execute: false
 # dialect: postgres
+#schema: {"users": {"user_id": "int"}, "logs": {"log_date": "int", "user_id": "int"}}
 SELECT u.user_id, l.log_date
 FROM   users u
 CROSS JOIN LATERAL (
@@ -827,6 +849,7 @@ CROSS JOIN LATERAL (
 # title: bigquery column identifiers are case-insensitive
 # execute: false
 # dialect: bigquery
+#schema: {"bigquery-public-data": {"GooGle_tReNDs": {"TOp_TeRmS": {"refresh_date": "date", "term": "string", "rank": "int64"}}}}
 WITH cte AS (
     SELECT
         refresh_date AS `reFREsh_date`,
@@ -881,18 +904,20 @@ FROM "x" AS "x";
 
 # title: wrapped table without alias
 # execute: false
+#schema: {"tbl": {"c": "int"}}
 SELECT * FROM (tbl);
 SELECT
-  *
+  "tbl"."c" AS "c"
 FROM (
   "tbl" AS "tbl"
 );
 
 # title: wrapped table with alias
 # execute: false
+#schema: {"tbl": {"c": "int"}}
 SELECT * FROM (tbl AS tbl);
 SELECT
-  *
+  "tbl"."c" AS "c"
 FROM (
   "tbl" AS "tbl"
 );
@@ -920,9 +945,14 @@ LEFT JOIN "y" AS "y"
 
 # title: chained wrapped joins without aliases
 # execute: false
+#schema: {"a": {"a1": "int"}, "b": {"b1": "int"}, "c": {"c1": "int"}, "d": {"d1": "int"}, "e": {"e1": "int"}}
 SELECT * FROM ((a CROSS JOIN ((b CROSS JOIN c) CROSS JOIN (d CROSS JOIN e))));
 SELECT
-  *
+  "a"."a1" AS "a1",
+  "b"."b1" AS "b1",
+  "c"."c1" AS "c1",
+  "d"."d1" AS "d1",
+  "e"."e1" AS "e1"
 FROM (
   (
     "a" AS "a"
@@ -941,9 +971,12 @@ FROM (
 
 # title: chained wrapped joins with aliases
 # execute: false
+#schema: {"a": {"a1": "int"}, "b": {"b1": "int"}, "c": {"c1": "int"}}
 SELECT * FROM ((a AS foo CROSS JOIN b AS bar) CROSS JOIN c AS baz);
 SELECT
-  *
+  "foo"."a1" AS "a1",
+  "bar"."b1" AS "b1",
+  "baz"."c1" AS "c1"
 FROM (
   (
     "a" AS "foo"
@@ -986,16 +1019,12 @@ LEFT JOIN (
 
 # title: select * from wrapped subquery
 # execute: false
+#schema: {"tbl": {"c": "int"}}
 SELECT * FROM ((SELECT * FROM tbl));
-WITH "_0" AS (
-  SELECT
-    *
-  FROM "tbl" AS "tbl"
-)
 SELECT
-  *
+  "tbl"."c" AS "c"
 FROM (
-  "_0" AS "_0"
+  "tbl" AS "tbl"
 );
 
 # title: select * from wrapped subquery joined to a table (known schema)
@@ -1011,18 +1040,15 @@ FROM (
       ON "x"."a" = "y"."c"
 );
 
-# title: select * from wrapped subquery joined to a table (unknown schema)
+# title: select * from wrapped subquery joined to a table
 # execute: false
+#schema: {"t1": {"c": "int"}, "t2": {"d": "int"}}
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-WITH "_0" AS (
-  SELECT
-    "t1"."c" AS "c"
-  FROM "t1" AS "t1"
-)
 SELECT
-  *
+  "t1"."c" AS "c",
+  "t2"."d" AS "d"
 FROM (
-  "_0" AS "_0"
+  "t1" AS "t1"
     CROSS JOIN "t2" AS "t2"
 );
 
@@ -1036,23 +1062,16 @@ FROM (
       ON "x"."a" = "y"."b"
 );
 
-# title: select * from wrapped join of subqueries (unknown schema)
+# title: select * from wrapped join of subqueries
 # execute: false
+#schema: {"t1": {"c": "int"}, "t2": {"d": "int"}}
 SELECT * FROM ((SELECT * FROM t1) JOIN (SELECT * FROM t2));
-WITH "_0" AS (
-  SELECT
-    *
-  FROM "t1" AS "t1"
-), "_1" AS (
-  SELECT
-    *
-  FROM "t2" AS "t2"
-)
 SELECT
-  *
+  "t1"."c" AS "c",
+  "t2"."d" AS "d"
 FROM (
-  "_0" AS "_0"
-    CROSS JOIN "_1" AS "_1"
+  "t1" AS "t1"
+    CROSS JOIN "t2" AS "t2"
 );
 
 # title: select * from wrapped join of subqueries (known schema)
@@ -1131,6 +1150,7 @@ SELECT
 # title: complex query with derived tables and redundant parentheses
 # execute: false
 # dialect: snowflake
+#schema: {"sales": {"insert_ts": "timestamp", "event_name": "text"}}
 SELECT
   ("SUBQUERY_0"."KEY") AS "SUBQUERY_1_COL_0"
 FROM
@@ -1163,10 +1183,11 @@ SELECT
   "SALES"."EVENT_NAME" AS "SUBQUERY_1_COL_0"
 FROM "SALES" AS "SALES"
 WHERE
-  "SALES"."INSERT_TS" > '2023-08-07 21:03:35.590 -0700';
+  "SALES"."INSERT_TS" > CAST('2023-08-07 21:03:35.590 -0700' AS TIMESTAMP);
 
 # title: using join without select *
 # execute: false
+#schema: {"table1": {"cid": "int"}, "table2": {"cid": "int", "od": "int", "odi": "int"}}
 with
     alias1 as (select * from table1),
     alias2 as (select * from table2),
@@ -1204,6 +1225,7 @@ LEFT JOIN "alias3" AS "alias3"
 # title: CTE with EXPLODE cannot be merged
 # dialect: spark
 # execute: false
+#schema: {"fruits_table": {"name": "string", "fruits": "array<struct<`$id` string, value string>>"}}
 SELECT Name,
        FruitStruct.`$id`,
        FruitStruct.value
@@ -1249,6 +1271,7 @@ FROM `t` AS `t`;
 
 # title: top-level query is parenthesized
 # execute: false
+#schema: {"t": {"a": "int"}}
 WITH x AS (
   SELECT a FROM t
 )
@@ -1278,6 +1301,7 @@ LIMIT 10;
 
 # title: avoid producing DAG cycle when pushing down predicate to join
 # execute: false
+#schema: {"route": {"num": "int", "company": "text", "pos": "int", "stop": "int"}, "stops": {"id": "int", "name": "text"}}
 SELECT
   a.company,
   b.num
@@ -1291,12 +1315,12 @@ WHERE
 SELECT
   "a"."company" AS "company",
   "b"."num" AS "num"
-FROM "route" AS "a"("num", "company", "pos", "stop")
-JOIN "route" AS "b"("num", "company", "pos", "stop")
+FROM "route" AS "a"
+JOIN "route" AS "b"
   ON "a"."num" = "b"."num"
-JOIN "stops" AS "c"("id", "name")
+JOIN "stops" AS "c"
   ON "b"."stop" = "c"."id"
-JOIN "stops" AS "d"("id", "name")
+JOIN "stops" AS "d"
   ON "c"."id" = "d"."id"
   AND (
     "c"."name" = 'Craiglockhart' OR "d"."name" = 'Tollcross'
@@ -1305,6 +1329,7 @@ JOIN "stops" AS "d"("id", "name")
 # title: avoid dag cycles with unnesting subqueries
 # execute: false
 # dialect: snowflake
+#schema: {"ACCOUNTS": {"ACCOUNT_ID": "int", "NAME": "text"}, "CONTACTS": {"ACCOUNT_ID": "int", "EMAIL_DOMAIN": "text"}, "DOMAINS": {"DOMAIN": "text", "TYPE": "text"}}
 SELECT
   A.ACCOUNT_ID,
   A.NAME,
@@ -1343,6 +1368,7 @@ WHERE
 # title: decorrelate subquery and transpile ArrayAny correctly when generating spark
 # execute: false
 # dialect: spark
+#schema: {"catalog_sales": {"cs_order_number": "int", "cs_ext_ship_cost": "double", "cs_net_profit": "double", "cs_ship_date_sk": "int", "cs_ship_addr_sk": "int", "cs_call_center_sk": "int", "cs_warehouse_sk": "int"}, "catalog_returns": {"cr_order_number": "int"}, "date_dim": {"d_date": "date", "d_date_sk": "int"}, "customer_address": {"ca_address_sk": "int", "ca_state": "text"}, "call_center": {"cc_call_center_sk": "int", "cc_county": "text"}}
 SELECT
   COUNT(DISTINCT cs1.cs_order_number) AS `order count`,
   SUM(cs1.cs_ext_ship_cost) AS `total shipping cost`,
@@ -1372,14 +1398,14 @@ WHERE
 LIMIT 100;
 WITH `_u_0` AS (
   SELECT
-    `cs2`.`cs_order_number` AS `_u_1`,
-    COLLECT_LIST(`cs2`.`cs_warehouse_sk`) AS `_u_2`
+    `cs2`.`cs_order_number` AS `cs_order_number`,
+    COLLECT_LIST(`cs2`.`cs_warehouse_sk`) AS `_u_1`
   FROM `catalog_sales` AS `cs2`
   GROUP BY
     `cs2`.`cs_order_number`
-), `_u_3` AS (
+), `_u_2` AS (
   SELECT
-    `cr1`.`cr_order_number` AS `_u_4`
+    `cr1`.`cr_order_number` AS `cr_order_number`
   FROM `catalog_returns` AS `cr1`
   GROUP BY
     `cr1`.`cr_order_number`
@@ -1394,7 +1420,7 @@ JOIN `date_dim` AS `date_dim`
   AND `date_dim`.`d_date` <= (
     CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
   )
-  AND `date_dim`.`d_date` >= '2002-02-01'
+  AND `date_dim`.`d_date` >= CAST('2002-02-01' AS DATE)
 JOIN `customer_address` AS `customer_address`
   ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
   AND `customer_address`.`ca_state` = 'GA'
@@ -1408,21 +1434,22 @@ JOIN `call_center` AS `call_center`
     'Williamson County'
   )
 LEFT JOIN `_u_0` AS `_u_0`
-  ON `_u_0`.`_u_1` = `cs1`.`cs_order_number`
-LEFT JOIN `_u_3` AS `_u_3`
-  ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
+  ON `_u_0`.`cs_order_number` = `cs1`.`cs_order_number`
+LEFT JOIN `_u_2` AS `_u_2`
+  ON `_u_2`.`cr_order_number` = `cs1`.`cs_order_number`
 WHERE
-  `_u_3`.`_u_4` IS NULL
+  `_u_2`.`cr_order_number` IS NULL
   AND (
-    SIZE(`_u_0`.`_u_2`) = 0
-    OR SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
+    SIZE(`_u_0`.`_u_1`) = 0
+    OR SIZE(FILTER(`_u_0`.`_u_1`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
   )
-  AND NOT `_u_0`.`_u_1` IS NULL
+  AND NOT `_u_0`.`cs_order_number` IS NULL
 ORDER BY
   COUNT(DISTINCT `cs1`.`cs_order_number`)
 LIMIT 100;
 
 # execute: false
+#schema: {"event": {"priority": "text", "tagname": "text"}, "cascade": {"tag_input": "text", "tag_output": "text"}}
 SELECT
   *
 FROM event
@@ -1457,7 +1484,8 @@ WITH "_u_0" AS (
     "_u_0"."tagname"
 )
 SELECT
-  *
+  "event"."priority" AS "priority",
+  "event"."tagname" AS "tagname"
 FROM "event" AS "event"
 LEFT JOIN "_u_1" AS "_u_1"
   ON "_u_1"."tagname" = "event"."tagname"
@@ -1586,6 +1614,7 @@ CROSS JOIN LATERAL FLATTEN(input => "OBJ"."DATA") AS "F"("SEQ", "KEY", "PATH", "
 # title: array_agg within group over
 # dialect: snowflake
 # execute: false
+#schema: {"t": {"id": "int", "grp": "int"}}
 SELECT array_agg(id) WITHIN GROUP (ORDER BY id) OVER (PARTITION BY grp) FROM t;
 SELECT
   ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY

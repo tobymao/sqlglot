@@ -331,6 +331,7 @@ SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS 
 
 # title: Keep ORDER BY
 # execute: false
+#schema: {"t1": {"x": "int", "y": "int"}, "t2": {"a": "int", "b": "int"}}
 WITH t AS (SELECT t1.x AS x, t1.y AS y, t2.a AS a, t2.b AS b FROM t1 AS t1(x, y) CROSS JOIN t2 AS t2(a, b) ORDER BY t2.a) SELECT t.x AS x, t.y AS y, t.a AS a, t.b AS b FROM t AS t;
 SELECT t1.x AS x, t1.y AS y, t2.a AS a, t2.b AS b FROM t1 AS t1(x, y) CROSS JOIN t2 AS t2(a, b) ORDER BY t2.a;
 
@@ -412,10 +413,11 @@ LEFT JOIN i AS i
   ON x.a = i.a;
 WITH i AS (SELECT x.a AS a FROM y AS y JOIN x AS x ON y.b = x.b) SELECT x.a AS a FROM x AS x LEFT JOIN i AS i ON x.a = i.a;
 
-# title: Outer scope selects from wrapped table with a join (unknown schema)
+# title: Outer scope selects from wrapped table with a join
 # execute: false
+#schema: {"t1": {"c": "int"}, "t2": {"d": "int"}}
 WITH _q_0 AS (SELECT t1.c AS c FROM t1 AS t1) SELECT * FROM (_q_0 AS _q_0 CROSS JOIN t2 AS t2);
-WITH _q_0 AS (SELECT t1.c AS c FROM t1 AS t1) SELECT * FROM (_q_0 AS _q_0 CROSS JOIN t2 AS t2);
+SELECT t1.c AS c, t2.d AS d FROM (t1 AS t1 CROSS JOIN t2 AS t2);
 
 # title: Outer scope selects single column from wrapped table with a join
 WITH _q_0 AS (

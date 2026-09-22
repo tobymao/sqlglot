@@ -1676,12 +1676,15 @@ class TestExecutor(unittest.TestCase):
 
     def test_agg_order(self):
         plan = Plan(
-            optimize("""
+            optimize(
+                """
             SELECT
               AVG(bill_length_mm) AS avg_bill_length,
               AVG(bill_depth_mm) AS avg_bill_depth
             FROM penguins
-            """)
+            """,
+                schema={"penguins": {"bill_length_mm": "double", "bill_depth_mm": "double"}},
+            )
         )
 
         assert [agg.alias for agg in plan.root.aggregations] == [

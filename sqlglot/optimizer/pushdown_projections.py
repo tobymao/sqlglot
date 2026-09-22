@@ -288,7 +288,6 @@ def _remove_unused_selections(
     star = False
     is_agg = False
 
-    # names are already dialect normalized
     named_windows = {
         window.name: window
         for window in expression.args.get("windows") or []

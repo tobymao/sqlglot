@@ -2,19 +2,14 @@ from sqlglot import exp
 from sqlglot.optimizer.scope import find_all_in_scope
 
 
-def _agg_func_is_windowed(agg_func: exp.AggFunc) -> bool:
-    from sqlglot.expressions.query import Window
-
+def _is_window_expression(agg_func: exp.AggFunc) -> bool:
     node: exp.Expr = agg_func
-    parent = node.parent
+    parent = agg_func.parent
 
     # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
-    while parent is not None and parent.this is node:
-        if isinstance(parent, Window):
+    while parent is not None and not isinstance(parent, exp.Func) and parent.this is node:
+        if isinstance(parent, exp.Window):
             return True
-
-        if isinstance(parent, exp.Func):
-            return False
 
         node, parent = parent, parent.parent
 
@@ -42,7 +37,7 @@ def _named_window_has_aggregate(
             break
 
         if any(
-            not _agg_func_is_windowed(aggregate)
+            not _is_window_expression(aggregate)
             for aggregate in find_all_in_scope(window, exp.AggFunc)
         ):
             has_aggregate = True
@@ -61,7 +56,7 @@ def projection_has_aggregate(
     named_windows: dict[str, exp.Window],
     cache: dict[str, bool],
 ) -> bool:
-    if any(not _agg_func_is_windowed(agg) for agg in find_all_in_scope(projection, exp.AggFunc)):
+    if any(not _is_window_expression(agg) for agg in find_all_in_scope(projection, exp.AggFunc)):
         return True
 
     # this projection's aggregate(s) are windowed (e.g. COUNT(*) OVER w), but the

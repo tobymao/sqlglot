@@ -27,7 +27,7 @@ def _named_window_has_aggregate(
     cache: dict[str, bool],
 ) -> bool:
     # the referenced window's PARTITION BY / ORDER BY may contain an un-windowed aggregate
-    # that forces the whole (ungrouped) scope to aggregate
+    # that forces the whole (ungrouped) scope to aggregate, e.g., WINDOW w AS (ORDER BY SUM(a)).
     visited: set[str] = set()
     has_aggregate = False
 

@@ -154,9 +154,9 @@ class MySQLGenerator(generator.Generator):
         exp.DateDiff: remove_ts_or_ds_to_date(
             lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
         ),
-        exp.DateAdd: remove_ts_or_ds_to_date(date_add_sql("ADD")),
+        exp.DateAdd: date_add_sql("ADD"),
         exp.DateStrToDate: datestrtodate_sql,
-        exp.DateSub: remove_ts_or_ds_to_date(date_add_sql("SUB")),
+        exp.DateSub: date_add_sql("SUB"),
         exp.DateTrunc: _date_trunc_sql,
         exp.Day: remove_ts_or_ds_to_date(),
         exp.DayOfMonth: remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),

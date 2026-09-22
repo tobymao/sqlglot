@@ -5474,3 +5474,8 @@ FROM subquery2""",
         result = parse_one("SELECT DOUBLE_IT(5)", dialect=MyDialect)
         self.assertIsInstance(result.expressions[0], exp.Mul)
         self.assertEqual(result.sql(), "SELECT 2 * 5")
+
+    def test_agg(self):
+        expression = self.validate_identity("SELECT AGG(m), AGG(m) AS x, AGG(t.m) FROM t")
+        self.assertIsInstance(expression.selects[0], exp.Agg)
+        self.assertEqual([s.output_name for s in expression.selects], ["m", "x", "m"])

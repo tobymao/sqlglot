@@ -5,6 +5,12 @@ from __future__ import annotations
 from sqlglot.expressions.core import Expression, Func, AggFunc, Binary
 
 
+class Agg(Expression, AggFunc):
+    @property
+    def output_name(self) -> str:
+        return self.this.name
+
+
 class AIAgg(Expression, AggFunc):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["AI_AGG"]

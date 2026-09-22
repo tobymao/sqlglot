@@ -493,9 +493,16 @@ class TestBigQuery(Validator):
             "SELECT y + 1 z FROM x GROUP BY y + 1",
             "SELECT y + 1 AS z FROM x GROUP BY y + 1",
         )
+        self.validate_identity("""SELECT JSON '"foo"' AS json_data""")
+        # An explicit PARSE_JSON(...) call must stay a function call, not become a typed literal:
+        # unlike JSON '...', it also accepts non-literal arguments and wide_number_mode/safe.
+        self.validate_identity("""SELECT PARSE_JSON('"foo"') AS json_data""")
+        self.validate_identity("SELECT PARSE_JSON(my_col)")
+        self.validate_identity("SELECT PARSE_JSON('{}', wide_number_mode => 'round')")
+        # model_params here must stay a literal or BigQuery rejects it with "Argument
+        # 'model_params' to function 'AI.GENERATE' must be a literal or query parameter".
         self.validate_identity(
-            """SELECT JSON '"foo"' AS json_data""",
-            """SELECT PARSE_JSON('"foo"') AS json_data""",
+            """SELECT AI.GENERATE(prompt, model_params => JSON '{"temperature": 0}')"""
         )
         self.validate_identity(
             "SELECT * FROM (SELECT a, b, c FROM test) PIVOT(SUM(b) d, COUNT(*) e FOR c IN ('x', 'y'))",
@@ -2010,7 +2017,7 @@ WHERE
         self.validate_all(
             """SELECT INT64(JSON_QUERY(JSON '{"key": 2000}', '$.key'))""",
             write={
-                "bigquery": """SELECT INT64(JSON_QUERY(PARSE_JSON('{"key": 2000}'), '$.key'))""",
+                "bigquery": """SELECT INT64(JSON_QUERY(JSON '{"key": 2000}', '$.key'))""",
                 "duckdb": """SELECT CAST(JSON('{"key": 2000}') -> '$.key' AS BIGINT)""",
                 "snowflake": """SELECT CAST(GET_PATH(PARSE_JSON('{"key": 2000}'), 'key') AS BIGINT)""",
             },
@@ -2763,7 +2770,7 @@ OPTIONS (
         )
         self.validate_identity(
             """SELECT JSON_OBJECT(['a', 'b'], [JSON '10', JSON '"foo"']) AS json_data""",
-            """SELECT JSON_OBJECT('a', PARSE_JSON('10'), 'b', PARSE_JSON('"foo"')) AS json_data""",
+            """SELECT JSON_OBJECT('a', JSON '10', 'b', JSON '"foo"') AS json_data""",
         )
         self.validate_identity(
             "SELECT JSON_OBJECT(['a', 'b'], [STRUCT(10 AS id, 'Red' AS color), STRUCT(20 AS id, 'Blue' AS color)]) AS json_data",

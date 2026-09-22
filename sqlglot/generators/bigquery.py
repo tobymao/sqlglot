@@ -228,6 +228,24 @@ def _levenshtein_sql(self: BigQueryGenerator, expression: exp.Levenshtein) -> st
     return self.func("EDIT_DISTANCE", expression.this, expression.expression, max_dist)
 
 
+def _parse_json_sql(self: BigQueryGenerator, expression: exp.ParseJSON) -> str:
+    # Round-trip BigQuery's `JSON '...'` typed-literal syntax back to itself instead of always
+    # canonicalizing it to PARSE_JSON(...). This matters beyond style: some BigQuery functions
+    # (e.g. AI.GENERATE's model_params) only accept a literal or query parameter there, and
+    # reject PARSE_JSON(...) even when its argument is itself a literal, since it's a function
+    # call rather than a literal.
+    # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#json_literals
+    #
+    # An explicit PARSE_JSON(...) call in the source SQL is left as a function call, since that's
+    # what the user asked for and JSON typed-literal syntax can't represent every case PARSE_JSON
+    # can (e.g. a non-literal argument, or the wide_number_mode/safe options).
+    this = expression.this
+    if expression.meta_get("is_type_literal") and isinstance(this, exp.Literal):
+        return f"JSON {self.sql(this)}"
+
+    return self.func("PARSE_JSON", this, expression.args.get("expression"))
+
+
 def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) -> str:
     name = expression.meta_get("name") or expression.sql_name()
     upper = name.upper()
@@ -369,6 +387,7 @@ class BigQueryGenerator(generator.Generator):
             e.this,
             e.args.get("form"),
         ),
+        exp.ParseJSON: _parse_json_sql,
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
         exp.RegexpExtract: lambda self, e: self.func(
             "REGEXP_EXTRACT",

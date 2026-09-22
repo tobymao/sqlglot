@@ -274,6 +274,23 @@ def build_array_remove(args: BuilderArgs, dialect: Dialect) -> exp.ArrayRemove:
     )
 
 
+def build_json_type_literal(
+    self: Parser, this: t.Optional[exp.Expr], _: exp.Expr
+) -> exp.ParseJSON:
+    """
+    Builds a ParseJSON from BigQuery/Snowflake-style `JSON '...'` typed-literal syntax.
+
+    The resulting node is tagged via `meta["is_type_literal"]` so that generators can tell it
+    apart from an explicit `PARSE_JSON(...)` function call in the source SQL. Some engines (e.g.
+    BigQuery's `AI.GENERATE`) only accept a literal for certain arguments and reject a
+    `PARSE_JSON(...)` call there, even when its argument is itself a literal, so a generator may
+    want to round-trip this case back to the typed-literal form instead of `PARSE_JSON(...)`.
+    """
+    node = self.expression(exp.ParseJSON(this=this))
+    node.meta["is_type_literal"] = True
+    return node
+
+
 def _resolve_dialect(dialect: DialectType) -> Dialect:
     from sqlglot.dialects.dialect import Dialect
 
@@ -1633,7 +1650,7 @@ class Parser:
     SHOW_PARSERS: t.ClassVar[dict[str, t.Callable]] = {}
 
     TYPE_LITERAL_PARSERS: t.ClassVar = {
-        exp.DType.JSON: lambda self, this, _: self.expression(exp.ParseJSON(this=this)),
+        exp.DType.JSON: build_json_type_literal,
     }
 
     TYPE_CONVERTERS: t.ClassVar[dict[exp.DType, t.Callable[[exp.DataType], exp.DataType]]] = {}

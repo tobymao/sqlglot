@@ -414,16 +414,9 @@ def _is_plain_group(group: exp.Group) -> bool:
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:
-    named_windows = {
-        window.name: window
-        for window in select.args.get("windows") or []
-        if isinstance(window, exp.Window)
-    }
-    cache: dict[str, bool] = {}
+    windows = select.args.get("windows")
 
-    return any(
-        projection_has_aggregate(projection, named_windows, cache) for projection in select.selects
-    )
+    return any(projection_has_aggregate(projection, windows) for projection in select.selects)
 
 
 def _other_operand(expression: object) -> exp.Expr | None:

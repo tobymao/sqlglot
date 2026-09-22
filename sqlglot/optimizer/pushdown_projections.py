@@ -264,14 +264,9 @@ def pushdown_projections(
     return expression
 
 
-def _remove_unused_selections(
-    scope: Scope,
-    parent_selections: set[str | object],
-    schema: Schema,
-    alias_count: int,
-    journal: Journal | None = None,
-) -> bool:
-    expression = t.cast(exp.Select, scope.expression)
+def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None) -> bool:
+    expression = scope.expression
+    windows = expression.args.get("windows")
     output_refs = _output_column_refs(expression, scoped=False)
 
     # Resolve GROUP BY ordinals before pruning
@@ -288,18 +283,11 @@ def _remove_unused_selections(
     star = False
     is_agg = False
 
-    named_windows = {
-        window.name: window
-        for window in expression.args.get("windows") or []
-        if isinstance(window, exp.Window)
-    }
-    named_window_aggregate_cache: dict[str, bool] = {}
-
     for selection in expression.selects:
         name = selection.alias_or_name
         referenced = name in parent_selections
         is_agg_selection = (implicit_group_by_all or not is_agg) and projection_has_aggregate(
-            selection, named_windows, named_window_aggregate_cache
+            selection, windows
         )
 
         if (
@@ -328,7 +316,7 @@ def _remove_unused_selections(
         resolver = Resolver(scope, schema)
         names = {s.alias_or_name for s in new_selections}
 
-        for name in sorted(t.cast("set[str]", parent_selections)):
+        for name in sorted(parent_selections):
             if name not in names:
                 new_selections.append(
                     alias(exp.column(name, table=resolver.get_table(name)), name, copy=False)

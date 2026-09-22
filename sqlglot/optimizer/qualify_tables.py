@@ -136,8 +136,29 @@ def qualify_tables(
                 else:
                     unwrapped.replace(subquery)
 
-        for derived_table in scope.derived_tables:
-            unnested = derived_table.unnest()
+        for derived_table in (*scope.ctes, *scope.derived_tables):
+            unnested = derived_table.this.unnest()
+            if (
+                isinstance(unnested, exp.SetOperation)
+                and derived_table.alias_column_names
+                and any(
+                    isinstance(node, exp.SetOperation) and node.args.get("by_name")
+                    for node in derived_table.this.walk(
+                        prune=lambda node: isinstance(node, exp.Select)
+                    )
+                )
+            ):
+                # Apply aliases after BY NAME has matched columns, including in nested unions.
+                derived_table.set(
+                    "this",
+                    exp.select("*").from_(
+                        derived_table.this.subquery(next_alias_name(), copy=False), copy=False
+                    ),
+                )
+
+            if isinstance(derived_table, exp.CTE):
+                continue
+
             if isinstance(unnested, exp.Table):
                 joins = unnested.args.get("joins")
                 unnested.set("joins", None)

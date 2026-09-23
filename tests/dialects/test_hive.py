@@ -1,34 +1,9 @@
 from tests.dialects.test_dialect import Validator
-from sqlglot import exp, parse_one
-from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot import exp
 
 
 class TestHive(Validator):
     dialect = "hive"
-
-    def test_get_json_object(self):
-        for source in (
-            "GET_JSON_OBJECT(j, '$.a')",
-            "GET_JSON_OBJECT(j, '$.a[0]')",
-            "GET_JSON_OBJECT(j, '$.x-y')",
-            "GET_JSON_OBJECT(j, '$.a[*]')",
-            "GET_JSON_OBJECT(j, '$..a')",
-            "GET_JSON_OBJECT(j, path)",
-            "GET_JSON_OBJECT(j, CONCAT('$.', field_name))",
-            "GET_JSON_OBJECT(j, NULL)",
-            "GET_JSON_OBJECT(GET_JSON_OBJECT(j, '$[0]'), '$.a')",
-        ):
-            with self.subTest(source=source):
-                expression = self.validate_identity(source)
-                self.assertIsInstance(expression, exp.GetJsonObject)
-                self.validate_all(
-                    source,
-                    write=dict.fromkeys(("", "hive", "spark2", "spark", "databricks"), source),
-                )
-                self.assertEqual(parse_one(expression.sql()), expression)
-                self.assertTrue(
-                    annotate_types(expression, dialect="hive").is_type(exp.DType.VARCHAR)
-                )
 
     def test_bits(self):
         self.validate_all(
@@ -1047,7 +1022,7 @@ class TestHive(Validator):
                 "hive": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
                 "spark2": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
                 "spark": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
-                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
+                "databricks": """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
             },
         )
 

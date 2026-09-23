@@ -328,6 +328,7 @@ EXPRESSION_METADATA = {
             exp.CodePointsToString,
             exp.Format,
             exp.Host,
+            exp.GetJsonObject,
             exp.JSONExtractScalar,
             exp.JSONType,
             exp.LaxString,

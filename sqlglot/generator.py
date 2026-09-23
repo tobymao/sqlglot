@@ -3816,17 +3816,8 @@ class Generator:
         )
 
     def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
-        from sqlglot.dialects.dialect import Dialect
-
-        if type(self.dialect) is Dialect:
-            return self.function_fallback_sql(expression)
-
-        # Preserve the historical best-effort translation for other dialects.
         return self.sql(
-            exp.JSONExtractScalar(
-                this=expression.this,
-                expression=self.dialect.to_json_path(expression.expression),
-            )
+            exp.JSONExtractScalar(this=expression.this, expression=expression.expression)
         )
 
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:

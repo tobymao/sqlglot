@@ -302,7 +302,6 @@ class HiveGenerator(generator.Generator):
         exp.ILike: no_ilike_sql,
         exp.IntDiv: lambda self, e: self.binary(e, "DIV"),
         exp.IsNan: rename_func("ISNAN"),
-        exp.GetJsonObject: rename_func("GET_JSON_OBJECT"),
         exp.JSONExtract: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
         exp.JSONExtractScalar: lambda self, e: self.func("GET_JSON_OBJECT", e.this, e.expression),
         exp.JSONFormat: rename_func("TO_JSON"),

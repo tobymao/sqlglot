@@ -86,7 +86,6 @@ class Hive(Dialect):
         VAR_TOKENS = {
             *jsonpath.JSONPathTokenizer.VAR_TOKENS,
             TokenType.DASH,
-            TokenType.COLON,
         }
 
     class Tokenizer(tokens.Tokenizer):

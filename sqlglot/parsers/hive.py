@@ -23,6 +23,15 @@ def build_with_ignore_nulls(
     return _parse
 
 
+def _build_get_json_object(args: list, dialect: Dialect) -> exp.GetJsonObject:
+    path = seq_get(args, 1)
+    return exp.GetJsonObject(
+        this=seq_get(args, 0),
+        expression=dialect.to_json_path(path),
+        original_path=path.name if path and path.is_string else None,
+    )
+
+
 def _build_to_date(args: list, dialect: Dialect) -> exp.TsOrDsToDate:
     expr = build_formatted_time(exp.TsOrDsToDate)(args, dialect)
     expr.set("safe", True)
@@ -96,7 +105,7 @@ class HiveParser(parser.Parser):
         "FIRST": build_with_ignore_nulls(exp.First),
         "FIRST_VALUE": build_with_ignore_nulls(exp.FirstValue),
         "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, default=True),
-        "GET_JSON_OBJECT": exp.GetJsonObject.from_arg_list,
+        "GET_JSON_OBJECT": _build_get_json_object,
         "LAST": build_with_ignore_nulls(exp.Last),
         "LAST_VALUE": build_with_ignore_nulls(exp.LastValue),
         "MAP": parser.build_var_map,

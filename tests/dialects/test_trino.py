@@ -28,6 +28,7 @@ class TestTrino(Validator):
         for path, target_path in (
             ("$", "strict $"),
             ("$.items[0]", 'strict $."items"[0]'),
+            ("$.a:b", 'strict $."a:b"'),
             ("$.a::b", 'strict $."a::b"'),
             ("$.a.b:", 'strict $."a"."b:"'),
             ("$.items[0].value", 'strict $."items"[0]."value"'),
@@ -47,6 +48,32 @@ class TestTrino(Validator):
         )
         self.validate_identity("JSON_EXTRACT_SCALAR(j, '$.a')")
         self.validate_identity("JSON_EXTRACT(j, '$.a')")
+
+    def test_get_json_object_other_targets(self):
+        for source in ("hive", "spark2", "spark", "databricks"):
+            with self.subTest(source=source):
+                expression = parse_one("GET_JSON_OBJECT(j, '$.x-y')", read=source)
+                self.assertIsInstance(expression.expression, exp.JSONPath)
+                for target, expected in (
+                    ("databricks", """GET_JSON_OBJECT(j, '$["x-y"]')"""),
+                    ("spark", "GET_JSON_OBJECT(j, '$.x-y')"),
+                    ("presto", """JSON_EXTRACT_SCALAR(j, '$["x-y"]')"""),
+                    ("", """JSON_EXTRACT_SCALAR(j, '$["x-y"]')"""),
+                ):
+                    with self.subTest(target=target):
+                        self.assertEqual(expression.sql(target), expected)
+
+                for function in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR"):
+                    self.assertEqual(
+                        parse_one(f"{function}(j, '$.a:b')", read=source).sql("trino"),
+                        f"{function}(j, '$.a.b')",
+                    )
+                self.assertEqual(
+                    parse_one("CAST(GET_JSON_OBJECT(j, '$.a') AS ARRAY<STRING>)", read=source).sql(
+                        "snowflake"
+                    ),
+                    "CAST(JSON_EXTRACT_PATH_TEXT(j, 'a') AS ARRAY(VARCHAR))",
+                )
 
     def test_concat_ws(self):
         self.validate_identity("SELECT CONCAT_WS('-', ARRAY['a', NULL, 'b'])")

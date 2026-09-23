@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sqlglot.dialects.hive import Hive
 from sqlglot.dialects.presto import Presto
 from sqlglot.generators.trino import TrinoGenerator
 from sqlglot.parsers.trino import TrinoParser
@@ -10,6 +11,9 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
     CONCAT_WS_COALESCE = True
+
+    class GetJsonObjectTokenizer(Hive.JSONPathTokenizer):
+        VAR_TOKENS = {*Hive.JSONPathTokenizer.VAR_TOKENS, TokenType.COLON}
 
     class Tokenizer(Presto.Tokenizer):
         KEYWORDS = {

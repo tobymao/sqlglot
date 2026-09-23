@@ -26,6 +26,7 @@ EXPRESSION_METADATA = {
             exp.AddMonths,
             exp.CurrentDatabase,
             exp.Hex,
+            exp.GetJsonObject,
             exp.JSONExtractScalar,
             exp.JSONFormat,
             exp.NextDay,

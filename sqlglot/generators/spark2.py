@@ -221,7 +221,7 @@ class Spark2Generator(HiveGenerator):
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         arg = expression.this
         is_json_extract = isinstance(
-            arg, (exp.GetJsonObject, exp.JSONExtract, exp.JSONExtractScalar)
+            arg, (exp.JSONExtract, exp.JSONExtractScalar)
         ) and not arg.args.get("variant_extract")
 
         # We can't use a non-nested type (eg. STRING) as a schema

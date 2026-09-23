@@ -230,7 +230,6 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Dayname,
             exp.DateToDateStr,
             exp.DPipe,
-            exp.GetJsonObject,
             exp.GroupConcat,
             exp.Initcap,
             exp.Lower,

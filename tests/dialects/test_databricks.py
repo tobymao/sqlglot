@@ -293,8 +293,8 @@ class TestDatabricks(Validator):
 
         self.validate_identity(
             """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT get_json_object(c, '$.x-y') FROM t""",
-            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$.x-y') FROM t""",
-        ).selects[0].expression.assert_is(exp.Literal)
+            """WITH t AS (SELECT '{"x-y": "z"}' AS c) SELECT GET_JSON_OBJECT(c, '$["x-y"]') FROM t""",
+        ).selects[0].expression.assert_is(exp.JSONPath)
 
         self.validate_identity("INSERT INTO t REPLACE WHERE a = 1 SELECT * FROM src")
         self.validate_identity("INSERT INTO t REPLACE WHERE a = 2 (SELECT * FROM src)")

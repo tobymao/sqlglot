@@ -21,6 +21,7 @@ class StarRocks(MySQL):
             "LARGEINT": TokenType.INT128,
             "REFRESH": TokenType.REFRESH,
         }
+        KEYWORDS.pop("IGNORE")
 
     Parser = StarRocksParser
 

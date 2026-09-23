@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.optimizer.scope import walk_in_scope
+from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
 
 WINDOW_HAS_AGGREGATE = "window_has_aggregate"
 
@@ -14,7 +14,7 @@ def projection_has_aggregate(
 
     for node in walk_in_scope(projection):
         if isinstance(node, exp.Window):
-            target: object = node.this
+            target = node.this
 
             # parens, FILTER and IGNORE NULLS wrap that function without changing which one it is
             while isinstance(target, exp.Expr) and not isinstance(target, exp.Func):
@@ -57,7 +57,7 @@ def _named_window_has_aggregate(
             break
         visited_windows.append(window)
 
-        if projection_has_aggregate(window):
+        if any(find_all_in_scope(window, exp.AggFunc)):
             has_aggregate = True
             break
 

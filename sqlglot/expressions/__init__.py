@@ -54,4 +54,4 @@ EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name
 SET_RETURNING_FUNCTIONS = (Anonymous, UDTF, ExplodingGenerateSeries)
 
 # UDTFs that return multiple columns; a single AS _col_0 alias would cause UDTF_ALIAS_NUMBER_MISMATCH.
-MULTI_OUTPUT_UDTF = (Posexplode, PosexplodeOuter, Inline, Stack)
+MULTI_OUTPUT_UDTF = (Posexplode, PosexplodeOuter, Explode, Inline, Stack)

@@ -1097,11 +1097,14 @@ def _expand_stars(
 
             # Similarly, if a derived table source (i.e. Scope in a Select) has unnamed projections
             # (e.g. multi-column UDTFs) then leave it unexpanded too.
+            # Only bare (unaliased) expressions count — an Alias with an empty string name (e.g.
+            # from a PIVOT over ANY columns) is not a multi-column UDTF and must not block expansion.
             if (
                 isinstance(source, Scope)
                 and isinstance(source.expression, exp.Select)
                 and any(
-                    not s.output_name and not isinstance(s, exp.QueryTransform)
+                    not s.output_name
+                    and not isinstance(s, (exp.QueryTransform, exp.Alias, exp.Aliases))
                     for s in source.expression.selects
                 )
             ):

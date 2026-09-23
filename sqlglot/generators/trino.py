@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_table
-from sqlglot.dialects.hive import Hive
 
 
 class TrinoGenerator(PrestoGenerator):
@@ -56,7 +55,7 @@ class TrinoGenerator(PrestoGenerator):
     def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
         from sqlglot.dialects.trino import Trino
 
-        dialect = Hive()
+        dialect = Trino()
         dialect.jsonpath_tokenizer_class = Trino.GetJsonObjectTokenizer
         original_path = expression.args.get("original_path")
         path = dialect.to_json_path(

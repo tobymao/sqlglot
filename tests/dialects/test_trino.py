@@ -28,6 +28,7 @@ class TestTrino(Validator):
         for path, target_path in (
             ("$", "strict $"),
             ("$.items[0]", 'strict $."items"[0]'),
+            ("$.123key", 'strict $."123key"'),
             ("$.a:b", 'strict $."a:b"'),
             ("$.a::b", 'strict $."a::b"'),
             ("$.a.b:", 'strict $."a"."b:"'),

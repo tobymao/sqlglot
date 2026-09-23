@@ -1095,6 +1095,18 @@ def _expand_stars(
             if not columns or "*" in columns or len(columns) != len(set(columns)):
                 return
 
+            # Similarly, if a derived table source (i.e. Scope in a Select) has unnamed projections
+            # (e.g. multi-column UDTFs) then leave it unexpanded too.
+            if (
+                isinstance(source, Scope)
+                and isinstance(source.expression, exp.Select)
+                and any(
+                    not s.output_name and not isinstance(s, exp.QueryTransform)
+                    for s in source.expression.selects
+                )
+            ):
+                return
+
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
             renamed_columns = rename_columns.get(table_id, {})

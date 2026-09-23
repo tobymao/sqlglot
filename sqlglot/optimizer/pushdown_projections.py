@@ -264,7 +264,7 @@ def pushdown_projections(
     return expression
 
 
-def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None) -> bool:
+def _remove_unused_selections(scope, parent_selections, schema, alias_count, journal=None):
     expression = scope.expression
     windows = expression.args.get("windows")
     output_refs = _output_column_refs(expression, scoped=False)

@@ -9,6 +9,19 @@ class CheckJson(Expression, Func):
     arg_types = {"this": True}
 
 
+class GetJsonObject(Expression, Binary, Func):
+    """Extract JSON as text, unquoting strings but retaining objects and arrays.
+
+    Keep the original path for native Hive/Spark generation. Trino uses JSON_QUERY
+    with OMIT QUOTES for parsed literal paths, preserving objects and arrays.
+    JSON null is filtered to retain the historical SQL NULL result, including at
+    the root or an array index where Spark instead returns the text 'null'. Other
+    targets and unparsed/dynamic paths retain the scalar-extraction translation.
+    """
+
+    _sql_names = ["GET_JSON_OBJECT"]
+
+
 class JSONArray(Expression, Func):
     arg_types = {
         "expressions": False,

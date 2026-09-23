@@ -3815,6 +3815,20 @@ class Generator:
             f"{self.func('MATCH', *expressions)} AGAINST({self.sql(expression, 'this')}{modifier})"
         )
 
+    def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
+        from sqlglot.dialects.dialect import Dialect
+
+        if type(self.dialect) is Dialect:
+            return self.function_fallback_sql(expression)
+
+        # Preserve the historical best-effort translation for other dialects.
+        return self.sql(
+            exp.JSONExtractScalar(
+                this=expression.this,
+                expression=self.dialect.to_json_path(expression.expression),
+            )
+        )
+
     def jsonkeyvalue_sql(self, expression: exp.JSONKeyValue) -> str:
         return f"{self.sql(expression, 'this')}{self.JSON_KEY_VALUE_PAIR_SEP} {self.sql(expression, 'expression')}"
 

@@ -96,9 +96,7 @@ class HiveParser(parser.Parser):
         "FIRST": build_with_ignore_nulls(exp.First),
         "FIRST_VALUE": build_with_ignore_nulls(exp.FirstValue),
         "FROM_UNIXTIME": build_formatted_time(exp.UnixToStr, default=True),
-        "GET_JSON_OBJECT": lambda args, dialect: exp.JSONExtractScalar(
-            this=seq_get(args, 0), expression=dialect.to_json_path(seq_get(args, 1))
-        ),
+        "GET_JSON_OBJECT": exp.GetJsonObject.from_arg_list,
         "LAST": build_with_ignore_nulls(exp.Last),
         "LAST_VALUE": build_with_ignore_nulls(exp.LastValue),
         "MAP": parser.build_var_map,

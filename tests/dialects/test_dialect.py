@@ -1871,6 +1871,10 @@ class TestDialect(Validator):
             },
         )
         self.validate_all(
+            "GET_JSON_OBJECT(x, '$.y[0].z')",
+            read={"spark": 'GET_JSON_OBJECT(x, "$.y[0].z")'},
+        )
+        self.validate_all(
             "JSON_EXTRACT_SCALAR(x, '$.y')",
             read={
                 "bigquery": "JSON_EXTRACT_SCALAR(x, '$.y')",
@@ -1879,7 +1883,6 @@ class TestDialect(Validator):
                 "postgres": "x ->> 'y'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
-                "spark": "GET_JSON_OBJECT(x, '$.y')",
                 "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "sqlite": "x ->> '$.y'",
             },
@@ -1933,7 +1936,6 @@ class TestDialect(Validator):
                 "duckdb": "x ->> '$.y[0].z'",
                 "presto": "JSON_EXTRACT_SCALAR(x, '$.y[0].z')",
                 "snowflake": "JSON_EXTRACT_PATH_TEXT(x, 'y[0].z')",
-                "spark": 'GET_JSON_OBJECT(x, "$.y[0].z")',
                 "sqlite": "x ->> '$.y[0].z'",
             },
             write={

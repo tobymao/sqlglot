@@ -9,6 +9,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
 )
 from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_table
+from sqlglot.dialects.hive import Hive
 
 
 class TrinoGenerator(PrestoGenerator):
@@ -51,6 +52,27 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathRoot,
         exp.JSONPathSubscript,
     }
+
+    def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
+        path = Hive().to_json_path(expression.expression)
+        if not isinstance(path, exp.JSONPath):
+            return super().getjsonobject_sql(expression)
+
+        path_sql = "strict " + "".join(
+            '."' + part.name.replace('"', '""') + '"'
+            if isinstance(part, exp.JSONPathKey) and isinstance(part.this, str)
+            else self.json_path_part(part)
+            for part in path.expressions
+        )
+        path_sql += " ? (@ != null)"
+        return self.sql(
+            exp.JSONExtract(
+                this=expression.this,
+                expression=exp.Literal.string(path_sql),
+                json_query=True,
+                quote=exp.JSONExtractQuote(option=exp.var("OMIT")),
+            )
+        )
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         if expression.args.get("flatten"):

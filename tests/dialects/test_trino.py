@@ -7,6 +7,47 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_get_json_object(self):
+        for value in (
+            '{"a":{"credit":1.5}}',
+            '{"a":[1,2]}',
+            '{"a":"x"}',
+            '{"a":1}',
+            '{"a":true}',
+            '{"a":null}',
+            '{"a":"null"}',
+            "{}",
+            "not json",
+        ):
+            with self.subTest(value=value):
+                self.validate_all(
+                    f"JSON_QUERY('{value}', 'strict $.\"a\" ? (@ != null)' OMIT QUOTES)",
+                    read={"spark": f"GET_JSON_OBJECT('{value}', '$.a')"},
+                )
+
+        for path, target_path in (
+            ("$", "strict $"),
+            ("$.items[0]", 'strict $."items"[0]'),
+            ("$.a::b", 'strict $."a::b"'),
+            ("$.a.b:", 'strict $."a"."b:"'),
+            ("$.items[0].value", 'strict $."items"[0]."value"'),
+            ("$['a.b']", 'strict $."a.b"'),
+        ):
+            with self.subTest(path=path):
+                expression = exp.GetJsonObject(
+                    this=exp.column("j"), expression=exp.Literal.string(path)
+                )
+                self.validate_all(
+                    f"JSON_QUERY(j, '{target_path} ? (@ != null)' OMIT QUOTES)",
+                    read={"spark": expression.sql("spark")},
+                )
+
+        self.validate_all(
+            "JSON_EXTRACT_SCALAR(j, path)", read={"spark": "GET_JSON_OBJECT(j, path)"}
+        )
+        self.validate_identity("JSON_EXTRACT_SCALAR(j, '$.a')")
+        self.validate_identity("JSON_EXTRACT(j, '$.a')")
+
     def test_concat_ws(self):
         self.validate_identity("SELECT CONCAT_WS('-', ARRAY['a', NULL, 'b'])")
         self.validate_identity("SELECT CONCAT_WS('-', CAST(NULL AS ARRAY(VARCHAR)))")

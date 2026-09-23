@@ -1314,7 +1314,8 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
         elif (
             not isinstance(selection, (exp.Alias, exp.Aliases))
             and not selection.is_star
-            and not isinstance(selection, exp.SET_RETURNING_FUNCTIONS)
+            and not isinstance(selection, exp.MULTI_OUTPUT_UDTF)
+            and not (scope.is_subquery and isinstance(selection, exp.UDTF))
         ):
             unwrapped = selection.unnest()
             if isinstance(unwrapped, exp.Column):

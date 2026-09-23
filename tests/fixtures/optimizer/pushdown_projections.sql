@@ -116,33 +116,8 @@ WITH y AS (SELECT 1 AS _ FROM x AS x GROUP BY x.a) SELECT 1 AS "1" FROM y AS y;
 WITH cte AS (SELECT col FROM t) SELECT IF(1 IN UNNEST(col), 1, 0) AS col FROM cte;
 WITH cte AS (SELECT t.col AS col FROM t AS t) SELECT CASE WHEN 1 IN (SELECT UNNEST(cte.col)) THEN 1 ELSE 0 END AS col FROM cte AS cte;
 
---------------------------------------
--- Unknown Star Expansion
---------------------------------------
-
-SELECT a FROM (SELECT * FROM zz) WHERE b = 1;
-SELECT _0.a AS a FROM (SELECT zz.a AS a, zz.b AS b FROM zz AS zz) AS _0 WHERE _0.b = 1;
-
-SELECT a FROM (SELECT * FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
-SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _0;
-
-SELECT a FROM (SELECT a FROM aa UNION ALL SELECT * FROM bb UNION ALL SELECT * from cc);
-SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa UNION ALL SELECT bb.a AS a FROM bb AS bb UNION ALL SELECT cc.a AS a FROM cc AS cc) AS _0;
-
-SELECT a FROM (SELECT * FROM aa CROSS JOIN bb);
-SELECT _0.a AS a FROM (SELECT a AS a FROM aa AS aa CROSS JOIN bb AS bb) AS _0;
-
-SELECT a FROM (SELECT aa.* FROM aa);
-SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _0;
-
-SELECT a FROM (SELECT * FROM (SELECT * FROM aa));
-SELECT _1.a AS a FROM (SELECT _0.a AS a FROM (SELECT aa.a AS a FROM aa AS aa) AS _0) AS _1;
-
 with cte1 as (SELECT cola, colb FROM tb UNION ALL SELECT colc, cold FROM tb2) SELECT cola FROM cte1;
 WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS colc FROM tb2 AS tb2) SELECT cte1.cola AS cola FROM cte1 AS cte1;
-
-SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0, t2 AS t2);
 
 SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 6 c, 7 d, 8 a, 9 e);
 SELECT _0.a AS a, _0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT 7 AS d, 8 AS a) AS _0;

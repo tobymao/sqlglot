@@ -38,6 +38,16 @@ class TestJsonpath(unittest.TestCase):
                 with self.assertRaises(ParseError):
                     parse(selector)
 
+    def test_hive_colon_keys(self):
+        for dialect in ("hive", "spark2", "spark", "databricks"):
+            for path, quoted in (
+                ("$.a:b", '$["a:b"]'),
+                ("$.a::b", '$["a::b"]'),
+                ("$.a:b[0].c:", '$["a:b"][0]["c:"]'),
+            ):
+                with self.subTest(dialect=dialect, path=path):
+                    self.assertEqual(parse(path, dialect=dialect), parse(quoted))
+
     def test_identity(self):
         for selector, expected in (
             ("$.select", "$.select"),

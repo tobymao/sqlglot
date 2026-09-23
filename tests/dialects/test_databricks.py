@@ -307,6 +307,16 @@ class TestDatabricks(Validator):
 
     # https://docs.databricks.com/sql/language-manual/functions/colonsign.html
     def test_json(self):
+        self.validate_all(
+            """GET_JSON_OBJECT(j, '$["a::b"]')""",
+            read={
+                "hive": "GET_JSON_OBJECT(j, '$.a::b')",
+                "spark": "GET_JSON_OBJECT(j, '$.a::b')",
+            },
+        )
+        self.validate_identity("SELECT j:a::INT", "SELECT CAST(j:a AS INT)")
+        self.validate_identity("SELECT j:a:b")
+
         self.validate_identity("SELECT c1:price, c1:price.foo, c1:price.bar[1]")
         self.validate_identity("SELECT TRY_CAST(c1:price AS ARRAY<VARIANT>)")
         self.validate_identity("""SELECT TRY_CAST(c1:["foo bar"]["baz qux"] AS ARRAY<VARIANT>)""")

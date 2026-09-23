@@ -47,6 +47,10 @@ class TestTrino(Validator):
         self.validate_all(
             "JSON_EXTRACT_SCALAR(j, path)", read={"spark": "GET_JSON_OBJECT(j, path)"}
         )
+        self.validate_all(
+            """JSON_QUERY(j, 'strict $."a.b" ? (@ != null)' OMIT QUOTES)""",
+            read={"databricks": """GET_JSON_OBJECT(j, '$["a.b"]')"""},
+        )
         self.validate_identity("JSON_EXTRACT_SCALAR(j, '$.a')")
         self.validate_identity("JSON_EXTRACT(j, '$.a')")
 
@@ -67,7 +71,7 @@ class TestTrino(Validator):
                 for function in ("JSON_EXTRACT", "JSON_EXTRACT_SCALAR"):
                     self.assertEqual(
                         parse_one(f"{function}(j, '$.a:b')", read=source).sql("trino"),
-                        f"{function}(j, '$.a.b')",
+                        f"""{function}(j, '$["a:b"]')""",
                     )
                 self.assertEqual(
                     parse_one("CAST(GET_JSON_OBJECT(j, '$.a') AS ARRAY<STRING>)", read=source).sql(

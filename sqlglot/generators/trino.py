@@ -53,16 +53,7 @@ class TrinoGenerator(PrestoGenerator):
     }
 
     def getjsonobject_sql(self, expression: exp.GetJsonObject) -> str:
-        from sqlglot.dialects.trino import Trino
-
-        dialect = Trino()
-        dialect.jsonpath_tokenizer_class = Trino.GetJsonObjectTokenizer
-        original_path = expression.args.get("original_path")
-        path = dialect.to_json_path(
-            exp.Literal.string(original_path)
-            if original_path is not None
-            else expression.expression
-        )
+        path = expression.expression
         if not isinstance(path, exp.JSONPath):
             return super().getjsonobject_sql(expression)
 

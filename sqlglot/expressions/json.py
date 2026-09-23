@@ -148,13 +148,9 @@ class JSONExtractScalar(Expression, Binary, Func):
 
 
 class GetJsonObject(JSONExtractScalar):
-    """Extract JSON as text, unquoting strings but retaining objects and arrays.
+    """Extract JSON as text, unquoting strings but retaining objects and arrays."""
 
-    Keep the source dialect's parsed path for existing target translations, and
-    the original literal path for Trino's GET_JSON_OBJECT-specific translation.
-    """
-
-    arg_types = {"this": True, "expression": True, "original_path": False}
+    arg_types = {"this": True, "expression": True}
     _sql_names = ["GET_JSON_OBJECT"]
     is_var_len_args = False
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.optimizer.scope import walk_in_scope
 

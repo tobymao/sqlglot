@@ -656,9 +656,13 @@ class TSQLGenerator(generator.Generator):
         return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
     def alter_sql(self, expression: exp.Alter) -> str:
-        action = seq_get(expression.args.get("actions") or [], 0)
-        if isinstance(action, exp.AlterRename):
-            return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
+        actions = expression.args.get("actions") or []
+        if any(isinstance(action, exp.AlterRename) for action in actions):
+            if len(actions) == 1:
+                return f"EXEC sp_rename '{self.sql(expression.this)}', '{actions[0].this.name}'"
+            self.unsupported(
+                "T-SQL renames with sp_rename, which can't be combined with other actions."
+            )
         return super().alter_sql(expression)
 
     def drop_sql(self, expression: exp.Drop) -> str:

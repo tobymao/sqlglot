@@ -1413,6 +1413,10 @@ FROM json_data, field_ids""",
             "ALTER TABLE t ALTER COLUMN b SET STATISTICS 100", check_command_warning=True
         )
         self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN b SET STATISTICS 100",
+            check_command_warning=True,
+        )
+        self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
             "CREATE TABLE t (col INT[3])",
         )
@@ -1572,6 +1576,44 @@ FROM json_data, field_ids""",
                 "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
                 read="postgres",
             )
+
+    def test_alter_mixed_actions(self):
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d"
+        )
+        add_a, drop_b, add_c, drop_d = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        drop_b.assert_is(exp.Drop)
+        add_c.assert_is(exp.ColumnDef)
+        drop_d.assert_is(exp.Drop)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT c UNIQUE (a), DROP CONSTRAINT d"
+        )
+        add_constraint, drop_constraint = alter.args["actions"]
+        add_constraint.assert_is(exp.AddConstraint)
+        drop_constraint.assert_is(exp.Drop)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1, ADD COLUMN d INT"
+        )
+        alter_c, add_d = alter.args["actions"]
+        alter_c.assert_is(exp.AlterColumn)
+        add_d.assert_is(exp.ColumnDef)
+
+        alter = self.validate_identity("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN if")
+        add_a, drop = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "if")
+
+        self.validate_identity(
+            "ALTER TABLE t DROP COLUMN b, ADD index INT", check_command_warning=True
+        ).assert_is(exp.Command)
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN b INT, DROP partition", check_command_warning=True
+        ).assert_is(exp.Command)
 
     def test_called_on_null_input_malformed(self):
         # Regression test for a zero-progress parse loop: a malformed property suffix used to

@@ -97,6 +97,16 @@ WITH y AS (SELECT 1 AS _ FROM x AS x) SELECT 1 AS "1" FROM y AS y;
 WITH y AS (SELECT SUM(a) FROM x) SELECT 1 FROM y;
 WITH y AS (SELECT MAX(1) AS _ FROM x AS x) SELECT 1 AS "1" FROM y AS y;
 
+# title: an inherited window partition can force aggregation
+# dialect: postgres
+SELECT COUNT(*) FROM (SELECT RANK() OVER w2 AS r FROM x WINDOW w1 AS (PARTITION BY SUM(b)), w2 AS (w1 ORDER BY 1)) AS t;
+SELECT COUNT(*) AS _col_0 FROM (SELECT MAX(1) AS _ FROM x AS x WINDOW w1 AS (PARTITION BY SUM(x.b)), w2 AS (w1 ORDER BY 1)) AS t;
+
+# title: extending a named window can introduce aggregation
+# dialect: postgres
+SELECT COUNT(*) FROM (SELECT RANK() OVER w2 AS r FROM x WINDOW w1 AS (PARTITION BY 1), w2 AS (w1 ORDER BY SUM(b))) AS t;
+SELECT COUNT(*) AS _col_0 FROM (SELECT MAX(1) AS _ FROM x AS x WINDOW w1 AS (PARTITION BY 1), w2 AS (w1 ORDER BY SUM(x.b))) AS t;
+
 WITH y AS (SELECT a FROM x GROUP BY a) SELECT 1 FROM y;
 WITH y AS (SELECT 1 AS _ FROM x AS x GROUP BY x.a) SELECT 1 AS "1" FROM y AS y;
 

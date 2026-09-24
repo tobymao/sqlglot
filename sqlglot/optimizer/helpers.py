@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
+from sqlglot.optimizer.scope import find_in_scope, walk_in_scope
 
 WINDOW_HAS_AGGREGATE = "window_has_aggregate"
 
@@ -11,6 +11,7 @@ def projection_has_aggregate(
     windows: list[exp.Window] | None = None,
 ) -> bool:
     windowed_aggregates: set[int] = set()
+    remaining_windows = {window.name: window for window in windows or []}
 
     for node in walk_in_scope(projection):
         if isinstance(node, exp.Window):
@@ -23,47 +24,26 @@ def projection_has_aggregate(
             if isinstance(target, exp.AggFunc):
                 windowed_aggregates.add(id(target))
 
-            if (
-                node.alias
-                and windows is not None
-                and _named_window_has_aggregate(node.alias, windows)
-            ):
-                return True
+            # WINDOW w AS (...)
+            #        ^ this is the node's alias
+            name = node.alias
+
+            # The loop below handles named window inheritance, e.g.:
+            # WINDOW w1 AS (PARTITION BY SUM(x)), w2 AS (w1 ORDER BY 1), w3 AS (w2)
+            while name:
+                window = remaining_windows.pop(name, None)
+                if window is None:
+                    break
+
+                has_aggregate = window.meta_get(WINDOW_HAS_AGGREGATE)
+                if has_aggregate is None:
+                    has_aggregate = bool(find_in_scope(window, exp.AggFunc))
+                    window.meta[WINDOW_HAS_AGGREGATE] = has_aggregate
+                if has_aggregate:
+                    return True
+
+                name = window.alias
         elif isinstance(node, exp.AggFunc) and id(node) not in windowed_aggregates:
             return True
 
     return False
-
-
-def _named_window_has_aggregate(
-    name: str,
-    windows: list[exp.Window],
-) -> bool:
-    # the referenced window's PARTITION BY / ORDER BY may contain an un-windowed aggregate
-    # that forces the whole (ungrouped) scope to aggregate, e.g., WINDOW w AS (ORDER BY SUM(a)).
-    visited_names: set[str] = set()
-    visited_windows: list[exp.Window] = []
-    has_aggregate = False
-
-    while name and name not in visited_names:
-        visited_names.add(name)
-        window = next((window for window in windows if window.name == name), None)
-        if window is None:
-            break
-
-        cached = window.meta_get(WINDOW_HAS_AGGREGATE)
-        if cached is not None:
-            has_aggregate = cached
-            break
-        visited_windows.append(window)
-
-        if any(find_all_in_scope(window, exp.AggFunc)):
-            has_aggregate = True
-            break
-
-        name = window.alias
-
-    for window in visited_windows:
-        window.meta[WINDOW_HAS_AGGREGATE] = has_aggregate
-
-    return has_aggregate

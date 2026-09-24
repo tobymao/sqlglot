@@ -1116,7 +1116,11 @@ def _expand_stars(
             if isinstance(source_expression, exp.Select):
                 quoted_columns = set()
                 for s in source_expression.selects:
-                    if not s.output_name and not isinstance(s, exp.QueryTransform):
+                    # exp.Alias/Aliases with empty name are valid (e.g. PIVOT ANY columns,
+                    # explicitly-aliased multi-col UDTFs); only bare unnamed expressions block expansion.
+                    if not s.output_name and not isinstance(
+                        s, (exp.QueryTransform, exp.Alias, exp.Aliases)
+                    ):
                         return
                     if _is_output_identifier_quoted(s):
                         quoted_columns.add(s.output_name)

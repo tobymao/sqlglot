@@ -851,7 +851,7 @@ class TestPresto(Validator):
         self.validate_all(
             """JSON '"foo"'""",
             write={
-                "bigquery": """PARSE_JSON('"foo"')""",
+                "bigquery": """JSON '"foo"'""",
                 "postgres": """CAST('"foo"' AS JSON)""",
                 "presto": """JSON_PARSE('"foo"')""",
                 "snowflake": """PARSE_JSON('"foo"')""",
@@ -1136,7 +1136,7 @@ class TestPresto(Validator):
         self.validate_all(
             """JSON_FORMAT(JSON '"x"')""",
             write={
-                "bigquery": """TO_JSON_STRING(PARSE_JSON('"x"'))""",
+                "bigquery": """TO_JSON_STRING(JSON '"x"')""",
                 "duckdb": """CAST(TO_JSON(JSON('"x"')) AS TEXT)""",
                 "presto": """JSON_FORMAT(JSON_PARSE('"x"'))""",
                 "spark": """REGEXP_EXTRACT(TO_JSON(FROM_JSON('["x"]', SCHEMA_OF_JSON('["x"]'))), '^.(.*).$', 1)""",

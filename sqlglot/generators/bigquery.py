@@ -713,6 +713,11 @@ class BigQueryGenerator(generator.Generator):
 
         return self.func("CONTAINS_SUBSTR", this, expr, expression.args.get("json_scope"))
 
+    def parsejson_sql(self, expression: exp.ParseJSON) -> str:
+        if expression.args.get("is_literal"):
+            return f"JSON {self.sql(expression, 'this')}"
+        return super().parsejson_sql(expression)
+
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         this = expression.this
 

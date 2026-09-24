@@ -1633,7 +1633,9 @@ class Parser:
     SHOW_PARSERS: t.ClassVar[dict[str, t.Callable]] = {}
 
     TYPE_LITERAL_PARSERS: t.ClassVar = {
-        exp.DType.JSON: lambda self, this, _: self.expression(exp.ParseJSON(this=this)),
+        exp.DType.JSON: lambda self, this, _: self.expression(
+            exp.ParseJSON(this=this, is_literal=True)
+        ),
     }
 
     TYPE_CONVERTERS: t.ClassVar[dict[exp.DType, t.Callable[[exp.DataType], exp.DataType]]] = {}

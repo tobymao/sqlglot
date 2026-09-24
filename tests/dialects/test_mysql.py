@@ -350,6 +350,73 @@ class TestMySQL(Validator):
             "CREATE FUNCTION f() RETURNS TEXT LANGUAGE SQL SQL SECURITY INVOKER AS SELECT 'abc'",
         )
 
+    def test_alter_mixed_actions(self):
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d"
+        )
+        add_a, drop_b, add_c, drop_d = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        drop_b.assert_is(exp.Drop)
+        add_c.assert_is(exp.ColumnDef)
+        drop_d.assert_is(exp.Drop)
+
+        alter = self.validate_identity("ALTER TABLE t ADD INDEX `i` (`a`), DROP INDEX `j`")
+        add_index, drop_index = alter.args["actions"]
+        add_index.assert_is(exp.AddConstraint)
+        drop_index.assert_is(exp.Drop)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT c UNIQUE (a), DROP CONSTRAINT d"
+        )
+        add_constraint, drop_constraint = alter.args["actions"]
+        add_constraint.assert_is(exp.AddConstraint)
+        drop_constraint.assert_is(exp.Drop)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1, ADD COLUMN d INT"
+        )
+        alter_c, add_d = alter.args["actions"]
+        alter_c.assert_is(exp.AlterColumn)
+        add_d.assert_is(exp.ColumnDef)
+
+        alter = self.validate_identity("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT")
+        comment, add_c = alter.args["actions"]
+        comment.assert_is(exp.SchemaCommentProperty)
+        add_c.assert_is(exp.ColumnDef)
+
+        alter = self.validate_identity("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000")
+        (comment,) = alter.args["actions"]
+        (auto_increment,) = alter.args["options"]
+        comment.assert_is(exp.SchemaCommentProperty)
+        auto_increment.assert_is(exp.AutoIncrementProperty)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'"
+        )
+        (modify_c,) = alter.args["actions"]
+        (comment,) = alter.args["options"]
+        modify_c.assert_is(exp.ModifyColumn)
+        comment.assert_is(exp.SchemaCommentProperty)
+
+        alter = self.validate_identity("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'")
+        (change_c,) = alter.args["actions"]
+        (comment,) = alter.args["options"]
+        change_c.assert_is(exp.ModifyColumn)
+        comment.assert_is(exp.SchemaCommentProperty)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5"
+        )
+        (add_c,) = alter.args["actions"]
+        comment, auto_increment = alter.args["options"]
+        add_c.assert_is(exp.ColumnDef)
+        comment.assert_is(exp.SchemaCommentProperty)
+        auto_increment.assert_is(exp.AutoIncrementProperty)
+
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, DROP b, ADD COLUMN c INT", check_command_warning=True
+        ).assert_is(exp.Command)
+
     def test_column_key_constraint(self):
         self.validate_identity(
             "CREATE TABLE t1 (id INT KEY AUTO_INCREMENT)",

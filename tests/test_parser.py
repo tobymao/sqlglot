@@ -1101,6 +1101,12 @@ class TestParser(unittest.TestCase):
                 with self.subTest(f"Testing query '{sql}' for dialect {dialect}"):
                     self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
 
+    def test_alter_mixed_actions(self):
+        with self.assertLogs(parser_logger):
+            alter = parse_one("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b")
+
+        self.assertIsInstance(alter, exp.Command)
+
     def test_distinct_from(self):
         self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)
 

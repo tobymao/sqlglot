@@ -20,7 +20,7 @@ from sqlglot.tokens import TokenType
 
 
 def _transform_create(expression: exp.Expr) -> exp.Expr:
-    """Move primary key to a column and enforce auto_increment on primary keys."""
+    """Move primary key to a column and place auto_increment after it."""
     schema = expression.this
 
     if isinstance(expression, exp.Create) and isinstance(schema, exp.Schema):
@@ -52,12 +52,9 @@ def _transform_create(expression: exp.Expr) -> exp.Expr:
                     auto_increment = constraint
                     auto_increment_index = i
 
-            if auto_increment is not None and (
-                primary_key_index == -1 or auto_increment_index < primary_key_index
-            ):
+            if auto_increment is not None and 0 <= auto_increment_index < primary_key_index:
                 column.constraints.remove(auto_increment)
-                if primary_key_index != -1:
-                    column.constraints.insert(primary_key_index, auto_increment)
+                column.constraints.insert(primary_key_index, auto_increment)
 
     return expression
 
@@ -205,6 +202,16 @@ class SQLiteGenerator(generator.Generator):
     }
 
     LIMIT_FETCH = "LIMIT"
+
+    def autoincrementcolumnconstraint_sql(
+        self, expression: exp.AutoIncrementColumnConstraint
+    ) -> str:
+        column = expression.find_ancestor(exp.ColumnDef)
+        if column and column.find(exp.PrimaryKeyColumnConstraint):
+            return super().autoincrementcolumnconstraint_sql(expression)
+
+        self.unsupported("SQLite AUTOINCREMENT requires an INTEGER PRIMARY KEY")
+        return ""
 
     def insert_sql(self, expression: exp.Insert) -> str:
         if expression.args.get("ignore"):

@@ -1194,6 +1194,26 @@ SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y A
 SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
 SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
 
+# title: unqualified column in ANTI JOIN's ON clause resolves to that join's own table, not a later join sharing the same column name
+SELECT w.d FROM w ANTI JOIN y ON b > 0 JOIN z ON TRUE;
+SELECT w.d AS d FROM w AS w ANTI JOIN y AS y ON y.b > 0 JOIN z AS z ON TRUE;
+
+# title: unqualified column in SEMI JOIN's ON clause resolves to that join's own table, not a later join sharing the same column name
+SELECT w.d FROM w SEMI JOIN y ON b > 0 JOIN z ON TRUE;
+SELECT w.d AS d FROM w AS w SEMI JOIN y AS y ON y.b > 0 JOIN z AS z ON TRUE;
+
+# title: self-join -- ANTI JOIN's own alias wins over a later normal join of the same table
+SELECT w.d FROM w ANTI JOIN x AS x1 ON a > 0 JOIN x AS x2 ON TRUE;
+SELECT w.d AS d FROM w AS w ANTI JOIN x AS x1 ON x1.a > 0 JOIN x AS x2 ON TRUE;
+
+# title: derived table (subquery) as the ANTI JOIN's own source -- unqualified column resolves into the derived table, not a later derived source sharing the same column name
+SELECT w.d FROM w ANTI JOIN (SELECT a FROM x) AS m ON a > 0 JOIN (SELECT a FROM x) AS n ON TRUE;
+SELECT w.d AS d FROM w AS w ANTI JOIN (SELECT x.a AS a FROM x AS x) AS m ON m.a > 0 JOIN (SELECT x.a AS a FROM x AS x) AS n ON TRUE;
+
+# title: unqualified column in a normal JOIN's ON clause that comes after a SEMI JOIN still sees that later join's own table, not the earlier SEMI JOIN's now out-of-scope table
+SELECT x.a FROM x SEMI JOIN y ON x.b = y.b JOIN z ON c > 0;
+SELECT x.a AS a FROM x AS x SEMI JOIN y AS y ON x.b = y.b JOIN z AS z ON z.c > 0;
+
 # title: chained UNPIVOT, source is a CTE
 # dialect: duckdb
 WITH t AS (SELECT 1 AS id, 100 AS jan, 200 AS feb, 7 AS north, 8 AS south) SELECT * FROM t UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south));

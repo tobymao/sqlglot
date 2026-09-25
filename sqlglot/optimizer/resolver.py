@@ -43,22 +43,26 @@ class Resolver:
         """
         column_name = column if isinstance(column, str) else column.name
 
-        table_name = self._get_table_name_from_sources(column_name)
+        join_context = (
+            self._get_column_join_context(column) if isinstance(column, exp.Column) else None
+        )
+        is_semi_or_anti_join = join_context is not None and join_context.is_semi_or_anti_join
 
-        if not table_name and isinstance(column, exp.Column):
+        # A SEMI/ANTI join's own table is excluded from the global lookup below, so skip it here
+        table_name = (
+            None if is_semi_or_anti_join else self._get_table_name_from_sources(column_name)
+        )
+
+        if not table_name and join_context is not None:
             # Fall-back case: If we couldn't find the `table_name` from ALL of the sources,
             # attempt to disambiguate the column based on other characteristics e.g if this column is in a join condition,
             # we may be able to disambiguate based on the source order.
-            if join_context := self._get_column_join_context(column):
-                # In this case, the return value will be the join that _may_ be able to disambiguate the column
-                # and we can use the source columns available at that join to get the table name
-                # catch OptimizeError if column is still ambiguous and try to resolve with schema inference below
-                try:
-                    table_name = self._get_table_name_from_sources(
-                        column_name, self._get_available_source_columns(join_context)
-                    )
-                except OptimizeError:
-                    pass
+            try:
+                table_name = self._get_table_name_from_sources(
+                    column_name, self._get_available_source_columns(join_context)
+                )
+            except OptimizeError:
+                pass
 
         if not table_name and self._infer_schema:
             sources_without_schema = tuple(

@@ -271,6 +271,29 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(expr.args.get("limit"))
         self.assertEqual(expr.sql(dialect="clickhouse"), single_union)
 
+    def test_set_operation_precedence(self):
+        for operator, expected_type in (("UNION", exp.Union), ("EXCEPT", exp.Except)):
+            with self.subTest(operator=operator):
+                expression = parse_one(f"SELECT 1 {operator} SELECT 2 INTERSECT SELECT 3")
+                self.assertIsInstance(expression, expected_type)
+                self.assertIsInstance(expression.expression, exp.Intersect)
+
+        expression = parse_one("SELECT 1 UNION SELECT 2 UNION SELECT 3").assert_is(exp.Union)
+        self.assertIsInstance(expression.this, exp.Union)
+
+        expression = parse_one("SELECT 1 INTERSECT SELECT 2 UNION SELECT 3").assert_is(exp.Union)
+        self.assertIsInstance(expression.this, exp.Intersect)
+
+        expression = parse_one("(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3").assert_is(
+            exp.Intersect
+        )
+        self.assertIsInstance(expression.this, exp.Subquery)
+        self.assertIsInstance(expression.this.this, exp.Union)
+
+        expression = parse_one("SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1 LIMIT 1")
+        self.assertIsInstance(expression.args.get("order"), exp.Order)
+        self.assertIsInstance(expression.args.get("limit"), exp.Limit)
+
     def test_mod_precedence(self):
         expression = parse_one("SELECT 10 % 3 / 2").expressions[0]
 

@@ -453,18 +453,20 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
                     item.replace(exp.Literal.number(group_ordinal))
                     continue
 
+            # Skip the expensive deep copy for the last reference since the inner query
+            # is about to be removed, so we can move the expression directly
+            replacement = expression.copy() if i < last else expression
+
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).
             if isinstance(parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
-                expression = exp.paren(expression, copy=False)
+                replacement = exp.paren(replacement, copy=False)
 
             # make sure we do not accidentally change the name of the column
             if isinstance(parent, exp.Select) and column.name != expression.name:
-                expression = exp.alias_(expression, column.name)
+                replacement = exp.alias_(replacement, column.name, copy=False)
 
-            # Skip the expensive deep copy for the last reference since the inner query
-            # is about to be removed, so we can move the expression directly
-            column.replace(expression.copy() if i < last else expression)
+            column.replace(replacement)
 
 
 def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:

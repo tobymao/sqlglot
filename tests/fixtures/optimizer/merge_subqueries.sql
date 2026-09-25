@@ -622,3 +622,7 @@ SELECT q.rn AS rn FROM (SELECT ROW_NUMBER() OVER (ORDER BY x.a) AS rn FROM x AS 
 # title: A CTE merge that reintroduces a name colliding with the outer join still renames correctly
 WITH c AS (SELECT q.a FROM (SELECT x.a FROM x AS x) AS q) SELECT c.a FROM c JOIN x ON c.a = x.a;
 SELECT x_2.a AS a FROM x AS x_2 JOIN x AS x ON x_2.a = x.a;
+
+# title: Each reference that needs wrapping gets a single pair of parentheses
+WITH q AS (SELECT a + b AS c FROM x) SELECT q.c * 1 AS c1, q.c * 2 AS c2, q.c * 3 AS c3 FROM q;
+SELECT (x.a + x.b) * 1 AS c1, (x.a + x.b) * 2 AS c2, (x.a + x.b) * 3 AS c3 FROM x AS x;

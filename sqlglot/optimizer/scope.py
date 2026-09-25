@@ -204,13 +204,15 @@ class Scope:
             if node is self.expression or not isinstance(node, COLLECTIBLE_TYPES):
                 # DFS visits Comprehension before its child Columns, so IDs are ready in time.
                 if isinstance(node, exp.Comprehension):
-                    bound_name = node.expression.name
-                    if type(node.expression) is exp.Column:
-                        comprehension_var_ids.add(id(node.expression))
+                    bound_names: set[str] = set()
+                    for var in (node.expression, node.args.get("position")):
+                        if var and type(var) is exp.Column:
+                            comprehension_var_ids.add(id(var))
+                            bound_names.add(var.name)
                     for subtree in (node.this, node.args.get("condition")):
                         if subtree:
                             for col in subtree.walk():
-                                if type(col) is exp.Column and col.name == bound_name:
+                                if type(col) is exp.Column and col.name in bound_names:
                                     comprehension_var_ids.add(id(col))
                 continue
 

@@ -847,6 +847,28 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT []")
 
+    def test_global_join(self):
+        for kind in ("", "LEFT ", "INNER ", "LEFT ANY ", "FULL OUTER "):
+            for condition in (
+                "a.id = b.id",
+                "a.id = b.id AND b.id > 0",
+                "a.id = b.id AND b.id GLOBAL IN (SELECT 1)",
+                "a.id = b.id AND b.id GLOBAL NOT IN (SELECT 2)",
+            ):
+                sql = (
+                    f"SELECT * FROM t AS a JOIN s AS b ON {condition} "
+                    f"GLOBAL {kind}JOIN u AS c ON a.id = c.id"
+                )
+                with self.subTest(sql=sql):
+                    self.validate_identity(sql)
+
+        self.validate_identity(
+            "SELECT * FROM t AS a JOIN s AS b ON a.id = b.id "
+            "GLOBAL ANY LEFT JOIN u AS c ON a.id = c.id",
+            "SELECT * FROM t AS a JOIN s AS b ON a.id = b.id "
+            "GLOBAL LEFT ANY JOIN u AS c ON a.id = c.id",
+        )
+
     def test_safe_div(self):
         # ClickHouse never returns NULL on division by zero: `/` follows IEEE 754
         # (`a / 0` yields inf/nan) and DECIMAL division raises, so the divisor must

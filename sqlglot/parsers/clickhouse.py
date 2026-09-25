@@ -633,13 +633,16 @@ class ClickHouseParser(parser.Parser):
 
         return bracket
 
-    def _parse_global_in(self, this: exp.Expr | None) -> exp.Not | exp.In:
+    def _parse_global_in(self, this: exp.Expr | None) -> exp.Not | exp.In | None:
+        index = self._index - 1
         is_negated = self._match(TokenType.NOT)
-        in_expr: exp.In | None = None
-        if self._match(TokenType.IN):
-            in_expr = self._parse_in(this)
-            in_expr.set("is_global", True)
-        return self.expression(exp.Not(this=in_expr)) if is_negated else t.cast(exp.In, in_expr)
+        if not self._match(TokenType.IN):
+            self._retreat(index)
+            return None
+
+        in_expr = self._parse_in(this)
+        in_expr.set("is_global", True)
+        return self.expression(exp.Not(this=in_expr)) if is_negated else in_expr
 
     def _parse_table(
         self,

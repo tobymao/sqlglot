@@ -1908,6 +1908,9 @@ class Parser:
     # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_RENAME_REQUIRES_COLUMN: t.ClassVar = True
 
+    # Whether dropping a column with an ALTER statement requires the presence of the COLUMN keyword
+    ALTER_DROP_REQUIRES_COLUMN: t.ClassVar = True
+
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
 
@@ -2406,13 +2409,13 @@ class Parser:
 
         return self._parse_query_modifiers(expression)
 
-    def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
+    def _parse_drop(self, exists: bool = False, kind: str | None = None) -> exp.Drop | exp.Command:
         start = self._prev
-        temporary = self._match(TokenType.TEMPORARY)
-        materialized = self._match_text_seq("MATERIALIZED")
-        iceberg = self._match_text_seq("ICEBERG")
+        temporary = not kind and self._match(TokenType.TEMPORARY)
+        materialized = not kind and self._match_text_seq("MATERIALIZED")
+        iceberg = not kind and self._match_text_seq("ICEBERG")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+        kind = kind or (self._prev.text.upper() if self._match_set(self.CREATABLES) else None)
         if not kind or (iceberg and kind and kind != "TABLE"):
             return self._parse_as_command(start)
 
@@ -9102,7 +9105,26 @@ class Parser:
         return self._parse_column_def_with_exists()
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
-        drop = self._parse_drop() if self._match(TokenType.DROP) else None
+        if not self._match(TokenType.DROP):
+            return None
+
+        kind = None
+        if not self.ALTER_DROP_REQUIRES_COLUMN:
+            offset = 2 if self._match_text_seq("IF", "EXISTS", advance=False) else 0
+            name = seq_get(self._tokens, self._index + offset)
+            after = seq_get(self._tokens, self._index + offset + 1)
+            if (
+                name
+                and name.token_type in self.ID_VAR_TOKENS
+                and (
+                    not after
+                    or after.token_type == TokenType.COMMA
+                    or after.text.upper() in ("CASCADE", "RESTRICT")
+                )
+            ):
+                kind = "COLUMN"
+
+        drop = self._parse_drop(kind=kind)
         if drop and not isinstance(drop, exp.Command):
             drop.set("kind", drop.args.get("kind", "COLUMN"))
         return drop

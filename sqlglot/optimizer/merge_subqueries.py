@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
@@ -14,7 +14,61 @@ if t.TYPE_CHECKING:
     FromOrJoin = t.Union[exp.From, exp.Join]
 
 
-def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
+class CopyBudget:
+    """
+    Merging copies an inner projection into every outer reference to it, so chained merges of
+    repeatedly referenced projections can grow the AST exponentially. The number of copied nodes
+    is capped per statement, relative to its size, and merges that would exceed the cap are skipped.
+    """
+
+    MAX_COPY_FACTOR = 8
+    """Smallest factor that changed no ordinary query among 1,121 real-world queries"""
+
+    MIN_COPY_BUDGET = 1000
+    """Spares small statements"""
+
+    def __init__(
+        self,
+        expression: exp.Expr,
+        max_copy_factor: int | None = MAX_COPY_FACTOR,
+        min_copy_budget: int = MIN_COPY_BUDGET,
+    ) -> None:
+        self.expression = expression
+        self.max_copy_factor = max_copy_factor
+        self.min_copy_budget = min_copy_budget
+        self.remaining: int | None = None
+
+    def consume(self, outer_scope: Scope, inner_scope: Scope, alias: str) -> bool:
+        """Charges the copies needed to merge `inner_scope` into `outer_scope`, if they fit."""
+        if self.max_copy_factor is None:
+            return True
+
+        if self.remaining is None:
+            # Sized on first use, which precedes any merge, so statements with nothing to merge skip it
+            size = sum(1 for _ in self.expression.walk())
+            self.remaining = max(self.max_copy_factor * size, self.min_copy_budget)
+
+        references = Counter(c.name for c in outer_scope.columns if c.table == alias)
+        copies = 0
+        for projection in inner_scope.expression.expressions:
+            # The last reference receives the projection itself rather than a copy
+            count = references.get(projection.alias_or_name, 0) - 1
+            if count > 0:
+                for _ in projection.unalias().walk():
+                    copies += count
+                    if copies > self.remaining:
+                        return False
+
+        self.remaining -= copies
+        return True
+
+
+def merge_subqueries(
+    expression: E,
+    leave_tables_isolated: bool = False,
+    max_copy_factor: int | None = CopyBudget.MAX_COPY_FACTOR,
+    min_copy_budget: int = CopyBudget.MIN_COPY_BUDGET,
+) -> E:
     """
     Rewrite sqlglot AST to merge derived tables into the outer query.
 
@@ -37,6 +91,8 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     Args:
         expression (sqlglot.Expr): expression to optimize
         leave_tables_isolated (bool):
+        max_copy_factor: see `CopyBudget.MAX_COPY_FACTOR`; `None` disables the copy budget.
+        min_copy_budget: see `CopyBudget.MIN_COPY_BUDGET`.
     Returns:
         sqlglot.Expr: optimized expression
     """
@@ -44,12 +100,20 @@ def merge_subqueries(expression: E, leave_tables_isolated: bool = False) -> E:
     # doesn't mutate the AST; if it does, the scopes it was given are no longer valid, so the
     # scope tree needs to be rebuilt before merge_derived_tables runs.
     scopes = traverse_scope(expression)
-    expression, merged_ctes = merge_ctes(expression, leave_tables_isolated, scopes=scopes)
+
+    copy_budget = CopyBudget(
+        expression, max_copy_factor=max_copy_factor, min_copy_budget=min_copy_budget
+    )
+    expression, merged_ctes = merge_ctes(
+        expression, leave_tables_isolated, scopes=scopes, copy_budget=copy_budget
+    )
 
     if merged_ctes:
         scopes = traverse_scope(expression)
 
-    expression = merge_derived_tables(expression, leave_tables_isolated, scopes=scopes)
+    expression = merge_derived_tables(
+        expression, leave_tables_isolated, scopes=scopes, copy_budget=copy_budget
+    )
     return expression
 
 
@@ -79,7 +143,10 @@ def merge_ctes(
     expression: E,
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
+    copy_budget: CopyBudget | None = None,
 ) -> tuple[E, bool]:
+    copy_budget = copy_budget or CopyBudget(expression)
+
     # All places where we select from CTEs.
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
     cte_selections = defaultdict(list)
@@ -100,8 +167,10 @@ def merge_ctes(
         from_or_join = table.find_ancestor(exp.From, exp.Join)
         if not isinstance(from_or_join, (exp.From, exp.Join)):
             continue
-        if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
-            alias = table.alias_or_name
+        alias = table.alias_or_name
+        if _mergeable(
+            outer_scope, inner_scope, leave_tables_isolated, from_or_join
+        ) and copy_budget.consume(outer_scope, inner_scope, alias):
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(outer_scope, inner_scope, table, alias)
             _merge_expressions(outer_scope, inner_scope, alias)
@@ -119,7 +188,10 @@ def merge_derived_tables(
     expression: E,
     leave_tables_isolated: bool = False,
     scopes: list[Scope] | None = None,
+    copy_budget: CopyBudget | None = None,
 ) -> E:
+    copy_budget = copy_budget or CopyBudget(expression)
+
     for outer_scope in traverse_scope(expression) if scopes is None else scopes:
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
@@ -129,7 +201,9 @@ def merge_derived_tables(
             inner_scope = outer_scope.sources[alias]
             if not isinstance(inner_scope, Scope):
                 continue
-            if _mergeable(outer_scope, inner_scope, leave_tables_isolated, from_or_join):
+            if _mergeable(
+                outer_scope, inner_scope, leave_tables_isolated, from_or_join
+            ) and copy_budget.consume(outer_scope, inner_scope, alias):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)

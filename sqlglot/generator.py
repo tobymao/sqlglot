@@ -4942,14 +4942,19 @@ class Generator:
     def tonumber_sql(self, expression: exp.ToNumber) -> str:
         if not self.SUPPORTS_TO_NUMBER:
             self.unsupported("Unsupported TO_NUMBER function")
-            return self.sql(exp.cast(expression.this, exp.DType.DOUBLE))
+            return self._tonumber_cast_sql(expression)
 
         fmt = expression.args.get("format")
         if not fmt:
             self.unsupported("Conversion format is required for TO_NUMBER")
-            return self.sql(exp.cast(expression.this, exp.DType.DOUBLE))
+            return self._tonumber_cast_sql(expression)
 
         return self.func("TO_NUMBER", expression.this, fmt)
+
+    def _tonumber_cast_sql(self, expression: exp.ToNumber) -> str:
+        if expression.args.get("safe"):
+            return self.sql(exp.TryCast(this=expression.this, to=exp.DataType.build("DOUBLE")))
+        return self.sql(exp.cast(expression.this, exp.DType.DOUBLE))
 
     def dictproperty_sql(self, expression: exp.DictProperty) -> str:
         this = self.sql(expression, "this")

@@ -660,6 +660,23 @@ class TestSnowflake(Validator):
         self.assertEqual(ast.args.get("scale").name, "0")
         self.assertTrue(ast.args.get("safe"))
 
+        self.validate_all(
+            "TRY_TO_NUMBER(x)",
+            write={
+                "bigquery": "SAFE_CAST(x AS FLOAT64)",
+                "presto": "TRY_CAST(x AS DOUBLE)",
+                "tsql": "TRY_CAST(x AS FLOAT)",
+            },
+        )
+        self.validate_all(
+            "TO_NUMBER(x)",
+            write={
+                "bigquery": "CAST(x AS FLOAT64)",
+                "presto": "CAST(x AS DOUBLE)",
+                "tsql": "CAST(x AS FLOAT)",
+            },
+        )
+
         self.validate_identity("TO_NUMERIC('123.45')", "TO_NUMBER('123.45')")
         self.validate_identity("TO_NUMERIC('123.45', '999.99')", "TO_NUMBER('123.45', '999.99')")
         self.validate_identity(

@@ -2577,11 +2577,10 @@ class DuckDBGenerator(generator.Generator):
         scale = expression.args.get("scale")
 
         if not fmt and precision and scale:
-            return self.sql(
-                exp.cast(
-                    expression.this, f"DECIMAL({precision.name}, {scale.name})", dialect="duckdb"
-                )
-            )
+            to = exp.DataType.build(f"DECIMAL({precision.name}, {scale.name})", dialect="duckdb")
+            if expression.args.get("safe"):
+                return self.sql(exp.TryCast(this=expression.this, to=to))
+            return self.sql(exp.cast(expression.this, to, dialect="duckdb"))
 
         return super().tonumber_sql(expression)
 

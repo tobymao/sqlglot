@@ -39,6 +39,7 @@ class SQLiteParser(parser.Parser):
     ALTER_RENAME_REQUIRES_COLUMN = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True
     ADD_JOIN_ON_TRUE = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,

@@ -120,7 +120,8 @@ class TeradataParser(parser.Parser):
             exp.Update(
                 this=self._parse_table(alias_tokens=self.UPDATE_ALIAS_TOKENS),
                 from_=self._parse_from(joins=True),
-                expressions=self._match(TokenType.SET) and self._parse_csv(self._parse_equality),
+                expressions=self._match(TokenType.SET)
+                and self._parse_csv(self._parse_update_assignment),
                 where=self._parse_where(),
             )
         )

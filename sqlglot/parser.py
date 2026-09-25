@@ -3740,7 +3740,7 @@ class Parser:
         action = self._parse_var_from_options(self.CONFLICT_ACTIONS)
         if self._prev.token_type == TokenType.UPDATE:
             self._match(TokenType.SET)
-            expressions = self._parse_csv(self._parse_equality)
+            expressions = self._parse_csv(self._parse_update_assignment)
         else:
             expressions = None
 
@@ -3869,6 +3869,15 @@ class Parser:
             )
         )
 
+    def _parse_update_assignment(self) -> exp.Expr | None:
+        this = self._parse_comparison()
+        if self._match(TokenType.EQ):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.EQ(this=this, expression=self._parse_disjunction()), comments=comments
+            )
+        return this
+
     def _parse_update(self) -> exp.Update:
         hint = self._parse_hint()
         kwargs: dict[str, object] = {
@@ -3877,7 +3886,7 @@ class Parser:
         }
         while self._curr:
             if self._match(TokenType.SET):
-                kwargs["expressions"] = self._parse_csv(self._parse_equality)
+                kwargs["expressions"] = self._parse_csv(self._parse_update_assignment)
             elif self._match(TokenType.RETURNING, advance=False):
                 kwargs["returning"] = self._parse_returning()
             elif self._match(TokenType.FROM, advance=False):
@@ -9583,7 +9592,7 @@ class Parser:
                     then = self.expression(
                         exp.Update(
                             expressions=self._match(TokenType.SET)
-                            and self._parse_csv(self._parse_equality),
+                            and self._parse_csv(self._parse_update_assignment),
                             where=self._parse_where(),
                         )
                     )

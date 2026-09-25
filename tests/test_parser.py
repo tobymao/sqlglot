@@ -569,6 +569,21 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.this.comments, ["comment3"])
         self.assertEqual(expression.args.get("with_").comments, ["comment1.1", "comment1.2"])
 
+    def test_update_assignment(self):
+        for sql in (
+            "UPDATE t SET a = t.b = t.c OR t.d AND t.e",
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = t.b = t.c OR t.d AND t.e",
+            "INSERT INTO t (id) VALUES (1) ON CONFLICT(id) DO UPDATE SET a = t.b = t.c OR t.d AND t.e",
+            "INSERT INTO t (id) VALUES (1) ON DUPLICATE KEY UPDATE a = t.b = t.c OR t.d AND t.e",
+        ):
+            with self.subTest(sql=sql):
+                update = parse_one(sql).find(exp.Update, exp.OnConflict)
+                self.assertIsNotNone(update)
+                assignment = update.expressions[0]
+                self.assertIsInstance(assignment, exp.EQ)
+                self.assertEqual(assignment.this, exp.column("a"))
+                self.assertEqual(assignment.expression, parse_one("t.b = t.c OR t.d AND t.e"))
+
     def test_comments_update(self):
         expression = parse_one(
             """

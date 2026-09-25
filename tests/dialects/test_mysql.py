@@ -133,6 +133,9 @@ class TestMySQL(Validator):
             "INSERT INTO x VALUES (1, 'a', 2.0) ON DUPLICATE KEY UPDATE x.id = 1"
         )
         self.validate_identity(
+            "INSERT INTO t (id, a) VALUES (1, FALSE) ON DUPLICATE KEY UPDATE a = x OR y, b = x AND y"
+        )
+        self.validate_identity(
             "INSERT INTO `test_table` SET `test_col_1` = 123, `test_col_2` = '456'",
             "INSERT INTO `test_table` (`test_col_1`, `test_col_2`) VALUES (123, '456')",
         )

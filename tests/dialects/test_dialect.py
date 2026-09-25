@@ -3130,7 +3130,27 @@ SELECT
             write={"sqlite": "BEGIN IMMEDIATE TRANSACTION"},
         )
 
+    def test_update(self):
+        for sql in (
+            "UPDATE t SET a = x OR y",
+            "UPDATE t SET a = b AND c WHERE id = 1",
+            "UPDATE t SET a = x OR y AND z, b = x = y WHERE id = 1",
+            "UPDATE t SET flag = COALESCE(id IN (SELECT id FROM s), FALSE) OR COALESCE(sid IN (SELECT sid FROM u), FALSE)",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    sql,
+                    read={dialect: sql for dialect in ("postgres", "duckdb", "trino", "mysql")},
+                    write={dialect: sql for dialect in ("postgres", "duckdb", "trino", "mysql")},
+                )
+
     def test_merge(self):
+        sql = "MERGE INTO target AS t USING source AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.x OR s.y, b = s.x AND s.y WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id)"
+        self.validate_all(
+            sql,
+            read={dialect: sql for dialect in ("postgres", "duckdb", "trino")},
+            write={dialect: sql for dialect in ("postgres", "duckdb", "trino")},
+        )
         self.validate_all(
             """
             MERGE INTO target USING source ON target.id = source.id

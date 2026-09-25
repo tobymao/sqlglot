@@ -1271,6 +1271,7 @@ FROM json_data, field_ids""",
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING a, b")
         self.validate_identity("INSERT INTO x VALUES (1, 'a', 2.0) RETURNING *")
         self.validate_identity("UPDATE tbl_name SET foo = 123 RETURNING a")
+        self.validate_identity("UPDATE t SET (b, c) = (3, 4), xs[1] = 7")
         self.validate_identity("CREATE TABLE cities_partdef PARTITION OF cities DEFAULT")
         self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
         self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
@@ -1293,6 +1294,9 @@ FROM json_data, field_ids""",
         )
         self.validate_identity(
             "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
+        )
+        self.validate_identity(
+            "INSERT INTO t (id, a) VALUES (1, FALSE) ON CONFLICT(id) DO UPDATE SET a = t.x OR t.y, b = t.x AND t.y WHERE t.id = 1 RETURNING a"
         )
         self.validate_identity(
             "INSERT INTO tbl (a, b) VALUES (1, 'x') ON CONFLICT(a, LOWER(b)) DO UPDATE SET b = excluded.b"

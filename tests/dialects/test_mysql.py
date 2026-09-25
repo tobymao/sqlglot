@@ -377,6 +377,140 @@ class TestMySQL(Validator):
             "CREATE TABLE t1 (id INT PRIMARY KEY)",
         )
 
+    def test_alter_drop_column(self):
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP b", "ALTER TABLE t DROP COLUMN b"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "b")
+
+        drop_b, drop_c = self.validate_identity(
+            "ALTER TABLE t DROP b, DROP c", "ALTER TABLE t DROP COLUMN b, DROP COLUMN c"
+        ).args["actions"]
+        drop_b.assert_is(exp.Drop)
+        drop_c.assert_is(exp.Drop)
+        self.assertEqual(drop_b.args["kind"], "COLUMN")
+        self.assertEqual(drop_b.args["tables"][0].name, "b")
+        self.assertEqual(drop_c.args["kind"], "COLUMN")
+        self.assertEqual(drop_c.args["tables"][0].name, "c")
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP b RESTRICT", "ALTER TABLE t DROP COLUMN b RESTRICT"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "b")
+        self.assertTrue(drop.args["restrict"])
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP materialized", "ALTER TABLE t DROP COLUMN materialized"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "materialized")
+        self.assertFalse(drop.args["materialized"])
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP date", "ALTER TABLE t DROP COLUMN date"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "date")
+
+        (drop,) = (
+            self.validate_identity("ALTER TABLE t DROP COLUMN `cascade`")
+            .assert_is(exp.Alter)
+            .args["actions"]
+        )
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "cascade")
+        self.assertFalse(drop.args["cascade"])
+
+        (drop,) = (
+            self.validate_identity("ALTER TABLE t DROP INDEX `restrict`")
+            .assert_is(exp.Alter)
+            .args["actions"]
+        )
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "INDEX")
+        self.assertEqual(drop.args["tables"][0].name, "restrict")
+        self.assertFalse(drop.args["restrict"])
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP concurrently", "ALTER TABLE t DROP COLUMN concurrently"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "concurrently")
+        self.assertFalse(drop.args["concurrently"])
+
+        (drop,) = (
+            self.validate_identity("ALTER TABLE t DROP COLUMN concurrently")
+            .assert_is(exp.Alter)
+            .args["actions"]
+        )
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "concurrently")
+        self.assertFalse(drop.args["concurrently"])
+
+        (drop,) = (
+            self.validate_identity("ALTER TABLE t DROP INDEX concurrently")
+            .assert_is(exp.Alter)
+            .args["actions"]
+        )
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "INDEX")
+        self.assertEqual(drop.args["tables"][0].name, "concurrently")
+        self.assertFalse(drop.args["concurrently"])
+
+        drop, drop_b = self.validate_identity(
+            "ALTER TABLE t DROP INDEX concurrently, DROP b",
+            "ALTER TABLE t DROP INDEX concurrently, DROP COLUMN b",
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "INDEX")
+        self.assertEqual(drop.args["tables"][0].name, "concurrently")
+        self.assertFalse(drop.args["concurrently"])
+        drop_b.assert_is(exp.Drop)
+        self.assertEqual(drop_b.args["kind"], "COLUMN")
+        self.assertEqual(drop_b.args["tables"][0].name, "b")
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP concurrently RESTRICT",
+            "ALTER TABLE t DROP COLUMN concurrently RESTRICT",
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "concurrently")
+        self.assertFalse(drop.args["concurrently"])
+        self.assertTrue(drop.args["restrict"])
+
+        drop_b, drop = self.validate_identity(
+            "ALTER TABLE t DROP b, DROP view RESTRICT",
+            "ALTER TABLE t DROP COLUMN b, DROP COLUMN view RESTRICT",
+        ).args["actions"]
+        drop_b.assert_is(exp.Drop)
+        self.assertEqual(drop_b.args["kind"], "COLUMN")
+        self.assertEqual(drop_b.args["tables"][0].name, "b")
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "view")
+        self.assertTrue(drop.args["restrict"])
+
+        drop_b, drop = self.validate_identity(
+            "ALTER TABLE t DROP b, DROP COLUMN any RESTRICT",
+            "ALTER TABLE t DROP COLUMN b, DROP COLUMN any RESTRICT",
+        ).args["actions"]
+        drop_b.assert_is(exp.Drop)
+        self.assertEqual(drop_b.args["tables"][0].name, "b")
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "any")
+        self.assertTrue(drop.args["restrict"])
+
     def test_identity(self):
         self.validate_identity("SELECT a, SUM(b) FROM t GROUP BY a WITH ROLLUP LIMIT 2")
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")

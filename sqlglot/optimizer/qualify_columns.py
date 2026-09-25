@@ -524,11 +524,12 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
             selects = {s.this: exp.column(s.alias_or_name) for s in expression.selects}
 
             for node in modifier_expressions:
-                node.replace(
-                    exp.to_identifier(_select_by_pos(expression, node).alias)
-                    if node.is_int
-                    else selects.get(node, node)
-                )
+                if node.is_int:
+                    select = _select_by_pos(expression, node)
+                    if select is not None:
+                        node.replace(exp.to_identifier(select.alias))
+                else:
+                    node.replace(selects.get(node, node))
 
 
 def _expand_positional_references(
@@ -545,6 +546,10 @@ def _expand_positional_references(
     for node in expressions:
         if node.is_int and isinstance(node, exp.Literal):
             select = _select_by_pos(expression, node)
+
+            if select is None:
+                new_nodes.append(node)
+                continue
 
             if alias:
                 new_nodes.append(exp.column(select.args["alias"].copy()))
@@ -584,9 +589,10 @@ def _expand_positional_references(
     return new_nodes
 
 
-def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
+def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias | None:
     try:
-        return expression.selects[int(node.this) - 1].assert_is(exp.Alias)
+        select = expression.selects[int(node.this) - 1]
+        return select if isinstance(select, exp.Alias) else None
     except IndexError:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
@@ -1101,17 +1107,35 @@ def _expand_stars(
             replaced_columns = replace_columns.get(table_id, {})
 
             # Preserve case-sensitivity of quoted source columns when expanding stars,
-            # so the generated alias isn't folded by dialect normalization
+            # so the generated alias isn't folded by dialect normalization.
+            # In the same pass, check for unnamed projections (e.g. multi-column UDTFs):
+            # if any exist, leave the star unexpanded to avoid dropping columns.
+            # Only bare (unaliased) expressions count — an Alias with an empty string name
+            # (e.g. from a PIVOT over ANY columns) is not a multi-column UDTF.
             source_expression = source.expression if isinstance(source, Scope) else None
-            quoted_columns = (
-                {
+            if isinstance(source_expression, exp.Select):
+                quoted_columns = set()
+                for s in source_expression.selects:
+                    # exp.Alias/Aliases with empty name are valid (e.g. PIVOT ANY columns,
+                    # explicitly-aliased multi-col UDTFs); only bare unnamed expressions block expansion.
+                    if not s.output_name and not isinstance(
+                        s, (exp.QueryTransform, exp.Alias, exp.Aliases)
+                    ):
+                        return
+                    if _is_output_identifier_quoted(s):
+                        quoted_columns.add(s.output_name)
+            elif isinstance(source_expression, exp.SetOperation) and any(
+                not name for name in source_expression.named_selects
+            ):
+                return
+            elif isinstance(source_expression, exp.Query):
+                quoted_columns = {
                     s.output_name
                     for s in source_expression.selects
                     if _is_output_identifier_quoted(s)
                 }
-                if isinstance(source_expression, exp.Query)
-                else set()
-            )
+            else:
+                quoted_columns = set()
 
             # The operators belong to a specific source, so a star over a source joined
             # alongside it must expand from that source's own columns
@@ -1311,7 +1335,12 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
                 alias_identifier = exp.to_identifier(f"_col_{i}")
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
-        elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+        elif (
+            not isinstance(selection, (exp.Alias, exp.Aliases))
+            and not selection.is_star
+            and not isinstance(selection, exp.MULTI_OUTPUT_UDTF)
+            and not (scope.is_subquery and isinstance(selection, exp.UDTF))
+        ):
             unwrapped = selection.unnest()
             if isinstance(unwrapped, exp.Column):
                 source_identifier = unwrapped.this
@@ -1335,7 +1364,10 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             else:
                 dialect.normalize_identifier(selection.args["alias"])
         if aliased_column:
-            selection.set("alias", exp.to_identifier(aliased_column))
+            if not isinstance(selection, (exp.Alias, exp.Aliases)):
+                selection = exp.alias_(selection, aliased_column, copy=False)
+            else:
+                selection.set("alias", exp.to_identifier(aliased_column))
 
         new_selections.append(selection)
 

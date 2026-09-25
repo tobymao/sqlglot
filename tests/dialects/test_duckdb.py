@@ -2361,6 +2361,35 @@ class TestDuckDB(Validator):
             },
         )
 
+    def test_timestamp_from_parts(self):
+        for source, target, dtype in (
+            (
+                "SELECT TIMESTAMP_FROM_PARTS(2019, 1, 10, 2, 3, 4, 0, 'America/Los_Angeles')",
+                "SELECT MAKE_TIMESTAMP(2019, 1, 10, 2, 3, 4 + (0 / 1000000000.0)) AT TIME ZONE 'America/Los_Angeles'",
+                exp.DType.TIMESTAMPTZ,
+            ),
+            (
+                "SELECT TIMESTAMP_FROM_PARTS(2019, 7, 10, 2, 3, 4, 123456000, 'America/Los_Angeles')",
+                "SELECT MAKE_TIMESTAMP(2019, 7, 10, 2, 3, 4 + (123456000 / 1000000000.0)) AT TIME ZONE 'America/Los_Angeles'",
+                exp.DType.TIMESTAMPTZ,
+            ),
+            (
+                "SELECT TIMESTAMP_FROM_PARTS(2019, 1, 10, 2, 3, 4, ns, tz) FROM (VALUES (123456000, 'America/Los_Angeles'), (NULL, 'UTC'), (0, NULL)) AS t(ns, tz)",
+                "SELECT MAKE_TIMESTAMP(2019, 1, 10, 2, 3, 4 + (ns / 1000000000.0)) AT TIME ZONE tz FROM (VALUES (123456000, 'America/Los_Angeles'), (NULL, 'UTC'), (0, NULL)) AS t(ns, tz)",
+                exp.DType.TIMESTAMPTZ,
+            ),
+            (
+                "SELECT TIMESTAMP_FROM_PARTS(2019, 1, 10, 2, 3, 4, 123456000)",
+                "SELECT MAKE_TIMESTAMP(2019, 1, 10, 2, 3, 4 + (123456000 / 1000000000.0))",
+                exp.DType.TIMESTAMP,
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(target, read={"snowflake": source}, write={"duckdb": target})
+                for dialect, sql in (("snowflake", source), ("duckdb", target)):
+                    expression = annotate_types(parse_one(sql, read=dialect), dialect=dialect)
+                    self.assertEqual(expression.selects[0].type, exp.DataType.build(dtype))
+
     def test_timestamps_with_time_zone_precision(self):
         for timestamp_type in ("TIMESTAMP_TZ", "TIMESTAMP_LTZ"):
             for precision in ("", "(0)", "(3)", "(6)", "(9)"):

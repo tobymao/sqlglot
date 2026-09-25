@@ -1573,6 +1573,49 @@ FROM json_data, field_ids""",
             with self.assertRaises(ParseError):
                 self.parse_one(sql)
 
+    def test_alter_drop_column(self):
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP b", "ALTER TABLE t DROP COLUMN b"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "b")
+
+        drop_b, drop_c = self.validate_identity(
+            "ALTER TABLE t DROP b, DROP c", "ALTER TABLE t DROP COLUMN b, DROP COLUMN c"
+        ).args["actions"]
+        drop_b.assert_is(exp.Drop)
+        drop_c.assert_is(exp.Drop)
+        self.assertEqual(drop_b.args["kind"], "COLUMN")
+        self.assertEqual(drop_b.args["tables"][0].name, "b")
+        self.assertEqual(drop_c.args["kind"], "COLUMN")
+        self.assertEqual(drop_c.args["tables"][0].name, "c")
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP b CASCADE", "ALTER TABLE t DROP COLUMN b CASCADE"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "b")
+        self.assertTrue(drop.args["cascade"])
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP IF EXISTS b CASCADE",
+            "ALTER TABLE t DROP COLUMN IF EXISTS b CASCADE",
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "b")
+        self.assertTrue(drop.args["exists"])
+        self.assertTrue(drop.args["cascade"])
+
+        (drop,) = self.validate_identity(
+            "ALTER TABLE t DROP type", "ALTER TABLE t DROP COLUMN type"
+        ).args["actions"]
+        drop.assert_is(exp.Drop)
+        self.assertEqual(drop.args["kind"], "COLUMN")
+        self.assertEqual(drop.args["tables"][0].name, "type")
+
     def test_unnest(self):
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"

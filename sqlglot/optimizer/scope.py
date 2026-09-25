@@ -215,6 +215,8 @@ class Scope:
                                 if type(col) is exp.Column and (
                                     (col.name in bound_names and not col.table)
                                     or col.text("table") in bound_names
+                                    or col.text("db") in bound_names
+                                    or col.text("catalog") in bound_names
                                 ):
                                     comprehension_var_ids.add(id(col))
                 continue

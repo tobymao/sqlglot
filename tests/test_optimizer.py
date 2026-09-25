@@ -1627,6 +1627,33 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
 
+    def test_merge_subqueries_copy_budget(self):
+        # Each CTE references its source's projection twice, so merging the whole chain would
+        # double the expression at every step
+        ctes = ["q0 AS (SELECT x.a AS a FROM x AS x)"] + [
+            f"q{i} AS (SELECT q{i - 1}.a + q{i - 1}.a AS a FROM q{i - 1} AS q{i - 1})"
+            for i in range(1, 17)
+        ]
+        expression = parse_one(f"WITH {', '.join(ctes)} SELECT q16.a AS a FROM q16 AS q16")
+        input_size = sum(1 for _ in expression.walk())
+
+        merged = optimizer.merge_subqueries.merge_subqueries(expression.copy())
+        self.assertIsNotNone(merged.args.get("with_"))
+        self.assertLess(sum(1 for _ in merged.walk()), 10 * input_size)
+
+        # With no budget, only q16 is merged, since the outer query references it once
+        merged = optimizer.merge_subqueries.merge_subqueries(
+            expression.copy(), max_copy_factor=0, min_copy_budget=0
+        )
+        self.assertEqual(len(merged.args["with_"].expressions), 16)
+
+        # A None factor disables the budget, so everything is merged despite the zero minimum
+        short_chain = parse_one(f"WITH {', '.join(ctes[:5])} SELECT q4.a AS a FROM q4 AS q4")
+        merged = optimizer.merge_subqueries.merge_subqueries(
+            short_chain, max_copy_factor=None, min_copy_budget=0
+        )
+        self.assertIsNone(merged.args.get("with_"))
+
     def test_eliminate_subqueries(self):
         self.check_file("eliminate_subqueries", optimizer.eliminate_subqueries.eliminate_subqueries)
 

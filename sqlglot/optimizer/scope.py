@@ -212,7 +212,10 @@ class Scope:
                     for subtree in (node.this, node.args.get("condition")):
                         if subtree:
                             for col in subtree.walk():
-                                if type(col) is exp.Column and col.name in bound_names:
+                                if type(col) is exp.Column and (
+                                    (col.name in bound_names and not col.table)
+                                    or col.text("table") in bound_names
+                                ):
                                     comprehension_var_ids.add(id(col))
                 continue
 

@@ -946,6 +946,18 @@ class TestDuckDB(Validator):
                 "duckdb": "SELECT CAST('12.3456' AS DECIMAL(10, 2))",
             },
         )
+        self.validate_all(
+            "SELECT TRY_CAST('12.3456' AS DECIMAL(38, 0))",
+            read={
+                "snowflake": "SELECT TRY_TO_NUMBER('12.3456')",
+            },
+        )
+        self.validate_all(
+            "SELECT TRY_CAST('12.3456' AS DECIMAL(10, 2))",
+            read={
+                "snowflake": "SELECT TRY_TO_DECIMAL('12.3456', 10, 2)",
+            },
+        )
 
         self.validate_all(
             "VAR_POP(x)",

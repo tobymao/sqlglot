@@ -3074,6 +3074,9 @@ class DuckDBGenerator(generator.Generator):
         if milli or nano:
             expression.set("sec", sec)
 
+        if zone := expression.args.get("zone"):
+            return self.sql(exp.AtTimeZone(this=expression, zone=zone.pop()))
+
         return rename_func("MAKE_TIMESTAMP")(self, expression)
 
     @unsupported_args("nano")

@@ -9,6 +9,29 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
+DATETIME_WITHOUT_TZ = {
+    exp.DType.DATE,
+    exp.DType.TIMESTAMP,
+    exp.DType.TIMESTAMPNTZ,
+    exp.DType.TIMESTAMP_S,
+    exp.DType.TIMESTAMP_MS,
+    exp.DType.TIMESTAMP_NS,
+}
+
+
+def _annotate_at_time_zone(self: TypeAnnotator, expression: exp.AtTimeZone) -> exp.Expr:
+    this = expression.this
+
+    if this.is_type(*DATETIME_WITHOUT_TZ):
+        return self._set_type(expression, exp.DType.TIMESTAMPTZ)
+    if this.is_type(exp.DType.TIMESTAMPTZ):
+        return self._set_type(expression, exp.DType.TIMESTAMP)
+    if this.is_type(exp.DType.TIMETZ):
+        return self._set_type(expression, exp.DType.TIMETZ)
+
+    return self._set_type(expression, exp.DType.UNKNOWN)
+
+
 def _annotate_date_trunc(
     self: TypeAnnotator, expression: exp.DateTrunc | exp.TimestampTrunc
 ) -> exp.Expr:
@@ -76,6 +99,7 @@ EXPRESSION_METADATA = {
             exp.Unhex,
         }
     },
+    exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},
     exp.PercentileDisc: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
@@ -83,4 +107,5 @@ EXPRESSION_METADATA = {
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},
     exp.ToDays: {"returns": exp.DType.INTERVAL},
     exp.TimeFromParts: {"returns": exp.DType.TIME},
+    exp.TimestampFromParts: {"returns": exp.DType.TIMESTAMP},
 }

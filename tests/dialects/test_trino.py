@@ -7,6 +7,24 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_fetch(self):
+        self.validate_identity(
+            "SELECT * FROM t ORDER BY x FETCH FIRST 1 ROW ONLY",
+            "SELECT * FROM t ORDER BY x FETCH FIRST 1 ROWS ONLY",
+        )
+        self.validate_identity(
+            "SELECT * FROM t ORDER BY x FETCH NEXT 1 ROW WITH TIES",
+            "SELECT * FROM t ORDER BY x FETCH NEXT 1 ROWS WITH TIES",
+        )
+        self.validate_identity(
+            "SELECT * FROM t ORDER BY x OFFSET 1 ROW FETCH NEXT 1 ROW ONLY",
+            "SELECT * FROM t ORDER BY x OFFSET 1 FETCH NEXT 1 ROWS ONLY",
+        )
+        self.validate_identity(
+            "SELECT * FROM t ORDER BY x FETCH FIRST ROW ONLY",
+            "SELECT * FROM t ORDER BY x FETCH FIRST ROWS ONLY",
+        )
+
     def test_concat_ws(self):
         self.validate_identity("SELECT CONCAT_WS('-', ARRAY['a', NULL, 'b'])")
         self.validate_identity("SELECT CONCAT_WS('-', CAST(NULL AS ARRAY(VARCHAR)))")

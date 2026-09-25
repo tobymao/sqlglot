@@ -5768,7 +5768,7 @@ class Parser:
 
     def _parse_limit_options(self) -> exp.LimitOptions | None:
         percent = self._match_set((TokenType.PERCENT, TokenType.MOD))
-        rows = self._match_set((TokenType.ROW, TokenType.ROWS))
+        rows = self._match_texts(("ROW", "ROWS"))
         self._match_text_seq("ONLY")
         with_ties = self._match_text_seq("WITH", "TIES")
 
@@ -5832,7 +5832,11 @@ class Parser:
                 else "FIRST"
             )
 
-            count = self._parse_field(tokens=self.FETCH_TOKENS)
+            count = (
+                None
+                if self._match_texts(("ROW", "ROWS"), advance=False)
+                else self._parse_field(tokens=self.FETCH_TOKENS)
+            )
 
             return self.expression(
                 exp.Fetch(
@@ -5847,7 +5851,7 @@ class Parser:
             return this
 
         count = self._parse_term()
-        self._match_set((TokenType.ROW, TokenType.ROWS))
+        self._match_texts(("ROW", "ROWS"))
 
         return self.expression(
             exp.Offset(this=this, expression=count, expressions=self._parse_limit_by())

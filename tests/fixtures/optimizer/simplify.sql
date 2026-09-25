@@ -386,9 +386,11 @@ SELECT t_bool.a FROM t_bool;
 SELECT t_bool.a AND t_bool.a FROM t_bool;
 SELECT t_bool.a FROM t_bool;
 
+# schema: {"t": {"x": "INT"}}
 SELECT SUM(t.x OR t.x) FROM t;
 SELECT SUM(t.x AND TRUE) FROM t;
 
+# schema: {"t": {"x": "INT"}}
 SELECT SUM(t.x AND t.x) FROM t;
 SELECT SUM(t.x AND TRUE) FROM t;
 
@@ -1307,6 +1309,7 @@ CONCAT_WS(sep, 'a', 'b');
 'a' || 'b' || x;
 'ab' || x;
 
+# schema: {"foo": {"cond": "BOOLEAN"}}
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
 CONCAT(a, b) IN (SELECT * FROM foo WHERE cond);
 
@@ -1753,12 +1756,15 @@ x = 5 AND (x = y OR z = 1);
 x = 5 AND x + 3 = 8;
 x = 5;
 
+# schema: {"t": {"x": "INT", "y": "INT"}}
 x = 5 AND (SELECT x FROM t WHERE y = 1);
 (SELECT x FROM t WHERE y = 1) AND x = 5;
 
+# schema: {"t": {"y": "INT", "z": "INT"}}
 x = 1 AND y > 0 AND (SELECT z = 5 FROM t WHERE y = 1);
 (SELECT z = 5 FROM t WHERE y = 1) AND x = 1 AND y > 0;
 
+# schema: {"t": {"a": "BOOLEAN", "b": "BOOLEAN", "c": "BOOLEAN", "z": "INT"}}
 x = 1 AND x = y AND (SELECT z FROM t WHERE a AND (b OR c));
 (SELECT z FROM t WHERE a AND (b OR c)) AND x = 1 AND x = y;
 
@@ -1969,5 +1975,6 @@ SELECT IF(NULL = NULL, 1, 100);
 SELECT 100;
 
 # dialect: snowflake
+# schema: {"o": {"id": "INT", "observed_date": "DATE"}, "e": {"id": "INT", "metric_date": "DATE"}}
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;

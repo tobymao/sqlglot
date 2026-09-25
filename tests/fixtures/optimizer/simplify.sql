@@ -145,6 +145,81 @@ NULL IS DISTINCT FROM NULL;
 NOT (NOT TRUE);
 TRUE;
 
+NOT (a = b);
+a <> b;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a = b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a <> b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a <> b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a = b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a < b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a >= b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a <= b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a > b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a > b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a <= b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c = NOT (a >= b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c = (a < b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a = b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a <> b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a <> b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a = b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a < b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a >= b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a <= b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a > b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a > b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a <= b) AS result FROM comparisons ORDER BY a, b, c;
+
+# dialect: duckdb
+# execute: true
+SELECT c <> NOT (a >= b) AS result FROM comparisons ORDER BY a, b, c;
+SELECT c <> (a < b) AS result FROM comparisons ORDER BY a, b, c;
+
+1 - NOT (b = b);
+1 - (b <> b);
+
+2 || NOT (b = 2);
+2 || (b <> 2);
+
+SELECT c = NOT (a = ALL (SELECT b FROM t)) FROM t;
+SELECT c = (a <> ANY(SELECT b FROM t)) FROM t;
+
+SELECT c = NOT (a <> ANY (SELECT b FROM t)) FROM t;
+SELECT c = (a = ALL ((SELECT b FROM t))) FROM t;
+
 a AND (b OR b);
 a AND b;
 
@@ -1083,6 +1158,36 @@ CAST(x AS INT) < 0 AND CAST(x AS INT) >= -500;
 --------------------------------------
 -- COALESCE
 --------------------------------------
+# dialect: duckdb
+# execute: true
+SELECT COALESCE(a, NULL, 1) = 1 AS eq FROM x;
+SELECT COALESCE(a, NULL) = 1 OR COALESCE(a, NULL) IS NULL AS eq FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT 1 = COALESCE(a, NULL, 1) AS eq FROM x;
+SELECT COALESCE(a, NULL) = 1 OR COALESCE(a, NULL) IS NULL AS eq FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT 0 < COALESCE(a, NULL, -1) AS gt FROM x;
+SELECT COALESCE(a, NULL, -1) > 0 AS gt FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT COALESCE(a, NULL, b, 3) = 3 AS eq FROM x;
+SELECT COALESCE(a, NULL, b) = 3 OR COALESCE(a, NULL, b) IS NULL AS eq FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT COALESCE(a, NULL, NULL, 1) = 1 AS eq FROM x;
+SELECT COALESCE(a, NULL, NULL) = 1 OR COALESCE(a, NULL, NULL) IS NULL AS eq FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT COALESCE(a, NULL) = 1 AS eq FROM x;
+SELECT COALESCE(a, NULL) = 1 AS eq FROM x;
+
 COALESCE(x);
 x;
 
@@ -1141,6 +1246,7 @@ ROW() OVER () = 1 OR ROW() OVER () IS NULL;
 a AND b AND COALESCE(ROW() OVER (), 1) = 1;
 (ROW() OVER () = 1 OR ROW() OVER () IS NULL) AND a AND b;
 
+# execute: true
 COALESCE(1, 2);
 1;
 

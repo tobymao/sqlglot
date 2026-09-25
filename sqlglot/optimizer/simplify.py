@@ -841,7 +841,10 @@ class Simplifier:
                 if complement_subquery_predicate:
                     right = complement_subquery_predicate(this=right.this)
 
-                return self.COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right)
+                return exp.paren(
+                    self.COMPLEMENT_COMPARISONS[this.__class__](this=this.this, expression=right),
+                    copy=False,
+                )
             if isinstance(this, exp.Paren):
                 condition = this.unnest()
                 if isinstance(condition, exp.And):

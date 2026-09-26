@@ -9,6 +9,40 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_insert_value(self):
+        for sql, expected in (
+            ("INSERT INTO t VALUE (1)", "INSERT INTO t VALUES (1)"),
+            ("INSERT INTO t (a) value (1), (2)", "INSERT INTO t (a) VALUES (1), (2)"),
+            ("INSERT INTO value (value) VALUE (1)", "INSERT INTO value (value) VALUES (1)"),
+            (
+                "INSERT INTO `value` (`value`) VALUE ('VALUE')",
+                "INSERT INTO `value` (`value`) VALUES ('VALUE')",
+            ),
+            (
+                "INSERT INTO t (a) VALUE ((SELECT value FROM value))",
+                "INSERT INTO t (a) VALUES ((SELECT value FROM value))",
+            ),
+            (
+                "INSERT IGNORE INTO t (a, b) VALUE (1, DEFAULT), (2, DEFAULT) AS new "
+                "ON DUPLICATE KEY UPDATE b = new.b",
+                "INSERT IGNORE INTO t (a, b) VALUES (1, DEFAULT), (2, DEFAULT) AS new "
+                "ON DUPLICATE KEY UPDATE b = new.b",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertEqual(expression, self.parse_one(expected))
+
+        self.validate_identity("SELECT value FROM value")
+        self.validate_identity("INSERT INTO t SELECT value FROM value")
+        self.validate_all(
+            "INSERT INTO t (a) VALUE (1)",
+            write={
+                "mysql": "INSERT INTO t (a) VALUES (1)",
+                "postgres": "INSERT INTO t (a) VALUES (1)",
+            },
+        )
+
     def test_ddl(self):
         self.validate_identity("DROP TEMPORARY TABLE IF EXISTS db.t1, t2 CASCADE")
 

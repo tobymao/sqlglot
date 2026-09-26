@@ -1073,6 +1073,23 @@ DOUBLE;
 tbl.bigint DIV tbl.bigint;
 BIGINT; 
 
+# dialect: databricks
+FIRST(tbl.int_col);
+INT;
+
+# dialect: databricks
+FIRST(tbl.str_col);
+STRING;
+
+# dialect: databricks
+FIRST(tbl.date_col);
+DATE;
+
+# dialect: databricks
+FIRST(tbl.timestamp_col);
+TIMESTAMP;
+
+
 --------------------------------------
 -- BigQuery
 --------------------------------------
@@ -7348,6 +7365,18 @@ BOOLEAN;
 # dialect: duckdb
 CURRENT_ROLE();
 VARCHAR;
+
+# dialect: duckdb
+BIT_AND(tbl.int_col);
+INTEGER;
+
+# dialect: duckdb
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
+# dialect: duckdb
+BIT_AND(tbl.bit_col);
+BIT;
 
 --------------------------------------
 -- Postgres

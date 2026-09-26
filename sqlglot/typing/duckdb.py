@@ -99,6 +99,12 @@ EXPRESSION_METADATA = {
             exp.Unhex,
         }
     },
+    **{
+        expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
+        for expr_type in {
+            exp.BitwiseOrAgg,
+        }
+    },
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},

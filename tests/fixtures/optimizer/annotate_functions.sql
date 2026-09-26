@@ -7359,7 +7359,7 @@ BIGINT;
 
 # dialect: duckdb
 BIT_AND(tbl.bit_col);
-INTEGER;
+BIT;
 
 # dialect: duckdb
 BIT_OR(tbl.int_col);

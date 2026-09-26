@@ -195,10 +195,30 @@ class Scope:
             self.expression.unnest() if isinstance(self.expression, exp.Subquery) else None
         )
 
+        # Columns that are comprehension bound variables; populated on first Comprehension seen.
+        comprehension_var_ids: set[int] = set()
+
         for node in self.walk():
             # Most nodes (identifiers, literals, operators etc.) aren't collectible, so a
             # single isinstance gate lets them skip the classification chain below.
             if node is self.expression or not isinstance(node, COLLECTIBLE_TYPES):
+                # DFS visits Comprehension before its child Columns, so IDs are ready in time.
+                if isinstance(node, exp.Comprehension):
+                    bound_names: set[str] = set()
+                    for var in (node.expression, node.args.get("position")):
+                        if var and type(var) is exp.Column:
+                            comprehension_var_ids.add(id(var))
+                            bound_names.add(var.name)
+                    for subtree in (node.this, node.args.get("condition")):
+                        if subtree:
+                            for col in subtree.walk():
+                                if type(col) is exp.Column and (
+                                    (col.name in bound_names and not col.table)
+                                    or col.text("table") in bound_names
+                                    or col.text("db") in bound_names
+                                    or col.text("catalog") in bound_names
+                                ):
+                                    comprehension_var_ids.add(id(col))
                 continue
 
             if isinstance(node, exp.Dot) and node.is_star:
@@ -208,7 +228,7 @@ class Scope:
 
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
-                else:
+                elif not comprehension_var_ids or id(node) not in comprehension_var_ids:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 parent = node.parent

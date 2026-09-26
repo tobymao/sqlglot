@@ -1,5 +1,5 @@
-from sqlglot import exp, parse_one
-from sqlglot.errors import ParseError, UnsupportedError
+from sqlglot import exp, parse_one, transpile
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
@@ -1554,6 +1554,13 @@ WHERE
                 "tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER",
             },
         )
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "ALTER TABLE t RENAME TO u, ADD COLUMN c INT",
+                read="mysql",
+                write="tsql",
+                unsupported_level=ErrorLevel.RAISE,
+            )
         self.validate_all(
             "ALTER TABLE a ALTER COLUMN b INTEGER",
             read={

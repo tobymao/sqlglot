@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     property_sql,
     rename_func,
     time_format,
+    var_map_sql,
     weekstart_unit_to_str,
 )
 from sqlglot.generators.mysql import MySQLGenerator
@@ -22,6 +23,15 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     )
 
 
+def _group_concat_sql(self: DorisGenerator, expression: exp.GroupConcat) -> str:
+    this = expression.this
+    separator = expression.args.get("separator")
+    if isinstance(this, exp.Order):
+        separator_sql = f" SEPARATOR {self.sql(separator)}" if separator else ""
+        return f"GROUP_CONCAT({self.sql(this)}{separator_sql})"
+    return self.func("GROUP_CONCAT", this, separator or exp.Literal.string(","))
+
+
 class DorisGenerator(MySQLGenerator):
     LAST_DAY_SUPPORTS_DATE_PART = False
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
@@ -32,6 +42,7 @@ class DorisGenerator(MySQLGenerator):
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
+        exp.DType.INT128: "LARGEINT",
         exp.DType.TEXT: "STRING",
         exp.DType.TIMESTAMP: "DATETIME",
         exp.DType.TIMESTAMPTZ: "DATETIME",
@@ -56,15 +67,14 @@ class DorisGenerator(MySQLGenerator):
         exp.ArrayAgg: rename_func("COLLECT_LIST"),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
+        exp.ArrayFilter: rename_func("ARRAY_FILTER"),
         exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),
         exp.CurrentTimestamp: lambda self, _: self.func("NOW"),
         exp.DateTrunc: lambda self, e: self.func(
             "DATE_TRUNC", e.this, weekstart_unit_to_str(self, e)
         ),
         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
-        exp.GroupConcat: lambda self, e: self.func(
-            "GROUP_CONCAT", e.this, e.args.get("separator") or exp.Literal.string(",")
-        ),
+        exp.GroupConcat: _group_concat_sql,
         exp.JSONExtractScalar: lambda self, e: self.func("JSON_EXTRACT", e.this, e.expression),
         exp.Lag: _lag_lead_sql,
         exp.Lead: _lag_lead_sql,
@@ -74,6 +84,7 @@ class DorisGenerator(MySQLGenerator):
         exp.RegexpSplit: rename_func("SPLIT_BY_STRING"),
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.Split: rename_func("SPLIT_BY_STRING"),
+        exp.VarMap: lambda self, e: var_map_sql(self, e, "MAP"),
         exp.StringToArray: rename_func("SPLIT_BY_STRING"),
         exp.StrToUnix: lambda self, e: self.func("UNIX_TIMESTAMP", e.this, self.format_time(e)),
         exp.TimeStrToDate: rename_func("TO_DATE"),
@@ -577,6 +588,22 @@ class DorisGenerator(MySQLGenerator):
         "xor",
         "year",
     }
+
+    def datatype_sql(self, expression: exp.DataType) -> str:
+        if (
+            expression.is_type(exp.DType.STRUCT)
+            and expression.args.get("nested")
+            and expression.expressions
+        ):
+            # Doris declares struct fields as name:type
+            fields = ", ".join(
+                self.columndef_sql(field, sep=":")
+                if isinstance(field, exp.ColumnDef)
+                else self.sql(field)
+                for field in expression.expressions
+            )
+            return f"STRUCT<{fields}>"
+        return super().datatype_sql(expression)
 
     def uniquekeyproperty_sql(
         self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"

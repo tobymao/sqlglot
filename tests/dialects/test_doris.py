@@ -5,6 +5,55 @@ from tests.dialects.test_dialect import Validator
 class TestDoris(Validator):
     dialect = "doris"
 
+    def test_doris_types(self):
+        for sql in (
+            "SELECT CAST('1' AS LARGEINT)",
+            "SELECT CAST('1.2.3.4' AS IPV4)",
+            "SELECT CAST('::1' AS IPV6)",
+            "SELECT CAST(x AS DATETIMEV2(6))",
+            "SELECT CAST(x AS DATEV2)",
+            "SELECT CAST(x AS DECIMALV3(10, 2))",
+            "SELECT CAST(x AS DECIMALV2(27, 9))",
+            "SELECT CAST(TO_BITMAP(5) AS BITMAP)",
+            "SELECT CAST(x AS STRUCT<a:INT, b:VARCHAR(10)>)",
+            "SELECT CAST(x AS ARRAY<STRUCT<a:INT>>)",
+            "CREATE TABLE t (id INT, b BITMAP BITMAP_UNION, h HLL HLL_UNION, q QUANTILE_STATE QUANTILE_UNION) AGGREGATE KEY (id)",
+            "CREATE TABLE t (id INT, total BIGINT SUM DEFAULT '0', v VARCHAR(10) REPLACE_IF_NOT_NULL) AGGREGATE KEY (id)",
+            "CREATE TABLE t (id INT, m AGG_STATE<max_by(INT NOT NULL, INT)> GENERIC) AGGREGATE KEY (id)",
+            "CREATE TABLE t (id INT, l LARGEINT, ip IPV6, s STRUCT<a:INT>)",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql)
+
+        self.validate_identity("SELECT ipv4, bitmap FROM t", "SELECT `ipv4`, `bitmap` FROM t")
+        self.validate_all(
+            "SELECT CAST(x AS LARGEINT)",
+            read={"starrocks": "SELECT CAST(x AS LARGEINT)", "duckdb": "SELECT CAST(x AS HUGEINT)"},
+        )
+
+    def test_doris_maps(self):
+        self.validate_identity("SELECT MAP(1, 'a', 2, 'b')")
+        self.validate_identity("SELECT MAP_KEYS(MAP(1, 'a'))")
+        self.validate_identity("SELECT MAP(1, 'a')[1]")
+        self.validate_identity("SELECT {1: 'a', 2: 'b'}", "SELECT MAP(1, 'a', 2, 'b')")
+        self.validate_identity("SELECT {'a': {1: 2}}", "SELECT MAP('a', MAP(1, 2))")
+        self.validate_identity("SELECT MAP_SIZE({})", "SELECT MAP_SIZE(MAP())")
+        self.validate_identity("SELECT [{1: 'x'}]", "SELECT ARRAY(MAP(1, 'x'))")
+        self.validate_identity(
+            "SELECT ARRAY_FILTER(x -> x > 1, [1, 2])",
+            "SELECT ARRAY_FILTER(x -> x > 1, ARRAY(1, 2))",
+        )
+
+    def test_doris_group_concat(self):
+        self.validate_identity("SELECT GROUP_CONCAT(x ORDER BY x SEPARATOR '|')")
+        self.validate_identity("SELECT GROUP_CONCAT(DISTINCT x ORDER BY x SEPARATOR ',')")
+        self.validate_identity("SELECT GROUP_CONCAT(x, '|')")
+        self.validate_identity("SELECT GROUP_CONCAT(x)", "SELECT GROUP_CONCAT(x, ',')")
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x ORDER BY y SEPARATOR '|')",
+            read={"mysql": "SELECT GROUP_CONCAT(x ORDER BY y SEPARATOR '|')"},
+        )
+
     def test_doris(self):
         self.validate_all(
             "SELECT TO_DATE('2020-02-02 00:00:00')",

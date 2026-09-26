@@ -102,13 +102,14 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
+            exp.BitwiseAndAgg,
             exp.BitwiseOrAgg,
+            exp.PercentileDisc,
         }
     },
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},
-    exp.PercentileDisc: {"annotator": lambda self, e: self._annotate_by_args(e, "this")},
     exp.TimestampTrunc: {"annotator": _annotate_date_trunc},
     exp.Localtimestamp: {"returns": exp.DType.TIMESTAMP},
     exp.ToDays: {"returns": exp.DType.INTERVAL},

@@ -7350,6 +7350,18 @@ CURRENT_ROLE();
 VARCHAR;
 
 # dialect: duckdb
+BIT_AND(tbl.int_col);
+INTEGER;
+
+# dialect: duckdb
+BIT_AND(tbl.bigint_col);
+BIGINT;
+
+# dialect: duckdb
+BIT_AND(tbl.bit_col);
+BIT;
+
+# dialect: duckdb
 BIT_OR(tbl.int_col);
 INTEGER;
 

@@ -1,6 +1,9 @@
 SELECT a FROM (SELECT * FROM x);
 SELECT _0.a AS a FROM (SELECT x.a AS a FROM x AS x) AS _0;
 
+SELECT a FROM (SELECT a, b AS unused, a AS j, -b AS j FROM x ORDER BY 3, 4 LIMIT 2) AS t;
+SELECT t.a AS a FROM (SELECT x.a AS a, x.b AS unused, x.a AS j, -x.b AS j FROM x AS x ORDER BY 3, 4 LIMIT 2) AS t;
+
 SELECT 1 FROM (SELECT * FROM x) WHERE b = 2;
 SELECT 1 AS "1" FROM (SELECT x.b AS b FROM x AS x) AS _0 WHERE _0.b = 2;
 

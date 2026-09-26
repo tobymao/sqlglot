@@ -492,6 +492,10 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     if not isinstance(expression, exp.Selectable):
         return
 
+    names = expression.named_selects
+    if len(names) != len(set(names)):
+        return
+
     # TODO (mypyc): rebind to exp.Expr to avoid Selectable trait vtable dispatch for .args
     expr: exp.Expr = expression
 

@@ -67,6 +67,9 @@ SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 SELECT a AS j, b AS a FROM x ORDER BY 1;
 SELECT x.a AS j, x.b AS a FROM x AS x ORDER BY j;
 
+SELECT a AS j, -b AS j FROM x GROUP BY 1, 2 ORDER BY 1, -b;
+SELECT x.a AS j, -x.b AS j FROM x AS x GROUP BY x.a, -x.b ORDER BY 1, -x.b;
+
 SELECT SUM(a) AS c, SUM(b) AS d FROM x ORDER BY 1, 2;
 SELECT SUM(x.a) AS c, SUM(x.b) AS d FROM x AS x ORDER BY c, d;
 

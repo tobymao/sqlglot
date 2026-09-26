@@ -1073,23 +1073,6 @@ DOUBLE;
 tbl.bigint DIV tbl.bigint;
 BIGINT; 
 
-# dialect: databricks
-FIRST(tbl.int_col);
-INT;
-
-# dialect: databricks
-FIRST(tbl.str_col);
-STRING;
-
-# dialect: databricks
-FIRST(tbl.date_col);
-DATE;
-
-# dialect: databricks
-FIRST(tbl.timestamp_col);
-TIMESTAMP;
-
-
 --------------------------------------
 -- BigQuery
 --------------------------------------

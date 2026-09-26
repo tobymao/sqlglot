@@ -18,6 +18,7 @@ FROM UNNEST(ARRAY(1, 2)) AS "q"("x", "y");
 # title: explode_outer
 # dialect: spark
 # execute: false
+# schema: {"boo": {"object_pointstext": "TEXT"}}
 CREATE OR REPLACE TEMPORARY VIEW latest_boo AS
 SELECT
     TRIM(split(points, ':')[0]) as points_type,
@@ -418,6 +419,7 @@ FROM "x" AS "x";
 
 # title: unqualified struct element is selected in the outer query
 # execute: false
+# schema: {"tbl": {"value": "TEXT"}}
 WITH "cte" AS (
   SELECT
     FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: STRUCT<f3: STRUCT<f4: STRING>>>>') AS "struct"
@@ -429,6 +431,7 @@ FROM "tbl" AS "tbl";
 
 # title: qualified struct element is selected in the outer query
 # execute: false
+# schema: {"tbl": {"value": "TEXT"}}
 WITH "cte" AS (
   SELECT
     FROM_JSON("value", 'STRUCT<f1: STRUCT<f2: INTEGER>, STRUCT<f3: STRING>>') AS "struct"
@@ -441,6 +444,7 @@ FROM "tbl" AS "tbl";
 
 # title: left join doesnt push down predicate to join in merge subqueries
 # execute: false
+# schema: {"company_table": {"id": "INT", "score": "INT"}, "unlocked": {"company_id": "INT"}}
 SELECT
   main_query.id,
   main_query.score
@@ -498,6 +502,7 @@ FROM "db1"."tbl" AS "tbl"
 CROSS JOIN "db2"."tbl" AS "tbl_2";
 
 # execute: false
+# schema: {"unioned": {"uploaded_at": "TIMESTAMP", "source_system": "TEXT", "unique_filter_key": "TEXT"}}
 SELECT
 *,
 IFF(
@@ -526,9 +531,11 @@ OR (
 	1
 ) = 1;
 SELECT
-  *,
+  "unioned"."uploaded_at" AS "uploaded_at",
+  "unioned"."source_system" AS "source_system",
+  "unioned"."unique_filter_key" AS "unique_filter_key",
   IFF(
-    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= '2022-06-16', 'workday', 'bamboohr'),
+    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS TIMESTAMP), 'workday', 'bamboohr'),
     1,
     0
   ) AS "sort_order"
@@ -538,11 +545,16 @@ WHERE
 QUALIFY
   ROW_NUMBER() OVER (
     PARTITION BY "unioned"."unique_filter_key"
-    ORDER BY "unioned"."sort_order" DESC, 1
+    ORDER BY IFF(
+      IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS TIMESTAMP), 'workday', 'bamboohr') = "unioned"."source_system",
+      1,
+      0
+    ) DESC, 1
   ) = 1;
 
 # title: pivoted source with explicit selections
 # execute: false
+# schema: {"sc": {"tb": {"a": "INT", "b": "TEXT", "c": "INT"}}}
 SELECT * FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
 SELECT
   "_1"."a" AS "a",
@@ -561,6 +573,7 @@ PIVOT(SUM("_0"."c") FOR "_0"."b" IN ('x', 'y', 'z')) AS "_1";
 # title: pivoted source with explicit selections where one of them is excluded & selected at the same time
 # note: we need to respect the exclude when selecting * from pivoted source and not include the computed column twice
 # execute: false
+# schema: {"sc": {"tb": {"a": "INT", "b": "TEXT", "c": "INT"}}}
 SELECT * EXCEPT (x), CAST(x AS TEXT) AS x FROM (SELECT a, b, c FROM sc.tb) PIVOT (SUM(c) FOR b IN ('x','y','z'));
 SELECT
   "_1"."a" AS "a",
@@ -663,6 +676,7 @@ FROM (
 # title: selecting all columns from a pivoted source, pivot has column aliases
 # execute: false
 # dialect: snowflake
+# schema: {"DB_NAME": {"SCHEMA_NAME": {"TABLE_NAME": {"ID": "INT", "KEY": "TEXT", "VALUE": "TEXT", "TIMESTAMP_1": "TIMESTAMP", "TIMESTAMP_2": "TIMESTAMP"}}}}
 WITH source AS (
   SELECT
     id,
@@ -827,6 +841,7 @@ CROSS JOIN LATERAL (
 # title: bigquery column identifiers are case-insensitive
 # execute: false
 # dialect: bigquery
+# schema: {"bigquery-public-data": {"GooGle_tReNDs": {"TOp_TeRmS": {"refresh_date": "DATE", "term": "TEXT", "rank": "INT"}}}}
 WITH cte AS (
     SELECT
         refresh_date AS `reFREsh_date`,
@@ -1013,6 +1028,7 @@ FROM (
 
 # title: select * from wrapped subquery joined to a table (unknown schema)
 # execute: false
+# schema: {"t1": {"c": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
 WITH "_0" AS (
   SELECT
@@ -1131,6 +1147,7 @@ SELECT
 # title: complex query with derived tables and redundant parentheses
 # execute: false
 # dialect: snowflake
+# schema: {"SALES": {"INSERT_TS": "TIMESTAMP", "EVENT_NAME": "TEXT"}}
 SELECT
   ("SUBQUERY_0"."KEY") AS "SUBQUERY_1_COL_0"
 FROM
@@ -1163,10 +1180,11 @@ SELECT
   "SALES"."EVENT_NAME" AS "SUBQUERY_1_COL_0"
 FROM "SALES" AS "SALES"
 WHERE
-  "SALES"."INSERT_TS" > '2023-08-07 21:03:35.590 -0700';
+  "SALES"."INSERT_TS" > CAST('2023-08-07 21:03:35.590 -0700' AS TIMESTAMP);
 
 # title: using join without select *
 # execute: false
+# schema: {"table1": {"cid": "INT"}, "table2": {"cid": "INT", "od": "INT", "odi": "INT"}}
 with
     alias1 as (select * from table1),
     alias2 as (select * from table2),
@@ -1204,6 +1222,7 @@ LEFT JOIN "alias3" AS "alias3"
 # title: CTE with EXPLODE cannot be merged
 # dialect: spark
 # execute: false
+# schema: {"fruits_table": {"name": "TEXT", "fruits": "ARRAY<TEXT>"}}
 SELECT Name,
        FruitStruct.`$id`,
        FruitStruct.value
@@ -1249,6 +1268,7 @@ FROM `t` AS `t`;
 
 # title: top-level query is parenthesized
 # execute: false
+# schema: {"t": {"a": "INT"}}
 WITH x AS (
   SELECT a FROM t
 )
@@ -1305,6 +1325,7 @@ JOIN "stops" AS "d"("id", "name")
 # title: avoid dag cycles with unnesting subqueries
 # execute: false
 # dialect: snowflake
+# schema: {"ACCOUNTS": {"ACCOUNT_ID": "INT", "NAME": "TEXT"}, "CONTACTS": {"ACCOUNT_ID": "INT", "EMAIL_DOMAIN": "TEXT"}, "DOMAINS": {"DOMAIN": "TEXT", "TYPE": "TEXT"}}
 SELECT
   A.ACCOUNT_ID,
   A.NAME,
@@ -1423,6 +1444,7 @@ ORDER BY
 LIMIT 100;
 
 # execute: false
+# schema: {"event": {"priority": "TEXT", "tagname": "TEXT"}, "cascade": {"tag_input": "TEXT", "tag_output": "TEXT"}}
 SELECT
   *
 FROM event
@@ -1457,7 +1479,8 @@ WITH "_u_0" AS (
     "_u_0"."tagname"
 )
 SELECT
-  *
+  "event"."priority" AS "priority",
+  "event"."tagname" AS "tagname"
 FROM "event" AS "event"
 LEFT JOIN "_u_1" AS "_u_1"
   ON "_u_1"."tagname" = "event"."tagname"
@@ -1586,6 +1609,7 @@ CROSS JOIN LATERAL FLATTEN(input => "OBJ"."DATA") AS "F"("SEQ", "KEY", "PATH", "
 # title: array_agg within group over
 # dialect: snowflake
 # execute: false
+# schema: {"T": {"ID": "INT", "GRP": "INT"}}
 SELECT array_agg(id) WITHIN GROUP (ORDER BY id) OVER (PARTITION BY grp) FROM t;
 SELECT
   ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY

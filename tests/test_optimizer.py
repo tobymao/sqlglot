@@ -1,3 +1,5 @@
+import json
+import os
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -19,11 +21,14 @@ from sqlglot.schema import MappingSchema
 from tests.helpers import (
     TPCDS_SCHEMA,
     TPCH_SCHEMA,
+    _extract_meta,
     assert_logger_contains,
     load_sql_fixture_pairs,
     load_sql_fixtures,
     string_to_bool,
 )
+
+STRICT_SCHEMA = os.environ.get("STRICT_SCHEMA") == "1"
 
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
@@ -37,7 +42,7 @@ def qualify_then_canonicalize(expression, **qualify_kwargs):
 def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
     expression = optimizer.qualify.qualify(
         expression,
-        infer_schema=True,
+        infer_schema=not STRICT_SCHEMA,
         validate_qualify_columns=validate_qualify_columns,
         identify=False,
         **kwargs,
@@ -47,7 +52,9 @@ def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
 
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
+    expression = optimizer.qualify_columns.qualify_columns(
+        expression, infer_schema=not STRICT_SCHEMA, **kwargs
+    )
     expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
     return expression
 
@@ -213,6 +220,7 @@ class TestOptimizer(unittest.TestCase):
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
                 canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
+                schema = meta.get("schema")
 
                 func_kwargs = kwargs.copy()
 
@@ -229,6 +237,8 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["canonicalize_table_aliases"] = string_to_bool(
                         canonicalize_table_aliases
                     )
+                if schema is not None:
+                    func_kwargs["schema"] = json.loads(schema)
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (
@@ -278,7 +288,7 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "optimizer",
             optimizer.optimize,
-            infer_schema=True,
+            infer_schema=not STRICT_SCHEMA,
             pretty=True,
             execute=True,
             schema=schema,
@@ -1279,6 +1289,11 @@ class TestOptimizer(unittest.TestCase):
         error_msg = str(ctx.exception)
         self.assertIn("Column 'nonexistent' could not be resolved", error_msg)
         self.assertNotIn(f"{ANSI_UNDERLINE}nonexistent{ANSI_RESET}", error_msg)
+
+    def test_extract_meta_schema_directive(self):
+        sql, meta = _extract_meta('# schema: {"t": {"a": "INT", "b": "TEXT"}}\nSELECT a FROM t')
+        self.assertEqual(sql, "SELECT a FROM t")
+        self.assertEqual(json.loads(meta["schema"]), {"t": {"a": "INT", "b": "TEXT"}})
 
     def test_normalize_identifiers(self):
         self.check_file(

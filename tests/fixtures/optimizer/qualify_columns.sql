@@ -8,10 +8,12 @@ SELECT "a" FROM x;
 SELECT x."a" AS "a" FROM x AS x;
 
 # execute: false
+# schema: {"zz": {"a": "INT"}}
 SELECT a FROM zz GROUP BY a ORDER BY a;
 SELECT zz.a AS a FROM zz AS zz GROUP BY zz.a ORDER BY a;
 
 # execute: false
+# schema: {"xx": {"x": "INT"}, "yy": {"p": "INT"}}
 SELECT x, p FROM (SELECT x from xx) xx CROSS JOIN yy;
 SELECT xx.x AS x, yy.p AS p FROM (SELECT xx.x AS x FROM xx AS xx) AS xx CROSS JOIN yy AS yy;
 
@@ -212,6 +214,7 @@ select * from (values (1, 2)) x;
 SELECT x._col_0 AS _col_0, x._col_1 AS _col_1 FROM (VALUES (1, 2)) AS x(_col_0, _col_1);
 
 # execute: false
+# schema: {"t": {"data": "INT"}}
 SELECT SOME_UDF(data).* FROM t;
 SELECT SOME_UDF(t.data).* FROM t AS t;
 
@@ -227,6 +230,7 @@ SELECT x.a + 1 AS i, missing_column AS missing_column FROM x AS x;
 
 # execute: false
 # dialect: clickhouse
+# schema: {"arrays_test": {"s": "TEXT", "arr1": "ARRAY<TEXT>", "arr2": "ARRAY<TEXT>"}}
 SELECT s, arr1, arr2 FROM arrays_test LEFT ARRAY JOIN arr1, arrays_test.arr2;
 SELECT arrays_test.s AS s, arrays_test.arr1 AS arr1, arrays_test.arr2 AS arr2 FROM arrays_test AS arrays_test LEFT ARRAY JOIN arrays_test.arr1, arrays_test.arr2;
 
@@ -295,6 +299,7 @@ SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY qua
 SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0 ORDER BY _0.EMPID;
 
 # execute: false
+# schema: {"t": {"x": "DOUBLE"}}
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) AS x FROM t;
 SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY t.x) AS x FROM t AS t;
 
@@ -305,6 +310,7 @@ WITH t AS (SELECT 1 AS c) SELECT TO_JSON_STRING(t) AS _col_0 FROM t AS t;
 
 # execute: false
 # dialect: bigquery
+# schema: {"t": {"col1": "DATE", "col2": "TEXT"}}
 SELECT DATE_TRUNC(col1, WEEK(MONDAY)), col2 FROM t;
 SELECT DATE_TRUNC(t.col1, WEEK(MONDAY)) AS _col_0, t.col2 AS col2 FROM t AS t;
 
@@ -512,16 +518,19 @@ SELECT (SELECT n.a AS a FROM n AS n WHERE n.id = m.id) AS _col_0 FROM m AS m;
 
 # title: correlated aggregate resolves to local source without schema
 # execute: false
+# schema: {"t": {"id": "INT", "name": "TEXT"}, "u": {"id": "INT", "name": "TEXT"}}
 SELECT id FROM t WHERE id > (SELECT AVG(id) FROM u WHERE u.name = t.name);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.id) AS _col_0 FROM u AS u WHERE u.name = t.name);
 
 # title: correlated aggregate with self-correlation via alias
 # execute: false
+# schema: {"t": {"id": "INT", "k": "INT"}}
 SELECT id FROM t WHERE id > (SELECT AVG(id) FROM t AS t2 WHERE t2.k = t.k);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(t2.id) AS _col_0 FROM t AS t2 WHERE t2.k = t.k);
 
 # title: correlated aggregate where inner column name matches outer table
 # execute: false
+# schema: {"t": {"id": "INT", "k": "INT"}, "u": {"u": "INT", "k": "INT"}}
 SELECT id FROM t WHERE id > (SELECT AVG(u) FROM u WHERE u.k = t.k);
 SELECT t.id AS id FROM t AS t WHERE t.id > (SELECT AVG(u.u) AS _col_0 FROM u AS u WHERE u.k = t.k);
 
@@ -699,10 +708,12 @@ WITH RECURSIVE cte(x) AS (SELECT 1), cte2(y) AS (SELECT 2) SELECT * FROM cte, ct
 WITH RECURSIVE cte(x) AS (SELECT 1 AS x), cte2(y) AS (SELECT 2 AS y) SELECT cte.x AS x, cte2.y AS y FROM cte AS cte, cte2 AS cte2;
 
 # execute: false
+# schema: {"players": {"player": "STRUCT<name TEXT, asset STRUCT<info TEXT>>"}}
 WITH player AS (SELECT player.name, player.asset.info FROM players) SELECT * FROM player;
 WITH player AS (SELECT players.player.name AS name, players.player.asset.info AS info FROM players AS players) SELECT player.name AS name, player.info AS info FROM player AS player;
 
 # execute: false
+# schema: {"t1": {"c1": "INT"}}
 WITH tesT AS (SELECT c1 FROM t1) SELECT c1 FROM test;
 WITH test AS (SELECT t1.c1 AS c1 FROM t1 AS t1) SELECT test.c1 AS c1 FROM test AS test;
 
@@ -777,6 +788,7 @@ SELECT x.b FROM x JOIN y USING (b);
 SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
 # execute: false
+# schema: {"tbl1": {"a": "STRUCT<b STRUCT<c STRUCT<d STRUCT<f STRUCT<g INT>>>>>"}, "tbl2": {"g": "INT"}}
 WITH cte AS (SELECT a.b.c.d.f.g FROM tbl1) SELECT g FROM (SELECT g FROM tbl2) tbl2 JOIN cte USING(g);
 WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte AS cte ON tbl2.g = cte.g;
 
@@ -904,6 +916,7 @@ SELECT c FROM x LATERAL VIEW EXPLODE (a) AS c;
 SELECT _0.c AS c FROM x AS x LATERAL VIEW EXPLODE(x.a) _0 AS c;
 
 # execute: false
+# schema: {"xx": {"a": "ARRAY<INT>"}}
 SELECT c FROM xx LATERAL VIEW EXPLODE (a) AS c;
 SELECT _0.c AS c FROM xx AS xx LATERAL VIEW EXPLODE(xx.a) _0 AS c;
 
@@ -1071,6 +1084,7 @@ SELECT COALESCE(COUNT(DISTINCT x.a)) AS a FROM x AS x;
 # title: Oracle does not support lateral alias expansion
 # dialect: oracle
 # execute: false
+# schema: {"c": {"a": "INT", "b": "INT"}}
 SELECT a AS b, b AS a FROM c;
 SELECT C.A AS B, C.B AS A FROM C C;
 

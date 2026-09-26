@@ -152,11 +152,13 @@ def pushdown_projections(
         # SELECT DISTINCT, UNION DISTINCT, INTERSECT, and EXCEPT consume the entire row, so we
         # can't remove any columns, otherwise we risk changing the query's semantics. Also, we
         # conservatively skip pruning on recursive CTEs that read their own output for now.
+        order = scope_expression.args.get("order")
         if (
             scope_expression.args.get("distinct")
             or isinstance(scope_expression, (exp.Intersect, exp.Except))
             or _is_self_referencing_cte(scope)
             or unsupported_set_operation
+            or (order and any(ordered.this.is_int for ordered in order.expressions))
         ):
             widened = SELECT_ALL not in parent_selections
             parent_selections = {SELECT_ALL}

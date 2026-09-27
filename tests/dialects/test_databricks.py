@@ -576,3 +576,21 @@ class TestDatabricks(Validator):
         self.validate_identity("DECLARE x, y, z INT DEFAULT 1", "DECLARE x, y, z INT = 1")
         self.validate_identity("DECLARE x INT = 1")
         self.validate_identity("DECLARE OR REPLACE x INT = 1")
+
+    def test_where_alias_does_not_shadow_source_column(self):
+        # WHERE is evaluated before the projection, so "plant_code" refers to the source column
+        # even though the projection aliases it
+        from sqlglot.optimizer.qualify_columns import qualify_columns
+
+        sql = (
+            "SELECT CASE WHEN plant_code = '0010' THEN '0020' ELSE plant_code END AS plant_code"
+            " FROM my_db.forecast_snapshot WHERE plant_code = '0010' GROUP BY ALL"
+        )
+        self.assertEqual(
+            qualify_columns(
+                parse_one(sql, dialect="databricks"), schema={}, dialect="databricks"
+            ).sql("databricks"),
+            "SELECT CASE WHEN forecast_snapshot.plant_code = '0010' THEN '0020' ELSE "
+            "forecast_snapshot.plant_code END AS plant_code FROM my_db.forecast_snapshot "
+            "WHERE forecast_snapshot.plant_code = '0010' GROUP BY ALL",
+        )

@@ -347,6 +347,7 @@ def _expand_alias_refs(
         is_group_by = isinstance(node, exp.Group)
         is_having = isinstance(node, exp.Having)
         is_qualify = isinstance(node, exp.Qualify)
+        is_where = isinstance(node, exp.Where)
         if not node or (expand_only_groupby and not is_group_by):
             return
 
@@ -366,8 +367,18 @@ def _expand_alias_refs(
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
+                # WHERE is evaluated before the projection, so it only sees source columns: a name
+                # that can belong to a source must keep referring to it, unless the dialect
+                # resolves aliases in the WHERE clause
+                if (
+                    is_where
+                    and not dialect.SUPPORTS_ALIAS_REFS_IN_WHERE
+                    and (column.name in resolver.all_columns or resolver.has_unknown_sources)
+                ):
+                    skip_replace = True
+
                 # An aggregate alias must not be expanded into a GROUP BY or another (non-window) aggregate.
-                skip_replace = bool(
+                skip_replace = skip_replace or bool(
                     find_in_scope(alias_expr, exp.AggFunc)
                     and (
                         is_group_by

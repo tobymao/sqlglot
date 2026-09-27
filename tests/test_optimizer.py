@@ -1449,10 +1449,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT -99 AS "e" GROUP BY 1',
         )
 
-        # check order of lateral expansion with no schema
+        # check order of lateral expansion with no schema; WHERE resolves against the sources
         self.assertEqual(
             optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),
-            'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE ("x"."a" + 2) > 1 GROUP BY "x"."a" + 1 + 1',
+            'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE "x"."e" > 1 GROUP BY "x"."a" + 1 + 1',
         )
 
         unused_schema = {"l": {"c": "int"}}
@@ -1501,6 +1501,48 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 schema=MappingSchema(schema=unused_schema, dialect="bigquery"),
             ).sql(),
             "SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 HAVING x > 1",
+        )
+
+    def test_where_alias_must_not_shadow_source_column(self):
+        # WHERE is evaluated before the projection, so a name that matches a source column must
+        # not be expanded into the projection alias (SUPPORTS_ALIAS_REFS_IN_WHERE)
+        sql = """
+        SELECT CASE WHEN plant_code = '0010' THEN '0020' ELSE plant_code END AS plant_code
+        FROM my_db.forecast_snapshot
+        WHERE plant_code = '0010'
+        GROUP BY ALL
+        """
+        expected = (
+            "SELECT CASE WHEN forecast_snapshot.plant_code = '0010' THEN '0020' "
+            "ELSE forecast_snapshot.plant_code END AS plant_code "
+            "FROM my_db.forecast_snapshot "
+            "WHERE forecast_snapshot.plant_code = '0010' GROUP BY ALL"
+        )
+
+        for dialect in (None, "databricks"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(
+                    optimizer.qualify_columns.qualify_columns(
+                        parse_one(sql, dialect=dialect), schema={}, dialect=dialect
+                    ).sql(dialect),
+                    expected,
+                )
+
+        # Clickhouse resolves aliases in the WHERE clause, so the alias is expanded
+        self.assertEqual(
+            optimizer.qualify_columns.qualify_columns(
+                parse_one(
+                    "SELECT CASE WHEN plant_code = '0010' THEN '0020' ELSE plant_code END AS "
+                    "plant_code FROM my_db.forecast_snapshot WHERE plant_code = '0010'",
+                    dialect="clickhouse",
+                ),
+                schema={},
+                dialect="clickhouse",
+            ).sql("clickhouse"),
+            "SELECT CASE WHEN forecast_snapshot.plant_code = '0010' THEN '0020' ELSE "
+            "forecast_snapshot.plant_code END AS plant_code FROM my_db.forecast_snapshot "
+            "WHERE CASE WHEN forecast_snapshot.plant_code = '0010' THEN '0020' ELSE "
+            "forecast_snapshot.plant_code END = '0010'",
         )
 
     def test_optimize_joins(self):

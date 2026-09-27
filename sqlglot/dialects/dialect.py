@@ -566,6 +566,24 @@ class Dialect(metaclass=_Dialect):
     Reference: https://docs.snowflake.com/en/sql-reference/sql/select#usage-notes
     """
 
+    SUPPORTS_ALIAS_REFS_IN_WHERE = False
+    """
+    Whether alias references are allowed in the WHERE clause.
+
+    Most dialects do not support this, since WHERE is evaluated before the projection: a name
+    that can belong to a source refers to that column, not to a projection alias. Expanding such
+    a reference would silently change the meaning of the filter.
+
+    For example, in Spark:
+        SELECT CASE WHEN plant_code = '0010' THEN '0020' ELSE plant_code END AS plant_code
+        FROM forecast_snapshot
+        WHERE plant_code = '0010'  -- refers to forecast_snapshot.plant_code
+
+    References that no source can satisfy, e.g. an alias of a constant, are still expanded.
+
+    ClickHouse resolves aliases in the WHERE clause, so it opts in.
+    """
+
     SUPPORTS_ORDER_BY_ALL = False
     """
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks

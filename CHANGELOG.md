@@ -1,6 +1,74 @@
 Changelog
 =========
 
+## [v30.20.0] - 2026-09-27
+### :boom: BREAKING CHANGES
+- due to [`1d0e3f3`](https://github.com/tobymao/sqlglot/commit/1d0e3f34864037c54cf6bdf45af594db62ad7319) - Fix mysql roundtrip for DATE_ADD and DATE_SUB *(PR [#8417](https://github.com/tobymao/sqlglot/pull/8417) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
+
+  Fix mysql roundtrip for DATE_ADD and DATE_SUB (#8417)
+
+- due to [`284ea43`](https://github.com/tobymao/sqlglot/commit/284ea43fe773762a1aa1556171bbb4c03a197788) - support IGNORE NULLS and RESPECT NULLS in window functions [CLAUDE] *(PR [#8412](https://github.com/tobymao/sqlglot/pull/8412) by [@UCHPUCHMAK](https://github.com/UCHPUCHMAK))*:
+
+  support IGNORE NULLS and RESPECT NULLS in window functions [CLAUDE] (#8412)
+
+- due to [`abacf31`](https://github.com/tobymao/sqlglot/commit/abacf31d7b12b3bd70cd4a70b25cfcd2ad6c1f0a) - use row-preserving default projection for windowed aggregates *(PR [#8381](https://github.com/tobymao/sqlglot/pull/8381) by [@treysp](https://github.com/treysp))*:
+
+  use row-preserving default projection for windowed aggregates (#8381)
+
+- due to [`a388416`](https://github.com/tobymao/sqlglot/commit/a3884168f639633fa8f64334bf63e4b343bedfe2) - retain json <string> literals closes [#8413](https://github.com/tobymao/sqlglot/pull/8413) *(commit by [@georgesittas](https://github.com/georgesittas))*:
+
+  retain json <string> literals closes #8413
+
+- due to [`20fa8ae`](https://github.com/tobymao/sqlglot/commit/20fa8aedc48fccb780b973987908db63d0f76895) - keep `TRY_TO_NUMBER` safe when it falls back to a cast [CLAUDE] *(PR [#8424](https://github.com/tobymao/sqlglot/pull/8424) by [@anishmehta24](https://github.com/anishmehta24))*:
+
+  keep `TRY_TO_NUMBER` safe when it falls back to a cast [CLAUDE] (#8424)
+
+- due to [`b85a8c8`](https://github.com/tobymao/sqlglot/commit/b85a8c8b0d107410f6689c2ddad0921dbff9ddad) - exponential AST growth prevention in merge_subqueries *(PR [#8427](https://github.com/tobymao/sqlglot/pull/8427) by [@georgesittas](https://github.com/georgesittas))*:
+
+  exponential AST growth prevention in merge_subqueries (#8427)
+
+- due to [`4c11d07`](https://github.com/tobymao/sqlglot/commit/4c11d07af4b533274cabbcae9271234e9a0b039c) - avoid AUTOINCREMENT without a primary key *(PR [#8431](https://github.com/tobymao/sqlglot/pull/8431) by [@georgesittas](https://github.com/georgesittas))*:
+
+  avoid AUTOINCREMENT without a primary key (#8431)
+
+- due to [`d2fbb21`](https://github.com/tobymao/sqlglot/commit/d2fbb215ff6bd548547a151e8838c277aad076c1) - preserve TIMESTAMP_FROM_PARTS time zones ([#8422](https://github.com/tobymao/sqlglot/pull/8422)) *(PR [#8434](https://github.com/tobymao/sqlglot/pull/8434) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve TIMESTAMP_FROM_PARTS time zones (#8422) (#8434)
+
+- due to [`afd6b69`](https://github.com/tobymao/sqlglot/commit/afd6b6946267b0b1100f48b299f3d44ff9a13767) - annotate `bit_or` for duckdb *(PR [#8438](https://github.com/tobymao/sqlglot/pull/8438) by [@deepika-kakde](https://github.com/deepika-kakde))*:
+
+  annotate `bit_or` for duckdb (#8438)
+
+- due to [`8bd7686`](https://github.com/tobymao/sqlglot/commit/8bd768664197fbd0ed86158c0eca955c14f43328) - annotate `bit_and` for duckdb *(PR [#8439](https://github.com/tobymao/sqlglot/pull/8439) by [@Anuja006](https://github.com/Anuja006))*:
+
+  annotate `bit_and` for duckdb (#8439)
+
+
+### :sparkles: New Features
+- [`a313c8b`](https://github.com/tobymao/sqlglot/commit/a313c8bee143b4b92c9a068fef72a5fd512bba61) - **parser**: support boolean expressions in update assignments closes [#8428](https://github.com/tobymao/sqlglot/pull/8428) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`afd6b69`](https://github.com/tobymao/sqlglot/commit/afd6b6946267b0b1100f48b299f3d44ff9a13767) - **optimizer**: annotate `bit_or` for duckdb *(PR [#8438](https://github.com/tobymao/sqlglot/pull/8438) by [@deepika-kakde](https://github.com/deepika-kakde))*
+- [`8bd7686`](https://github.com/tobymao/sqlglot/commit/8bd768664197fbd0ed86158c0eca955c14f43328) - **optimizer**: annotate `bit_and` for duckdb *(PR [#8439](https://github.com/tobymao/sqlglot/pull/8439) by [@Anuja006](https://github.com/Anuja006))*
+
+### :bug: Bug Fixes
+- [`1d0e3f3`](https://github.com/tobymao/sqlglot/commit/1d0e3f34864037c54cf6bdf45af594db62ad7319) - **mysql**: Fix mysql roundtrip for DATE_ADD and DATE_SUB *(PR [#8417](https://github.com/tobymao/sqlglot/pull/8417) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+  - :arrow_lower_right: *fixes issue [#8392](https://github.com/tobymao/sqlglot/issues/8392) opened by [@linchangyang-sg](https://github.com/linchangyang-sg)*
+- [`284ea43`](https://github.com/tobymao/sqlglot/commit/284ea43fe773762a1aa1556171bbb4c03a197788) - **starrocks**: support IGNORE NULLS and RESPECT NULLS in window functions [CLAUDE] *(PR [#8412](https://github.com/tobymao/sqlglot/pull/8412) by [@UCHPUCHMAK](https://github.com/UCHPUCHMAK))*
+- [`abacf31`](https://github.com/tobymao/sqlglot/commit/abacf31d7b12b3bd70cd4a70b25cfcd2ad6c1f0a) - **optimizer**: use row-preserving default projection for windowed aggregates *(PR [#8381](https://github.com/tobymao/sqlglot/pull/8381) by [@treysp](https://github.com/treysp))*
+- [`a388416`](https://github.com/tobymao/sqlglot/commit/a3884168f639633fa8f64334bf63e4b343bedfe2) - retain json <string> literals closes [#8413](https://github.com/tobymao/sqlglot/pull/8413) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`32a9297`](https://github.com/tobymao/sqlglot/commit/32a9297a24f06035293a2a3e935a7b65ece25755) - **optimizer**: avoid accumulating parentheses when merging repeated references *(PR [#8425](https://github.com/tobymao/sqlglot/pull/8425) by [@georgesittas](https://github.com/georgesittas))*
+- [`20fa8ae`](https://github.com/tobymao/sqlglot/commit/20fa8aedc48fccb780b973987908db63d0f76895) - keep `TRY_TO_NUMBER` safe when it falls back to a cast [CLAUDE] *(PR [#8424](https://github.com/tobymao/sqlglot/pull/8424) by [@anishmehta24](https://github.com/anishmehta24))*
+- [`b85a8c8`](https://github.com/tobymao/sqlglot/commit/b85a8c8b0d107410f6689c2ddad0921dbff9ddad) - **optimizer**: exponential AST growth prevention in merge_subqueries *(PR [#8427](https://github.com/tobymao/sqlglot/pull/8427) by [@georgesittas](https://github.com/georgesittas))*
+- [`8d9f5d0`](https://github.com/tobymao/sqlglot/commit/8d9f5d08cce4b72b4df1a8f6394c2aa043cc7de8) - **parser**: handle singular ROW in FETCH and OFFSET clauses closes [#8429](https://github.com/tobymao/sqlglot/pull/8429) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`981e492`](https://github.com/tobymao/sqlglot/commit/981e492413740f7740d2b0288e3da5b4028c767e) - **clickhouse**: preserve GLOBAL JOIN after ON conditions fixes [#8426](https://github.com/tobymao/sqlglot/pull/8426) *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`4c11d07`](https://github.com/tobymao/sqlglot/commit/4c11d07af4b533274cabbcae9271234e9a0b039c) - **sqlite**: avoid AUTOINCREMENT without a primary key *(PR [#8431](https://github.com/tobymao/sqlglot/pull/8431) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8423](https://github.com/tobymao/sqlglot/issues/8423) opened by [@Rodrigo-Palma](https://github.com/Rodrigo-Palma)*
+- [`87b1402`](https://github.com/tobymao/sqlglot/commit/87b14027372c3820cbf6c89bc8adc2cbf8963404) - **optimizer**: preserve grouping when complementing comparisons *(PR [#8433](https://github.com/tobymao/sqlglot/pull/8433) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8421](https://github.com/tobymao/sqlglot/issues/8421) opened by [@Rodrigo-Palma](https://github.com/Rodrigo-Palma)*
+- [`d2fbb21`](https://github.com/tobymao/sqlglot/commit/d2fbb215ff6bd548547a151e8838c277aad076c1) - **duckdb**: preserve TIMESTAMP_FROM_PARTS time zones ([#8422](https://github.com/tobymao/sqlglot/pull/8422)) *(PR [#8434](https://github.com/tobymao/sqlglot/pull/8434) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8422](https://github.com/tobymao/sqlglot/issues/8422) opened by [@Rodrigo-Palma](https://github.com/Rodrigo-Palma)*
+- [`d01e946`](https://github.com/tobymao/sqlglot/commit/d01e9461a7a3fcbe50a965c7a2ddf55d41aca97d) - **optimizer**: preserve ordinal ordering with duplicate aliases [CODEX] *(PR [#8436](https://github.com/tobymao/sqlglot/pull/8436) by [@tobymao](https://github.com/tobymao))*
+
+
 ## [v30.19.0] - 2026-09-22
 ### :boom: BREAKING CHANGES
 - due to [`bbb717e`](https://github.com/tobymao/sqlglot/commit/bbb717ebb24c8dcbee94d77c9154e74da1dc6c10) - rename union scope type to set operation for consistency *(PR [#8306](https://github.com/tobymao/sqlglot/pull/8306) by [@georgesittas](https://github.com/georgesittas))*:
@@ -15921,3 +15989,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.17.0]: https://github.com/tobymao/sqlglot/compare/v30.16.0...v30.17.0
 [v30.18.0]: https://github.com/tobymao/sqlglot/compare/v30.17.0...v30.18.0
 [v30.19.0]: https://github.com/tobymao/sqlglot/compare/v30.18.0...v30.19.0
+[v30.20.0]: https://github.com/tobymao/sqlglot/compare/v30.19.0...v30.20.0

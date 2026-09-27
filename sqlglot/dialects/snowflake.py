@@ -17,7 +17,7 @@ class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/identifiers-syntax
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
     # https://docs.snowflake.com/en/sql-reference/data-types-text#escape-sequences
-    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v", "\\0": "\0"}
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
@@ -136,6 +136,10 @@ class Snowflake(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
+        # A backslash before any character not in this list is ignored, e.g. '\z' is 'z'
+        ESCAPE_FOLLOW_CHARS = ["0", "b", "f", "n", "r", "t", "u", "x", *"1234567"]
+        CODE_POINT_ESCAPES = True
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         RAW_STRINGS = ["$$"]
         COMMENTS = ["--", "//", ("/*", "*/")]

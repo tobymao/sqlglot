@@ -61,6 +61,7 @@ class _TokenizerBase:
     COMMAND_PREFIX_TOKENS: t.ClassVar[set[TokenType]]
     HEREDOC_TAG_IS_IDENTIFIER: t.ClassVar[bool]
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
+    CODE_POINT_ESCAPES: t.ClassVar[bool]
     NESTED_COMMENTS: t.ClassVar[bool]
     TOKENS_PRECEDING_HINT: t.ClassVar[set[TokenType]]
     HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
@@ -179,6 +180,10 @@ class Tokenizer(_TokenizerBase):
 
     # Whether string escape characters function as such when placed within raw strings
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = True
+
+    # Whether backslash escapes in strings can specify code points in octal (\ooo),
+    # hexadecimal (\xhh) or Unicode (\uhhhh) notation
+    CODE_POINT_ESCAPES: t.ClassVar[bool] = False
 
     NESTED_COMMENTS = True
 
@@ -570,6 +575,7 @@ class Tokenizer(_TokenizerBase):
             numbers_can_have_decimals=self.NUMBERS_CAN_HAVE_DECIMALS,
             identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
+            code_point_escapes=self.CODE_POINT_ESCAPES,
         )
 
     def tokenize(self, sql: str) -> list[Token]:

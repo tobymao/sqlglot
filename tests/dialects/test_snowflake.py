@@ -3513,6 +3513,28 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_string_escapes(self):
+        self.validate_identity("SELECT 'say \\\"hi\\\"'", "SELECT 'say \"hi\"'")
+        self.validate_identity("SELECT '\\x41'", "SELECT 'A'")
+        self.validate_identity("SELECT '\\u0041'", "SELECT 'A'")
+        self.validate_identity("SELECT '\\101'", "SELECT 'A'")
+        self.validate_identity("SELECT '\\012'", "SELECT '\\n'")
+        self.validate_identity("SELECT 'a\\0b'")
+        self.validate_identity("SELECT '\\z'", "SELECT 'z'")
+        self.validate_identity("SELECT '\\xZZ'", "SELECT '\\\\xZZ'")
+        self.validate_identity("SELECT $$\\x41$$", "SELECT '\\\\x41'")
+
+        self.assertEqual(self.parse_one("SELECT 'a\\0b'").selects[0].this, "a\0b")
+        self.assertEqual(self.parse_one("SELECT '\\u26c4'").selects[0].this, "⛄")
+
+        self.validate_all(
+            "SELECT '\\x41\\u0042\\103'",
+            write={
+                "snowflake": "SELECT 'ABC'",
+                "duckdb": "SELECT 'ABC'",
+            },
+        )
+
     def test_chained_pivots(self):
         self.validate_identity(
             "SELECT * FROM t UNPIVOT(a FOR b IN (c, d)) UNPIVOT(e FOR f IN (g, h))"

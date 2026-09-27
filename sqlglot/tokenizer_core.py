@@ -8,6 +8,8 @@ from sqlglot.errors import TokenError
 # dict lookup is faster than .upper() and .isdigit()
 _CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 _DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
+_OCTAL_CHARS: frozenset[str] = frozenset("01234567")
+_HEX_CHARS: frozenset[str] = frozenset("0123456789abcdefABCDEF")
 
 
 class TokenType(IntEnum):
@@ -574,6 +576,7 @@ class TokenizerCore:
         "numbers_can_have_decimals",
         "identifiers_can_start_with_digit",
         "unescaped_sequences",
+        "code_point_escapes",
     )
 
     def __init__(
@@ -605,6 +608,7 @@ class TokenizerCore:
         numbers_can_have_decimals: bool,
         identifiers_can_start_with_digit: bool,
         unescaped_sequences: dict[str, str],
+        code_point_escapes: bool,
     ) -> None:
         self.single_tokens = single_tokens
         self.keywords = keywords
@@ -633,6 +637,7 @@ class TokenizerCore:
         self.numbers_can_have_decimals = numbers_can_have_decimals
         self.identifiers_can_start_with_digit = identifiers_can_start_with_digit
         self.unescaped_sequences = unescaped_sequences
+        self.code_point_escapes = code_point_escapes
         self.sql = ""
         self.size = 0
         self.tokens: list[Token] = []
@@ -1131,6 +1136,7 @@ class TokenizerCore:
         escapes = self.string_escapes if escapes is None else escapes
         unescaped_sequences = self.unescaped_sequences
         escape_follow_chars = self.escape_follow_chars
+        code_point_escapes = self.code_point_escapes
         string_escapes_allowed_in_raw_strings = self.string_escapes_allowed_in_raw_strings
         quotes = self.quotes
         sql = self.sql
@@ -1162,6 +1168,12 @@ class TokenizerCore:
                 return sql[pos:end]
 
         while True:
+            if code_point_escapes and not raw_string and self._char == "\\" and "\\" in escapes:
+                code_point = self._extract_code_point()
+                if code_point:
+                    text += code_point
+                    continue
+
             if not raw_string and unescaped_sequences and self._peek and self._char in escapes:
                 unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
                 if unescaped_sequence:
@@ -1215,3 +1227,32 @@ class TokenizerCore:
                 text += sql[current : self._current - 1]
 
         return text
+
+    def _extract_code_point(self) -> str:
+        """Decodes an octal (\\ooo), hex (\\xhh) or Unicode (\\uhhhh) escape at the current backslash."""
+        peek = self._peek
+        start = self._current
+
+        if peek == "x":
+            start += 1
+            end = start + 2
+            digits = _HEX_CHARS
+            base = 16
+        elif peek == "u":
+            start += 1
+            end = start + 4
+            digits = _HEX_CHARS
+            base = 16
+        elif peek in _OCTAL_CHARS:
+            end = start + 3
+            digits = _OCTAL_CHARS
+            base = 8
+        else:
+            return ""
+
+        code = self.sql[start:end]
+        if end >= self.size or not all(c in digits for c in code):
+            return ""
+
+        self._advance(end - self._current + 1)
+        return chr(int(code, base))

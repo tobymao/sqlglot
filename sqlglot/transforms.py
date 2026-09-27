@@ -241,7 +241,10 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                 if expression_by_alias:
                     for column in select_candidate.find_all(exp.Column):
                         expr = expression_by_alias.get(column.name)
-                        if expr:
+
+                        # A qualified column refers to its table, not to a select alias, even if
+                        # their names coincide, so it must not be replaced by the aliased expression
+                        if expr and not column.table:
                             column.replace(expr)
 
                 alias = find_new_name(expression.named_selects, "_w")
@@ -252,7 +255,12 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                     qualify_filters = column
                 else:
                     select_candidate.replace(column)
-            elif select_candidate.name not in expression.named_selects:
+            elif select_candidate.name not in expression.named_selects and not (
+                select_candidate.find_ancestor(exp.Window)
+            ):
+                # A column that is only read by a window function is computed by the window
+                # itself, so projecting it in the subquery is redundant and can even produce
+                # invalid SQL, e.g. when the query is grouped
                 expression.select(select_candidate.copy(), copy=False)
 
         return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(

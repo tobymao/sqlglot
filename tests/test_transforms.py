@@ -84,12 +84,12 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "SELECT i, a + 1 FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p) = 1",
-            "SELECT i, _c FROM (SELECT i, a + 1 AS _c, ROW_NUMBER() OVER (PARTITION BY p) AS _w, p FROM qt) AS _t WHERE _w = 1",
+            "SELECT i, _c FROM (SELECT i, a + 1 AS _c, ROW_NUMBER() OVER (PARTITION BY p) AS _w FROM qt) AS _t WHERE _w = 1",
         )
         self.validate(
             eliminate_qualify,
             "SELECT i FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1 AND p = 0",
-            "SELECT i FROM (SELECT i, ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) AS _w, p, o FROM qt) AS _t WHERE _w = 1 AND p = 0",
+            "SELECT i FROM (SELECT i, ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) AS _w, p FROM qt) AS _t WHERE _w = 1 AND p = 0",
         )
         self.validate(
             eliminate_qualify,
@@ -114,7 +114,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "SELECT x FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY p)",
-            "SELECT x FROM (SELECT x, ROW_NUMBER() OVER (PARTITION BY p) AS _w, p FROM y) AS _t WHERE _w",
+            "SELECT x FROM (SELECT x, ROW_NUMBER() OVER (PARTITION BY p) AS _w FROM y) AS _t WHERE _w",
         )
         self.validate(
             eliminate_qualify,
@@ -124,7 +124,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "SELECT SOME_UDF(x) AS z FROM y QUALIFY ROW_NUMBER() OVER (PARTITION BY x ORDER BY z)",
-            "SELECT z FROM (SELECT SOME_UDF(x) AS z, ROW_NUMBER() OVER (PARTITION BY x ORDER BY SOME_UDF(x)) AS _w, x FROM y) AS _t WHERE _w",
+            "SELECT z FROM (SELECT SOME_UDF(x) AS z, ROW_NUMBER() OVER (PARTITION BY x ORDER BY SOME_UDF(x)) AS _w FROM y) AS _t WHERE _w",
         )
         self.validate(
             eliminate_qualify,
@@ -139,7 +139,38 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_qualify,
             "select max(col) over (partition by col_id) as col, from some_table qualify row_number() over (partition by col_id order by col asc)=1",
-            "SELECT col FROM (SELECT MAX(col) OVER (PARTITION BY col_id) AS col, ROW_NUMBER() OVER (PARTITION BY col_id ORDER BY MAX(col) OVER (PARTITION BY col_id) ASC) AS _w, col_id FROM some_table) AS _t WHERE _w = 1",
+            "SELECT col FROM (SELECT MAX(col) OVER (PARTITION BY col_id) AS col, ROW_NUMBER() OVER (PARTITION BY col_id ORDER BY MAX(col) OVER (PARTITION BY col_id) ASC) AS _w FROM some_table) AS _t WHERE _w = 1",
+        )
+        # A column that is only read by a window function must not be projected in the
+        # subquery, otherwise a grouped query selects a non-grouped column
+        self.validate(
+            eliminate_qualify,
+            "SELECT d, c, SUM(s) AS t FROM x GROUP BY d, c QUALIFY RANK() OVER (PARTITION BY d ORDER BY SUM(s) DESC) <= 3",
+            "SELECT d, c, t FROM (SELECT d, c, SUM(s) AS t, RANK() OVER (PARTITION BY d ORDER BY SUM(s) DESC) AS _w FROM x GROUP BY d, c) AS _t WHERE _w <= 3",
+        )
+        # Ditto when the window contains a subquery, whose columns may not be in scope
+        self.validate(
+            eliminate_qualify,
+            "SELECT x.c, SUM(x.s) AS t FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) <= 3",
+            "SELECT c, t FROM (SELECT x.c, SUM(x.s) AS t, RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
+        )
+        # A qualified column isn't replaced by a select alias that happens to share its name
+        self.validate(
+            eliminate_qualify,
+            "SELECT x.c, SUM(x.s) AS s FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY SUM(x.s) DESC) <= 3",
+            "SELECT c, s FROM (SELECT x.c, SUM(x.s) AS s, RANK() OVER (ORDER BY SUM(x.s) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
+        )
+        # ... whereas an unqualified one still is
+        self.validate(
+            eliminate_qualify,
+            "SELECT SUM(x.s) AS t FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY t DESC) <= 3",
+            "SELECT t FROM (SELECT SUM(x.s) AS t, RANK() OVER (ORDER BY SUM(x.s) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
+        )
+        # Columns that the outer filter reads are still projected
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, b FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY d ORDER BY e) = 1 AND f > 0",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY d ORDER BY e) AS _w, f FROM t) AS _t WHERE _w = 1 AND f > 0",
         )
 
     def test_remove_precision_parameterized_types(self):

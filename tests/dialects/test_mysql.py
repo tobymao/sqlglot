@@ -1990,3 +1990,13 @@ COMMENT='客户账户表'"""
             exp.AutoIncrementProperty
         )
         self.assertEqual(prop.this.to_py(), 3000000000)
+
+    def test_comments(self):
+        self.validate_identity("SELECT 1--1", "SELECT 1 - -1")
+        self.validate_identity("SELECT 1---1", "SELECT 1 - - -1")
+        self.validate_identity("SELECT 1-- 1", "SELECT 1 /* 1 */")
+        self.validate_identity("SELECT 1--\t1", "SELECT 1 /*\t1 */")
+        self.validate_identity("SELECT 1--", "SELECT 1")
+        self.validate_identity("SELECT 1 -- x\r+1", "SELECT 1 /* x\r+1 */")
+        self.validate_identity("SELECT 1 # x\r+1", "SELECT 1 /* x\r+1 */")
+        self.validate_identity("SELECT 1 -- x\n+1", "SELECT 1 /* x */ + 1")

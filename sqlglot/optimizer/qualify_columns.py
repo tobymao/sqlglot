@@ -1330,19 +1330,48 @@ def _is_lateral_subquery(scope: Scope) -> bool:
     return isinstance(parent, exp.Subquery) and isinstance(parent.parent, exp.Lateral)
 
 
-def _is_map_explode(
+def _udtf_output_names(
     selection: exp.Expr,
     scope: Scope,
     resolver: Resolver | None,
-) -> bool:
-    """Returns True if `selection` is an Explode whose argument is a MAP type (multi-output: key + value)."""
-    if not isinstance(selection, exp.Explode) or isinstance(selection, exp.Posexplode):
-        return False
+) -> list[str] | None:
+    """
+    Returns the default output column names for a multi-output UDTF whose arity can be
+    determined (either statically, e.g. STACK, or from the schema-resolved argument type),
+    or None if the arity can't be determined and the UDTF must be left unaliased.
+    """
+    if isinstance(selection, exp.Stack):
+        n = selection.this
+        if isinstance(n, exp.Literal) and n.is_int:
+            rows = int(n.to_py())
+            count = len(selection.expressions)
+            if rows and count % rows == 0:
+                return [f"col{i}" for i in range(count // rows)]
+        return None
+
+    if not isinstance(selection, (exp.Explode, exp.Inline)):
+        return None
+
     arg = selection.this
     if not isinstance(arg, exp.Column) or resolver is None:
-        return False
+        return None
+
     col_type = resolver._get_unnest_column_type(arg, scope)
-    return bool(col_type and col_type.is_type(exp.DataType.Type.MAP))
+    if not col_type:
+        return None
+
+    if isinstance(selection, exp.Posexplode):
+        if col_type.is_type(exp.DataType.Type.MAP):
+            return ["pos", "key", "value"]
+        if col_type.is_type(exp.DataType.Type.ARRAY):
+            return ["pos", "col"]
+        return None
+
+    if isinstance(selection, exp.Inline):
+        return resolver._struct_field_names(col_type) or None
+
+    # Plain Explode is only ambiguous in arity (1 vs 2 outputs) when the argument is a MAP
+    return ["key", "value"] if col_type.is_type(exp.DataType.Type.MAP) else None
 
 
 def qualify_outputs(
@@ -1376,41 +1405,48 @@ def qualify_outputs(
                 alias_identifier = exp.to_identifier(f"_col_{i}")
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
-        elif (
-            not isinstance(selection, (exp.Alias, exp.Aliases))
-            and not selection.is_star
-            and not isinstance(selection, exp.MULTI_OUTPUT_UDTF)
-            and not (
-                scope.is_subquery
-                and isinstance(selection, exp.UDTF)
-                and (not isinstance(selection, exp.Explode) or not _is_lateral_subquery(scope))
-            )
-            and not _is_map_explode(selection, scope, resolver)
-        ):
-            unwrapped = selection.unnest()
-            if isinstance(unwrapped, exp.Column):
-                source_identifier = unwrapped.this
-            elif isinstance(unwrapped, exp.Dot):
-                source_identifier = unwrapped.expression
-            else:
-                source_identifier = None
+        elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+            column_names = _udtf_output_names(selection, scope, resolver)
+            if column_names:
+                selection = exp.Aliases(
+                    this=selection,
+                    expressions=[exp.to_identifier(name) for name in column_names],
+                )
+            elif not (
+                isinstance(selection, exp.MULTI_OUTPUT_UDTF)
+                or (
+                    scope.is_subquery
+                    and isinstance(selection, exp.UDTF)
+                    and (not isinstance(selection, exp.Explode) or not _is_lateral_subquery(scope))
+                )
+            ):
+                unwrapped = selection.unnest()
+                if isinstance(unwrapped, exp.Column):
+                    source_identifier = unwrapped.this
+                elif isinstance(unwrapped, exp.Dot):
+                    source_identifier = unwrapped.expression
+                else:
+                    source_identifier = None
 
-            selection = alias(
-                selection,
-                alias=selection.output_name or f"_col_{i}",
-                copy=False,
-            )
-            if isinstance(source_identifier, exp.Identifier):
-                # The alias copies the exact spelling of an existing identifier, so folding it
-                # here would desync it from other occurrences of that identifier; its casing
-                # is `normalize_identifiers`' concern, which has already run (or was skipped
-                # deliberately) by this point
-                if source_identifier.quoted:
-                    selection.args["alias"].set("quoted", True)
+                selection = alias(
+                    selection,
+                    alias=selection.output_name or f"_col_{i}",
+                    copy=False,
+                )
+                if isinstance(source_identifier, exp.Identifier):
+                    # The alias copies the exact spelling of an existing identifier, so folding it
+                    # here would desync it from other occurrences of that identifier; its casing
+                    # is `normalize_identifiers`' concern, which has already run (or was skipped
+                    # deliberately) by this point
+                    if source_identifier.quoted:
+                        selection.args["alias"].set("quoted", True)
+                else:
+                    dialect.normalize_identifier(selection.args["alias"])
+        if aliased_column and not selection.is_star:
+            if not isinstance(selection, (exp.Alias, exp.Aliases)):
+                selection = exp.alias_(selection, aliased_column, copy=False)
             else:
-                dialect.normalize_identifier(selection.args["alias"])
-        if aliased_column:
-            selection.set("alias", exp.to_identifier(aliased_column))
+                selection.set("alias", exp.to_identifier(aliased_column))
 
         new_selections.append(selection)
 

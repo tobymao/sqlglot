@@ -7800,10 +7800,11 @@ class Parser:
             and self._next.text.upper() in self.PROCEDURE_OPTIONS
         )
 
+        index = self._index
         if not procedure_option_follows and self._match_texts(self.CONSTRAINT_PARSERS):
             constraint = self.CONSTRAINT_PARSERS[self._prev.text.upper()](self)
             if not constraint:
-                self._retreat(self._index - 1)
+                self._retreat(index)
                 return None
 
             return self.expression(exp.ColumnConstraint(this=this, kind=constraint))

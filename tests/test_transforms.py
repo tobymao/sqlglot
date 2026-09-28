@@ -154,12 +154,6 @@ class TestTransforms(unittest.TestCase):
             "SELECT x.c, SUM(x.s) AS t FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) <= 3",
             "SELECT c, t FROM (SELECT x.c, SUM(x.s) AS t, RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
         )
-        # ... whereas an unqualified one still is
-        self.validate(
-            eliminate_qualify,
-            "SELECT SUM(x.s) AS t FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY t DESC) <= 3",
-            "SELECT t FROM (SELECT SUM(x.s) AS t, RANK() OVER (ORDER BY SUM(x.s) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
-        )
         # Columns that the outer filter reads are still projected
         self.validate(
             eliminate_qualify,

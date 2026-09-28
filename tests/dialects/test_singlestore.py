@@ -898,7 +898,6 @@ class TestSingleStore(Validator):
         )
         self.validate_identity(
             "SELECT name :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
-            "SELECT name :> LONGTEXT :> LONGTEXT COLLATE 'utf8mb4_bin' FROM `users`",
         )
 
     def test_match_against(self):

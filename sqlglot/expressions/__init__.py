@@ -53,5 +53,6 @@ EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name
 # Functions that can return multiple rows. We include anonymous functions conservatively.
 SET_RETURNING_FUNCTIONS = (Anonymous, UDTF, ExplodingGenerateSeries)
 
-# UDTFs that return multiple columns; a single AS _col_0 alias would cause UDTF_ALIAS_NUMBER_MISMATCH.
-MULTI_OUTPUT_UDTF = (Explode, Inline, Stack)
+# UDTFs that always return multiple columns regardless of input type.
+# Explode is excluded because its arity depends on the argument type (MAP → 2, ARRAY → 1)
+MULTI_OUTPUT_UDTF = (Posexplode, Inline, Stack)

@@ -112,7 +112,7 @@ def qualify_columns(
                     pseudocolumns,
                     annotator,
                 )
-            qualify_outputs(scope, dialect=dialect)
+            qualify_outputs(scope, dialect=dialect, resolver=resolver)
 
         _expand_group_by(scope, dialect)
 
@@ -1324,7 +1324,32 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> None:
+def _is_lateral_subquery(scope: Scope) -> bool:
+    """Returns True if scope is the inner SELECT of a LATERAL derived table."""
+    parent = scope.expression.parent
+    return isinstance(parent, exp.Subquery) and isinstance(parent.parent, exp.Lateral)
+
+
+def _is_map_explode(
+    selection: exp.Expr,
+    scope: Scope,
+    resolver: Resolver | None,
+) -> bool:
+    """Returns True if `selection` is an Explode whose argument is a MAP type (multi-output: key + value)."""
+    if not isinstance(selection, exp.Explode) or isinstance(selection, exp.Posexplode):
+        return False
+    arg = selection.this
+    if not isinstance(arg, exp.Column) or resolver is None:
+        return False
+    col_type = resolver._get_unnest_column_type(arg, scope)
+    return bool(col_type and col_type.is_type(exp.DataType.Type.MAP))
+
+
+def qualify_outputs(
+    scope_or_expression: Scope | exp.Expr,
+    dialect: Dialect,
+    resolver: Resolver | None = None,
+) -> None:
     """Ensure all output columns are aliased"""
     if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
@@ -1355,7 +1380,12 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             not isinstance(selection, (exp.Alias, exp.Aliases))
             and not selection.is_star
             and not isinstance(selection, exp.MULTI_OUTPUT_UDTF)
-            and not (scope.is_subquery and isinstance(selection, exp.UDTF))
+            and not (
+                scope.is_subquery
+                and isinstance(selection, exp.UDTF)
+                and (not isinstance(selection, exp.Explode) or not _is_lateral_subquery(scope))
+            )
+            and not _is_map_explode(selection, scope, resolver)
         ):
             unwrapped = selection.unnest()
             if isinstance(unwrapped, exp.Column):

@@ -55,7 +55,7 @@ def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_columns.qualify_columns(
         expression, infer_schema=not STRICT_SCHEMA, **kwargs
     )
-    expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
+    expression = optimizer.pushdown_projections.pushdown_projections(expression)
     return expression
 
 

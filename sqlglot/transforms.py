@@ -241,8 +241,8 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                 if expression_by_alias:
                     for column in select_candidate.find_all(exp.Column):
                         expr = expression_by_alias.get(column.name)
-
                         if expr:
+                            column.replace(expr)
 
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(select_candidate, alias), copy=False)

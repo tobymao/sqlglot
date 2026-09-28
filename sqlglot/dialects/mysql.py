@@ -79,6 +79,10 @@ class MySQL(Dialect):
 
         NESTED_COMMENTS = False
 
+        # https://dev.mysql.com/doc/refman/8.4/en/ansi-diff-comments.html
+        DASH_COMMENT_REQUIRES_SPACE = True
+        LINE_COMMENT_ENDS_AT_CR = False
+
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
             "BLOB": TokenType.BLOB,

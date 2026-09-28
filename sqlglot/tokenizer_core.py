@@ -560,6 +560,8 @@ class TokenizerCore:
         "commands",
         "command_prefix_tokens",
         "nested_comments",
+        "dash_comment_requires_space",
+        "line_comment_ends_at_cr",
         "hint_start",
         "tokens_preceding_hint",
         "has_bit_strings",
@@ -591,6 +593,8 @@ class TokenizerCore:
         commands: set[TokenType],
         command_prefix_tokens: set[TokenType],
         nested_comments: bool,
+        dash_comment_requires_space: bool,
+        line_comment_ends_at_cr: bool,
         hint_start: str,
         tokens_preceding_hint: set[TokenType],
         has_bit_strings: bool,
@@ -619,6 +623,8 @@ class TokenizerCore:
         self.commands = commands
         self.command_prefix_tokens = command_prefix_tokens
         self.nested_comments = nested_comments
+        self.dash_comment_requires_space = dash_comment_requires_space
+        self.line_comment_ends_at_cr = line_comment_ends_at_cr
         self.hint_start = hint_start
         self.tokens_preceding_hint = tokens_preceding_hint
         self.has_bit_strings = has_bit_strings
@@ -847,10 +853,10 @@ class TokenizerCore:
                 return
             if self._scan_comment(word):
                 return
-            if prev_space or single_token or not char:
+            word_upper = word.upper()
+            if (prev_space or single_token or not char) and word_upper in self.keywords:
                 self._advance(size - 1)
-                word = word.upper()
-                self._add(self.keywords[word], text=word)
+                self._add(self.keywords[word_upper], text=word_upper)
                 return
 
         if self._char in single_tokens:
@@ -862,6 +868,11 @@ class TokenizerCore:
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self.comments:
             return False
+
+        if comment_start == "--" and self.dash_comment_requires_space:
+            follow = self._current + 1
+            if follow < self.size and self.sql[follow] > " " and self.sql[follow] != "\x7f":
+                return False
 
         comment_start_line = self._line
         comment_start_size = len(comment_start)
@@ -896,7 +907,8 @@ class TokenizerCore:
             self._advance(comment_end_size - 1)
         else:
             _peek = self._peek
-            while not self._end and _peek != "\n" and _peek != "\r":
+            ends_at_cr = self.line_comment_ends_at_cr
+            while not self._end and _peek != "\n" and (_peek != "\r" or not ends_at_cr):
                 self._advance(alnum=True)
                 _peek = self._peek
             self._comments.append(self._text[comment_start_size:])

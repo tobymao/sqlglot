@@ -182,6 +182,12 @@ class Tokenizer(_TokenizerBase):
 
     NESTED_COMMENTS = True
 
+    # Whether "--" only starts a comment when followed by whitespace or a control character
+    DASH_COMMENT_REQUIRES_SPACE = False
+
+    # Whether a carriage return (\r) terminates a single-line comment, in addition to \n
+    LINE_COMMENT_ENDS_AT_CR = True
+
     HINT_START = "/*+"
 
     TOKENS_PRECEDING_HINT = {TokenType.SELECT, TokenType.INSERT, TokenType.UPDATE, TokenType.DELETE}
@@ -556,6 +562,8 @@ class Tokenizer(_TokenizerBase):
             commands=self.COMMANDS,
             command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
             nested_comments=self.NESTED_COMMENTS,
+            dash_comment_requires_space=self.DASH_COMMENT_REQUIRES_SPACE,
+            line_comment_ends_at_cr=self.LINE_COMMENT_ENDS_AT_CR,
             hint_start=self.HINT_START,
             tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
             has_bit_strings=bool(self.BIT_STRINGS),

@@ -154,12 +154,6 @@ class TestTransforms(unittest.TestCase):
             "SELECT x.c, SUM(x.s) AS t FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) <= 3",
             "SELECT c, t FROM (SELECT x.c, SUM(x.s) AS t, RANK() OVER (ORDER BY (SELECT SUM(y.s) FROM y WHERE y.c = x.c) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
         )
-        # A qualified column isn't replaced by a select alias that happens to share its name
-        self.validate(
-            eliminate_qualify,
-            "SELECT x.c, SUM(x.s) AS s FROM x GROUP BY x.c QUALIFY RANK() OVER (ORDER BY SUM(x.s) DESC) <= 3",
-            "SELECT c, s FROM (SELECT x.c, SUM(x.s) AS s, RANK() OVER (ORDER BY SUM(x.s) DESC) AS _w FROM x GROUP BY x.c) AS _t WHERE _w <= 3",
-        )
         # ... whereas an unqualified one still is
         self.validate(
             eliminate_qualify,

@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import re
 import typing as t
+from collections import Counter
 
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType
@@ -492,9 +493,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     if not isinstance(expression, exp.Selectable):
         return
 
-    names = expression.named_selects
-    if len(names) != len(set(names)):
-        return
+    alias_names = {name for name, count in Counter(expression.named_selects).items() if count == 1}
 
     # TODO (mypyc): rebind to exp.Expr to avoid Selectable trait vtable dispatch for .args
     expr: exp.Expr = expression
@@ -514,7 +513,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         for original, expanded in zip(
             modifier_expressions,
             _expand_positional_references(
-                scope, modifier_expressions, resolver.dialect, alias=True
+                scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
             for agg in original.find_all(exp.AggFunc):
@@ -525,18 +524,23 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
             original.replace(expanded)
 
         if expr.args.get("group"):
-            selects = {s.this: exp.column(s.alias_or_name) for s in expression.selects}
+            selects = {
+                s.this: exp.column(s.alias_or_name)
+                for s in expression.selects
+                if s.alias_or_name in alias_names
+            }
 
             for node in modifier_expressions:
-                node.replace(
-                    exp.to_identifier(_select_by_pos(expression, node).alias)
-                    if node.is_int
-                    else selects.get(node, node)
-                )
+                # Remaining ordinals reference duplicate aliases and must stay positional.
+                if not node.is_int:
+                    node.replace(selects.get(node, node))
 
 
 def _expand_positional_references(
-    scope: Scope, expressions: Iterable[exp.Expr], dialect: Dialect, alias: bool = False
+    scope: Scope,
+    expressions: Iterable[exp.Expr],
+    dialect: Dialect,
+    alias_names: set[str] | None = None,
 ) -> list[exp.Expr]:
     new_nodes: list[exp.Expr] = []
     ambiguous_projections = None
@@ -550,8 +554,10 @@ def _expand_positional_references(
         if node.is_int and isinstance(node, exp.Literal):
             select = _select_by_pos(expression, node)
 
-            if alias:
-                new_nodes.append(exp.column(select.args["alias"].copy()))
+            if alias_names is not None:
+                new_nodes.append(
+                    exp.column(select.args["alias"].copy()) if select.alias in alias_names else node
+                )
             else:
                 # TODO (mypyc): use a separate variable to avoid reusing `select` (Alias) with a different type
                 select_expr: exp.Expr = select.this

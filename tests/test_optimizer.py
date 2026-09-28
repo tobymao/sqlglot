@@ -1,3 +1,4 @@
+import json
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -48,7 +49,7 @@ def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
     expression = optimizer.qualify_columns.qualify_columns(expression, infer_schema=True, **kwargs)
-    expression = optimizer.pushdown_projections.pushdown_projections(expression, **kwargs)
+    expression = optimizer.pushdown_projections.pushdown_projections(expression)
     return expression
 
 
@@ -215,6 +216,9 @@ class TestOptimizer(unittest.TestCase):
                 canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
 
                 func_kwargs = kwargs.copy()
+
+                if schema := meta.get("schema"):
+                    func_kwargs["schema"] = json.loads(schema)
 
                 if leave_tables_isolated is not None:
                     func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
@@ -1573,9 +1577,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             identify=False,
         )
         sql = expression.sql()
-        optimizer.pushdown_projections.pushdown_projections(
-            expression, schema=self.schema, journal=journal
-        )
+        optimizer.pushdown_projections.pushdown_projections(expression, journal=journal)
         self.assertEqual(
             expression.sql(), "SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x) AS t"
         )
@@ -1599,9 +1601,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             identify=False,
         )
         original = expression.copy()
-        optimizer.pushdown_projections.pushdown_projections(
-            expression, dialect="duckdb", journal=journal
-        )
+        optimizer.pushdown_projections.pushdown_projections(expression, journal=journal)
         group = expression.find(exp.CTE).this.args["group"]
         self.assertEqual([e.sql() for e in group.expressions], ["t.z", "1", "1"])
 
@@ -1965,8 +1965,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize(
                 "SELECT * FROM foo",
                 on_qualify=lambda table: table.replace(exp.to_table("bar")),
+                schema={"bar": {"a": "INT"}},
             ).sql(),
-            'SELECT * FROM "bar"',
+            'SELECT "bar"."a" AS "a" FROM "bar"',
         )
 
     def test_scope(self):
@@ -3187,9 +3188,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ),
         ):
             with self.subTest(sql):
-                expression = optimizer.pushdown_projections.pushdown_projections(
-                    parse_one(sql), schema=self.schema
-                )
+                expression = optimizer.pushdown_projections.pushdown_projections(parse_one(sql))
                 self.assertEqual(expression.sql(), expected)
 
     def test_pushdown_projections_keeps_recursive_cte_self_referenced_columns(self):

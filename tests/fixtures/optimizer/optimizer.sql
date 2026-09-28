@@ -491,13 +491,16 @@ JOIN "alias_2" AS "alias_2"
 
 # title: db.table alias clash
 # execute: false
+# schema: {"db1": {"tbl": {"a": "INT"}}, "db2": {"tbl": {"b": "INT"}}}
 select * from db1.tbl, db2.tbl;
 SELECT
-  *
+  "tbl"."a" AS "a",
+  "tbl_2"."b" AS "b"
 FROM "db1"."tbl" AS "tbl"
 CROSS JOIN "db2"."tbl" AS "tbl_2";
 
 # execute: false
+# schema: {"unioned": {"uploaded_at": "DATE", "source_system": "TEXT", "unique_filter_key": "TEXT"}}
 SELECT
 *,
 IFF(
@@ -526,9 +529,11 @@ OR (
 	1
 ) = 1;
 SELECT
-  *,
+  "unioned"."uploaded_at" AS "uploaded_at",
+  "unioned"."source_system" AS "source_system",
+  "unioned"."unique_filter_key" AS "unique_filter_key",
   IFF(
-    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= '2022-06-16', 'workday', 'bamboohr'),
+    "unioned"."source_system" = IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS DATE), 'workday', 'bamboohr'),
     1,
     0
   ) AS "sort_order"
@@ -538,7 +543,11 @@ WHERE
 QUALIFY
   ROW_NUMBER() OVER (
     PARTITION BY "unioned"."unique_filter_key"
-    ORDER BY "unioned"."sort_order" DESC, 1
+    ORDER BY IFF(
+      IFF("unioned"."uploaded_at" >= CAST('2022-06-16' AS DATE), 'workday', 'bamboohr') = "unioned"."source_system",
+      1,
+      0
+    ) DESC, 1
   ) = 1;
 
 # title: pivoted source with explicit selections
@@ -881,18 +890,22 @@ FROM "x" AS "x";
 
 # title: wrapped table without alias
 # execute: false
+# schema: {"tbl": {"a": "INT", "b": "INT"}}
 SELECT * FROM (tbl);
 SELECT
-  *
+  "tbl"."a" AS "a",
+  "tbl"."b" AS "b"
 FROM (
   "tbl" AS "tbl"
 );
 
 # title: wrapped table with alias
 # execute: false
+# schema: {"tbl": {"a": "INT", "b": "INT"}}
 SELECT * FROM (tbl AS tbl);
 SELECT
-  *
+  "tbl"."a" AS "a",
+  "tbl"."b" AS "b"
 FROM (
   "tbl" AS "tbl"
 );
@@ -920,9 +933,14 @@ LEFT JOIN "y" AS "y"
 
 # title: chained wrapped joins without aliases
 # execute: false
+# schema: {"a": {"a": "INT"}, "b": {"b": "INT"}, "c": {"c": "INT"}, "d": {"d": "INT"}, "e": {"e": "INT"}}
 SELECT * FROM ((a CROSS JOIN ((b CROSS JOIN c) CROSS JOIN (d CROSS JOIN e))));
 SELECT
-  *
+  "a"."a" AS "a",
+  "b"."b" AS "b",
+  "c"."c" AS "c",
+  "d"."d" AS "d",
+  "e"."e" AS "e"
 FROM (
   (
     "a" AS "a"
@@ -941,9 +959,12 @@ FROM (
 
 # title: chained wrapped joins with aliases
 # execute: false
+# schema: {"a": {"a": "INT"}, "b": {"b": "INT"}, "c": {"c": "INT"}}
 SELECT * FROM ((a AS foo CROSS JOIN b AS bar) CROSS JOIN c AS baz);
 SELECT
-  *
+  "foo"."a" AS "a",
+  "bar"."b" AS "b",
+  "baz"."c" AS "c"
 FROM (
   (
     "a" AS "foo"
@@ -986,16 +1007,13 @@ LEFT JOIN (
 
 # title: select * from wrapped subquery
 # execute: false
+# schema: {"tbl": {"a": "INT", "b": "INT"}}
 SELECT * FROM ((SELECT * FROM tbl));
-WITH "_0" AS (
-  SELECT
-    *
-  FROM "tbl" AS "tbl"
-)
 SELECT
-  *
+  "tbl"."a" AS "a",
+  "tbl"."b" AS "b"
 FROM (
-  "_0" AS "_0"
+  "tbl" AS "tbl"
 );
 
 # title: select * from wrapped subquery joined to a table (known schema)
@@ -1011,18 +1029,15 @@ FROM (
       ON "x"."a" = "y"."c"
 );
 
-# title: select * from wrapped subquery joined to a table (unknown schema)
+# title: select * from wrapped subquery cross joined to a table
 # execute: false
+# schema: {"t1": {"c": "INT"}, "t2": {"d": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-WITH "_0" AS (
-  SELECT
-    "t1"."c" AS "c"
-  FROM "t1" AS "t1"
-)
 SELECT
-  *
+  "t1"."c" AS "c",
+  "t2"."d" AS "d"
 FROM (
-  "_0" AS "_0"
+  "t1" AS "t1"
     CROSS JOIN "t2" AS "t2"
 );
 
@@ -1036,23 +1051,16 @@ FROM (
       ON "x"."a" = "y"."b"
 );
 
-# title: select * from wrapped join of subqueries (unknown schema)
+# title: select * from wrapped cross join of subqueries
 # execute: false
+# schema: {"t1": {"c": "INT"}, "t2": {"d": "INT"}}
 SELECT * FROM ((SELECT * FROM t1) JOIN (SELECT * FROM t2));
-WITH "_0" AS (
-  SELECT
-    *
-  FROM "t1" AS "t1"
-), "_1" AS (
-  SELECT
-    *
-  FROM "t2" AS "t2"
-)
 SELECT
-  *
+  "t1"."c" AS "c",
+  "t2"."d" AS "d"
 FROM (
-  "_0" AS "_0"
-    CROSS JOIN "_1" AS "_1"
+  "t1" AS "t1"
+    CROSS JOIN "t2" AS "t2"
 );
 
 # title: select * from wrapped join of subqueries (known schema)
@@ -1167,6 +1175,7 @@ WHERE
 
 # title: using join without select *
 # execute: false
+# schema: {"table1": {"cid": "INT"}, "table2": {"cid": "INT", "od": "DATE", "odi": "INT"}}
 with
     alias1 as (select * from table1),
     alias2 as (select * from table2),
@@ -1343,6 +1352,7 @@ WHERE
 # title: decorrelate subquery and transpile ArrayAny correctly when generating spark
 # execute: false
 # dialect: spark
+# schema: {"catalog_sales": {"cs_order_number": "bigint", "cs_ext_ship_cost": "double", "cs_net_profit": "double", "cs_ship_date_sk": "bigint", "cs_ship_addr_sk": "bigint", "cs_call_center_sk": "bigint", "cs_warehouse_sk": "bigint"}, "date_dim": {"d_date": "string", "d_date_sk": "bigint"}, "customer_address": {"ca_address_sk": "bigint", "ca_state": "string"}, "call_center": {"cc_call_center_sk": "bigint", "cc_county": "string"}, "catalog_returns": {"cr_order_number": "bigint"}}
 SELECT
   COUNT(DISTINCT cs1.cs_order_number) AS `order count`,
   SUM(cs1.cs_ext_ship_cost) AS `total shipping cost`,
@@ -1372,14 +1382,14 @@ WHERE
 LIMIT 100;
 WITH `_u_0` AS (
   SELECT
-    `cs2`.`cs_order_number` AS `_u_1`,
-    COLLECT_LIST(`cs2`.`cs_warehouse_sk`) AS `_u_2`
+    `cs2`.`cs_order_number` AS `cs_order_number`,
+    COLLECT_LIST(`cs2`.`cs_warehouse_sk`) AS `_u_1`
   FROM `catalog_sales` AS `cs2`
   GROUP BY
     `cs2`.`cs_order_number`
-), `_u_3` AS (
+), `_u_2` AS (
   SELECT
-    `cr1`.`cr_order_number` AS `_u_4`
+    `cr1`.`cr_order_number` AS `cr_order_number`
   FROM `catalog_returns` AS `cr1`
   GROUP BY
     `cr1`.`cr_order_number`
@@ -1391,10 +1401,10 @@ SELECT
 FROM `catalog_sales` AS `cs1`
 JOIN `date_dim` AS `date_dim`
   ON `cs1`.`cs_ship_date_sk` = `date_dim`.`d_date_sk`
-  AND `date_dim`.`d_date` <= (
-    CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
-  )
   AND `date_dim`.`d_date` >= '2002-02-01'
+  AND (
+    CAST(CAST('2002-02-01' AS DATE) AS TIMESTAMP) + INTERVAL '60' DAYS
+  ) >= CAST(`date_dim`.`d_date` AS TIMESTAMP)
 JOIN `customer_address` AS `customer_address`
   ON `cs1`.`cs_ship_addr_sk` = `customer_address`.`ca_address_sk`
   AND `customer_address`.`ca_state` = 'GA'
@@ -1408,21 +1418,22 @@ JOIN `call_center` AS `call_center`
     'Williamson County'
   )
 LEFT JOIN `_u_0` AS `_u_0`
-  ON `_u_0`.`_u_1` = `cs1`.`cs_order_number`
-LEFT JOIN `_u_3` AS `_u_3`
-  ON `_u_3`.`_u_4` = `cs1`.`cs_order_number`
+  ON `_u_0`.`cs_order_number` = `cs1`.`cs_order_number`
+LEFT JOIN `_u_2` AS `_u_2`
+  ON `_u_2`.`cr_order_number` = `cs1`.`cs_order_number`
 WHERE
-  `_u_3`.`_u_4` IS NULL
+  `_u_2`.`cr_order_number` IS NULL
   AND (
-    SIZE(`_u_0`.`_u_2`) = 0
-    OR SIZE(FILTER(`_u_0`.`_u_2`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
+    SIZE(`_u_0`.`_u_1`) = 0
+    OR SIZE(FILTER(`_u_0`.`_u_1`, `_x` -> `cs1`.`cs_warehouse_sk` <> `_x`)) <> 0
   )
-  AND NOT `_u_0`.`_u_1` IS NULL
+  AND NOT `_u_0`.`cs_order_number` IS NULL
 ORDER BY
   COUNT(DISTINCT `cs1`.`cs_order_number`)
 LIMIT 100;
 
 # execute: false
+# schema: {"event": {"priority": "TEXT", "tagname": "TEXT"}, "cascade": {"tag_input": "TEXT", "tag_output": "TEXT"}}
 SELECT
   *
 FROM event
@@ -1457,7 +1468,8 @@ WITH "_u_0" AS (
     "_u_0"."tagname"
 )
 SELECT
-  *
+  "event"."priority" AS "priority",
+  "event"."tagname" AS "tagname"
 FROM "event" AS "event"
 LEFT JOIN "_u_1" AS "_u_1"
   ON "_u_1"."tagname" = "event"."tagname"

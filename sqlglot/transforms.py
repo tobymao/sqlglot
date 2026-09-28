@@ -252,7 +252,12 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                     qualify_filters = column
                 else:
                     select_candidate.replace(column)
-            elif select_candidate.name not in expression.named_selects:
+            elif select_candidate.name not in expression.named_selects and not (
+                select_candidate.find_ancestor(exp.Window)
+            ):
+                # A column that is only read by a window function is computed by the window
+                # itself, so projecting it in the subquery is redundant and can even produce
+                # invalid SQL, e.g. when the query is grouped
                 expression.select(select_candidate.copy(), copy=False)
 
         return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(

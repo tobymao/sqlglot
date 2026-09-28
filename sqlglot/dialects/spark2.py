@@ -29,6 +29,8 @@ class Spark2(Hive):
     INITCAP_DEFAULT_DELIMITER_CHARS = " "
 
     class Tokenizer(Hive.Tokenizer):
+        NUMERIC_LITERALS = {**Hive.Tokenizer.NUMERIC_LITERALS, "BD": "BIGDECIMAL"}
+
         HEX_STRINGS = [("X'", "'"), ("x'", "'")]
 
         KEYWORDS = {

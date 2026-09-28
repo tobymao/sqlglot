@@ -9,6 +9,32 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_decimal_suffix_precision(self):
+        for dialect in ("spark2", "spark", "databricks"):
+            for literal, precision, scale in (
+                ("10.50", 4, 2),
+                ("0.00", 2, 2),
+                ("0.01", 2, 2),
+                ("0001.50", 3, 2),
+                ("1E3", 4, 0),
+                ("0E3", 4, 0),
+                ("1E-18", 18, 18),
+                ("1.234567890123456789E2", 19, 16),
+                ("12345678901234567890.123456789012345678", 38, 18),
+            ):
+                for sign in ("", "-", "+"):
+                    with self.subTest(dialect=dialect, literal=literal, sign=sign):
+                        expression = parse_one(f"{sign}{literal}BD", read=dialect)
+                        prefix = "-" if sign == "-" else ""
+                        expected = f"{prefix}CAST('{literal}' AS DECIMAL({precision}, {scale}))"
+                        self.assertEqual(expression.sql(dialect=dialect), expected)
+                        # Type and value also survive cross-dialect generation.
+                        self.assertIn(f"DECIMAL({precision}, {scale})", expression.sql("trino"))
+            self.assertEqual(
+                parse_one("CAST(10.50 AS DECIMAL)", read=dialect).sql(dialect=dialect),
+                "CAST(10.50 AS DECIMAL)",
+            )
+
     def test_ddl(self):
         self.validate_identity("DAYOFWEEK(TO_DATE(x))")
         self.validate_identity("DAYOFMONTH(TO_DATE(x))")

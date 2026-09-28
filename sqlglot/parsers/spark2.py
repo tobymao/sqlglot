@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
@@ -32,6 +33,24 @@ def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
 
 
 class Spark2Parser(HiveParser):
+    def build_cast(self, strict: bool, **kwargs) -> exp.Expr:
+        this, to = kwargs.get("this"), kwargs.get("to")
+        if (
+            isinstance(this, exp.Literal)
+            and not this.is_string
+            and isinstance(to, exp.DataType)
+            and to.is_type(exp.DType.BIGDECIMAL)
+        ):
+            # BD literals infer DECIMAL(p,s); a bare DECIMAL cast means (10,0).
+            _, digits, exponent = Decimal(this.name).as_tuple()
+            scale = max(0, -int(exponent))
+            precision = max(len(digits) + max(0, int(exponent)), scale)
+            # Exponent notation without BD is a DOUBLE in Spark. A string cast
+            # avoids losing precision before the DECIMAL cast takes place.
+            kwargs["this"] = exp.Literal.string(this.name)
+            kwargs["to"] = exp.DataType.build(f"DECIMAL({precision}, {scale})")
+        return super().build_cast(strict, **kwargs)
+
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
     PIVOT_COLUMN_NAMING = "agg_name_if_multiple"

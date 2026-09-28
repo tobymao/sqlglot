@@ -18,3 +18,7 @@ SELECT b FROM x INNER JOIN y ON x.a = y.c INNER JOIN z ON x.a = z.c;
 SELECT unpivotable.north FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) UNPIVOT(headcount FOR region IN (north, south))
 SELECT u1.id FROM unpivotable UNPIVOT(zzz FOR m IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (zzz)) AS u2
 SELECT u2.* FROM unpivotable UNPIVOT(revenue FOR month IN (jan, feb)) AS u1 CROSS JOIN x UNPIVOT(w FOR k IN (b)) AS u2
+SELECT w.d FROM w JOIN y ON TRUE JOIN z ON b > 0;
+SELECT w.d FROM w JOIN y ON TRUE ANTI JOIN z ON b > 0;
+SELECT w.d FROM w JOIN y ON TRUE SEMI JOIN z ON b > 0;
+SELECT w.d FROM w JOIN (SELECT b FROM y) AS n ON TRUE ANTI JOIN z ON b > 0;

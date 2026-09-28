@@ -242,10 +242,7 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                     for column in select_candidate.find_all(exp.Column):
                         expr = expression_by_alias.get(column.name)
 
-                        # A qualified column refers to its table, not to a select alias, even if
-                        # their names coincide, so it must not be replaced by the aliased expression
-                        if expr and not column.table:
-                            column.replace(expr)
+                        if expr:
 
                 alias = find_new_name(expression.named_selects, "_w")
                 expression.select(exp.alias_(select_candidate, alias), copy=False)

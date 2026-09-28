@@ -9,6 +9,16 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_insert_value(self):
+        self.validate_identity("INSERT INTO t VALUE (1)", "INSERT INTO t VALUES (1)")
+        self.validate_identity(
+            "INSERT INTO t (a) value (1), (2)", "INSERT INTO t (a) VALUES (1), (2)"
+        )
+        self.validate_identity(
+            "INSERT INTO value (value) VALUE (1)", "INSERT INTO value (value) VALUES (1)"
+        )
+        self.validate_identity("SELECT value FROM value")
+
     def test_ddl(self):
         self.validate_identity("DROP TEMPORARY TABLE IF EXISTS db.t1, t2 CASCADE")
 

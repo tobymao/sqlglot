@@ -3695,7 +3695,7 @@ class Parser:
                 settings=self._match_text_seq("SETTINGS") and self._parse_settings_property(),
                 default=self._match_text_seq("DEFAULT", "VALUES"),
                 expression=set_values
-                or self._parse_derived_table_values()
+                or self._parse_derived_table_values(allow_value_synonym=True)
                 or self._parse_ddl_select(),
                 conflict=self._parse_on_conflict(),
                 returning=returning or self._parse_returning(),
@@ -5270,11 +5270,14 @@ class Parser:
 
         return self.expression(exp.Unnest(expressions=expressions, alias=alias, offset=offset))
 
-    def _parse_derived_table_values(self) -> exp.Values | None:
+    def _parse_derived_table_values(self, allow_value_synonym: bool = False) -> exp.Values | None:
         is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)
         if not is_derived and not (
             # ClickHouse's `FORMAT Values` is equivalent to `VALUES`
-            self._match_text_seq("VALUES") or self._match_text_seq("FORMAT", "VALUES")
+            self._match_text_seq("VALUES")
+            or self._match_text_seq("FORMAT", "VALUES")
+            # MySQL accepts VALUE as a synonym for VALUES in INSERT statements.
+            or (allow_value_synonym and self._match_text_seq("VALUE"))
         ):
             return None
 

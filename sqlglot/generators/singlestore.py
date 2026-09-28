@@ -1529,7 +1529,12 @@ class SingleStoreGenerator(MySQLGenerator):
 
     def collate_sql(self, expression: exp.Collate) -> str:
         # SingleStore does not support setting a collation for column in the SELECT query,
-        # so we cast column to a LONGTEXT type with specific collation
+        # so we cast column to a LONGTEXT type with specific collation. If the cast is
+        # already there (e.g. when regenerating previously generated SQL), don't add
+        # another one, so that generation stays idempotent.
+        this = expression.this
+        if isinstance(this, exp.Cast) and this.to.this == exp.DType.LONGTEXT:
+            return self.binary(expression, "COLLATE")
         return self.binary(expression, ":> LONGTEXT COLLATE")
 
     def currentdate_sql(self, expression: exp.CurrentDate) -> str:

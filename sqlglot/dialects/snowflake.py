@@ -136,6 +136,8 @@ class Snowflake(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         STRING_ESCAPES = ["\\", "'"]
+        NUMERIC_ESCAPES = {"x": (16, 2, 2, 0xFF), "u": (16, 4, 4, 0xFFFF), "0": (8, 1, 3, 0xFF)}
+        DROP_UNKNOWN_ESCAPES = True
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         RAW_STRINGS = ["$$"]
         COMMENTS = ["--", "//", ("/*", "*/")]

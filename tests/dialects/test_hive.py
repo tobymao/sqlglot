@@ -127,10 +127,10 @@ class TestHive(Validator):
         self.validate_all(
             "1.0bd",
             write={
-                "duckdb": "TRY_CAST(1.0 AS DECIMAL)",
-                "presto": "TRY_CAST(1.0 AS DECIMAL)",
-                "hive": "CAST(1.0 AS DECIMAL)",
-                "spark": "CAST(1.0 AS DECIMAL)",
+                "duckdb": "TRY_CAST('1.0' AS DECIMAL(1, 0))",
+                "presto": "TRY_CAST('1.0' AS DECIMAL(1, 0))",
+                "hive": "CAST('1.0' AS DECIMAL(1, 0))",
+                "spark": "CAST('1.0' AS DECIMAL(1, 0))",
             },
         )
         self.validate_all(

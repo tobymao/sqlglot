@@ -32,6 +32,8 @@ def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
 
 
 class Spark2Parser(HiveParser):
+    NORMALIZE_DECIMAL_LITERALS = False
+    DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = True
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
     PIVOT_COLUMN_NAMING = "agg_name_if_multiple"

@@ -220,6 +220,16 @@ class Spark2Generator(HiveGenerator):
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         arg = expression.this
+        if (
+            isinstance(arg, exp.Literal)
+            and arg.is_number
+            and expression.to.is_type(exp.DType.DECIMAL)
+            and len(expression.to.expressions) == 2
+            and isinstance(expression.to.expressions[1].this, exp.Neg)
+        ):
+            # Spark 2 supports negative scales in literals, but not in DECIMAL type syntax.
+            return f"{self.sql(arg)}BD"
+
         is_json_extract = isinstance(
             arg, (exp.JSONExtract, exp.JSONExtractScalar)
         ) and not arg.args.get("variant_extract")

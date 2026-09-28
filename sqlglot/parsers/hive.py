@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_regexp_extract
@@ -57,8 +58,14 @@ class HiveParser(parser.Parser):
     ADD_JOIN_ON_TRUE = True
     ALTER_TABLE_PARTITIONS = True
 
-    CHANGE_COLUMN_ALTER_SYNTAX = False
+    # Strip trailing fractional zeros and normalize zero when inferring BD literal types.
+    NORMALIZE_DECIMAL_LITERALS = True
+
+    # Allow negative scales for BD exponent literals, e.g. 1E3BD as DECIMAL(1, -3).
+    DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = False
+
     # Whether the dialect supports using ALTER COLUMN syntax with CHANGE COLUMN.
+    CHANGE_COLUMN_ALTER_SYNTAX = False
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
@@ -145,6 +152,35 @@ class HiveParser(parser.Parser):
         **parser.Parser.ALTER_PARSERS,
         "CHANGE": lambda self: self._parse_alter_table_change(),
     }
+
+    def build_cast(self, strict: bool, **kwargs) -> exp.Expr:
+        if self._prev.text.upper() == "BD":
+            this = kwargs["this"]
+            _, digits, exponent = Decimal(this.name).as_tuple()
+            precision, scale = len(digits), -int(exponent)
+
+            if self.NORMALIZE_DECIMAL_LITERALS:
+                if not any(digits):
+                    precision, scale = 1, 0
+                else:
+                    while scale > 0 and digits[precision - 1] == 0:
+                        precision -= 1
+                        scale -= 1
+
+            if scale < 0 and not self.DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE:
+                precision -= scale
+                scale = 0
+
+            # Unsuffixed exponent literals can be DOUBLE, so cast from text to avoid rounding.
+            kwargs["this"] = this if scale < 0 else exp.Literal.string(this.name)
+            kwargs["to"] = exp.DataType(
+                this=exp.DType.DECIMAL,
+                expressions=[
+                    exp.DataTypeParam(this=exp.Literal.number(value))
+                    for value in (max(precision, scale), scale)
+                ],
+            )
+        return super().build_cast(strict, **kwargs)
 
     def _parse_transform(self) -> exp.Transform | exp.QueryTransform | None:
         if not self._match(TokenType.L_PAREN, advance=False):

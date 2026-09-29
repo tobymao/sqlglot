@@ -197,6 +197,9 @@ class Scope:
 
         # Columns that are comprehension bound variables; populated on first Comprehension seen.
         comprehension_var_ids: set[int] = set()
+        # Real table/CTE aliases in scope; lazily computed since a real alias takes precedence
+        # over a same-named bound variable (DuckDB resolves the qualifier to the table in that case).
+        table_aliases: set[str] | None = None
 
         for node in self.walk():
             # Most nodes (identifiers, literals, operators etc.) aren't collectible, so a
@@ -209,16 +212,24 @@ class Scope:
                         if var and type(var) is exp.Column:
                             comprehension_var_ids.add(id(var))
                             bound_names.add(var.name)
+
+                    if bound_names and table_aliases is None:
+                        table_aliases = {
+                            source.alias_or_name
+                            for source in self.walk()
+                            if isinstance(source, (exp.Table, exp.Subquery, exp.CTE))
+                        } - {""}
+
                     for subtree in (node.this, node.args.get("condition")):
                         if subtree:
                             for col in subtree.walk():
-                                if type(col) is exp.Column and (
-                                    (col.name in bound_names and not col.table)
-                                    or col.text("table") in bound_names
-                                    or col.text("db") in bound_names
-                                    or col.text("catalog") in bound_names
-                                ):
-                                    comprehension_var_ids.add(id(col))
+                                if type(col) is exp.Column:
+                                    parts = col.parts
+                                    anchor = parts[0].name
+                                    if anchor in bound_names and not (
+                                        len(parts) > 1 and anchor in (table_aliases or ())
+                                    ):
+                                        comprehension_var_ids.add(id(col))
                 continue
 
             if isinstance(node, exp.Dot) and node.is_star:
@@ -228,7 +239,7 @@ class Scope:
 
                 if isinstance(node.this, exp.Star):
                     self._stars.append(node)
-                elif not comprehension_var_ids or id(node) not in comprehension_var_ids:
+                elif id(node) not in comprehension_var_ids:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
                 parent = node.parent

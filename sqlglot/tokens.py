@@ -61,6 +61,8 @@ class _TokenizerBase:
     COMMAND_PREFIX_TOKENS: t.ClassVar[set[TokenType]]
     HEREDOC_TAG_IS_IDENTIFIER: t.ClassVar[bool]
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
+    NUMERIC_ESCAPES: t.ClassVar[dict[str, tuple[int, int, int, int]]]
+    DROP_UNKNOWN_ESCAPES: t.ClassVar[bool]
     NESTED_COMMENTS: t.ClassVar[bool]
     TOKENS_PRECEDING_HINT: t.ClassVar[set[TokenType]]
     HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
@@ -179,6 +181,16 @@ class Tokenizer(_TokenizerBase):
 
     # Whether string escape characters function as such when placed within raw strings
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = True
+
+    # Maps the char after a backslash to (base, min digits, max digits, max value) for escape
+    # sequences that encode a code point, e.g. {"x": (16, 2, 2, 0xFF)} decodes '\x41' as 'A'.
+    # Digits are read until the next one would exceed the max value; if fewer than the min digits
+    # are read, the sequence isn't decoded. Octal escapes, e.g. '\101', are keyed by "0".
+    NUMERIC_ESCAPES: t.ClassVar[dict[str, tuple[int, int, int, int]]] = {}
+
+    # Whether the backslash is dropped from escape sequences that aren't otherwise decoded,
+    # e.g. '\z' is 'z'
+    DROP_UNKNOWN_ESCAPES = False
 
     NESTED_COMMENTS = True
 
@@ -570,6 +582,8 @@ class Tokenizer(_TokenizerBase):
             numbers_can_have_decimals=self.NUMBERS_CAN_HAVE_DECIMALS,
             identifiers_can_start_with_digit=self.dialect.IDENTIFIERS_CAN_START_WITH_DIGIT,
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
+            numeric_escapes=self.NUMERIC_ESCAPES,
+            drop_unknown_escapes=self.DROP_UNKNOWN_ESCAPES,
         )
 
     def tokenize(self, sql: str) -> list[Token]:

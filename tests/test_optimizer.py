@@ -220,8 +220,6 @@ class TestOptimizer(unittest.TestCase):
                 leave_tables_isolated = meta.get("leave_tables_isolated")
                 validate_qualify_columns = meta.get("validate_qualify_columns")
                 canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
-                schema = meta.get("schema")
-
                 func_kwargs = kwargs.copy()
 
                 if schema := meta.get("schema"):
@@ -240,8 +238,6 @@ class TestOptimizer(unittest.TestCase):
                     func_kwargs["canonicalize_table_aliases"] = string_to_bool(
                         canonicalize_table_aliases
                     )
-                if schema is not None:
-                    func_kwargs["schema"] = json.loads(schema)
 
                 future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
                 results[future] = (

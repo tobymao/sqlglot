@@ -1222,7 +1222,7 @@ LEFT JOIN "alias3" AS "alias3"
 # title: CTE with EXPLODE cannot be merged
 # dialect: spark
 # execute: false
-# schema: {"fruits_table": {"name": "TEXT", "fruits": "ARRAY<TEXT>"}}
+# schema: {"fruits_table": {"name": "TEXT", "fruits": "ARRAY<STRUCT<`$id`: TEXT, value: TEXT>>"}}
 SELECT Name,
        FruitStruct.`$id`,
        FruitStruct.value

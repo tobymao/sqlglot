@@ -465,6 +465,41 @@ A AND B AND C;
 SELECT x WHERE TRUE;
 SELECT x;
 
+# dialect: duckdb
+# execute: true
+SELECT COUNT(*) FILTER (WHERE TRUE) FROM x;
+SELECT COUNT(*) FILTER(WHERE TRUE) FROM x;
+
+# dialect: duckdb
+# execute: true
+COUNT(*) FILTER (WHERE 1 = 1);
+COUNT(*) FILTER(WHERE TRUE);
+
+# dialect: duckdb
+# execute: true
+SELECT COUNT(a) FILTER (WHERE TRUE) AS count_value, SUM(DISTINCT a) FILTER (WHERE 1 = 1) AS sum_value FROM x;
+SELECT COUNT(a) FILTER(WHERE TRUE) AS count_value, SUM(DISTINCT a) FILTER(WHERE TRUE) AS sum_value FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT COUNT(*) FILTER (WHERE TRUE), SUM(a) FILTER (WHERE TRUE) FROM x WHERE FALSE;
+SELECT COUNT(*) FILTER(WHERE TRUE), SUM(a) FILTER(WHERE TRUE) FROM x WHERE FALSE;
+
+# dialect: duckdb
+# execute: true
+SELECT COUNT(*) FILTER (WHERE FALSE) AS count_value, SUM(a) FILTER (WHERE NULL) AS null_sum, SUM(a) FILTER (WHERE a > 1 AND TRUE) AS sum_value FROM x;
+SELECT COUNT(*) FILTER(WHERE FALSE) AS count_value, SUM(a) FILTER(WHERE NULL) AS null_sum, SUM(a) FILTER(WHERE a > 1) AS sum_value FROM x;
+
+# dialect: duckdb
+# execute: true
+SELECT a, SUM(a) FILTER (WHERE TRUE) OVER () FROM x ORDER BY a;
+SELECT a, SUM(a) FILTER(WHERE TRUE) OVER () FROM x ORDER BY a;
+
+# dialect: duckdb
+# execute: true
+SELECT COUNT(*) FILTER (WHERE TRUE) FROM x WHERE TRUE;
+SELECT COUNT(*) FILTER(WHERE TRUE) FROM x;
+
 SELECT x FROM y JOIN z ON TRUE;
 SELECT x FROM y CROSS JOIN z;
 

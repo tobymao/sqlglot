@@ -4642,6 +4642,10 @@ class Parser:
         elif isinstance(this, (exp.Subquery, exp.Unnest)) and this.alias:
             # We move the alias from the lateral's child node to the lateral itself
             table_alias = this.args["alias"].pop()
+            # WITH ORDINALITY's extra column is stored on Unnest.offset
+            offset = this.args.get("offset") if isinstance(this, exp.Unnest) else None
+            if isinstance(offset, exp.Expr):
+                table_alias.append("columns", offset.copy())
         else:
             ordinality = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
             table_alias = self._parse_table_alias()

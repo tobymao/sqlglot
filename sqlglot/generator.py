@@ -5309,6 +5309,28 @@ class Generator:
             sqlglot.dialects.dialect.unit_to_str(expression),
         )
 
+    def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:
+        this = expression.this
+        position = expression.args["position"]
+        offset = index_offset - (expression.args.get("offset") or 0)
+
+        if offset:
+            if position.is_int:
+                value = position.to_py()
+                if value >= 0:
+                    position = exp.Literal.number(value + offset)
+                elif offset < 0 and value == -1:
+                    # 1-based -1 appends, which a 0-based position can only express as the size
+                    position = exp.ArraySize(this=this.copy())
+                else:
+                    # Negative positions count from the end, so they shift in the opposite
+                    # direction, e.g. 0-based -1 (before the last element) is 1-based -2
+                    position = exp.Literal.number(value - offset)
+            else:
+                self.unsupported("ARRAY_INSERT position can only be converted if it's a literal")
+
+        return self.func("ARRAY_INSERT", this, position, expression.expression)
+
     def arrayany_sql(self, expression: exp.ArrayAny) -> str:
         if self.CAN_IMPLEMENT_ARRAY_ANY:
             filtered = exp.ArrayFilter(this=expression.this, expression=expression.expression)

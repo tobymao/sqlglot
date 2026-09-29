@@ -72,6 +72,7 @@ class SparkGenerator(Spark2Generator):
     SUPPORTS_UNIX_SECONDS = True
     SUPPORTS_DECODE_CASE = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
+    ARRAY_INSERT_INDEX_OFFSET = 1
 
     TYPE_MAPPING = {
         **Spark2Generator.TYPE_MAPPING,
@@ -94,9 +95,6 @@ class SparkGenerator(Spark2Generator):
             **Spark2Generator.TRANSFORMS,
             exp.ArrayConstructCompact: lambda self, e: self.func(
                 "ARRAY_COMPACT", self.func("ARRAY", *e.expressions)
-            ),
-            exp.ArrayInsert: lambda self, e: self.func(
-                "ARRAY_INSERT", e.this, e.args.get("position"), e.expression
             ),
             exp.ArrayAppend: array_append_sql("ARRAY_APPEND"),
             exp.ArrayPrepend: array_append_sql("ARRAY_PREPEND"),

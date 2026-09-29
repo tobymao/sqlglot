@@ -1543,6 +1543,22 @@ TBLPROPERTIES (
             write={
                 "databricks": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
                 "spark": "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 1, 'z')",
+                "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], 0, 'z')",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), -2, 'z')",
+            read={
+                "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], -1, 'z')",
+            },
+            write={
+                "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], -1, 'z')",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 3, 'z')",
+            read={
+                "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], 2, 'z')",
             },
         )
 

@@ -524,6 +524,9 @@ class Generator:
     # Whether any(f(x) for x in array) can be implemented by this dialect
     CAN_IMPLEMENT_ARRAY_ANY = False
 
+    # The index offset used by the position argument of ARRAY_INSERT (e.g. 1 in Spark)
+    ARRAY_INSERT_INDEX_OFFSET = 0
+
     # Whether the function TO_NUMBER is supported
     SUPPORTS_TO_NUMBER = True
 
@@ -5308,6 +5311,21 @@ class Generator:
             expression.expression,
             sqlglot.dialects.dialect.unit_to_str(expression),
         )
+
+    def arrayinsert_sql(self, expression: exp.ArrayInsert) -> str:
+        position = expression.args["position"]
+        offset = self.ARRAY_INSERT_INDEX_OFFSET - (expression.args.get("offset") or 0)
+
+        if offset:
+            if position.is_int:
+                # Negative positions count from the end, so they shift in the opposite direction,
+                # e.g. 0-based -1 (before the last element) is 1-based -2
+                value = position.to_py()
+                position = exp.Literal.number(value + offset if value >= 0 else value - offset)
+            else:
+                self.unsupported("ARRAY_INSERT position can only be converted if it's a literal")
+
+        return self.func("ARRAY_INSERT", expression.this, position, expression.expression)
 
     def arrayany_sql(self, expression: exp.ArrayAny) -> str:
         if self.CAN_IMPLEMENT_ARRAY_ANY:

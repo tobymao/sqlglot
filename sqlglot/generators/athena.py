@@ -122,7 +122,7 @@ class AthenaTrinoGenerator(TrinoGenerator):
     }
 
 
-class AthenaGenerator(generator.Generator):
+class AthenaGenerator(AthenaTrinoGenerator):
     SELECT_KINDS: tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
 

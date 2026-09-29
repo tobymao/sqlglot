@@ -1,4 +1,6 @@
 from sqlglot import exp
+from sqlglot.errors import ParseError
+from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
 
@@ -36,6 +38,37 @@ class TestAthena(Validator):
             "/* leading comment */SELECT * FROM foo",
             '/* leading comment */ SELECT * FROM "foo"',
             identify=True,
+        )
+
+    def test_func_builder(self):
+        args = (exp.Literal.string("-"), exp.column("a"), exp.column("b"))
+        self.assertEqual(
+            exp.func("CONCAT_WS", *args, dialect="athena").sql("athena"), "CONCAT_WS('-', a, b)"
+        )
+        self.assertEqual(
+            exp.func("CONCAT", *args, dialect="athena").sql("athena"), "CONCAT('-', a, b)"
+        )
+        self.assertIsInstance(exp.func("DATE_FORMAT", "a", "'%Y'", dialect="athena"), exp.TimeToStr)
+        self.assertEqual(
+            exp.cast(self.parse_one("CAST(x AS VARCHAR)"), "TEXT", dialect="athena").sql("athena"),
+            "CAST(x AS VARCHAR)",
+        )
+
+    def test_max_nodes(self):
+        for sql in ("SELECT a + b + c FROM t", "ALTER TABLE t ADD COLUMNS (a INT, b INT)"):
+            with self.subTest(sql), self.assertRaises(ParseError):
+                self.parse_one(sql, max_nodes=3)
+
+    def test_qualify(self):
+        # Quoted identifiers are case-insensitive in Athena, so they're normalized to lowercase
+        expression = qualify(
+            self.parse_one('SELECT "MyCol" FROM "MyTable"'),
+            schema={"MyTable": {"MyCol": "INT"}},
+            dialect="athena",
+        )
+        self.assertEqual(
+            expression.sql("athena"),
+            'SELECT "mytable"."mycol" AS "mycol" FROM "mytable" AS "mytable"',
         )
 
     def test_ddl(self):

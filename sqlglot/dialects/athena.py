@@ -48,6 +48,8 @@ class Athena(Dialect):
     - https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
     """
 
+    CONCAT_WS_COALESCE = True
+
     # This Tokenizer consumes a combination of HiveQL and Trino SQL and then processes the tokens
     # to disambiguate which dialect needs to be actually used in order to tokenize correctly.
     class Tokenizer(tokens.Tokenizer):

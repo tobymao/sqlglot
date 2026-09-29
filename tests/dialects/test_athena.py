@@ -38,6 +38,14 @@ class TestAthena(Validator):
             identify=True,
         )
 
+    def test_concat_ws(self):
+        concat_ws = exp.func(
+            "CONCAT_WS", exp.Literal.string("-"), exp.column("a"), exp.column("b"), dialect="athena"
+        )
+        self.assertEqual(
+            concat_ws.sql("athena"), "CONCAT_WS('-', CAST(a AS VARCHAR), CAST(b AS VARCHAR))"
+        )
+
     def test_ddl(self):
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")

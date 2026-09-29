@@ -224,6 +224,7 @@ SELECT `_c0` AS `n`, `_c1` AS `off` FROM UNNEST([10, 20, 30]) AS `_c0` WITH OFFS
 
 # title: bigquery correlated unnest, outer table shared with unnest expression
 # dialect: bigquery
+# schema: {"t": {"id": "INT", "arr": "ARRAY<INT>"}}
 SELECT t.id, u FROM t CROSS JOIN UNNEST(t.arr) AS u;
 SELECT `_t0`.`id` AS `id`, `_c0` AS `u` FROM `c`.`db`.`t` AS `_t0` CROSS JOIN UNNEST(`_t0`.`arr`) AS `_c0`;
 
@@ -249,6 +250,7 @@ SELECT `_c0` AS `s` FROM UNNEST([STRUCT('a' AS `sid`)]) AS `_c0`;
 
 # title: bigquery whole-row struct selection — TableColumn follows the table's canonical name, output alias preserves the row-struct's contract name
 # dialect: bigquery
+# schema: {"t": {"id": "INT"}}
 SELECT t FROM t;
 SELECT `_t0` AS `t` FROM `c`.`db`.`t` AS `_t0`;
 

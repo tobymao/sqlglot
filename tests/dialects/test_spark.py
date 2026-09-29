@@ -1556,6 +1556,12 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), -1, 'z')",
+            write={
+                "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], ARRAY_SIZE(['a', 'b', 'c']), 'z')",
+            },
+        )
+        self.validate_all(
             "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 3, 'z')",
             read={
                 "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], 2, 'z')",

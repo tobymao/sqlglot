@@ -72,7 +72,6 @@ class SparkGenerator(Spark2Generator):
     SUPPORTS_UNIX_SECONDS = True
     SUPPORTS_DECODE_CASE = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
-    ARRAY_INSERT_INDEX_OFFSET = 1
 
     TYPE_MAPPING = {
         **Spark2Generator.TYPE_MAPPING,
@@ -149,6 +148,9 @@ class SparkGenerator(Spark2Generator):
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         return generator.Generator.ignorenulls_sql(self, expression)
+
+    def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:
+        return super().arrayinsert_sql(expression, index_offset=1)
 
     def bracket_sql(self, expression: exp.Bracket) -> str:
         if expression.args.get("safe"):

@@ -804,6 +804,17 @@ class Lateral(Expression, UDTF):
         "ordinality": False,
     }
 
+    @property
+    def selects(self) -> list[Expr]:
+        alias = self.args.get("alias")
+        columns = list(alias.columns) if alias else []
+        this = self.this
+        if this is not None and this.key == "unnest":
+            offset = this.args.get("offset")
+            if isinstance(offset, Expr) and all(col.name != offset.name for col in columns):
+                columns.append(offset)
+        return columns
+
 
 class TableFromRows(Expression, UDTF):
     arg_types = {

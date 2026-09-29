@@ -4,7 +4,6 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.errors import ErrorLevel
-from sqlglot.parser import Parser
 from sqlglot.parsers.trino import TrinoParser
 from sqlglot.tokens import TokenType, Token
 
@@ -21,12 +20,13 @@ class AthenaTrinoParser(TrinoParser):
     }
 
 
-class AthenaParser(Parser):
+class AthenaParser(AthenaTrinoParser):
     def __init__(
         self,
         error_level: ErrorLevel | None = None,
         error_message_context: int = 100,
         max_errors: int = 3,
+        max_nodes: int = -1,
         dialect: DialectType = None,
         hive: Hive | None = None,
         trino: Trino | None = None,
@@ -41,6 +41,7 @@ class AthenaParser(Parser):
             error_level=error_level,
             error_message_context=error_message_context,
             max_errors=max_errors,
+            max_nodes=max_nodes,
             dialect=dialect,
         )
 
@@ -48,11 +49,13 @@ class AthenaParser(Parser):
             error_level=error_level,
             error_message_context=error_message_context,
             max_errors=max_errors,
+            max_nodes=max_nodes,
         )
         self._trino_parser = AthenaTrinoParser(
             error_level=error_level,
             error_message_context=error_message_context,
             max_errors=max_errors,
+            max_nodes=max_nodes,
             dialect=trino,
         )
 

@@ -331,6 +331,13 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
         self.assertEqual(tokens[1].token_type, TokenType.NUMBER)
         self.assertEqual(len(tokens[1].text), 4500)
 
+    def test_athena_known_function_kept(self):
+        sql = "SELECT LISTAGG(x, ',') WITHIN GROUP (ORDER BY x) FROM t"
+        self.assertEqual(
+            render(sql, anonymize(sql, "athena"), "athena"),
+            "SELECT LISTAGG(a, 'b') aaaaac aaaad (ORDER BY a) FROM e",
+        )
+
     def test_known_function_kept_when_passing_tokens(self):
         tokens = anonymize(
             Tokenizer(dialect="snowflake").tokenize("SELECT TO_VARIANT(x) FROM t"), "snowflake"

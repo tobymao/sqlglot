@@ -7605,7 +7605,7 @@ VARBINARY;
 LEVENSHTEIN_DISTANCE(tbl.str_col, tbl.str_col);
 BIGINT;
 
-# dialect: presto, trino
+# dialect: presto, trino, athena
 LENGTH(tbl.str_col);
 BIGINT;
 
@@ -7613,7 +7613,7 @@ BIGINT;
 POSITION(tbl.str_col IN tbl.str_col);
 BIGINT;
 
-# dialect: presto, trino
+# dialect: presto, trino, athena
 STRPOS(tbl.str_col, tbl.str_col);
 BIGINT;
 
@@ -7636,6 +7636,14 @@ BIGINT;
 # dialect: presto, trino
 WIDTH_BUCKET(tbl.double_col, tbl.array_col);
 BIGINT;
+
+# dialect: athena
+FLOOR(2.5);
+DOUBLE;
+
+# dialect: athena
+CEIL(5.5);
+DOUBLE;
 
 # dialect: trino
 ARRAY_FIRST(ARRAY['a', 'b'], x -> x = 'b');

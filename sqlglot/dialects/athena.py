@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import tokens
-from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.dialects.dialect import DialectType
 from sqlglot.generators.athena import AthenaGenerator
 from sqlglot.parsers.athena import AthenaParser
 from sqlglot.tokens import TokenType, Token
@@ -10,7 +10,7 @@ from sqlglot.dialects.trino import Trino
 from sqlglot.dialects.hive import Hive
 
 
-class Athena(Dialect):
+class Athena(Trino):
     """
     Over the years, it looks like AWS has taken various execution engines, bolted on AWS-specific
     modifications and then built the Athena service around them.

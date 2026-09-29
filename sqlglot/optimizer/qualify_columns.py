@@ -1105,21 +1105,6 @@ def _expand_stars(
             if not columns or "*" in columns or len(columns) != len(set(columns)):
                 return
 
-            # Similarly, if a derived table source (i.e. Scope in a Select) has unnamed projections
-            # (e.g. multi-column UDTFs) then leave it unexpanded too.
-            # Only bare (unaliased) expressions count — an Alias with an empty string name (e.g.
-            # from a PIVOT over ANY columns) is not a multi-column UDTF and must not block expansion.
-            if (
-                isinstance(source, Scope)
-                and isinstance(source.expression, exp.Select)
-                and any(
-                    not s.output_name
-                    and not isinstance(s, (exp.QueryTransform, exp.Alias, exp.Aliases))
-                    for s in source.expression.selects
-                )
-            ):
-                return
-
             table_id = id(table)
             columns_to_exclude = except_columns.get(table_id) or set()
             renamed_columns = rename_columns.get(table_id, {})
@@ -1149,9 +1134,8 @@ def _expand_stars(
                     for s in source_expression.selects
                     if _is_output_identifier_quoted(s)
                 }
-                if isinstance(source_expression, exp.Query)
-                else set()
-            )
+            else:
+                quoted_columns = set()
 
             # The operators belong to a specific source, so a star over a source joined
             # alongside it must expand from that source's own columns
@@ -1324,12 +1308,6 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def _is_lateral_subquery(scope: Scope) -> bool:
-    """Returns True if scope is the inner SELECT of a LATERAL derived table."""
-    parent = scope.expression.parent
-    return isinstance(parent, exp.Subquery) and isinstance(parent.parent, exp.Lateral)
-
-
 def _udtf_output_names(
     selection: exp.Expr,
     scope: Scope,
@@ -1412,14 +1390,7 @@ def qualify_outputs(
                     this=selection,
                     expressions=[exp.to_identifier(name) for name in column_names],
                 )
-            elif not (
-                isinstance(selection, exp.MULTI_OUTPUT_UDTF)
-                or (
-                    scope.is_subquery
-                    and isinstance(selection, exp.UDTF)
-                    and (not isinstance(selection, exp.Explode) or not _is_lateral_subquery(scope))
-                )
-            ):
+            elif not isinstance(selection, exp.MULTI_OUTPUT_UDTF):
                 unwrapped = selection.unnest()
                 if isinstance(unwrapped, exp.Column):
                     source_identifier = unwrapped.this

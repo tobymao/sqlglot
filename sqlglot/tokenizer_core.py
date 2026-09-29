@@ -928,8 +928,8 @@ class TokenizerCore:
     def _scan_number(self) -> None:
         if self._char == "0":
             peek = _CHAR_UPPER.get(self._peek, self._peek)
-            if peek == "B":
-                return self._scan_bits() if self.has_bit_strings else self._add(TokenType.NUMBER)
+            if peek == "B" and self.has_bit_strings:
+                return self._scan_bits()
             elif peek == "X":
                 return self._scan_hex() if self.has_hex_strings else self._add(TokenType.NUMBER)
 

@@ -230,6 +230,60 @@ class TestDialect(Validator):
         self.assertTrue(ddb_v1.version == ddb_v1_2.version)
         self.assertTrue(ddb_latest.version == Dialect.get_or_raise("duckdb").version)
 
+    def test_decimal_literals(self):
+        for dialect in ("hive", "spark2", "spark", "databricks"):
+            for literal, hive_type, spark_type in (
+                ("10.50", "DECIMAL(3, 1)", "DECIMAL(4, 2)"),
+                ("0", "DECIMAL(1, 0)", "DECIMAL(1, 0)"),
+                ("0.00", "DECIMAL(1, 0)", "DECIMAL(2, 2)"),
+                ("0.01", "DECIMAL(2, 2)", "DECIMAL(2, 2)"),
+                ("0001.50", "DECIMAL(2, 1)", "DECIMAL(3, 2)"),
+                ("1E-18", "DECIMAL(18, 18)", "DECIMAL(18, 18)"),
+                ("1.234567890123456789E2", "DECIMAL(19, 16)", "DECIMAL(19, 16)"),
+                ("12345678901234567890.123456789012345678", "DECIMAL(38, 18)", "DECIMAL(38, 18)"),
+                ("12345678901234567890.123456789012345670", "DECIMAL(37, 17)", "DECIMAL(38, 18)"),
+            ):
+                data_type = hive_type if dialect == "hive" else spark_type
+                for sign in ("", "-", "+"):
+                    with self.subTest(dialect=dialect, literal=literal, sign=sign):
+                        prefix = "-" if sign == "-" else ""
+                        self.assertEqual(
+                            parse_one(f"{sign}{literal}bd", read=dialect).sql(dialect),
+                            f"{prefix}CAST('{literal}' AS {data_type})",
+                        )
+
+            if dialect != "spark2":
+                for literal, precision in (("1E3", 4), ("0E3", 1 if dialect == "hive" else 4)):
+                    with self.subTest(dialect=dialect, literal=literal):
+                        self.assertEqual(
+                            parse_one(f"{literal}BD", read=dialect).sql(dialect),
+                            f"CAST('{literal}' AS DECIMAL({precision}, 0))",
+                        )
+
+            data_type = "DECIMAL(3, 1)" if dialect == "hive" else "DECIMAL(4, 2)"
+            for sql, expected in (
+                ("CAST(10.50 AS DECIMAL)", "CAST(10.50 AS DECIMAL)"),
+                ("10.50::DECIMAL", "CAST(10.50 AS DECIMAL)"),
+                ("CAST(10.50BD AS DECIMAL)", f"CAST(CAST('10.50' AS {data_type}) AS DECIMAL)"),
+            ):
+                with self.subTest(dialect=dialect, sql=sql):
+                    self.assertEqual(parse_one(sql, read=dialect).sql(dialect), expected)
+
+    def test_spark2_negative_scale_decimal_literals(self):
+        for literal, precision, scale in (
+            ("1E3", 1, -3),
+            ("0E3", 1, -3),
+            ("1.20E3", 3, -1),
+            ("1E38", 1, -38),
+        ):
+            with self.subTest(literal=literal):
+                expression = parse_one(f"{literal}BD", read="spark2")
+                self.assertEqual(expression.sql("spark2"), f"{literal}BD")
+                self.assertEqual(
+                    [parameter.this.to_py() for parameter in expression.to.expressions],
+                    [precision, scale],
+                )
+
     def test_cast(self):
         self.validate_all(
             "CAST(a AS TEXT)",

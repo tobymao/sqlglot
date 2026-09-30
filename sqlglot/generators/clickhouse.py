@@ -370,6 +370,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.UnixToTime: _unix_to_time_sql,
         exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
         exp.Variance: rename_func("varSamp"),
+        exp.VariancePop: rename_func("varPop"),
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.Stddev: rename_func("stddevSamp"),
         exp.Chr: rename_func("CHAR"),

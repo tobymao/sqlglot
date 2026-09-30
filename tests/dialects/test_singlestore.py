@@ -461,7 +461,7 @@ class TestSingleStore(Validator):
             },
         )
         self.validate_all(
-            "SELECT ('a' RLIKE '^[\x00-\x7f]*$')",
+            "SELECT ('a' RLIKE '^[\\0-\x7f]*$')",
             read={"singlestore": "SELECT ('a' RLIKE '^[\x00-\x7f]*$')", "": "SELECT IS_ASCII('a')"},
         )
         self.validate_all(

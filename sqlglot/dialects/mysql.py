@@ -67,6 +67,16 @@ class MySQL(Dialect):
         "YEAR_MONTH",
     }
 
+    UNESCAPED_SEQUENCES = {
+        "\\0": "\0",
+        "\\Z": "\x1a",
+        "\\%": "\\%",
+        "\\_": "\\_",
+        "\\a": "a",
+        "\\f": "f",
+        "\\v": "v",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         QUOTES = ["'", '"']
         COMMENTS = ["--", "#", ("/*", "*/")]
@@ -75,7 +85,7 @@ class MySQL(Dialect):
         BIT_STRINGS = [("b'", "'"), ("B'", "'"), ("0b", "")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", "")]
         # https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
-        ESCAPE_FOLLOW_CHARS = ["0", "b", "n", "r", "t", "Z", "%", "_"]
+        DROP_UNKNOWN_ESCAPES = True
 
         NESTED_COMMENTS = False
 

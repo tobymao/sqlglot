@@ -206,7 +206,7 @@ class SingleStoreGenerator(MySQLGenerator):
             exp.Mul(this=self.func("LENGTH", e.this), expression=e.args.get("times")),
             e.this,
         ),
-        exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\x00-\x7f]*$')",
+        exp.IsAscii: lambda self, e: f"({self.sql(e, 'this')} RLIKE '^[\\0-\x7f]*$')",
         exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
         exp.Contains: rename_func("INSTR"),
         exp.RegexpExtractAll: unsupported_args("position", "occurrence", "group")(

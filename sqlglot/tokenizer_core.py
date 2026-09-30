@@ -558,7 +558,6 @@ class TokenizerCore:
         "string_escapes",
         "byte_string_escapes",
         "identifier_escapes",
-        "escape_follow_chars",
         "commands",
         "command_prefix_tokens",
         "nested_comments",
@@ -591,7 +590,6 @@ class TokenizerCore:
         string_escapes: set[str],
         byte_string_escapes: set[str],
         identifier_escapes: set[str],
-        escape_follow_chars: set[str],
         commands: set[TokenType],
         command_prefix_tokens: set[TokenType],
         nested_comments: bool,
@@ -621,7 +619,6 @@ class TokenizerCore:
         self.string_escapes = string_escapes
         self.byte_string_escapes = byte_string_escapes
         self.identifier_escapes = identifier_escapes
-        self.escape_follow_chars = escape_follow_chars
         self.commands = commands
         self.command_prefix_tokens = command_prefix_tokens
         self.nested_comments = nested_comments
@@ -1204,7 +1201,6 @@ class TokenizerCore:
         delim_size = len(delimiter)
         escapes = self.string_escapes if escapes is None else escapes
         unescaped_sequences = self.unescaped_sequences
-        escape_follow_chars = self.escape_follow_chars
         numeric_escapes = self.numeric_escapes
         drop_unknown_escapes = self.drop_unknown_escapes
         string_escapes_allowed_in_raw_strings = self.string_escapes_allowed_in_raw_strings
@@ -1275,10 +1271,6 @@ class TokenizerCore:
                 text += peek
                 continue
 
-            is_valid_custom_escape = (
-                escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars
-            )
-
             # An escaped quote before the closing delimiter (e.g. \" in """a\"""") must be
             # consumed here, otherwise it'd be picked up by the delimiter check below and
             # terminate the string early. This is only relevant for multi-char delimiters
@@ -1290,13 +1282,11 @@ class TokenizerCore:
             if (
                 (string_escapes_allowed_in_raw_strings or not raw_string)
                 and self._char in escapes
-                and (escaped_delimiter or self._peek in escapes or is_valid_custom_escape)
+                and (escaped_delimiter or self._peek in escapes)
                 and (self._char not in quotes or self._char == self._peek)
             ):
                 if escaped_delimiter:
                     text += self._peek if not raw_string else self._char + self._peek
-                elif is_valid_custom_escape and self._char != self._peek:
-                    text += self._peek
                 else:
                     text += self._char + self._peek
 

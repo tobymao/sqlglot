@@ -221,6 +221,11 @@ WITH RECURSIVE "_t0" AS (SELECT 1 AS "_c0" UNION ALL SELECT "_t0"."_c0" + 1 AS "
 SELECT n, off FROM UNNEST([10, 20, 30]) AS n WITH OFFSET AS off;
 SELECT `_c0` AS `n`, `_c1` AS `off` FROM UNNEST([10, 20, 30]) AS `_c0` WITH OFFSET AS `_c1`;
 
+# title: lateral unnest ordinality is canonicalized after star expansion
+# dialect: postgres
+# execute: true
+SELECT * FROM LATERAL UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS r(v, idx);
+SELECT "_t0"."_c0" AS "v", "_t0"."_c1" AS "idx" FROM LATERAL UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS "_t0"("_c0", "_c1");
 
 # title: bigquery correlated unnest, outer table shared with unnest expression
 # dialect: bigquery

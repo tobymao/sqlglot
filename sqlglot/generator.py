@@ -2961,7 +2961,13 @@ class Generator:
 
         table_alias = expression.args.get("alias")
         offset = expression.this.args.get("offset")
-        if self.UNNEST_WITH_ORDINALITY and table_alias and isinstance(offset, exp.Identifier):
+
+        if (
+            self.UNNEST_WITH_ORDINALITY
+            and table_alias
+            and isinstance(expression.this, exp.Unnest)
+            and isinstance(offset, exp.Identifier)
+        ):
             # UNNEST ... WITH ORDINALITY stores the ordinality column's name in Unnest.offset
             table_alias = table_alias.copy()
             table_alias.append("columns", offset.copy())

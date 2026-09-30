@@ -205,10 +205,12 @@ def canonicalize_internal_names(expression: E) -> E:
                             ],
                         )
 
-                # BigQuery UNNEST ... WITH OFFSET AS <id> declares a pseudo-column via
-                # the offset arg (not the alias).
-                if isinstance(alias_holder, exp.Unnest):
-                    offset_id = alias_holder.args.get("offset")
+                # UNNEST stores its offset column outside the alias, including under LATERAL.
+                unnest = (
+                    alias_holder.this if isinstance(alias_holder, exp.Lateral) else alias_holder
+                )
+                if isinstance(unnest, exp.Unnest):
+                    offset_id = unnest.args.get("offset")
                     if isinstance(offset_id, exp.Identifier) and offset_id.name in name_map:
                         _canon(offset_id, name_map[offset_id.name])
 

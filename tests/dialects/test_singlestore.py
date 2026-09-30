@@ -436,6 +436,24 @@ class TestSingleStore(Validator):
             },
         )
 
+    def test_is_ascii(self):
+        self.validate_identity(
+            "SELECT ('a' RLIKE '^[\x00-\x7f]*$')",
+            "SELECT ('a' RLIKE '^[\\0-\x7f]*$')",
+        )
+        self.validate_all(
+            "SELECT ('a' RLIKE '^[\\0-\x7f]*$')",
+            read={"": "SELECT IS_ASCII('a')"},
+        )
+        self.validate_all(
+            "SELECT 1 + ('a' RLIKE '^[\\0-\x7f]*$')",
+            read={"": "SELECT 1 + IS_ASCII('a')"},
+        )
+        self.validate_all(
+            "SELECT NOT ('é' RLIKE '^[\\0-\x7f]*$')",
+            read={"": "SELECT NOT IS_ASCII('é')"},
+        )
+
     def test_string_functions(self):
         self.validate_all(
             "SELECT 'a' RLIKE 'b'",
@@ -459,10 +477,6 @@ class TestSingleStore(Validator):
                 "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
                 "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
-        )
-        self.validate_all(
-            "SELECT ('a' RLIKE '^[\\0-\x7f]*$')",
-            read={"singlestore": "SELECT ('a' RLIKE '^[\x00-\x7f]*$')", "": "SELECT IS_ASCII('a')"},
         )
         self.validate_all(
             "SELECT UNHEX(MD5('data'))",

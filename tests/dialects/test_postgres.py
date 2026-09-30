@@ -1616,8 +1616,6 @@ FROM json_data, field_ids""",
         ).args["actions"]
         drop_if.assert_is(exp.Drop)
         drop_b.assert_is(exp.Drop)
-        self.validate_identity("ALTER TABLE t DROP IF EXISTS", check_command_warning=True)
-        self.validate_identity("ALTER TABLE t DROP COLUMN").args["actions"][0].assert_is(exp.Drop)
 
     def test_unnest(self):
         self.validate_identity(

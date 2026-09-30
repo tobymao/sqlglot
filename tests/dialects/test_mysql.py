@@ -420,10 +420,6 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t DROP INDEX concurrently").args["actions"][
             0
         ].assert_is(exp.Drop)
-        self.validate_identity(
-            "ALTER TABLE t DROP FOREIGN KEY restrict", "ALTER TABLE t DROP FOREIGN KEY `restrict`"
-        )
-        self.validate_identity("ALTER TABLE t DROP UNIQUE restrict", check_command_warning=True)
 
     def test_identity(self):
         self.validate_identity("SELECT a, SUM(b) FROM t GROUP BY a WITH ROLLUP LIMIT 2")

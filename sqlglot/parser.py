@@ -9132,8 +9132,6 @@ class Parser:
             if name.token_type in self.ID_VAR_TOKENS and name.token_type not in (
                 TokenType.COLUMN,
                 TokenType.CONSTRAINT,
-                TokenType.FOREIGN_KEY,
-                TokenType.UNIQUE,
             ):
                 self._advance()
                 if (

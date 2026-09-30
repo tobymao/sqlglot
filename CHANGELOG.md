@@ -1,6 +1,60 @@
 Changelog
 =========
 
+## [v30.21.0] - 2026-09-30
+### :boom: BREAKING CHANGES
+- due to [`2be1e0e`](https://github.com/tobymao/sqlglot/commit/2be1e0e2addc0ef01cfa3fd3cf2ef751cdbf411d) - annotate `bit_xor` for duckdb *(PR [#8452](https://github.com/tobymao/sqlglot/pull/8452) by [@opencode13241-eng](https://github.com/opencode13241-eng))*:
+
+  annotate `bit_xor` for duckdb (#8452)
+
+- due to [`65a0e22`](https://github.com/tobymao/sqlglot/commit/65a0e22447fcca9ea4a89f6167954fbb872c8e6d) - new projection pushdown algorithm *(PR [#8440](https://github.com/tobymao/sqlglot/pull/8440) by [@georgesittas](https://github.com/georgesittas))*:
+
+  new projection pushdown algorithm (#8440)
+
+- due to [`e3f71dc`](https://github.com/tobymao/sqlglot/commit/e3f71dc1a1186ada4b017a5f2498b8c2b0a8a25b) - decode backslash escape sequences in string literals *(PR [#8456](https://github.com/tobymao/sqlglot/pull/8456) by [@georgesittas](https://github.com/georgesittas))*:
+
+  decode backslash escape sequences in string literals (#8456)
+
+- due to [`b4d9e37`](https://github.com/tobymao/sqlglot/commit/b4d9e37d84a61eeb78e8d652f697e2e0d4d57869) - inherit Trino dialect, parser and generator defaults *(PR [#8464](https://github.com/tobymao/sqlglot/pull/8464) by [@georgesittas](https://github.com/georgesittas))*:
+
+  inherit Trino dialect, parser and generator defaults (#8464)
+
+- due to [`d84f7f3`](https://github.com/tobymao/sqlglot/commit/d84f7f3ee1ff50778c93970b086d59692714dcdc) - preserve BD literal semantics in Hive and Spark *(PR [#8455](https://github.com/tobymao/sqlglot/pull/8455) by [@georgesittas](https://github.com/georgesittas))*:
+
+  preserve BD literal semantics in Hive and Spark (#8455)
+
+- due to [`1122046`](https://github.com/tobymao/sqlglot/commit/11220460d0e78a3c83f14b006239f636e4ddde71) - convert ARRAY_INSERT position between 0- and 1-based dialects [CLAUDE] *(PR [#8460](https://github.com/tobymao/sqlglot/pull/8460) by [@anishmehta24](https://github.com/anishmehta24))*:
+
+  convert ARRAY_INSERT position between 0- and 1-based dialects [CLAUDE] (#8460)
+
+
+### :sparkles: New Features
+- [`2be1e0e`](https://github.com/tobymao/sqlglot/commit/2be1e0e2addc0ef01cfa3fd3cf2ef751cdbf411d) - **optimizer**: annotate `bit_xor` for duckdb *(PR [#8452](https://github.com/tobymao/sqlglot/pull/8452) by [@opencode13241-eng](https://github.com/opencode13241-eng))*
+- [`7e48d16`](https://github.com/tobymao/sqlglot/commit/7e48d16936216f9f93d7a52baef0e482e3fb14e7) - **optimizer**: add #schema fixture directive *(PR [#8435](https://github.com/tobymao/sqlglot/pull/8435) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+
+### :bug: Bug Fixes
+- [`1d40af1`](https://github.com/tobymao/sqlglot/commit/1d40af146d77dcf890ae18c1a59e649bf0862db3) - **optimizer**: unqualified semi/anti join column bound to table joined *(PR [#8430](https://github.com/tobymao/sqlglot/pull/8430) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`d9b2b96`](https://github.com/tobymao/sqlglot/commit/d9b2b9660be8a6b77a0bb0475f6bf0509c6c6aa0) - **parser**: constraint parsing fixup *(PR [#8457](https://github.com/tobymao/sqlglot/pull/8457) by [@georgesittas](https://github.com/georgesittas))*
+- [`e3f71dc`](https://github.com/tobymao/sqlglot/commit/e3f71dc1a1186ada4b017a5f2498b8c2b0a8a25b) - **snowflake**: decode backslash escape sequences in string literals *(PR [#8456](https://github.com/tobymao/sqlglot/pull/8456) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#4344](https://github.com/tobymao/sqlglot/issues/4344) opened by [@dylanscott](https://github.com/dylanscott)*
+  - :arrow_lower_right: *fixes issue [#8441](https://github.com/tobymao/sqlglot/issues/8441) opened by [@yvonne-chou-1](https://github.com/yvonne-chou-1)*
+- [`b4d9e37`](https://github.com/tobymao/sqlglot/commit/b4d9e37d84a61eeb78e8d652f697e2e0d4d57869) - **athena**: inherit Trino dialect, parser and generator defaults *(PR [#8464](https://github.com/tobymao/sqlglot/pull/8464) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8458](https://github.com/tobymao/sqlglot/issues/8458) opened by [@deepyaman](https://github.com/deepyaman)*
+- [`d84f7f3`](https://github.com/tobymao/sqlglot/commit/d84f7f3ee1ff50778c93970b086d59692714dcdc) - preserve BD literal semantics in Hive and Spark *(PR [#8455](https://github.com/tobymao/sqlglot/pull/8455) by [@georgesittas](https://github.com/georgesittas))*
+- [`1122046`](https://github.com/tobymao/sqlglot/commit/11220460d0e78a3c83f14b006239f636e4ddde71) - **spark**: convert ARRAY_INSERT position between 0- and 1-based dialects [CLAUDE] *(PR [#8460](https://github.com/tobymao/sqlglot/pull/8460) by [@anishmehta24](https://github.com/anishmehta24))*
+- [`18520e2`](https://github.com/tobymao/sqlglot/commit/18520e2b5bfa3f1d7ed1a261d1bd463132054db1) - **clickhouse**: generate varPop for VariancePop [CLAUDE] *(PR [#8469](https://github.com/tobymao/sqlglot/pull/8469) by [@ekut](https://github.com/ekut))*
+- [`2960bdd`](https://github.com/tobymao/sqlglot/commit/2960bdd7470f1c21518710ed468466b9bab4bb7b) - **optimizer**: preserve tautological aggregate filters [CODEX] *(PR [#8466](https://github.com/tobymao/sqlglot/pull/8466) by [@Boulea7](https://github.com/Boulea7))*
+- [`840b482`](https://github.com/tobymao/sqlglot/commit/840b4823e649e380e1dda30cf21907baebb6c58c) - **postgres**: keep WITH ORDINALITY alias columns on LATERAL UNNEST [GROK] *(PR [#8463](https://github.com/tobymao/sqlglot/pull/8463) by [@00200200](https://github.com/00200200))*
+  - :arrow_lower_right: *fixes issue [#8462](https://github.com/tobymao/sqlglot/issues/8462) opened by [@SoTrx](https://github.com/SoTrx)*
+- [`aa70202`](https://github.com/tobymao/sqlglot/commit/aa702020725f4d1591cfb2d308c72937a38e8fd4) - **optimizer**: qualify struct paths with conflicting aliases [CODEX] *(PR [#8467](https://github.com/tobymao/sqlglot/pull/8467) by [@tobymao](https://github.com/tobymao))*
+- [`b54d32f`](https://github.com/tobymao/sqlglot/commit/b54d32f036d4c1158bb889324f4ac6d2846d2701) - **optimizer**: stop struct lookup at nearest alias [CODEX] *(commit by [@tobymao](https://github.com/tobymao))*
+- [`5d16fa8`](https://github.com/tobymao/sqlglot/commit/5d16fa83bfb8f3582eaffa4b99c7d05a061d8a76) - **ci**: publish sqlglot independently of sqlglotc [CODEX] *(commit by [@tobymao](https://github.com/tobymao))*
+
+### :recycle: Refactors
+- [`65a0e22`](https://github.com/tobymao/sqlglot/commit/65a0e22447fcca9ea4a89f6167954fbb872c8e6d) - **optimizer**: new projection pushdown algorithm *(PR [#8440](https://github.com/tobymao/sqlglot/pull/8440) by [@georgesittas](https://github.com/georgesittas))*
+- [`ac940f0`](https://github.com/tobymao/sqlglot/commit/ac940f016a1d398137b4d666db0f191e6c4b6d1f) - **tokenizer**: generalize backslash escape handling, report unterminated escapes *(PR [#8470](https://github.com/tobymao/sqlglot/pull/8470) by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.20.0] - 2026-09-27
 ### :boom: BREAKING CHANGES
 - due to [`1d0e3f3`](https://github.com/tobymao/sqlglot/commit/1d0e3f34864037c54cf6bdf45af594db62ad7319) - Fix mysql roundtrip for DATE_ADD and DATE_SUB *(PR [#8417](https://github.com/tobymao/sqlglot/pull/8417) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*:
@@ -15990,3 +16044,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.18.0]: https://github.com/tobymao/sqlglot/compare/v30.17.0...v30.18.0
 [v30.19.0]: https://github.com/tobymao/sqlglot/compare/v30.18.0...v30.19.0
 [v30.20.0]: https://github.com/tobymao/sqlglot/compare/v30.19.0...v30.20.0
+[v30.21.0]: https://github.com/tobymao/sqlglot/compare/v30.20.0...v30.21.0

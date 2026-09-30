@@ -806,13 +806,11 @@ class Lateral(Expression, UDTF):
 
     @property
     def selects(self) -> list[Expr]:
-        alias = self.args.get("alias")
-        columns = list(alias.columns) if alias else []
-        this = self.this
-        if this is not None and this.key == "unnest":
-            offset = this.args.get("offset")
-            if isinstance(offset, Expr) and all(col.name != offset.name for col in columns):
-                columns.append(offset)
+        columns = super().selects
+        # UNNEST ... WITH ORDINALITY stores the ordinality column's name in Unnest.offset
+        offset = self.this.args.get("offset")
+        if isinstance(offset, Identifier):
+            columns = columns + [offset]
         return columns
 
 

@@ -1580,23 +1580,21 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "SELECT TRIM(ARRAY_TO_STRING(ARRAY(SELECT val FROM UNNEST(ARRAY['a', 'b']) WITH ORDINALITY AS u(val, rn)), ' '))"
         )
-        self.validate_identity("SELECT r.idx FROM t, UNNEST(t.a) WITH ORDINALITY AS r(v, idx)")
-        self.validate_identity(
-            "SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)"
-        )
         self.validate_identity(
             "SELECT r.v, r.idx FROM t CROSS JOIN LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)"
         )
         self.validate_identity("SELECT * FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r")
-
-        lateral = (
-            self.parse_one(
-                "SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)"
-            )
-            .args["joins"][0]
-            .this
+        self.validate_identity(
+            "SELECT * FROM t, LATERAL UNNEST(t.a, t.b) WITH ORDINALITY AS r(x, y, idx)"
         )
-        self.assertEqual(lateral.named_selects, ["v", "idx"])
+        self.validate_all(
+            "SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)",
+            write={
+                "postgres": "SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)",
+                "duckdb": "SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx)",
+                "spark": "SELECT r.v, r.idx FROM t LATERAL VIEW POSEXPLODE(t.a) r AS idx, v",
+            },
+        )
 
         self.validate_all(
             "SELECT UNNEST(c) FROM t",

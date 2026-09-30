@@ -2949,19 +2949,6 @@ class Generator:
         return f"{op}LATERAL"
 
     def lateral_sql(self, expression: exp.Lateral) -> str:
-        this_expr = expression.this
-        # UNNEST WITH ORDINALITY stores the extra column on Unnest.offset. The
-        # Unnest alias was moved onto the Lateral, so surface that column here
-        # instead of leaving offset on the child (Spark LATERAL VIEW EXPLODE
-        # would otherwise emit it twice).
-        if this_expr and this_expr.key == "unnest":
-            offset = this_expr.args.get("offset")
-            alias_node = expression.args.get("alias")
-            if alias_node is not None and isinstance(offset, exp.Expr):
-                if all(col.name != offset.name for col in alias_node.columns):
-                    alias_node.append("columns", offset)
-                this_expr.set("offset", True)
-
         this = self.sql(expression, "this")
 
         if expression.args.get("view"):
@@ -2972,7 +2959,14 @@ class Generator:
             op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
             return f"{op_sql}{self.sep()}{this}{table}{columns}"
 
-        alias = self.sql(expression, "alias")
+        table_alias = expression.args.get("alias")
+        offset = expression.this.args.get("offset")
+        if self.UNNEST_WITH_ORDINALITY and table_alias and isinstance(offset, exp.Identifier):
+            # UNNEST ... WITH ORDINALITY stores the ordinality column's name in Unnest.offset
+            table_alias = table_alias.copy()
+            table_alias.append("columns", offset.copy())
+
+        alias = self.sql(table_alias)
         alias = f" AS {alias}" if alias else ""
 
         ordinality = expression.args.get("ordinality") or ""

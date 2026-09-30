@@ -289,6 +289,11 @@ SELECT * FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a,
 SELECT t.a AS a, t.b AS b FROM ROWS FROM (GENERATE_SERIES(1, 3), GENERATE_SERIES(10, 12)) AS t(a, b);
 
 # execute: false
+# dialect: postgres
+SELECT r.v, r.idx FROM t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx);
+SELECT r.v AS v, r.idx AS idx FROM t AS t, LATERAL UNNEST(t.a) WITH ORDINALITY AS r(v, idx);
+
+# execute: false
 # dialect: clickhouse
 SELECT generate_series FROM generate_series(0, 10) AS g;
 SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);

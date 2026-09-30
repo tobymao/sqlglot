@@ -2959,7 +2959,14 @@ class Generator:
             op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
             return f"{op_sql}{self.sep()}{this}{table}{columns}"
 
-        alias = self.sql(expression, "alias")
+        table_alias = expression.args.get("alias")
+        offset = expression.this.args.get("offset")
+        if self.UNNEST_WITH_ORDINALITY and table_alias and isinstance(offset, exp.Identifier):
+            # UNNEST ... WITH ORDINALITY stores the ordinality column's name in Unnest.offset
+            table_alias = table_alias.copy()
+            table_alias.append("columns", offset.copy())
+
+        alias = self.sql(table_alias)
         alias = f" AS {alias}" if alias else ""
 
         ordinality = expression.args.get("ordinality") or ""

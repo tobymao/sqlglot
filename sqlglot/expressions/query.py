@@ -804,6 +804,15 @@ class Lateral(Expression, UDTF):
         "ordinality": False,
     }
 
+    @property
+    def selects(self) -> list[Expr]:
+        columns = super().selects
+        # UNNEST ... WITH ORDINALITY stores the ordinality column's name in Unnest.offset
+        offset = self.this.args.get("offset")
+        if isinstance(offset, Identifier):
+            columns = columns + [offset]
+        return columns
+
 
 class TableFromRows(Expression, UDTF):
     arg_types = {

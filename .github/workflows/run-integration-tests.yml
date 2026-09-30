@@ -129,6 +129,7 @@ jobs:
               --repo $REMOTE_REPO \
               --event workflow_dispatch \
               --workflow run-tests.yml \
+              --branch "$INTEGRATION_REF" \
               --user sqlglot-integration-tests \
               --json displayTitle,databaseId \
               --limit 20 \

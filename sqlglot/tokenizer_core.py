@@ -1148,10 +1148,10 @@ class TokenizerCore:
 
         return (value, end) if end - start >= min_digits else (-1, end)
 
-    def _scan_escape(self) -> str:
+    def _scan_numeric_escape(self) -> str:
         """
-        Decodes the escape sequence starting at the current char, which is a backslash, according to
-        `numeric_escapes` and `drop_unknown_escapes`. Returns an empty string if nothing is decoded.
+        Decodes the numeric escape sequence starting at the current char, which is a backslash,
+        according to `numeric_escapes`. Returns an empty string if nothing is decoded.
         """
         sql = self.sql
         start = self._current
@@ -1191,13 +1191,6 @@ class TokenizerCore:
                 self._advance(end - start + 1)
                 return chr(value)
 
-        # Not decoded: drop the backslash if configured, else return "" so that the caller keeps it
-        if self.drop_unknown_escapes and self._current + 1 < self.size:
-            # Advance one char at a time so that line numbers are updated if `peek` is a newline
-            self._advance()
-            self._advance()
-            return peek
-
         return ""
 
     def _extract_string(
@@ -1212,7 +1205,8 @@ class TokenizerCore:
         escapes = self.string_escapes if escapes is None else escapes
         unescaped_sequences = self.unescaped_sequences
         escape_follow_chars = self.escape_follow_chars
-        scan_escapes = bool(self.numeric_escapes) or self.drop_unknown_escapes
+        numeric_escapes = self.numeric_escapes
+        drop_unknown_escapes = self.drop_unknown_escapes
         string_escapes_allowed_in_raw_strings = self.string_escapes_allowed_in_raw_strings
         quotes = self.quotes
         sql = self.sql
@@ -1244,18 +1238,42 @@ class TokenizerCore:
                 return sql[pos:end]
 
         while True:
-            if not raw_string and unescaped_sequences and self._peek and self._char in escapes:
-                unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
-                if unescaped_sequence:
-                    self._advance(2)
-                    text += unescaped_sequence
-                    continue
+            backslash_escape = not raw_string and self._char == "\\" and "\\" in escapes
 
-            if scan_escapes and not raw_string and self._char == "\\" and "\\" in escapes:
-                decoded = self._scan_escape()
+            # Numeric escapes come first, since they may overlap fixed sequences (e.g. \000 vs \0)
+            if backslash_escape and numeric_escapes:
+                decoded = self._scan_numeric_escape()
                 if decoded:
                     text += decoded
                     continue
+
+            # An escape at the end of the input is left to the checks below, which report the
+            # unterminated string
+            if (
+                not raw_string
+                and unescaped_sequences
+                and self._char in escapes
+                and self._current + 1 < self.size
+            ):
+                unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
+                if unescaped_sequence:
+                    # Advance one char at a time so that line numbers are updated for a newline
+                    if self._peek in "\n\r":
+                        self._advance()
+                        self._advance()
+                    else:
+                        self._advance(2)
+                    text += unescaped_sequence
+                    continue
+
+            # Not decoded: drop the backslash if configured, unless the string is unterminated
+            if backslash_escape and drop_unknown_escapes and self._current + 1 < self.size:
+                # Advance one char at a time so that line numbers are updated if `peek` is a newline
+                peek = self._peek
+                self._advance()
+                self._advance()
+                text += peek
+                continue
 
             is_valid_custom_escape = (
                 escape_follow_chars and self._char == "\\" and self._peek not in escape_follow_chars

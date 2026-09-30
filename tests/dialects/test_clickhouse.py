@@ -127,6 +127,7 @@ class TestClickhouse(Validator):
             "varPop(x)",
             read={
                 "": "VAR_POP(x)",
+                "clickhouse": "varPop(x)",
                 "duckdb": "VAR_POP(x)",
                 "postgres": "VAR_POP(x)",
             },

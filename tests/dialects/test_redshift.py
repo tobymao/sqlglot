@@ -343,6 +343,9 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")
         self.validate_identity("SELECT EXP(1)")
         self.validate_identity("ALTER TABLE table_name ALTER COLUMN bla TYPE VARCHAR")
+        self.validate_identity(
+            "ALTER TABLE t DROP b CASCADE", "ALTER TABLE t DROP COLUMN b CASCADE"
+        )
         self.validate_identity("SELECT CAST(value AS FLOAT(8))")
         self.validate_identity("1 div", "1 AS div")
         self.validate_identity("LISTAGG(DISTINCT foo, ', ')")

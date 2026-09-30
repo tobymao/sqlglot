@@ -9125,24 +9125,24 @@ class Parser:
 
         kind = None
         if not self.ALTER_DROP_REQUIRES_COLUMN:
-            offset = 2 if self._match_text_seq("IF", "EXISTS", advance=False) else 0
-            name = seq_get(self._tokens, self._index + offset)
-            after = seq_get(self._tokens, self._index + offset + 1)
-            if (
-                name
-                and name.token_type in self.ID_VAR_TOKENS
-                and name.text.upper() not in self.NO_PAREN_FUNCTION_PARSERS
-                and (
-                    not after
-                    or after.token_type == TokenType.COMMA
-                    or (
-                        name.token_type not in (TokenType.COLUMN, TokenType.CONSTRAINT)
-                        and after.token_type not in self.TEXT_MATCH_EXCLUDED_TOKENS
-                        and after.text.upper() in ("CASCADE", "RESTRICT")
-                    )
-                )
+            # A bare `DROP [IF EXISTS] c [CASCADE | RESTRICT]` drops a column
+            index = self._index
+            self._parse_exists()
+            name = self._curr
+            if name.token_type in self.ID_VAR_TOKENS and name.token_type not in (
+                TokenType.COLUMN,
+                TokenType.CONSTRAINT,
+                TokenType.FOREIGN_KEY,
+                TokenType.UNIQUE,
             ):
-                kind = "COLUMN"
+                self._advance()
+                if (
+                    not self._curr
+                    or self._match(TokenType.COMMA, advance=False)
+                    or self._match_texts(("CASCADE", "RESTRICT"), advance=False)
+                ):
+                    kind = "COLUMN"
+            self._retreat(index)
 
         drop = self._parse_drop(kind=kind)
         if drop and not isinstance(drop, exp.Command):

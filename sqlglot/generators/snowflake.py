@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 from collections import defaultdict
 
@@ -40,9 +39,6 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
-
-# Control chars that aren't covered by ESCAPED_SEQUENCES (e.g. \n)
-_CONTROL_CHARS_RE = re.compile(r"[\x00-\x07\x0b\x0e-\x1f\x7f]")
 
 
 def _build_datediff(args: list) -> exp.DateDiff:
@@ -600,23 +596,6 @@ class SnowflakeGenerator(generator.Generator):
             "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
         ),
     }
-
-    def escape_str(
-        self,
-        text: str,
-        escape_backslash: bool = True,
-        delimiter: str | None = None,
-        escaped_delimiter: str | None = None,
-        is_byte_string: bool = False,
-    ) -> str:
-        text = super().escape_str(
-            text,
-            escape_backslash=escape_backslash,
-            delimiter=delimiter,
-            escaped_delimiter=escaped_delimiter,
-            is_byte_string=is_byte_string,
-        )
-        return _CONTROL_CHARS_RE.sub(lambda m: f"\\x{ord(m.group()):02x}", text)
 
     def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
         this = self.func("IDENTIFIER", expression.this)

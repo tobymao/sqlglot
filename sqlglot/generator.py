@@ -25,6 +25,9 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+# Control chars other than tab, newline and carriage return
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
@@ -3083,6 +3086,20 @@ class Generator:
                 self.dialect.ESCAPED_SEQUENCES.get(ch, ch) if escape_backslash or ch != "\\" else ch
                 for ch in text
             )
+
+            # Write the remaining control chars with the dialect's numeric escape, if it has one
+            numeric_escapes = self.dialect.tokenizer_class.NUMERIC_ESCAPES
+            if "x" in numeric_escapes:
+                fmt = "\\x{:02x}"
+            elif "0" in numeric_escapes:
+                fmt = "\\{:03o}"
+            elif "u" in numeric_escapes:
+                fmt = "\\u{:04x}"
+            else:
+                fmt = ""
+
+            if fmt:
+                text = _CONTROL_CHARS_RE.sub(lambda m: fmt.format(ord(m.group())), text)
 
         delimiter = delimiter or self.dialect.QUOTE_END
         escaped_delimiter = escaped_delimiter or self._escaped_quote_end

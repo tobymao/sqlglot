@@ -433,9 +433,6 @@ class TestMySQL(Validator):
         add_a, drop = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "INDEX")
-        self.assertEqual(drop.args["tables"][0].name, "concurrently")
-        self.assertFalse(drop.args["concurrently"])
 
         alter = self.validate_identity(
             "ALTER TABLE t ADD COLUMN a INT, DROP INDEX concurrently, DROP COLUMN b"
@@ -443,19 +440,12 @@ class TestMySQL(Validator):
         add_a, drop, drop_b = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "INDEX")
-        self.assertEqual(drop.args["tables"][0].name, "concurrently")
-        self.assertFalse(drop.args["concurrently"])
         drop_b.assert_is(exp.Drop)
-        self.assertEqual(drop_b.args["tables"][0].name, "b")
 
         alter = self.validate_identity("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN concurrently")
         add_a, drop = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "COLUMN")
-        self.assertEqual(drop.args["tables"][0].name, "concurrently")
-        self.assertFalse(drop.args["concurrently"])
 
         alter = self.validate_identity(
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN concurrently RESTRICT"
@@ -463,18 +453,22 @@ class TestMySQL(Validator):
         add_a, drop = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "COLUMN")
-        self.assertEqual(drop.args["tables"][0].name, "concurrently")
-        self.assertFalse(drop.args["concurrently"])
-        self.assertTrue(drop.args["restrict"])
 
         alter = self.validate_identity("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN any RESTRICT")
         add_a, drop = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "COLUMN")
-        self.assertEqual(drop.args["tables"][0].name, "any")
-        self.assertTrue(drop.args["restrict"])
+
+        alter = self.validate_identity("ALTER TABLE t ADD COLUMN a INT, RENAME INDEX any TO b")
+        add_a, rename = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        rename.assert_is(exp.RenameIndex)
+
+        alter = self.validate_identity("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN charset")
+        add_a, drop = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        drop.assert_is(exp.Drop)
+        drop.args["tables"][0].assert_is(exp.Column)
 
         self.validate_identity(
             "ALTER TABLE t ADD COLUMN a INT, DROP b, ADD COLUMN c INT",

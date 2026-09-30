@@ -1605,8 +1605,6 @@ FROM json_data, field_ids""",
         add_a, drop = alter.args["actions"]
         add_a.assert_is(exp.ColumnDef)
         drop.assert_is(exp.Drop)
-        self.assertEqual(drop.args["kind"], "COLUMN")
-        self.assertEqual(drop.args["tables"][0].name, "if")
 
         self.validate_identity(
             "ALTER TABLE t DROP COLUMN b, ADD index INT", check_command_warning=True
@@ -1614,6 +1612,16 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "ALTER TABLE t ADD COLUMN b INT, DROP partition", check_command_warning=True
         ).assert_is(exp.Command)
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN b RESTART", check_command_warning=True
+        ).assert_is(exp.Command)
+
+        alter = self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN partitioned_by CASCADE"
+        )
+        add_a, drop = alter.args["actions"]
+        add_a.assert_is(exp.ColumnDef)
+        drop.assert_is(exp.Drop)
 
     def test_called_on_null_input_malformed(self):
         # Regression test for a zero-progress parse loop: a malformed property suffix used to

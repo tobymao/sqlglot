@@ -476,6 +476,31 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(physical.find(exp.Column), exp.column("state", table="address"))
 
+    def test_qualify_correlated_shadowed_struct_path(self):
+        schema = {
+            "customer": {"address": "STRUCT<state TEXT>"},
+            "other": {"id": "INT"},
+            "addresses": {"id": "INT", "state": "TEXT"},
+        }
+        query = (
+            "SELECT (SELECT c.address.state FROM other AS c "
+            "JOIN addresses AS address ON c.id = address.id) AS state "
+            "FROM customer AS c"
+        )
+        qualified = qualify(parse_one(query), schema=schema, identify=False)
+
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE customer (address STRUCT(state TEXT))")
+            connection.execute("CREATE TABLE other (id INT)")
+            connection.execute("CREATE TABLE addresses (id INT, state TEXT)")
+            connection.execute("INSERT INTO customer VALUES ({'state': 'CA'})")
+            connection.execute("INSERT INTO other VALUES (1)")
+            connection.execute("INSERT INTO addresses VALUES (1, 'NY')")
+            self.assertEqual(
+                connection.execute(qualified.sql(dialect="duckdb")).fetchall(),
+                connection.execute(query).fetchall(),
+            )
+
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
         self.assertEqual(

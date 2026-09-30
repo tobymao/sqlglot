@@ -620,12 +620,11 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if not is_star and column.db and column_table in scope.selected_sources:
             root, field = column.parts[:2]
             for candidate_resolver in itertools.chain((resolver,), resolver.outer_resolvers()):
-                if (
-                    root.name in candidate_resolver.scope.selected_sources
-                    and field.name in candidate_resolver.get_source_columns(root.name)
-                ):
+                if root.name not in candidate_resolver.scope.selected_sources:
+                    continue
+                if field.name in candidate_resolver.get_source_columns(root.name):
                     root_resolver = candidate_resolver
-                    break
+                break
         if (
             column_table
             and (

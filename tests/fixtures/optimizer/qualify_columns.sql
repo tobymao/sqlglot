@@ -1122,6 +1122,7 @@ SELECT * FROM ((SELECT * FROM tbl));
 SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _0);
 
 # execute: false
+# schema: {"t1": {"c": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) CROSS JOIN t2);
 SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
 

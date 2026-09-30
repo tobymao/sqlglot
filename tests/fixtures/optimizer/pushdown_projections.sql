@@ -176,7 +176,7 @@ SELECT t.c AS c FROM (SELECT 1 AS c UNION ALL BY NAME SELECT 3 AS c) AS t;
 
 # dialect: snowflake
 SELECT OBJECT_CONSTRUCT(*) FROM (SELECT a, b FROM x) AS t;
-SELECT OBJECT_CONSTRUCT(*) AS _COL_0 FROM (SELECT a AS a, b AS b FROM x AS x) AS t;
+SELECT OBJECT_CONSTRUCT(*) AS _COL_0 FROM (SELECT x.a AS a, x.b AS b FROM x AS x) AS t;
 
 # dialect: snowflake
 WITH base AS (SELECT 1 AS a, 2 AS b, 3 AS c, 4 AS d) SELECT OBJECT_INSERT(OBJECT_CONSTRUCT(*), 'e', 5) FROM base;
@@ -192,7 +192,7 @@ WITH cte AS (SELECT 1 AS a, 2 AS b) SELECT HASH_AGG(*) AS _COL_0 FROM cte AS cte
 
 # dialect: snowflake
 WITH cte AS (SELECT a, b FROM x) SELECT COUNT(* EXCLUDE a) FROM cte;
-WITH cte AS (SELECT a AS a, b AS b FROM x AS x) SELECT COUNT(* EXCLUDE (a)) AS _COL_0 FROM cte AS cte;
+WITH cte AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT COUNT(* EXCLUDE (a)) AS _COL_0 FROM cte AS cte;
 
 WITH cte1 AS (SELECT a, SUM(b) AS sale FROM x GROUP BY a), cte2 AS (SELECT cte1.a, COUNT(*) AS cnt FROM cte1 GROUP BY cte1.a) SELECT a, cnt FROM cte2;
 WITH cte1 AS (SELECT x.a AS a FROM x AS x GROUP BY x.a), cte2 AS (SELECT cte1.a AS a, COUNT(*) AS cnt FROM cte1 AS cte1 GROUP BY cte1.a) SELECT cte2.a AS a, cte2.cnt AS cnt FROM cte2 AS cte2;

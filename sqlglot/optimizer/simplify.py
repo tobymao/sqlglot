@@ -707,7 +707,7 @@ class Simplifier:
                 joins.append(node)
 
         for where in wheres:
-            if always_true(where.this):
+            if always_true(where.this) and not isinstance(where.parent, exp.Filter):
                 where.pop()
         for join in joins:
             # Only an inner join can become a CROSS JOIN: a cross join is empty as soon as either

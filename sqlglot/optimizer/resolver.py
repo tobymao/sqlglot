@@ -64,13 +64,16 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and self._infer_schema:
+        if not table_name:
+            all_source_cols = self._get_all_source_columns()
             sources_without_schema = tuple(
                 source
-                for source, columns in self._get_all_source_columns().items()
+                for source, columns in all_source_cols.items()
                 if not columns or "*" in columns
             )
-            if len(sources_without_schema) == 1:
+            if len(sources_without_schema) == 1 and (
+                self._infer_schema or self._is_dynamic_source(sources_without_schema[0])
+            ):
                 table_name = sources_without_schema[0]
 
         if table_name not in self.scope.selected_sources:
@@ -262,7 +265,26 @@ class Resolver:
         else:
             unambiguous_columns = self._get_unambiguous_columns(source_columns)
 
-        return unambiguous_columns.get(column_name)
+        result = unambiguous_columns.get(column_name)
+        if result is None:
+            # Fall back to the dialect-normalized form so that unquoted identifiers match
+            # schema columns even when cases differ (e.g. Snowflake stores columns as
+            # uppercase 'D' but the AST may carry the lowercase 'd' as typed).
+            normalized = self.dialect.normalize_identifier(exp.to_identifier(column_name)).name
+            if normalized != column_name:
+                result = unambiguous_columns.get(normalized)
+        return result
+
+    def _is_dynamic_source(self, source_name: str) -> bool:
+        """Return True for sources whose columns can't be known from the schema (TVFs, UNNEST, PIVOTs, etc.)."""
+        source = self.scope.sources.get(source_name)
+        if isinstance(source, Scope):
+            return True
+        if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
+            return True
+        if self.scope.pivots:
+            return True
+        return False
 
     def _get_column_join_context(self, column: exp.Column) -> exp.Join | None:
         """

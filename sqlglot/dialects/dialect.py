@@ -346,6 +346,24 @@ class _Dialect(type):
             if not v.isprintable() or v == "\\"
         }
 
+        # Prefer hex, then octal, then Unicode for numeric control-character escapes.
+        numeric_escapes = klass.tokenizer_class.NUMERIC_ESCAPES
+        if "x" in numeric_escapes:
+            fmt = "\\x{:02x}"
+        elif "0" in numeric_escapes:
+            fmt = "\\{:03o}"
+        elif "u" in numeric_escapes:
+            fmt = "\\u{:04x}"
+        else:
+            fmt = ""
+
+        if fmt:
+            # ASCII controls are 0-31 and DEL (127). Preserve existing escape mappings and
+            # leave tab (9), newline (10), and carriage return (13) to their existing handling.
+            for code in (*range(32), 127):
+                if code not in (9, 10, 13):
+                    klass.ESCAPED_SEQUENCES.setdefault(chr(code), fmt.format(code))
+
         klass.SUPPORTS_COLUMN_JOIN_MARKS = "(+)" in klass.tokenizer_class.KEYWORDS
 
         if enum not in ("", "bigquery", "snowflake"):

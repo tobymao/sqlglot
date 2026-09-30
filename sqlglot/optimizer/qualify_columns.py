@@ -820,6 +820,16 @@ def _qualify_columns(
                 and column_name not in source_columns
                 and "*" not in source_columns
             ):
+                # If the table qualifier is a comprehension bound variable, treat as struct field access.
+                comp = column.find_ancestor(exp.Comprehension)
+                if comp:
+                    bound_vars = {
+                        v.name
+                        for v in (comp.args.get("expression"), comp.args.get("position"))
+                        if v and type(v) is exp.Column
+                    }
+                    if column_table in bound_vars:
+                        continue
                 raise OptimizeError(f"Unknown column: {column_name}")
 
         if not column_table:

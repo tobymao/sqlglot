@@ -217,7 +217,7 @@ class Scope:
                         table_aliases = {
                             source.alias_or_name
                             for source in self.walk()
-                            if isinstance(source, (exp.Table, exp.Subquery, exp.CTE))
+                            if isinstance(source, (exp.Table, exp.Subquery))
                         } - {""}
 
                     for subtree in (node.this, node.args.get("condition")):

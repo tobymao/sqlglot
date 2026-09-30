@@ -412,6 +412,70 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("normalize", normalize, schema=self.schema)
 
+    def test_qualify_columns_struct_field_and_source_alias(self):
+        schema = {
+            "customer": {
+                "id": "INT",
+                "address": "STRUCT<state TEXT, location STRUCT<state TEXT>>",
+            },
+            "addresses": {"id": "INT", "state": "TEXT"},
+            "other": {"id": "INT"},
+        }
+        qualified = qualify(
+            parse_one(
+                "SELECT c.address.state FROM customer AS c "
+                "JOIN addresses AS address ON c.id = address.id"
+            ),
+            schema=schema,
+            identify=False,
+        )
+        struct_field = exp.Dot.build([exp.column("address", table="c"), exp.to_identifier("state")])
+        self.assertEqual(qualified.find(exp.Dot), struct_field)
+
+        nested = qualify(
+            parse_one(
+                "SELECT c.address.location.state FROM customer AS c "
+                "CROSS JOIN addresses AS location"
+            ),
+            schema=schema,
+            identify=False,
+        )
+        self.assertEqual(
+            nested.find(exp.Dot),
+            exp.Dot.build(
+                [
+                    exp.column("address", table="c"),
+                    exp.to_identifier("location"),
+                    exp.to_identifier("state"),
+                ]
+            ),
+        )
+
+        correlated = qualify(
+            parse_one(
+                "SELECT (SELECT c.address.state FROM addresses AS address "
+                "WHERE address.id = c.id) FROM customer AS c"
+            ),
+            schema=schema,
+            identify=False,
+        )
+        self.assertEqual(correlated.find(exp.Dot), struct_field)
+
+        physical = qualify(
+            parse_one(
+                "SELECT db.address.state FROM db.address AS address "
+                "JOIN db.other AS db ON address.id = db.id"
+            ),
+            schema={
+                "db": {
+                    "address": {"id": "INT", "state": "TEXT"},
+                    "other": {"id": "INT"},
+                }
+            },
+            identify=False,
+        )
+        self.assertEqual(physical.find(exp.Column), exp.column("state", table="address"))
+
     @patch("sqlglot.generator.logger")
     def test_qualify_columns(self, logger):
         self.assertEqual(

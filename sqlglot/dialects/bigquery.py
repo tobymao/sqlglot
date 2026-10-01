@@ -168,6 +168,14 @@ class BigQuery(Dialect):
         }
 
     class Tokenizer(tokens.Tokenizer):
+        NUMERIC_ESCAPES = {
+            "x": (16, 2, 2, 0xFF),
+            "X": (16, 2, 2, 0xFF),
+            "u": (16, 4, 4, 0xFFFF),
+            "U": (16, 8, 8, 0x10FFFF),
+            "0": (8, 3, 3, 0xFF),
+        }
+        DROP_UNKNOWN_ESCAPES = True
         QUOTES = ["'", '"', '"""', "'''"]
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]

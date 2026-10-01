@@ -582,6 +582,7 @@ class Tokenizer(_TokenizerBase):
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
             numeric_escapes=self.NUMERIC_ESCAPES,
             drop_unknown_escapes=self.DROP_UNKNOWN_ESCAPES,
+            byte_strings_are_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE,
             lone_surrogate_replacement=self.LONE_SURROGATE_REPLACEMENT,
         )
 

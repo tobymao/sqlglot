@@ -2,7 +2,9 @@ import unittest
 
 from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
-from sqlglot.schema import MappingSchema, ensure_schema
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
+from sqlglot.schema import DelegateSchema, MappingSchema, ensure_schema
 
 
 class TestSchema(unittest.TestCase):
@@ -340,3 +342,41 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(found, {"c": "int"})
         found = schema.find(exp.to_table("x"), ensure_data_types=True)
         self.assertEqual(found, {"c": exp.DataType.build("int")})
+
+    def test_delegate_schema(self):
+        mapping = MappingSchema(
+            {"x": {"a": "int", "b": "text"}},
+            visible={"x": {"a"}},
+            dialect="duckdb",
+            udf_mapping={"f": "int"},
+        )
+        schema = DelegateSchema(mapping)
+        schema.add_table("y", {"c": "int"})
+
+        self.assertIs(ensure_schema(schema), schema)
+        self.assertIs(schema.dialect, mapping.dialect)
+        self.assertFalse(schema.empty)
+        self.assertEqual(schema.supported_table_args, mapping.supported_table_args)
+        self.assertEqual(mapping.column_names("y"), ["c"])
+        self.assertEqual(schema.column_names("x"), ["a", "b"])
+        self.assertEqual(schema.column_names("x", only_visible=True), ["a"])
+        self.assertTrue(schema.has_column("x", "A"))
+        self.assertFalse(schema.has_column("x", "A", normalize=False))
+        self.assertEqual(schema.get_column_type("x", "a"), exp.DataType.build("int"))
+        self.assertEqual(schema.get_udf_type("f()"), exp.DataType.build("int"))
+
+    def test_delegate_schema_optimize(self):
+        class Foo:
+            dialect = None
+            empty = False
+
+            def column_names(self, table, only_visible=False, dialect=None, normalize=None):
+                return ["a", "b"]
+
+            def get_column_type(self, table, column, dialect=None, normalize=None):
+                return exp.DataType.build("int" if exp.to_column(column).name == "a" else "text")
+
+        schema = DelegateSchema(Foo())
+        expression = annotate_types(qualify(parse_one("SELECT * FROM x"), schema=schema), schema)
+        self.assertEqual(expression.sql(), 'SELECT "x"."a" AS "a", "x"."b" AS "b" FROM "x" AS "x"')
+        self.assertEqual([select.type.sql() for select in expression.selects], ["INT", "TEXT"])

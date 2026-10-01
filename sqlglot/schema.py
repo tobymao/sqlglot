@@ -150,6 +150,83 @@ class Schema(abc.ABC):
         return True
 
 
+class DelegateSchema(Schema):
+    """
+    Schema that forwards every `Schema` member to `delegate`.
+
+    When sqlglot is compiled with mypyc, interpreted classes cannot subclass `Schema`. Instead,
+    such a class can implement the same members and be wrapped in a `DelegateSchema`.
+    """
+
+    def __init__(self, delegate: t.Any) -> None:
+        self.delegate = delegate
+
+    @property
+    def dialect(self) -> Dialect | None:
+        return self.delegate.dialect
+
+    def add_table(
+        self,
+        table: exp.Table | str,
+        column_mapping: ColumnMapping | None = None,
+        dialect: DialectType = None,
+        normalize: bool | None = None,
+        match_depth: bool = True,
+    ) -> None:
+        self.delegate.add_table(
+            table,
+            column_mapping=column_mapping,
+            dialect=dialect,
+            normalize=normalize,
+            match_depth=match_depth,
+        )
+
+    def column_names(
+        self,
+        table: exp.Table | str,
+        only_visible: bool = False,
+        dialect: DialectType = None,
+        normalize: bool | None = None,
+    ) -> Sequence[str]:
+        return self.delegate.column_names(
+            table, only_visible=only_visible, dialect=dialect, normalize=normalize
+        )
+
+    def get_column_type(
+        self,
+        table: exp.Table | str,
+        column: exp.Column | str,
+        dialect: DialectType = None,
+        normalize: bool | None = None,
+    ) -> exp.DataType:
+        return self.delegate.get_column_type(table, column, dialect=dialect, normalize=normalize)
+
+    def has_column(
+        self,
+        table: exp.Table | str,
+        column: exp.Column | str,
+        dialect: DialectType = None,
+        normalize: bool | None = None,
+    ) -> bool:
+        return self.delegate.has_column(table, column, dialect=dialect, normalize=normalize)
+
+    def get_udf_type(
+        self,
+        udf: exp.Anonymous | str,
+        dialect: DialectType = None,
+        normalize: bool | None = None,
+    ) -> exp.DataType:
+        return self.delegate.get_udf_type(udf, dialect=dialect, normalize=normalize)
+
+    @property
+    def supported_table_args(self) -> tuple[str, ...]:
+        return self.delegate.supported_table_args
+
+    @property
+    def empty(self) -> bool:
+        return self.delegate.empty
+
+
 class AbstractMappingSchema:
     def __init__(
         self,

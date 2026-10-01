@@ -44,10 +44,12 @@ From PyPI:
 # Pure python version
 pip3 install sqlglot
 
-# C extensions compiled with mypyc
+# C extensions compiled with mypyc (Python 3.10+)
 # prebuilt wheel if available for your platform, otherwise builds from source
 pip3 install "sqlglot[c]"
 ```
+
+On Python 3.9, `sqlglot[c]` installs the pure Python version.
 
 Or with a local checkout:
 
@@ -538,12 +540,12 @@ make docs-serve
 ## Run Tests and Lint
 
 ```
-make style   # Only linter checks
+make style   # Format, lint, and type-check
 make unit    # Only unit tests (pure Python)
 make test    # Unit and integration tests (pure Python)
 make unitc   # Only unit tests (mypyc compiled)
 make testc   # Unit and integration tests (mypyc compiled)
-make check   # Full test suite & linter checks
+make check   # Full test suite, formatting, linting, and type checks
 make clean   # Remove compiled C artifacts (.so files, build dirs)
 ```
 
@@ -573,17 +575,27 @@ sqlglot, sqltree, sqlparse, and sqlfluff are python based whereas sqloxide and p
 |      many_numbers | 0.103898 (1.00) | 0.024483 (0.24) | 0.120119 (1.16) |              N/A |               N/A | 0.031667 (0.30) | 0.026880 (0.26) |
 
 ```
-make bench            # Run parsing benchmark
+make bench            # Run parsing, transpilation, and optimization benchmarks
+make bench-parse      # Run parsing benchmark
+make bench-transpile  # Run transpilation benchmark
 make bench-optimize   # Run optimization benchmark
 ```
 
 ## Optional Dependencies
 
-SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify literal timedelta expressions. The optimizer will not simplify expressions like the following if the module cannot be found:
+SQLGlot uses [dateutil](https://github.com/dateutil/dateutil) to simplify constant date and interval arithmetic. With dateutil installed, the optimizer simplifies:
 
 ```sql
-x + interval '1' month
+DATE '2021-01-01' + INTERVAL '1' MONTH
 ```
+
+to:
+
+```sql
+CAST('2021-02-01' AS DATE)
+```
+
+Without dateutil, the optimizer leaves this arithmetic unevaluated.
 
 ## Supported Dialects
 

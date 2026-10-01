@@ -69,6 +69,7 @@ class ClickHouse(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
+        COMMENTS_TERMINATE_AT_NEWLINE_ONLY = True
         IDENTIFIERS = ['"', "`"]
         IDENTIFIER_ESCAPES = ["\\"]
         STRING_ESCAPES = ["'", "\\"]

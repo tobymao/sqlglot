@@ -25,6 +25,7 @@ class SQLite(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]
 
         NESTED_COMMENTS = False
+        COMMENTS_TERMINATE_AT_NEWLINE_ONLY = True
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

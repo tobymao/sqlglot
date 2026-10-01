@@ -4,6 +4,7 @@ import datetime
 import unittest
 from datetime import date, time
 from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from unittest import mock
 
 import duckdb
@@ -162,6 +163,7 @@ class TestExecutor(unittest.TestCase):
 
     def _mp_execute(self, schema, tables, sqls, tpch):
         with ProcessPoolExecutor(
+            mp_context=get_context("spawn"),
             initializer=initializer,
             initargs=(schema, tables),
         ) as pool:

@@ -3,6 +3,7 @@ import os
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
+from multiprocessing import get_context
 from unittest.mock import patch
 
 import duckdb
@@ -206,7 +207,7 @@ class TestOptimizer(unittest.TestCase):
         only=None,
         **kwargs,
     ):
-        with ProcessPoolExecutor() as pool:
+        with ProcessPoolExecutor(mp_context=get_context("spawn")) as pool:
             results = {}
 
             for i, (meta, sql, expected) in enumerate(

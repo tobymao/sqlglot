@@ -2350,6 +2350,18 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(add_expr)
 
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
+        if not expression.args.get("is_bytes"):
+            return super().bytestring_sql(expression)
+
+        # Each char is a byte. Casting to BLOB decodes \xHH, so everything but printable ASCII
+        # (including the backslash itself) is written as such
+        text = "".join(
+            ch if ch.isascii() and ch.isprintable() and ch != "\\" else f"\\x{ord(ch):02x}"
+            for ch in expression.this
+        )
+        return self.sql(exp.cast(exp.Literal.string(text), exp.DType.BINARY))
+
     def bitmapbucketnumber_sql(self, expression: exp.BitmapBucketNumber) -> str:
         """
         Transpile BITMAP_BUCKET_NUMBER function from Snowflake to DuckDB equivalent.

@@ -164,6 +164,7 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
 
 
 class ClickHouseGenerator(generator.Generator):
+    BYTE_STRING_FUNCTION = "unhex"
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False

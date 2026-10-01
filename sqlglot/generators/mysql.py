@@ -110,6 +110,7 @@ def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) ->
 
 
 class MySQLGenerator(generator.Generator):
+    BYTE_STRING_FUNCTION = "UNHEX"
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False

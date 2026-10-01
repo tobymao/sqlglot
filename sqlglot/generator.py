@@ -25,6 +25,8 @@ if t.TYPE_CHECKING:
 
 logger = logging.getLogger("sqlglot")
 
+_HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
+
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
@@ -564,6 +566,9 @@ class Generator:
 
     # The HEX function name
     HEX_FUNC = "HEX"
+
+    # Function that constructs a binary value from a hex-encoded byte string.
+    BYTE_STRING_FUNCTION = ""
 
     # The keywords to use when prefixing & separating WITH based properties
     WITH_PROPERTIES_PREFIX = "WITH"
@@ -1642,15 +1647,23 @@ class Generator:
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
+        is_bytes = bool(expression.args.get("is_bytes"))
+        if is_bytes and self.BYTE_STRING_FUNCTION:
+            # Hex digits can be quoted directly without escaping.
+            return self.func(self.BYTE_STRING_FUNCTION, f"'{this.encode('latin-1').hex()}'")
+
         if self.dialect.BYTE_START:
             escaped_byte_string = self.escape_str(
                 this,
-                escape_backslash=False,
+                escape_backslash=bool(
+                    self.dialect.tokenizer_class.NUMERIC_ESCAPES
+                    or self.dialect.tokenizer_class.DROP_UNKNOWN_ESCAPES
+                ),
                 delimiter=self.dialect.BYTE_END,
                 escaped_delimiter=self._escaped_byte_quote_end,
                 is_byte_string=True,
+                is_bytes=is_bytes,
             )
-            is_bytes = expression.args.get("is_bytes", False)
             delimited_byte_string = (
                 f"{self.dialect.BYTE_START}{escaped_byte_string}{self.dialect.BYTE_END}"
             )
@@ -3072,6 +3085,7 @@ class Generator:
         delimiter: str | None = None,
         escaped_delimiter: str | None = None,
         is_byte_string: bool = False,
+        is_bytes: bool = False,
     ) -> str:
         if is_byte_string:
             supports_escape_sequences = self.dialect.BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES
@@ -3083,6 +3097,10 @@ class Generator:
                 self.dialect.ESCAPED_SEQUENCES.get(ch, ch) if escape_backslash or ch != "\\" else ch
                 for ch in text
             )
+
+            if is_bytes and "x" in self.dialect.tokenizer_class.NUMERIC_ESCAPES:
+                # Escape high bytes so they aren't re-encoded as UTF-8 characters.
+                text = _HIGH_BYTE_RE.sub(lambda m: f"\\x{ord(m.group()):02x}", text)
 
         delimiter = delimiter or self.dialect.QUOTE_END
         escaped_delimiter = escaped_delimiter or self._escaped_quote_end

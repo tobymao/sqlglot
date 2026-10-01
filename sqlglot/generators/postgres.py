@@ -430,6 +430,16 @@ class PostgresGenerator(generator.Generator):
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
+        if not expression.args.get("is_bytes"):
+            return super().bytestring_sql(expression)
+
+        return self.func(
+            "DECODE",
+            exp.Literal.string(expression.this.encode("latin-1").hex()),
+            exp.Literal.string("hex"),
+        )
+
     def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
         self.unsupported("Table comments are not supported in the CREATE statement")
         return ""

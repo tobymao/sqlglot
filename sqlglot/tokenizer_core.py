@@ -577,6 +577,7 @@ class TokenizerCore:
         "unescaped_sequences",
         "numeric_escapes",
         "drop_unknown_escapes",
+        "byte_strings_are_bytes",
         "lone_surrogate_replacement",
     )
 
@@ -610,6 +611,7 @@ class TokenizerCore:
         unescaped_sequences: dict[str, str],
         numeric_escapes: dict[str, tuple[int, int, int, int]],
         drop_unknown_escapes: bool,
+        byte_strings_are_bytes: bool,
         lone_surrogate_replacement: str,
     ) -> None:
         self.single_tokens = single_tokens
@@ -640,6 +642,7 @@ class TokenizerCore:
         self.unescaped_sequences = unescaped_sequences
         self.numeric_escapes = numeric_escapes
         self.drop_unknown_escapes = drop_unknown_escapes
+        self.byte_strings_are_bytes = byte_strings_are_bytes
         self.lone_surrogate_replacement = lone_surrogate_replacement
         self.sql = ""
         self.size = 0
@@ -1089,6 +1092,7 @@ class TokenizerCore:
                 else self.string_escapes
             ),
             raw_string=token_type == TokenType.RAW_STRING,
+            bytes_literal=token_type == TokenType.BYTE_STRING and self.byte_strings_are_bytes,
         )
 
         if base and text:
@@ -1203,7 +1207,12 @@ class TokenizerCore:
         escapes: set[str] | None = None,
         raw_string: bool = False,
         raise_unmatched: bool = True,
+        bytes_literal: bool = False,
     ) -> str:
+        """
+        Extracts a string up to the delimiter, decoding its escape sequences. For byte literals,
+        each char of the result is a byte, so non-ASCII chars are stored as their UTF-8 bytes.
+        """
         text = ""
         delim_size = len(delimiter)
         escapes = self.string_escapes if escapes is None else escapes
@@ -1238,7 +1247,10 @@ class TokenizerCore:
                 self._end = self._current >= self.size
                 self._char = sql[end]
                 self._peek = "" if self._end else sql[self._current]
-                return sql[pos:end]
+                text = sql[pos:end]
+                if bytes_literal and not text.isascii():
+                    text = text.encode("utf-8").decode("latin-1")
+                return text
 
         while True:
             backslash_escape = not raw_string and self._char == "\\" and "\\" in escapes
@@ -1275,7 +1287,7 @@ class TokenizerCore:
                 peek = self._peek
                 self._advance()
                 self._advance()
-                text += peek
+                text += peek.encode("utf-8").decode("latin-1") if bytes_literal else peek
                 continue
 
             # An escaped quote before the closing delimiter (e.g. \" in """a\"""") must be
@@ -1315,6 +1327,9 @@ class TokenizerCore:
 
                 current = self._current - 1
                 self._advance(alnum=True)
-                text += sql[current : self._current - 1]
+                chunk = sql[current : self._current - 1]
+                if bytes_literal and not chunk.isascii():
+                    chunk = chunk.encode("utf-8").decode("latin-1")
+                text += chunk
 
         return text

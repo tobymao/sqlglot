@@ -347,12 +347,12 @@ class TestHive(Validator):
         self.validate_all(
             "'\\\\\\\\a'",
             read={
-                "drill": "'\\\\\\\\a'",
+                "drill": "'\\\\a'",
                 "duckdb": "'\\\\a'",
                 "presto": "'\\\\a'",
             },
             write={
-                "drill": "'\\\\\\\\a'",
+                "drill": "'\\\\a'",
                 "duckdb": "'\\\\a'",
                 "hive": "'\\\\\\\\a'",
                 "presto": "'\\\\a'",

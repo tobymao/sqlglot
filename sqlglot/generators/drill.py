@@ -105,6 +105,11 @@ class DrillGenerator(generator.Generator):
         ),
     }
 
+    def bytestring_sql(self, expression: exp.ByteString) -> str:
+        if expression.args.get("is_bytes"):
+            return super().bytestring_sql(expression)
+        return self.sql(exp.Literal.string(expression.this))
+
     def ilike_sql(self, expression: exp.ILike) -> str:
         if isinstance(expression.expression, (exp.All, exp.Any)):
             return super().ilike_sql(expression)

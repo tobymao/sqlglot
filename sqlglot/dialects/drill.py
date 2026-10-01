@@ -53,7 +53,7 @@ class Drill(Dialect):
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ["`"]
-        STRING_ESCAPES = ["\\"]
+        STRING_ESCAPES = ["'"]
 
         KEYWORDS = tokens.Tokenizer.KEYWORDS.copy()
         KEYWORDS.pop("/*+")

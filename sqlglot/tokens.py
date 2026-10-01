@@ -62,6 +62,7 @@ class _TokenizerBase:
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
     NUMERIC_ESCAPES: t.ClassVar[dict[str, tuple[int, int, int, int]]]
     DROP_UNKNOWN_ESCAPES: t.ClassVar[bool]
+    NUMERIC_ESCAPES_ARE_BYTES: t.ClassVar[bool]
     LONE_SURROGATE_REPLACEMENT: t.ClassVar[str]
     NESTED_COMMENTS: t.ClassVar[bool]
     DASH_COMMENT_REQUIRES_BOUNDARY: t.ClassVar[bool]
@@ -96,7 +97,9 @@ class _TokenizerBase:
             **_quotes_to_format(TokenType.HEREDOC_STRING, cls.HEREDOC_STRINGS),
             **_quotes_to_format(TokenType.UNICODE_STRING, cls.UNICODE_STRINGS),
         }
-        if "BYTE_STRING_ESCAPES" not in cls.__dict__:
+        if not any(
+            "BYTE_STRING_ESCAPES" in k.__dict__ for k in cls.__mro__ if k.__module__ != __name__
+        ):
             cls.BYTE_STRING_ESCAPES = cls.STRING_ESCAPES.copy()
         cls._STRING_ESCAPES = set(cls.STRING_ESCAPES)
         cls._BYTE_STRING_ESCAPES = set(cls.BYTE_STRING_ESCAPES)
@@ -190,6 +193,10 @@ class Tokenizer(_TokenizerBase):
     # Whether the backslash is dropped from escape sequences that aren't otherwise decoded,
     # e.g. '\z' is 'z'
     DROP_UNKNOWN_ESCAPES = False
+
+    # Whether byte-valued numeric escapes (e.g. \xhh) are raw bytes, so that consecutive ones are
+    # decoded together as UTF-8, e.g. '\xC3\xA9' is 'é' instead of 'Ã©'
+    NUMERIC_ESCAPES_ARE_BYTES = False
 
     # What an unpaired surrogate escape (e.g. \uD800) decodes to. If empty, it isn't decoded
     LONE_SURROGATE_REPLACEMENT = ""
@@ -592,6 +599,7 @@ class Tokenizer(_TokenizerBase):
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
             numeric_escapes=self.NUMERIC_ESCAPES,
             drop_unknown_escapes=self.DROP_UNKNOWN_ESCAPES,
+            numeric_escapes_are_bytes=self.NUMERIC_ESCAPES_ARE_BYTES,
             byte_strings_are_bytes=self.dialect.BYTE_STRING_IS_BYTES_TYPE,
             lone_surrogate_replacement=self.LONE_SURROGATE_REPLACEMENT,
         )

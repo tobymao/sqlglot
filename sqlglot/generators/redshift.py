@@ -274,7 +274,7 @@ class RedshiftGenerator(PostgresGenerator):
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
-            return super().bytestring_sql(expression)
+            return self.sql(exp.Literal.string(expression.this))
 
         return self.func("FROM_HEX", exp.Literal.string(expression.this.encode("latin-1").hex()))
 

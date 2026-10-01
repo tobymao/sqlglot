@@ -31,6 +31,13 @@ class ClickHouse(Dialect):
 
     UNESCAPED_SEQUENCES = {
         "\\0": "\0",
+        "\\e": "\x1b",
+        "\\N": "",
+        "\\/": "/",
+        '\\"': '"',
+        "\\=": "=",
+        "\\`": "`",
+        **{"\\" + chr(i): chr(i) for i in range(1, 32)},
     }
 
     CREATABLE_KIND_MAPPING = {"DATABASE": "SCHEMA"}
@@ -68,6 +75,8 @@ class ClickHouse(Dialect):
         return column_aliases
 
     class Tokenizer(tokens.Tokenizer):
+        NUMERIC_ESCAPES = {"x": (16, 2, 2, 0xFF)}
+        NUMERIC_ESCAPES_ARE_BYTES = True
         COMMENTS = ["--", "#", "#!", ("/*", "*/")]
         COMMENTS_TERMINATE_AT_NEWLINE_ONLY = True
         IDENTIFIERS = ['"', "`"]

@@ -69,7 +69,17 @@ class Postgres(Dialect):
         "YYYY": "%Y",  # 2015
     }
 
+    UNESCAPED_SEQUENCES = {"\\a": "a"}
+
     class Tokenizer(tokens.Tokenizer):
+        NUMERIC_ESCAPES = {
+            "x": (16, 1, 2, 0xFF),
+            "u": (16, 4, 4, 0xFFFF),
+            "U": (16, 8, 8, 0x10FFFF),
+            "0": (8, 1, 3, 0o777),
+        }
+        NUMERIC_ESCAPES_ARE_BYTES = True
+        DROP_UNKNOWN_ESCAPES = True
         BIT_STRINGS = [("b'", "'"), ("B'", "'")]
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]

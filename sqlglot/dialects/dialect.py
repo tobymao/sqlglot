@@ -343,7 +343,8 @@ class _Dialect(type):
             # The filter is necessary because of `\\a -> a` in Snowflake; we can't replace `a` with `\a`.
             v: k
             for k, v in klass.UNESCAPED_SEQUENCES.items()
-            if not v.isprintable() or v == "\\"
+            # Sequences that only drop the backslash (e.g. "\\\n" -> "\n") aren't needed for generation
+            if v == "\\" or (not v.isprintable() and k[1:] != v)
         }
 
         # Prefer hex, then octal, then Unicode for numeric control-character escapes.

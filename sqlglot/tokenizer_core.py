@@ -579,6 +579,7 @@ class TokenizerCore:
         "unescaped_sequences",
         "numeric_escapes",
         "drop_unknown_escapes",
+        "numeric_escapes_are_bytes",
         "byte_strings_are_bytes",
         "lone_surrogate_replacement",
     )
@@ -615,6 +616,7 @@ class TokenizerCore:
         unescaped_sequences: dict[str, str],
         numeric_escapes: dict[str, tuple[int, int, int, int]],
         drop_unknown_escapes: bool,
+        numeric_escapes_are_bytes: bool,
         byte_strings_are_bytes: bool,
         lone_surrogate_replacement: str,
     ) -> None:
@@ -648,6 +650,7 @@ class TokenizerCore:
         self.unescaped_sequences = unescaped_sequences
         self.numeric_escapes = numeric_escapes
         self.drop_unknown_escapes = drop_unknown_escapes
+        self.numeric_escapes_are_bytes = numeric_escapes_are_bytes
         self.byte_strings_are_bytes = byte_strings_are_bytes
         self.lone_surrogate_replacement = lone_surrogate_replacement
         self.sql = ""
@@ -1112,7 +1115,7 @@ class TokenizerCore:
                 if token_type == TokenType.BYTE_STRING
                 else self.string_escapes
             ),
-            raw_string=token_type == TokenType.RAW_STRING,
+            raw_string=token_type in (TokenType.RAW_STRING, TokenType.HEREDOC_STRING),
             bytes_literal=token_type == TokenType.BYTE_STRING and self.byte_strings_are_bytes,
         )
 
@@ -1173,6 +1176,20 @@ class TokenizerCore:
 
         return (value, end) if end - start >= min_digits else (-1, end)
 
+    def _read_byte_escape(self, pos: int) -> tuple[int, int]:
+        """Reads the numeric escape at `pos` (a backslash) if it encodes a byte, else returns -1."""
+        peek = self.sql[pos + 1 : pos + 2]
+        is_octal = peek in _OCTAL_CHARS
+        spec = self.numeric_escapes.get("0" if is_octal else peek)
+        if not spec or (spec[0] != 8 and spec[3] > 0xFF):
+            return -1, pos
+
+        base, min_digits, max_digits, max_value = spec
+        value, end = self._read_numeric_escape(
+            pos + 1 if is_octal else pos + 2, base, min_digits, max_digits, max_value
+        )
+        return (value & 0xFF if value >= 0 else value), end
+
     def _scan_numeric_escape(self) -> str:
         """
         Decodes the numeric escape sequence starting at the current char, which is a backslash,
@@ -1191,6 +1208,12 @@ class TokenizerCore:
             value, end = self._read_numeric_escape(
                 start if is_octal else start + 1, base, min_digits, max_digits, max_value
             )
+
+            # With byte semantics, octal and hex escapes encode a byte, so octal values wrap around,
+            # e.g. \541 is \x61
+            is_byte = self.numeric_escapes_are_bytes and (base == 8 or max_value <= 0xFF)
+            if is_byte and value >= 0:
+                value &= 0xFF
 
             # A UTF-16 surrogate is only valid as a high half (D800-DBFF) followed by an escaped
             # low half (DC00-DFFF), e.g. \uD83D\uDE00 is U+1F600
@@ -1212,6 +1235,29 @@ class TokenizerCore:
                 else:
                     # A lone surrogate isn't a character, so the escape isn't decoded
                     value = -1
+
+            # Decode one UTF-8 character at a time to avoid rescanning long invalid byte runs.
+            # Invalid UTF-8 falls back to decoding each byte as a code point. This first check
+            # detects whether the byte can start a multi-byte UTF-8 character.
+            if is_byte and 0xC2 <= value <= 0xF4:
+                run = bytearray([value])
+                run_end = end
+                byte_count = 2 if value < 0xE0 else 3 if value < 0xF0 else 4
+                while len(run) < byte_count and sql[run_end : run_end + 1] == "\\":
+                    byte, byte_end = self._read_byte_escape(run_end)
+                    if not 0x80 <= byte <= 0xBF:
+                        break
+                    run.append(byte)
+                    run_end = byte_end
+
+                try:
+                    decoded = run.decode("utf-8")
+                except UnicodeDecodeError:
+                    decoded = ""
+
+                if decoded and run_end < self.size:
+                    self._advance(run_end - start + 1)
+                    return decoded
 
             # -1 means the escape isn't decoded, e.g. because it has too few digits. An escape at the
             # end of the input is left to the caller, which reports the unterminated string
@@ -1292,7 +1338,7 @@ class TokenizerCore:
                 and self._current + 1 < self.size
             ):
                 unescaped_sequence = unescaped_sequences.get(self._char + self._peek)
-                if unescaped_sequence:
+                if unescaped_sequence is not None:
                     # Advance one char at a time so that line numbers are updated for a newline
                     if self._peek in "\n\r":
                         self._advance()

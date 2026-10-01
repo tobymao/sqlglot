@@ -12,6 +12,8 @@ class RisingWave(Postgres):
     REQUIRES_PARENTHESIZED_STRUCT_ACCESS = True
     SUPPORTS_STRUCT_STAR_EXPANSION = True
 
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+
     class Tokenizer(Postgres.Tokenizer):
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,

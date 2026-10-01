@@ -16,6 +16,9 @@ class StarRocks(MySQL):
     }
 
     class Tokenizer(MySQL.Tokenizer):
+        DASH_COMMENT_REQUIRES_BOUNDARY = False
+        COMMENTS_TERMINATE_AT_NEWLINE_ONLY = False
+
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
             "LARGEINT": TokenType.INT128,

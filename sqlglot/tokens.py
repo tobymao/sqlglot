@@ -64,6 +64,8 @@ class _TokenizerBase:
     DROP_UNKNOWN_ESCAPES: t.ClassVar[bool]
     LONE_SURROGATE_REPLACEMENT: t.ClassVar[str]
     NESTED_COMMENTS: t.ClassVar[bool]
+    DASH_COMMENT_REQUIRES_BOUNDARY: t.ClassVar[bool]
+    COMMENTS_TERMINATE_AT_NEWLINE_ONLY: t.ClassVar[bool]
     TOKENS_PRECEDING_HINT: t.ClassVar[set[TokenType]]
     HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
     COMMENTS: t.ClassVar[list[str | tuple[str, str]]]
@@ -193,6 +195,12 @@ class Tokenizer(_TokenizerBase):
     LONE_SURROGATE_REPLACEMENT = ""
 
     NESTED_COMMENTS = True
+
+    # Whether "--" only starts a comment when followed by whitespace or a control character
+    DASH_COMMENT_REQUIRES_BOUNDARY = False
+
+    # Whether "--"/"#" line comments are terminated only by "\n", and not also by "\r"
+    COMMENTS_TERMINATE_AT_NEWLINE_ONLY = False
 
     HINT_START = "/*+"
 
@@ -566,6 +574,8 @@ class Tokenizer(_TokenizerBase):
             commands=self.COMMANDS,
             command_prefix_tokens=self.COMMAND_PREFIX_TOKENS,
             nested_comments=self.NESTED_COMMENTS,
+            dash_comment_requires_boundary=self.DASH_COMMENT_REQUIRES_BOUNDARY,
+            comments_terminate_at_newline_only=self.COMMENTS_TERMINATE_AT_NEWLINE_ONLY,
             hint_start=self.HINT_START,
             tokens_preceding_hint=self.TOKENS_PRECEDING_HINT,
             has_bit_strings=bool(self.BIT_STRINGS),

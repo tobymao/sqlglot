@@ -377,6 +377,50 @@ class TestMySQL(Validator):
             "CREATE TABLE t1 (id INT PRIMARY KEY)",
         )
 
+    def test_alter_drop_column(self):
+        self.validate_identity("ALTER TABLE t DROP b", "ALTER TABLE t DROP COLUMN b")
+        self.validate_identity(
+            "ALTER TABLE t DROP b, DROP c", "ALTER TABLE t DROP COLUMN b, DROP COLUMN c"
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP b RESTRICT", "ALTER TABLE t DROP COLUMN b RESTRICT"
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP materialized", "ALTER TABLE t DROP COLUMN materialized"
+        )
+        self.validate_identity("ALTER TABLE t DROP date", "ALTER TABLE t DROP COLUMN date")
+        self.validate_identity(
+            "ALTER TABLE t DROP concurrently", "ALTER TABLE t DROP COLUMN concurrently"
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP INDEX concurrently, DROP b",
+            "ALTER TABLE t DROP INDEX concurrently, DROP COLUMN b",
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP concurrently RESTRICT",
+            "ALTER TABLE t DROP COLUMN concurrently RESTRICT",
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP b, DROP view RESTRICT",
+            "ALTER TABLE t DROP COLUMN b, DROP COLUMN view RESTRICT",
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP b, DROP COLUMN any RESTRICT",
+            "ALTER TABLE t DROP COLUMN b, DROP COLUMN any RESTRICT",
+        )
+        self.validate_identity("ALTER TABLE t DROP COLUMN `cascade`").args["actions"][0].assert_is(
+            exp.Drop
+        )
+        self.validate_identity("ALTER TABLE t DROP INDEX `restrict`").args["actions"][0].assert_is(
+            exp.Drop
+        )
+        self.validate_identity("ALTER TABLE t DROP COLUMN concurrently").args["actions"][
+            0
+        ].assert_is(exp.Drop)
+        self.validate_identity("ALTER TABLE t DROP INDEX concurrently").args["actions"][
+            0
+        ].assert_is(exp.Drop)
+
     def test_identity(self):
         self.validate_identity("SELECT a, SUM(b) FROM t GROUP BY a WITH ROLLUP LIMIT 2")
         self.validate_identity("SELECT HIGH_PRIORITY STRAIGHT_JOIN SQL_CALC_FOUND_ROWS * FROM t")

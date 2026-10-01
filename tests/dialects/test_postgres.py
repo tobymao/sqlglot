@@ -1399,6 +1399,13 @@ FROM json_data, field_ids""",
         self.validate_identity(
             "ALTER TABLE foo ADD COLUMN id BIGINT NOT NULL PRIMARY KEY DEFAULT 1, ADD CONSTRAINT fk_orders_user FOREIGN KEY (id) REFERENCES foo (id)"
         )
+        (column,) = (
+            self.validate_identity("ALTER TABLE t ADD COLUMN if INT")
+            .assert_is(exp.Alter)
+            .args["actions"]
+        )
+        column.assert_is(exp.ColumnDef)
+        self.assertEqual(column.name, "if")
         self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
             "CREATE TABLE t (col INT[3])",
@@ -1572,6 +1579,43 @@ FROM json_data, field_ids""",
         ):
             with self.assertRaises(ParseError):
                 self.parse_one(sql)
+
+    def test_alter_drop_column(self):
+        self.validate_identity("ALTER TABLE t DROP b", "ALTER TABLE t DROP COLUMN b")
+        self.validate_identity(
+            "ALTER TABLE t DROP b, DROP c", "ALTER TABLE t DROP COLUMN b, DROP COLUMN c"
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP b CASCADE", "ALTER TABLE t DROP COLUMN b CASCADE"
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP IF EXISTS b CASCADE",
+            "ALTER TABLE t DROP COLUMN IF EXISTS b CASCADE",
+        )
+        self.validate_identity("ALTER TABLE t DROP type", "ALTER TABLE t DROP COLUMN type")
+        self.validate_identity("ALTER TABLE t DROP if", "ALTER TABLE t DROP COLUMN if")
+        self.validate_identity(
+            "ALTER TABLE t DROP IF EXISTS if CASCADE",
+            "ALTER TABLE t DROP COLUMN IF EXISTS if CASCADE",
+        )
+        self.validate_identity(
+            "ALTER TABLE t DROP b, DROP view CASCADE",
+            "ALTER TABLE t DROP COLUMN b, DROP COLUMN view CASCADE",
+        )
+        self.validate_identity("ALTER TABLE t DROP COLUMN cascade").args["actions"][0].assert_is(
+            exp.Drop
+        )
+        self.validate_identity("ALTER TABLE t DROP COLUMN restrict").args["actions"][0].assert_is(
+            exp.Drop
+        )
+        self.validate_identity("ALTER TABLE t DROP CONSTRAINT restrict").args["actions"][
+            0
+        ].assert_is(exp.Drop)
+        drop_if, drop_b = self.validate_identity(
+            "ALTER TABLE t DROP COLUMN if CASCADE, DROP COLUMN b"
+        ).args["actions"]
+        drop_if.assert_is(exp.Drop)
+        drop_b.assert_is(exp.Drop)
 
     def test_unnest(self):
         self.validate_identity(

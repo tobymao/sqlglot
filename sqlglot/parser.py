@@ -1908,6 +1908,9 @@ class Parser:
     # Whether renaming a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_RENAME_REQUIRES_COLUMN: t.ClassVar = True
 
+    # Whether dropping a column with an ALTER statement requires the presence of the COLUMN keyword
+    ALTER_DROP_REQUIRES_COLUMN: t.ClassVar = True
+
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
 
@@ -2406,22 +2409,32 @@ class Parser:
 
         return self._parse_query_modifiers(expression)
 
-    def _parse_drop(self, exists: bool = False) -> exp.Drop | exp.Command:
+    def _parse_drop(self, exists: bool = False, kind: str | None = None) -> exp.Drop | exp.Command:
         start = self._prev
-        temporary = self._match(TokenType.TEMPORARY)
-        materialized = self._match_text_seq("MATERIALIZED")
-        iceberg = self._match_text_seq("ICEBERG")
+        temporary = not kind and self._match(TokenType.TEMPORARY)
+        materialized = not kind and self._match_text_seq("MATERIALIZED")
+        iceberg = not kind and self._match_text_seq("ICEBERG")
 
-        kind = self._match_set(self.CREATABLES) and self._prev.text.upper()
+        kind = kind or (self._prev.text.upper() if self._match_set(self.CREATABLES) else None)
         if not kind or (iceberg and kind and kind != "TABLE"):
             return self._parse_as_command(start)
 
-        concurrently = self._match_text_seq("CONCURRENTLY")
+        concurrently = (
+            kind != "COLUMN"
+            and bool(self._next)
+            and self._next.token_type != TokenType.COMMA
+            and self._match_text_seq("CONCURRENTLY")
+        )
         if_exists = exists or self._parse_exists()
 
         tables: exp.Expr | list[exp.Expr] | None
         if kind == "COLUMN":
-            tables = self._parse_column()
+            # A dropped column named after a keyword function, like MySQL's `any`, is only a name
+            tables = (
+                self.expression(exp.Column(this=self._parse_id_var()))
+                if self._curr.text.upper() in self.NO_PAREN_FUNCTION_PARSERS
+                else self._parse_column()
+            )
         elif kind in ("TABLE", "VIEW"):
             tables = self._parse_csv(lambda: self._parse_table_parts(schema=True))
         else:
@@ -2457,11 +2470,9 @@ class Parser:
         )
 
     def _parse_exists(self, not_: bool = False) -> bool | None:
-        return (
-            self._match_text_seq("IF")
-            and (not not_ or self._match(TokenType.NOT))
-            and self._match(TokenType.EXISTS)
-        )
+        if not_:
+            return self._match_text_seq("IF", "NOT", "EXISTS")
+        return self._match_text_seq("IF", "EXISTS")
 
     def _parse_create(self) -> exp.Create | exp.Command:
         # Note: this can't be None because we've matched a statement parser
@@ -8152,7 +8163,10 @@ class Parser:
                 self._retreat(index)
                 return None
 
-            self._match(TokenType.THEN)
+            if not self._match(TokenType.THEN):
+                self._retreat(index)
+                return None
+
             true = self._parse_disjunction()
             false = self._parse_disjunction() if self._match(TokenType.ELSE) else None
             self._match(TokenType.END)
@@ -9106,7 +9120,29 @@ class Parser:
         return self._parse_column_def_with_exists()
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
-        drop = self._parse_drop() if self._match(TokenType.DROP) else None
+        if not self._match(TokenType.DROP):
+            return None
+
+        kind = None
+        if not self.ALTER_DROP_REQUIRES_COLUMN:
+            # A bare `DROP [IF EXISTS] c [CASCADE | RESTRICT]` drops a column
+            index = self._index
+            self._parse_exists()
+            name = self._curr
+            if name.token_type in self.ID_VAR_TOKENS and name.token_type not in (
+                TokenType.COLUMN,
+                TokenType.CONSTRAINT,
+            ):
+                self._advance()
+                if (
+                    not self._curr
+                    or self._match(TokenType.COMMA, advance=False)
+                    or self._match_texts(("CASCADE", "RESTRICT"), advance=False)
+                ):
+                    kind = "COLUMN"
+            self._retreat(index)
+
+        drop = self._parse_drop(kind=kind)
         if drop and not isinstance(drop, exp.Command):
             drop.set("kind", drop.args.get("kind", "COLUMN"))
         return drop

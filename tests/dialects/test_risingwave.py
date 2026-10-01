@@ -21,6 +21,9 @@ class TestRisingWave(Validator):
         self.validate_identity(
             "WITH t1 AS MATERIALIZED (SELECT 1), t2 AS NOT MATERIALIZED (SELECT 2) SELECT * FROM t1, t2"
         )
+        self.validate_identity(
+            "ALTER TABLE t DROP IF EXISTS b", "ALTER TABLE t DROP COLUMN IF EXISTS b"
+        )
 
     def test_datatypes(self):
         self.validate_identity("SELECT CAST(NULL AS MAP(VARCHAR, INT)) AS map_column")

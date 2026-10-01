@@ -297,6 +297,7 @@ class MySQLParser(parser.Parser):
         "SQL_CALC_FOUND_ROWS",
     }
 
+    ALTER_DROP_REQUIRES_COLUMN = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False

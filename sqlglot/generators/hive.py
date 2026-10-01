@@ -225,6 +225,7 @@ class HiveGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_GROUPING_SETS_AS_SUFFIX = True
+    SUPPORTS_FROM_FIRST_INSERT = True
     SUPPORTS_DECODE_CASE = False
     LIMIT_FETCH = "LIMIT"
     TABLESAMPLE_WITH_METHOD = False

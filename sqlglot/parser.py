@@ -4105,6 +4105,24 @@ class Parser:
             if self._match(TokenType.FROM, advance=False)
             else None
         )
+        laterals = list(iter(self._parse_lateral, None)) if from_ else None
+
+        # Hive supports multi-table inserts: FROM x INSERT ... SELECT ... [INSERT ... SELECT ...]
+        if from_ and not nested and not table and self._match(TokenType.INSERT, advance=False):
+            source = from_.this
+            source.set("laterals", laterals or None)
+
+            inserts = []
+            while self._match(TokenType.INSERT):
+                comments = self._prev_comments
+                insert = self._parse_insert()
+                insert.add_comments(comments, prepend=True)
+                inserts.append(insert)
+
+            return self.expression(
+                exp.MultitableInserts(expressions=inserts, source=source),
+                comments=from_.comments,
+            )
 
         if self._match(TokenType.SELECT):
             comments = self._prev_comments
@@ -4167,6 +4185,7 @@ class Parser:
                     limit=limit,
                     exclude=exclude,
                     operation_modifiers=operation_modifiers or None,
+                    laterals=laterals or None,
                 )
             )
             this.comments = comments
@@ -4197,6 +4216,7 @@ class Parser:
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
+            this.set("laterals", laterals or None)
             this = self._parse_query_modifiers(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)

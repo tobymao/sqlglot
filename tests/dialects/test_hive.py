@@ -1,5 +1,5 @@
 from tests.dialects.test_dialect import Validator
-from sqlglot import exp
+from sqlglot import UnsupportedError, exp
 
 
 class TestHive(Validator):
@@ -313,6 +313,13 @@ class TestHive(Validator):
                 "duckdb": "SELECT a FROM x CROSS JOIN UNNEST([y]) AS t(a)",
                 "hive": "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
                 "spark": "SELECT a FROM x LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
+            },
+        )
+        self.validate_all(
+            "FROM x LATERAL VIEW EXPLODE(y) t AS a SELECT a",
+            write={
+                "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
+                "hive": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
         )
 
@@ -1171,4 +1178,62 @@ class TestHive(Validator):
         self.assertEqual(
             expr.sql(dialect="hive"),
             "CREATE FUNCTION my_func AS 'com.example.MyFunc' USING JAR 'hdfs://new/path.jar'",
+        )
+
+    def test_multitable_inserts(self):
+        self.validate_identity("FROM x INSERT OVERWRITE TABLE a SELECT k, v")
+        self.validate_identity(
+            "FROM x INSERT INTO TABLE a SELECT k", "FROM x INSERT INTO a SELECT k"
+        )
+        self.validate_identity(
+            "FROM x AS v "
+            "INSERT OVERWRITE TABLE a PARTITION(ds = '1') SELECT v.k, v.m['c'] AS c WHERE v.os = 'ios' "
+            "INSERT OVERWRITE TABLE b PARTITION(ds) SELECT v.k, v.ds WHERE v.os = 'android' "
+            "INSERT INTO c SELECT v.os, COUNT(DISTINCT v.k) AS uv GROUP BY v.os"
+        )
+        self.validate_identity(
+            "FROM x INSERT OVERWRITE LOCAL DIRECTORY '/tmp/a' SELECT k "
+            "INSERT OVERWRITE DIRECTORY '/tmp/b' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT v"
+        )
+        self.validate_identity(
+            "FROM a JOIN b ON a.k = b.k LEFT JOIN c ON a.k = c.k INSERT OVERWRITE TABLE t SELECT a.k, c.v"
+        )
+        self.validate_identity(
+            "FROM (SELECT k, v FROM x WHERE v > 0) AS s INSERT OVERWRITE TABLE t SELECT s.k"
+        )
+        self.validate_identity(
+            "FROM x LATERAL VIEW EXPLODE(arr) a AS c LATERAL VIEW OUTER EXPLODE(m) b AS mk, mv "
+            "INSERT OVERWRITE TABLE t SELECT c, mk"
+        )
+        self.validate_identity(
+            "FROM x "
+            "INSERT OVERWRITE TABLE a SELECT k, COUNT(*) WHERE v > 1 GROUP BY k HAVING COUNT(*) > 2 ORDER BY k LIMIT 10 "
+            "INSERT INTO b SELECT DISTINCT k DISTRIBUTE BY k SORT BY k"
+        )
+        self.validate_identity(
+            "WITH c AS (SELECT 1 AS k) FROM c INSERT OVERWRITE TABLE a SELECT k INSERT INTO b SELECT k"
+        )
+        self.validate_identity(
+            "-- a\nFROM x\n-- b\nINSERT OVERWRITE TABLE t SELECT k\n-- c\nINSERT INTO u SELECT v",
+            "/* a */ FROM x /* b */ INSERT OVERWRITE TABLE t SELECT k /* c */ INSERT INTO u SELECT v",
+        )
+
+        ast = self.validate_identity(
+            "FROM x INSERT OVERWRITE TABLE a SELECT k INSERT INTO b SELECT v WHERE k > 0"
+        ).assert_is(exp.MultitableInserts)
+        self.assertEqual(ast.args["source"].sql(), "x")
+        self.assertEqual(
+            [insert.expression.sql() for insert in ast.expressions],
+            ["SELECT k", "SELECT v WHERE k > 0"],
+        )
+
+        self.validate_all(
+            "FROM x INSERT OVERWRITE TABLE a SELECT k",
+            write={
+                "hive": "FROM x INSERT OVERWRITE TABLE a SELECT k",
+                "spark2": "FROM x INSERT OVERWRITE TABLE a SELECT k",
+                "spark": "FROM x INSERT OVERWRITE TABLE a SELECT k",
+                "databricks": "FROM x INSERT OVERWRITE TABLE a SELECT k",
+                "duckdb": UnsupportedError,
+            },
         )

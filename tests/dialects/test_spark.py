@@ -1288,6 +1288,11 @@ TBLPROPERTIES (
             "SELECT TRANSFORM(zip_code, name, age) USING 'cat' FROM person WHERE zip_code > 94500"
         )
 
+    def test_multitable_inserts(self):
+        self.validate_identity(
+            "FROM x INSERT OVERWRITE TABLE a PARTITION(ds = '1') SELECT k WHERE v > 0 INSERT INTO b SELECT k, v"
+        )
+
     def test_insert_cte(self):
         self.validate_all(
             "INSERT OVERWRITE TABLE table WITH cte AS (SELECT cola FROM other_table) SELECT cola FROM cte",

@@ -729,6 +729,10 @@ class TestBuild(unittest.TestCase):
             (lambda: exp.delete("tbl").where("x = 1"), "DELETE FROM tbl WHERE x = 1"),
             (lambda: exp.delete(exp.table_("tbl")), "DELETE FROM tbl"),
             (
+                lambda: exp.table_(None, db="dataset", catalog="project", quoted=False),
+                "project.dataset",
+            ),
+            (
                 lambda: exp.delete("tbl", "x = 1").where("y = 2"),
                 "DELETE FROM tbl WHERE x = 1 AND y = 2",
             ),

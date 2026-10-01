@@ -2357,7 +2357,8 @@ class DuckDBGenerator(generator.Generator):
         # Each char is a byte. Casting to BLOB decodes \xHH, so everything but printable ASCII
         # (including the backslash itself) is written as such
         text = "".join(
-            ch if " " <= ch <= "~" and ch != "\\" else f"\\x{ord(ch):02x}" for ch in expression.this
+            ch if ch.isascii() and ch.isprintable() and ch != "\\" else f"\\x{ord(ch):02x}"
+            for ch in expression.this
         )
         return self.sql(exp.cast(exp.Literal.string(text), exp.DType.BINARY))
 

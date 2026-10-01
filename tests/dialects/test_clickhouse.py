@@ -501,7 +501,7 @@ class TestClickhouse(Validator):
             },
             write={
                 "clickhouse": "SELECT '\\0'",
-                "mysql": "SELECT '\0'",
+                "mysql": "SELECT '\\0'",
             },
         )
         self.validate_all(

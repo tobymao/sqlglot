@@ -2411,20 +2411,26 @@ class Parser:
 
     def _parse_drop(self, exists: bool = False, kind: str | None = None) -> exp.Drop | exp.Command:
         start = self._prev
-        temporary = not kind and self._match(TokenType.TEMPORARY)
-        materialized = not kind and self._match_text_seq("MATERIALIZED")
-        iceberg = not kind and self._match_text_seq("ICEBERG")
 
-        kind = kind or (self._prev.text.upper() if self._match_set(self.CREATABLES) else None)
-        if not kind or (iceberg and kind and kind != "TABLE"):
+        if not kind:
+            temporary = self._match(TokenType.TEMPORARY)
+            materialized = self._match_text_seq("MATERIALIZED")
+            iceberg = self._match_text_seq("ICEBERG")
+            kind = self._prev.text.upper() if self._match_set(self.CREATABLES) else None
+        else:
+            temporary = False
+            materialized = False
+            iceberg = False
+
+        if not kind or (iceberg and kind != "TABLE"):
             return self._parse_as_command(start)
 
         concurrently = (
-            kind != "COLUMN"
-            and bool(self._next)
-            and self._next.token_type != TokenType.COMMA
+            kind == "INDEX"
+            and self._next.token_type in self.ID_VAR_TOKENS
             and self._match_text_seq("CONCURRENTLY")
         )
+
         if_exists = exists or self._parse_exists()
 
         tables: exp.Expr | list[exp.Expr] | None
@@ -8159,11 +8165,7 @@ class Parser:
 
             condition = self._parse_disjunction()
 
-            if not condition:
-                self._retreat(index)
-                return None
-
-            if not self._match(TokenType.THEN):
+            if not condition or not self._match(TokenType.THEN):
                 self._retreat(index)
                 return None
 
@@ -9128,24 +9130,19 @@ class Parser:
             # A bare `DROP [IF EXISTS] c [CASCADE | RESTRICT]` drops a column
             index = self._index
             self._parse_exists()
-            name = self._curr
-            if name.token_type in self.ID_VAR_TOKENS and name.token_type not in (
-                TokenType.COLUMN,
-                TokenType.CONSTRAINT,
-            ):
-                self._advance()
-                if (
+            if (
+                self._curr.token_type not in (TokenType.COLUMN, TokenType.CONSTRAINT)
+                and self._match_set(self.ID_VAR_TOKENS)
+                and (
                     not self._curr
                     or self._match(TokenType.COMMA, advance=False)
                     or self._match_texts(("CASCADE", "RESTRICT"), advance=False)
-                ):
-                    kind = "COLUMN"
+                )
+            ):
+                kind = "COLUMN"
             self._retreat(index)
 
-        drop = self._parse_drop(kind=kind)
-        if drop and not isinstance(drop, exp.Command):
-            drop.set("kind", drop.args.get("kind", "COLUMN"))
-        return drop
+        return self._parse_drop(kind=kind)
 
     def _parse_alter_drop_action(self) -> exp.Expr | None:
         return self._parse_drop_column()

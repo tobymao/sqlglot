@@ -9,6 +9,9 @@ from sqlglot.tokens import TokenType
 
 
 class StarRocksParser(MySQLParser):
+    # Unlike MySQL, dropping a column requires the COLUMN keyword
+    ALTER_DROP_REQUIRES_COLUMN = True
+
     # StarRocks supports LEFT SEMI JOIN and LEFT ANTI JOIN natively
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
     TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}

@@ -25,6 +25,9 @@ def _build_date_trunc(args: list[exp.Expr]) -> exp.Expr:
 
 
 class DorisParser(MySQLParser):
+    # Unlike MySQL, dropping a column requires the COLUMN keyword
+    ALTER_DROP_REQUIRES_COLUMN = True
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),

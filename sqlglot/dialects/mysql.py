@@ -88,6 +88,8 @@ class MySQL(Dialect):
         DROP_UNKNOWN_ESCAPES = True
 
         NESTED_COMMENTS = False
+        DASH_COMMENT_REQUIRES_BOUNDARY = True
+        COMMENTS_TERMINATE_AT_NEWLINE_ONLY = True
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,

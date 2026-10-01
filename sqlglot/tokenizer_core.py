@@ -561,6 +561,8 @@ class TokenizerCore:
         "commands",
         "command_prefix_tokens",
         "nested_comments",
+        "dash_comment_requires_boundary",
+        "comments_terminate_at_newline_only",
         "hint_start",
         "tokens_preceding_hint",
         "has_bit_strings",
@@ -595,6 +597,8 @@ class TokenizerCore:
         commands: set[TokenType],
         command_prefix_tokens: set[TokenType],
         nested_comments: bool,
+        dash_comment_requires_boundary: bool,
+        comments_terminate_at_newline_only: bool,
         hint_start: str,
         tokens_preceding_hint: set[TokenType],
         has_bit_strings: bool,
@@ -626,6 +630,8 @@ class TokenizerCore:
         self.commands = commands
         self.command_prefix_tokens = command_prefix_tokens
         self.nested_comments = nested_comments
+        self.dash_comment_requires_boundary = dash_comment_requires_boundary
+        self.comments_terminate_at_newline_only = comments_terminate_at_newline_only
         self.hint_start = hint_start
         self.tokens_preceding_hint = tokens_preceding_hint
         self.has_bit_strings = has_bit_strings
@@ -859,10 +865,11 @@ class TokenizerCore:
             if self._scan_comment(word):
                 return
             if prev_space or single_token or not char:
-                self._advance(size - 1)
                 word = word.upper()
-                self._add(self.keywords[word], text=word)
-                return
+                if word in self.keywords:
+                    self._advance(size - 1)
+                    self._add(self.keywords[word], text=word)
+                    return
 
         if self._char in single_tokens:
             self._add(single_tokens[self._char], text=self._char)
@@ -873,6 +880,15 @@ class TokenizerCore:
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self.comments:
             return False
+
+        if comment_start == "--" and self.dash_comment_requires_boundary:
+            boundary_index = self._current + 1
+            if boundary_index < self.size:
+                boundary_char = self.sql[boundary_index]
+                if not (
+                    boundary_char.isspace() or ord(boundary_char) < 32 or ord(boundary_char) == 127
+                ):
+                    return False
 
         comment_start_line = self._line
         comment_start_size = len(comment_start)
@@ -907,7 +923,12 @@ class TokenizerCore:
             self._advance(comment_end_size - 1)
         else:
             _peek = self._peek
-            while not self._end and _peek != "\n" and _peek != "\r":
+            terminates_at_carriage_return = not self.comments_terminate_at_newline_only
+            while (
+                not self._end
+                and _peek != "\n"
+                and (not terminates_at_carriage_return or _peek != "\r")
+            ):
                 self._advance(alnum=True)
                 _peek = self._peek
             self._comments.append(self._text[comment_start_size:])

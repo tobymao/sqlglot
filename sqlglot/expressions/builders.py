@@ -516,7 +516,7 @@ def cast(
 
 
 def table_(
-    table: Identifier | str,
+    table: Identifier | str | None,
     db: Identifier | str | None = None,
     catalog: Identifier | str | None = None,
     quoted: bool | None = None,

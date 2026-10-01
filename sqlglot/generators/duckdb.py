@@ -3340,17 +3340,17 @@ class DuckDBGenerator(generator.Generator):
         if position:
             this = exp.Substring(this=this, start=position)
 
+        # Handle empty pattern: Snowflake returns 0, DuckDB would match between every character.
+        # Checked before the flags are embedded, which would make the pattern non-empty
+        is_empty = exp.EQ(this=pattern.copy(), expression=exp.Literal.string(""))
+
         # Embed flags in pattern (REGEXP_EXTRACT_ALL doesn't support flags argument)
         if validated_flags:
             pattern = exp.Concat(expressions=[exp.Literal.string(f"(?{validated_flags})"), pattern])
 
-        # Handle empty pattern: Snowflake returns 0, DuckDB would match between every character
         result = (
             exp.case()
-            .when(
-                exp.EQ(this=pattern, expression=exp.Literal.string("")),
-                exp.Literal.number(0),
-            )
+            .when(is_empty, exp.Literal.number(0))
             .else_(
                 exp.Length(
                     this=exp.Anonymous(this="REGEXP_EXTRACT_ALL", expressions=[this, pattern])
@@ -4218,6 +4218,8 @@ class DuckDBGenerator(generator.Generator):
         parameters = expression.args.get("parameters")
 
         validated_flags = self._validate_regexp_flags(parameters, supported_flags="ims")
+        # Checked before the flags are embedded, which would make the pattern non-empty
+        is_empty = pattern.copy().eq(exp.Literal.string(""))
         if validated_flags:
             pattern = exp.Concat(expressions=[exp.Literal.string(f"(?{validated_flags})"), pattern])
 
@@ -4285,7 +4287,7 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(
             exp.case()
             .when(exp.or_(*null_checks), exp.Null())
-            .when(pattern.copy().eq(exp.Literal.string("")), exp.Literal.number(0))
+            .when(is_empty, exp.Literal.number(0))
             .when(exp.Length(this=matches) < occurrence, exp.Literal.number(0))
             .else_(base_pos)
         )

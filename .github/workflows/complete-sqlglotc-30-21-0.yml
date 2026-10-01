@@ -1,0 +1,30 @@
+name: Complete sqlglotc 30.21.0
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 36749308477
+          github-token: ${{ github.token }}
+          pattern: wheels-*
+          path: dist/
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          run-id: 36749308477
+          github-token: ${{ github.token }}
+          name: sqlglotc-sdist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true

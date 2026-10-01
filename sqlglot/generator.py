@@ -567,6 +567,9 @@ class Generator:
     # The HEX function name
     HEX_FUNC = "HEX"
 
+    # Function that constructs a binary value from a hex-encoded byte string.
+    BYTE_STRING_FUNCTION = ""
+
     # The keywords to use when prefixing & separating WITH based properties
     WITH_PROPERTIES_PREFIX = "WITH"
 
@@ -1644,8 +1647,12 @@ class Generator:
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         this = self.sql(expression, "this")
+        is_bytes = bool(expression.args.get("is_bytes"))
+        if is_bytes and self.BYTE_STRING_FUNCTION:
+            # Hex digits can be quoted directly without escaping.
+            return self.func(self.BYTE_STRING_FUNCTION, f"'{this.encode('latin-1').hex()}'")
+
         if self.dialect.BYTE_START:
-            is_bytes = bool(expression.args.get("is_bytes"))
             escaped_byte_string = self.escape_str(
                 this,
                 escape_backslash=bool(

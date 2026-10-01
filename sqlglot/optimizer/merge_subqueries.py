@@ -382,6 +382,17 @@ def _mergeable(
             if isinstance(node, exp.Window):
                 window_aliases.add(name)
 
+    # Don't merge if an inner source alias would shadow a comprehension bound variable in the outer scope.
+    inner_aliases = set(inner_scope.selected_sources)
+    for comp in outer_scope.expression.find_all(exp.Comprehension):
+        bound_vars = {
+            v.name
+            for v in (comp.args.get("expression"), comp.args.get("position"))
+            if v and type(v) is exp.Column
+        }
+        if inner_aliases & bound_vars:
+            return False
+
     return (
         not _outer_select_joins_on_inner_select_join(projections)
         and not _window_projection_blocks_merge(window_aliases)

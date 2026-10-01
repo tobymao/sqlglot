@@ -88,7 +88,20 @@ class Hive(Dialect):
             TokenType.DASH,
         }
 
+    UNESCAPED_SEQUENCES = {
+        "\\0": "\0",
+        "\\Z": "\x1a",
+        "\\%": "\\%",
+        "\\_": "\\_",
+        "\\a": "a",
+        "\\f": "f",
+        "\\v": "v",
+    }
+
     class Tokenizer(tokens.Tokenizer):
+        NUMERIC_ESCAPES = {"u": (16, 4, 4, 0xFFFF), "0": (8, 3, 3, 0x7F)}
+        DROP_UNKNOWN_ESCAPES = True
+        LONE_SURROGATE_REPLACEMENT = "?"
         QUOTES = ["'", '"']
         IDENTIFIERS = ["`"]
         STRING_ESCAPES = ["\\"]

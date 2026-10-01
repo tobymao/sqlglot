@@ -1,7 +1,6 @@
 import ast
 import csv
 import datetime
-import sys
 import unittest
 from datetime import date, time
 from concurrent.futures import ProcessPoolExecutor
@@ -164,7 +163,7 @@ class TestExecutor(unittest.TestCase):
 
     def _mp_execute(self, schema, tables, sqls, tpch):
         with ProcessPoolExecutor(
-            mp_context=get_context("forkserver" if sys.platform == "linux" else "spawn"),
+            mp_context=get_context("spawn"),
             initializer=initializer,
             initargs=(schema, tables),
         ) as pool:

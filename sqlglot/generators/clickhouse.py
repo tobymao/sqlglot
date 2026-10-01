@@ -312,6 +312,8 @@ class ClickHouseGenerator(generator.Generator):
         exp.DateDiff: _datetime_delta_sql("DATE_DIFF"),
         exp.DateStrToDate: rename_func("toDate"),
         exp.DateSub: _datetime_delta_sql("DATE_SUB"),
+        exp.DayOfMonth: rename_func("toDayOfMonth"),
+        exp.DayOfYear: rename_func("toDayOfYear"),
         exp.Explode: rename_func("arrayJoin"),
         exp.FarmFingerprint: rename_func("farmFingerprint64"),
         exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",

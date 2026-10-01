@@ -132,6 +132,20 @@ class TestClickhouse(Validator):
                 "postgres": "VAR_POP(x)",
             },
         )
+        self.validate_all(
+            "toDayOfMonth(x)",
+            read={
+                "": "DAY_OF_MONTH(x)",
+                "snowflake": "DAYOFMONTH(x)",
+            },
+        )
+        self.validate_all(
+            "toDayOfYear(x)",
+            read={
+                "": "DAY_OF_YEAR(x)",
+                "snowflake": "DAYOFYEAR(x)",
+            },
+        )
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL NOT IN (SELECT * FROM bar)")
         self.validate_identity("POSITION(haystack, needle)")

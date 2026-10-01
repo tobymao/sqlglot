@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -207,7 +208,9 @@ class TestOptimizer(unittest.TestCase):
         only=None,
         **kwargs,
     ):
-        with ProcessPoolExecutor(mp_context=get_context("spawn")) as pool:
+        with ProcessPoolExecutor(
+            mp_context=get_context("forkserver" if sys.platform == "linux" else "spawn")
+        ) as pool:
             results = {}
 
             for i, (meta, sql, expected) in enumerate(

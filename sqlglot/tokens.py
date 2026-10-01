@@ -62,6 +62,7 @@ class _TokenizerBase:
     STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS: t.ClassVar[bool]
     NUMERIC_ESCAPES: t.ClassVar[dict[str, tuple[int, int, int, int]]]
     DROP_UNKNOWN_ESCAPES: t.ClassVar[bool]
+    LONE_SURROGATE_REPLACEMENT: t.ClassVar[str]
     NESTED_COMMENTS: t.ClassVar[bool]
     TOKENS_PRECEDING_HINT: t.ClassVar[set[TokenType]]
     HEREDOC_STRING_ALTERNATIVE: t.ClassVar[TokenType]
@@ -187,6 +188,9 @@ class Tokenizer(_TokenizerBase):
     # Whether the backslash is dropped from escape sequences that aren't otherwise decoded,
     # e.g. '\z' is 'z'
     DROP_UNKNOWN_ESCAPES = False
+
+    # What an unpaired surrogate escape (e.g. \uD800) decodes to. If empty, it isn't decoded
+    LONE_SURROGATE_REPLACEMENT = ""
 
     NESTED_COMMENTS = True
 
@@ -578,6 +582,7 @@ class Tokenizer(_TokenizerBase):
             unescaped_sequences=self.dialect.UNESCAPED_SEQUENCES,
             numeric_escapes=self.NUMERIC_ESCAPES,
             drop_unknown_escapes=self.DROP_UNKNOWN_ESCAPES,
+            lone_surrogate_replacement=self.LONE_SURROGATE_REPLACEMENT,
         )
 
     def tokenize(self, sql: str) -> list[Token]:

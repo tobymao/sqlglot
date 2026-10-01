@@ -9,6 +9,11 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_string_escapes(self):
+        self.validate_identity(r"'\U0001F600'", "'\U0001f600'")
+        self.validate_identity(r"r'\u0041\101\z'", r"'\\u0041\\101\\z'")
+        self.validate_all("'U0001F600'", read={"spark2": r"'\U0001F600'"})
+
     def test_ddl(self):
         self.validate_identity("DAYOFWEEK(TO_DATE(x))")
         self.validate_identity("DAYOFMONTH(TO_DATE(x))")

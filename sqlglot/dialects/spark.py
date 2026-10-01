@@ -28,6 +28,7 @@ class Spark(Spark2):
     }
 
     class Tokenizer(Spark2.Tokenizer):
+        NUMERIC_ESCAPES = {"u": (16, 4, 4, 0xFFFF), "U": (16, 8, 8, 0x10FFFF), "0": (8, 3, 3, 0x7F)}
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
 
         RAW_STRINGS = [

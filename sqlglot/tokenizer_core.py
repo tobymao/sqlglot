@@ -577,6 +577,7 @@ class TokenizerCore:
         "unescaped_sequences",
         "numeric_escapes",
         "drop_unknown_escapes",
+        "lone_surrogate_replacement",
     )
 
     def __init__(
@@ -609,6 +610,7 @@ class TokenizerCore:
         unescaped_sequences: dict[str, str],
         numeric_escapes: dict[str, tuple[int, int, int, int]],
         drop_unknown_escapes: bool,
+        lone_surrogate_replacement: str,
     ) -> None:
         self.single_tokens = single_tokens
         self.keywords = keywords
@@ -638,6 +640,7 @@ class TokenizerCore:
         self.unescaped_sequences = unescaped_sequences
         self.numeric_escapes = numeric_escapes
         self.drop_unknown_escapes = drop_unknown_escapes
+        self.lone_surrogate_replacement = lone_surrogate_replacement
         self.sql = ""
         self.size = 0
         self.tokens: list[Token] = []
@@ -1177,6 +1180,10 @@ class TokenizerCore:
                     # Combine the two halves into a single code point (standard formula)
                     value = 0x10000 + ((value - 0xD800) << 10) + (low - 0xDC00)
                     end = low_end
+                elif self.lone_surrogate_replacement and end < self.size:
+                    # A lone surrogate isn't a character, so some engines replace it (e.g. with ?)
+                    self._advance(end - start + 1)
+                    return self.lone_surrogate_replacement
                 else:
                     # A lone surrogate isn't a character, so the escape isn't decoded
                     value = -1

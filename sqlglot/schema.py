@@ -152,10 +152,10 @@ class Schema(abc.ABC):
 
 class DelegateSchema(Schema):
     """
-    Schema that forwards every `Schema` member to `delegate`.
+    Schema that forwards every Schema member to delegate.
 
-    When sqlglot is compiled with mypyc, interpreted classes cannot subclass `Schema`. Instead,
-    such a class can implement the same members and be wrapped in a `DelegateSchema`.
+    When sqlglot is compiled with mypyc, interpreted classes cannot subclass Schema. Instead,
+    such a class can implement the same members and be wrapped in a DelegateSchema.
     """
 
     def __init__(self, delegate: t.Any) -> None:

@@ -81,6 +81,7 @@ def tokenize(sql: str, read: DialectType = None, dialect: DialectType = None) ->
     Args:
         sql: the SQL code string to tokenize.
         read: the SQL dialect to apply during tokenizing (eg. "spark", "hive", "presto", "mysql").
+            See `sqlglot.dialects.Dialects` for options.
         dialect: the SQL dialect (alias for read).
 
     Returns:
@@ -101,6 +102,7 @@ def parse(
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+            See `sqlglot.dialects.Dialects` for options.
         dialect: the SQL dialect (alias for read).
         **opts: other `sqlglot.parser.Parser` options.
 
@@ -144,6 +146,7 @@ def parse_one(
     Args:
         sql: the SQL code string to parse.
         read: the SQL dialect to apply during parsing (eg. "spark", "hive", "presto", "mysql").
+            See `sqlglot.dialects.Dialects` for options.
         dialect: the SQL dialect (alias for read)
         into: the SQLGlot Expr to parse into.
         **opts: other `sqlglot.parser.Parser` options.
@@ -180,7 +183,9 @@ def transpile(
     Args:
         sql: the SQL code string to transpile.
         read: the source dialect used to parse the input string (eg. "spark", "hive", "presto", "mysql").
+            See `sqlglot.dialects.Dialects` for options.
         write: the target dialect into which the input should be transformed (eg. "spark", "hive", "presto", "mysql").
+            See `sqlglot.dialects.Dialects` for options.
         identity: if set to `True` and if the target dialect is not specified the source dialect will be used as both:
             the source and the target dialect.
         error_level: the desired error level of the parser.

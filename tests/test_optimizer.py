@@ -1,8 +1,9 @@
 import json
 import os
 import unittest
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
+from multiprocessing import get_context
 from unittest.mock import patch
 
 import duckdb
@@ -96,6 +97,8 @@ class TestOptimizer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.pool = ProcessPoolExecutor(mp_context=get_context("spawn"))
+        cls.addClassCleanup(cls.pool.shutdown)
         sqlglot.schema = MappingSchema()
         cls.conn = duckdb.connect()
         cls.conn.execute(
@@ -206,47 +209,46 @@ class TestOptimizer(unittest.TestCase):
         only=None,
         **kwargs,
     ):
-        with ProcessPoolExecutor() as pool:
-            results = {}
+        results = {}
 
-            for i, (meta, sql, expected) in enumerate(
-                load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
-            ):
-                title = meta.get("title") or f"{i}, {sql}"
-                if only and title != only:
-                    continue
+        for i, (meta, sql, expected) in enumerate(
+            load_sql_fixture_pairs(f"optimizer/{file}.sql"), start=1
+        ):
+            title = meta.get("title") or f"{i}, {sql}"
+            if only and title != only:
+                continue
 
-                dialect = meta.get("dialect")
-                leave_tables_isolated = meta.get("leave_tables_isolated")
-                validate_qualify_columns = meta.get("validate_qualify_columns")
-                canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
-                func_kwargs = kwargs.copy()
+            dialect = meta.get("dialect")
+            leave_tables_isolated = meta.get("leave_tables_isolated")
+            validate_qualify_columns = meta.get("validate_qualify_columns")
+            canonicalize_table_aliases = meta.get("canonicalize_table_aliases")
+            func_kwargs = kwargs.copy()
 
-                if schema := meta.get("schema"):
-                    func_kwargs["schema"] = json.loads(schema)
+            if schema := meta.get("schema"):
+                func_kwargs["schema"] = json.loads(schema)
 
-                if leave_tables_isolated is not None:
-                    func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
+            if leave_tables_isolated is not None:
+                func_kwargs["leave_tables_isolated"] = string_to_bool(leave_tables_isolated)
 
-                if validate_qualify_columns is not None:
-                    func_kwargs["validate_qualify_columns"] = string_to_bool(
-                        validate_qualify_columns
-                    )
-                if dialect:
-                    func_kwargs["dialect"] = dialect
-                if canonicalize_table_aliases is not None:
-                    func_kwargs["canonicalize_table_aliases"] = string_to_bool(
-                        canonicalize_table_aliases
-                    )
-
-                future = pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
-                results[future] = (
-                    sql,
-                    title,
-                    expected,
-                    dialect,
-                    False if execute is False else meta.get("execute", execute),
+            if validate_qualify_columns is not None:
+                func_kwargs["validate_qualify_columns"] = string_to_bool(validate_qualify_columns)
+            if dialect:
+                func_kwargs["dialect"] = dialect
+            if canonicalize_table_aliases is not None:
+                func_kwargs["canonicalize_table_aliases"] = string_to_bool(
+                    canonicalize_table_aliases
                 )
+
+            future = self.pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
+            results[future] = (
+                sql,
+                title,
+                expected,
+                dialect,
+                False if execute is False else meta.get("execute", execute),
+            )
+
+        wait(results)
 
         for future in as_completed(results):
             sql, title, expected, dialect, execute = results[future]

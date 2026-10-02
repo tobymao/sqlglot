@@ -1377,8 +1377,7 @@ FOR JSON
         self.validate_identity("ALTER TABLE dbo.DocExe DROP CONSTRAINT FK_Column_B").assert_is(
             exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
-        # GH#8485
-        self.validate_identity("ALTER TABLE tbl DROP COLUMN col1, col2")
+        self.validate_identity("ALTER TABLE tbl DROP COLUMN col1, col2").assert_is(exp.Alter)
 
         for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(

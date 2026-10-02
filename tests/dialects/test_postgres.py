@@ -1406,6 +1406,10 @@ FROM json_data, field_ids""",
         )
         column.assert_is(exp.ColumnDef)
         self.assertEqual(column.name, "if")
+        self.validate_identity("ALTER TABLE t ALTER COLUMN b RESTART", check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE t ALTER COLUMN b SET STATISTICS 100", check_command_warning=True
+        )
         self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
             "CREATE TABLE t (col INT[3])",
@@ -1611,6 +1615,10 @@ FROM json_data, field_ids""",
         self.validate_identity("ALTER TABLE t DROP CONSTRAINT restrict").args["actions"][
             0
         ].assert_is(exp.Drop)
+        self.validate_identity("ALTER TABLE t DROP COLUMN partitioned_by").args["actions"][
+            0
+        ].assert_is(exp.Drop)
+        self.validate_identity("ALTER TABLE t DROP COLUMN partitioned_by CASCADE")
         drop_if, drop_b = self.validate_identity(
             "ALTER TABLE t DROP COLUMN if CASCADE, DROP COLUMN b"
         ).args["actions"]

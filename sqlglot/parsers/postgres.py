@@ -85,6 +85,7 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 class PostgresParser(parser.Parser):
     ALTER_DROP_REQUIRES_COLUMN = False
+    ALTER_COLUMN_TYPE_REQUIRES_KEYWORD = True
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 
     # The one-byte "char" type is distinct from CHAR, and it can only be referenced by

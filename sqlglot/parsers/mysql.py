@@ -327,9 +327,9 @@ class MySQLParser(parser.Parser):
 
     def _parse_alter_table_rename(self):
         if self._match_texts(("INDEX", "KEY")):
-            old = self._parse_field(any_token=True)
+            old = self._parse_id_var()
             self._match_text_seq("TO")
-            new = self._parse_field(any_token=True)
+            new = self._parse_id_var()
             return self.expression(exp.RenameIndex(this=old, to=new))
         return super()._parse_alter_table_rename()
 

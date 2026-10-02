@@ -1914,6 +1914,9 @@ class Parser:
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
 
+    # Whether changing a column's type with ALTER COLUMN requires the TYPE keyword
+    ALTER_COLUMN_TYPE_REQUIRES_KEYWORD: t.ClassVar = False
+
     # Whether all join types have the same precedence, i.e., they "naturally" produce a left-deep tree.
     # In standard SQL, joins that use the JOIN keyword take higher precedence than comma-joins. That is
     # to say, JOIN operators happen before comma operators. This is not the case in some dialects, such
@@ -2435,11 +2438,14 @@ class Parser:
 
         tables: exp.Expr | list[exp.Expr] | None
         if kind == "COLUMN":
-            # A dropped column named after a keyword function, like MySQL's `any`, is only a name
-            tables = (
-                self.expression(exp.Column(this=self._parse_id_var()))
+            # A dropped column named after a keyword, like `any` or `charset`, is only a name
+            name = (
+                None
                 if self._curr.text.upper() in self.NO_PAREN_FUNCTION_PARSERS
                 else self._parse_column()
+            ) or self._parse_id_var()
+            tables = (
+                self.expression(exp.Column(this=name)) if isinstance(name, exp.Identifier) else name
             )
         elif kind in ("TABLE", "VIEW"):
             tables = self._parse_csv(lambda: self._parse_table_parts(schema=True))
@@ -9149,18 +9155,11 @@ class Parser:
 
         if (
             isinstance(drop, exp.Drop)
-            and drop.args.get("kind") == "COLUMN"
+            and drop.kind == "COLUMN"
             and not self.dialect.ALTER_TABLE_DROP_REQUIRED_FOR_EACH_COLUMN
+            and self._match(TokenType.COMMA)
         ):
-            # Columns after a comma may omit the DROP keyword,
-            # e.g. `ALTER TABLE t DROP COLUMN a, b` (GH#8485)
-            while self._match(TokenType.COMMA):
-                if not self._curr or self._curr.token_type not in self.ID_VAR_TOKENS:
-                    break
-                column = self._parse_column()
-                if column is None:
-                    break
-                drop.append("tables", column)
+            drop.set("tables", [*drop.args["tables"], *self._parse_csv(self._parse_column)])
 
         return drop
 
@@ -9250,11 +9249,18 @@ class Parser:
             )
 
         self._match_text_seq("SET", "DATA")
-        self._match_text_seq("TYPE")
+        dtype = (
+            self._parse_types()
+            if self._match_text_seq("TYPE") or not self.ALTER_COLUMN_TYPE_REQUIRES_KEYWORD
+            else None
+        )
+        if not dtype:
+            return None
+
         return self.expression(
             exp.AlterColumn(
                 this=column,
-                dtype=self._parse_types(),
+                dtype=dtype,
                 collate=self._match(TokenType.COLLATE) and self._parse_term(),
                 using=self._match(TokenType.USING) and self._parse_disjunction(),
                 exists=exists or None,

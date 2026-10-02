@@ -56,9 +56,8 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
-        self.validate_identity("ALTER TABLE t DROP PRIMARY KEY").assert_is(exp.Alter).args[
-            "actions"
-        ][0].assert_is(exp.DropPrimaryKey)
+        alter = self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
+        alter.args["actions"][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
         self.validate_identity("ALTER TABLE t DROP COLUMN a, ALGORITHM=INPLACE")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
@@ -322,6 +321,7 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET INVISIBLE")
         self.validate_identity("ALTER TABLE t ALTER COLUMN c SET VISIBLE")
         self.validate_identity("ALTER TABLE t RENAME INDEX a TO b")
+        self.validate_identity("ALTER TABLE t RENAME INDEX any TO b")
         self.validate_identity(
             "ALTER TABLE t RENAME KEY a TO b",
             "ALTER TABLE t RENAME INDEX a TO b",
@@ -424,6 +424,10 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t DROP COLUMN concurrently").args["actions"][
             0
         ].assert_is(exp.Drop)
+        self.validate_identity("ALTER TABLE t DROP COLUMN charset").args["actions"][0].assert_is(
+            exp.Drop
+        )
+        self.validate_identity("ALTER TABLE t DROP COLUMN charset RESTRICT")
         drop = (
             self.validate_identity("ALTER TABLE t DROP INDEX concurrently")
             .args["actions"][0]

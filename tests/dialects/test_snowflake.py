@@ -2934,8 +2934,7 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
-        # GH#8485
-        self.validate_identity("ALTER TABLE foo DROP COLUMN col1, col2")
+        self.validate_identity("ALTER TABLE foo DROP COLUMN col1, col2").assert_is(exp.Alter)
         # ADD_MONTHS - Basic integer months with type preservation
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31', 1)",

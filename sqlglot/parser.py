@@ -9273,7 +9273,24 @@ class Parser:
             return self._parse_csv(lambda: self._parse_drop_partition(exists=partition_exists))
 
         self._retreat(index)
-        return self._parse_csv(self._parse_alter_drop_action)
+        last_drop: list[exp.Drop] = []
+
+        def _parse_drop_action() -> exp.Expr | None:
+            drop = self._parse_drop_column()
+            # Columns after a comma may omit the DROP keyword,
+            # e.g. `ALTER TABLE t DROP COLUMN a, b` (GH#8485)
+            if drop is None and last_drop:
+                column = self._parse_column()
+                if column is not None:
+                    return self.expression(
+                        exp.Drop(exists=False, tables=[column], kind=last_drop[0].kind or "COLUMN")
+                    )
+            if isinstance(drop, exp.Drop):
+                last_drop.clear()
+                last_drop.append(drop)
+            return drop
+
+        return self._parse_csv(_parse_drop_action)
 
     def _parse_alter_table_rename(self) -> exp.AlterRename | exp.RenameColumn | None:
         if self._match(TokenType.COLUMN) or (

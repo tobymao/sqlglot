@@ -673,6 +673,13 @@ class TestClickhouse(Validator):
             write={"clickhouse": "SELECT isNaN(x), isNaN(x)"},
         )
 
+        self.validate_identity("SELECT isInfinite(x)")
+        self.validate_all(
+            "SELECT isInfinite(x)",
+            read={"bigquery": "SELECT IS_INF(x)", "duckdb": "SELECT ISINF(x)"},
+            write={"duckdb": "SELECT ISINF(x)"},
+        )
+
         self.validate_identity("SELECT startsWith('a', 'b')")
         self.validate_all(
             "SELECT STARTS_WITH('a', 'b'), STARTSWITH('a', 'b')",

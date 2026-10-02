@@ -304,6 +304,7 @@ class ClickHouseParser(parser.Parser):
         "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
         "HAS": exp.ArrayContains.from_arg_list,
         "ILIKE": build_like(exp.ILike),
+        "ISINFINITE": exp.IsInf.from_arg_list,
         "JSONEXTRACTSTRING": build_json_extract_path(
             exp.JSONExtractScalar, zero_based_indexing=False
         ),

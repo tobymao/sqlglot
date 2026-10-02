@@ -311,6 +311,31 @@ SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10)) AS t(generate_series);
 SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
 SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
 
+# title: Qualify TABLE(SPLIT_TO_TABLE()) with its default columns
+# dialect: snowflake
+SELECT value FROM TABLE(SPLIT_TO_TABLE('a.b', '.'));
+SELECT value FROM TABLE(SPLIT_TO_TABLE('a.b', '.')) AS _0(SEQ, INDEX, VALUE);
+
+# title: Qualify correlated TABLE(SPLIT_TO_TABLE()) with a table alias
+# dialect: snowflake
+SELECT s.value FROM t, TABLE(SPLIT_TO_TABLE(t.a, '.')) AS s;
+SELECT s.value FROM C.DB.t AS T, TABLE(SPLIT_TO_TABLE(t.a, '.')) AS s(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with its default columns
+# dialect: snowflake
+SELECT value FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.');
+SELECT value FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS _0(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with a table alias
+# dialect: snowflake
+SELECT s.value FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s;
+SELECT s.value FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with alias on table and columns
+# dialect: snowflake
+SELECT v FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(x, y, v);
+SELECT v FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(x, y, v);
+
 # title: Qualify JSONB_TO_RECORDSET with typed alias columns and canonicalize_table_aliases
 # dialect: postgres
 # canonicalize_table_aliases: true

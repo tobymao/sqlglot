@@ -244,6 +244,10 @@ class Inline(Expression, Func, UDTF):
     pass
 
 
+class SplitToTable(Expression, Func, UDTF):
+    arg_types = {"this": True, "expression": True}
+
+
 class Stack(Expression, Func, UDTF):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True

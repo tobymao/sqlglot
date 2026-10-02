@@ -66,7 +66,12 @@ class DuckDB(Dialect):
 
         return super().to_json_path(path)
 
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+
     class Tokenizer(tokens.Tokenizer):
+        NUMERIC_ESCAPES = {"x": (16, 1, 2, 0xFF), "0": (8, 1, 3, 0o777)}
+        NUMERIC_ESCAPES_ARE_BYTES = True
+        DROP_UNKNOWN_ESCAPES = True
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]

@@ -35,7 +35,12 @@ class Redshift(Postgres):
 
     Parser = RedshiftParser
 
+    UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+
     class Tokenizer(Postgres.Tokenizer):
+        NUMERIC_ESCAPES = {"0": (8, 1, 3, 0o777)}
+        NUMERIC_ESCAPES_ARE_BYTES = True
+        DROP_UNKNOWN_ESCAPES = True
         BIT_STRINGS = []
         HEX_STRINGS = []
         STRING_ESCAPES = ["\\", "'"]

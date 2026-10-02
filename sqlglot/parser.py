@@ -9395,28 +9395,23 @@ class Parser:
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
         if parser:
-            if not self.ALTER_TABLE_MIXED_ACTIONS:
-                actions = ensure_list(parser(self))
-            else:
-                actions = []
-                while not actions or (
-                    (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
-                    and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
-                    and self._match_texts(self.ALTER_PARSERS)
-                ):
-                    index = self._index
-                    parser = self.ALTER_PARSERS[self._prev.text.upper()]
-                    parsed = ensure_list(
-                        self._try_parse(lambda: parser(self)) if actions else parser(self)
-                    )
-                    if (
-                        not parsed
-                        or self._index <= index
-                        or (actions and any(isinstance(a, exp.Command) for a in parsed))
-                    ):
-                        return self._parse_as_command(start)
+            actions = ensure_list(parser(self))
 
-                    actions.extend(parsed)
+            # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
+            # The comma before them may have already been consumed by the previous action's parser
+            while (
+                self.ALTER_TABLE_MIXED_ACTIONS
+                and actions
+                and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
+                and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
+                and self._match_texts(self.ALTER_PARSERS)
+            ):
+                parser = self.ALTER_PARSERS[self._prev.text.upper()]
+                parsed = ensure_list(self._try_parse(lambda: parser(self)))
+                if not parsed or any(isinstance(action, exp.Command) for action in parsed):
+                    return self._parse_as_command(start)
+
+                actions.extend(parsed)
 
             not_valid = self._match_text_seq("NOT", "VALID")
             options = self._parse_csv(self._parse_property)

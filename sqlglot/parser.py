@@ -9399,14 +9399,12 @@ class Parser:
                 self._advance()
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
-        if parser:
-            actions = ensure_list(parser(self))
-
+        actions = ensure_list(parser(self)) if parser else None
+        if actions:
             # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
             # The comma before them may have already been consumed by the previous action's parser
             while (
                 self.ALTER_TABLE_MIXED_ACTIONS
-                and actions
                 and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
                 and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
                 and self._match_texts(self.ALTER_PARSERS)
@@ -9422,7 +9420,7 @@ class Parser:
             options = self._parse_csv(self._parse_property)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
-            if not self._curr and actions:
+            if not self._curr:
                 return self.expression(
                     exp.Alter(
                         this=this,

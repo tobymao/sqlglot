@@ -1413,6 +1413,9 @@ FROM json_data, field_ids""",
             "ALTER TABLE t ALTER COLUMN b SET STATISTICS 100", check_command_warning=True
         )
         self.validate_identity(
+            "ALTER TABLE t ALTER COLUMN b OPTIONS (ADD x 'a')", check_command_warning=True
+        )
+        self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
             "CREATE TABLE t (col INT[3])",
         )

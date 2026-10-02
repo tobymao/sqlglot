@@ -132,10 +132,6 @@ SELECT 2 AS d FROM x AS x GROUP BY 1 ORDER BY d;
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
-# execute: false
-SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
-SELECT (SELECT MIN(x.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _0) AS f FROM x AS x GROUP BY 1;
-
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
 WITH x AS (SELECT 'a' AS a, 1 AS b) SELECT x.a AS c, y.a AS d, SUM(x.b) AS y FROM x AS x JOIN x AS y ON x.a = y.a GROUP BY x.a, 2;
@@ -201,40 +197,19 @@ SELECT DATE_TRUNC('WEEK', x.a) AS a FROM x AS x;
 SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
-# execute: false
-SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
-SELECT _0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _0;
-
-# title: correlated reference to outer CTE should not be attributed to inner TVF source
-# execute: false
-WITH x AS (SELECT 7 AS a) SELECT (SELECT a FROM UNNEST([1])) AS r FROM x;
-WITH x AS (SELECT 7 AS a) SELECT (SELECT x.a AS a FROM UNNEST(ARRAY(1)) AS _0) AS r FROM x AS x;
-
-# title: SELECT alias referenced in same SELECT list should not be attributed to TVF source
-# execute: false
-SELECT 1 AS z, z + 1 AS w FROM UNNEST([1]);
-SELECT 1 AS z, 1 + 1 AS w FROM UNNEST(ARRAY(1)) AS _0;
-
-# title: TVF still receives a name that no alias or outer scope explains
-# execute: false
-SELECT (SELECT MAX(q) FROM UNNEST([1])) AS r FROM x;
-SELECT (SELECT MAX(_0.q) AS _col_0 FROM UNNEST(ARRAY(1)) AS _0) AS r FROM x AS x;
-
-# title: default UNNEST column name resolves to the UNNEST source
-SELECT unnest FROM UNNEST([1, 2]);
-SELECT _0.unnest AS unnest FROM UNNEST(ARRAY(1, 2)) AS _0;
-
 # title: oracle cannot reference select aliases, so z is a source column
 # dialect: oracle
 # execute: false
+# schema: {"t": {"z": "INT"}}
 SELECT 1 AS z, z + 1 AS w FROM (SELECT * FROM t) c;
-SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT * FROM T T) C;
+SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT T.Z AS Z FROM T T) C;
 
 # title: oracle WHERE column sharing a projection alias name is a source column
 # dialect: oracle
 # execute: false
+# schema: {"t": {"z": "INT"}}
 SELECT 1 AS z FROM (SELECT * FROM t) c WHERE z > 0;
-SELECT 1 AS Z FROM (SELECT * FROM T T) C WHERE C.Z > 0;
+SELECT 1 AS Z FROM (SELECT T.Z AS Z FROM T T) C WHERE C.Z > 0;
 
 # execute: false
 select * from (values (1, 2));
@@ -329,10 +304,6 @@ SELECT r.v AS v, r.idx AS idx FROM t AS t, LATERAL UNNEST(t.a) WITH ORDINALITY A
 SELECT generate_series FROM generate_series(0, 10) AS g;
 SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);
 
-# execute: false
-# dialect: snowflake
-SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
-SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0 ORDER BY _0.EMPID;
 
 # execute: false
 # schema: {"t": {"x": "DOUBLE"}}

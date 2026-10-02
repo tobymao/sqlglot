@@ -201,6 +201,12 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD UNIQUE KEY uq (a) USING BTREE COMMENT 'why' INVISIBLE",
             "ALTER TABLE t ADD UNIQUE uq (a) USING BTREE COMMENT 'why' INVISIBLE",
         )
+        self.validate_identity("ALTER TABLE t ADD FULLTEXT INDEX i (s)").args["actions"][
+            0
+        ].assert_is(exp.AddConstraint)
+        self.validate_identity("ALTER TABLE t ADD SPATIAL INDEX i (g)").args["actions"][
+            0
+        ].assert_is(exp.AddConstraint)
         self.validate_identity(
             "ALTER TABLE t ADD UNIQUE KEY u USING BTREE (c)",
             "ALTER TABLE t ADD UNIQUE u (c) USING BTREE",
@@ -370,6 +376,7 @@ class TestMySQL(Validator):
         for sql in (
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d",
             "ALTER TABLE t ADD INDEX `i` (`a`), DROP INDEX `j`",
+            "ALTER TABLE t DROP INDEX i, ADD FULLTEXT INDEX i1 (s)",
             "ALTER TABLE t ADD CONSTRAINT c UNIQUE (a), DROP CONSTRAINT d",
             "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1, ADD COLUMN d INT",
             "ALTER TABLE t ADD COLUMN a INT, DROP INDEX concurrently",

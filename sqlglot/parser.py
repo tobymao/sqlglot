@@ -1777,6 +1777,9 @@ class Parser:
         TokenType.UNIQUE,
     }
 
+    # Constraint kinds that start an ALTER ... ADD action but aren't tokens of their own
+    ADD_CONSTRAINT_KEYWORDS: t.ClassVar[set[str]] = set()
+
     DISTINCT_TOKENS: t.ClassVar = {TokenType.DISTINCT}
 
     UNNEST_OFFSET_ALIAS_TOKENS: t.ClassVar = TABLE_ALIAS_TOKENS - SET_OPERATIONS
@@ -9176,7 +9179,9 @@ class Parser:
     def _parse_alter_table_add(self) -> list[exp.Expr]:
         def _parse_add_alteration() -> exp.Expr | None:
             self._match_text_seq("ADD")
-            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
+            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False) or self._match_texts(
+                self.ADD_CONSTRAINT_KEYWORDS, advance=False
+            ):
                 return self.expression(
                     exp.AddConstraint(expressions=self._parse_csv(self._parse_constraint))
                 )

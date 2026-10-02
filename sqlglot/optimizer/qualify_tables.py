@@ -216,10 +216,7 @@ def qualify_tables(
                         for i in dialect.generate_values_aliases(udtf)
                     ]
                     table_alias.set("columns", column_aliases)
-                elif (
-                    isinstance(udtf, exp.TableFromRows)
-                    or (isinstance(udtf, exp.Lateral) and isinstance(udtf.this, exp.UDTF))
-                ) and not table_alias.columns:
+                elif isinstance(udtf, exp.TableFromRows) and not table_alias.columns:
                     default_columns = dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(udtf.this))
                     if default_columns:
                         table_alias.set(

@@ -9145,7 +9145,24 @@ class Parser:
         return self._parse_drop(kind=kind)
 
     def _parse_alter_drop_action(self) -> exp.Expr | None:
-        return self._parse_drop_column()
+        drop = self._parse_drop_column()
+
+        if (
+            isinstance(drop, exp.Drop)
+            and drop.args.get("kind") == "COLUMN"
+            and not self.dialect.ALTER_TABLE_DROP_REQUIRED_FOR_EACH_COLUMN
+        ):
+            # Columns after a comma may omit the DROP keyword,
+            # e.g. `ALTER TABLE t DROP COLUMN a, b` (GH#8485)
+            while self._match(TokenType.COMMA):
+                if not self._curr or self._curr.token_type not in self.ID_VAR_TOKENS:
+                    break
+                column = self._parse_column()
+                if column is None:
+                    break
+                drop.append("tables", column)
+
+        return drop
 
     # https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
     def _parse_drop_partition(self, exists: bool | None = None) -> exp.DropPartition:

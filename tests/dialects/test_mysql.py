@@ -1,7 +1,7 @@
 import unittest
 import sys
 
-from sqlglot import UnsupportedError, expressions as exp
+from sqlglot import UnsupportedError, expressions as exp, transpile
 from sqlglot.dialects.mysql import MySQL
 from tests.dialects.test_dialect import Validator
 
@@ -2053,3 +2053,23 @@ COMMENT='客户账户表'"""
             exp.AutoIncrementProperty
         )
         self.assertEqual(prop.this.to_py(), 3000000000)
+
+    def test_null_ordering_simulation_inside_aggregate(self) -> None:
+        # GH#8489: a name inside an aggregate's ORDER BY refers to the aggregate's
+        # input column, not to a SELECT alias with the same name.
+        self.assertEqual(
+            transpile(
+                "SELECT array_agg(v ORDER BY v) AS v FROM t",
+                read="trino",
+                write="mysql",
+            )[0],
+            "SELECT GROUP_CONCAT(v ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS v FROM t",
+        )
+        self.assertEqual(
+            transpile(
+                "SELECT x AS v, array_agg(v ORDER BY v) AS w FROM t",
+                read="trino",
+                write="mysql",
+            )[0],
+            "SELECT x AS v, GROUP_CONCAT(v ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS w FROM t",
+        )

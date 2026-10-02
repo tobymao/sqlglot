@@ -3202,7 +3202,11 @@ class Generator:
         if not (isinstance(this, exp.Column) and not this.table):
             return None
 
-        ancestor = expression.find_ancestor(exp.Select, exp.Window)
+        # A name inside a function call's ORDER BY (e.g. an aggregate such as
+        # array_agg or string_agg) refers to the function's input scope, not to
+        # the enclosing SELECT's aliases (GH#8489). Window and WITHIN GROUP
+        # contexts already stop the walk before reaching the SELECT.
+        ancestor = expression.find_ancestor(exp.Select, exp.Window, exp.WithinGroup, exp.Func)
         if not isinstance(ancestor, exp.Select):
             return None
 

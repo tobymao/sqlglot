@@ -56,9 +56,9 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
-        self.validate_identity("ALTER TABLE t DROP PRIMARY KEY").assert_is(
-            exp.Alter
-        ).args["actions"][0].assert_is(exp.DropPrimaryKey)
+        self.validate_identity("ALTER TABLE t DROP PRIMARY KEY").assert_is(exp.Alter).args[
+            "actions"
+        ][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
         self.validate_identity("ALTER TABLE t DROP COLUMN a, ALGORITHM=INPLACE")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")

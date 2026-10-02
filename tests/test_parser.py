@@ -1155,13 +1155,15 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(list(ast.find_all(exp.Column))), 1)
 
     def test_drop_multiple_columns(self):
-        # GH#8485
-        ast = parse_one("ALTER TABLE tbl DROP COLUMN col1, col2")
+        # GH#8485 - the continuation columns fold into a single exp.Drop when the
+        # dialect doesn't require a DROP keyword per column (e.g. Snowflake/T-SQL);
+        # the base dialect keeps requiring DROP for each column
+        ast = parse_one("ALTER TABLE tbl DROP COLUMN col1, col2", read="snowflake")
         self.assertIsInstance(ast, exp.Alter)
         drops = list(ast.find_all(exp.Drop))
-        self.assertEqual(len(drops), 2)
-        self.assertEqual([d.args["tables"][0].name for d in drops], ["col1", "col2"])
-        self.assertEqual({d.kind for d in drops}, {"COLUMN"})
+        self.assertEqual(len(drops), 1)
+        self.assertEqual([t.name for t in drops[0].args["tables"]], ["col1", "col2"])
+        self.assertEqual(drops[0].kind, "COLUMN")
 
     def test_udf_meta(self):
         ast = parse_one("YEAR(a) /* sqlglot.anonymous */")

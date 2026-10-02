@@ -318,6 +318,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.Explode: rename_func("arrayJoin"),
         exp.FarmFingerprint: rename_func("farmFingerprint64"),
         exp.Final: lambda self, e: f"{self.sql(e, 'this')} FINAL",
+        exp.IsInf: rename_func("isInfinite"),
         exp.IsNan: rename_func("isNaN"),
         exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
         exp.JSONCast: _json_cast_sql,

@@ -53,6 +53,9 @@ def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
 
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
+    expression = optimizer.normalize_identifiers.normalize_identifiers(
+        expression, dialect=kwargs.get("dialect")
+    )
     expression = optimizer.qualify_columns.qualify_columns(
         expression, infer_schema=not STRICT_SCHEMA, **kwargs
     )

@@ -7,7 +7,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get, SingleValuedMapping
-from sqlglot.optimizer.scope import Scope
+from sqlglot.optimizer.scope import Scope, find_all_in_scope
 
 if t.TYPE_CHECKING:
     from sqlglot.schema import Schema
@@ -31,6 +31,8 @@ class Resolver:
         self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
+        self._outer_resolvers: list[Resolver] | None = None
+        self._lateral_aliases: set[str] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -71,8 +73,10 @@ class Resolver:
                 for source, columns in all_source_cols.items()
                 if not columns or "*" in columns
             )
-            if len(sources_without_schema) == 1 and (
-                self._infer_schema or self._is_dynamic_source(sources_without_schema[0])
+            if (
+                len(sources_without_schema) == 1
+                and (self._infer_schema or self._is_dynamic_source(sources_without_schema[0]))
+                and not self._is_resolved_elsewhere(column_name)
             ):
                 table_name = sources_without_schema[0]
 
@@ -91,12 +95,15 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
-    def outer_resolvers(self) -> t.Iterator[Resolver]:
+    def outer_resolvers(self) -> list[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
-        scope = self.scope
-        while scope.can_be_correlated and scope.parent:
-            scope = scope.parent
-            yield Resolver(scope, self.schema, self._infer_schema)
+        if self._outer_resolvers is None:
+            self._outer_resolvers = []
+            scope = self.scope
+            while scope.can_be_correlated and scope.parent:
+                scope = scope.parent
+                self._outer_resolvers.append(Resolver(scope, self.schema, self._infer_schema))
+        return self._outer_resolvers
 
     @property
     def has_unknown_sources(self) -> bool:
@@ -265,26 +272,38 @@ class Resolver:
         else:
             unambiguous_columns = self._get_unambiguous_columns(source_columns)
 
-        result = unambiguous_columns.get(column_name)
-        if result is None:
-            # Fall back to the dialect-normalized form so that unquoted identifiers match
-            # schema columns even when cases differ (e.g. Snowflake stores columns as
-            # uppercase 'D' but the AST may carry the lowercase 'd' as typed).
-            normalized = self.dialect.normalize_identifier(exp.to_identifier(column_name)).name
-            if normalized != column_name:
-                result = unambiguous_columns.get(normalized)
-        return result
+        return unambiguous_columns.get(column_name)
 
     def _is_dynamic_source(self, source_name: str) -> bool:
         """Return True for sources whose columns can't be known from the schema (TVFs, UNNEST, PIVOTs, etc.)."""
         source = self.scope.sources.get(source_name)
-        if isinstance(source, Scope):
-            return True
-        if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
-            return True
-        if self.scope.pivots:
-            return True
-        return False
+        return (
+            isinstance(source, Scope)
+            or (isinstance(source, exp.Table) and isinstance(source.this, exp.Func))
+            or bool(self.scope.pivots)
+        )
+
+    def _is_resolved_elsewhere(self, column_name: str) -> bool:
+        """Return True if a lateral alias (e.g. `1 AS z`, not `f(z) AS z`) or an outer scope explains column_name."""
+        if self._lateral_aliases is None:
+            expression = self.scope.expression
+            self._lateral_aliases = (
+                set()
+                if self.dialect.DISABLES_ALIAS_REF_EXPANSION
+                or not isinstance(expression, exp.Select)
+                else {
+                    select.alias
+                    for select in expression.selects
+                    if isinstance(select, exp.Alias)
+                    and not any(
+                        col.name == select.alias
+                        for col in find_all_in_scope(select.this, exp.Column)
+                    )
+                }
+            )
+        return column_name in self._lateral_aliases or any(
+            outer.get_table(column_name) for outer in self.outer_resolvers()
+        )
 
     def _get_column_join_context(self, column: exp.Column) -> exp.Join | None:
         """

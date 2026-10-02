@@ -146,6 +146,7 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "BYTEINT": TokenType.INT,
             "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,

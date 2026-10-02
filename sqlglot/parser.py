@@ -6917,8 +6917,8 @@ class Parser:
             column = self._parse_column_ops(this) if this else this
 
         if column:
-            if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS:
-                column.set("join_mark", self._match(TokenType.JOIN_MARKER))
+            if self.dialect.SUPPORTS_COLUMN_JOIN_MARKS and self._match(TokenType.JOIN_MARKER):
+                column.set("join_mark", True)
             if self.COLON_IS_VARIANT_EXTRACT:
                 column = self._parse_colon_as_variant_extract(column)
 

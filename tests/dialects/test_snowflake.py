@@ -4876,6 +4876,24 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
+    def test_join_marker(self):
+        self.validate_identity("SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)")
+        self.validate_identity("SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 (+) = t2.c2")
+        self.validate_identity(
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2(+)",
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+        )
+        self.validate_all(
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+            read={
+                "oracle": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+            },
+            write={
+                "oracle": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+                "redshift": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+            },
+        )
+
     def test_values(self):
         select = exp.select("*").from_("values (map(['a'], [1]))")
         self.assertEqual(select.sql("snowflake"), "SELECT * FROM (SELECT OBJECT_CONSTRUCT('a', 1))")

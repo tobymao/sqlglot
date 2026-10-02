@@ -99,7 +99,6 @@ class DuckDBParser(parser.Parser):
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
-        TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
         TokenType.TILDE: binary_range_parser(exp.RegexpFullMatch),
     }
 

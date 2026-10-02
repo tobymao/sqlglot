@@ -1280,6 +1280,7 @@ class Parser:
         TokenType.OPERATOR: lambda self, this: self._parse_operator(this),
         TokenType.AMP_LT: binary_range_parser(exp.ExtendsLeft),
         TokenType.AMP_GT: binary_range_parser(exp.ExtendsRight),
+        TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
     }
 
     PIPE_SYNTAX_TRANSFORM_PARSERS: t.ClassVar = {

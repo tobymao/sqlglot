@@ -104,6 +104,7 @@ class Postgres(Dialect):
             "#-": TokenType.HASH_DASH,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
+            "^@": TokenType.CARET_AT,
             "BEGIN": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CSTRING": TokenType.PSEUDO_TYPE,

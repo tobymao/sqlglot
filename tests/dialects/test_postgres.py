@@ -1124,6 +1124,8 @@ FROM json_data, field_ids""",
         # `@>` is polymorphic in Postgres (arrays, ranges, jsonb), so it parses to ArrayContainsAll
         self.validate_identity("a @> b").assert_is(exp.ArrayContainsAll)
 
+        self.validate_identity("a ^@ b", "STARTS_WITH(a, b)")
+
         self.validate_identity("a ?| b").assert_is(exp.JSONBContainsAnyTopKeys)
         self.validate_identity(
             """SELECT '{"a":1, "b":2, "c":3}'::jsonb ?| array['b', 'c']""",

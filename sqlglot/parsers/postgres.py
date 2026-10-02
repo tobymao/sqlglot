@@ -178,6 +178,7 @@ class PostgresParser(parser.Parser):
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
+        TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
         TokenType.DAT: lambda self, this: self.expression(
             exp.MatchAgainst(this=self._parse_bitwise(), expressions=[this])
         ),

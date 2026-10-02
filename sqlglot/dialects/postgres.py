@@ -99,6 +99,7 @@ class Postgres(Dialect):
             "@?": TokenType.AT_QMARK,
             "@>": TokenType.AT_GT,
             "<@": TokenType.LT_AT,
+            "^@": TokenType.CARET_AT,
             "?&": TokenType.QMARK_AMP,
             "?|": TokenType.QMARK_PIPE,
             "#-": TokenType.HASH_DASH,

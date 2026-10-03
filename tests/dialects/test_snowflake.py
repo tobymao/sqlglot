@@ -3582,6 +3582,31 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_list_stage(self):
+        for sql in (
+            "LIST @%table1",
+            "LIST @db1.schema1.%table1",
+            "LIST @named_stage",
+            "LIST @schema1.named_stage",
+            "LIST @db1.schema1.named_stage",
+            "LIST @~",
+            "LIST @named_stage/path1",
+            "LIST @~/path1",
+            "LIST @%table1 PATTERN='.*data_0.*'",
+            "LIST @named_stage/analysis/ PATTERN='.*data_0.*'",
+            "LIST '@\"my stage\"/my path'",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql).assert_is(exp.Command)
+
+    def test_list_stage_alias(self):
+        self.validate_identity("LS @~").assert_is(exp.Command)
+        self.validate_identity("ls @named_stage", "LS @named_stage")
+
+    def test_list_stage_identifiers(self):
+        self.validate_identity("SELECT list, ls FROM list").assert_is(exp.Select)
+        self.validate_identity("SELECT x AS list, y AS ls FROM t").assert_is(exp.Select)
+
     def test_staged_files(self):
         # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
         staged_file = parse_one("SELECT * FROM @foo", read="snowflake")

@@ -152,6 +152,8 @@ class Snowflake(Dialect):
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
             "INTEGRATION": TokenType.INTEGRATION,
+            "LIST": TokenType.COMMAND,
+            "LS": TokenType.COMMAND,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,

@@ -154,6 +154,8 @@ class Snowflake(Dialect):
             "INTEGRATION": TokenType.INTEGRATION,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "LIST": TokenType.COMMAND,
+            "LS": TokenType.COMMAND,
             "MINUS": TokenType.EXCEPT,
             "NCHAR VARYING": TokenType.VARCHAR,
             "PACKAGE": TokenType.PACKAGE,

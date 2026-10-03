@@ -1777,6 +1777,9 @@ class Parser:
         TokenType.UNIQUE,
     }
 
+    # Constraint kinds that start an ALTER ... ADD action but aren't tokens of their own
+    ADD_CONSTRAINT_KEYWORDS: t.ClassVar[set[str]] = set()
+
     DISTINCT_TOKENS: t.ClassVar = {TokenType.DISTINCT}
 
     UNNEST_OFFSET_ALIAS_TOKENS: t.ClassVar = TABLE_ALIAS_TOKENS - SET_OPERATIONS
@@ -1914,6 +1917,9 @@ class Parser:
 
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
+
+    # Whether an ALTER can combine different actions, e.g. ADD COLUMN a INT, DROP COLUMN b
+    ALTER_TABLE_MIXED_ACTIONS: t.ClassVar = False
 
     # Whether changing a column's type with ALTER COLUMN requires the TYPE keyword
     ALTER_COLUMN_TYPE_REQUIRES_KEYWORD: t.ClassVar = False
@@ -9173,7 +9179,9 @@ class Parser:
     def _parse_alter_table_add(self) -> list[exp.Expr]:
         def _parse_add_alteration() -> exp.Expr | None:
             self._match_text_seq("ADD")
-            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False):
+            if self._match_set(self.ADD_CONSTRAINT_TOKENS, advance=False) or self._match_texts(
+                self.ADD_CONSTRAINT_KEYWORDS, advance=False
+            ):
                 return self.expression(
                     exp.AddConstraint(expressions=self._parse_csv(self._parse_constraint))
                 )
@@ -9391,13 +9399,28 @@ class Parser:
                 self._advance()
 
         parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
-        if parser:
-            actions = ensure_list(parser(self))
+        actions = ensure_list(parser(self)) if parser else None
+        if actions:
+            # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
+            # The comma before them may have already been consumed by the previous action's parser
+            while (
+                self.ALTER_TABLE_MIXED_ACTIONS
+                and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
+                and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
+                and self._match_texts(self.ALTER_PARSERS)
+            ):
+                parser = self.ALTER_PARSERS[self._prev.text.upper()]
+                parsed = ensure_list(self._try_parse(lambda: parser(self)))
+                if not parsed or any(isinstance(action, exp.Command) for action in parsed):
+                    return self._parse_as_command(start)
+
+                actions.extend(parsed)
+
             not_valid = self._match_text_seq("NOT", "VALID")
             options = self._parse_csv(self._parse_property)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
-            if not self._curr and actions:
+            if not self._curr:
                 return self.expression(
                     exp.Alter(
                         this=this,

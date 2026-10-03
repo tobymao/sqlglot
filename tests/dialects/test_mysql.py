@@ -201,6 +201,12 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD UNIQUE KEY uq (a) USING BTREE COMMENT 'why' INVISIBLE",
             "ALTER TABLE t ADD UNIQUE uq (a) USING BTREE COMMENT 'why' INVISIBLE",
         )
+        self.validate_identity("ALTER TABLE t ADD FULLTEXT INDEX i (s)").args["actions"][
+            0
+        ].assert_is(exp.AddConstraint)
+        self.validate_identity("ALTER TABLE t ADD SPATIAL INDEX i (g)").args["actions"][
+            0
+        ].assert_is(exp.AddConstraint)
         self.validate_identity(
             "ALTER TABLE t ADD UNIQUE KEY u USING BTREE (c)",
             "ALTER TABLE t ADD UNIQUE u (c) USING BTREE",
@@ -365,6 +371,43 @@ class TestMySQL(Validator):
             "CREATE FUNCTION f () RETURNS VARCHAR LANGUAGE SQL SQL SECURITY INVOKER SELECT 'abc'",
             "CREATE FUNCTION f() RETURNS TEXT LANGUAGE SQL SQL SECURITY INVOKER AS SELECT 'abc'",
         )
+
+    def test_alter_mixed_actions(self):
+        for sql in (
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d",
+            "ALTER TABLE t ADD INDEX `i` (`a`), DROP INDEX `j`",
+            "ALTER TABLE t DROP INDEX i, ADD FULLTEXT INDEX i1 (s)",
+            "ALTER TABLE t ADD CONSTRAINT c UNIQUE (a), DROP CONSTRAINT d",
+            "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1, ADD COLUMN d INT",
+            "ALTER TABLE t ADD COLUMN a INT, DROP INDEX concurrently",
+            "ALTER TABLE t ADD COLUMN a INT, DROP INDEX concurrently, DROP COLUMN b",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN concurrently",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN concurrently RESTRICT",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN any RESTRICT",
+            "ALTER TABLE t ADD COLUMN a INT, RENAME INDEX any TO b",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN charset",
+        ):
+            with self.subTest(sql):
+                alter = self.validate_identity(sql).assert_is(exp.Alter)
+                for action in alter.args["actions"]:
+                    self.assertNotIsInstance(action, exp.Command)
+
+        for sql, num_actions, num_options in (
+            ("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT", 2, 0),
+            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", 1, 1),
+            ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", 1, 1),
+            ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", 1, 1),
+            ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", 1, 2),
+        ):
+            with self.subTest(sql):
+                alter = self.validate_identity(sql).assert_is(exp.Alter)
+                self.assertEqual(len(alter.args["actions"]), num_actions)
+                self.assertEqual(len(alter.args["options"]), num_options)
+
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT, DROP b, ADD COLUMN c INT",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT",
+        ).assert_is(exp.Alter)
 
     def test_column_key_constraint(self):
         self.validate_identity(

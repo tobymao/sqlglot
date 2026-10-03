@@ -261,6 +261,8 @@ class MySQLParser(parser.Parser):
         "INDEX": lambda self: self._parse_alter_table_alter_index(),
     }
 
+    ADD_CONSTRAINT_KEYWORDS = {"FULLTEXT", "SPATIAL"}
+
     SCHEMA_UNNAMED_CONSTRAINTS = {
         *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
         "FULLTEXT",
@@ -298,6 +300,7 @@ class MySQLParser(parser.Parser):
     }
 
     ALTER_DROP_REQUIRES_COLUMN = False
+    ALTER_TABLE_MIXED_ACTIONS = True
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False

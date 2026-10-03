@@ -1413,6 +1413,9 @@ FROM json_data, field_ids""",
             "ALTER TABLE t ALTER COLUMN b SET STATISTICS 100", check_command_warning=True
         )
         self.validate_identity(
+            "ALTER TABLE t ALTER COLUMN b OPTIONS (ADD x 'a')", check_command_warning=True
+        )
+        self.validate_identity(
             "CREATE TABLE t (col integer ARRAY[3])",
             "CREATE TABLE t (col INT[3])",
         )
@@ -1572,6 +1575,28 @@ FROM json_data, field_ids""",
                 "CREATE TABLE products (price DECIMAL, CHECK price > 1)",
                 read="postgres",
             )
+
+    def test_alter_mixed_actions(self):
+        for sql in (
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d",
+            "ALTER TABLE t ADD CONSTRAINT c UNIQUE (a), DROP CONSTRAINT d",
+            "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1, ADD COLUMN d INT",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN if",
+            "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN partitioned_by CASCADE",
+        ):
+            with self.subTest(sql):
+                alter = self.validate_identity(sql).assert_is(exp.Alter)
+                for action in alter.args["actions"]:
+                    self.assertNotIsInstance(action, exp.Command)
+
+        for sql in (
+            "ALTER TABLE t DROP COLUMN b, ADD index INT",
+            "ALTER TABLE t ADD COLUMN b INT, DROP partition",
+            "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN b RESTART",
+            "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN b SET STATISTICS 100",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
 
     def test_called_on_null_input_malformed(self):
         # Regression test for a zero-progress parse loop: a malformed property suffix used to

@@ -27,7 +27,7 @@ from sqlglot.dialects.dialect import (
     sha2_digest_sql,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import seq_get
+from sqlglot.helper import dialect_identity, seq_get
 
 logger = logging.getLogger("sqlglot")
 
@@ -229,7 +229,12 @@ def _levenshtein_sql(self: BigQueryGenerator, expression: exp.Levenshtein) -> st
 
 
 def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) -> str:
-    name = expression.meta_get("name") or expression.sql_name()
+    name = (
+        expression.meta_get("name")
+        if expression.meta_get("dialect") == dialect_identity(self.dialect)
+        else None
+    )
+    name = name or expression.sql_name()
     upper = name.upper()
 
     dquote_escaping = upper in DQUOTES_ESCAPING_JSON_FUNCTIONS

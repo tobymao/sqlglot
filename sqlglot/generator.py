@@ -11,7 +11,7 @@ from sqlglot import exp
 from sqlglot.errors import ErrorLevel, UnsupportedError, concat_messages
 from sqlglot.expressions import apply_index_offset
 from sqlglot.expressions.core import maybe_parse
-from sqlglot.helper import csv, name_sequence, seq_get
+from sqlglot.helper import csv, dialect_identity, name_sequence, seq_get
 from sqlglot.jsonpath import ALL_JSON_PATH_PARTS, JSON_PATH_PART_TRANSFORMS
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
@@ -4758,7 +4758,9 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        if self.dialect.PRESERVE_ORIGINAL_NAMES:
+        if self.dialect.PRESERVE_ORIGINAL_NAMES and expression.meta_get(
+            "dialect"
+        ) == dialect_identity(self.dialect):
             name = expression.meta_get("name") or expression.sql_name()
         else:
             name = expression.sql_name()

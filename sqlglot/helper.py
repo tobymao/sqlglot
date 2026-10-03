@@ -38,6 +38,13 @@ PYTHON_VERSION = sys.version_info[:2]
 logger = logging.getLogger("sqlglot")
 
 
+def dialect_identity(dialect: t.Any) -> str:
+    """Return a stable, JSON-friendly identity for a dialect class and its MRO."""
+    return "|".join(
+        f"{klass.__module__}.{klass.__qualname__}" for klass in dialect.__class__.__mro__
+    )
+
+
 class AutoName(Enum):
     """
     This is used for creating Enum classes where `auto()` is the string form

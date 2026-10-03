@@ -3044,6 +3044,10 @@ OPTIONS (
                     )
 
     def test_json_extract(self):
+        expression = self.parse_one("SELECT JSON_EXTRACT_SCALAR(x, '$.a')")
+        expression.find(exp.JSONExtractScalar).meta.pop("name")
+        self.assertEqual("SELECT JSON_EXTRACT_SCALAR(x, '$.a')", expression.sql("bigquery"))
+
         self.validate_all(
             """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
             write={

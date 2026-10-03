@@ -1,5 +1,5 @@
 from datetime import date, datetime, timezone
-from sqlglot import exp, parse_one
+from sqlglot import exp, parse_one, transpile
 from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from sqlglot.helper import logger as helper_logger
@@ -671,6 +671,22 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT IS_NAN(x), ISNAN(x)",
             write={"clickhouse": "SELECT isNaN(x), isNaN(x)"},
+        )
+        self.assertEqual(
+            ["SELECT IS_NAN(x), ARRAY_REVERSE(a)"],
+            transpile("SELECT isNaN(x), arrayReverse(a)", read="clickhouse", write="bigquery"),
+        )
+        self.assertEqual(
+            ["SELECT JSON_EXTRACT_SCALAR(j, '$.a')"],
+            transpile("SELECT JSONExtractString(j, 'a')", read="clickhouse", write="bigquery"),
+        )
+        self.assertEqual(
+            ["SELECT UNHEX(s)"],
+            transpile("SELECT FROM_HEX(s)", read="bigquery", write="clickhouse"),
+        )
+        self.assertEqual(
+            ["SELECT IS_NAN(x)"],
+            transpile("SELECT isNaN(x)", read="clickhouse", write="drill"),
         )
 
         self.validate_identity("SELECT isInfinite(x)")

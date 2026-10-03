@@ -19,7 +19,7 @@ from sqlglot.errors import (
     merge_errors,
 )
 from sqlglot.expressions import apply_index_offset
-from sqlglot.helper import ensure_list, i64, seq_get
+from sqlglot.helper import dialect_identity, ensure_list, i64, seq_get
 from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.time import format_time
 from sqlglot.tokens import Token, Tokenizer, TokenType
@@ -7395,6 +7395,7 @@ class Parser:
                 func = self.validate_expression(func, args)
                 if self.dialect.PRESERVE_ORIGINAL_NAMES:
                     func.meta["name"] = this
+                    func.meta["dialect"] = dialect_identity(self.dialect)
 
                 result = func
             else:

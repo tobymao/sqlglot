@@ -681,6 +681,21 @@ class TestPresto(Validator):
             },
         )
 
+        # Spark allows `SELECT a LATERAL VIEW EXPLODE(ARRAY(y)) t AS a` without a
+        # FROM clause. The exploded UNNEST must become the FROM relation rather
+        # than a dangling CROSS JOIN UNNEST (which has no left relation and is
+        # invalid SQL) -- see issue #8495.
+        self.validate_all(
+            "SELECT a FROM UNNEST(ARRAY[y]) AS t(a)",
+            read={
+                "spark": "SELECT a LATERAL VIEW EXPLODE(ARRAY(y)) t AS a",
+            },
+            write={
+                "trino": "SELECT a FROM UNNEST(ARRAY[y]) AS t(a)",
+                "duckdb": "SELECT a FROM UNNEST([y]) AS t(a)",
+            },
+        )
+
     def test_unicode_string(self):
         for prefix in ("u&", "U&"):
             self.validate_all(

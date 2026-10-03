@@ -2558,6 +2558,15 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
         )
 
     if cross_join_expr:
+        # Spark allows `SELECT x LATERAL VIEW EXPLODE(a) AS x` without a FROM
+        # clause, but a CROSS JOIN UNNEST requires a left relation. When the
+        # parent SELECT has no FROM, emit the UNNEST as the FROM clause instead
+        # so the generated SQL is valid.
+        parent = expression.parent
+        if isinstance(parent, exp.Select) and not parent.args.get("from_"):
+            if isinstance(cross_join_expr, exp.Unnest):
+                return self.sql(exp.From(this=cross_join_expr))
+
         return self.sql(exp.Join(this=cross_join_expr, kind="cross"))
 
     return self.lateral_sql(expression)

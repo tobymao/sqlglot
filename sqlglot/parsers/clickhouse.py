@@ -59,7 +59,7 @@ def _build_timestamp_trunc(unit: str) -> t.Callable[[list], exp.TimestampTrunc]:
 def _build_without_extra_args(expr_type: type[exp.Func], name: str) -> t.Callable[[list], exp.Func]:
     # The optional mode / timezone arguments have no counterpart in expr_type
     return lambda args: (
-        expr_type(this=seq_get(args, 0))
+        expr_type(this=args[0])
         if len(args) == 1
         else exp.Anonymous(this=name, expressions=args)
     )

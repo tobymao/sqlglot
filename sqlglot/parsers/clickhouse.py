@@ -56,6 +56,17 @@ def _build_timestamp_trunc(unit: str) -> t.Callable[[list], exp.TimestampTrunc]:
     )
 
 
+def _build_without_extra_args(
+    expr_type: type[exp.Func], name: str
+) -> t.Callable[[list], exp.Func | exp.Anonymous]:
+    # The optional mode / timezone arguments have no counterpart in expr_type
+    return lambda args: (
+        expr_type(this=seq_get(args, 0))
+        if len(args) == 1
+        else exp.Anonymous(this=name, expressions=args)
+    )
+
+
 def _build_split_by_char(args: list) -> exp.Split | exp.Anonymous:
     sep = seq_get(args, 0)
     if isinstance(sep, exp.Literal):
@@ -321,6 +332,9 @@ class ClickHouseParser(parser.Parser):
         "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
         "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
         "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
+        "TODAYOFWEEK": _build_without_extra_args(exp.DayOfWeekIso, "toDayOfWeek"),
+        "TOISOWEEK": _build_without_extra_args(exp.WeekOfYear, "toISOWeek"),
+        "TOISOYEAR": _build_without_extra_args(exp.YearOfWeekIso, "toISOYear"),
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
         "UNIQ": exp.ApproxDistinct.from_arg_list,
         "MD5": exp.MD5Digest.from_arg_list,

@@ -3582,6 +3582,59 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_list_stage(self):
+        for location in (
+            "@%table1",
+            "@schema1.%table1",
+            "@db1.schema1.%table1",
+            "@named_stage",
+            "@schema1.named_stage",
+            "@db1.schema1.named_stage",
+            "@~",
+            "@named_stage/path1",
+            "@%table1/path1",
+            "@~/path1",
+            '@"my_DB"."schEMA1"."MYstage"/CaseSensitivePath',
+            "'@\"my stage\"/my path'",
+            "@my_repo/branches/main/",
+        ):
+            with self.subTest(location=location):
+                expression = self.validate_identity(f"LIST {location}").assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+
+    def test_list_stage_pattern(self):
+        for location, pattern in (
+            ("@%table1", ".*data_0.*"),
+            ("@named_stage/analysis/", ".*data_0.*"),
+            ("'@\"my stage\"/my path'", ".*[.]csv"),
+            ("@~", ""),
+        ):
+            with self.subTest(location=location, pattern=pattern):
+                expression = self.validate_identity(
+                    f"LIST {location} pattern='{pattern}'",
+                    f"LIST {location} PATTERN = '{pattern}'",
+                ).assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+                self.assertEqual(expression.args["pattern"], exp.Literal.string(pattern))
+
+    def test_list_stage_alias(self):
+        self.validate_identity("LS @~", "LIST @~").assert_is(exp.ListStage)
+        self.validate_identity("ls @named_stage", "LIST @named_stage").assert_is(exp.ListStage)
+
+    def test_list_stage_invalid_pattern(self):
+        for sql in (
+            "LIST @stage PATTERN",
+            "LIST @stage PATTERN '.*'",
+            "LIST @stage PATTERN =",
+            "LIST @stage PATTERN = 123",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
+
+    def test_list_stage_identifiers(self):
+        self.validate_identity("SELECT list, ls FROM list").assert_is(exp.Select)
+        self.validate_identity("SELECT x AS list, y AS ls FROM t").assert_is(exp.Select)
+
     def test_staged_files(self):
         # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
         staged_file = parse_one("SELECT * FROM @foo", read="snowflake")

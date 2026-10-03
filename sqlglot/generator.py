@@ -6229,6 +6229,11 @@ class Generator:
         self.unsupported("Unsupported INSTALL statement")
         return ""
 
+    def liststage_sql(self, expression: exp.ListStage) -> str:
+        pattern = self.sql(expression, "pattern")
+        pattern = f" PATTERN = {pattern}" if pattern else ""
+        return f"LIST {self.sql(expression, 'this')}{pattern}"
+
     def get_put_sql(self, expression: exp.Put | exp.Get) -> str:
         # Snowflake GET/PUT statements:
         #   PUT <file> <internalStage> <properties>

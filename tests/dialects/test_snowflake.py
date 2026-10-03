@@ -3583,25 +3583,53 @@ class TestSnowflake(Validator):
         )
 
     def test_list_stage(self):
-        for sql in (
-            "LIST @%table1",
-            "LIST @db1.schema1.%table1",
-            "LIST @named_stage",
-            "LIST @schema1.named_stage",
-            "LIST @db1.schema1.named_stage",
-            "LIST @~",
-            "LIST @named_stage/path1",
-            "LIST @~/path1",
-            "LIST @%table1 PATTERN='.*data_0.*'",
-            "LIST @named_stage/analysis/ PATTERN='.*data_0.*'",
-            "LIST '@\"my stage\"/my path'",
+        for location in (
+            "@%table1",
+            "@schema1.%table1",
+            "@db1.schema1.%table1",
+            "@named_stage",
+            "@schema1.named_stage",
+            "@db1.schema1.named_stage",
+            "@~",
+            "@named_stage/path1",
+            "@%table1/path1",
+            "@~/path1",
+            '@"my_DB"."schEMA1"."MYstage"/CaseSensitivePath',
+            "'@\"my stage\"/my path'",
+            "@my_repo/branches/main/",
         ):
-            with self.subTest(sql=sql):
-                self.validate_identity(sql).assert_is(exp.Command)
+            with self.subTest(location=location):
+                expression = self.validate_identity(f"LIST {location}").assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+
+    def test_list_stage_pattern(self):
+        for location, pattern in (
+            ("@%table1", ".*data_0.*"),
+            ("@named_stage/analysis/", ".*data_0.*"),
+            ("'@\"my stage\"/my path'", ".*[.]csv"),
+            ("@~", ""),
+        ):
+            with self.subTest(location=location, pattern=pattern):
+                expression = self.validate_identity(
+                    f"LIST {location} pattern='{pattern}'",
+                    f"LIST {location} PATTERN = '{pattern}'",
+                ).assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+                self.assertEqual(expression.args["pattern"], exp.Literal.string(pattern))
 
     def test_list_stage_alias(self):
-        self.validate_identity("LS @~").assert_is(exp.Command)
-        self.validate_identity("ls @named_stage", "LS @named_stage")
+        self.validate_identity("LS @~", "LIST @~").assert_is(exp.ListStage)
+        self.validate_identity("ls @named_stage", "LIST @named_stage").assert_is(exp.ListStage)
+
+    def test_list_stage_invalid_pattern(self):
+        for sql in (
+            "LIST @stage PATTERN",
+            "LIST @stage PATTERN '.*'",
+            "LIST @stage PATTERN =",
+            "LIST @stage PATTERN = 123",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
 
     def test_list_stage_identifiers(self):
         self.validate_identity("SELECT list, ls FROM list").assert_is(exp.Select)

@@ -954,6 +954,12 @@ class Get(Expression):
     arg_types = {"this": True, "target": True, "properties": False}
 
 
+class ListStage(Expression):
+    """Lists files in a Snowflake stage or Git repository clone."""
+
+    arg_types = {"this": True, "pattern": False}
+
+
 class Table(Expression, Selectable):
     arg_types = {
         "this": False,

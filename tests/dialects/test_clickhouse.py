@@ -146,6 +146,35 @@ class TestClickhouse(Validator):
                 "snowflake": "DAYOFYEAR(x)",
             },
         )
+        self.validate_all(
+            "toDayOfWeek(x)",
+            read={
+                "": "DAYOFWEEK_ISO(x)",
+                "duckdb": "ISODOW(x)",
+                "snowflake": "DAYOFWEEKISO(x)",
+            },
+            write={"duckdb": "ISODOW(x)", "snowflake": "DAYOFWEEKISO(x)"},
+        )
+        self.validate_all(
+            "toISOWeek(x)",
+            read={
+                "": "WEEK_OF_YEAR(x)",
+                "presto": "WEEK(x)",
+                "snowflake": "WEEKISO(x)",
+            },
+            write={"duckdb": "WEEKOFYEAR(x)", "snowflake": "WEEKISO(x)"},
+        )
+        self.validate_all(
+            "toISOYear(x)",
+            read={
+                "": "YEAR_OF_WEEK_ISO(x)",
+                "snowflake": "YEAROFWEEKISO(x)",
+            },
+            write={"duckdb": "EXTRACT(ISOYEAR FROM x)", "snowflake": "YEAROFWEEKISO(x)"},
+        )
+        self.validate_identity("toDayOfWeek(x, 3)")
+        self.validate_identity("toISOWeek(x, 'UTC')")
+        self.validate_identity("toISOYear(x, 'UTC')")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL NOT IN (SELECT * FROM bar)")
         self.validate_identity("POSITION(haystack, needle)")

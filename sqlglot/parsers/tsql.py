@@ -321,6 +321,24 @@ def _build_datetrunc(args: list) -> exp.TimestampTrunc:
 
 
 class TSQLParser(parser.Parser):
+    BARE_TABLE_HINTS = {
+        "NOLOCK",
+        "READUNCOMMITTED",
+        "UPDLOCK",
+        "REPEATABLEREAD",
+        "SERIALIZABLE",
+        "READCOMMITTED",
+        "TABLOCK",
+        "TABLOCKX",
+        "PAGLOCK",
+        "ROWLOCK",
+        "NOWAIT",
+        "READPAST",
+        "XLOCK",
+        "SNAPSHOT",
+        "NOEXPAND",
+    }
+
     SET_REQUIRES_ASSIGNMENT_DELIMITER = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
@@ -722,6 +740,53 @@ class TSQLParser(parser.Parser):
                 this.set("temporary", True)
 
         return this
+
+    def _parse_table(
+        self,
+        schema: bool = False,
+        joins: bool = False,
+        alias_tokens: Collection[TokenType] | None = None,
+        parse_bracket: bool = False,
+        is_db_reference: bool = False,
+        parse_partition: bool = False,
+        consume_pipe: bool = False,
+    ) -> exp.Expr | None:
+        table = super()._parse_table(
+            schema=schema,
+            joins=joins,
+            alias_tokens=alias_tokens,
+            parse_bracket=parse_bracket,
+            is_db_reference=is_db_reference,
+            parse_partition=parse_partition,
+            consume_pipe=consume_pipe,
+        )
+        if isinstance(table, exp.Table) and not table.args.get("hints"):
+            function = table.this
+            alias = table.args.get("alias")
+            hint = None
+            if isinstance(function, exp.Anonymous) and len(function.expressions) == 1:
+                argument = function.expressions[0]
+                if isinstance(argument, exp.Column) and not argument.table:
+                    hint = argument.this
+            elif isinstance(function, exp.Identifier) and alias and len(alias.columns) == 1:
+                hint = alias.columns[0]
+
+            if (
+                isinstance(hint, exp.Identifier)
+                and not hint.quoted
+                and hint.name.upper() in self.BARE_TABLE_HINTS
+            ):
+                if isinstance(function, exp.Anonymous):
+                    table.set("this", exp.to_identifier(function.this))
+                elif alias:
+                    alias.set("columns", None)
+                    if not alias.this:
+                        table.set("alias", None)
+                table.set(
+                    "hints",
+                    [exp.WithTableHint(expressions=[exp.var(hint.name.upper())])],
+                )
+        return table
 
     def _parse_table_parts(
         self,

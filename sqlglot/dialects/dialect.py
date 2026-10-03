@@ -1652,11 +1652,7 @@ def build_formatted_time(
     """
 
     def _builder(args: BuilderArgs, dialect: Dialect) -> E:
-        target_dialect = (
-            t.cast(Dialect, Dialect[dialect_override])
-            if isinstance(dialect_override, str)
-            else dialect
-        )
+        target_dialect = Dialect[dialect_override] if isinstance(dialect_override, str) else dialect
 
         fmt = seq_get(args, 1)
         if not fmt:

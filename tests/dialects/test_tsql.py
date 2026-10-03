@@ -285,7 +285,7 @@ class TestTSQL(Validator):
         )
         self.validate_identity(
             "SELECT TOP 10 s.RECORDID, n.c.value('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s(nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)",
-            "SELECT TOP 10 s.RECORDID, n.c.value('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s WITH (NOLOCK) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)",
+            "SELECT TOP 10 s.RECORDID, n.c.value('(/*:FORM_ROOT/*:SOME_TAG)[1]', 'float') AS SOME_TAG_VALUE FROM source_table.dbo.source_data AS s WITH (nolock) CROSS APPLY FormContent.nodes('/*:FORM_ROOT') AS N(C)",
         )
         self.validate_identity(
             "CREATE CLUSTERED INDEX [IX_OfficeTagDetail_TagDetailID] ON [dbo].[OfficeTagDetail]([TagDetailID] ASC)"
@@ -2566,36 +2566,112 @@ WHERE
         self.validate_identity("DELETE FROM start WITH (ROWLOCK)")
         self.validate_identity("SELECT x FROM a INNER LOOP JOIN b ON b.id = a.id")
 
-    def test_bare_table_hint(self):
-        for table in ("t", "dbo.t", "[dbo].[t]"):
-            with self.subTest(table=table):
+    def test_bare_table_hints(self):
+        for table in (
+            "t",
+            "dbo.t",
+            "[dbo].[t]",
+            "[count]",
+            "[left]",
+            "[cast]",
+            "#t",
+            "[#t]",
+            "##t",
+            "[##t]",
+        ):
+            for alias in ("", " AS s", " s"):
+                with self.subTest(table=table, alias=alias):
+                    expected = f"SELECT * FROM {table}{' AS s' if alias else ''} WITH (NOLOCK)"
+                    expression = self.validate_identity(
+                        f"SELECT * FROM {table}{alias} (NOLOCK)", expected
+                    )
+                    self.assertEqual(expression, parse_one(expected, read="tsql"))
+                    if alias:
+                        expression = self.validate_identity(
+                            f"SELECT * FROM {table} (NOLOCK){alias}", expected
+                        )
+                        self.assertEqual(expression, parse_one(expected, read="tsql"))
+
+        for alias in (" AS s", " s"):
+            with self.subTest(alias=alias):
+                expected = "SELECT * FROM server.db.dbo.t AS s WITH (NOLOCK)"
                 expression = self.validate_identity(
-                    f"SELECT * FROM {table} (NOLOCK)",
-                    f"SELECT * FROM {table} WITH (NOLOCK)",
+                    f"SELECT * FROM server.db.dbo.t{alias} (NOLOCK)", expected
                 )
-                self.assertEqual(
-                    expression, parse_one(f"SELECT * FROM {table} WITH (NOLOCK)", read="tsql")
+                self.assertEqual(expression, parse_one(expected, read="tsql"))
+
+        for hint in (
+            "NOLOCK",
+            "READUNCOMMITTED",
+            "UPDLOCK",
+            "REPEATABLEREAD",
+            "SERIALIZABLE",
+            "READCOMMITTED",
+            "TABLOCK",
+            "TABLOCKX",
+            "PAGLOCK",
+            "ROWLOCK",
+            "NOWAIT",
+            "READPAST",
+            "XLOCK",
+            "SNAPSHOT",
+            "NOEXPAND",
+        ):
+            with self.subTest(hint=hint):
+                self.validate_identity(
+                    f"SELECT * FROM dbo.t ({hint.lower()})",
+                    f"SELECT * FROM dbo.t WITH ({hint.lower()})",
                 )
 
         self.validate_identity(
-            "SELECT * FROM dbo.t (ROWLOCK)",
-            "SELECT * FROM dbo.t WITH (ROWLOCK)",
+            "UPDATE dbo.t (ROWLOCK) SET x = 1", "UPDATE dbo.t WITH (ROWLOCK) SET x = 1"
         )
-        for original, canonical in (
-            ("SELECT * FROM dbo.t AS a (NOLOCK)", "SELECT * FROM dbo.t AS a WITH (NOLOCK)"),
-            ("SELECT * FROM #t (NOLOCK)", "SELECT * FROM #t WITH (NOLOCK)"),
+        self.validate_identity("DELETE FROM dbo.t (ROWLOCK)", "DELETE FROM dbo.t WITH (ROWLOCK)")
+        self.validate_identity(
+            "SELECT * FROM dbo.t (NOLOCK) JOIN dbo.u AS u (ROWLOCK) ON t.id = u.id",
+            "SELECT * FROM dbo.t WITH (NOLOCK) JOIN dbo.u AS u WITH (ROWLOCK) ON t.id = u.id",
+        )
+        self.validate_identity(
+            "SELECT * FROM dbo.t (NOLOCK) AS s JOIN dbo.u AS u ON s.id = u.id",
+            "SELECT * FROM dbo.t AS s WITH (NOLOCK) JOIN dbo.u AS u ON s.id = u.id",
+        )
+        self.validate_identity(
+            "SELECT * FROM dbo.t AS s /* alias */ (NOLOCK /* hint */)",
+            "SELECT * FROM dbo.t AS s /* alias */ WITH (NOLOCK /* hint */)",
+        )
+        self.validate_identity("INSERT INTO dbo.t (nolock) SELECT 1")
+        self.validate_identity(
+            "UPDATE s SET x = 1 FROM dbo.t AS s (ROWLOCK) JOIN dbo.u AS u ON s.id = u.id",
+            "UPDATE s SET x = 1 FROM dbo.t AS s WITH (ROWLOCK) JOIN dbo.u AS u ON s.id = u.id",
+        )
+        self.validate_identity(
+            "SELECT * FROM dbo.t AS s (NOLOCK) PIVOT(SUM(x) FOR id IN ([1])) AS p",
+            "SELECT * FROM dbo.t AS s WITH (NOLOCK) PIVOT(SUM(x) FOR id IN ([1])) AS p",
+        )
+        self.validate_all(
+            "SELECT * FROM dbo.t (NOLOCK)",
+            write={
+                "tsql": "SELECT * FROM dbo.t WITH (NOLOCK)",
+                "spark": "SELECT * FROM dbo.t",
+            },
+        )
+
+        for sql in (
+            "SELECT s.nolock FROM (SELECT 1 AS x) AS s(nolock)",
+            "SELECT s.nolock FROM (VALUES (1)) AS s(nolock)",
+            "SELECT s.nolock.query('.') FROM dbo.t CROSS APPLY t.doc.nodes('/root') AS s(nolock)",
+            "SELECT * FROM dbo.FN(1)",
+            "SELECT * FROM dbo.FN(1) AS s",
+            "SELECT * FROM dbo.FN('NOLOCK')",
+            "SELECT * FROM dbo.FN(@NOLOCK)",
+            "SELECT * FROM dbo.src CROSS APPLY dbo.fn(NOLOCK)",
+            "SELECT * FROM dbo.src CROSS APPLY dbo.fn(x)",
+            "SELECT * FROM dbo.src CROSS APPLY dbo.fn([NOLOCK])",
+            "SELECT * FROM dbo.src CROSS APPLY dbo.fn(NOLOCK, 1)",
         ):
-            with self.subTest(sql=original):
-                expression = self.validate_identity(original, canonical)
-                self.assertEqual(expression, parse_one(canonical, read="tsql"))
-        self.validate_identity("SELECT * FROM (SELECT 1 AS x) AS s(nolock)")
-        self.validate_identity("SELECT * FROM (VALUES (1)) AS s(nolock)")
-        self.validate_identity("SELECT * FROM dbo.fn(1) AS s", "SELECT * FROM dbo.FN(1) AS s")
-        self.validate_identity("SELECT * FROM dbo.src CROSS APPLY dbo.fn(NOLOCK)")
-        self.validate_identity("SELECT * FROM dbo.fn(1)", "SELECT * FROM dbo.FN(1)")
-        self.validate_identity("SELECT * FROM dbo.src CROSS APPLY dbo.fn(x)")
-        self.validate_identity("SELECT * FROM dbo.src CROSS APPLY dbo.fn2(NOLOCK, 1)")
-        self.validate_identity("SELECT * FROM dbo.src CROSS APPLY dbo.fn([NOLOCK])")
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql)
+                self.assertIsNone(expression.find(exp.WithTableHint))
 
     def test_openjson(self):
         self.validate_identity("SELECT * FROM OPENJSON(@json)")

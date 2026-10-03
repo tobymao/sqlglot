@@ -741,6 +741,19 @@ class TSQLParser(parser.Parser):
 
         return this
 
+    def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
+        # Schema mode already skips function parsing; otherwise, '(' may start a bare table hint.
+        if not schema and self._next.token_type == TokenType.L_PAREN:
+            index = self._index
+            self._advance(2)
+            is_hint = self._match_texts(self.BARE_TABLE_HINTS) and self._match(TokenType.R_PAREN)
+            self._retreat(index)
+
+            if is_hint and (this := self._parse_id_var(any_token=False)):
+                return this
+
+        return super()._parse_table_part(schema=schema)
+
     def _parse_table(
         self,
         schema: bool = False,
@@ -760,32 +773,24 @@ class TSQLParser(parser.Parser):
             parse_partition=parse_partition,
             consume_pipe=consume_pipe,
         )
-        if isinstance(table, exp.Table) and not table.args.get("hints"):
-            function = table.this
-            alias = table.args.get("alias")
-            hint = None
-            if isinstance(function, exp.Anonymous) and len(function.expressions) == 1:
-                argument = function.expressions[0]
-                if isinstance(argument, exp.Column) and not argument.table:
-                    hint = argument.this
-            elif isinstance(function, exp.Identifier) and alias and len(alias.columns) == 1:
-                hint = alias.columns[0]
+        if (
+            isinstance(table, exp.Table)
+            and not table.args.get("hints")
+            and (alias := table.args.get("alias"))
+            and len(alias.columns) == 1
+            and isinstance(hint := alias.columns[0], exp.Identifier)
+            and not hint.quoted
+            and hint.name.upper() in self.BARE_TABLE_HINTS
+            and all(isinstance(part, exp.Identifier) for part in table.parts)
+        ):
+            var = exp.var(hint.name)
+            var.add_comments(hint.pop_comments())
+            alias.set("columns", None)
+            if not alias.this:
+                table.add_comments(alias.pop_comments())
+                table.set("alias", self._parse_table_alias(alias_tokens=alias_tokens))
+            table.set("hints", [exp.WithTableHint(expressions=[var])])
 
-            if (
-                isinstance(hint, exp.Identifier)
-                and not hint.quoted
-                and hint.name.upper() in self.BARE_TABLE_HINTS
-            ):
-                if isinstance(function, exp.Anonymous):
-                    table.set("this", exp.to_identifier(function.this))
-                elif alias:
-                    alias.set("columns", None)
-                    if not alias.this:
-                        table.set("alias", None)
-                table.set(
-                    "hints",
-                    [exp.WithTableHint(expressions=[exp.var(hint.name.upper())])],
-                )
         return table
 
     def _parse_table_parts(

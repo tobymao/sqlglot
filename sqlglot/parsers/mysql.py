@@ -221,6 +221,11 @@ class MySQLParser(parser.Parser):
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
+        "CHAR": lambda self, **kwargs: (
+            self.PROPERTY_PARSERS["CHARSET"](self, **kwargs)
+            if self._match(TokenType.SET)
+            else self._retreat(self._index - 1)
+        ),
         "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
         "PARTITION BY": lambda self: self._parse_partition_property(),
     }
@@ -240,6 +245,9 @@ class MySQLParser(parser.Parser):
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,
         "BINARY": lambda self: self.expression(exp.BinaryColumnConstraint()),
+        "CHAR": lambda self: (
+            self._match(TokenType.SET) and self.CONSTRAINT_PARSERS["CHARSET"](self)
+        ),
         "CHARSET": lambda self: self.expression(
             exp.CharacterSetColumnConstraint(this=self._parse_var_or_string())
         ),

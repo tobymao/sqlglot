@@ -292,6 +292,22 @@ class TestMySQL(Validator):
                 "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARSET utf8mb4 COLLATE utf8mb4_bin, CHARSET=utf8mb4 ENGINE=InnoDB",
                 "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, CHARACTER SET=utf8mb4, ENGINE=InnoDB",
             ),
+            (
+                "CREATE TABLE t (a VARCHAR(5) CHAR SET utf8mb4 COLLATE utf8mb4_bin) CHARSET=utf8mb4 ENGINE=InnoDB",
+                "CREATE TABLE t (a VARCHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET=utf8mb4 ENGINE=InnoDB",
+            ),
+            (
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHAR SET utf8mb4 COLLATE utf8mb4_bin, CHARSET=utf8mb4 ENGINE=InnoDB",
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, CHARACTER SET=utf8mb4, ENGINE=InnoDB",
+            ),
+            (
+                "CREATE TABLE t (a VARCHAR(5) CHARSET utf8mb4) CHAR SET utf8mb4 ENGINE=InnoDB",
+                "CREATE TABLE t (a VARCHAR(5) CHARACTER SET utf8mb4) CHARACTER SET=utf8mb4 ENGINE=InnoDB",
+            ),
+            (
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARSET utf8mb4, DEFAULT CHAR SET=utf8mb4 ENGINE=InnoDB",
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARACTER SET utf8mb4, DEFAULT CHARACTER SET=utf8mb4, ENGINE=InnoDB",
+            ),
         ):
             with self.subTest(sql):
                 ast = self.validate_identity(sql, expected)

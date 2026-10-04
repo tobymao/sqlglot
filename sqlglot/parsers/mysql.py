@@ -307,6 +307,8 @@ class MySQLParser(parser.Parser):
     SUPPORTS_PARTITION_SELECTION = True
 
     def _parse_column_constraint(self) -> exp.Expr | None:
+        # SIGNED is the default for numeric types, so MySQL ignores it
+        self._match_text_seq("SIGNED")
         if self._match(TokenType.KEY):
             return self.expression(exp.ColumnConstraint(kind=self._parse_primary_key()))
 
@@ -339,6 +341,10 @@ class MySQLParser(parser.Parser):
     def _parse_alter_drop_action(self) -> exp.Expr | None:
         if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
             return self.expression(exp.DropPrimaryKey())
+        if self._match_pair(TokenType.DROP, TokenType.KEY):
+            return self._parse_drop(kind="INDEX")
+        if self._match_text_seq("DROP", "CHECK"):
+            return self._parse_drop(kind="CHECK")
         return super()._parse_alter_drop_action()
 
     def _parse_alter_table_modify(self, rename: bool = False) -> exp.Expr | None:

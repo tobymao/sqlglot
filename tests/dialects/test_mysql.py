@@ -59,6 +59,16 @@ class TestMySQL(Validator):
         alter = self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
         alter.args["actions"][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
+        self.validate_identity("ALTER TABLE t DROP KEY k", "ALTER TABLE t DROP INDEX k")
+        self.validate_identity("ALTER TABLE t DROP CHECK c").args["actions"][0].assert_is(exp.Drop)
+        self.validate_identity(
+            "CREATE TABLE t (a BIGINT SIGNED, b DECIMAL(5, 2) SIGNED)",
+            "CREATE TABLE t (a BIGINT, b DECIMAL(5, 2))",
+        )
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN a INT SIGNED NOT NULL",
+            "ALTER TABLE t ADD COLUMN a INT NOT NULL",
+        )
         self.validate_identity("ALTER TABLE t DROP COLUMN a, ALGORITHM=INPLACE")
         self.validate_identity("ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT")
         self.validate_identity("ALTER TABLE t MODIFY COLUMN c INT NOT NULL")

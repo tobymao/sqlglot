@@ -1915,6 +1915,9 @@ class Parser:
     # Whether dropping a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN: t.ClassVar = True
 
+    # Whether the comma between ALTER TABLE options is optional, e.g. MySQL
+    OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS: t.ClassVar = False
+
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
 
@@ -3037,6 +3040,8 @@ class Parser:
                 break
             for p in ensure_list(prop):
                 properties.append(p)
+
+            self._match(TokenType.COMMA, expression=properties[-1])
 
         if properties:
             return self.expression(exp.Properties(expressions=properties))
@@ -9417,7 +9422,11 @@ class Parser:
                 actions.extend(parsed)
 
             not_valid = self._match_text_seq("NOT", "VALID")
-            options = self._parse_csv(self._parse_property)
+            if self.OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS:
+                properties = self._parse_properties()
+                options = properties.expressions if properties else []
+            else:
+                options = self._parse_csv(self._parse_property)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr:

@@ -240,6 +240,9 @@ class MySQLParser(parser.Parser):
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,
         "BINARY": lambda self: self.expression(exp.BinaryColumnConstraint()),
+        "CHARSET": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=self._parse_var_or_string())
+        ),
         "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
         "INDEX": lambda self: self._parse_index_constraint(),
         "KEY": lambda self: self._parse_index_constraint(),
@@ -300,6 +303,7 @@ class MySQLParser(parser.Parser):
     }
 
     ALTER_DROP_REQUIRES_COLUMN = False
+    OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS = True
     ALTER_TABLE_MIXED_ACTIONS = True
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True

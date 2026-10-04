@@ -283,6 +283,32 @@ class TestMySQL(Validator):
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
         )
+        for sql, expected in (
+            (
+                "CREATE TABLE t (a VARCHAR(5) CHARSET utf8mb4 COLLATE utf8mb4_bin) CHARSET=utf8mb4 ENGINE=InnoDB",
+                "CREATE TABLE t (a VARCHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET=utf8mb4 ENGINE=InnoDB",
+            ),
+            (
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARSET utf8mb4 COLLATE utf8mb4_bin, CHARSET=utf8mb4 ENGINE=InnoDB",
+                "ALTER TABLE t ADD COLUMN a VARCHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin, CHARACTER SET=utf8mb4, ENGINE=InnoDB",
+            ),
+        ):
+            with self.subTest(sql):
+                ast = self.validate_identity(sql, expected)
+                self.assertEqual(len(list(ast.find_all(exp.CharacterSetColumnConstraint))), 1)
+                self.assertEqual(len(list(ast.find_all(exp.CharacterSetProperty))), 1)
+        create = self.validate_identity(
+            "CREATE TABLE t (a INT) ENGINE=InnoDB, COMMENT='c' ROW_FORMAT=DYNAMIC",
+            "CREATE TABLE t (a INT) ENGINE=InnoDB COMMENT='c' ROW_FORMAT=DYNAMIC",
+        )
+        self.assertEqual(
+            [type(prop) for prop in create.args["properties"].expressions],
+            [exp.EngineProperty, exp.SchemaCommentProperty, exp.RowFormatProperty],
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT) ENGINE=InnoDB, /* c */ ROW_FORMAT=DYNAMIC",
+            "CREATE TABLE t (a INT) ENGINE=InnoDB /* c */ ROW_FORMAT=DYNAMIC",
+        )
         self.validate_identity(
             "CREATE TABLE `foo` (a VARCHAR(10), KEY idx_a (a DESC))",
             "CREATE TABLE `foo` (a VARCHAR(10), INDEX idx_a (a DESC))",
@@ -392,15 +418,39 @@ class TestMySQL(Validator):
                 for action in alter.args["actions"]:
                     self.assertNotIsInstance(action, exp.Command)
 
-        for sql, num_actions, num_options in (
-            ("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT", 2, 0),
-            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", 1, 1),
-            ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", 1, 1),
-            ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", 1, 1),
-            ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", 1, 2),
+        for sql, expected, num_actions, num_options in (
+            ("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT", None, 2, 0),
+            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 1, 1),
+            ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", None, 1, 1),
+            ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", None, 1, 1),
+            ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", None, 1, 2),
+            (
+                "ALTER TABLE s.t COMMENT 'notes' AUTO_INCREMENT=5 COMPRESSION='zlib'",
+                "ALTER TABLE s.t COMMENT='notes', AUTO_INCREMENT=5, COMPRESSION='zlib'",
+                1,
+                2,
+            ),
+            (
+                "ALTER TABLE t COMMENT='x' AUTO_INCREMENT=5, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
+                "ALTER TABLE t COMMENT='x', AUTO_INCREMENT=5, ENGINE=InnoDB, ROW_FORMAT=DYNAMIC",
+                1,
+                3,
+            ),
+            (
+                "ALTER TABLE t ADD COLUMN x INT, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
+                "ALTER TABLE t ADD COLUMN x INT, ENGINE=InnoDB, ROW_FORMAT=DYNAMIC",
+                1,
+                2,
+            ),
+            (
+                "ALTER TABLE t ADD COLUMN x INT, LOCK=NONE, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
+                "ALTER TABLE t ADD COLUMN x INT, LOCK=NONE, ENGINE=InnoDB, ROW_FORMAT=DYNAMIC",
+                1,
+                3,
+            ),
         ):
             with self.subTest(sql):
-                alter = self.validate_identity(sql).assert_is(exp.Alter)
+                alter = self.validate_identity(sql, expected).assert_is(exp.Alter)
                 self.assertEqual(len(alter.args["actions"]), num_actions)
                 self.assertEqual(len(alter.args["options"]), num_options)
 

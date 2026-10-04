@@ -6412,6 +6412,11 @@ class Generator:
         using = f" USING {charset}" if charset else ""
         return self.func(name, this + using)
 
+    def weightstring_sql(self, expression: exp.WeightString) -> str:
+        to = self.sql(expression, "to")
+        to = f" AS {to}" if to else ""
+        return self.func("WEIGHT_STRING", f"{self.sql(expression, 'this')}{to}")
+
     def block_sql(self, expression: exp.Block) -> str:
         expressions = self.expressions(expression, sep="; ", flat=True)
         begin = "BEGIN " if expression.args.get("begin") else ""

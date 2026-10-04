@@ -701,12 +701,19 @@ class TestClickhouse(Validator):
             "SELECT IS_NAN(x), ISNAN(x)",
             write={"clickhouse": "SELECT isNaN(x), isNaN(x)"},
         )
+        self.validate_identity("SELECT arrayReverse(a)")
+        self.validate_all(
+            "SELECT isNaN(x), arrayReverse(a), JSONExtractString(j, 'a')",
+            write={
+                "bigquery": "SELECT IS_NAN(x), ARRAY_REVERSE(a), JSON_EXTRACT_SCALAR(j, '$.a')",
+            },
+        )
 
         self.validate_identity("SELECT isInfinite(x)")
         self.validate_all(
             "SELECT isInfinite(x)",
             read={"bigquery": "SELECT IS_INF(x)", "duckdb": "SELECT ISINF(x)"},
-            write={"duckdb": "SELECT ISINF(x)"},
+            write={"bigquery": "SELECT IS_INF(x)", "duckdb": "SELECT ISINF(x)"},
         )
 
         self.validate_identity("SELECT startsWith('a', 'b')")

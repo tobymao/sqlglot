@@ -4758,12 +4758,13 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        if self.dialect.PRESERVE_ORIGINAL_NAMES:
-            name = expression.meta_get("name") or expression.sql_name()
-        else:
-            name = expression.sql_name()
+        return self.func(self.original_func_name(expression) or expression.sql_name(), *args)
 
-        return self.func(name, *args)
+    def original_func_name(self, expression: exp.Func) -> str | None:
+        """Returns the function's name as written in the input, if it was parsed by this same dialect."""
+        if expression.meta_get("dialect") == type(self.dialect).__name__:
+            return expression.meta_get("name")
+        return None
 
     def func(
         self,

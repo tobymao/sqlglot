@@ -709,6 +709,24 @@ class TestClickhouse(Validator):
             write={"duckdb": "SELECT ISINF(x)"},
         )
 
+        self.validate_all(
+            "SELECT POSITION(s, 'a') > 0",
+            read={
+                "snowflake": "SELECT CONTAINS(s, 'a')",
+                "duckdb": "SELECT CONTAINS(s, 'a')",
+            },
+        )
+        self.validate_all(
+            "SELECT POSITION(LOWER(s), LOWER('a')) > 0",
+            read={"bigquery": "SELECT CONTAINS_SUBSTR(s, 'a')"},
+        )
+        self.validate_all(
+            "SELECT (POSITION(s, 'a') > 0) = (POSITION(t, 'b') > 0) FROM x WHERE NOT POSITION(s, 'a') > 0 AND y",
+            read={
+                "snowflake": "SELECT CONTAINS(s, 'a') = CONTAINS(t, 'b') FROM x WHERE NOT CONTAINS(s, 'a') AND y"
+            },
+        )
+
         self.validate_identity("SELECT startsWith('a', 'b')")
         self.validate_all(
             "SELECT STARTS_WITH('a', 'b'), STARTSWITH('a', 'b')",

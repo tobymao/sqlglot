@@ -107,6 +107,9 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT CURRENT_ROLE")
         self.validate_identity("SELECT VERSION()")
         self.validate_identity("SELECT * FROM ONLY t1")
+        # a value that is not a literal cannot be folded into the string
+        self.validate_identity("SELECT INTERVAL (1 + 3) DAYS")
+        self.validate_identity("SELECT INTERVAL (x) DAY")
         self.validate_identity("SELECT INTERVAL '-1 MONTH'")
         self.validate_identity("SELECT INTERVAL '4.1 DAY'")
         self.validate_identity("SELECT INTERVAL '3.14159 HOUR'")

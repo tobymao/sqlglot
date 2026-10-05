@@ -4037,7 +4037,12 @@ class Generator:
             unit = self.TIME_PART_SINGULARS.get(unit, unit)
         unit = f" {unit}" if unit else ""
 
-        if self.SINGLE_STRING_INTERVAL:
+        # The single string form can only carry a literal value: anything else
+        # would have to be flattened into the string, which drops a column
+        # reference or an expression entirely.
+        if self.SINGLE_STRING_INTERVAL and (
+            expression.this is None or isinstance(expression.this, exp.Literal)
+        ):
             this = expression.this.name if expression.this else ""
             if this:
                 interval_keyword = f"{interval_keyword} " if interval_keyword else ""

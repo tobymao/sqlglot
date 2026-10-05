@@ -19,14 +19,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
-    # Extract sqlglot-mypy pin so the build cache busts whenever it bumps. mypyc's
-    # separate=True build cache is layout-sensitive across sqlglot-mypy versions, so a
+    # Extract mypy pin so the build cache busts whenever it bumps. mypyc's
+    # separate=True build cache is layout-sensitive across mypy versions, so a
     # cache produced by one version cannot be safely reused by another.
-    - name: Extract sqlglot-mypy pin
+    - name: Extract mypy pin
       if: matrix.python-version != '3.9'
       id: mypy-pin
       run: |
-        PIN=$(grep -oE '"sqlglot-mypy[^"]*"' sqlglotc/pyproject.toml \
+        PIN=$(grep -oE '"mypy *[<>=~!][^"]*"' sqlglotc/pyproject.toml \
               | head -1 | tr -d '"' | tr -s ' ' | tr ' ' '-')
         echo "pin=${PIN:-unpinned}" >> $GITHUB_OUTPUT
         echo "Resolved pin: ${PIN:-unpinned}"

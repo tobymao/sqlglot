@@ -94,6 +94,14 @@ SELECT * FROM (c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2);
 SELECT * FROM (t1 CROSS JOIN t2) AS t;
 SELECT * FROM (SELECT * FROM c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2) AS t;
 
+# title: aliased join with a join on an intermediate wrapper
+SELECT * FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j;
+SELECT * FROM (SELECT * FROM c.db.a AS a JOIN c.db.b AS b ON TRUE CROSS JOIN c.db.c AS c) AS j;
+
+# title: aliased join with joins on multiple intermediate wrappers
+SELECT * FROM (((a JOIN b ON TRUE) LEFT JOIN c ON a.id = c.id) RIGHT JOIN d ON c.id = d.id) AS j;
+SELECT * FROM (SELECT * FROM c.db.a AS a JOIN c.db.b AS b ON TRUE LEFT JOIN c.db.c AS c ON a.id = c.id RIGHT JOIN c.db.d AS d ON c.id = d.id) AS j;
+
 # title: chained wrapped joins without aliases (1)
 SELECT * FROM ((a CROSS JOIN b) CROSS JOIN c);
 SELECT * FROM ((c.db.a AS a CROSS JOIN c.db.b AS b) CROSS JOIN c.db.c AS c);

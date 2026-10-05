@@ -107,6 +107,27 @@ def qualify_tables(
         if scope:
             scope.rename_source(None, new_alias_name)
 
+    # Expand aliased join constructs before building scopes so nested joins are included.
+    for derived_table in reversed(list(expression.find_all(exp.Subquery))):
+        if not derived_table.alias:
+            continue
+
+        unnested = derived_table.this
+        while isinstance(unnested, exp.Subquery) and not unnested.alias:
+            unnested = unnested.this
+
+        if isinstance(unnested, (exp.Table, exp.Subquery)):
+            joins = list(unnested.args.get("joins") or [])
+            wrapper = unnested.parent
+            while isinstance(wrapper, exp.Subquery) and wrapper is not derived_table:
+                joins.extend(wrapper.args.get("joins") or [])
+                wrapper = wrapper.parent
+
+            if isinstance(unnested, exp.Table) or joins:
+                unnested.set("joins", None)
+                derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
+                derived_table.this.set("joins", joins)
+
     for scope in traverse_scope(expression):
         parent = scope.parent
         local_columns = scope.local_columns
@@ -137,13 +158,6 @@ def qualify_tables(
                     unwrapped.replace(subquery)
 
         for derived_table in scope.derived_tables:
-            unnested = derived_table.unnest()
-            if isinstance(unnested, exp.Table):
-                joins = unnested.args.get("joins")
-                unnested.set("joins", None)
-                derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-                derived_table.this.set("joins", joins)
-
             _set_alias(derived_table, canonical_aliases, scope=scope)
             if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)

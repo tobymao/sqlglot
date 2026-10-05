@@ -386,6 +386,49 @@ class TestOptimizer(unittest.TestCase):
         self.assertIsNot(original, new)
         self.assertEqual(original.sql(), new.sql())
 
+    def test_qualify_aliased_parenthesized_joins(self):
+        schema = {name: {f"{name}_id": "int"} for name in "abcd"}
+        schema.update({name: {"id": "int", f"{name}_value": "int"} for name in "uvw"})
+        queries = [
+            "SELECT * FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j",
+            "SELECT * FROM (((a CROSS JOIN b) LEFT JOIN c ON a.a_id = c.c_id) RIGHT JOIN d ON c.c_id = d.d_id) AS j",
+            "SELECT * FROM ((a LEFT JOIN (b JOIN c ON b.b_id = c.c_id) ON a.a_id = b.b_id) CROSS JOIN d) AS j",
+            "SELECT j.a_id, j.b_id, j.c_id, d.d_id FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j LEFT JOIN d ON j.c_id = d.d_id",
+            "SELECT j.z FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j(x, y, z)",
+            "SELECT j.c_id FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j",
+            "SELECT * FROM d LEFT JOIN ((a JOIN b ON TRUE) CROSS JOIN c) AS j ON d.d_id = j.c_id",
+            "SELECT j.a_id, j.b_id, j.c_id FROM ((a JOIN b ON TRUE) AS ab CROSS JOIN c) AS j",
+            "SELECT * FROM ((u JOIN v USING (id)) JOIN w USING (id)) AS j",
+            "SELECT * FROM ((u NATURAL JOIN v) NATURAL JOIN w) AS j",
+        ]
+
+        with duckdb.connect() as conn:
+            for name, values in zip("abcd", [(1, 2), (1, 1), (1, 3), (1, 4)]):
+                conn.execute(f"CREATE TABLE {name} ({name}_id INT)")
+                conn.execute(f"INSERT INTO {name} VALUES ({values[0]}), ({values[1]}), (NULL)")
+
+            for name in "uvw":
+                conn.execute(f"CREATE TABLE {name} (id INT, {name}_value INT)")
+                conn.execute(f"INSERT INTO {name} VALUES (1, 10), (2, 20), (NULL, 30)")
+
+            for sql in queries:
+                for canonicalize in (False, True):
+                    with self.subTest(sql=sql, canonicalize=canonicalize):
+                        expected = conn.execute(sql)
+                        expected_columns = [column[0] for column in expected.description]
+                        expected_rows = expected.fetchall()
+
+                        qualified = qualify(
+                            parse_one(sql),
+                            schema=schema,
+                            canonicalize_table_aliases=canonicalize,
+                        )
+                        actual = conn.execute(qualified.sql(dialect="duckdb"))
+                        self.assertEqual(
+                            [column[0] for column in actual.description], expected_columns
+                        )
+                        self.assertCountEqual(actual.fetchall(), expected_rows)
+
     def test_normalize(self):
         self.assertEqual(
             optimizer.normalize.normalize(

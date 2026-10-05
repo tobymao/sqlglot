@@ -2103,3 +2103,15 @@ COMMENT='客户账户表'"""
             exp.AutoIncrementProperty
         )
         self.assertEqual(prop.this.to_py(), 3000000000)
+
+    def test_dash_comment_requires_boundary(self):
+        # https://dev.mysql.com/doc/refman/8.0/en/ansi-diff-comments.html
+        # `--` only starts a comment when followed by a whitespace or control character.
+        self.validate_identity(
+            "SELECT a FROM t WHERE x = 5--1 AND y = 2",
+            "SELECT a FROM t WHERE x = 5 - -1 AND y = 2",
+        )
+        self.validate_identity("SELECT 1 --comment", "SELECT 1 - -comment")
+        self.validate_identity("SELECT 1 -- comment", "SELECT 1 /* comment */")
+        self.validate_identity("SELECT 1 --\tx", "SELECT 1 /*\tx */")
+        self.validate_identity("SELECT 1 --", "SELECT 1")

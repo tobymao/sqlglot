@@ -2761,6 +2761,25 @@ FROM OPENJSON(@json) WITH (
             'SELECT * FROM (SELECT "c") AS subq',
             "SELECT * FROM (SELECT [c] AS [c]) AS subq",
         )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 UNION ALL SELECT 2) AS subq",
+            "SELECT * FROM (SELECT 1 AS [1] UNION ALL SELECT 2) AS subq",
+        )
+        self.validate_identity(
+            'SELECT * FROM (SELECT "c" UNION ALL SELECT "d") AS subq',
+            "SELECT * FROM (SELECT [c] UNION ALL SELECT [d]) AS subq",
+        )
+        self.validate_identity(
+            "WITH q AS (SELECT 1 UNION ALL SELECT 2) SELECT * FROM q",
+            "WITH q AS (SELECT 1 AS [1] UNION ALL SELECT 2) SELECT * FROM q",
+        )
+        self.validate_identity(
+            "WITH q(v) AS (SELECT 1 UNION ALL SELECT 2) SELECT * FROM q",
+        )
+        self.assertEqual(
+            exp.union("SELECT 1", "SELECT 2", distinct=False).limit(1).sql("tsql"),
+            "SELECT TOP 1 * FROM (SELECT 1 AS [1] UNION ALL SELECT 2) AS _l_0",
+        )
 
         self.validate_all(
             "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) AS c FROM t1) SELECT * FROM t2",

@@ -85,6 +85,19 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         # themselves, because the latter are going to be replaced by new nodes when the aliases
         # are added and hence we won't be able to reach these newly added Alias parents
         query = expression.this
+        if isinstance(query, exp.SetOperation):
+            output: exp.Expr = query
+            while isinstance(output, (exp.SetOperation, exp.Subquery, exp.Paren)):
+                output = output.this
+            if isinstance(output, exp.Select):
+                query = output
+                # Preserve set-operation projections that already have output names.
+                if all(
+                    isinstance(selection, (exp.Alias, exp.Aliases, exp.Column, exp.Star))
+                    for selection in output.selects
+                ):
+                    return expression
+
         unaliased_column_indexes = (
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
@@ -290,6 +303,10 @@ class TSQLGenerator(generator.Generator):
         return super().select_sql(expression)
 
     def set_operations(self, expression: exp.SetOperation) -> str:
+        select = self._setop_outer_query(expression)
+        return self.sql(select) if select else super().set_operations(expression)
+
+    def _setop_outer_query(self, expression: exp.SetOperation) -> exp.Select | None:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
         order = expression.args.get("order")
@@ -319,19 +336,15 @@ class TSQLGenerator(generator.Generator):
             or (isinstance(limit, exp.Limit) and not offset)
             or (not order and (offset or isinstance(limit, exp.Fetch)))
         ):
-            select = self._move_ctes_to_top_level(
-                exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
-            )
-            for arg in SET_OP_MODIFIERS:
-                value = expression.args.get(arg)
-                if value:
-                    expression.set(arg, None)
-                    select.set(arg, value)
-
-            return self.sql(select)
+            return self._setop_wrap_query(expression, SET_OP_MODIFIERS)
 
         self._prepare_limit_offset(expression)
-        return super().set_operations(expression)
+        return None
+
+    def _setop_select_shell(self, select: exp.Select) -> tuple[str, str]:
+        # The shell substitutes a string for the real derived query while rendering.
+        qualify_derived_table_outputs(select.args["from_"].this)
+        return super()._setop_select_shell(select)
 
     def _prepare_limit_offset(self, expression: exp.Query) -> None:
         limit = expression.args.get("limit")

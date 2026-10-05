@@ -255,6 +255,7 @@ class TestTSQL(Validator):
         self.validate_identity("CREATE view a.b.c", "CREATE VIEW b.c")
         self.validate_identity("DROP view a.b.c", "DROP VIEW b.c")
         self.validate_identity("DROP VIEW a.b.c, a.b.d", "DROP VIEW b.c, b.d")
+        self.validate_identity("DROP INDEX IF EXISTS i ON dbo.t").assert_is(exp.Drop)
         self.validate_identity("ROUND(x, 1, 0)")
         self.validate_identity(
             "EXEC MyProc @id = 7, @name = 'Lochristi'",

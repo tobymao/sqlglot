@@ -555,6 +555,7 @@ class TestMySQL(Validator):
         self.assertEqual(drop.args["tables"][0].name, "concurrently")
         self.assertIs(drop.args["concurrently"], False)
         self.validate_identity("DROP INDEX concurrently ON t")
+        self.validate_identity("DROP INDEX i ON db.t").assert_is(exp.Drop)
 
     def test_identity(self):
         self.validate_identity("SELECT a, SUM(b) FROM t GROUP BY a WITH ROLLUP LIMIT 2")

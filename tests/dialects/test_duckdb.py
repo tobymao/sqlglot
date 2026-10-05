@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -3058,3 +3058,103 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+    def test_concat_ws(self):
+        self.validate_identity("SELECT CONCAT_WS('-', 'a', 'b')")
+        self.validate_identity("SELECT CONCAT_WS('-', ['a', NULL, 'b'])")
+
+        for source, target in (
+            (
+                "CONCAT_WS('', ARRAY('a', 'b'))",
+                "ARRAY_TO_STRING(['a', 'b'], '')",
+            ),
+            (
+                "CONCAT_WS(',', ARRAY('b', 'c', 'd', 'e'))",
+                "ARRAY_TO_STRING(['b', 'c', 'd', 'e'], ',')",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('a', NULL, '', 'b'))",
+                "ARRAY_TO_STRING(['a', NULL, '', 'b'], '-')",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY())",
+                "ARRAY_TO_STRING([], '-')",
+            ),
+            (
+                "CONCAT_WS('-', CAST(NULL AS ARRAY<STRING>))",
+                "ARRAY_TO_STRING(COALESCE(TRY_CAST(NULL AS TEXT[]), []), '-')",
+            ),
+            (
+                "CONCAT_WS(NULL, CAST(NULL AS ARRAY<STRING>))",
+                "ARRAY_TO_STRING(COALESCE(TRY_CAST(NULL AS TEXT[]), []), NULL)",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), 'ghi')",
+                "ARRAY_TO_STRING(LIST_CONCAT(['abc', 'def'], [CAST('ghi' AS TEXT)]), '-')",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), ARRAY('bla', 'bob'))",
+                "ARRAY_TO_STRING(LIST_CONCAT(['abc', 'def'], ['bla', 'bob']), '-')",
+            ),
+            (
+                "CONCAT_WS('-', 'x', ARRAY(), ARRAY(NULL), CAST(NULL AS ARRAY<STRING>), NULL, 'y')",
+                (
+                    "ARRAY_TO_STRING(LIST_CONCAT([CAST('x' AS TEXT)], [], [NULL], "
+                    "COALESCE(TRY_CAST(NULL AS TEXT[]), []), [CAST(NULL AS TEXT)], [CAST('y' AS TEXT)]), '-')"
+                ),
+            ),
+            (
+                "CONCAT_WS('-', 1, NULL, 'a')",
+                "CONCAT_WS('-', 1, NULL, 'a')",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {target}", read={"spark": f"SELECT {source}"})
+                parse_one(source, read="spark").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
+
+    def test_concat_ws_typed(self):
+        for a_type, b_type, expected in (
+            (
+                "ARRAY<STRING>",
+                "STRING",
+                (
+                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
+                    "[CAST(t.b AS TEXT)]), t.sep)"
+                ),
+            ),
+            (
+                "ARRAY<STRING>",
+                "ARRAY<STRING>",
+                (
+                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
+                    "COALESCE(CAST(t.b AS TEXT[]), [])), t.sep)"
+                ),
+            ),
+            (
+                "ARRAY<INT>",
+                "INT",
+                (
+                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
+                    "[CAST(t.b AS TEXT)]), t.sep)"
+                ),
+            ),
+        ):
+            with self.subTest(a_type=a_type, b_type=b_type):
+                expression = annotate_types(
+                    parse_one("SELECT CONCAT_WS(t.sep, t.a, t.b) FROM t", read="spark"),
+                    schema={"t": {"sep": "STRING", "a": a_type, "b": b_type}},
+                    dialect="spark",
+                )
+                self.assertEqual(
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT {expected} FROM t",
+                )
+
+    def test_concat_ws_unknown_types(self):
+        expression = parse_one("SELECT CONCAT_WS('-', ARRAY('a'), t.b) FROM t", read="spark")
+        with self.assertLogs(generator_logger) as logs:
+            expression.sql("duckdb")
+        self.assertIn("CONCAT_WS with unknown argument types", logs.output[0])
+
+        with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
+            expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)

@@ -7399,8 +7399,8 @@ class Parser:
                     func = func_builder(args, dialect=self.dialect)
 
                 func = self.validate_expression(func, args)
-                if self.dialect.PRESERVE_ORIGINAL_NAMES:
-                    func.meta["name"] = this
+                if name_key := self.dialect.ORIGINAL_NAME_META_KEY:
+                    func.meta[name_key] = this
 
                 result = func
             else:

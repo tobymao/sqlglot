@@ -429,11 +429,11 @@ class Dialect(metaclass=_Dialect):
         False: Disables function name normalization.
     """
 
-    PRESERVE_ORIGINAL_NAMES: bool = False
+    ORIGINAL_NAME_META_KEY: str | None = None
     """
-    Whether the name of the function should be preserved inside the node's metadata,
-    can be useful for roundtripping deprecated vs new functions that share an AST node
-    e.g JSON_VALUE vs JSON_EXTRACT_SCALAR in BigQuery
+    Dialect-specific metadata key for preserving original function names, or None to disable.
+    Only generators using the same key reuse these names, allowing round trips of aliases
+    that share an AST node, e.g. JSON_VALUE vs JSON_EXTRACT_SCALAR in BigQuery.
     """
 
     LOG_BASE_FIRST: bool | None = True

@@ -696,7 +696,13 @@ class TestClickhouse(Validator):
             write={"clickhouse": "SELECT quantiles(0.5)(a)"},
         )
 
-        self.validate_identity("SELECT isNaN(x)")
+        self.validate_all(
+            "SELECT isNaN(x), arrayReverse(a)",
+            write={
+                "clickhouse": "SELECT isNaN(x), arrayReverse(a)",
+                "bigquery": "SELECT IS_NAN(x), ARRAY_REVERSE(a)",
+            },
+        )
         self.validate_all(
             "SELECT IS_NAN(x), ISNAN(x)",
             write={"clickhouse": "SELECT isNaN(x), isNaN(x)"},
@@ -706,7 +712,7 @@ class TestClickhouse(Validator):
         self.validate_all(
             "SELECT isInfinite(x)",
             read={"bigquery": "SELECT IS_INF(x)", "duckdb": "SELECT ISINF(x)"},
-            write={"duckdb": "SELECT ISINF(x)"},
+            write={"bigquery": "SELECT IS_INF(x)", "duckdb": "SELECT ISINF(x)"},
         )
 
         self.validate_identity("SELECT startsWith('a', 'b')")

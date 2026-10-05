@@ -4758,12 +4758,11 @@ class Generator:
             elif arg_value is not None:
                 args.append(arg_value)
 
-        if self.dialect.PRESERVE_ORIGINAL_NAMES:
-            name = expression.meta_get("name") or expression.sql_name()
-        else:
-            name = expression.sql_name()
+        return self.func(self.function_name(expression), *args)
 
-        return self.func(name, *args)
+    def function_name(self, expression: exp.Func) -> str:
+        name_key = self.dialect.ORIGINAL_NAME_META_KEY
+        return (expression.meta_get(name_key) if name_key else None) or expression.sql_name()
 
     def func(
         self,

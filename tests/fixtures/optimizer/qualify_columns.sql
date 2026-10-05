@@ -1127,7 +1127,13 @@ SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
 
 # execute: false
 SELECT * FROM ((SELECT * FROM x) INNER JOIN y ON a = c);
-SELECT y.b AS b, y.c AS c, _0.a AS a, _0.b AS b FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _0 INNER JOIN y AS y ON _0.a = y.c);
+SELECT _0.a AS a, _0.b AS b, y.b AS b, y.c AS c FROM ((SELECT x.a AS a, x.b AS b FROM x AS x) AS _0 INNER JOIN y AS y ON _0.a = y.c);
+
+SELECT * FROM (SELECT a FROM x) AS s CROSS JOIN w;
+SELECT s.a AS a, w.d AS d, w.e AS e FROM (SELECT x.a AS a FROM x AS x) AS s CROSS JOIN w AS w;
+
+SELECT * FROM UNNEST(ARRAY(1, 2)) AS u(v) CROSS JOIN x;
+SELECT u.v AS v, x.a AS a, x.b AS b FROM UNNEST(ARRAY(1, 2)) AS u(v) CROSS JOIN x AS x;
 
 SELECT x.a, y.b, z.c FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
 SELECT x.a AS a, y.b AS b, z.c AS c FROM x AS x LEFT JOIN (y AS y INNER JOIN z AS z ON y.c = z.c) ON x.b = y.b;

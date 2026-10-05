@@ -654,4 +654,3 @@ class Properties(Expression):
                 expressions.append(Property(this=Literal.string(key), value=convert(value)))
 
         return cls(expressions=expressions)
-

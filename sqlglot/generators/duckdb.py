@@ -2915,7 +2915,7 @@ class DuckDBGenerator(generator.Generator):
         """
         min_val = expression.this
         max_val = expression.expression
-        gen = expression.args.get("gen")
+        gen = expression.args.get("gen") or expression.args.get("seed") or exp.Rand()
 
         # Determine if result should be integer (both bounds are integers).
         # We do this to emulate Snowflake's behavior, INT -> INT, FLOAT -> FLOAT

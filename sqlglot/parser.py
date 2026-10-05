@@ -1915,9 +1915,6 @@ class Parser:
     # Whether dropping a column with an ALTER statement requires the presence of the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN: t.ClassVar = True
 
-    # Whether the comma between ALTER TABLE options is optional, e.g. MySQL
-    OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS: t.ClassVar = False
-
     # Whether Alter statements are allowed to contain Partition specifications
     ALTER_TABLE_PARTITIONS: t.ClassVar = False
 
@@ -2927,7 +2924,7 @@ class Parser:
             except TypeError:
                 self.raise_error(f"Cannot parse property '{self._prev.text}'")
 
-        if self._match_text_seq("CHARACTER", "SET"):
+        if self._match_pair(TokenType.CHAR, TokenType.SET):
             return self._parse_character_set(default=bool(kwargs["default"]))
 
         return None
@@ -2939,14 +2936,14 @@ class Parser:
         if self._match_texts(self.PROPERTY_PARSERS):
             return self.PROPERTY_PARSERS[self._prev.text.upper()](self)
 
-        if self._match_text_seq("CHARACTER", "SET"):
+        if self._match_pair(TokenType.CHAR, TokenType.SET):
             return self._parse_character_set()
 
         if self._match(TokenType.DEFAULT):
             if self._match_texts(self.PROPERTY_PARSERS):
                 return self.PROPERTY_PARSERS[self._prev.text.upper()](self, default=True)
 
-            if self._match_text_seq("CHARACTER", "SET"):
+            if self._match_pair(TokenType.CHAR, TokenType.SET):
                 return self._parse_character_set(default=True)
 
         if self._match_text_seq("COMPOUND", "SORTKEY"):
@@ -7844,7 +7841,7 @@ class Parser:
 
             return self.expression(exp.ColumnConstraint(this=this, kind=constraint))
 
-        if self._match_text_seq("CHARACTER", "SET"):
+        if self._match(TokenType.CHARACTER_SET) or self._match_pair(TokenType.CHAR, TokenType.SET):
             return self.expression(
                 exp.ColumnConstraint(
                     this=this,
@@ -9422,11 +9419,8 @@ class Parser:
                 actions.extend(parsed)
 
             not_valid = self._match_text_seq("NOT", "VALID")
-            if self.OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS:
-                properties = self._parse_properties()
-                options = properties.expressions if properties else []
-            else:
-                options = self._parse_csv(self._parse_property)
+            properties = self._parse_properties()
+            options = properties.expressions if properties else []
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr:

@@ -221,11 +221,6 @@ class MySQLParser(parser.Parser):
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
-        "CHAR": lambda self, **kwargs: (
-            self.PROPERTY_PARSERS["CHARSET"](self, **kwargs)
-            if self._match(TokenType.SET)
-            else self._retreat(self._index - 1)
-        ),
         "LOCK": lambda self: self._parse_property_assignment(exp.LockProperty),
         "PARTITION BY": lambda self: self._parse_partition_property(),
     }
@@ -245,12 +240,6 @@ class MySQLParser(parser.Parser):
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,
         "BINARY": lambda self: self.expression(exp.BinaryColumnConstraint()),
-        "CHAR": lambda self: (
-            self._match(TokenType.SET) and self.CONSTRAINT_PARSERS["CHARSET"](self)
-        ),
-        "CHARSET": lambda self: self.expression(
-            exp.CharacterSetColumnConstraint(this=self._parse_var_or_string())
-        ),
         "FULLTEXT": lambda self: self._parse_index_constraint(kind="FULLTEXT"),
         "INDEX": lambda self: self._parse_index_constraint(),
         "KEY": lambda self: self._parse_index_constraint(),
@@ -311,7 +300,6 @@ class MySQLParser(parser.Parser):
     }
 
     ALTER_DROP_REQUIRES_COLUMN = False
-    OPTIONAL_COMMA_BETWEEN_ALTER_TABLE_OPTIONS = True
     ALTER_TABLE_MIXED_ACTIONS = True
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True

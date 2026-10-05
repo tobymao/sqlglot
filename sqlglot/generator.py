@@ -3202,7 +3202,9 @@ class Generator:
         if not (isinstance(this, exp.Column) and not this.table):
             return None
 
-        ancestor = expression.find_ancestor(exp.Select, exp.Window)
+        # Only a query's own ORDER BY can reference its projection aliases
+        order = expression.parent
+        ancestor = order.parent if isinstance(order, exp.Order) else None
         if not isinstance(ancestor, exp.Select):
             return None
 

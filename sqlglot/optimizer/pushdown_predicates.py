@@ -182,17 +182,29 @@ def pushdown_dnf(
 
     # pushdown all predicates to their respective nodes
     for table in sorted(pushdown_tables):
+        table_nodes: dict[str, exp.Expr] = {}
+        incomplete = False
+
         for predicate in predicates:
             nodes = nodes_for_predicate(predicate, sources, scope_ref_count)
 
             if table not in nodes:
+                # If this OR branch references the table but can't push it, the condition
+                # we'd accumulate would be an incomplete OR — skip pushing for this table.
+                if table in exp.column_table_names(predicate):
+                    incomplete = True
                 continue
 
+            table_nodes = nodes
             conditions[table] = (
                 exp.or_(conditions[table], predicate) if table in conditions else predicate
             )
 
-        for name, node in nodes.items():
+        if incomplete:
+            conditions.pop(table, None)
+            continue
+
+        for name, node in table_nodes.items():
             if name not in conditions:
                 continue
 

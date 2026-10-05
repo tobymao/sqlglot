@@ -42,7 +42,7 @@ install-dev:
 		fi; \
 	fi
 
-# sqlglotc requires Python 3.10+ (sqlglot-mypy 1.20+ dropped 3.9). On 3.9
+# sqlglotc requires Python 3.10+ (mypy 2.4+ dropped 3.9). On 3.9
 # we skip the C build; tests fall back to pure-Python sqlglot.
 PY_GE_310 := $(shell python -c "import sys; print(int(sys.version_info >= (3, 10)))")
 

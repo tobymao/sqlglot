@@ -84,7 +84,16 @@ class ArrayReverse(Expression, Func):
 
 
 class ArraySlice(Expression, Func):
-    arg_types = {"this": True, "start": True, "end": False, "step": False, "zero_based": False}
+    """Slice by end index, or by length when is_length is set."""
+
+    arg_types = {
+        "this": True,
+        "start": True,
+        "end": False,
+        "step": False,
+        "zero_based": False,
+        "is_length": False,
+    }
 
 
 class ArraySort(Expression, Func):

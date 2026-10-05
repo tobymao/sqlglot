@@ -713,8 +713,7 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
     elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
     elif isinstance(expression, exp.DDL):
-        # TODO (mypyc): change to ddl_expression = expression.expression
-        ddl_expression = expression.args.get("expression")
+        ddl_expression = expression.expression
         if isinstance(ddl_expression, exp.Query):
             yield from _traverse_ctes(scope)
             yield from _traverse_scope(Scope(ddl_expression, cte_sources=scope.cte_sources))

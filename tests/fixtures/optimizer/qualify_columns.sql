@@ -1135,6 +1135,18 @@ SELECT s.a AS a, w.d AS d, w.e AS e FROM (SELECT x.a AS a FROM x AS x) AS s CROS
 SELECT * FROM UNNEST(ARRAY(1, 2)) AS u(v) CROSS JOIN x;
 SELECT u.v AS v, x.a AS a, x.b AS b FROM UNNEST(ARRAY(1, 2)) AS u(v) CROSS JOIN x AS x;
 
+SELECT * FROM ((SELECT a FROM x) CROSS JOIN y) AS j;
+SELECT j.a AS a, j.b AS b, j.c AS c FROM (SELECT _0.a AS a, y.b AS b, y.c AS c FROM (SELECT x.a AS a FROM x AS x) AS _0 CROSS JOIN y AS y) AS j;
+
+SELECT * FROM ((x CROSS JOIN w) CROSS JOIN (SELECT c FROM y) AS s) AS j;
+SELECT j.a AS a, j.b AS b, j.d AS d, j.e AS e, j.c AS c FROM (SELECT x.a AS a, x.b AS b, w.d AS d, w.e AS e, s.c AS c FROM x AS x CROSS JOIN w AS w CROSS JOIN (SELECT y.c AS c FROM y AS y) AS s) AS j;
+
+SELECT * FROM ((x CROSS JOIN w) AS i CROSS JOIN (SELECT c FROM y) AS s) AS j;
+SELECT j.a AS a, j.b AS b, j.d AS d, j.e AS e, j.c AS c FROM (SELECT i.a AS a, i.b AS b, i.d AS d, i.e AS e, s.c AS c FROM (SELECT x.a AS a, x.b AS b, w.d AS d, w.e AS e FROM x AS x CROSS JOIN w AS w) AS i CROSS JOIN (SELECT y.c AS c FROM y AS y) AS s) AS j;
+
+SELECT * FROM ((SELECT a FROM x) CROSS JOIN (w CROSS JOIN (SELECT c FROM y) AS s) AS k) AS j;
+SELECT j.a AS a, j.d AS d, j.e AS e, j.c AS c FROM (SELECT _0.a AS a, k.d AS d, k.e AS e, k.c AS c FROM (SELECT x.a AS a FROM x AS x) AS _0 CROSS JOIN (SELECT w.d AS d, w.e AS e, s.c AS c FROM w AS w CROSS JOIN (SELECT y.c AS c FROM y AS y) AS s) AS k) AS j;
+
 SELECT x.a, y.b, z.c FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
 SELECT x.a AS a, y.b AS b, z.c AS c FROM x AS x LEFT JOIN (y AS y INNER JOIN z AS z ON y.c = z.c) ON x.b = y.b;
 

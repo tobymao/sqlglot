@@ -163,6 +163,17 @@ def _json_cast_sql(self: ClickHouseGenerator, expression: exp.JSONCast) -> str:
     return f"{this}.:{to_sql}"
 
 
+@unsupported_args("json_scope")
+def _contains_sql(self: ClickHouseGenerator, expression: exp.Contains) -> str:
+    # ClickHouse has no CONTAINS; the comparison needs parentheses inside another operator
+    result = exp.StrPosition(this=expression.this, substr=expression.expression) > 0
+    if isinstance(expression.parent, exp.Binary) and not isinstance(
+        expression.parent, exp.Connector
+    ):
+        return self.sql(exp.paren(result, copy=False))
+    return self.sql(result)
+
+
 class ClickHouseGenerator(generator.Generator):
     BYTE_STRING_FUNCTION = "unhex"
     SELECT_KINDS: tuple[str, ...] = ()
@@ -284,6 +295,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.ArrayDistinct: rename_func("arrayDistinct"),
         exp.ArrayConcat: rename_func("arrayConcat"),
         exp.ArrayContains: rename_func("has"),
+        exp.Contains: _contains_sql,
         exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
         exp.Transform: lambda self, e: self.func("arrayMap", e.expression, e.this),
         exp.ArrayRemove: remove_from_array_using_filter,

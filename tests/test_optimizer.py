@@ -3217,6 +3217,47 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     == exp.DataType.build(expected_type, dialect="bigquery")
                 )
 
+    def test_right_nested_set_operation_annotation(self):
+        sql = (
+            "SELECT t.a FROM (SELECT 1 AS a UNION "
+            "(SELECT 2 AS b INTERSECT SELECT CAST(2.5 AS NUMERIC) AS c)) AS t"
+        )
+        annotated = annotate_types(parse_one(sql))
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.DECIMAL)
+
+    def test_nested_by_name_set_operation_annotation(self):
+        for sql, expected_types in (
+            (
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION "
+                "(SELECT 3 AS c UNION BY NAME SELECT CAST(4.5 AS NUMERIC) AS d)) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.DECIMAL],
+            ),
+            (
+                "SELECT t.a, t.b FROM ((SELECT 1 AS a UNION ALL BY NAME "
+                "SELECT CAST(2 AS BIGINT) AS b) UNION ALL "
+                "SELECT CAST(3 AS BIGINT) AS c, CAST(4 AS DOUBLE) AS d) AS t",
+                [exp.DataType.Type.BIGINT, exp.DataType.Type.DOUBLE],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                annotated = annotate_types(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    [select.type.this for select in annotated.selects],
+                    expected_types,
+                )
+
+    def test_mismatched_set_operation_annotation_fallback(self):
+        # The invalid UNION keeps its left operand's types during annotation.
+        sql = (
+            "SELECT t.a, t.b FROM (SELECT 1 AS a, 'x' AS b "
+            "UNION SELECT CAST(2.5 AS NUMERIC) AS c) AS t"
+        )
+        annotated = annotate_types(parse_one(sql))
+        self.assertEqual(
+            [select.type.this for select in annotated.selects],
+            [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
+        )
+
     def test_udtf_annotation(self):
         table_udtf = parse_one(
             "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 100000))",

@@ -2166,6 +2166,10 @@ COMMENT='客户账户表'"""
             },
         )
         self.validate_all(
+            "SELECT a + 1 AS v FROM t UNION ALL SELECT b FROM u ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v",
+            read={"trino": "SELECT a + 1 AS v FROM t UNION ALL SELECT b FROM u ORDER BY v"},
+        )
+        self.validate_all(
             "SELECT x AS v, ROW_NUMBER() OVER (ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS rn FROM t",
             read={"postgres": "SELECT x AS v, ROW_NUMBER() OVER (ORDER BY v) AS rn FROM t"},
         )

@@ -999,12 +999,12 @@ LEFT JOIN (
 # execute: false
 SELECT * FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
 SELECT
+  "x"."a" AS "a",
+  "x"."b" AS "b",
   "y"."b" AS "b",
   "y"."c" AS "c",
   "z"."a" AS "a",
-  "z"."c" AS "c",
-  "x"."a" AS "a",
-  "x"."b" AS "b"
+  "z"."c" AS "c"
 FROM "x" AS "x"
 LEFT JOIN (
   "y" AS "y"

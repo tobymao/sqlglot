@@ -97,6 +97,7 @@ class Scope:
     _local_columns: list[exp.Column] | None
     _pivots: list[exp.Pivot] | None
     _references: list[tuple[str, exp.Selectable]] | None
+    _reference_nodes: list[exp.Selectable]
 
     def __init__(
         self,
@@ -153,6 +154,7 @@ class Scope:
         self._local_columns = None
         self._pivots = None
         self._references = None
+        self._reference_nodes = []
 
     def branch(
         self,
@@ -177,6 +179,7 @@ class Scope:
         )
 
     def _collect(self) -> None:
+        self._reference_nodes = []
         self._tables = []
         self._ctes = []
         self._subqueries = []
@@ -216,16 +219,19 @@ class Scope:
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
+                self._reference_nodes.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
             elif type(node) is exp.Lateral or (
                 isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
             ):
                 self._udtfs.append(node)
+                self._reference_nodes.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
                 self._derived_tables.append(t.cast(exp.Subquery, node))
+                self._reference_nodes.append(t.cast(exp.Subquery, node))
             elif (
                 isinstance(node, exp.UNWRAPPED_QUERIES)
                 and not _is_from_or_join(node)
@@ -443,21 +449,24 @@ class Scope:
     @property
     def references(self) -> list[tuple[str, exp.Selectable]]:
         if self._references is None:
+            self._ensure_collected()
             self._references = []
 
-            for table in self.tables:
-                self._references.append((table.alias_or_name, table))
-            for _expr in itertools.chain(self.derived_tables, self.udtfs):
-                # TODO (mypyc): rebind to exp.Expr to avoid DerivedTable trait vtable dispatch
-                expression: exp.Expr = _expr
-                self._references.append(
-                    (
-                        _get_source_alias(expression),
+            # Star expansion and positional aliases depend on source order.
+            for reference in self._reference_nodes:
+                # TODO (mypyc): avoid Selectable trait vtable dispatch.
+                expression: exp.Expr = reference
+                if isinstance(expression, exp.Table):
+                    self._references.append((expression.alias_or_name, expression))
+                else:
+                    self._references.append(
                         (
-                            expression if expression.args.get("pivots") else expression.unnest()
-                        ).assert_is(exp.Selectable),
+                            _get_source_alias(expression),
+                            (
+                                expression if expression.args.get("pivots") else expression.unnest()
+                            ).assert_is(exp.Selectable),
+                        )
                     )
-                )
 
         return self._references
 

@@ -107,28 +107,41 @@ def qualify_tables(
         if scope:
             scope.rename_source(None, new_alias_name)
 
-    # Expand aliased join constructs before building scopes so nested joins are included.
-    for derived_table in reversed(list(expression.find_all(exp.Subquery))):
-        if not derived_table.alias:
-            continue
+    scopes = traverse_scope(expression)
+    expanded = False
+    for scope in scopes:
+        for derived_table in scope.derived_tables:
+            if not isinstance(derived_table.this, (exp.Table, exp.Subquery)):
+                continue
 
-        unnested = derived_table.this
-        while isinstance(unnested, exp.Subquery) and not unnested.alias:
-            unnested = unnested.this
+            for join_construct in reversed(list(derived_table.find_all(exp.Subquery))):
+                if not join_construct.alias:
+                    continue
 
-        if isinstance(unnested, (exp.Table, exp.Subquery)):
-            joins = list(unnested.args.get("joins") or [])
-            wrapper = unnested.parent
-            while isinstance(wrapper, exp.Subquery) and wrapper is not derived_table:
-                joins.extend(wrapper.args.get("joins") or [])
-                wrapper = wrapper.parent
+                unnested = join_construct.this
+                while isinstance(unnested, exp.Subquery) and not unnested.alias:
+                    unnested = unnested.this
 
-            if isinstance(unnested, exp.Table) or joins:
-                unnested.set("joins", None)
-                derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-                derived_table.this.set("joins", joins)
+                if isinstance(unnested, (exp.Table, exp.Subquery)):
+                    joins = list(unnested.args.get("joins") or [])
+                    wrapper = unnested.parent
+                    while isinstance(wrapper, exp.Subquery) and wrapper is not join_construct:
+                        joins.extend(wrapper.args.get("joins") or [])
+                        wrapper = wrapper.parent
 
-    for scope in traverse_scope(expression):
+                    if isinstance(unnested, exp.Table) or joins:
+                        unnested.set("joins", None)
+                        join_construct.this.replace(
+                            exp.select("*").from_(unnested.copy(), copy=False)
+                        )
+                        join_construct.this.set("joins", joins)
+                        expanded = True
+
+    # Rebuild only when expansion exposes sources hidden by parenthesized joins.
+    if expanded:
+        scopes = traverse_scope(expression)
+
+    for scope in scopes:
         parent = scope.parent
         local_columns = scope.local_columns
         canonical_aliases: dict[str, str] = {}

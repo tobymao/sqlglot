@@ -397,7 +397,9 @@ class TestOptimizer(unittest.TestCase):
             "SELECT j.z FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j(x, y, z)",
             "SELECT j.c_id FROM ((a JOIN b ON TRUE) CROSS JOIN c) AS j",
             "SELECT * FROM d LEFT JOIN ((a JOIN b ON TRUE) CROSS JOIN c) AS j ON d.d_id = j.c_id",
-            "SELECT j.a_id, j.b_id, j.c_id FROM ((a JOIN b ON TRUE) AS ab CROSS JOIN c) AS j",
+            "SELECT * FROM ((a JOIN b ON TRUE) AS ab CROSS JOIN c) AS j",
+            "SELECT * FROM ((a JOIN b ON TRUE) AS ab CROSS JOIN c) AS j(x, y, z)",
+            "SELECT MAX(j.x) AS result FROM ((a JOIN b ON TRUE) AS ab CROSS JOIN c) AS j(x, y, z)",
             "SELECT * FROM ((u JOIN v USING (id)) JOIN w USING (id)) AS j",
             "SELECT * FROM ((u NATURAL JOIN v) NATURAL JOIN w) AS j",
         ]

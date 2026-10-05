@@ -846,6 +846,17 @@ class TestTSQL(Validator):
             },
         )
 
+        self.validate_all(
+            "SELECT STRING_AGG(v, ',') WITHIN GROUP (ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS v FROM t",
+            read={"trino": "SELECT LISTAGG(v, ',') WITHIN GROUP (ORDER BY v) AS v FROM t"},
+        )
+        self.validate_all(
+            "SELECT x AS v, STRING_AGG(v, ',') WITHIN GROUP (ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS w FROM t GROUP BY x",
+            read={
+                "postgres": "SELECT x AS v, STRING_AGG(v, ',' ORDER BY v) AS w FROM t GROUP BY x"
+            },
+        )
+
     def test_option(self):
         possible_options = [
             "HASH GROUP",

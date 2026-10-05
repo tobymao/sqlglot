@@ -2145,6 +2145,31 @@ COMMENT='客户账户表'"""
             },
         )
 
+        self.validate_all(
+            "SELECT GROUP_CONCAT(v ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS v FROM t",
+            read={"trino": "SELECT ARRAY_AGG(v ORDER BY v) AS v FROM t"},
+        )
+        self.validate_all(
+            "SELECT GROUP_CONCAT(v ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v SEPARATOR ',') AS v FROM t",
+            read={"trino": "SELECT LISTAGG(v, ',') WITHIN GROUP (ORDER BY v) AS v FROM t"},
+        )
+        self.validate_all(
+            "SELECT x AS v, GROUP_CONCAT(v ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS w FROM t GROUP BY x",
+            read={"trino": "SELECT x AS v, ARRAY_AGG(v ORDER BY v) AS w FROM t GROUP BY x"},
+        )
+        self.validate_all(
+            "WITH c AS (SELECT a AS v, b AS x FROM t UNION ALL SELECT a, b FROM u"
+            " ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v LIMIT 1) SELECT x AS v FROM c",
+            read={
+                "postgres": "WITH c AS (SELECT a AS v, b AS x FROM t UNION ALL SELECT a, b FROM u"
+                " ORDER BY v LIMIT 1) SELECT x AS v FROM c",
+            },
+        )
+        self.validate_all(
+            "SELECT x AS v, ROW_NUMBER() OVER (ORDER BY CASE WHEN v IS NULL THEN 1 ELSE 0 END, v) AS rn FROM t",
+            read={"postgres": "SELECT x AS v, ROW_NUMBER() OVER (ORDER BY v) AS rn FROM t"},
+        )
+
     def test_invisible_column(self):
         expr = self.parse_one("CREATE TABLE t (c INT INVISIBLE)")
         self.assertIsNotNone(expr.find(exp.InvisibleColumnConstraint))

@@ -119,6 +119,20 @@ class Validator(unittest.TestCase):
 class TestDialect(Validator):
     maxDiff = None
 
+    def test_preserve_original_names(self):
+        expression = exp.select(
+            parse_one("abs(1)", read="clickhouse"),
+            parse_one("abs(2)", read="bigquery"),
+            parse_one("abs(3)", read="drill"),
+        )
+        for dialect, sql in (
+            ("clickhouse", "SELECT abs(1), ABS(2), ABS(3)"),
+            ("bigquery", "SELECT ABS(1), abs(2), ABS(3)"),
+            ("drill", "SELECT ABS(1), ABS(2), abs(3)"),
+        ):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(expression.sql(dialect), sql)
+
     def test_enum(self):
         dialect_by_key = Dialect.classes
         for dialect in Dialects:

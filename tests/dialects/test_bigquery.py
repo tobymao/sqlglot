@@ -2127,6 +2127,7 @@ WHERE
             "SAFE_CONVERT_BYTES_TO_STRING(b'\xc2')", "SAFE_CONVERT_BYTES_TO_STRING(b'\\xc3\\x82')"
         )
         self.validate_identity("FROM_HEX('foo')")
+        self.validate_all("FROM_HEX('CAFE')", write={"clickhouse": "UNHEX('CAFE')"})
         self.validate_identity("TO_CODE_POINTS('foo')")
         self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")
         self.validate_identity("PARSE_BIGNUMERIC('1.2')")
@@ -3044,6 +3045,10 @@ OPTIONS (
                     )
 
     def test_json_extract(self):
+        self.validate_all(
+            "SELECT JSON_EXTRACT_SCALAR(j, '$.a')",
+            read={"clickhouse": "SELECT JSONExtractString(j, 'a')"},
+        )
         self.validate_all(
             """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
             write={

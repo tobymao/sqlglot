@@ -198,7 +198,7 @@ def pushdown_dnf(
                 exp.or_(conditions[table], predicate) if table in conditions else predicate
             )
 
-        if incomplete or table_node is None or table not in conditions:
+        if incomplete:
             conditions.pop(table, None)
             continue
 

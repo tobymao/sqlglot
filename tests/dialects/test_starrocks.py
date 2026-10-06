@@ -522,6 +522,11 @@ class TestStarrocks(Validator):
 
     def test_alter_table(self):
         # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/ALTER_TABLE/
+        self.validate_identity(
+            "ALTER TABLE example_db.my_table DROP PARTITION p1",
+            "ALTER TABLE example_db.my_table DROP PARTITION(p1)",
+        )
+        self.validate_identity("ALTER TABLE example_db.my_table DROP PARTITION(p1, p2)")
         self.validate_identity("ALTER TABLE db.tbl ADD ROLLUP r1(col1, col2) FROM r0")
         self.validate_identity("ALTER TABLE db.tbl ADD ROLLUP r1(col1, col2)")
         self.validate_identity(
@@ -529,3 +534,10 @@ class TestStarrocks(Validator):
             "ALTER TABLE my_table ADD COLUMNS (c1 INT DEFAULT '0', c2 INT DEFAULT '0')",
         )
         self.validate_identity("ALTER TABLE t ADD COLUMN c INT")
+
+    def test_delete_partition(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/data-manipulation/DELETE/
+        self.validate_identity(
+            "DELETE FROM my_table PARTITION p1 WHERE k1 = 3",
+            "DELETE FROM my_table PARTITION(p1) WHERE k1 = 3",
+        )

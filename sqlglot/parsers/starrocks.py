@@ -196,6 +196,19 @@ class StarRocksParser(MySQLParser):
             exp.PartitionByRangePropertyDynamic(start=start, end=end, every=every)
         )
 
+    def _parse_partition(self) -> exp.Partition | None:
+        # Also accept an unparenthesized partition name, e.g. DROP PARTITION p1
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/ALTER_TABLE/#drop-partition
+        if not self._match_texts(self.PARTITION_KEYWORDS, advance=False) or (
+            self._next and self._next.token_type == TokenType.L_PAREN
+        ):
+            return super()._parse_partition()
+
+        subpartition = self._advance_any() and self._prev.text.upper() == "SUBPARTITION"
+        return self.expression(
+            exp.Partition(subpartition=subpartition, expressions=[self._parse_disjunction()])
+        )
+
     def _parse_partition_range_value(self) -> exp.Expr | None:
         expr = super()._parse_partition_range_value()
         if isinstance(expr, exp.Partition) or not self._match_text_seq("VALUES"):

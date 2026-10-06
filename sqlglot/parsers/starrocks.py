@@ -3,9 +3,28 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
-from sqlglot.helper import seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
+
+
+def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
+    # TIME_SLICE(dt, INTERVAL n unit [, FLOOR | CEIL])
+    # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+    time_slice = build_date_delta_with_interval(exp.TimeSlice)(args)
+    if not time_slice:
+        return None
+
+    amount = time_slice.expression
+    if amount.is_string and is_int(amount.name):
+        time_slice.set("expression", exp.Literal.number(amount.name))
+
+    boundary = seq_get(args, 2)
+    if boundary:
+        time_slice.set(
+            "kind", exp.Literal.string("END" if boundary.name.upper() == "CEIL" else "START")
+        )
+    return time_slice
 
 
 class StarRocksParser(MySQLParser):
@@ -37,6 +56,7 @@ class StarRocksParser(MySQLParser):
         # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+        "TIME_SLICE": _build_time_slice,
     }
 
     PROPERTY_PARSERS = {

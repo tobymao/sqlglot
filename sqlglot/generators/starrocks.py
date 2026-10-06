@@ -392,6 +392,16 @@ class StarRocksGenerator(MySQLGenerator):
 
         return sql
 
+    def schema_sql(self, expression: exp.Schema) -> str:
+        insert = expression.parent
+        label = self.sql(insert, "label") if isinstance(insert, exp.Insert) else ""
+        if not label:
+            return super().schema_sql(expression)
+
+        this = f"{self.sql(expression, 'this')} WITH LABEL {label}"
+        columns = self.schema_columns_sql(expression)
+        return f"{this} {columns}" if columns else this
+
     def rollupindex_sql(self, expression: exp.RollupIndex) -> str:
         sql = super().rollupindex_sql(expression)
         return f"ADD ROLLUP {sql}" if isinstance(expression.parent, exp.Alter) else sql

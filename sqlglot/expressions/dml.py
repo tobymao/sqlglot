@@ -213,6 +213,7 @@ class Insert(Expression, DDL, DML):
         "source": False,
         "default": False,
         "using": False,
+        "label": False,
     }
 
     def with_(

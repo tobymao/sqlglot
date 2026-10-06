@@ -588,3 +588,17 @@ class TestStarrocks(Validator):
             "DELETE FROM my_table PARTITION p1 WHERE k1 = 3",
             "DELETE FROM my_table PARTITION(p1) WHERE k1 = 3",
         )
+
+    def test_insert(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/loading_unloading/INSERT/
+        self.validate_identity(
+            "INSERT OVERWRITE test PARTITION(p1, p2) WITH LABEL `label1` SELECT * FROM test3"
+        )
+        self.validate_identity(
+            "INSERT OVERWRITE test WITH LABEL `label1` (c1, c2) SELECT * FROM test3"
+        ).assert_is(exp.Insert).args["label"].assert_is(exp.Identifier)
+        self.validate_identity(
+            "INSERT INTO FILES('path' = 's3://bucket/x/', 'format' = 'parquet') SELECT * FROM t"
+        )
+        self.validate_identity("INSERT INTO t (c1) VALUES (1)")
+        self.validate_identity("INSERT INTO t AS t_alias VALUES (1)")

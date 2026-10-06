@@ -341,3 +341,35 @@ class StarRocksParser(MySQLParser):
             options.extend(super()._parse_index_constraint_options())
 
         return options
+
+    def _parse_insert(self) -> exp.Insert | exp.MultitableInserts:
+        insert = super()._parse_insert()
+        if isinstance(insert, exp.Insert) and insert.this:
+            insert.set("label", insert.this.meta.pop("label", None))
+        return insert
+
+    def _parse_insert_table(self) -> exp.Expr | None:
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/files/
+        if (
+            self._curr
+            and self._curr.text.upper() == "FILES"
+            and self._next
+            and self._next.token_type == TokenType.L_PAREN
+        ):
+            return self._parse_table()
+
+        this = super()._parse_insert_table()
+
+        # INSERT INTO t WITH LABEL l (c1, c2)
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/loading_unloading/INSERT/
+        if isinstance(this, exp.Table) and self._match_text_seq("WITH", "LABEL"):
+            label = self._parse_id_var()
+            columns = (
+                self._parse_wrapped_id_vars()
+                if self._match(TokenType.L_PAREN, advance=False)
+                else None
+            )
+            this = self.expression(exp.Schema(this=this, expressions=columns))
+            this.meta["label"] = label
+
+        return this

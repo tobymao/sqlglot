@@ -156,7 +156,7 @@ WITH cte1 AS (SELECT tb.cola AS cola FROM tb AS tb UNION ALL SELECT tb2.colc AS 
 
 # schema: {"t1": {"c": "INT"}, "t2": {"d": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-SELECT t2.d AS d, _0.c AS c FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0, t2 AS t2);
+SELECT _0.c AS c, t2.d AS d FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0, t2 AS t2);
 
 SELECT a, d FROM (SELECT 1 a, 2 c, 3 d, 4 e UNION ALL BY NAME SELECT 6 c, 7 d, 8 a, 9 e);
 SELECT _0.a AS a, _0.d AS d FROM (SELECT 1 AS a, 3 AS d UNION ALL BY NAME SELECT 7 AS d, 8 AS a) AS _0;

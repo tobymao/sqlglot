@@ -533,6 +533,19 @@ class TestClickhouse(Validator):
                 "mysql": "SELECT '\\0'",
             },
         )
+        self.validate_identity(r'SELECT "a\\"')
+        self.validate_identity(r'SELECT "a\\""b"')
+        self.validate_identity(r"SELECT `a\\b`", r'SELECT "a\\b"')
+        self.validate_all(
+            r'SELECT "a\\b"',
+            read={
+                "postgres": r'SELECT "a\b"',
+            },
+            write={
+                "clickhouse": r'SELECT "a\\b"',
+                "postgres": r'SELECT "a\b"',
+            },
+        )
         self.validate_all(
             "DATE_ADD(DAY, 1, x)",
             read={

@@ -599,6 +599,13 @@ class ClickHouseGenerator(generator.Generator):
             ),
         ]
 
+    def identifier_sql(self, expression: exp.Identifier) -> str:
+        # A backslash in a quoted identifier starts an escape sequence, as in a string literal
+        if "\\" in expression.name:
+            expression = expression.copy()
+            expression.set("this", expression.name.replace("\\", "\\\\"))
+        return super().identifier_sql(expression)
+
     def placeholder_sql(self, expression: exp.Placeholder) -> str:
         return f"{{{expression.name}: {self.sql(expression, 'kind')}}}"
 

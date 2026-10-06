@@ -479,6 +479,11 @@ class TestStarrocks(Validator):
             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
         )
 
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+        self.validate_identity(
+            "CREATE TABLE test_table (dt DATETIME) PARTITION BY TIME_SLICE(dt, INTERVAL '7' DAY) DISTRIBUTED BY HASH (dt)"
+        )
+
     def test_aggregate_key_columns(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
         for agg in (

@@ -19,6 +19,21 @@ AGGREGATE_COLUMN_CONSTRAINTS = (
 )
 
 
+def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice:
+    # TIME_SLICE(dt, INTERVAL n unit [, boundary])
+    # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+    interval = seq_get(args, 1)
+    if not isinstance(interval, exp.Interval):
+        return exp.TimeSlice.from_arg_list(args)
+
+    return exp.TimeSlice(
+        this=seq_get(args, 0),
+        expression=interval.this,
+        unit=interval.args.get("unit"),
+        kind=seq_get(args, 2),
+    )
+
+
 class StarRocksParser(MySQLParser):
     # Unlike MySQL, dropping a column requires the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN = True
@@ -51,6 +66,7 @@ class StarRocksParser(MySQLParser):
         # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+        "TIME_SLICE": _build_time_slice,
     }
 
     PROPERTY_PARSERS = {

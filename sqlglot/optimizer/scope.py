@@ -795,6 +795,7 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
 
 
 def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
+    # Each frame collects its own left and right operand scopes, in that order.
     stack: list[tuple[Scope, list[Scope]]] = [(scope, [])]
 
     while stack:

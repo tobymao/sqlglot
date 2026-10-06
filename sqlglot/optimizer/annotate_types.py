@@ -387,7 +387,6 @@ class TypeAnnotator:
 
         if isinstance(expression, exp.SetOperation):
             # A nested BY NAME operand can have more columns than its first SELECT.
-            # Invalid positional widths fall through to the left-projection fallback below.
             column_types = self._get_setop_column_types(expression)
             if (
                 column_types
@@ -645,7 +644,8 @@ class TypeAnnotator:
         Computes and returns the coerced column types for a SetOperation.
 
         This handles UNION, INTERSECT, EXCEPT, etc., coercing types across
-        left and right operands for all projections/columns.
+        left and right operands for all projections/columns. Positional operands
+        with mismatched widths retain the left operand's output types.
 
         Args:
             setop: The SetOperation expression to analyze
@@ -658,6 +658,7 @@ class TypeAnnotator:
             return self._setop_column_types[setop_id]
 
         stack: list[tuple[exp.Expr, bool]] = [(setop, False)]
+        # Preserve column order for positional parents of BY NAME operations.
         column_type_stack: list[list[tuple[str, exp.DataType | exp.DType]]] = []
 
         while stack:
@@ -679,8 +680,10 @@ class TypeAnnotator:
                 left = column_type_stack.pop()
 
                 by_name = node.args.get("by_name")
-                if not left or not right or (not by_name and len(left) != len(right)):
+                if not left or not right:
                     resolved: list[tuple[str, exp.DataType | exp.DType]] = []
+                elif not by_name and len(left) != len(right):
+                    resolved = left
                 elif by_name:
                     # A missing column is NULL, the identity for _maybe_coerce.
                     remaining = dict(right)

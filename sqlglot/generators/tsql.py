@@ -352,9 +352,6 @@ class TSQLGenerator(generator.Generator):
 
             if isinstance(limit, exp.Limit):
                 if self._should_drop_limit_all(limit):
-                    # T-SQL has no LIMIT ALL equivalent; a bare OFFSET (no FETCH) already
-                    # means "no cap", so just drop the clause instead of emitting an invalid
-                    # FETCH FIRST ALL ROWS ONLY.
                     limit.pop()
                 else:
                     # TOP and OFFSET can't be combined, we need use FETCH instead of TOP

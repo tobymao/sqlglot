@@ -10391,9 +10391,19 @@ class Parser:
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
         offset = self._parse_offset()
-        if limit:
+        if isinstance(limit, exp.Limit):
             curr_limit = query.args.get("limit", limit)
-            if curr_limit.expression.to_py() >= limit.expression.to_py():
+            curr_is_limit_all = isinstance(curr_limit, exp.Limit) and curr_limit.is_limit_all
+
+            # LIMIT ALL means "no cap", so it's never tighter than a numeric limit.
+            if limit.is_limit_all:
+                should_replace = curr_is_limit_all
+            else:
+                should_replace = (
+                    curr_is_limit_all or curr_limit.expression.to_py() >= limit.expression.to_py()
+                )
+
+            if should_replace:
                 query.limit(limit, copy=False)
         if offset:
             curr_offset = query.args.get("offset")

@@ -3374,8 +3374,6 @@ class Generator:
             )
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
             if self._should_drop_limit_all(limit):
-                # The target dialect has no equivalent for LIMIT ALL (e.g. Oracle's
-                # FETCH FIRST requires a row count), so omit the clause entirely.
                 limit = None
             else:
                 limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
@@ -5525,16 +5523,7 @@ class Generator:
         return f"[{this}]" if this else ""
 
     def _should_drop_limit_all(self, expression: exp.Limit) -> bool:
-        limit_expression = expression.args.get("expression")
-        is_limit_all = (
-            isinstance(limit_expression, exp.Var) and limit_expression.name.upper() == "ALL"
-        )
-
-        if is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL:
-            self.unsupported("LIMIT ALL is not supported")
-            return True
-
-        return False
+        return expression.is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

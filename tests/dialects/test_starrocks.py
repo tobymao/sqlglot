@@ -602,3 +602,29 @@ class TestStarrocks(Validator):
         )
         self.validate_identity("INSERT INTO t (c1) VALUES (1)")
         self.validate_identity("INSERT INTO t AS t_alias VALUES (1)")
+
+    def test_command_statements(self):
+        for sql in (
+            "ADMIN SET FRONTEND CONFIG ('disable_balance' = 'true')",
+            "BACKUP SNAPSHOT example_db.snapshot_label1 TO example_repo PROPERTIES ('type' = 'full')",
+            "RESTORE SNAPSHOT example_db.snapshot_label1 FROM example_repo ON (backup_tbl)",
+            "RECOVER TABLE example_db.example_tbl",
+            "CANCEL LOAD WHERE LABEL = 'example_label'",
+            "EXPORT TABLE testTbl TO 'hdfs://h:9000/a/b/c/testTbl_' WITH BROKER",
+            "PAUSE ROUTINE LOAD FOR example_db.example_tbl1_ordertest1",
+            "RESUME ROUTINE LOAD FOR example_db.example_tbl1_ordertest1",
+            "STOP ROUTINE LOAD FOR example_db.example_tbl1_ordertest1",
+            "SUBMIT TASK etl0 AS CREATE TABLE tbl1 AS SELECT * FROM src_tbl",
+            "DEALLOCATE PREPARE select_by_id_stmt",
+            "ADD SQLBLACKLIST 'select count(*) from .+'",
+            "DELETE SQLBLACKLIST 3, 4",
+            "ADD BACKEND BLACKLIST 10001",
+            "DELETE BACKEND BLACKLIST 10001",
+            "ADD COMPUTE NODE BLACKLIST 10005",
+            "TRANSLATE TRINO SELECT 1",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity("SELECT stop, cancel, export FROM t")
+        self.validate_identity("SELECT TRANSLATE(col, 'a', 'b') FROM t")

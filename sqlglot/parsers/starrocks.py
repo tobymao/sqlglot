@@ -373,3 +373,25 @@ class StarRocksParser(MySQLParser):
             this.meta["label"] = label
 
         return this
+
+    def _parse_statement(self) -> exp.Expr | None:
+        start = self._curr
+        if not start:
+            return None
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/sql_blacklist/
+        # https://docs.starrocks.io/docs/administration/management/BE_blacklist/
+        index = self._index
+        if self._match_texts(("ADD", "DELETE")) and (
+            self._match_text_seq("SQLBLACKLIST")
+            or self._match_text_seq("BACKEND", "BLACKLIST")
+            or self._match_text_seq("COMPUTE", "NODE", "BLACKLIST")
+        ):
+            return self._parse_as_command(start)
+        self._retreat(index)
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/TRANSLATE_TRINO/
+        if self._match_text_seq("TRANSLATE", "TRINO"):
+            return self._parse_as_command(start)
+
+        return super()._parse_statement()

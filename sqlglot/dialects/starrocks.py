@@ -6,6 +6,21 @@ from sqlglot.generators.starrocks import StarRocksGenerator
 from sqlglot.parsers.starrocks import StarRocksParser
 from sqlglot.tokens import TokenType
 
+# Statements that are parsed as opaque commands
+STARROCKS_COMMAND_KEYWORDS = (
+    "ADMIN",
+    "BACKUP",
+    "RESTORE",
+    "RECOVER",
+    "CANCEL",
+    "EXPORT",
+    "SUBMIT",
+    "PAUSE",
+    "RESUME",
+    "STOP",
+    "DEALLOCATE",
+)
+
 
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
@@ -23,6 +38,7 @@ class StarRocks(MySQL):
             **MySQL.Tokenizer.KEYWORDS,
             "LARGEINT": TokenType.INT128,
             "REFRESH": TokenType.REFRESH,
+            **dict.fromkeys(STARROCKS_COMMAND_KEYWORDS, TokenType.COMMAND),
         }
         KEYWORDS.pop("IGNORE")
 

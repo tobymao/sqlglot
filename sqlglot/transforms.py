@@ -212,12 +212,14 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
     newly aliased projection is referenced in the QUALIFY clause, it will be replaced by the
     corresponding expression to avoid creating invalid column references.
     """
-    if (
-        isinstance(expression, exp.Select)
-        and expression.args.get("qualify")
-        # A FROM-first multi-table INSERT branch shares its parent's FROM, so it can't be wrapped
-        and not isinstance(expression.parent and expression.parent.parent, exp.MultitableInserts)
-    ):
+    if isinstance(expression, exp.Select) and expression.args.get("qualify"):
+        parent = expression.parent
+        if isinstance(parent, exp.Insert) and isinstance(parent.parent, exp.MultitableInserts):
+            # A FROM-first multi-table INSERT branch shares its parent's FROM, so it can't be wrapped
+            raise UnsupportedError(
+                "QUALIFY is not supported in a FROM-first multi-table INSERT branch"
+            )
+
         taken = set(expression.named_selects)
         for select in expression.selects:
             if not select.alias_or_name:

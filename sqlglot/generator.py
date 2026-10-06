@@ -5770,6 +5770,8 @@ class Generator:
             expressions = self.seg(self.expressions(expression, sep=" "))
             sql = f"INSERT {kind}{expressions}{self.seg(source)}"
         else:
+            # If kind isn't present, we have Hive's FROM-first form:
+            # FROM x INSERT ... SELECT ... [INSERT ... SELECT ...]
             inserts = self.sep().join(self.sql(e) for e in expression.expressions)
             sql = f"FROM {source}{self.seg(inserts)}"
 

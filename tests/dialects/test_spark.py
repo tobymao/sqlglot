@@ -1292,6 +1292,10 @@ TBLPROPERTIES (
         self.validate_identity(
             "FROM x INSERT OVERWRITE TABLE a PARTITION(ds = '1') SELECT k WHERE v > 0 INSERT INTO b SELECT k, v"
         )
+        self.validate_identity(
+            "FROM (SELECT k, v FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) = 1) AS s INSERT INTO t SELECT s.v INSERT INTO u SELECT s.k",
+            "FROM (SELECT k, v FROM (SELECT k, v, ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) AS _w FROM x) AS _t WHERE _w = 1) AS s INSERT INTO t SELECT s.v INSERT INTO u SELECT s.k",
+        )
 
     def test_insert_cte(self):
         self.validate_all(

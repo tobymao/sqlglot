@@ -3901,7 +3901,8 @@ class Parser:
             exp.Delete(
                 hint=hint,
                 tables=tables,
-                this=self._match(TokenType.FROM) and self._parse_table(joins=True),
+                this=self._match(TokenType.FROM)
+                and self._parse_table(joins=True, parse_partition=True),
                 using=self._match(TokenType.USING)
                 and self._parse_csv(lambda: self._parse_table(joins=True)),
                 cluster=self._match(TokenType.ON) and self._parse_on_property(),

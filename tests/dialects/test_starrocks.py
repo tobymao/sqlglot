@@ -493,6 +493,19 @@ class TestStarrocks(Validator):
             "CREATE TABLE test_table (dt DATETIME) PARTITION BY TIME_SLICE(dt, INTERVAL '7' DAY) DISTRIBUTED BY HASH (dt)"
         )
 
+    def test_show(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SHOW_TABLES/
+        self.validate_identity(
+            "SHOW TABLES IN catalog_1.schema_a", "SHOW TABLES FROM catalog_1.schema_a"
+        )
+        self.validate_identity("SHOW TABLES FROM schema_a")
+        self.validate_identity("SHOW DATABASES IN catalog_1", "SHOW DATABASES FROM catalog_1")
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/Function/SHOW_CREATE_FUNCTION/
+        self.validate_identity("SHOW CREATE FUNCTION db.my_add(BIGINT)")
+        self.validate_identity("SHOW CREATE FUNCTION my_add(BIGINT, VARCHAR)")
+        self.validate_identity("SHOW CREATE FUNCTION my_add")
+
     def test_kill(self):
         # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/KILL_ANALYZE/
         self.validate_identity("KILL ANALYZE 266030")

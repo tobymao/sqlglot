@@ -523,7 +523,7 @@ class MySQLParser(parser.Parser):
             db = None
 
             if self._match(TokenType.FROM) or self._match_text_seq("IN"):
-                db = self._parse_id_var()
+                db = self._parse_show_db()
             elif self._match(TokenType.DOT):
                 db = target_id
                 target_id = self._parse_id_var()
@@ -576,6 +576,9 @@ class MySQLParser(parser.Parser):
                 global_=global_,
             )
         )
+
+    def _parse_show_db(self) -> exp.Expr | None:
+        return self._parse_id_var()
 
     def _parse_oldstyle_limit(
         self,

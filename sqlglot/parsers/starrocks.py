@@ -294,3 +294,32 @@ class StarRocksParser(MySQLParser):
                 mode=mode,
             )
         )
+
+    def _parse_show_db(self) -> exp.Expr | None:
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SHOW_TABLES/
+        return self._parse_table_parts(is_db_reference=True)
+
+    def _parse_show_mysql(
+        self,
+        this: str,
+        target: bool | str = False,
+        full: bool | None = None,
+        global_: bool | None = None,
+    ) -> exp.Show:
+        show = super()._parse_show_mysql(this, target=target, full=full, global_=global_)
+
+        # SHOW CREATE FUNCTION f(INT)
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/Function/SHOW_CREATE_FUNCTION/
+        if this == "CREATE FUNCTION" and self._match(TokenType.L_PAREN, advance=False):
+            show.set(
+                "target",
+                self.expression(
+                    exp.UserDefinedFunction(
+                        this=show.args.get("target"),
+                        expressions=self._parse_wrapped_csv(self._parse_types),
+                        wrapped=True,
+                    )
+                ),
+            )
+
+        return show

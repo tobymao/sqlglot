@@ -4409,10 +4409,12 @@ class Generator:
         return f"SET {exprs}"
 
     def alter_sql(self, expression: exp.Alter) -> str:
-        actions = expression.args["actions"]
+        actions = expression.actions
 
-        if not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN and isinstance(
-            actions[0], exp.ColumnDef
+        if (
+            not self.dialect.ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN
+            and actions
+            and isinstance(actions[0], exp.ColumnDef)
         ):
             actions_sql = self.expressions(expression, key="actions", flat=True)
             actions_sql = f"ADD {actions_sql}"
@@ -4439,8 +4441,27 @@ class Generator:
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
         only = " ONLY" if expression.args.get("only") else ""
-        options = self.expressions(expression, key="options")
-        options = f", {options}" if options else ""
+        # Partition clauses follow the options without a comma, e.g. MySQL's
+        # ENGINE=InnoDB PARTITION BY LIST (...) or StarRocks' PARTITION BY ... DISTRIBUTED BY ...
+        regular: list[exp.Expr] = []
+        partitions: list[exp.Expr] = []
+        for option in expression.args.get("options") or []:
+            is_partition = isinstance(
+                option,
+                (
+                    exp.DistributedByProperty,
+                    exp.PartitionByListProperty,
+                    exp.PartitionByRangeProperty,
+                    exp.PartitionedByProperty,
+                ),
+            )
+            (partitions if is_partition else regular).append(option)
+        options = self.expressions(sqls=regular)
+        options = f", {options}" if options and actions_sql else options
+        partitions_sql = self.expressions(sqls=partitions, sep=" ")
+        partitions_sql = (
+            f" {partitions_sql}" if partitions_sql and (actions_sql or options) else partitions_sql
+        )
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
@@ -4452,7 +4473,7 @@ class Generator:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{cascade}"
+        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{partitions_sql}{cascade}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)

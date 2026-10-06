@@ -97,6 +97,22 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER TABLE t COMMENT='hi'")
         self.validate_identity("ALTER TABLE t COMMENT 'hi'", "ALTER TABLE t COMMENT='hi'")
+        self.validate_identity("ALTER TABLE t FORCE").assert_is(exp.Alter)
+        self.validate_identity(
+            "ALTER TABLE t ENGINE=InnoDB PARTITION BY LIST (a) (PARTITION p0 VALUES IN (1))"
+        )
+        for sql in (
+            "ALTER TABLE t PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+            "ALTER TABLE t PARTITION BY RANGE COLUMNS (a, b) (PARTITION p0 VALUES LESS THAN (10, 20))",
+            "ALTER TABLE t PARTITION BY LIST COLUMNS (a) (PARTITION p0 VALUES IN (1, 2))",
+            "ALTER TABLE t PARTITION BY LIST (a) (PARTITION p0 VALUES IN (1) COMMENT = 'x')",
+            "ALTER TABLE t PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB)",
+        ):
+            self.validate_identity(sql, check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE t ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8",
+            "ALTER TABLE t ROW_FORMAT=COMPRESSED, KEY_BLOCK_SIZE=8",
+        )
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(
@@ -445,22 +461,27 @@ class TestMySQL(Validator):
                     self.assertNotIsInstance(action, exp.Command)
 
         for sql, expected, num_actions, num_options in (
-            ("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT", None, 2, 0),
-            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 1, 1),
+            (
+                "ALTER TABLE t COMMENT='hi', ADD COLUMN c INT",
+                "ALTER TABLE t ADD COLUMN c INT, COMMENT='hi'",
+                1,
+                1,
+            ),
+            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 0, 2),
             ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", None, 1, 1),
             ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", None, 1, 1),
             ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", None, 1, 2),
             (
                 "ALTER TABLE s.t COMMENT 'notes' AUTO_INCREMENT=5 COMPRESSION='zlib'",
                 "ALTER TABLE s.t COMMENT='notes', AUTO_INCREMENT=5, COMPRESSION='zlib'",
-                1,
-                2,
+                0,
+                3,
             ),
             (
                 "ALTER TABLE t COMMENT='x' AUTO_INCREMENT=5, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
                 "ALTER TABLE t COMMENT='x', AUTO_INCREMENT=5, ENGINE=InnoDB, ROW_FORMAT=DYNAMIC",
-                1,
-                3,
+                0,
+                4,
             ),
             (
                 "ALTER TABLE t ADD COLUMN x INT, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",

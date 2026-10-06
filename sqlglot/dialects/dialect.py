@@ -347,6 +347,13 @@ class _Dialect(type):
             if v == "\\" or (not v.isprintable() and k[1:] != v)
         }
 
+        identifier_escapes = klass.tokenizer_class.IDENTIFIER_ESCAPES
+        klass.IDENTIFIER_ESCAPED_SEQUENCES = {
+            v: k
+            for k, v in klass.UNESCAPED_SEQUENCES.items()
+            if k[0] in identifier_escapes and v in identifier_escapes
+        }
+
         # Prefer hex, then octal, then Unicode for numeric control-character escapes.
         numeric_escapes = klass.tokenizer_class.NUMERIC_ESCAPES
         if "x" in numeric_escapes:
@@ -490,6 +497,9 @@ class Dialect(metaclass=_Dialect):
 
     BYTE_STRINGS_SUPPORT_ESCAPED_SEQUENCES: bool = False
     """Whether byte string literals support escape sequences. Set by the metaclass based on the tokenizer's BYTE_STRING_ESCAPES."""
+
+    IDENTIFIER_ESCAPED_SEQUENCES: dict[str, str] = {}
+    """Mapping of an identifier escape char (`\\`) to its escaped version (`\\\\`). Set by the metaclass based on the tokenizer's IDENTIFIER_ESCAPES."""
 
     INVERSE_VECTOR_TYPE_ALIASES: dict[str, str] = {}
     """Mapping of vector type aliases back to their canonical names. Overridden by dialects like SingleStore."""

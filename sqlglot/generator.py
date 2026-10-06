@@ -897,6 +897,7 @@ class Generator:
         "_escaped_quote_end",
         "_escaped_byte_quote_end",
         "_escaped_identifier_end",
+        "_identifier_escaped_sequences",
         "_next_name",
         "_identifier_start",
         "_identifier_end",
@@ -949,6 +950,7 @@ class Generator:
             else ""
         )
         self._escaped_identifier_end = self.dialect.IDENTIFIER_END * 2
+        self._identifier_escaped_sequences = self.dialect.IDENTIFIER_ESCAPED_SEQUENCES
 
         self._next_name = name_sequence("_t")
 
@@ -2044,6 +2046,9 @@ class Generator:
         lower = text.lower()
         quoted = expression.quoted
         text = lower if self.normalize and not quoted else text
+        if self._identifier_escaped_sequences:
+            for char, escaped in self._identifier_escaped_sequences.items():
+                text = text.replace(char, escaped)
         text = text.replace(self._identifier_end, self._escaped_identifier_end)
         if (
             quoted

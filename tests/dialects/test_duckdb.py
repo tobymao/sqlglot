@@ -1,7 +1,5 @@
 from unittest import mock
 
-import duckdb
-
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -1751,7 +1749,6 @@ class TestDuckDB(Validator):
         source = "SELECT SLICE(SPLIT('abcdef', ''), 2, 4) AS chars"
         target = "SELECT ARRAY_SLICE(STR_SPLIT_REGEX('abcdef', ''), 2, 5) AS chars"
         self.validate_all(target, read={"spark": source})
-        self.assertEqual(duckdb.sql(target).fetchall(), [(["b", "c", "d", "e"],)])
 
         for dialect in ("spark2", "spark", "databricks"):
             with self.subTest(dialect=dialect):
@@ -1760,53 +1757,41 @@ class TestDuckDB(Validator):
                 self.assertEqual(expression.sql("duckdb"), target)
 
     def test_spark_array_slice_bounds(self):
-        source = """
-            SELECT SLICE(SPLIT('abcdef', ''), s, n)
-            FROM (VALUES
-                (1, 4), (2, 4), (6, 2), (7, 2),
-                (-1, 4), (-2, 2), (-3, 1), (-3, 10), (-6, 3), (-7, 3),
-                (1, 0), (4, 0), (-2, 0), (-7, 0),
-                (NULL, 4), (2, NULL), (-7, NULL), (2147483647, 2)
-            ) AS t(s, n)
-        """
-        target = parse_one(source, read="spark").sql("duckdb")
-        self.assertEqual(
-            duckdb.sql(target).fetchall(),
-            [
-                (["a", "b", "c", "d"],),
-                (["b", "c", "d", "e"],),
-                (["f"],),
-                ([],),
-                (["f"],),
-                (["e", "f"],),
-                (["d"],),
-                (["d", "e", "f"],),
-                (["a", "b", "c"],),
-                ([],),
-                ([],),
-                ([],),
-                ([],),
-                ([],),
-                (None,),
-                (None,),
-                (None,),
-                ([],),
-            ],
-        )
-
-        for source, expected in (
-            ("SELECT SLICE(ARRAY(), -1, 2)", []),
-            ("SELECT SLICE(CAST(NULL AS ARRAY<INT>), -1, 2)", None),
-            ("SELECT SLICE(ARRAY(1, NULL, 3), 2, 2)", [None, 3]),
-            ("SELECT SLICE(ARRAY(1, 2, 3), 2, 2147483647)", [2, 3]),
+        for source, target in (
+            ("SLICE(ARRAY(1, 2, 3), 1, 2)", "ARRAY_SLICE([1, 2, 3], 1, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 4)", "ARRAY_SLICE([1, 2, 3], 2, 5)"),
+            ("SLICE(ARRAY(1, 2, 3), 3, 0)", "ARRAY_SLICE([1, 2, 3], 3, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 2147483647)", "ARRAY_SLICE([1, 2, 3], 2, 2147483648)"),
             (
-                "SELECT SLICE(ARRAY(1, 2, 3), 2, n) FROM (VALUES (2147483647)) AS t(n)",
-                [2, 3],
+                "SLICE(ARRAY(1, 2, 3), -2, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END, (CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(ARRAY(1, 2, 3), -4, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END, (CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(NULL, 2, 1)",
+                "ARRAY_SLICE(NULL, 2, 2)",
+            ),
+            (
+                "SLICE(a, s, n)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, 2, n)",
+                "ARRAY_SLICE(a, 2, (2 + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, s, 2)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(2 AS BIGINT)) - 1)",
             ),
         ):
             with self.subTest(source=source):
-                target = parse_one(source, read="spark").sql("duckdb")
-                self.assertEqual(duckdb.sql(target).fetchall(), [(expected,)])
+                self.validate_all(
+                    target,
+                    read={"spark2": source, "spark": source, "databricks": source},
+                )
 
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning

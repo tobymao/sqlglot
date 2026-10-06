@@ -3582,6 +3582,26 @@ class DuckDBGenerator(generator.Generator):
         """
         start, end = expression.args.get("start"), expression.args.get("end")
 
+        if expression.args.get("zero_based"):
+            if start is not None:
+                start = (
+                    exp.case()
+                    .when(
+                        exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
+                        exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
+                    )
+                    .else_(start)
+                )
+            if end is not None and not expression.args.get("is_length"):
+                end = (
+                    exp.case()
+                    .when(
+                        exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
+                        exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
+                    )
+                    .else_(end)
+                )
+
         if expression.args.get("is_length") and start is not None and end is not None:
             if not start.is_int or start.to_py() < 0:
                 size = exp.ArraySize(this=expression.this.copy())
@@ -3596,26 +3616,6 @@ class DuckDBGenerator(generator.Generator):
                 end = exp.Literal.number(start.to_py() + end.to_py() - 1)
             else:
                 end = start.copy() + exp.cast(end, "BIGINT") - 1
-        elif expression.args.get("zero_based"):
-            if start is not None:
-                start = (
-                    exp.case()
-                    .when(
-                        exp.GTE(this=start.copy(), expression=exp.Literal.number(0)),
-                        exp.Add(this=start.copy(), expression=exp.Literal.number(1)),
-                    )
-                    .else_(start)
-                )
-            if end is not None:
-                end = (
-                    exp.case()
-                    .when(
-                        exp.LT(this=end.copy(), expression=exp.Literal.number(0)),
-                        exp.Sub(this=end.copy(), expression=exp.Literal.number(1)),
-                    )
-                    .else_(end)
-                )
-
         return self.func("ARRAY_SLICE", expression.this, start, end, expression.args.get("step"))
 
     def arrayszip_sql(self, expression: exp.ArraysZip) -> str:

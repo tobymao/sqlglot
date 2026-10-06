@@ -4518,16 +4518,7 @@ class Generator:
         return f"{this_sql} HAVING {kind} {expression_sql}"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
-        l, r = expression.left, expression.right
-
-        if (
-            self.dialect.TYPED_DIVISION
-            and l.is_type(*exp.DataType.INTEGER_TYPES)
-            and r.is_type(*exp.DataType.INTEGER_TYPES)
-        ):
-            return self.binary(expression, "/")
-
-        div: exp.Expr = exp.Div(this=l, expression=r)
+        div: exp.Expr = exp.Div(this=expression.this, expression=expression.expression)
         if self.CAST_TO_INT_ROUNDS:
             div = exp.Trunc(this=div)
 

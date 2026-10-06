@@ -6140,19 +6140,19 @@ class Parser:
             this = setop
 
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
-            expression = this.expression
+            right_operand = this.expression
 
             # There may be nested right-hand operands, so we hoist their modifiers to the root set operation
-            while expression:
+            while right_operand:
                 for arg in self.SET_OP_MODIFIERS:
                     if not this.args.get(arg):
-                        expr = expression.args.get(arg)
+                        expr = right_operand.args.get(arg)
                         if expr and not (arg == "limit" and expr.meta.get("top")):
-                            expression.set(arg, None)
+                            right_operand.set(arg, None)
                             this.set(arg, expr)
-                if not isinstance(expression, exp.SetOperation):
+                if not isinstance(right_operand, exp.SetOperation):
                     break
-                expression = expression.expression
+                right_operand = right_operand.expression
 
             # A trailing LIMIT/FETCH can coexist with TOP on the final operand.
             if self._curr.token_type in (TokenType.LIMIT, TokenType.FETCH):

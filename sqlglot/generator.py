@@ -1137,12 +1137,12 @@ class Generator:
 
         parts: list[str] = []
         at_line_start = True
-        for sql, depth in sql_fragments:
+        for sql, indent_level in sql_fragments:
             if sql:
                 parts.append(
                     self.indent(
                         sql,
-                        level=depth,
+                        level=indent_level,
                         pad=0,
                         skip_first=not at_line_start,
                         skip_last=sql.endswith("\n"),
@@ -1952,44 +1952,44 @@ class Generator:
         mixed_requires_parens = self.SET_OP_MIXED_OPERATORS_REQUIRE_PARENS
 
         while stack:
-            node, depth, render_with_modifiers = stack.pop()
+            item, indent_level, render_with_modifiers = stack.pop()
 
-            if isinstance(node, str):
-                sql_fragments.append((node, depth))
+            if isinstance(item, str):
+                sql_fragments.append((item, indent_level))
                 continue
 
-            if not isinstance(node, exp.SetOperation):
+            if not isinstance(item, exp.SetOperation):
                 if (
-                    isinstance(node, exp.Select)
-                    and node.args.get("limit")
+                    isinstance(item, exp.Select)
+                    and item.args.get("limit")
                     and not self.SET_OP_LIMITS
                 ):
-                    node = node.subquery(copy=False)
+                    item = item.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:
-                        node = exp.select("*").from_(node, copy=False)
-                sql_fragments.append((self.sql(node), depth))
+                        item = exp.select("*").from_(item, copy=False)
+                sql_fragments.append((self.sql(item), indent_level))
                 continue
 
-            if render_with_modifiers and (node is not expression or not self.SET_OP_MODIFIERS):
-                select = self._setop_outer_query(node)
+            if render_with_modifiers and (item is not expression or not self.SET_OP_MODIFIERS):
+                select = self._setop_outer_query(item)
                 if select:
-                    if node is expression:
+                    if item is expression:
                         return self.sql(select)
 
                     prefix, suffix = self._setop_select_shell(select)
-                    sql_fragments.append((prefix, depth))
-                    stack.append((suffix, depth, False))
-                    stack.append((node, depth + 1, True))
+                    sql_fragments.append((prefix, indent_level))
+                    stack.append((suffix, indent_level, False))
+                    stack.append((item, indent_level + 1, True))
                     continue
 
             if render_with_modifiers:
-                with_ = self.sql(node, "with_")
+                with_ = self.sql(item, "with_")
                 if with_:
-                    sql_fragments.append((f"{with_}{separator}", depth))
-                stack.append((self.query_modifiers(node, ""), depth, False))
+                    sql_fragments.append((f"{with_}{separator}", indent_level))
+                stack.append((self.query_modifiers(item, ""), indent_level, False))
 
-            this = node.this
-            expr = node.expression
+            this = item.this
+            expr = item.expression
 
             # The parser groups equal-precedence operators from the left. A
             # lower-precedence left operand needs grouping before INTERSECT;
@@ -1998,14 +1998,14 @@ class Generator:
                 self._setop_has_modifiers(this)
                 or (
                     intersect_tighter
-                    and isinstance(node, exp.Intersect)
+                    and isinstance(item, exp.Intersect)
                     and not isinstance(this, exp.Intersect)
                 )
                 or (
                     mixed_requires_parens
                     and (
-                        type(this) is not type(node)
-                        or this.args.get("distinct") != node.args.get("distinct")
+                        type(this) is not type(item)
+                        or this.args.get("distinct") != item.args.get("distinct")
                     )
                 )
             )
@@ -2013,23 +2013,23 @@ class Generator:
                 self._setop_has_modifiers(expr)
                 or (
                     intersect_tighter
-                    and isinstance(node, exp.Intersect)
+                    and isinstance(item, exp.Intersect)
                     and not isinstance(expr, exp.Intersect)
                 )
                 or (
                     mixed_requires_parens
                     and (
-                        type(expr) is not type(node)
-                        or expr.args.get("distinct") != node.args.get("distinct")
+                        type(expr) is not type(item)
+                        or expr.args.get("distinct") != item.args.get("distinct")
                     )
                 )
                 or (
                     not (
                         intersect_tighter
                         and isinstance(expr, exp.Intersect)
-                        and not isinstance(node, exp.Intersect)
+                        and not isinstance(item, exp.Intersect)
                     )
-                    and not self._setop_operand_flattenable(node, expr)
+                    and not self._setop_operand_flattenable(item, expr)
                 )
             )
             if wrap_this or wrap_expr:
@@ -2038,28 +2038,28 @@ class Generator:
                 open_wrapper, close_wrapper = wrapper
 
             if wrap_expr:
-                stack.append((close_wrapper, depth, False))
-            stack.append((expr, depth + bool(wrap_expr), bool(wrap_expr)))
+                stack.append((close_wrapper, indent_level, False))
+            stack.append((expr, indent_level + bool(wrap_expr), bool(wrap_expr)))
             if wrap_expr:
-                stack.append((open_wrapper, depth, False))
-            stack.append((separator, depth, False))
+                stack.append((open_wrapper, indent_level, False))
+            stack.append((separator, indent_level, False))
 
             stack.append(
                 (
                     self.maybe_comment(
-                        self.set_operation(node), comments=node.comments, separated=True
+                        self.set_operation(item), comments=item.comments, separated=True
                     ),
-                    depth,
+                    indent_level,
                     False,
                 )
             )
-            stack.append((separator, depth, False))
+            stack.append((separator, indent_level, False))
 
             if wrap_this:
-                stack.append((close_wrapper, depth, False))
-            stack.append((this, depth + bool(wrap_this), bool(wrap_this)))
+                stack.append((close_wrapper, indent_level, False))
+            stack.append((this, indent_level + bool(wrap_this), bool(wrap_this)))
             if wrap_this:
-                stack.append((open_wrapper, depth, False))
+                stack.append((open_wrapper, indent_level, False))
 
         return self._join_sql_fragments(sql_fragments)
 

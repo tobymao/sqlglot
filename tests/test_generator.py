@@ -146,10 +146,10 @@ class TestGenerator(unittest.TestCase):
         )
 
     def test_setop_grouping_and_precedence(self):
-        right = exp.union("SELECT 1", exp.intersect("SELECT 2", "SELECT 3"))
-        left = exp.intersect(exp.union("SELECT 1", "SELECT 2"), "SELECT 3")
+        right_nested = exp.union("SELECT 1", exp.intersect("SELECT 2", "SELECT 3"))
+        left_nested = exp.intersect(exp.union("SELECT 1", "SELECT 2"), "SELECT 3")
 
-        for dialect, right_sql, left_sql in (
+        for dialect, right_nested_sql, left_nested_sql in (
             (
                 "postgres",
                 "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
@@ -182,8 +182,8 @@ class TestGenerator(unittest.TestCase):
             ),
         ):
             with self.subTest(dialect=dialect):
-                self.assertEqual(right.sql(dialect), right_sql)
-                self.assertEqual(left.sql(dialect), left_sql)
+                self.assertEqual(right_nested.sql(dialect), right_nested_sql)
+                self.assertEqual(left_nested.sql(dialect), left_nested_sql)
 
         self.assertEqual(
             exp.union(
@@ -321,21 +321,21 @@ class TestGenerator(unittest.TestCase):
         ):
             branch_sql = f"SELECT 1 AS x UNION ALL SELECT 2 AS x {clause} x"
             branch = parse_one(branch_sql, read="spark")
-            for left in (False, True):
-                with self.subTest(clause=clause, left=left):
+            for branch_on_left in (False, True):
+                with self.subTest(clause=clause, branch_on_left=branch_on_left):
                     tree = exp.union(
-                        branch.copy() if left else "SELECT 0 AS x",
-                        "SELECT 0 AS x" if left else branch.copy(),
+                        branch.copy() if branch_on_left else "SELECT 0 AS x",
+                        "SELECT 0 AS x" if branch_on_left else branch.copy(),
                         distinct=False,
                     )
                     expected = (
                         f"({branch_sql}) UNION ALL SELECT 0 AS x"
-                        if left
+                        if branch_on_left
                         else f"SELECT 0 AS x UNION ALL ({branch_sql})"
                     )
                     self.assertEqual(tree.sql("spark"), expected)
                     reparsed = parse_one(expected, read="spark")
-                    operand = reparsed.this if left else reparsed.expression
+                    operand = reparsed.this if branch_on_left else reparsed.expression
                     self.assertIsInstance(operand, exp.Subquery)
                     self.assertIsNotNone(operand.this.args.get(key))
                     self.assertIsNone(reparsed.args.get(key))

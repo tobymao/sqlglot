@@ -86,15 +86,15 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         # are added and hence we won't be able to reach these newly added Alias parents
         query = expression.this
         if isinstance(query, exp.SetOperation):
-            output: exp.Expr = query
-            while isinstance(output, (exp.SetOperation, exp.Subquery, exp.Paren)):
-                output = output.this
-            if isinstance(output, exp.Select):
-                query = output
+            leftmost_operand: exp.Expr = query
+            while isinstance(leftmost_operand, (exp.SetOperation, exp.Subquery, exp.Paren)):
+                leftmost_operand = leftmost_operand.this
+            if isinstance(leftmost_operand, exp.Select):
+                query = leftmost_operand
                 # Preserve set-operation projections that already have output names.
                 if all(
                     isinstance(selection, (exp.Alias, exp.Aliases, exp.Column, exp.Star))
-                    for selection in output.selects
+                    for selection in leftmost_operand.selects
                 ):
                     return expression
 

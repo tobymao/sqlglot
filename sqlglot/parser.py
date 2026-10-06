@@ -6011,14 +6011,12 @@ class Parser:
         """Parses a single UNION/EXCEPT/INTERSECT operator plus its right-hand operand.
 
         Args:
-            this: The already-parsed left-hand operand.
-            consume_pipe: Whether the right-hand operand may consume a trailing pipe operator.
-            set_operations_to_parse: Token types eligible to match here; defaults to
-                `SET_OPERATIONS`. Callers restrict this to implement operator precedence
-                (e.g. matching only INTERSECT, or only UNION/EXCEPT).
-            right_operand_parser: Parses the right-hand operand; defaults to a plain nested
-                SELECT. Callers substitute a custom parser to recurse into a tighter-binding
-                operator tier before returning control here.
+            this: The already-parsed left operand.
+            consume_pipe: Whether the default right-operand parser may consume a trailing pipe.
+            set_operations_to_parse: Eligible operator tokens; defaults to SET_OPERATIONS.
+                Restrict this set to implement precedence tiers.
+            right_operand_parser: Optional parser for the right operand and its higher-precedence
+                operations; defaults to a nested SELECT without set-operation parsing.
 
         Returns:
             The combined SetOperation, or None if no eligible operator was matched.
@@ -6104,7 +6102,6 @@ class Parser:
             comments=comments,
         )
 
-    # Parse subsequent INTERSECT operations using `this` as the first operand
     def _parse_intersection_chain(self, this: exp.Expr | None) -> exp.Expr | None:
         while this:
             setop = self.parse_set_operation(
@@ -6115,7 +6112,6 @@ class Parser:
             this = setop
         return this
 
-    # Parse next query and all immediately following INTERSECTs
     def _parse_intersection_operand(self) -> exp.Expr | None:
         return self._parse_intersection_chain(
             self._parse_select(nested=True, parse_set_operation=False, consume_pipe=False)
@@ -6142,7 +6138,7 @@ class Parser:
         if isinstance(this, exp.SetOperation) and self.MODIFIERS_ATTACHED_TO_SET_OP:
             right_operand = this.expression
 
-            # There may be nested right-hand operands, so we hoist their modifiers to the root set operation
+            # Hoist trailing modifiers from the right operand chain.
             while right_operand:
                 for arg in self.SET_OP_MODIFIERS:
                     if not this.args.get(arg):

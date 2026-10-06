@@ -1943,7 +1943,6 @@ class Generator:
         return f"{side_kind}{op_name}{distinct_or_all}{by_name}{on}"
 
     def set_operations(self, expression: exp.SetOperation) -> str:
-        """Render set-operation chains iteratively, grouping operands with emitted modifiers."""
         sql_fragments: list[tuple[str, int]] = []
         stack: list[tuple[exp.Expr | str, int, bool]] = [(expression, 0, True)]
         wrapper: tuple[str, str] | None = None
@@ -1952,44 +1951,44 @@ class Generator:
         mixed_requires_parens = self.SET_OP_MIXED_OPERATORS_REQUIRE_PARENS
 
         while stack:
-            item, indent_level, render_with_modifiers = stack.pop()
+            node, indent_level, render_with_modifiers = stack.pop()
 
-            if isinstance(item, str):
-                sql_fragments.append((item, indent_level))
+            if isinstance(node, str):
+                sql_fragments.append((node, indent_level))
                 continue
 
-            if not isinstance(item, exp.SetOperation):
+            if not isinstance(node, exp.SetOperation):
                 if (
-                    isinstance(item, exp.Select)
-                    and item.args.get("limit")
-                    and not self.SET_OP_LIMITS
+                    not self.SET_OP_LIMITS
+                    and isinstance(node, exp.Select)
+                    and node.args.get("limit")
                 ):
-                    item = item.subquery(copy=False)
+                    node = node.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:
-                        item = exp.select("*").from_(item, copy=False)
-                sql_fragments.append((self.sql(item), indent_level))
+                        node = exp.select("*").from_(node, copy=False)
+                sql_fragments.append((self.sql(node), indent_level))
                 continue
 
-            if render_with_modifiers and (item is not expression or not self.SET_OP_MODIFIERS):
-                select = self._setop_outer_query(item)
+            if render_with_modifiers and (node is not expression or not self.SET_OP_MODIFIERS):
+                select = self._setop_outer_query(node)
                 if select:
-                    if item is expression:
+                    if node is expression:
                         return self.sql(select)
 
                     prefix, suffix = self._setop_select_shell(select)
                     sql_fragments.append((prefix, indent_level))
                     stack.append((suffix, indent_level, False))
-                    stack.append((item, indent_level + 1, True))
+                    stack.append((node, indent_level + 1, True))
                     continue
 
             if render_with_modifiers:
-                with_ = self.sql(item, "with_")
+                with_ = self.sql(node, "with_")
                 if with_:
                     sql_fragments.append((f"{with_}{separator}", indent_level))
-                stack.append((self.query_modifiers(item, ""), indent_level, False))
+                stack.append((self.query_modifiers(node, ""), indent_level, False))
 
-            this = item.this
-            expr = item.expression
+            this = node.this
+            expr = node.expression
 
             # The parser groups equal-precedence operators from the left. A
             # lower-precedence left operand needs grouping before INTERSECT;
@@ -1998,14 +1997,14 @@ class Generator:
                 self._setop_has_modifiers(this)
                 or (
                     intersect_tighter
-                    and isinstance(item, exp.Intersect)
+                    and isinstance(node, exp.Intersect)
                     and not isinstance(this, exp.Intersect)
                 )
                 or (
                     mixed_requires_parens
                     and (
-                        type(this) is not type(item)
-                        or this.args.get("distinct") != item.args.get("distinct")
+                        type(this) is not type(node)
+                        or this.args.get("distinct") != node.args.get("distinct")
                     )
                 )
             )
@@ -2013,23 +2012,23 @@ class Generator:
                 self._setop_has_modifiers(expr)
                 or (
                     intersect_tighter
-                    and isinstance(item, exp.Intersect)
+                    and isinstance(node, exp.Intersect)
                     and not isinstance(expr, exp.Intersect)
                 )
                 or (
                     mixed_requires_parens
                     and (
-                        type(expr) is not type(item)
-                        or expr.args.get("distinct") != item.args.get("distinct")
+                        type(expr) is not type(node)
+                        or expr.args.get("distinct") != node.args.get("distinct")
                     )
                 )
                 or (
                     not (
                         intersect_tighter
                         and isinstance(expr, exp.Intersect)
-                        and not isinstance(item, exp.Intersect)
+                        and not isinstance(node, exp.Intersect)
                     )
-                    and not self._setop_operand_flattenable(item, expr)
+                    and not self._setop_operand_flattenable(node, expr)
                 )
             )
             if wrap_this or wrap_expr:
@@ -2037,6 +2036,7 @@ class Generator:
                     wrapper = self._wrap_setop_operand()
                 open_wrapper, close_wrapper = wrapper
 
+            # Only grouped set-operation operands render their own CTEs and trailing modifiers.
             if wrap_expr:
                 stack.append((close_wrapper, indent_level, False))
             stack.append((expr, indent_level + bool(wrap_expr), bool(wrap_expr)))
@@ -2047,7 +2047,7 @@ class Generator:
             stack.append(
                 (
                     self.maybe_comment(
-                        self.set_operation(item), comments=item.comments, separated=True
+                        self.set_operation(node), comments=node.comments, separated=True
                     ),
                     indent_level,
                     False,
@@ -2129,9 +2129,8 @@ class Generator:
         if isinstance(node, exp.Except):
             return False
 
-        # A right operand can flatten only across matching associative operators
-        # with identical row and column matching semantics. A tighter INTERSECT
-        # at the bottom of that spine already binds to the right operand.
+        # Follow left operands to check whether removing the right operand's parentheses is safe.
+        # Matching associative operations can regroup; a higher-precedence INTERSECT stays grouped.
         default_distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[type(node)]
         distinct = node.args.get("distinct")
         if distinct is None:

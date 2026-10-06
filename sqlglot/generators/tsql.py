@@ -342,7 +342,7 @@ class TSQLGenerator(generator.Generator):
         return None
 
     def _setop_select_shell(self, select: exp.Select) -> tuple[str, str]:
-        # The shell substitutes a string for the real derived query while rendering.
+        # Qualify outputs before the shell replaces the derived query with a string.
         qualify_derived_table_outputs(select.args["from_"].this)
         return super()._setop_select_shell(select)
 

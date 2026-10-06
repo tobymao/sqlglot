@@ -3301,15 +3301,29 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_mismatched_set_operation_annotation_fallback(self):
         # The invalid UNION keeps its left operand's types during annotation.
-        sql = (
-            "SELECT t.a, t.b FROM (SELECT 1 AS a, 'x' AS b "
-            "UNION SELECT CAST(2.5 AS NUMERIC) AS c) AS t"
-        )
-        annotated = annotate_types(parse_one(sql))
-        self.assertEqual(
-            [select.type.this for select in annotated.selects],
-            [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
-        )
+        for sql, expected_types in (
+            (
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 'x' AS b "
+                "UNION SELECT CAST(2.5 AS NUMERIC) AS c) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
+            ),
+            (
+                "SELECT t.a, t.b FROM ((SELECT 1 AS a UNION ALL BY NAME "
+                "SELECT 'x' AS b) UNION ALL SELECT 3 AS c) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a UNION ALL SELECT 2 AS b, 3 AS c) "
+                "UNION ALL SELECT CAST(4 AS DOUBLE) AS d) AS t",
+                [exp.DataType.Type.DOUBLE],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                annotated = annotate_types(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    [select.type.this for select in annotated.selects],
+                    expected_types,
+                )
 
     def test_udtf_annotation(self):
         table_udtf = parse_one(

@@ -200,10 +200,11 @@ class StarRocksParser(MySQLParser):
     def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
         """
         REFRESH [DEFERRED | IMMEDIATE]
-                [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>) | MANUAL]
+                [ASYNC | ASYNC [START (<start_time>)] EVERY (INTERVAL <refresh_interval>)
+                 | MANUAL | SCHEDULE [START (<start_time>)] EVERY (INTERVAL <refresh_interval>)]
         """
         method = self._match_texts(("DEFERRED", "IMMEDIATE")) and self._prev.text.upper()
-        kind = self._match_texts(("ASYNC", "MANUAL")) and self._prev.text.upper()
+        kind = self._match_texts(("ASYNC", "MANUAL", "SCHEDULE")) and self._prev.text.upper()
         start = self._match_text_seq("START") and self._parse_wrapped(self._parse_string)
 
         if self._match_text_seq("EVERY"):

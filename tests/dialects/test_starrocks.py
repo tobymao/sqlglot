@@ -244,6 +244,7 @@ class TestStarrocks(Validator):
             "REFRESH DEFERRED ASYNC EVERY (INTERVAL 5 MINUTE)",
             "REFRESH ASYNC START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
             "REFRESH ASYNC EVERY (INTERVAL 5 MINUTE)",
+            "REFRESH DEFERRED SCHEDULE START ('2025-01-01 00:00:00') EVERY (INTERVAL 5 MINUTE)",
         ]
         for properties in mv_properties:
             with self.subTest(f"Testing refresh clause: {properties}"):

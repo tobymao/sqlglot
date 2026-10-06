@@ -2458,6 +2458,12 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("PARSE_IP is not supported in DuckDB")
         return self.function_fallback_sql(expression)
 
+    def div_sql(self, expression: exp.Div) -> str:
+        # DuckDB's // is integer division for integer operands and regular division otherwise
+        if expression.args.get("typed"):
+            return self.binary(expression, "//")
+        return super().div_sql(expression)
+
     def decompressstring_sql(self, expression: exp.DecompressString) -> str:
         self.unsupported("DECOMPRESS_STRING is not supported in DuckDB")
         return self.function_fallback_sql(expression)

@@ -261,6 +261,7 @@ class PrestoGenerator(generator.Generator):
 
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
+    CAST_TO_INT_ROUNDS = True
     TABLE_HINTS = False
     QUERY_HINTS = False
     IS_BOOL_ALLOWED = False

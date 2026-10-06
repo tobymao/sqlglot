@@ -536,7 +536,11 @@ class PostgresGenerator(generator.Generator):
         this = expression.this
 
         # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
-        if isinstance(this, exp.IntDiv) and expression.to == exp.DType.DECIMAL.into_expr():
+        if (
+            isinstance(this, exp.IntDiv)
+            and exp.IntDiv in self.TRANSFORMS
+            and expression.to == exp.DType.DECIMAL.into_expr()
+        ):
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)

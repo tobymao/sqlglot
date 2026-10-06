@@ -169,6 +169,7 @@ class MySQLGenerator(generator.Generator):
         exp.ILike: no_ilike_sql,
         # https://dev.mysql.com/doc/refman/9.7/en/flow-control-functions.html#function_if
         exp.If: if_sql(false_value="NULL"),
+        exp.IntDiv: lambda self, e: self.binary(e, "DIV"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
         exp.Length: length_or_char_length_sql,
         exp.LogicalOr: rename_func("MAX"),

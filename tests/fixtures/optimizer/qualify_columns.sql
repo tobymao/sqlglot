@@ -132,6 +132,10 @@ SELECT 2 AS d FROM x AS x GROUP BY 1 ORDER BY d;
 SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
+# execute: false
+SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS t(a)) AS f FROM x GROUP BY 1;
+SELECT (SELECT MIN(t.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS t(a)) AS f FROM x AS x GROUP BY 1;
+
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
 WITH x AS (SELECT 'a' AS a, 1 AS b) SELECT x.a AS c, y.a AS d, SUM(x.b) AS y FROM x AS x JOIN x AS y ON x.a = y.a GROUP BY x.a, 2;
@@ -203,6 +207,10 @@ SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 # schema: {"t": {"z": "INT"}}
 SELECT 1 AS z, z + 1 AS w FROM (SELECT * FROM t) c;
 SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT T.Z AS Z FROM T T) C;
+
+# execute: false
+SELECT t.x FROM READ_PARQUET('path.parquet', hive_partition=1) AS t;
+SELECT t.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS t;
 
 # title: oracle WHERE column sharing a projection alias name is a source column
 # dialect: oracle
@@ -304,6 +312,11 @@ SELECT r.v AS v, r.idx AS idx FROM t AS t, LATERAL UNNEST(t.a) WITH ORDINALITY A
 SELECT generate_series FROM generate_series(0, 10) AS g;
 SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(generate_series);
 
+# execute: false
+# dialect: snowflake
+# schema: {"quarterly_sales": {"amount": "DOUBLE", "quarter": "INT", "empid": "INT"}}
+SELECT * FROM quarterly_sales PIVOT(SUM(amount) as S FOR quarter IN (ANY ORDER BY quarter)) AS p ORDER BY empid;
+SELECT P.EMPID AS EMPID, P.S AS S FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) AS S FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS P ORDER BY P.EMPID;
 
 # execute: false
 # schema: {"t": {"x": "DOUBLE"}}

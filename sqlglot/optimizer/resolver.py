@@ -65,13 +65,13 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name:
+        if not table_name and self._infer_schema:
             sources_without_schema = tuple(
                 source
                 for source, columns in self._get_all_source_columns().items()
                 if not columns or "*" in columns
             )
-            if len(sources_without_schema) == 1 and self._infer_schema:
+            if len(sources_without_schema) == 1:
                 table_name = sources_without_schema[0]
 
         if table_name not in self.scope.selected_sources:

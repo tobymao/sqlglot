@@ -315,8 +315,8 @@ SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(gen
 # execute: false
 # dialect: snowflake
 # schema: {"quarterly_sales": {"amount": "DOUBLE", "quarter": "INT", "empid": "INT"}}
-SELECT * FROM quarterly_sales PIVOT(SUM(amount) as S FOR quarter IN (ANY ORDER BY quarter)) AS p ORDER BY empid;
-SELECT P.EMPID AS EMPID, P.S AS S FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) AS S FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS P ORDER BY P.EMPID;
+SELECT empid FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter));
+SELECT _0.EMPID AS EMPID FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0;
 
 # execute: false
 # schema: {"t": {"x": "DOUBLE"}}

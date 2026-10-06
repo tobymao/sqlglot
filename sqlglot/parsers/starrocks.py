@@ -248,3 +248,9 @@ class StarRocksParser(MySQLParser):
                 method=method, kind=kind, starts=start, every=every, unit=unit
             )
         )
+
+    def _parse_kill(self) -> exp.Kill:
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/KILL_ANALYZE/
+        if self._match_text_seq("ANALYZE"):
+            return self.expression(exp.Kill(this=self._parse_primary(), kind=exp.var("ANALYZE")))
+        return super()._parse_kill()

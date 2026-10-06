@@ -493,6 +493,12 @@ class TestStarrocks(Validator):
             "CREATE TABLE test_table (dt DATETIME) PARTITION BY TIME_SLICE(dt, INTERVAL '7' DAY) DISTRIBUTED BY HASH (dt)"
         )
 
+    def test_kill(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cbo_stats/KILL_ANALYZE/
+        self.validate_identity("KILL ANALYZE 266030")
+        self.validate_identity("KILL QUERY 5")
+        self.validate_identity("KILL 20")
+
     def test_aggregate_key_columns(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
         for agg in (

@@ -658,14 +658,14 @@ class TypeAnnotator:
             return self._setop_column_types[setop_id]
 
         stack: list[tuple[exp.Expr, bool]] = [(setop, False)]
-        operand_types: list[list[tuple[str, exp.DataType | exp.DType]]] = []
+        column_type_stack: list[list[tuple[str, exp.DataType | exp.DType]]] = []
 
         while stack:
             node, children_resolved = stack.pop()
             if isinstance(node, exp.Subquery):
                 stack.append((node.unnest(), False))
             elif not isinstance(node, exp.SetOperation):
-                operand_types.append(
+                column_type_stack.append(
                     [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in node.selects]
                     if isinstance(node, exp.Selectable)
                     else []
@@ -675,8 +675,8 @@ class TypeAnnotator:
                 stack.append((node.expression, False))
                 stack.append((node.this, False))
             else:
-                right = operand_types.pop()
-                left = operand_types.pop()
+                right = column_type_stack.pop()
+                left = column_type_stack.pop()
 
                 by_name = node.args.get("by_name")
                 if not left or not right or (not by_name and len(left) != len(right)):
@@ -698,9 +698,9 @@ class TypeAnnotator:
                         for (name, left_type), (_, right_type) in zip(left, right)
                     ]
 
-                operand_types.append(resolved)
+                column_type_stack.append(resolved)
 
-        col_types = dict(operand_types.pop())
+        col_types = dict(column_type_stack.pop())
         self._setop_column_types[setop_id] = col_types
         return col_types
 

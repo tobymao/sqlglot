@@ -183,6 +183,20 @@ class StarRocksParser(MySQLParser):
             exp.PartitionByRangePropertyDynamic(start=start, end=end, every=every)
         )
 
+    def _parse_partition_range_value(self) -> exp.Expr | None:
+        expr = super()._parse_partition_range_value()
+        if isinstance(expr, exp.Partition) or not self._match_text_seq("VALUES"):
+            return expr
+
+        # PARTITION p1 VALUES [(lower), (upper))
+        # https://docs.starrocks.io/docs/table_design/data_distribution/#range-partitioning
+        self._match(TokenType.L_BRACKET)
+        values = self._parse_csv(lambda: self._parse_wrapped_csv(self._parse_expression))
+        self._match(TokenType.R_PAREN)
+
+        part_range = self.expression(exp.PartitionRange(this=expr, expressions=values))
+        return self.expression(exp.Partition(expressions=[part_range]))
+
     def _parse_refresh_property(self) -> exp.RefreshTriggerProperty:
         """
         REFRESH [DEFERRED | IMMEDIATE]

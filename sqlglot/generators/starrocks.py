@@ -372,6 +372,15 @@ class StarRocksGenerator(MySQLGenerator):
 
         return f"REFRESH{method}{kind}{starts}{every}"
 
+    def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
+        values = expression.expressions
+        if len(values) == 2 and all(isinstance(v, list) for v in values):
+            name = self.sql(expression, "this")
+            bounds = ", ".join(f"({self.expressions(sqls=bound, flat=True)})" for bound in values)
+            return f"PARTITION {name} VALUES [{bounds})"
+
+        return super().partitionrange_sql(expression)
+
     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
         interval = exp.Interval(this=expression.expression, unit=expression.args.get("unit"))
         return self.func("TIME_SLICE", expression.this, interval, expression.args.get("kind"))

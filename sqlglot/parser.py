@@ -2459,7 +2459,12 @@ class Parser:
         else:
             tables = self._parse_table_parts(schema=True, is_db_reference=kind == "SCHEMA")
 
-        cluster = self._parse_on_property() if self._match(TokenType.ON) else None
+        cluster: exp.Expr | None = None
+        if self._match(TokenType.ON):
+            if kind == "INDEX":
+                cluster = self.expression(exp.OnProperty(this=self._parse_table_parts()))
+            else:
+                cluster = self._parse_on_property()
 
         if self._match(TokenType.L_PAREN, advance=False):
             expressions = self._parse_wrapped_csv(self._parse_types)

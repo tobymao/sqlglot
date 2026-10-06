@@ -7,6 +7,17 @@ from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
+# https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
+AGGREGATE_COLUMN_CONSTRAINTS = (
+    "SUM",
+    "MAX",
+    "MIN",
+    "REPLACE",
+    "REPLACE_IF_NOT_NULL",
+    "BITMAP_UNION",
+    "HLL_UNION",
+)
+
 
 class StarRocksParser(MySQLParser):
     # Unlike MySQL, dropping a column requires the COLUMN keyword
@@ -45,6 +56,13 @@ class StarRocksParser(MySQLParser):
         "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         "ROLLUP": lambda self: self._parse_rollup_property(),
         "REFRESH": lambda self: self._parse_refresh_property(),
+    }
+
+    CONSTRAINT_PARSERS = {
+        **MySQLParser.CONSTRAINT_PARSERS,
+        **dict.fromkeys(
+            AGGREGATE_COLUMN_CONSTRAINTS, lambda self: exp.var(self._prev.text.upper())
+        ),
     }
 
     def _parse_rollup_property(self) -> exp.RollupProperty:

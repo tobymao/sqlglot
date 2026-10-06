@@ -478,3 +478,19 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
         )
+
+    def test_aggregate_key_columns(self):
+        # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
+        for agg in (
+            "SUM",
+            "MAX",
+            "MIN",
+            "REPLACE",
+            "REPLACE_IF_NOT_NULL",
+            "BITMAP_UNION",
+            "HLL_UNION",
+        ):
+            with self.subTest(agg):
+                self.validate_identity(
+                    f"CREATE TABLE t (k1 INT, v2 INT {agg}) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+                )

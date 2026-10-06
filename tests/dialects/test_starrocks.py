@@ -494,3 +494,14 @@ class TestStarrocks(Validator):
                 self.validate_identity(
                     f"CREATE TABLE t (k1 INT, v2 INT {agg}) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
                 )
+
+    def test_generated_columns(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/generated_columns/
+        self.validate_identity(
+            "CREATE TABLE t (id INT, newcol1 INT AS id + 1)",
+            "CREATE TABLE t (id INT, newcol1 INT GENERATED ALWAYS AS (id + 1) VIRTUAL)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (id INT, newcol1 INT AS (id + 1))",
+            "CREATE TABLE t (id INT, newcol1 INT GENERATED ALWAYS AS (id + 1) VIRTUAL)",
+        )

@@ -572,7 +572,7 @@ class ConditionalInsert(Expression):
 
 
 class MultitableInserts(Expression):
-    arg_types = {"expressions": True, "kind": True, "source": True}
+    arg_types = {"with_": False, "expressions": True, "kind": False, "source": True}
 
 
 class OnCondition(Expression):

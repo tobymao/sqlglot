@@ -3013,6 +3013,9 @@ class Generator:
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
 
+        if self._should_drop_limit_all(expression):
+            return this
+
         args = [
             self._simplify_unless_literal(e) if self.LIMIT_ONLY_LITERALS else e
             for e in (expression.args.get(k) for k in ("offset", "expression"))
@@ -3370,7 +3373,12 @@ class Generator:
                 expression=exp.maybe_copy(count) if count is not None else exp.Literal.number(1)
             )
         elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
-            limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
+            if self._should_drop_limit_all(limit):
+                # The target dialect has no equivalent for LIMIT ALL (e.g. Oracle's
+                # FETCH FIRST requires a row count), so omit the clause entirely.
+                limit = None
+            else:
+                limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
         return csv(
             *sqls,
@@ -5515,6 +5523,18 @@ class Generator:
     def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
         this = self.json_path_part(expression.this)
         return f"[{this}]" if this else ""
+
+    def _should_drop_limit_all(self, expression: exp.Limit) -> bool:
+        limit_expression = expression.args.get("expression")
+        is_limit_all = (
+            isinstance(limit_expression, exp.Var) and limit_expression.name.upper() == "ALL"
+        )
+
+        if is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL:
+            self.unsupported("LIMIT ALL is not supported")
+            return True
+
+        return False
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

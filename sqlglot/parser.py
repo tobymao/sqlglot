@@ -5862,9 +5862,9 @@ class Parser:
 
             else:
                 if self.dialect.SUPPORTS_LIMIT_ALL and self._match(TokenType.ALL):
-                    return this
-
-                expression = self._parse_term(parse_mod=False)
+                    expression = exp.var("ALL")
+                else:
+                    expression = self._parse_term(parse_mod=False)
             limit_options = self._parse_limit_options()
 
             if self._match(TokenType.COMMA):

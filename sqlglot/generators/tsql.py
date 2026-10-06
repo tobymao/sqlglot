@@ -351,9 +351,15 @@ class TSQLGenerator(generator.Generator):
                 expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
             if isinstance(limit, exp.Limit):
-                # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
-                # we replace here because otherwise TOP would be generated in select_sql
-                limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
+                if self._should_drop_limit_all(limit):
+                    # T-SQL has no LIMIT ALL equivalent; a bare OFFSET (no FETCH) already
+                    # means "no cap", so just drop the clause instead of emitting an invalid
+                    # FETCH FIRST ALL ROWS ONLY.
+                    limit.pop()
+                else:
+                    # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
+                    # we replace here because otherwise TOP would be generated in select_sql
+                    limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
 
     def convert_sql(self, expression: exp.Convert) -> str:
         name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

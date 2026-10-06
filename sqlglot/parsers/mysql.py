@@ -683,7 +683,10 @@ class MySQLParser(parser.Parser):
         if not self._match_text_seq("VALUES", "LESS", "THAN"):
             return name
 
-        values = self._parse_wrapped_csv(self._parse_expression)
+        if self._match_text_seq("MAXVALUE"):
+            values: list[exp.Expr] = [exp.var("MAXVALUE")]
+        else:
+            values = self._parse_wrapped_csv(self._parse_expression)
 
         if (
             len(values) == 1

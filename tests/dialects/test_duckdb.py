@@ -2534,6 +2534,10 @@ class TestDuckDB(Validator):
             "SELECT * FROM (SELECT foo1, foo2 FROM t1)",
         )
         self.validate_identity(
+            "FROM (FROM t1 SELECT foo1 UNION ALL SELECT foo2 FROM t2)",
+            "SELECT * FROM (SELECT foo1 FROM t1 UNION ALL SELECT foo2 FROM t2)",
+        )
+        self.validate_identity(
             "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
             "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
         )

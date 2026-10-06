@@ -212,7 +212,12 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
     newly aliased projection is referenced in the QUALIFY clause, it will be replaced by the
     corresponding expression to avoid creating invalid column references.
     """
-    if isinstance(expression, exp.Select) and expression.args.get("qualify"):
+    if (
+        isinstance(expression, exp.Select)
+        and expression.args.get("qualify")
+        # A FROM-first multi-table INSERT branch shares its parent's FROM, so it can't be wrapped
+        and not isinstance(expression.parent and expression.parent.parent, exp.MultitableInserts)
+    ):
         taken = set(expression.named_selects)
         for select in expression.selects:
             if not select.alias_or_name:

@@ -254,3 +254,43 @@ class StarRocksParser(MySQLParser):
         if self._match_text_seq("ANALYZE"):
             return self.expression(exp.Kill(this=self._parse_primary(), kind=exp.var("ANALYZE")))
         return super()._parse_kill()
+
+    def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/dictionary/REFRESH_DICTIONARY/
+        if self._match_text_seq("DICTIONARY"):
+            return self.expression(exp.Refresh(this=self._parse_table_parts(), kind="DICTIONARY"))
+        if self._match_text_seq("CONNECTIONS"):
+            return self.expression(exp.Refresh(this=exp.var("CONNECTIONS"), kind="CONNECTIONS"))
+        if not self._match_text_seq("MATERIALIZED", "VIEW"):
+            return super()._parse_refresh()
+
+        # Not _parse_table, which would consume FORCE / PARTITION as index hints
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/REFRESH_MATERIALIZED_VIEW/
+        this = self._parse_table_parts()
+        force = self._match_text_seq("FORCE")
+
+        partition_start = None
+        partition_end = None
+        if self._match_text_seq("PARTITION", "START"):
+            partition_start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            partition_end = self._parse_wrapped(self._parse_string)
+            force = self._match_text_seq("FORCE") or force
+
+        mode = (
+            self._match_text_seq("WITH")
+            and self._match_texts(("SYNC", "ASYNC"))
+            and self._prev.text.upper()
+        )
+        self._match_text_seq("MODE")
+
+        return self.expression(
+            exp.Refresh(
+                this=this,
+                kind="MATERIALIZED VIEW",
+                force=force,
+                partition_start=partition_start,
+                partition_end=partition_end,
+                mode=mode,
+            )
+        )

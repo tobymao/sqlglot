@@ -499,6 +499,25 @@ class TestStarrocks(Validator):
         self.validate_identity("KILL QUERY 5")
         self.validate_identity("KILL 20")
 
+    def test_refresh(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/dictionary/REFRESH_DICTIONARY/
+        self.validate_identity("REFRESH DICTIONARY dict_obj")
+        self.validate_identity("REFRESH CONNECTIONS")
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/REFRESH_MATERIALIZED_VIEW/
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 FORCE")
+        self.validate_identity(
+            "REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE"
+        )
+        self.validate_identity(
+            "REFRESH MATERIALIZED VIEW lo_mv1 FORCE PARTITION START ('2020-02-01') END ('2020-03-01')",
+            "REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE",
+        )
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH SYNC MODE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH ASYNC MODE")
+        self.validate_identity("REFRESH EXTERNAL TABLE t")
+
     def test_aggregate_key_columns(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
         for agg in (

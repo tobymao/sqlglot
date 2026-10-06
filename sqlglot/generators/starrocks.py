@@ -372,6 +372,26 @@ class StarRocksGenerator(MySQLGenerator):
 
         return f"REFRESH{method}{kind}{starts}{every}"
 
+    def refresh_sql(self, expression: exp.Refresh) -> str:
+        if expression.args.get("kind") == "CONNECTIONS":
+            return "REFRESH CONNECTIONS"
+
+        sql = super().refresh_sql(expression)
+
+        partition_start = self.sql(expression, "partition_start")
+        partition_end = self.sql(expression, "partition_end")
+        if partition_start and partition_end:
+            sql += f" PARTITION START ({partition_start}) END ({partition_end})"
+
+        if expression.args.get("force"):
+            sql += " FORCE"
+
+        mode = expression.args.get("mode")
+        if mode:
+            sql += f" WITH {mode} MODE"
+
+        return sql
+
     def rollupindex_sql(self, expression: exp.RollupIndex) -> str:
         sql = super().rollupindex_sql(expression)
         return f"ADD ROLLUP {sql}" if isinstance(expression.parent, exp.Alter) else sql

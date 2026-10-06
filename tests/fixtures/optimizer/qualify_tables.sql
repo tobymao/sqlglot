@@ -146,6 +146,14 @@ SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = i
 SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS _0;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _0;
 
+# title: join construct with joins on multiple levels of parentheses
+SELECT * FROM ((t1 CROSS JOIN t2) CROSS JOIN t3) AS t;
+SELECT * FROM (SELECT * FROM c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2 CROSS JOIN c.db.t3 AS t3) AS t;
+
+# title: join construct starting with a subquery
+SELECT * FROM ((SELECT * FROM t1) CROSS JOIN t2) AS t;
+SELECT * FROM (SELECT * FROM (SELECT * FROM c.db.t1 AS t1) AS _0 CROSS JOIN c.db.t2 AS t2) AS t;
+
 # title: join construct within join construct
 SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS _0 ON id1 = id3) AS _1;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _0 ON id1 = id3) AS _1;

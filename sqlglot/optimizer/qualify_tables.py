@@ -107,7 +107,14 @@ def qualify_tables(
         if scope:
             scope.rename_source(None, new_alias_name)
 
-    for scope in traverse_scope(expression):
+    # Expanding join constructs exposes new sources, including nested join constructs that only
+    # become derived tables afterwards, so the scopes are rebuilt until nothing else is expanded
+    # (a list is used so that every construct in a pass expands before the rebuild)
+    scopes = traverse_scope(expression)
+    while any([_expand_join_construct(d) for scope in scopes for d in scope.derived_tables]):
+        scopes = traverse_scope(expression)
+
+    for scope in scopes:
         parent = scope.parent
         local_columns = scope.local_columns
         canonical_aliases: dict[str, str] = {}
@@ -137,13 +144,6 @@ def qualify_tables(
                     unwrapped.replace(subquery)
 
         for derived_table in scope.derived_tables:
-            unnested = derived_table.unnest()
-            if isinstance(unnested, exp.Table):
-                joins = unnested.args.get("joins")
-                unnested.set("joins", None)
-                derived_table.this.replace(exp.select("*").from_(unnested.copy(), copy=False))
-                derived_table.this.set("joins", joins)
-
             _set_alias(derived_table, canonical_aliases, scope=scope)
             if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)
@@ -252,3 +252,27 @@ def qualify_tables(
                 column.set("table", exp.to_identifier(canonical_table))
 
     return expression
+
+
+def _expand_join_construct(derived_table: exp.Subquery) -> bool:
+    # Expands e.g. ((a JOIN b) JOIN c) AS j into a SELECT *, collecting the joins of every
+    # unaliased wrapper
+    source = derived_table.this
+    joins: list[exp.Expr] = []
+    while isinstance(source, (exp.Subquery, exp.Table)):
+        joins[:0] = source.args.get("joins") or []
+        if (
+            isinstance(source, exp.Table)
+            or source.alias
+            or not isinstance(source.this, (exp.Subquery, exp.Table))
+        ):
+            break
+        source = source.this
+
+    if isinstance(source, exp.Table) or joins:
+        source.set("joins", None)
+        derived_table.this.replace(exp.select("*").from_(source.copy(), copy=False))
+        derived_table.this.set("joins", joins or None)
+        return True
+
+    return False

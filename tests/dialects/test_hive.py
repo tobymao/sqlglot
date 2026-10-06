@@ -322,6 +322,10 @@ class TestHive(Validator):
                 "hive": "SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a",
             },
         )
+        self.validate_identity(
+            "SELECT * FROM (FROM x LATERAL VIEW EXPLODE(y) t AS a SELECT a) AS q",
+            "SELECT * FROM (SELECT a FROM x LATERAL VIEW EXPLODE(y) t AS a) AS q",
+        )
 
     def test_quotes(self):
         self.validate_all(
@@ -1217,6 +1221,18 @@ class TestHive(Validator):
             "-- a\nFROM x\n-- b\nINSERT OVERWRITE TABLE t SELECT k\n-- c\nINSERT INTO u SELECT v",
             "/* a */ FROM x /* b */ INSERT OVERWRITE TABLE t SELECT k /* c */ INSERT INTO u SELECT v",
         )
+        self.validate_identity(
+            "FROM (FROM x LATERAL VIEW EXPLODE(arr) a AS c SELECT k, c) AS s INSERT INTO t SELECT s.c INSERT INTO u SELECT s.k",
+            "FROM (SELECT k, c FROM x LATERAL VIEW EXPLODE(arr) a AS c) AS s INSERT INTO t SELECT s.c INSERT INTO u SELECT s.k",
+        )
+        self.validate_all(
+            "FROM x INSERT INTO t SELECT v QUALIFY ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) = 1",
+            write={
+                "hive": UnsupportedError,
+                "spark": UnsupportedError,
+                "databricks": "FROM x INSERT INTO t SELECT v QUALIFY ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) = 1",
+            },
+        )
 
         ast = self.validate_identity(
             "FROM x INSERT OVERWRITE TABLE a SELECT k INSERT INTO b SELECT v WHERE k > 0"
@@ -1234,6 +1250,5 @@ class TestHive(Validator):
                 "spark2": "FROM x INSERT OVERWRITE TABLE a SELECT k",
                 "spark": "FROM x INSERT OVERWRITE TABLE a SELECT k",
                 "databricks": "FROM x INSERT OVERWRITE TABLE a SELECT k",
-                "duckdb": UnsupportedError,
             },
         )

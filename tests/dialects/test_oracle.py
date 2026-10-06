@@ -776,6 +776,14 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "SELECT salary FROM employees"
         )
 
+        self.validate_all(
+            "INSERT WHEN k > 1 THEN INTO t VALUES (k) ELSE INTO u VALUES (k) SELECT k FROM x",
+            write={
+                "oracle": "INSERT ALL WHEN k > 1 THEN INTO t VALUES (k) ELSE INTO u VALUES (k) SELECT k FROM x",
+                "snowflake": "INSERT ALL WHEN k > 1 THEN INTO t VALUES (k) ELSE INTO u VALUES (k) SELECT k FROM x",
+            },
+        )
+
     def test_json_functions(self):
         for format_json in ("", " FORMAT JSON"):
             for on_cond in (

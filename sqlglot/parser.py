@@ -3601,8 +3601,10 @@ class Parser:
             )
         )
 
-    def _parse_multitable_inserts(self, comments: list[str] | None) -> exp.MultitableInserts:
-        kind = self._prev.text.upper()
+    def _parse_multitable_inserts(
+        self, comments: list[str] | None, kind: str | None = None
+    ) -> exp.MultitableInserts:
+        kind = kind or self._prev.text.upper()
         expressions = []
 
         def parse_conditional_insert() -> exp.ConditionalInsert | None:
@@ -3661,6 +3663,10 @@ class Parser:
             if self._match_set((TokenType.FIRST, TokenType.ALL)):
                 comments += ensure_list(self._prev_comments)
                 return self._parse_multitable_inserts(comments)
+
+            # Oracle's conditional form defaults to ALL when the keyword is omitted
+            if self._match(TokenType.WHEN, advance=False):
+                return self._parse_multitable_inserts(comments, kind="ALL")
 
             if self._match(TokenType.OR):
                 alternative = self._match_texts(self.INSERT_ALTERNATIVES) and self._prev.text
@@ -4019,21 +4025,11 @@ class Parser:
             this: exp.Expr | None = self._parse_simplified_pivot(
                 is_unpivot=self._prev.token_type == TokenType.UNPIVOT
             )
-        elif self._match(TokenType.FROM):
-            from_ = self._parse_from(joins=True, skip_from_token=True, consume_pipe=True)
-            # Support parentheses for duckdb FROM-first syntax
-            select = self._parse_select(from_=from_)
-            if select:
-                if not select.args.get("from_"):
-                    select.set("from_", from_)
-                this = select
-            else:
-                this = exp.select("*").from_(t.cast(exp.From, from_))
-                this = self._parse_query_modifiers(self._parse_set_operations(this))
         else:
+            # Support parentheses for duckdb FROM-first syntax
             this = (
                 self._parse_table(consume_pipe=True)
-                if table
+                if table and not self._match(TokenType.FROM, advance=False)
                 else self._parse_select(nested=True, parse_set_operation=False)
             )
 
@@ -4054,7 +4050,6 @@ class Parser:
         parse_subquery_alias: bool = True,
         parse_set_operation: bool = True,
         consume_pipe: bool = True,
-        from_: exp.From | None = None,
     ) -> exp.Expr | None:
         query = self._parse_select_query(
             nested=nested,
@@ -4064,8 +4059,6 @@ class Parser:
         )
 
         if consume_pipe and self._match(TokenType.PIPE_GT, advance=False):
-            if not query and from_:
-                query = exp.select("*").from_(from_)
             if isinstance(query, exp.Query):
                 query = self._parse_pipe_syntax_query(query)
                 query = query.subquery(copy=False) if query and table else query
@@ -4113,16 +4106,13 @@ class Parser:
         laterals = list(iter(self._parse_lateral, None)) if from_ else None
 
         # Hive supports multi-table inserts: FROM x INSERT ... SELECT ... [INSERT ... SELECT ...]
-        if from_ and not nested and not table and self._match(TokenType.INSERT, advance=False):
+        if from_ and self._match(TokenType.INSERT, advance=False):
             source = from_.this
             source.set("laterals", laterals or None)
 
             inserts = []
-            while self._match(TokenType.INSERT):
-                comments = self._prev_comments
-                insert = self._parse_insert()
-                insert.add_comments(comments, prepend=True)
-                inserts.append(insert)
+            while self._match(TokenType.INSERT, advance=False):
+                inserts.append(self._parse_statement())
 
             return self.expression(
                 exp.MultitableInserts(expressions=inserts, source=source),
@@ -4190,7 +4180,6 @@ class Parser:
                     limit=limit,
                     exclude=exclude,
                     operation_modifiers=operation_modifiers or None,
-                    laterals=laterals or None,
                 )
             )
             this.comments = comments
@@ -4221,7 +4210,6 @@ class Parser:
             this = self._parse_derived_table_values()
         elif from_:
             this = exp.select("*").from_(from_.this, copy=False)
-            this.set("laterals", laterals or None)
             this = self._parse_query_modifiers(this)
         elif self._match(TokenType.SUMMARIZE):
             table = self._match(TokenType.TABLE)
@@ -4231,6 +4219,9 @@ class Parser:
             this = self._parse_describe()
         else:
             this = None
+
+        if laterals and isinstance(this, exp.Select):
+            this.set("laterals", [*laterals, *(this.args.get("laterals") or [])])
 
         return self._parse_set_operations(this) if parse_set_operation else this
 

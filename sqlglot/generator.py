@@ -480,9 +480,6 @@ class Generator:
     # Whether the SELECT .. INTO syntax is used instead of CTAS
     SUPPORTS_SELECT_INTO = False
 
-    # Whether FROM-first multi-table INSERT is supported
-    SUPPORTS_FROM_FIRST_INSERT = False
-
     # Whether UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
@@ -5772,16 +5769,18 @@ class Generator:
 
     def multitableinserts_sql(self, expression: exp.MultitableInserts) -> str:
         kind = self.sql(expression, "kind")
-        if not kind:
-            if not self.SUPPORTS_FROM_FIRST_INSERT:
-                self.unsupported("FROM-first multi-table INSERT is not supported in this dialect")
-            inserts = self.sep().join(self.sql(e) for e in expression.expressions)
-            sql = f"FROM {self.sql(expression, 'source')}{self.seg(inserts)}"
-            return self.prepend_ctes(expression, sql)
+        source = self.sql(expression, "source")
 
-        expressions = self.seg(self.expressions(expression, sep=" "))
-        res = f"INSERT {kind}{expressions}{self.seg(self.sql(expression, 'source'))}"
-        return self.prepend_ctes(expression, res)
+        if kind:
+            expressions = self.seg(self.expressions(expression, sep=" "))
+            sql = f"INSERT {kind}{expressions}{self.seg(source)}"
+        else:
+            # If kind isn't present, we have Hive's FROM-first form:
+            # FROM x INSERT ... SELECT ... [INSERT ... SELECT ...]
+            inserts = self.sep().join(self.sql(e) for e in expression.expressions)
+            sql = f"FROM {source}{self.seg(inserts)}"
+
+        return self.prepend_ctes(expression, sql)
 
     def oncondition_sql(self, expression: exp.OnCondition) -> str:
         # Static options like "NULL ON ERROR" are stored as strings, in contrast to "DEFAULT <expr> ON ERROR"

@@ -531,6 +531,15 @@ class TestStarrocks(Validator):
         self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH ASYNC MODE")
         self.validate_identity("REFRESH EXTERNAL TABLE t")
 
+    def test_index_constraint(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_INDEX/
+        self.validate_identity(
+            "CREATE TABLE t (k1 INT, INDEX idx (k1) USING GIN ('parser'='english') COMMENT 'c') DUPLICATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (k1 INT, INDEX idx (k1) USING BITMAP COMMENT 'c') DUPLICATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+        )
+
     def test_aggregate_key_columns(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
         for agg in (

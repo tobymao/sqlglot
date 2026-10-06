@@ -323,3 +323,21 @@ class StarRocksParser(MySQLParser):
             )
 
         return show
+
+    def _parse_index_constraint_options(self) -> list[exp.IndexConstraintOption]:
+        options = super()._parse_index_constraint_options()
+
+        # USING GIN ('parser' = 'english')
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_INDEX/
+        if (
+            options
+            and options[-1].args.get("using")
+            and self._match(TokenType.L_PAREN, advance=False)
+        ):
+            options[-1].set(
+                "properties",
+                self.expression(exp.Properties(expressions=self._parse_wrapped_properties())),
+            )
+            options.extend(super()._parse_index_constraint_options())
+
+        return options

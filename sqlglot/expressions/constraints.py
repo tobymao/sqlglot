@@ -14,6 +14,7 @@ class IndexConstraintOption(Expression):
         "visible": False,
         "engine_attr": False,
         "secondary_engine_attr": False,
+        "properties": False,
     }
 
 

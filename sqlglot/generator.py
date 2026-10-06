@@ -5069,7 +5069,8 @@ class Generator:
 
         using = self.sql(expression, "using")
         if using:
-            return f"USING {using}"
+            properties = expression.args.get("properties")
+            return f"USING {using}{self.properties(properties, prefix=' ') if properties else ''}"
 
         parser = self.sql(expression, "parser")
         if parser:

@@ -133,8 +133,8 @@ SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
 # execute: false
-SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
-SELECT (SELECT MIN(_0.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _0) AS f FROM x AS x GROUP BY 1;
+SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS t(a)) AS f FROM x GROUP BY 1;
+SELECT (SELECT MIN(t.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS t(a)) AS f FROM x AS x GROUP BY 1;
 
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
@@ -201,9 +201,23 @@ SELECT DATE_TRUNC('WEEK', x.a) AS a FROM x AS x;
 SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
+# title: oracle cannot reference select aliases, so z is a source column
+# dialect: oracle
 # execute: false
-SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
-SELECT _0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _0;
+# schema: {"t": {"z": "INT"}}
+SELECT 1 AS z, z + 1 AS w FROM (SELECT * FROM t) c;
+SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT T.Z AS Z FROM T T) C;
+
+# execute: false
+SELECT t.x FROM READ_PARQUET('path.parquet', hive_partition=1) AS t;
+SELECT t.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS t;
+
+# title: oracle WHERE column sharing a projection alias name is a source column
+# dialect: oracle
+# execute: false
+# schema: {"t": {"z": "INT"}}
+SELECT 1 AS z FROM (SELECT * FROM t) c WHERE z > 0;
+SELECT 1 AS Z FROM (SELECT T.Z AS Z FROM T T) C WHERE C.Z > 0;
 
 # execute: false
 select * from (values (1, 2));
@@ -300,8 +314,9 @@ SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(gen
 
 # execute: false
 # dialect: snowflake
-SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
-SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0 ORDER BY _0.EMPID;
+# schema: {"quarterly_sales": {"amount": "DOUBLE", "quarter": "INT", "empid": "INT"}}
+SELECT empid FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter));
+SELECT _0.EMPID AS EMPID FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0;
 
 # execute: false
 # schema: {"t": {"x": "DOUBLE"}}
@@ -1122,6 +1137,7 @@ SELECT * FROM ((SELECT * FROM tbl));
 SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _0);
 
 # execute: false
+# schema: {"t1": {"c": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) CROSS JOIN t2);
 SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
 

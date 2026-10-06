@@ -31,6 +31,7 @@ class Resolver:
         self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
+        self._outer_resolvers: list[Resolver] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -88,12 +89,15 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
-    def outer_resolvers(self) -> t.Iterator[Resolver]:
+    def outer_resolvers(self) -> list[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
-        scope = self.scope
-        while scope.can_be_correlated and scope.parent:
-            scope = scope.parent
-            yield Resolver(scope, self.schema, self._infer_schema)
+        if self._outer_resolvers is None:
+            self._outer_resolvers = []
+            scope = self.scope
+            while scope.can_be_correlated and scope.parent:
+                scope = scope.parent
+                self._outer_resolvers.append(Resolver(scope, self.schema, self._infer_schema))
+        return self._outer_resolvers
 
     @property
     def has_unknown_sources(self) -> bool:

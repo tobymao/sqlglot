@@ -519,3 +519,13 @@ class TestStarrocks(Validator):
             "CREATE TABLE t (id INT, newcol1 INT AS (id + 1))",
             "CREATE TABLE t (id INT, newcol1 INT GENERATED ALWAYS AS (id + 1) VIRTUAL)",
         )
+
+    def test_alter_table(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/ALTER_TABLE/
+        self.validate_identity("ALTER TABLE db.tbl ADD ROLLUP r1(col1, col2) FROM r0")
+        self.validate_identity("ALTER TABLE db.tbl ADD ROLLUP r1(col1, col2)")
+        self.validate_identity(
+            "ALTER TABLE my_table ADD COLUMN (c1 INT DEFAULT '0', c2 INT DEFAULT '0')",
+            "ALTER TABLE my_table ADD COLUMNS (c1 INT DEFAULT '0', c2 INT DEFAULT '0')",
+        )
+        self.validate_identity("ALTER TABLE t ADD COLUMN c INT")

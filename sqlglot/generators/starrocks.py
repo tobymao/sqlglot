@@ -372,6 +372,10 @@ class StarRocksGenerator(MySQLGenerator):
 
         return f"REFRESH{method}{kind}{starts}{every}"
 
+    def rollupindex_sql(self, expression: exp.RollupIndex) -> str:
+        sql = super().rollupindex_sql(expression)
+        return f"ADD ROLLUP {sql}" if isinstance(expression.parent, exp.Alter) else sql
+
     def partitionrange_sql(self, expression: exp.PartitionRange) -> str:
         values = expression.expressions
         if len(values) == 2 and all(isinstance(v, list) for v in values):

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
-from sqlglot.helper import seq_get
+from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
@@ -86,23 +86,36 @@ class StarRocksParser(MySQLParser):
 
     def _parse_rollup_property(self) -> exp.RollupProperty:
         # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
-        def parse_rollup_index() -> exp.RollupIndex:
-            return self.expression(
-                exp.RollupIndex(
-                    this=self._parse_id_var(),
-                    expressions=self._parse_wrapped_id_vars(),
-                    from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
-                    properties=self.expression(
-                        exp.Properties(expressions=self._parse_wrapped_properties())
-                    )
-                    if self._match_text_seq("PROPERTIES")
-                    else None,
-                )
-            )
-
         return self.expression(
-            exp.RollupProperty(expressions=self._parse_wrapped_csv(parse_rollup_index))
+            exp.RollupProperty(expressions=self._parse_wrapped_csv(self._parse_rollup_index))
         )
+
+    def _parse_rollup_index(self) -> exp.RollupIndex:
+        return self.expression(
+            exp.RollupIndex(
+                this=self._parse_id_var(),
+                expressions=self._parse_wrapped_id_vars(),
+                from_index=self._parse_id_var() if self._match_text_seq("FROM") else None,
+                properties=self.expression(
+                    exp.Properties(expressions=self._parse_wrapped_properties())
+                )
+                if self._match_text_seq("PROPERTIES")
+                else None,
+            )
+        )
+
+    def _parse_alter_table_add(self) -> list[exp.Expr]:
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/ALTER_TABLE/#rollup
+        if self._match_text_seq("ROLLUP"):
+            return self._parse_csv(self._parse_rollup_index)
+
+        # ADD COLUMN (c1 INT, c2 INT)
+        index = self._index
+        if self._match(TokenType.COLUMN) and self._match(TokenType.L_PAREN, advance=False):
+            return ensure_list(self._parse_schema())
+        self._retreat(index)
+
+        return super()._parse_alter_table_add()
 
     def _parse_create(self) -> exp.Create | exp.Command:
         create = super()._parse_create()

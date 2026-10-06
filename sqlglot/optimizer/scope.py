@@ -783,47 +783,42 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
 
 
 def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
-    prev_scope: Scope | None = None
-    set_op_scope_stack: list[Scope] = [scope]
+    stack: list[tuple[Scope, list[Scope]]] = [(scope, [])]
 
-    set_op = scope.expression
-    assert isinstance(set_op, exp.SetOperation)
-    # Access the args directly instead of the left/right properties, because set operation
-    # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
-    expression_stack: list[exp.Expr] = [set_op.expression, set_op.this]
+    while stack:
+        set_op_scope, branches = stack[-1]
+        if len(branches) == 2:
+            set_op_scope.set_operation_scopes = branches
+            stack.pop()
+            yield set_op_scope
+            if stack:
+                stack[-1][1].append(set_op_scope)
+            continue
 
-    while expression_stack:
-        expression = expression_stack.pop()
-        set_op_scope = set_op_scope_stack[-1]
-
-        new_scope = set_op_scope.branch(
+        set_op = set_op_scope.expression
+        assert isinstance(set_op, exp.SetOperation)
+        # Access the args directly instead of the left/right properties, because set operation
+        # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1.
+        expression = set_op.this if not branches else set_op.expression
+        child_scope = set_op_scope.branch(
             expression,
             outer_columns=set_op_scope.outer_columns,
             scope_type=ScopeType.SET_OPERATION,
         )
 
         if isinstance(expression, exp.SetOperation):
-            yield from _traverse_ctes(new_scope)
-
-            set_op_scope_stack.append(new_scope)
-            expression_stack.extend([expression.expression, expression.this])
+            yield from _traverse_ctes(child_scope)
+            stack.append((child_scope, []))
             continue
 
         branch_scope: Scope | None = None
-        for branch_scope in _traverse_scope(new_scope):
+        for branch_scope in _traverse_scope(child_scope):
             yield branch_scope
 
         if branch_scope is None:
             raise OptimizeError(f"Cannot build a scope for set operation operand: {expression}")
 
-        if prev_scope:
-            set_op_scope_stack.pop()
-            set_op_scope.set_operation_scopes = [prev_scope, branch_scope]
-            prev_scope = set_op_scope
-
-            yield set_op_scope
-        else:
-            prev_scope = branch_scope
+        branches.append(branch_scope)
 
 
 def _traverse_ctes(scope: Scope) -> Iterator[Scope]:

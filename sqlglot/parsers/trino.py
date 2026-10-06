@@ -1,14 +1,25 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.helper import ensure_list
+from sqlglot.parser import TIME_ZONE_RE
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
+FRACTIONAL_SECONDS_RE = re.compile(r":\d+\.(\d+)")
+
 
 class TrinoParser(PrestoParser):
+    TYPE_LITERAL_PARSERS: t.ClassVar = {
+        **PrestoParser.TYPE_LITERAL_PARSERS,
+        exp.DType.TIMESTAMP: lambda self, this, to: self._parse_temporal_literal(this, to),
+        exp.DType.TIMESTAMPTZ: lambda self, this, to: self._parse_temporal_literal(this, to),
+        exp.DType.TIME: lambda self, this, to: self._parse_temporal_literal(this, to),
+        exp.DType.TIMETZ: lambda self, this, to: self._parse_temporal_literal(this, to),
+    }
     NO_PAREN_FUNCTIONS = {
         **PrestoParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
@@ -259,3 +270,23 @@ class TrinoParser(PrestoParser):
 
         self.raise_error("Expected routine statement")
         return None
+
+    def _parse_temporal_literal(self, this: exp.Literal, data_type: exp.DataType) -> exp.Cast:
+        literal = this.name
+        if self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR and TIME_ZONE_RE.search(literal):
+            if data_type.is_type(exp.DType.TIMESTAMP):
+                data_type = exp.DType.TIMESTAMPTZ.into_expr()
+            elif data_type.is_type(exp.DType.TIME):
+                data_type = exp.DType.TIMETZ.into_expr()
+
+        if not data_type.expressions:
+            match = FRACTIONAL_SECONDS_RE.search(literal)
+            if match:
+                precision = len(match.group(1))
+                if precision > 3:
+                    data_type.set(
+                        "expressions",
+                        [exp.DataTypeParam(this=exp.Literal.number(precision))],
+                    )
+
+        return self.expression(exp.Cast(this=this, to=data_type))

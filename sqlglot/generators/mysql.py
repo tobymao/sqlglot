@@ -142,6 +142,13 @@ class MySQLGenerator(generator.Generator):
     SUPPORTS_MEDIAN = False
     UPDATE_STATEMENT_SUPPORTS_FROM = False
 
+    ALTER_PARTITION_OPTIONS = (
+        exp.DistributedByProperty,
+        exp.PartitionByListProperty,
+        exp.PartitionByRangeProperty,
+        exp.PartitionedByProperty,
+    )
+
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
         exp.ArrayAgg: rename_func("GROUP_CONCAT"),

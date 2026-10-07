@@ -878,12 +878,7 @@ class Generator:
 
     # ALTER options that follow the others without a comma, e.g. MySQL's
     # ENGINE=InnoDB PARTITION BY LIST (...) or StarRocks' PARTITION BY ... DISTRIBUTED BY ...
-    ALTER_PARTITION_OPTIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = (
-        exp.DistributedByProperty,
-        exp.PartitionByListProperty,
-        exp.PartitionByRangeProperty,
-        exp.PartitionedByProperty,
-    )
+    ALTER_PARTITION_OPTIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = ()
 
     SAFE_JSON_PATH_KEY_RE: t.ClassVar = exp.SAFE_IDENTIFIER_RE
 

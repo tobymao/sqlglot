@@ -273,6 +273,35 @@ class TestGenerator(unittest.TestCase):
             "SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 2 UNION ALL SELECT 2",
         )
 
+    def test_setop_bigquery_modifiers(self):
+        select = "SELECT 1 AS a, 2 AS b"
+        for child_operator, parent_operator in (
+            ("UNION ALL BY NAME", "UNION ALL"),
+            ("INNER UNION ALL BY NAME", "UNION ALL BY NAME"),
+            ("FULL UNION ALL BY NAME", "LEFT UNION ALL BY NAME"),
+            ("UNION ALL BY NAME ON (a, b)", "UNION ALL BY NAME ON (b, a)"),
+        ):
+            for side in ("this", "expression"):
+                with self.subTest(child=child_operator, parent=parent_operator, side=side):
+                    child = parse_one(f"{select} {child_operator} {select}", read="bigquery")
+                    parent = parse_one(f"{select} {parent_operator} {select}", read="bigquery")
+                    parent.set(side, child)
+                    grouped = f"({select} {child_operator} {select})"
+                    expected = (
+                        f"{grouped} {parent_operator} {select}"
+                        if side == "this"
+                        else f"{select} {parent_operator} {grouped}"
+                    )
+                    sql = parent.sql("bigquery")
+                    self.assertEqual(sql, expected)
+                    self.assertIsInstance(parse_one(sql, read="bigquery").args[side], exp.Subquery)
+
+        sql = f"{select} UNION ALL BY NAME {select} UNION ALL BY NAME {select}"
+        self.assertEqual(parse_one(sql, read="bigquery").sql("bigquery"), sql)
+
+        sql = f"{select} UNION ALL BY NAME {select} UNION ALL {select}"
+        self.assertEqual(parse_one(sql, read="duckdb").sql("duckdb"), sql)
+
     def test_setop_branch_modifiers_and_ctes(self):
         branch = exp.union("SELECT 2", "SELECT 3", distinct=False).limit(1)
         tree = exp.union("SELECT 2", branch, distinct=False).limit(2)

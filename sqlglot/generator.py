@@ -543,7 +543,7 @@ class Generator:
     # Whether set operation operands can be parenthesized without a SELECT wrapper.
     SET_OP_PARENTHESIZED_OPERANDS = True
 
-    # Whether mixed set-operation kinds or ALL/DISTINCT forms require grouping.
+    # Whether differing set-operation kinds, quantifiers, or modifiers require grouping.
     SET_OP_MIXED_OPERATORS_REQUIRE_PARENS = False
 
     # Whether parameters from COPY statement are wrapped in parentheses
@@ -2004,7 +2004,10 @@ class Generator:
                     mixed_requires_parens
                     and (
                         type(this) is not type(node)
-                        or this.args.get("distinct") != node.args.get("distinct")
+                        or any(
+                            this.args.get(arg) != node.args.get(arg)
+                            for arg in ("distinct", "by_name", "side", "kind", "on")
+                        )
                     )
                 )
             )
@@ -2019,7 +2022,10 @@ class Generator:
                     mixed_requires_parens
                     and (
                         type(expr) is not type(node)
-                        or expr.args.get("distinct") != node.args.get("distinct")
+                        or any(
+                            expr.args.get(arg) != node.args.get(arg)
+                            for arg in ("distinct", "by_name", "side", "kind", "on")
+                        )
                     )
                 )
                 or (

@@ -93,6 +93,7 @@ class StarRocksGenerator(MySQLGenerator):
         exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Property: exp.Properties.Location.POST_WITH,
     }
 
     TRANSFORMS = {

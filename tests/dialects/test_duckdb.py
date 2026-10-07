@@ -2153,6 +2153,9 @@ class TestDuckDB(Validator):
             "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
             "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)",
         )
+        self.validate_identity(
+            "SELECT a, COUNT(*) OVER w AS c FROM tbl WHERE a > 0 GROUP BY a HAVING COUNT(*) > 0 WINDOW w AS (ORDER BY a) QUALIFY c > 0 USING SAMPLE SYSTEM (50 PERCENT) ORDER BY a LIMIT 3 OFFSET 1"
+        )
 
         self.validate_all(
             "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",

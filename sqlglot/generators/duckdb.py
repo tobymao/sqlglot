@@ -1567,7 +1567,12 @@ class DuckDBGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = False
 
-    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+    # USING SAMPLE goes after QUALIFY and before ORDER BY / LIMIT
+    # https://duckdb.org/docs/preview/sql/query_syntax/sample
+    AFTER_HAVING_MODIFIER_TRANSFORMS = {
+        **generator.AFTER_HAVING_MODIFIER_TRANSFORMS,
+        "sample": lambda self, e: self.sql(e, "sample"),
+    }
     SUPPORTS_WINDOW_EXCLUDE = True
     COPY_HAS_INTO_KEYWORD = False
     STAR_EXCEPT = "EXCLUDE"
@@ -3120,6 +3125,10 @@ class DuckDBGenerator(generator.Generator):
             return f"{timestamp} AT TIME ZONE {self.sql(zone)}"
 
         return timestamp
+
+    def after_limit_modifiers(self, expression: exp.Expr) -> list[str]:
+        locks = self.expressions(expression, key="locks", sep=" ")
+        return [f" {locks}" if locks else ""]
 
     def tablesample_sql(
         self,

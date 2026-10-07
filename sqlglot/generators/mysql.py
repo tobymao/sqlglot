@@ -170,7 +170,6 @@ class MySQLGenerator(generator.Generator):
         exp.ILike: no_ilike_sql,
         # https://dev.mysql.com/doc/refman/9.7/en/flow-control-functions.html#function_if
         exp.If: if_sql(false_value="NULL"),
-        exp.IntDiv: lambda self, e: self.binary(e, "DIV"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
         exp.Length: length_or_char_length_sql,
         exp.LogicalOr: rename_func("MAX"),
@@ -657,6 +656,20 @@ class MySQLGenerator(generator.Generator):
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.func("CONCAT", *expression.flatten())
+
+    def intdiv_sql(self, expression: exp.IntDiv) -> str:
+        this = self.sql(exp._wrap(expression.this, exp.Binary))
+        divisor = self.sql(exp._wrap(expression.expression, exp.Binary))
+        sql = f"{this} {self.maybe_comment('DIV', comments=expression.comments)} {divisor}"
+
+        parent = expression.parent
+        if isinstance(parent, (exp.Neg, exp.BitwiseNot)) or (
+            isinstance(parent, (exp.Mul, exp.Div, exp.IntDiv, exp.Mod))
+            and parent.expression is expression
+        ):
+            return f"({sql})"
+
+        return sql
 
     def extract_sql(self, expression: exp.Extract) -> str:
         unit = expression.name

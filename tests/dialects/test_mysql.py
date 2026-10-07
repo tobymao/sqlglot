@@ -1832,6 +1832,19 @@ COMMENT='客户账户表'"""
             },
         )
 
+    def test_integer_division(self):
+        for source, expected in (
+            ("DIV(10, DIV(4, 2))", "10 DIV (4 DIV 2)"),
+            ("10 / DIV(4, 2)", "10 / (4 DIV 2)"),
+            ("300 * DIV(1000, 300) + 120", "300 * (1000 DIV 300) + 120"),
+            ("DIV(10 + 2, 3 + 1)", "(10 + 2) DIV (3 + 1)"),
+            ("DIV(10, 2) / DIV(4, 3)", "10 DIV 2 / (4 DIV 3)"),
+            ("-DIV(7, 2)", "-(7 DIV 2)"),
+            ("~DIV(7, 3)", "~(7 DIV 3)"),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {expected}", read={"bigquery": f"SELECT {source}"})
+
     def test_safe_div(self):
         self.validate_all(
             "a / b",

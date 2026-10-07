@@ -198,6 +198,9 @@ def _like(this, e, flags=0):
 
 @null_if_any
 def intdiv(this, e):
+    if not isinstance(this, int) or not isinstance(e, int):
+        return int(this / e)
+
     quotient = abs(this) // abs(e)
     return quotient if (this < 0) == (e < 0) else -quotient
 

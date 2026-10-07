@@ -385,6 +385,9 @@ class Generator:
     # Whether casting a fractional number to an integer rounds it instead of truncating it
     CAST_TO_INT_ROUNDS = False
 
+    # Whether the native integer division operator returns NULL for a zero divisor instead of raising
+    SAFE_INT_DIVISION = False
+
     # Whether to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
     DUPLICATE_KEY_UPDATE_WITH_SET = True
 
@@ -4547,7 +4550,9 @@ class Generator:
                 # Native integer division depends on the target's operand types, which may differ
                 # from the source's (e.g. FLOOR(int) is DOUBLE in DuckDB), unless the operands are
                 # integer literals or casts
-                if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)):
+                if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)) and (
+                    expression.args.get("safe") or not self.SAFE_INT_DIVISION
+                ):
                     return self.sql(exp.IntDiv(this=l, expression=r))
                 return self._truncated_div_sql(l, r)
 

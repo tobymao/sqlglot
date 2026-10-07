@@ -57,7 +57,6 @@ class HiveParser(parser.Parser):
     JOINS_HAVE_EQUAL_PRECEDENCE = True
     ADD_JOIN_ON_TRUE = True
     ALTER_TABLE_PARTITIONS = True
-    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     # Strip trailing fractional zeros and normalize zero when inferring BD literal types.
     NORMALIZE_DECIMAL_LITERALS = True

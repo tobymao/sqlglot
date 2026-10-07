@@ -610,7 +610,7 @@ class TestDialect(Validator):
 
     def test_set_operation_precedence(self):
         sql = "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"
-        for dialect in ("postgres", "spark"):
+        for dialect in ("postgres", "spark2", "spark"):
             with self.subTest(dialect=dialect):
                 expression = parse_one(sql, read=dialect)
                 self.assertIsInstance(expression, exp.Union)

@@ -293,10 +293,14 @@ class PostgresGenerator(generator.Generator):
 
     def lateral_sql(self, expression: exp.Lateral) -> str:
         sql = super().lateral_sql(expression)
-
-        if expression.args.get("cross_apply") is not None:
+        # ON TRUE is only needed when the enclosing join has no condition of
+        # its own; a join that already carries an ON clause would end up with
+        # two ON clauses otherwise.
+        parent_has_on = isinstance(expression.parent, exp.Join) and bool(
+            expression.parent.args.get("on")
+        )
+        if expression.args.get("cross_apply") is not None and not parent_has_on:
             sql = f"{sql} ON TRUE"
-
         return sql
 
     TYPE_MAPPING = {

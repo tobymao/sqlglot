@@ -1200,3 +1200,17 @@ WHERE
         sql = "1 AND 2 OR 3 AND " * 1000
         sql += "4"
         self.assertEqual(len(parse_one(sql).sql()), 17001)
+
+    def test_cross_apply_table_operand_with_on(self):
+        self.validate(
+            "SELECT * FROM t1 CROSS APPLY u ON u.id = t1.id",
+            "SELECT * FROM t1 INNER JOIN LATERAL u ON u.id = t1.id",
+            read="tsql",
+            write="trino",
+        )
+        self.validate(
+            "SELECT * FROM t1 OUTER APPLY u ON u.id = t1.id",
+            "SELECT * FROM t1 LEFT JOIN LATERAL u ON u.id = t1.id",
+            read="tsql",
+            write="duckdb",
+        )

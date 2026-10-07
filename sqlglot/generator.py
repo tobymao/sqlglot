@@ -2948,6 +2948,13 @@ class Generator:
 
             return f", {this_sql}"
 
+        if not op_sql and isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
+            # A cross-apply Lateral renders its own join operator ("INNER
+            # JOIN LATERAL" / "LEFT JOIN LATERAL"); prepending "JOIN" would
+            # emit invalid SQL like "JOIN INNER JOIN LATERAL".
+            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+            return f" {this_sql}{match_cond}{on_sql}{pivots}"
+
         if op_sql != "STRAIGHT_JOIN":
             op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
 

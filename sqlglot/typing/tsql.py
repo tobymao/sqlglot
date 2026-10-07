@@ -1,7 +1,26 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_by_numeric_arg
+
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
+
+def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    this = expression.this
+    if this.is_type(exp.DType.UTINYINT, exp.DType.SMALLINT):
+        return self._set_type(expression, exp.DType.INT)
+    if this.is_type(exp.DType.BIT, *exp.DataType.FLOAT_TYPES, *exp.DataType.TEXT_TYPES):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    if this.is_type(exp.DType.SMALLMONEY):
+        return self._set_type(expression, exp.DType.MONEY)
+    if this.is_type(exp.DType.DECIMAL) and not isinstance(expression, exp.Sign):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+    return annotate_by_numeric_arg(self, expression)
+
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
@@ -30,6 +49,14 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Degrees,
             exp.Radians,
+        }
+    },
+    **{
+        expr_type: {"annotator": _annotate_math_function}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
+            exp.Sign,
         }
     },
     exp.CurrentTimezone: {"returns": exp.DType.NVARCHAR},

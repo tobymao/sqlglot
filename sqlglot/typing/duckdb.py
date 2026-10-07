@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -44,6 +44,12 @@ def _annotate_date_trunc(
         return self._set_type(expression, exp.DType.TIMESTAMP)
 
     return self._set_type(expression, expression.this.type)
+
+
+def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    if expression.this.is_type(exp.DType.DECIMAL):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+    return annotate_int_as_double(self, expression)
 
 
 EXPRESSION_METADATA = {
@@ -97,6 +103,13 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Encode,
             exp.Unhex,
+        }
+    },
+    **{
+        expr_type: {"annotator": _annotate_floor_ceil}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
         }
     },
     **{

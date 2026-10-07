@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -3066,41 +3066,53 @@ class TestDuckDB(Validator):
         for source, target in (
             (
                 "CONCAT_WS('', ARRAY('a', 'b'))",
-                "ARRAY_TO_STRING(['a', 'b'], '')",
+                "CONCAT_WS('', ARRAY_TO_STRING(CAST(['a', 'b'] AS TEXT[]), ''))",
             ),
             (
                 "CONCAT_WS(',', ARRAY('b', 'c', 'd', 'e'))",
-                "ARRAY_TO_STRING(['b', 'c', 'd', 'e'], ',')",
+                "CONCAT_WS(',', ARRAY_TO_STRING(CAST(['b', 'c', 'd', 'e'] AS TEXT[]), ','))",
             ),
             (
                 "CONCAT_WS('-', ARRAY('a', NULL, '', 'b'))",
-                "ARRAY_TO_STRING(['a', NULL, '', 'b'], '-')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST(['a', NULL, '', 'b'] AS TEXT[]), '-'))",
             ),
             (
                 "CONCAT_WS('-', ARRAY())",
-                "ARRAY_TO_STRING([], '-')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(NULL))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([NULL] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS(NULL, ARRAY())",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(CAST([] AS TEXT[]), NULL))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(1, 2), 'x')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST([1, 2] AS TEXT[]), [CAST('x' AS TEXT)]), '-'))",
             ),
             (
                 "CONCAT_WS('-', CAST(NULL AS ARRAY<STRING>))",
-                "ARRAY_TO_STRING(COALESCE(TRY_CAST(NULL AS TEXT[]), []), '-')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), '-'))",
             ),
             (
                 "CONCAT_WS(NULL, CAST(NULL AS ARRAY<STRING>))",
-                "ARRAY_TO_STRING(COALESCE(TRY_CAST(NULL AS TEXT[]), []), NULL)",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), NULL))",
             ),
             (
                 "CONCAT_WS('-', ARRAY('abc', 'def'), 'ghi')",
-                "ARRAY_TO_STRING(LIST_CONCAT(['abc', 'def'], [CAST('ghi' AS TEXT)]), '-')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), [CAST('ghi' AS TEXT)]), '-'))",
             ),
             (
                 "CONCAT_WS('-', ARRAY('abc', 'def'), ARRAY('bla', 'bob'))",
-                "ARRAY_TO_STRING(LIST_CONCAT(['abc', 'def'], ['bla', 'bob']), '-')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), CAST(['bla', 'bob'] AS TEXT[])), '-'))",
             ),
             (
                 "CONCAT_WS('-', 'x', ARRAY(), ARRAY(NULL), CAST(NULL AS ARRAY<STRING>), NULL, 'y')",
                 (
-                    "ARRAY_TO_STRING(LIST_CONCAT([CAST('x' AS TEXT)], [], [NULL], "
-                    "COALESCE(TRY_CAST(NULL AS TEXT[]), []), [CAST(NULL AS TEXT)], [CAST('y' AS TEXT)]), '-')"
+                    "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT([CAST('x' AS TEXT)], CAST([] AS TEXT[]), "
+                    "CAST([NULL] AS TEXT[]), TRY_CAST(NULL AS TEXT[]), [CAST(NULL AS TEXT)], [CAST('y' AS TEXT)]), '-'))"
                 ),
             ),
             (
@@ -3110,7 +3122,6 @@ class TestDuckDB(Validator):
         ):
             with self.subTest(source=source):
                 self.validate_all(f"SELECT {target}", read={"spark": f"SELECT {source}"})
-                parse_one(source, read="spark").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
 
     def test_concat_ws_typed(self):
         for a_type, b_type, expected in (
@@ -3118,24 +3129,24 @@ class TestDuckDB(Validator):
                 "ARRAY<STRING>",
                 "STRING",
                 (
-                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
-                    "[CAST(t.b AS TEXT)]), t.sep)"
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
                 ),
             ),
             (
                 "ARRAY<STRING>",
                 "ARRAY<STRING>",
                 (
-                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
-                    "COALESCE(CAST(t.b AS TEXT[]), [])), t.sep)"
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "CAST(t.b AS TEXT[])), t.sep))"
                 ),
             ),
             (
                 "ARRAY<INT>",
                 "INT",
                 (
-                    "ARRAY_TO_STRING(LIST_CONCAT(COALESCE(CAST(t.a AS TEXT[]), []), "
-                    "[CAST(t.b AS TEXT)]), t.sep)"
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
                 ),
             ),
         ):
@@ -3146,15 +3157,12 @@ class TestDuckDB(Validator):
                     dialect="spark",
                 )
                 self.assertEqual(
-                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+                    expression.sql("duckdb"),
                     f"SELECT {expected} FROM t",
                 )
 
-    def test_concat_ws_unknown_types(self):
         expression = parse_one("SELECT CONCAT_WS('-', ARRAY('a'), t.b) FROM t", read="spark")
-        with self.assertLogs(generator_logger) as logs:
-            expression.sql("duckdb")
-        self.assertIn("CONCAT_WS with unknown argument types", logs.output[0])
-
-        with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
-            expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            expression.sql("duckdb"),
+            "SELECT CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['a'] AS TEXT[]), [CAST(t.b AS TEXT)]), '-')) FROM t",
+        )

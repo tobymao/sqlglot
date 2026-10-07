@@ -4159,38 +4159,21 @@ class DuckDBGenerator(generator.Generator):
                 )
             return self.sql(result)
 
-        if expression.args.get("flatten"):
-            arrays = []
-            has_array = False
-            has_unknown = False
-
-            for arg in args:
-                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY):
-                    has_array = True
-                    if not isinstance(arg, exp.Array):
-                        arg = exp.func("COALESCE", exp.cast(arg, "ARRAY<TEXT>"), exp.array())
-                else:
-                    if (not arg.type or arg.is_type(exp.DType.UNKNOWN)) and not isinstance(
-                        arg, exp.CONSTANTS
-                    ):
-                        has_unknown = True
-
-                    arg = exp.array(exp.cast(arg, exp.DType.TEXT))
-
-                arrays.append(arg)
-
-            if has_array:
-                if has_unknown:
-                    self.unsupported(
-                        "Cannot transpile CONCAT_WS with unknown argument types to DuckDB."
-                    )
-
-                array = (
-                    exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
-                    if len(arrays) > 1
-                    else arrays[0]
-                )
-                return self.func("ARRAY_TO_STRING", array, separator)
+        if expression.args.get("flatten") and any(
+            isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY) for arg in args
+        ):
+            arrays = [
+                exp.cast(arg, "TEXT[]")
+                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY)
+                else exp.array(exp.cast(arg, exp.DType.TEXT))
+                for arg in args
+            ]
+            array = (
+                exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
+                if len(arrays) > 1
+                else arrays[0]
+            )
+            return self.func("CONCAT_WS", separator, self.func("ARRAY_TO_STRING", array, separator))
 
         return super().concatws_sql(expression)
 

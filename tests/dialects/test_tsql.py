@@ -245,6 +245,8 @@ class TestTSQL(Validator):
         # tsql allows .. which means use the default schema
         self.validate_identity("SELECT * FROM a..b")
 
+        self.validate_identity("SELECT output FROM t")
+        self.validate_identity("SELECT 1 output", "SELECT 1 AS output")
         self.validate_identity("SELECT TOP (SELECT 1) * FROM t")
         self.validate_identity("SELECT ATN2(x, y)")
         self.validate_identity("SELECT EXP(1)")

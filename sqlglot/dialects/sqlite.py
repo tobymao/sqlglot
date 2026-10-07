@@ -4,6 +4,7 @@ from sqlglot import tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    UsingColumnOrder,
 )
 from sqlglot.generators.sqlite import SQLiteGenerator
 from sqlglot.parsers.sqlite import SQLiteParser
@@ -17,6 +18,7 @@ class SQLite(Dialect):
     TYPED_DIVISION = True
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
+    USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
 

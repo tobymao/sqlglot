@@ -140,6 +140,19 @@ class NormalizationStrategy(str, AutoName):
     """Always case-insensitive (uppercase), regardless of quotes."""
 
 
+class UsingColumnOrder(str, AutoName):
+    """Where star expansion places the columns of a `USING` or `NATURAL` join."""
+
+    USING_LIST = auto()
+    """First, in the order they're listed in USING (SQL standard, e.g. Postgres)."""
+
+    LEFT_TABLE = auto()
+    """First, in the order they appear in the left table (e.g. MySQL)."""
+
+    IN_PLACE = auto()
+    """Where the left table has them (e.g. DuckDB)."""
+
+
 # "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
 # TIME_MAPPING so they roundtrip, since a lax %m/%d renders non-padded there for parse expressions
 # (see HiveGenerator.format_time).
@@ -660,6 +673,19 @@ class Dialect(metaclass=_Dialect):
     or BigQuery's _PARTITIONTIME, _PARTITIONDATE) that are implicitly available but not part
     of the table schema. When this is True, SELECT * will not include these pseudocolumns;
     they must be explicitly selected.
+    """
+
+    USING_COLUMN_ORDER = UsingColumnOrder.USING_LIST
+    """
+    Where star expansion places the columns of a `USING` or `NATURAL` join.
+
+    Given `a(a_id, k1, k2)` and `b(k2, b_id, k1)`, `SELECT * FROM a JOIN b USING (k2, k1)` returns:
+    - `USING_LIST`: `k2, k1, a_id, b_id`
+    - `LEFT_TABLE`: `k1, k2, a_id, b_id`
+    - `IN_PLACE`: `a_id, k1, k2, b_id`
+
+    When join columns come first, this applies at every join: each USING join moves its columns
+    ahead of all the columns to its left.
     """
 
     QUERY_RESULTS_ARE_STRUCTS = False

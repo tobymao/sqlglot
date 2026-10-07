@@ -6,6 +6,7 @@ from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    UsingColumnOrder,
 )
 from sqlglot.generators.duckdb import DuckDBGenerator, WS_CONTROL_CHARS_TO_DUCK  # noqa: F401
 from sqlglot.parsers.duckdb import DuckDBParser
@@ -25,6 +26,7 @@ class DuckDB(Dialect):
     STRICT_JSON_PATH_SYNTAX = False
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     UUID_IS_STRING_TYPE = False
+    USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

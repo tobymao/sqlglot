@@ -382,6 +382,12 @@ class Generator:
     # Whether comparing against booleans (e.g. x IS TRUE) is supported
     IS_BOOL_ALLOWED = True
 
+    # Whether casting a fractional number to an integer rounds it instead of truncating it
+    CAST_TO_INT_ROUNDS = False
+
+    # Whether the native integer division operator returns NULL for a zero divisor instead of raising
+    SAFE_INT_DIVISION = False
+
     # Whether to include the "SET" keyword in the "INSERT ... ON DUPLICATE KEY UPDATE" statement
     DUPLICATE_KEY_UPDATE_WITH_SET = True
 
@@ -4515,12 +4521,14 @@ class Generator:
         return f"{this_sql} HAVING {kind} {expression_sql}"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
-        return self.sql(
-            exp.Cast(
-                this=exp.Div(this=expression.this, expression=expression.expression),
-                to=exp.DataType(this=exp.DType.INT),
-            )
-        )
+        return self._truncated_div_sql(expression.this, expression.expression)
+
+    def _truncated_div_sql(self, this: exp.Expr, divisor: exp.Expr) -> str:
+        div: exp.Expr = exp.Div(this=this, expression=divisor)
+        if self.CAST_TO_INT_ROUNDS:
+            div = exp.Trunc(this=div)
+
+        return self.sql(exp.Cast(this=div, to=exp.DataType(this=exp.DType.BIGINT)))
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         if self.dialect.STRICT_STRING_CONCAT and expression.args.get("safe"):
@@ -4539,12 +4547,14 @@ class Generator:
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
             if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-                return self.sql(
-                    exp.cast(
-                        l / r,
-                        to=exp.DType.BIGINT,
-                    )
-                )
+                # Native integer division depends on the target's operand types, which may differ
+                # from the source's (e.g. FLOOR(int) is DOUBLE in DuckDB), unless the operands are
+                # integer literals or casts
+                if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)) and (
+                    expression.args.get("safe") or not self.SAFE_INT_DIVISION
+                ):
+                    return self.sql(exp.IntDiv(this=l, expression=r))
+                return self._truncated_div_sql(l, r)
 
         return self.binary(expression, "/")
 

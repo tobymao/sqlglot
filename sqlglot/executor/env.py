@@ -197,6 +197,12 @@ def _like(this, e, flags=0):
 
 
 @null_if_any
+def intdiv(this, e):
+    quotient = abs(this) // abs(e)
+    return quotient if (this < 0) == (e < 0) else -quotient
+
+
+@null_if_any
 def interval(this, unit):
     plural = unit + "S"
     if plural in Generator.TIME_PART_SINGULARS:
@@ -277,7 +283,7 @@ ENV = {
     "IF": lambda predicate, true, false: true if predicate else false,
     "IN": sql_in,
     "INT": null_if_any(int),
-    "INTDIV": null_if_any(lambda e, this: e // this),
+    "INTDIV": intdiv,
     "INTERVAL": interval,
     "JSONEXTRACT": jsonextract,
     "LEFT": null_if_any(lambda this, e: this[:e]),

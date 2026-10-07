@@ -62,6 +62,7 @@ class StarRocksGenerator(MySQLGenerator):
     WITH_PROPERTIES_PREFIX = "PROPERTIES"
     UPDATE_STATEMENT_SUPPORTS_FROM = True
     INSERT_OVERWRITE = " OVERWRITE"
+    CAST_TO_INT_ROUNDS = False
 
     # StarRocks doesn't support "IS TRUE/FALSE" syntax.
     IS_BOOL_ALLOWED = False

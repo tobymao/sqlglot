@@ -360,6 +360,7 @@ class SnowflakeGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
     SINGLE_STRING_INTERVAL = True
+    CAST_TO_INT_ROUNDS = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     QUERY_HINTS = False

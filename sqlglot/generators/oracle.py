@@ -26,6 +26,7 @@ class OracleGenerator(generator.Generator):
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True
     SUPPORTS_MERGE_WHERE = True
+    CAST_TO_INT_ROUNDS = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     DATA_TYPE_SPECIFIERS_ALLOWED = True

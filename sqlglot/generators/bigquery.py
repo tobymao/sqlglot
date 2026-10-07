@@ -256,6 +256,7 @@ class BigQueryGenerator(generator.Generator):
     RENAME_TABLE_WITH_DB = False
     NVL2_SUPPORTED = False
     UNNEST_WITH_ORDINALITY = False
+    CAST_TO_INT_ROUNDS = True
     COLLATE_IS_FUNC = True
     LIMIT_ONLY_LITERALS = True
     SUPPORTS_TABLE_ALIAS_COLUMNS = False

@@ -1254,6 +1254,21 @@ class TestExecutor(unittest.TestCase):
                     result = execute(sql, schema=schema, tables=tables, dialect=dialect)
                     self.assertEqual(result.rows, [(None,)])
 
+    def test_integer_division_truncates_towards_zero(self):
+        tables = {"t": [{"x": 7, "y": 2}]}
+
+        for sql, dialect in (
+            (
+                "SELECT DIV(x, y), DIV(-x, y), DIV(x, -y), DIV(-x, -y), DIV(NULL, y) FROM t",
+                "bigquery",
+            ),
+            ("SELECT x // y, -x // y, x // -y, -x // -y, NULL // y FROM t", "duckdb"),
+            ("SELECT x DIV y, -x DIV y, x DIV -y, -x DIV -y, NULL DIV y FROM t", "mysql"),
+        ):
+            with self.subTest(dialect):
+                result = execute(sql, tables=tables, dialect=dialect)
+                self.assertEqual(result.rows, [(3, -3, -3, 3, None)])
+
     def test_null_ordering_honors_nulls_first_and_dialect_defaults(self):
         schema = {"t": {"a": "INT"}}
         tables = {"t": [{"a": 1}, {"a": None}, {"a": 3}, {"a": None}]}

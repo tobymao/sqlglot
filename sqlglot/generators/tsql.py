@@ -350,13 +350,10 @@ class TSQLGenerator(generator.Generator):
                 # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
                 expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
-            if isinstance(limit, exp.Limit):
-                if self._should_drop_limit_all(limit):
-                    limit.pop()
-                else:
-                    # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
-                    # we replace here because otherwise TOP would be generated in select_sql
-                    limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
+            if isinstance(limit, exp.Limit) and not limit.is_limit_all:
+                # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
+                # we replace here because otherwise TOP would be generated in select_sql
+                limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
 
     def convert_sql(self, expression: exp.Convert) -> str:
         name = "TRY_CONVERT" if expression.args.get("safe") else "CONVERT"

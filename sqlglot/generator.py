@@ -3013,7 +3013,7 @@ class Generator:
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
 
-        if self._should_drop_limit_all(expression):
+        if expression.is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL:
             return this
 
         args = [
@@ -3372,11 +3372,10 @@ class Generator:
             limit = exp.Limit(
                 expression=exp.maybe_copy(count) if count is not None else exp.Literal.number(1)
             )
-        elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
-            if self._should_drop_limit_all(limit):
-                limit = None
-            else:
-                limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
+        elif (
+            self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit) and not limit.is_limit_all
+        ):
+            limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
         return csv(
             *sqls,
@@ -5521,9 +5520,6 @@ class Generator:
     def _jsonpathsubscript_sql(self, expression: exp.JSONPathSubscript) -> str:
         this = self.json_path_part(expression.this)
         return f"[{this}]" if this else ""
-
-    def _should_drop_limit_all(self, expression: exp.Limit) -> bool:
-        return expression.is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL
 
     def _simplify_unless_literal(self, expression: E) -> E:
         if not isinstance(expression, exp.Literal):

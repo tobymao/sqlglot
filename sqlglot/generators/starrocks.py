@@ -68,6 +68,12 @@ class StarRocksGenerator(MySQLGenerator):
     # StarRocks doesn't support renaming a table with a database.
     RENAME_TABLE_WITH_DB = False
 
+    ALTER_PARTITION_OPTIONS = (
+        *MySQLGenerator.ALTER_PARTITION_OPTIONS,
+        exp.DistributedByProperty,
+        exp.PartitionedByProperty,
+    )
+
     CAST_MAPPING: t.ClassVar[dict[exp.DType, str]] = {}
 
     TYPE_MAPPING = {

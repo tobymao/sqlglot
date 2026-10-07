@@ -4445,16 +4445,18 @@ class Generator:
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
         only = " ONLY" if expression.args.get("only") else ""
-        all_options = expression.args.get("options") or []
-        partitions = [o for o in all_options if isinstance(o, self.ALTER_PARTITION_OPTIONS)]
-        options = self.expressions(
-            sqls=[o for o in all_options if not isinstance(o, self.ALTER_PARTITION_OPTIONS)]
+        options = expression.args.get("options") or []
+        options_sql = self.expressions(
+            sqls=[o for o in options if not isinstance(o, self.ALTER_PARTITION_OPTIONS)]
         )
-        options = f", {options}" if options and actions_sql else options
-        partitions_sql = self.expressions(sqls=partitions, sep=" ")
-        partitions_sql = (
-            f" {partitions_sql}" if partitions_sql and (actions_sql or options) else partitions_sql
+        options_sql = f", {options_sql}" if options_sql and actions_sql else options_sql
+        partitions_sql = self.expressions(
+            sqls=[o for o in options if isinstance(o, self.ALTER_PARTITION_OPTIONS)],
+            sep=" ",
+            flat=True,
         )
+        if partitions_sql and (actions_sql or options_sql):
+            partitions_sql = f" {partitions_sql}"
         kind = self.sql(expression, "kind")
         not_valid = " NOT VALID" if expression.args.get("not_valid") else ""
         check = " WITH CHECK" if expression.args.get("check") else ""
@@ -4466,7 +4468,7 @@ class Generator:
         this = self.sql(expression, "this")
         this = f" {this}" if this else ""
 
-        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options}{partitions_sql}{cascade}"
+        return f"ALTER {iceberg}{kind}{exists}{only}{this}{on_cluster}{check}{self.sep()}{actions_sql}{not_valid}{options_sql}{partitions_sql}{cascade}"
 
     def altersession_sql(self, expression: exp.AlterSession) -> str:
         items_sql = self.expressions(expression, flat=True)

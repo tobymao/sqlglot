@@ -142,11 +142,9 @@ class MySQLGenerator(generator.Generator):
     SUPPORTS_MEDIAN = False
     UPDATE_STATEMENT_SUPPORTS_FROM = False
 
-    ALTER_PARTITION_OPTIONS = (
-        exp.DistributedByProperty,
+    ALTER_PARTITION_OPTIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = (
         exp.PartitionByListProperty,
         exp.PartitionByRangeProperty,
-        exp.PartitionedByProperty,
     )
 
     TRANSFORMS = {

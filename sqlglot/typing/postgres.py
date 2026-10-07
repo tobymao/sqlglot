@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
@@ -46,6 +46,14 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.TimestampFromParts,
             exp.Localtimestamp,
+        }
+    },
+    **{
+        expr_type: {"annotator": annotate_int_as_double}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
+            exp.Sign,
         }
     },
     **{

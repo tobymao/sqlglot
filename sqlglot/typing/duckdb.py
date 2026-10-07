@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -97,6 +97,13 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Encode,
             exp.Unhex,
+        }
+    },
+    **{
+        expr_type: {"annotator": annotate_int_as_double}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
         }
     },
     **{

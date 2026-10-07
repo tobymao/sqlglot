@@ -119,10 +119,10 @@ UNICODE('bcd');
 INT;
 
 CEIL(tbl.double_col);
-INT;
+DOUBLE;
 
 FLOOR(tbl.double_col);
-INT;
+DOUBLE;
 
 LAST_DAY(tbl.timestamp_col);
 DATE;
@@ -5395,7 +5395,7 @@ DOUBLE;
 
 # dialect: snowflake
 SIGN(tbl.double_col);
-INT;
+DOUBLE;
 
 # dialect: snowflake
 SKEW(tbl.double_col);

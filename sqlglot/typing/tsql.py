@@ -30,6 +30,7 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.Degrees,
             exp.Radians,
+            exp.Sign,
         }
     },
     exp.CurrentTimezone: {"returns": exp.DType.NVARCHAR},

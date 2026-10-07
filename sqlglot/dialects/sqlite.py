@@ -17,6 +17,7 @@ class SQLite(Dialect):
     TYPED_DIVISION = True
     SAFE_DIVISION = True
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
+    USING_COLUMN_ORDER = "in_place"
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
 

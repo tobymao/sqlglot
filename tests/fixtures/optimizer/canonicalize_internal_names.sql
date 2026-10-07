@@ -191,7 +191,7 @@ SELECT DISTINCT ON ("a") "_t0"."a" AS "a", "_t0"."b" AS "b" FROM "c"."db"."x" AS
 
 # title: join using is expanded to on with coalesce
 SELECT * FROM x JOIN y USING (b);
-SELECT "_t0"."a" AS "a", COALESCE("_t0"."b", "_t1"."b") AS "b", "_t1"."c" AS "c" FROM "c"."db"."x" AS "_t0" JOIN "c"."db"."y" AS "_t1" ON "_t0"."b" = "_t1"."b";
+SELECT COALESCE("_t0"."b", "_t1"."b") AS "b", "_t0"."a" AS "a", "_t1"."c" AS "c" FROM "c"."db"."x" AS "_t0" JOIN "c"."db"."y" AS "_t1" ON "_t0"."b" = "_t1"."b";
 
 # title: chained union
 SELECT a FROM x UNION SELECT b FROM y UNION SELECT c FROM z;

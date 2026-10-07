@@ -25,6 +25,7 @@ class DuckDB(Dialect):
     STRICT_JSON_PATH_SYNTAX = False
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     UUID_IS_STRING_TYPE = False
+    USING_COLUMN_ORDER = "in_place"
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

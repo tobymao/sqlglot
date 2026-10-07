@@ -10,6 +10,7 @@ from sqlglot.tokens import TokenType
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
     INDEX_OFFSET = 1
+    USING_COLUMN_ORDER = "using_list"
 
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {
         exp.GenerateSeries: "generate_series",

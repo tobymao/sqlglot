@@ -662,6 +662,20 @@ class Dialect(metaclass=_Dialect):
     they must be explicitly selected.
     """
 
+    USING_COLUMN_ORDER = "using_list"
+    """
+    Where star expansion places the columns of a `USING` or `NATURAL` join.
+    Possible values: `"using_list"`, `"left_table"`, `"in_place"`
+
+    Given `a(a_id, k1, k2)` and `b(k2, b_id, k1)`, `SELECT * FROM a JOIN b USING (k2, k1)` returns:
+    - `"using_list"`: `k2, k1, a_id, b_id`, join columns first in USING order (SQL standard, e.g. Postgres)
+    - `"left_table"`: `k1, k2, a_id, b_id`, join columns first in the left table's order (e.g. MySQL)
+    - `"in_place"`: `a_id, k1, k2, b_id`, join columns where the left table has them (e.g. DuckDB)
+
+    When join columns come first, this applies at every join: each USING join moves its columns
+    ahead of all the columns to its left.
+    """
+
     QUERY_RESULTS_ARE_STRUCTS = False
     """
     Whether query results are typed as structs in metadata for type inference.

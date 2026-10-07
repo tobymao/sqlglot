@@ -132,6 +132,22 @@ class TestClickhouse(Validator):
                 "postgres": "VAR_POP(x)",
             },
         )
+        for ch_name, op in (("groupBitAnd", "AND"), ("groupBitOr", "OR"), ("groupBitXor", "XOR")):
+            self.validate_all(
+                f"{ch_name}(x)",
+                read={
+                    "": f"BITWISE_{op}_AGG(x)",
+                    "clickhouse": f"{ch_name}(x)",
+                    "duckdb": f"BIT_{op}(x)",
+                    "postgres": f"BIT_{op}(x)",
+                },
+                write={"duckdb": f"BIT_{op}(x)", "postgres": f"BIT_{op}(x)"},
+            )
+        self.validate_identity("SELECT groupBitAndIf(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        window = self.validate_identity("SELECT groupBitAnd(x) OVER (PARTITION BY y) FROM t")
+        window.selects[0].assert_is(exp.Window).this.assert_is(exp.BitwiseAndAgg)
         self.validate_all(
             "toDayOfMonth(x)",
             read={

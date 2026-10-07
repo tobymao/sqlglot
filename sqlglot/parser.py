@@ -6527,15 +6527,15 @@ class Parser:
                 literal = this.name
                 this = self._parse_column_ops(this)
 
-                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
-                if parser:
-                    return parser(self, this, data_type)
-
                 if self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR and TIME_ZONE_RE.search(literal):
                     if data_type.is_type(exp.DType.TIMESTAMP):
                         data_type = exp.DType.TIMESTAMPTZ.into_expr()
                     elif data_type.is_type(exp.DType.TIME):
                         data_type = exp.DType.TIMETZ.into_expr()
+
+                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
+                if parser:
+                    return parser(self, this, data_type)
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 

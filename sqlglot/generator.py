@@ -30,6 +30,8 @@ _HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
+SETOP_OPERAND_PLACEHOLDER = "\x01SQLGLOT_SETOP_OPERAND\x01"
+
 
 def unsupported_args(
     *args: str | tuple[str, str],
@@ -1987,66 +1989,36 @@ class Generator:
                     sql_fragments.append((f"{with_}{separator}", indent_level))
                 stack.append((self.query_modifiers(node, ""), indent_level, False))
 
-            this = node.this
-            expr = node.expression
+            left = node.this
+            right = node.expression
 
             # The parser groups equal-precedence operators from the left. A
             # lower-precedence left operand needs grouping before INTERSECT;
             # some dialects also require grouping when operator kinds differ.
-            wrap_this = isinstance(this, exp.SetOperation) and (
-                self._setop_has_modifiers(this)
-                or (
-                    intersect_tighter
-                    and isinstance(node, exp.Intersect)
-                    and not isinstance(this, exp.Intersect)
-                )
-                or (
-                    mixed_requires_parens
-                    and (
-                        type(this) is not type(node)
-                        or any(
-                            this.args.get(arg) != node.args.get(arg)
-                            for arg in ("distinct", "by_name", "side", "kind", "on")
-                        )
-                    )
-                )
+            wrap_left = self._should_wrap_setop(
+                node, left, intersect_tighter, mixed_requires_parens
             )
-            wrap_expr = isinstance(expr, exp.SetOperation) and (
-                self._setop_has_modifiers(expr)
-                or (
+            wrap_right = self._should_wrap_setop(
+                node, right, intersect_tighter, mixed_requires_parens
+            ) or (
+                isinstance(right, exp.SetOperation)
+                and not (
                     intersect_tighter
-                    and isinstance(node, exp.Intersect)
-                    and not isinstance(expr, exp.Intersect)
+                    and isinstance(right, exp.Intersect)
+                    and not isinstance(node, exp.Intersect)
                 )
-                or (
-                    mixed_requires_parens
-                    and (
-                        type(expr) is not type(node)
-                        or any(
-                            expr.args.get(arg) != node.args.get(arg)
-                            for arg in ("distinct", "by_name", "side", "kind", "on")
-                        )
-                    )
-                )
-                or (
-                    not (
-                        intersect_tighter
-                        and isinstance(expr, exp.Intersect)
-                        and not isinstance(node, exp.Intersect)
-                    )
-                    and not self._setop_operand_flattenable(node, expr)
-                )
+                and not self._setop_operand_flattenable(node, right)
             )
-            if wrap_this or wrap_expr:
+            if wrap_left or wrap_right:
                 if wrapper is None:
                     wrapper = self._wrap_setop_operand()
                 open_wrapper, close_wrapper = wrapper
 
             # Only grouped set-operation operands render their own CTEs and trailing modifiers.
-            if wrap_expr:
+            if wrap_right:
                 stack.append((close_wrapper, indent_level, False))
-            stack.append((expr, indent_level + bool(wrap_expr), bool(wrap_expr)))
-            if wrap_expr:
+            stack.append((right, indent_level + bool(wrap_right), bool(wrap_right)))
+            if wrap_right:
                 stack.append((open_wrapper, indent_level, False))
             stack.append((separator, indent_level, False))
 
@@ -2061,10 +2033,10 @@ class Generator:
             )
             stack.append((separator, indent_level, False))
 
-            if wrap_this:
+            if wrap_left:
                 stack.append((close_wrapper, indent_level, False))
-            stack.append((this, indent_level + bool(wrap_this), bool(wrap_this)))
-            if wrap_this:
+            stack.append((left, indent_level + bool(wrap_left), bool(wrap_left)))
+            if wrap_left:
                 stack.append((open_wrapper, indent_level, False))
 
         return self._join_sql_fragments(sql_fragments)
@@ -2092,7 +2064,7 @@ class Generator:
         subquery = select.args["from_"].this
         node = subquery.this
         alias = subquery.args.get("alias")
-        hole = "\x01SQLGLOT_SETOP_OPERAND\x01"
+        hole = SETOP_OPERAND_PLACEHOLDER
 
         # Render the SELECT once without rendering the child set operation.
         subquery.set("this", hole)
@@ -2106,8 +2078,30 @@ class Generator:
         prefix, _, remainder = shell.partition(hole)
         return prefix, remainder
 
+    def _should_wrap_setop(
+        self, node: exp.Expr, setop: exp.Expr, intersect_tighter: bool, mixed_requires_parens: bool
+    ) -> bool:
+        return isinstance(setop, exp.SetOperation) and (
+            self._setop_has_modifiers(setop)
+            or (
+                intersect_tighter
+                and isinstance(node, exp.Intersect)
+                and not isinstance(setop, exp.Intersect)
+            )
+            or (
+                mixed_requires_parens
+                and (
+                    type(setop) is not type(node)
+                    or any(
+                        setop.args.get(arg) != node.args.get(arg)
+                        for arg in ("distinct", "by_name", "side", "kind", "on")
+                    )
+                )
+            )
+        )
+
     def _wrap_setop_operand(self) -> tuple[str, str]:
-        hole = "\x01SQLGLOT_SETOP_OPERAND\x01"
+        hole = SETOP_OPERAND_PLACEHOLDER
         shell = (
             self.wrap(hole)
             if self.SET_OP_PARENTHESIZED_OPERANDS

@@ -1729,6 +1729,7 @@ class Gen:
         self.stack.append("TRUE" if e.this else "FALSE")
 
     def bracket_sql(self, e: exp.Bracket) -> None:
+        self._args(e, 2)
         self.stack.extend(
             (
                 "]",

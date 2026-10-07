@@ -3430,6 +3430,32 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for func in exp.ALL_FUNCTIONS:
             self.assertIsInstance(optimizer.simplify.gen(func()), str)
 
+    def test_gen_bracket(self):
+        for sql, expected in (
+            ("a[i]", "a[i]"),
+            ("a[OFFSET(i)]", "a[i]:offset,0,:safe,False"),
+            ("a[ORDINAL(i)]", "a[i]:offset,1,:safe,False"),
+            ("a[SAFE_OFFSET(i)]", "a[i]:offset,0,:safe,True"),
+            ("a[SAFE_ORDINAL(i)]", "a[i]:offset,1,:safe,True"),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    optimizer.simplify.gen(parse_one(sql, dialect="bigquery")), expected
+                )
+
+        for flag in ("returns_list_for_maps", "json_access"):
+            with self.subTest(flag=flag):
+                bracket = parse_one("a[i]")
+                bracket.set(flag, True)
+                self.assertEqual(optimizer.simplify.gen(bracket), f"a[i]:{flag},True")
+
+        predicates = {
+            f"a[{access}(i)] = 1" for access in ("OFFSET", "ORDINAL", "SAFE_OFFSET", "SAFE_ORDINAL")
+        }
+        expression = parse_one(" AND ".join(sorted(predicates)), dialect="bigquery")
+        simplified = optimizer.simplify.simplify(expression)
+        self.assertEqual({e.sql("bigquery") for e in simplified.flatten()}, predicates)
+
     def test_normalization_distance(self):
         def gen_expr(depth: int) -> exp.Expr:
             return parse_one(" OR ".join("a AND b" for _ in range(depth)))

@@ -1,7 +1,19 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
+
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
+
+def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    if expression.this.is_type(exp.DType.FLOAT):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    return annotate_int_as_double(self, expression)
+
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
@@ -49,7 +61,7 @@ EXPRESSION_METADATA = {
         }
     },
     **{
-        expr_type: {"annotator": annotate_int_as_double}
+        expr_type: {"annotator": _annotate_math_function}
         for expr_type in {
             exp.Ceil,
             exp.Floor,

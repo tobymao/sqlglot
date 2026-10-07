@@ -12,9 +12,10 @@ if t.TYPE_CHECKING:
 ExprMetadataType = dict[Type[exp.Expr], dict[str, t.Any]]
 
 
-def annotate_int_as_double(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+def annotate_by_numeric_arg(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """
-    Annotates math functions (e.g. FLOOR) that return DOUBLE for integers and the input type otherwise.
+    Annotates math functions (e.g. FLOOR) that preserve numeric and unknown types, and return INT
+    otherwise.
 
     Assumes `this` is set, which holds for valid ASTs because it's a required argument.
     """
@@ -22,7 +23,27 @@ def annotate_int_as_double(self: TypeAnnotator, expression: exp.Expr) -> exp.Exp
 
     self._set_type(
         expression,
-        exp.DType.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
+        this.type
+        if this.is_type(exp.DType.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+        else exp.DType.INT,
+    )
+    return expression
+
+
+def annotate_int_as_double(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    """
+    Annotates math functions (e.g. FLOOR) that return DOUBLE for integers and strings, and the input
+    type otherwise.
+
+    Assumes `this` is set, which holds for valid ASTs because it's a required argument.
+    """
+    this: exp.Expr = expression.this
+
+    self._set_type(
+        expression,
+        exp.DType.DOUBLE
+        if this.is_type(*exp.DataType.INTEGER_TYPES, *exp.DataType.TEXT_TYPES)
+        else this.type,
     )
     return expression
 
@@ -276,6 +297,13 @@ EXPRESSION_METADATA: ExprMetadataType = {
         }
     },
     **{
+        expr_type: {"annotator": annotate_by_numeric_arg}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
+        }
+    },
+    **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.Abs,
@@ -283,10 +311,8 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ArrayConcatAgg,
             exp.ArrayReverse,
             exp.ArraySlice,
-            exp.Ceil,
             exp.Filter,
             exp.FirstValue,
-            exp.Floor,
             exp.HavingMax,
             exp.LastValue,
             exp.Limit,

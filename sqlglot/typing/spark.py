@@ -1,18 +1,7 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp
 from sqlglot.typing.spark2 import EXPRESSION_METADATA
-
-if t.TYPE_CHECKING:
-    from sqlglot.optimizer.annotate_types import TypeAnnotator
-
-
-def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
-    if expression.this.is_type(exp.DType.DECIMAL):
-        return self._annotate_by_args(expression, "this")
-    return self._set_type(expression, exp.DType.BIGINT)
 
 
 EXPRESSION_METADATA = {
@@ -47,13 +36,6 @@ EXPRESSION_METADATA = {
             exp.CurrentTimezone,
             exp.Randstr,
             exp.ToChar,
-        }
-    },
-    **{
-        exp_type: {"annotator": _annotate_floor_ceil}
-        for exp_type in {
-            exp.Ceil,
-            exp.Floor,
         }
     },
     **{

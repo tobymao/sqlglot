@@ -151,6 +151,22 @@ class TestTrino(Validator):
             "SELECT TIMESTAMP '2012-10-31 01:00 +2'",
             "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP WITH TIME ZONE)",
         )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2026-03-01 00:00:00.1234'",
+            "SELECT CAST('2026-03-01 00:00:00.1234' AS TIMESTAMP(4))",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2026-03-01 00:00:00.123456789'",
+            "SELECT CAST('2026-03-01 00:00:00.123456789' AS TIMESTAMP(9))",
+        )
+        self.validate_identity(
+            "SELECT TIMESTAMP '2026-03-01 00:00:00.1234 +02:00'",
+            "SELECT CAST('2026-03-01 00:00:00.1234 +02:00' AS TIMESTAMP(4) WITH TIME ZONE)",
+        )
+        self.validate_identity(
+            "SELECT TIME '01:02:03.1234'",
+            "SELECT CAST('01:02:03.1234' AS TIME(4))",
+        )
 
         self.validate_identity(
             "SELECT TIME '01:02:03.456 -08:00'",

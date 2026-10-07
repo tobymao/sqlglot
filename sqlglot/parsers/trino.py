@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -7,8 +8,22 @@ from sqlglot.helper import ensure_list
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
 
+FRACTIONAL_SECONDS_RE = re.compile(r":\d+\.(\d+)")
+
 
 class TrinoParser(PrestoParser):
+    TYPE_LITERAL_PARSERS: t.ClassVar = {
+        **PrestoParser.TYPE_LITERAL_PARSERS,
+        **dict.fromkeys(
+            (
+                exp.DType.TIMESTAMP,
+                exp.DType.TIMESTAMPTZ,
+                exp.DType.TIME,
+                exp.DType.TIMETZ,
+            ),
+            lambda self, this, to: self._parse_temporal_literal(this, to),
+        ),
+    }
     NO_PAREN_FUNCTIONS = {
         **PrestoParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
@@ -259,3 +274,16 @@ class TrinoParser(PrestoParser):
 
         self.raise_error("Expected routine statement")
         return None
+
+    def _parse_temporal_literal(self, this: exp.Literal, data_type: exp.DataType) -> exp.Cast:
+        if not data_type.expressions:
+            match = FRACTIONAL_SECONDS_RE.search(this.name)
+            if match:
+                precision = len(match.group(1))
+                if precision > 3:
+                    data_type.set(
+                        "expressions",
+                        [exp.DataTypeParam(this=exp.Literal.number(precision))],
+                    )
+
+        return self.expression(exp.Cast(this=this, to=data_type))

@@ -20,6 +20,7 @@ class Oracle(Dialect):
     ON_CONDITION_EMPTY_BEFORE_ERROR = False
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     DISABLES_ALIAS_REF_EXPANSION = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE

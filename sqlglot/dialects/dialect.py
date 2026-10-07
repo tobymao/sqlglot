@@ -759,6 +759,9 @@ class Dialect(metaclass=_Dialect):
     REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = True
     """Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length."""
 
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = True
+    """Whether INTERSECT binds more tightly than UNION and EXCEPT during parsing and generation."""
+
     SET_OP_DISTINCT_BY_DEFAULT: dict[Type[exp.Expr], bool | None] = {
         exp.Except: True,
         exp.Intersect: True,

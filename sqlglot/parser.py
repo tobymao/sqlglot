@@ -1881,9 +1881,6 @@ class Parser:
     MODIFIERS_ATTACHED_TO_SET_OP: t.ClassVar = True
     SET_OP_MODIFIERS: t.ClassVar = {"order", "limit", "offset", "sort", "distribute", "cluster"}
 
-    # Whether INTERSECT binds more tightly than UNION and EXCEPT
-    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT: t.ClassVar = True
-
     # Whether to parse IF statements that aren't followed by a left parenthesis as commands
     NO_PAREN_IF_COMMANDS: t.ClassVar = True
 
@@ -6120,7 +6117,7 @@ class Parser:
     def _parse_set_operations(self, this: exp.Expr | None) -> exp.Expr | None:
         set_operations_to_parse = None
         right_operand_parser = None
-        if self.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT:
+        if self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT:
             this = self._parse_intersection_chain(this)
             set_operations_to_parse = self.UNION_EXCEPT_SET_OPERATIONS
             right_operand_parser = self._parse_intersection_operand

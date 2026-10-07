@@ -1947,7 +1947,7 @@ class Generator:
         stack: list[tuple[exp.Expr | str, int, bool]] = [(expression, 0, True)]
         wrapper: tuple[str, str] | None = None
         separator = self.sep()
-        intersect_tighter = self.dialect.parser_class.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+        intersect_tighter = self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
         mixed_requires_parens = self.SET_OP_MIXED_OPERATORS_REQUIRE_PARENS
 
         while stack:
@@ -2140,7 +2140,7 @@ class Generator:
         while isinstance(cursor, exp.SetOperation):
             if type(cursor) is not type(node):
                 return (
-                    self.dialect.parser_class.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+                    self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
                     and isinstance(cursor, exp.Intersect)
                     and isinstance(node, exp.Union)
                 )

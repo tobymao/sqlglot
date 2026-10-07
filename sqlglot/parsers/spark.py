@@ -54,7 +54,6 @@ def _build_dateadd(args: list) -> exp.Expr:
 
 class SparkParser(Spark2Parser):
     DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = False
-    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = True
 
     NO_PAREN_FUNCTIONS = {
         **Spark2Parser.NO_PAREN_FUNCTIONS,

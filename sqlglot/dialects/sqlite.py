@@ -19,6 +19,7 @@ class SQLite(Dialect):
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]

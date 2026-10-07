@@ -876,6 +876,15 @@ class Generator:
         exp.Mod,
     )
 
+    # ALTER options that follow the others without a comma, e.g. MySQL's
+    # ENGINE=InnoDB PARTITION BY LIST (...) or StarRocks' PARTITION BY ... DISTRIBUTED BY ...
+    ALTER_PARTITION_OPTIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = (
+        exp.DistributedByProperty,
+        exp.PartitionByListProperty,
+        exp.PartitionByRangeProperty,
+        exp.PartitionedByProperty,
+    )
+
     SAFE_JSON_PATH_KEY_RE: t.ClassVar = exp.SAFE_IDENTIFIER_RE
 
     SENTINEL_LINE_BREAK = "__SQLGLOT__LB__"
@@ -4441,22 +4450,11 @@ class Generator:
         on_cluster = self.sql(expression, "cluster")
         on_cluster = f" {on_cluster}" if on_cluster else ""
         only = " ONLY" if expression.args.get("only") else ""
-        # Partition clauses follow the options without a comma, e.g. MySQL's
-        # ENGINE=InnoDB PARTITION BY LIST (...) or StarRocks' PARTITION BY ... DISTRIBUTED BY ...
-        regular: list[exp.Expr] = []
-        partitions: list[exp.Expr] = []
-        for option in expression.args.get("options") or []:
-            is_partition = isinstance(
-                option,
-                (
-                    exp.DistributedByProperty,
-                    exp.PartitionByListProperty,
-                    exp.PartitionByRangeProperty,
-                    exp.PartitionedByProperty,
-                ),
-            )
-            (partitions if is_partition else regular).append(option)
-        options = self.expressions(sqls=regular)
+        all_options = expression.args.get("options") or []
+        partitions = [o for o in all_options if isinstance(o, self.ALTER_PARTITION_OPTIONS)]
+        options = self.expressions(
+            sqls=[o for o in all_options if not isinstance(o, self.ALTER_PARTITION_OPTIONS)]
+        )
         options = f", {options}" if options and actions_sql else options
         partitions_sql = self.expressions(sqls=partitions, sep=" ")
         partitions_sql = (

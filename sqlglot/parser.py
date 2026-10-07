@@ -9422,17 +9422,19 @@ class Parser:
                 else None
             )
 
-        actions = ensure_list(parser(self) if parser else None)
-        if actions or (
+        options: list[exp.Expr] = []
+        if (
             not parser
             and alter_token.token_type == TokenType.TABLE
             and not self.ALTER_TABLE_REQUIRES_ACTION
         ):
             # Table options may precede the actions, e.g. MySQL's ENGINE=InnoDB, ADD COLUMN a INT.
             # A clause the property parser rejects, like PARTITION BY RANGE ... MAXVALUE, stays a Command
-            properties = None if actions else self._try_parse(self._parse_properties)
+            properties = self._try_parse(self._parse_properties)
             options = properties.expressions if properties else []
 
+        actions = ensure_list(parser(self) if parser else None)
+        if actions or options:
             # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
             # The comma before them may have already been consumed by the previous parser
             while (
@@ -9453,7 +9455,7 @@ class Parser:
                 options.extend(properties.expressions)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
-            if not self._curr and (actions or options):
+            if not self._curr:
                 return self.expression(
                     exp.Alter(
                         this=this,

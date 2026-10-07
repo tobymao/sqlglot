@@ -879,7 +879,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             write={
                 "oracle": "TRUNC(3.14159)",
                 "postgres": "TRUNC(3.14159)",
-                "mysql": "TRUNCATE(3.14159)",
+                "mysql": "TRUNCATE(3.14159, 0)",
                 "tsql": "ROUND(3.14159, 0, 1)",
             },
         )

@@ -4256,7 +4256,7 @@ class TestSnowflake(Validator):
                 "snowflake": "TRUNC(3.14159)",
                 "oracle": "TRUNC(3.14159)",
                 "postgres": "TRUNC(3.14159)",
-                "mysql": "TRUNCATE(3.14159)",
+                "mysql": "TRUNCATE(3.14159, 0)",
                 "tsql": "ROUND(3.14159, 0, 1)",
             },
         )

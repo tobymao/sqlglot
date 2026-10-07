@@ -2818,7 +2818,7 @@ class TestDialect(Validator):
             (div, (None, None), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
             (div, (None, None), div_dialect, "a / b"),
             (typed_div, (INT, INT), typed_div_dialect, "a / b"),
-            (typed_div, (INT, INT), div_dialect, "a DIV b"),
+            (typed_div, (INT, INT), div_dialect, "CAST(a / b AS BIGINT)"),
             (div, (INT, INT), typed_div_dialect, "CAST(a AS DOUBLE) / b"),
             (div, (INT, INT), div_dialect, "a / b"),
             (typed_div, (FLOAT, FLOAT), typed_div_dialect, "a / b"),

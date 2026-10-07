@@ -4518,7 +4518,10 @@ class Generator:
         return f"{this_sql} HAVING {kind} {expression_sql}"
 
     def intdiv_sql(self, expression: exp.IntDiv) -> str:
-        div: exp.Expr = exp.Div(this=expression.this, expression=expression.expression)
+        return self._truncated_div_sql(expression.this, expression.expression)
+
+    def _truncated_div_sql(self, this: exp.Expr, divisor: exp.Expr) -> str:
+        div: exp.Expr = exp.Div(this=this, expression=divisor)
         if self.CAST_TO_INT_ROUNDS:
             div = exp.Trunc(this=div)
 
@@ -4541,7 +4544,12 @@ class Generator:
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
             if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
-                return self.sql(exp.IntDiv(this=l, expression=r))
+                # Native integer division depends on the target's operand types, which may differ
+                # from the source's (e.g. FLOOR(int) is DOUBLE in DuckDB), unless the operands are
+                # integer literals or casts
+                if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)):
+                    return self.sql(exp.IntDiv(this=l, expression=r))
+                return self._truncated_div_sql(l, r)
 
         return self.binary(expression, "/")
 

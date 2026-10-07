@@ -3072,6 +3072,38 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(expression.selects[1].type, exp.DataType.build("STRUCT<c int>"))
         self.assertEqual(expression.selects[2].type, exp.DataType.build("int"))
 
+        self.assertEqual(
+            annotate_types(
+                optimizer.qualify.qualify(
+                    parse_one(
+                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x",
+                        dialect="bigquery",
+                    ),
+                    validate_qualify_columns=False,
+                    dialect="bigquery",
+                )
+            )
+            .selects[0]
+            .type,
+            exp.DataType.build("date"),
+        )
+
+        self.assertEqual(
+            annotate_types(
+                optimizer.qualify.qualify(
+                    parse_one(
+                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x",
+                        dialect="bigquery",
+                    ),
+                    validate_qualify_columns=False,
+                    dialect="bigquery",
+                )
+            )
+            .selects[0]
+            .type,
+            exp.DataType.build("timestamp"),
+        )
+
     def test_unnest_struct_field_annotation(self):
         """Test that UNNEST of struct array without column aliases exposes struct fields with proper types"""
         expression = annotate_types(

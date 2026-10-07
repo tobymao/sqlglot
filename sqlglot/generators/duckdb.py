@@ -3615,7 +3615,7 @@ class DuckDBGenerator(generator.Generator):
             if start.is_int and end.is_int:
                 end = exp.Literal.number(start.to_py() + end.to_py() - 1)
             else:
-                end = start.copy() + exp.cast(end, "BIGINT") - 1
+                end = start + exp.cast(end, "BIGINT") - 1
         return self.func("ARRAY_SLICE", expression.this, start, end, expression.args.get("step"))
 
     def arrayszip_sql(self, expression: exp.ArraysZip) -> str:

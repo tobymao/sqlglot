@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import seq_get
 from sqlglot.typing import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
@@ -11,18 +10,13 @@ if t.TYPE_CHECKING:
 
 
 def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
-    dtype = expression.this.type
-    if not dtype or dtype.is_type(exp.DType.UNKNOWN):
+    # Decimal results and numeric literals need precision inference that we don't model here.
+    if (
+        expression.args.get("decimals") is not None
+        or expression.this.is_type(exp.DType.DECIMAL, exp.DType.UNKNOWN)
+        or expression.this.unnest().is_number
+    ):
         return self._set_type(expression, exp.DType.UNKNOWN)
-    if dtype.is_type(exp.DType.DECIMAL):
-        precision_expr = seq_get(dtype.expressions, 0)
-        scale_expr = seq_get(dtype.expressions, 1)
-        precision = precision_expr.this.to_py() if precision_expr else 10
-        scale = scale_expr.this.to_py() if scale_expr else 0
-        return self._set_type(
-            expression,
-            exp.DataType.build(f"DECIMAL({precision - scale + 1}, 0)"),
-        )
     return self._set_type(expression, exp.DType.BIGINT)
 
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.helper import seq_get
 from sqlglot.typing import EXPRESSION_METADATA, annotate_by_numeric_arg
 
 if t.TYPE_CHECKING:
@@ -18,13 +17,8 @@ def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Ex
         return self._set_type(expression, exp.DType.DOUBLE)
     if this.is_type(exp.DType.SMALLMONEY):
         return self._set_type(expression, exp.DType.MONEY)
-    dtype = this.type
-    if dtype and dtype.is_type(exp.DType.DECIMAL) and not isinstance(expression, exp.Sign):
-        precision = seq_get(dtype.expressions, 0)
-        return self._set_type(
-            expression,
-            exp.DataType.build(f"DECIMAL({precision.this.to_py() if precision else 18}, 0)"),
-        )
+    if this.is_type(exp.DType.DECIMAL) and not isinstance(expression, exp.Sign):
+        return self._set_type(expression, exp.DType.UNKNOWN)
     return annotate_by_numeric_arg(self, expression)
 
 

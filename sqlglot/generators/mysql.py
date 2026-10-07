@@ -281,6 +281,7 @@ class MySQLGenerator(generator.Generator):
         exp.PartitionedByProperty: exp.Properties.Location.UNSUPPORTED,
         exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Property: exp.Properties.Location.POST_SCHEMA,
     }
 
     LIMIT_FETCH = "LIMIT"

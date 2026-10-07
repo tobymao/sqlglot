@@ -286,6 +286,14 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ADD INDEX k (c(20))")
         self.validate_identity("ALTER TABLE t ADD PRIMARY KEY (c(20))")
         self.validate_identity(
+            "ALTER TABLE t ADD PRIMARY KEY (a) KEY_BLOCK_SIZE=8",
+            "ALTER TABLE t ADD PRIMARY KEY (a) KEY_BLOCK_SIZE = 8",
+        )
+        self.validate_identity("ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'c'")
+        self.validate_identity(
+            "CREATE TABLE t (a INT, PRIMARY KEY (a) USING BTREE KEY_BLOCK_SIZE = 8 COMMENT 'c')"
+        )
+        self.validate_identity(
             "ALTER TABLE t ADD UNIQUE KEY u (c(20))",
             "ALTER TABLE t ADD UNIQUE u (c(20))",
         )
@@ -305,6 +313,8 @@ class TestMySQL(Validator):
             "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
             "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
         )
+        self.validate_identity("CREATE TABLE t (a INT) KEY_BLOCK_SIZE=8")
+        self.validate_identity("CREATE TABLE t (a INT) ENGINE=InnoDB KEY_BLOCK_SIZE=8 MAX_ROWS=100")
         self.validate_identity(
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",

@@ -42,6 +42,7 @@ class DorisGenerator(MySQLGenerator):
         exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.BuildProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Property: exp.Properties.Location.POST_WITH,
     }
 
     CAST_MAPPING: t.ClassVar[dict[exp.DType, str]] = {}

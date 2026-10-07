@@ -709,6 +709,14 @@ class MySQLParser(parser.Parser):
         in_props: bool = False,
         named_primary_key: bool = False,
     ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
-        return super()._parse_primary_key(
+        this = super()._parse_primary_key(
             wrapped_optional=wrapped_optional, in_props=in_props, named_primary_key=True
         )
+        if isinstance(this, exp.PrimaryKey):
+            # KEY_BLOCK_SIZE, COMMENT etc. after the key parts belong to the key, not the table
+            this.set(
+                "options",
+                [*(this.args.get("options") or []), *self._parse_index_constraint_options()],
+            )
+
+        return this

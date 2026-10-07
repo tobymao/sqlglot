@@ -4178,6 +4178,31 @@ class DuckDBGenerator(generator.Generator):
                 )
             return self.sql(result)
 
+        if expression.args.get("flatten") and any(
+            isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY) for arg in args
+        ):
+            arrays = []
+            for arg in args:
+                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY):
+                    arg = exp.cast(arg, "TEXT[]")
+                else:
+                    if (not arg.type or arg.is_type(exp.DType.UNKNOWN)) and not isinstance(
+                        arg, exp.CONSTANTS
+                    ):
+                        self.unsupported(
+                            "Cannot transpile CONCAT_WS with unknown argument types to DuckDB."
+                        )
+                    arg = exp.array(exp.cast(arg, exp.DType.TEXT))
+
+                arrays.append(arg)
+
+            array = (
+                exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
+                if len(arrays) > 1
+                else arrays[0]
+            )
+            return self.func("CONCAT_WS", separator, self.func("ARRAY_TO_STRING", array, separator))
+
         return super().concatws_sql(expression)
 
     def _regexp_extract_sql(self, expression: exp.RegexpExtract | exp.RegexpExtractAll) -> str:

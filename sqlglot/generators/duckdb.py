@@ -3607,8 +3607,8 @@ class DuckDBGenerator(generator.Generator):
                 size = exp.ArraySize(this=expression.this.copy())
                 start = (
                     exp.case()
-                    .when(start.copy() < -size.copy(), size.copy() + 1)
-                    .when(start.copy() < 0, size + start.copy() + 1)
+                    .when(start < -size, size + 1)
+                    .when(start < 0, size + start + 1)
                     .else_(start)
                 )
 

@@ -824,16 +824,20 @@ SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE COALES
 SELECT b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
 
-# execute: false
+# dialect: duckdb
 SELECT * FROM x JOIN y USING(b);
-SELECT COALESCE(x.b, y.b) AS b, x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: USING columns after a comma join keep their position
+SELECT * FROM w, x JOIN y USING (b);
+SELECT w.d AS d, w.e AS e, x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM w AS w, x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT x.* FROM x JOIN y USING(b);
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
-# execute: false
+# dialect: duckdb
 SELECT * FROM x LEFT JOIN y USING(b);
-SELECT COALESCE(x.b, y.b) AS b, x.a AS a, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
 
 SELECT b FROM x JOIN y USING(b);
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
@@ -895,9 +899,9 @@ WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(COALESCE(t1.id
 SELECT b FROM x NATURAL JOIN y;
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
-# execute: false
+# dialect: duckdb
 SELECT * FROM x NATURAL JOIN y;
-SELECT COALESCE(x.b, y.b) AS b, x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT a FROM x NATURAL JOIN z;
 SELECT x.a AS a FROM x AS x JOIN z AS z ON x.b = z.b;
@@ -1238,24 +1242,36 @@ SELECT X.A AS FOO FROM X AS X WHERE X.A = 1;
 --------------------------------------
 
 # title: SEMI JOIN table is excluded from the scope
-# execute: false
+# dialect: duckdb
 SELECT * FROM x SEMI JOIN y USING (b);
-SELECT x.b AS b, x.a AS a FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
 
 # title: ANTI JOIN table is excluded from the scope
-# execute: false
+# dialect: duckdb
 SELECT * FROM x ANTI JOIN y USING (b);
-SELECT x.b AS b, x.a AS a FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
+
+# title: SEMI join USING columns come first
+# dialect: spark
+# execute: false
+SELECT * FROM x LEFT SEMI JOIN y USING (b);
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT SEMI JOIN y AS y ON x.b = y.b;
+
+# title: SEMI join USING columns precede those of earlier joins
+# dialect: spark
+# execute: false
+SELECT * FROM x JOIN y USING (b) LEFT SEMI JOIN z USING (c);
+SELECT y.c AS c, COALESCE(x.b, y.b) AS b, x.a AS a FROM x AS x JOIN y AS y ON x.b = y.b LEFT SEMI JOIN z AS z ON y.c = z.c;
 
 # title: SEMI + normal joins reinclude the table on scope
-# execute: false
+# dialect: duckdb
 SELECT * FROM x SEMI JOIN y USING (b) JOIN y USING (b);
-SELECT COALESCE(x.b, y_2.b) AS b, x.a AS a, y_2.c AS c FROM x AS x SEMI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
+SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
 
 # title: ANTI + normal joins reinclude the table on scope
-# execute: false
+# dialect: duckdb
 SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
-SELECT COALESCE(x.b, y_2.b) AS b, x.a AS a, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
+SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
 
 # title: unqualified column in ANTI JOIN's ON clause resolves to that join's own table, not a later join sharing the same column name
 SELECT w.d FROM w ANTI JOIN y ON b > 0 JOIN z ON TRUE;
@@ -1428,16 +1444,3 @@ SELECT X.$2 AS _COL_0 FROM UNKNOWN AS X(ALIAS_NAME);
 # execute: false
 SELECT * FROM y JOIN z USING (c, b);
 SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.c = z.c AND y.b = z.b;
-
-# title: SEMI join USING columns come first
-# dialect: spark
-# execute: false
-SELECT * FROM x LEFT SEMI JOIN y USING (b);
-SELECT x.b AS b, x.a AS a FROM x AS x LEFT SEMI JOIN y AS y ON x.b = y.b;
-
-
-# title: SEMI join USING columns precede those of earlier joins
-# dialect: spark
-# execute: false
-SELECT * FROM x JOIN y USING (b) LEFT SEMI JOIN z USING (c);
-SELECT y.c AS c, COALESCE(x.b, y.b) AS b, x.a AS a FROM x AS x JOIN y AS y ON x.b = y.b LEFT SEMI JOIN z AS z ON y.c = z.c;

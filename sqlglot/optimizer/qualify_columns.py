@@ -6,7 +6,7 @@ import typing as t
 from collections import Counter
 
 from sqlglot import alias, exp
-from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.dialects.dialect import Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
@@ -240,7 +240,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
         _update_source_columns(source_name)
 
     column_order = resolver.dialect.USING_COLUMN_ORDER
-    move_using_columns = column_order != "in_place"
+    move_using_columns = column_order is not UsingColumnOrder.IN_PLACE
 
     for i, join in enumerate(joins):
         source_table = ordered[-1]
@@ -254,8 +254,9 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
         using = join.args.get("using")
         if not (using or join.args.get("on") or join.method or join.side or join.kind):
-            # A comma binds looser than JOIN, so the USING columns of later joins would only lead
-            # their own comma-separated group; that isn't modeled, so they keep their position
+            # `,` has lower precedence than JOIN, so `a, b JOIN c USING (k)` is `a, (b JOIN c USING (k))`
+            # and k should only move ahead of b's columns, not a's. That isn't modeled, so after a comma
+            # join the USING columns stay in place
             move_using_columns = False
 
         # The order in which the left side outputs its columns
@@ -282,7 +283,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
         if move_using_columns:
             join_keys = [identifier.name for identifier in using]
-            if column_order == "left_table":
+            if column_order is UsingColumnOrder.LEFT_TABLE:
                 join_keys = [name for name in left_columns if name in join_keys]
             using_columns = join_keys + [name for name in using_columns if name not in join_keys]
 
@@ -1098,7 +1099,10 @@ def _expand_stars(
             continue
 
         start = len(new_selections)
-        key_selections: dict[str, exp.Expr] = {}
+        # The selections of the USING columns, which go first, in order
+        using_selections: dict[str, exp.Expr | None] = (
+            dict.fromkeys(using_columns) if isinstance(expression, exp.Star) else {}
+        )
 
         for table in tables:
             source = scope.sources.get(table)
@@ -1206,8 +1210,6 @@ def _expand_stars(
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
                     selection = alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
-                    key_selections[name] = selection
-                    new_selections.append(selection)
                 else:
                     alias_ = renamed_columns.get(name, name)
                     quoted = name in quoted_columns or (
@@ -1222,16 +1224,13 @@ def _expand_stars(
                         if alias_ != name
                         else selection_expr
                     )
-                    if using_columns:
-                        key_selections.setdefault(name, selection)
+
+                if name in using_selections and using_selections[name] is None:
+                    using_selections[name] = selection
+                else:
                     new_selections.append(selection)
-        else:
-            if using_columns and isinstance(expression, exp.Star):
-                keys = [key_selections[name] for name in using_columns if name in key_selections]
-                key_ids = {id(key) for key in keys}
-                new_selections[start:] = keys + [
-                    s for s in new_selections[start:] if id(s) not in key_ids
-                ]
+
+        new_selections[start:start] = [s for s in using_selections.values() if s is not None]
 
         if annotated_ahead:
             # The star projection was replaced by the expansions above

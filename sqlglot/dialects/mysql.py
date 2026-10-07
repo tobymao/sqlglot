@@ -4,6 +4,7 @@ from sqlglot import tokens
 from sqlglot.dialects.dialect import (
     Dialect,
     NormalizationStrategy,
+    UsingColumnOrder,
 )
 from sqlglot.generators.mysql import MySQLGenerator
 from sqlglot.parsers.mysql import MySQLParser
@@ -13,7 +14,7 @@ from sqlglot.typing.mysql import EXPRESSION_METADATA
 
 class MySQL(Dialect):
     PROMOTE_TO_INFERRED_DATETIME_TYPE = True
-    USING_COLUMN_ORDER = "left_table"
+    USING_COLUMN_ORDER = UsingColumnOrder.LEFT_TABLE
 
     # https://dev.mysql.com/doc/refman/8.0/en/identifiers.html
     IDENTIFIERS_CAN_START_WITH_DIGIT = True

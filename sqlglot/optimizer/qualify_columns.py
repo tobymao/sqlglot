@@ -229,7 +229,8 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
     # Mapping of automatically joined column names to an ordered set of source names (dict).
     column_tables: dict[str, dict[str, t.Any]] = {}
 
-    # USING columns in star expansion order: each join's columns precede those of earlier joins
+    # USING columns to list first in star expansion, each join's columns preceding those of earlier
+    # joins; empty when they keep their position
     using_columns: list[str] = []
 
     if not any(join.args.get("using") or join.method == "NATURAL" for join in joins):
@@ -239,7 +240,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
         _update_source_columns(source_name)
 
     column_order = resolver.dialect.USING_COLUMN_ORDER
-    after_comma_join = False
+    move_using_columns = column_order != "in_place"
 
     for i, join in enumerate(joins):
         source_table = ordered[-1]
@@ -255,14 +256,10 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
         if not (using or join.args.get("on") or join.method or join.side or join.kind):
             # A comma binds looser than JOIN, so the USING columns of later joins would only lead
             # their own comma-separated group; that isn't modeled, so they keep their position
-            after_comma_join = True
+            move_using_columns = False
 
         # The order in which the left side outputs its columns
-        left_columns = (
-            list(columns)
-            if column_order == "in_place"
-            else using_columns + [c for c in columns if c not in using_columns]
-        )
+        left_columns = using_columns + [c for c in columns if c not in using_columns]
 
         if using is None and join.method == "NATURAL":
             # A NATURAL JOIN is a USING join over the columns common to both sides, in the
@@ -283,7 +280,7 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
         using_identifier_count = len(using)
         is_semi_or_anti_join = join.is_semi_or_anti_join
 
-        if not after_comma_join:
+        if move_using_columns:
             join_keys = [identifier.name for identifier in using]
             if column_order == "left_table":
                 join_keys = [name for name in left_columns if name in join_keys]
@@ -1229,11 +1226,7 @@ def _expand_stars(
                         key_selections.setdefault(name, selection)
                     new_selections.append(selection)
         else:
-            if (
-                using_columns
-                and dialect.USING_COLUMN_ORDER != "in_place"
-                and isinstance(expression, exp.Star)
-            ):
+            if using_columns and isinstance(expression, exp.Star):
                 keys = [key_selections[name] for name in using_columns if name in key_selections]
                 key_ids = {id(key) for key in keys}
                 new_selections[start:] = keys + [

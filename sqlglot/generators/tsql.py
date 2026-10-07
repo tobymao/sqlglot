@@ -69,8 +69,10 @@ def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
-def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
-    """Ensures all (unnamed) output columns are aliased for CTEs and Subqueries."""
+def qualify_derived_table_outputs(
+    expression: exp.Expr, query: exp.Select | None = None
+) -> exp.Expr:
+    """Qualifies CTE/Subquery outputs, with an explicit SELECT target for generated wrappers."""
     alias = expression.args.get("alias")
 
     if (
@@ -84,20 +86,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         # We keep track of the unaliased column projection indexes instead of the expressions
         # themselves, because the latter are going to be replaced by new nodes when the aliases
         # are added and hence we won't be able to reach these newly added Alias parents
-        query = expression.this
-        if isinstance(query, exp.SetOperation):
-            leftmost_operand: exp.Expr = query
-            while isinstance(leftmost_operand, (exp.SetOperation, exp.Subquery, exp.Paren)):
-                leftmost_operand = leftmost_operand.this
-            if isinstance(leftmost_operand, exp.Select):
-                query = leftmost_operand
-                # Preserve set-operation projections that already have output names.
-                if all(
-                    isinstance(selection, (exp.Alias, exp.Aliases, exp.Column, exp.Star))
-                    for selection in leftmost_operand.selects
-                ):
-                    return expression
-
+        query = query if query is not None else expression.this
         unaliased_column_indexes = (
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
@@ -336,15 +325,19 @@ class TSQLGenerator(generator.Generator):
             or (isinstance(limit, exp.Limit) and not offset)
             or (not order and (offset or isinstance(limit, exp.Fetch)))
         ):
-            return self._setop_wrap_query(expression, SET_OP_MODIFIERS)
+            select = self._setop_wrap_query(expression, SET_OP_MODIFIERS)
+            query: exp.Expr = expression
+            while isinstance(query, exp.SetOperation):
+                query = query.left.unnest()
+            if isinstance(query, exp.Select) and any(
+                not isinstance(output, (exp.Alias, exp.Aliases, exp.Column, exp.Star))
+                for output in query.selects
+            ):
+                qualify_derived_table_outputs(select.args["from_"].this, query=query)
+            return select
 
         self._prepare_limit_offset(expression)
         return None
-
-    def _setop_select_shell(self, select: exp.Select) -> tuple[str, str]:
-        # Qualify outputs before the shell replaces the derived query with a string.
-        qualify_derived_table_outputs(select.args["from_"].this)
-        return super()._setop_select_shell(select)
 
     def _prepare_limit_offset(self, expression: exp.Query) -> None:
         limit = expression.args.get("limit")

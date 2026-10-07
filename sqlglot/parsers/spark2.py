@@ -77,7 +77,12 @@ class Spark2Parser(HiveParser):
         "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
         "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
         "STRING": build_as_cast("string"),
-        "SLICE": exp.ArraySlice.from_arg_list,
+        "SLICE": lambda args: exp.ArraySlice(
+            this=seq_get(args, 0),
+            start=seq_get(args, 1),
+            end=seq_get(args, 2),
+            is_length=True,
+        ),
         "TIMESTAMP": build_as_cast("timestamp"),
         "TO_TIMESTAMP": lambda args, dialect: (
             build_as_cast("timestamp")(args)

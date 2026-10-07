@@ -3571,6 +3571,9 @@ class DuckDBGenerator(generator.Generator):
 
     def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
         """
+        Spark's SLICE uses a length, so normalize negative starts before computing
+        the inclusive end index. Starts before the array produce an empty slice.
+
         Transpiles Snowflake's ARRAY_SLICE (0-indexed, exclusive end) to DuckDB's
         ARRAY_SLICE (1-indexed, inclusive end) by wrapping start and end in CASE
         expressions that adjust the index at query time:
@@ -3589,7 +3592,7 @@ class DuckDBGenerator(generator.Generator):
                     )
                     .else_(start)
                 )
-            if end is not None:
+            if end is not None and not expression.args.get("is_length"):
                 end = (
                     exp.case()
                     .when(
@@ -3599,6 +3602,20 @@ class DuckDBGenerator(generator.Generator):
                     .else_(end)
                 )
 
+        if expression.args.get("is_length") and start is not None and end is not None:
+            if not start.is_int or start.to_py() < 0:
+                size = exp.ArraySize(this=expression.this.copy())
+                start = (
+                    exp.case()
+                    .when(start < -size, size + 1)
+                    .when(start < 0, size + start + 1)
+                    .else_(start)
+                )
+
+            if start.is_int and end.is_int:
+                end = exp.Literal.number(start.to_py() + end.to_py() - 1)
+            else:
+                end = start + exp.cast(end, "BIGINT") - 1
         return self.func("ARRAY_SLICE", expression.this, start, end, expression.args.get("step"))
 
     def arrayszip_sql(self, expression: exp.ArraysZip) -> str:

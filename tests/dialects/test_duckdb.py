@@ -1745,6 +1745,54 @@ class TestDuckDB(Validator):
                 ],
             )
 
+    def test_spark_array_slice(self):
+        source = "SELECT SLICE(SPLIT('abcdef', ''), 2, 4) AS chars"
+        target = "SELECT ARRAY_SLICE(STR_SPLIT_REGEX('abcdef', ''), 2, 5) AS chars"
+        self.validate_all(target, read={"spark": source})
+
+        for dialect in ("spark2", "spark", "databricks"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(source, read=dialect)
+                self.assertEqual(expression.sql(dialect), source)
+                self.assertEqual(expression.sql("duckdb"), target)
+
+    def test_spark_array_slice_bounds(self):
+        for source, target in (
+            ("SLICE(ARRAY(1, 2, 3), 1, 2)", "ARRAY_SLICE([1, 2, 3], 1, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 4)", "ARRAY_SLICE([1, 2, 3], 2, 5)"),
+            ("SLICE(ARRAY(1, 2, 3), 3, 0)", "ARRAY_SLICE([1, 2, 3], 3, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 2147483647)", "ARRAY_SLICE([1, 2, 3], 2, 2147483648)"),
+            (
+                "SLICE(ARRAY(1, 2, 3), -2, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END, (CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(ARRAY(1, 2, 3), -4, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END, (CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(NULL, 2, 1)",
+                "ARRAY_SLICE(NULL, 2, 2)",
+            ),
+            (
+                "SLICE(a, s, n)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, 2, n)",
+                "ARRAY_SLICE(a, 2, (2 + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, s, 2)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(2 AS BIGINT)) - 1)",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    target,
+                    read={"spark2": source, "spark": source, "databricks": source},
+                )
+
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning
         self.validate_all(

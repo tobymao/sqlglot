@@ -1903,6 +1903,22 @@ COMMENT='客户账户表'"""
                 f"""SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
             )
 
+    def test_weight_string(self):
+        for sql in (
+            "SELECT WEIGHT_STRING('ab')",
+            "SELECT WEIGHT_STRING('1' AS CHAR(1))",
+            "SELECT WEIGHT_STRING('ab' AS BINARY(4))",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql).selects[0].assert_is(exp.WeightString)
+
+        self.validate_identity("SELECT WEIGHT_STRING('ab', 0, 3, 0)").selects[0].assert_is(
+            exp.Anonymous
+        )
+        self.assertEqual(
+            self.parse_one("SELECT weight_string('ab', 0, 3, 0)").selects[0].name, "weight_string"
+        )
+
     def test_grant(self):
         grant_cmds = [
             "GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost'",

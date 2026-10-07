@@ -1591,6 +1591,7 @@ class Parser:
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
         "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
+        "WEIGHT_STRING": lambda self: self._parse_weight_string(),
         "XMLELEMENT": lambda self: self._parse_xml_element(),
         "XMLTABLE": lambda self: self._parse_xml_table(),
     }
@@ -8255,6 +8256,18 @@ class Parser:
         """
         return self._parse_var(
             tokens={TokenType.BINARY, TokenType.IDENTIFIER},
+        )
+
+    def _parse_weight_string(self) -> exp.WeightString | exp.Anonymous:
+        name = self._tokens[self._index - 2].text
+        args = self._parse_csv(self._parse_assignment)
+
+        # MySQL also accepts an undocumented WEIGHT_STRING(str, n, n, n) form
+        if len(args) != 1:
+            return self.expression(exp.Anonymous(this=name, expressions=args))
+
+        return self.expression(
+            exp.WeightString(this=args[0], to=self._match(TokenType.ALIAS) and self._parse_types())
         )
 
     def _parse_cast(self, strict: bool, safe: bool | None = None) -> exp.Expr:

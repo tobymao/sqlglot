@@ -1922,6 +1922,9 @@ class Parser:
     # Whether an ALTER can combine different actions, e.g. ADD COLUMN a INT, DROP COLUMN b
     ALTER_TABLE_MIXED_ACTIONS: t.ClassVar = False
 
+    # Whether an ALTER TABLE needs an action, e.g. MySQL's ALTER TABLE t ENGINE=InnoDB has none
+    ALTER_TABLE_REQUIRES_ACTION: t.ClassVar = True
+
     # Whether changing a column's type with ALTER COLUMN requires the TYPE keyword
     ALTER_COLUMN_TYPE_REQUIRES_KEYWORD: t.ClassVar = False
 
@@ -9421,19 +9424,32 @@ class Parser:
             this = None
             check = None
             cluster = None
+            parser = self.ALTER_PARSERS.get(alter_token.text.upper())
         else:
             this = self._parse_table(schema=True, parse_partition=self.ALTER_TABLE_PARTITIONS)
             check = self._match_text_seq("WITH", "CHECK")
             cluster = self._parse_on_property() if self._match(TokenType.ON) else None
+            parser = (
+                self.ALTER_PARSERS[self._prev.text.upper()]
+                if self._match_texts(self.ALTER_PARSERS)
+                else None
+            )
 
-            if self._next:
-                self._advance()
+        options: list[exp.Expr] = []
+        if (
+            not parser
+            and alter_token.token_type == TokenType.TABLE
+            and not self.ALTER_TABLE_REQUIRES_ACTION
+        ):
+            # Table options may precede the actions, e.g. MySQL's ENGINE=InnoDB, ADD COLUMN a INT.
+            # A clause the property parser rejects, like PARTITION BY RANGE ... MAXVALUE, stays a Command
+            properties = self._try_parse(self._parse_properties)
+            options = properties.expressions if properties else []
 
-        parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
-        actions = ensure_list(parser(self)) if parser else None
-        if actions:
+        actions = ensure_list(parser(self) if parser else None)
+        if actions or options:
             # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
-            # The comma before them may have already been consumed by the previous action's parser
+            # The comma before them may have already been consumed by the previous parser
             while (
                 self.ALTER_TABLE_MIXED_ACTIONS
                 and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
@@ -9448,8 +9464,8 @@ class Parser:
                 actions.extend(parsed)
 
             not_valid = self._match_text_seq("NOT", "VALID")
-            properties = self._parse_properties()
-            options = properties.expressions if properties else []
+            if properties := self._try_parse(self._parse_properties):
+                options.extend(properties.expressions)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr:

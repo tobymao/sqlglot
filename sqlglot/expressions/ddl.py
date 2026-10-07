@@ -400,7 +400,7 @@ class Alter(Expression):
     arg_types = {
         "this": False,
         "kind": True,
-        "actions": True,
+        "actions": False,
         "exists": False,
         "only": False,
         "options": False,

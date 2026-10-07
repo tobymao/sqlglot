@@ -252,8 +252,7 @@ class MySQLParser(parser.Parser):
         **parser.Parser.ALTER_PARSERS,
         "CHANGE": lambda self: self._parse_alter_table_modify(rename=True),
         "MODIFY": lambda self: self._parse_alter_table_modify(),
-        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
-        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "FORCE": lambda self: self.expression(exp.ForceProperty()),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -301,6 +300,7 @@ class MySQLParser(parser.Parser):
 
     ALTER_DROP_REQUIRES_COLUMN = False
     ALTER_TABLE_MIXED_ACTIONS = True
+    ALTER_TABLE_REQUIRES_ACTION = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False

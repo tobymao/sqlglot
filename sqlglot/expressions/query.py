@@ -19,6 +19,7 @@ from sqlglot.expressions.core import (
     Hint,
     Identifier,
     In,
+    Var,
     _apply_builder,
     _apply_child_list_builder,
     _apply_list_builder,
@@ -656,6 +657,11 @@ class Limit(Expression):
         "limit_options": False,
         "expressions": False,
     }
+
+    @property
+    def is_limit_all(self) -> bool:
+        limit_expression = self.args.get("expression")
+        return isinstance(limit_expression, Var) and limit_expression.name.upper() == "ALL"
 
 
 class LimitOptions(Expression):

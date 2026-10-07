@@ -989,7 +989,7 @@ class SnowflakeGenerator(generator.Generator):
     def select_sql(self, expression: exp.Select) -> str:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
-        if offset and not limit:
+        if offset and (not limit or (isinstance(limit, exp.Limit) and limit.is_limit_all)):
             expression.limit(exp.Null(), copy=False)
         return super().select_sql(expression)
 

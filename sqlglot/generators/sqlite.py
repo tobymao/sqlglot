@@ -86,8 +86,9 @@ def _offset_to_limit(expression: exp.Expr) -> exp.Expr:
         return expression
 
     offset = expression.args.get("offset")
+    limit = expression.args.get("limit")
 
-    if offset and not expression.args.get("limit"):
+    if offset and (not limit or (isinstance(limit, exp.Limit) and limit.is_limit_all)):
         expression.limit(-1, copy=False)
 
     return expression

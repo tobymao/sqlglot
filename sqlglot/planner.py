@@ -278,7 +278,7 @@ class Step:
 
         limit: exp.Limit | None = expression.args.get("limit")
 
-        if limit is not None:
+        if limit is not None and not limit.is_limit_all:
             step.limit = int(limit.text("expression"))
 
         offset: exp.Offset | None = expression.args.get("offset")

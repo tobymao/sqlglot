@@ -3013,6 +3013,9 @@ class Generator:
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
 
+        if expression.is_limit_all and not self.dialect.SUPPORTS_LIMIT_ALL:
+            return this
+
         args = [
             self._simplify_unless_literal(e) if self.LIMIT_ONLY_LITERALS else e
             for e in (expression.args.get(k) for k in ("offset", "expression"))
@@ -3369,7 +3372,9 @@ class Generator:
             limit = exp.Limit(
                 expression=exp.maybe_copy(count) if count is not None else exp.Literal.number(1)
             )
-        elif self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit):
+        elif (
+            self.LIMIT_FETCH == "FETCH" and isinstance(limit, exp.Limit) and not limit.is_limit_all
+        ):
             limit = exp.Fetch(direction="FIRST", count=exp.maybe_copy(limit.expression))
 
         return csv(

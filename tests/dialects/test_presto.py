@@ -1,10 +1,35 @@
-from sqlglot import UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
+from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from tests.dialects.test_dialect import Validator
 
 
 class TestPresto(Validator):
     dialect = "presto"
+
+    def test_temporal_precision(self):
+        message = "Presto only supports millisecond precision for temporal types"
+        for kind, value in (("TIMESTAMP", "2020-01-01 00:00:00"), ("TIME", "12:00:00")):
+            for zone in ("", " +02:00"):
+                suffix = " WITH TIME ZONE" if zone else ""
+                expected = f"CAST('{value}.123{zone}' AS {kind}{suffix})"
+                for precision in ("", "(0)", "(1)", "(2)", "(3)", "(6)"):
+                    with self.subTest(kind=kind, zone=zone, precision=precision):
+                        expression = parse_one(
+                            f"CAST('{value}.123{zone}' AS {kind}{precision}{suffix})",
+                            read="trino",
+                        )
+                        if precision in ("", "(3)"):
+                            self.assertEqual(
+                                expression.sql("presto", unsupported_level=ErrorLevel.RAISE),
+                                expected,
+                            )
+                        else:
+                            with self.assertLogs(generator_logger) as logs:
+                                self.assertEqual(expression.sql("presto"), expected)
+                            self.assertIn(message, logs.output[0])
+                            with self.assertRaisesRegex(UnsupportedError, message):
+                                expression.sql("presto", unsupported_level=ErrorLevel.RAISE)
 
     def test_cast(self):
         self.validate_identity("DEALLOCATE PREPARE my_query", check_command_warning=True)
@@ -158,7 +183,7 @@ class TestPresto(Validator):
             write={
                 "duckdb": "CAST(x AS TIMETZ)",
                 "postgres": "CAST(x AS TIMETZ(5))",
-                "presto": "CAST(x AS TIME(5) WITH TIME ZONE)",
+                "presto": "CAST(x AS TIME WITH TIME ZONE)",
                 "redshift": "CAST(x AS TIME(5) WITH TIME ZONE)",
             },
         )
@@ -167,7 +192,7 @@ class TestPresto(Validator):
             write={
                 "bigquery": "CAST(x AS TIMESTAMP)",
                 "duckdb": "CAST(x AS TIMESTAMPTZ)",
-                "presto": "CAST(x AS TIMESTAMP(9) WITH TIME ZONE)",
+                "presto": "CAST(x AS TIMESTAMP WITH TIME ZONE)",
                 "hive": "CAST(x AS TIMESTAMP)",
                 "spark": "CAST(x AS TIMESTAMP)",
             },

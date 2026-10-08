@@ -278,12 +278,9 @@ class TrinoParser(PrestoParser):
     def _parse_temporal_literal(self, this: exp.Literal, data_type: exp.DataType) -> exp.Cast:
         if not data_type.expressions:
             match = FRACTIONAL_SECONDS_RE.search(this.name)
-            if match:
-                precision = len(match.group(1))
-                if precision > 3:
-                    data_type.set(
-                        "expressions",
-                        [exp.DataTypeParam(this=exp.Literal.number(precision))],
-                    )
+            data_type.set(
+                "expressions",
+                [exp.DataTypeParam(this=exp.Literal.number(len(match.group(1)) if match else 0))],
+            )
 
         return self.expression(exp.Cast(this=this, to=data_type))

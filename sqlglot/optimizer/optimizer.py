@@ -63,6 +63,7 @@ def optimize(
     dialect: DialectType = None,
     rules: Sequence[OptimizerFn] = RULES,
     sql: str | None = None,
+    copy: bool = True,
     **kwargs: object,
 ) -> exp.Expr:
     """
@@ -85,10 +86,12 @@ def optimize(
             Do not remove `qualify` from the sequence of rules unless you know what you're doing!
         sql: Original SQL string for error highlighting. If not provided, errors will not include
             highlighting. Requires that the expression has position metadata from parsing.
+        copy: Whether to copy the input expression before optimizing it. If False, the input tree
+            may be mutated. Has no effect on SQL string inputs.
         **kwargs: If a rule has a keyword argument with a same name in **kwargs, it will be passed in.
 
     Returns:
-        The optimized expression.
+        The optimized expression, which may be a new root even if copy is False.
     """
     schema = ensure_schema(schema, dialect=dialect)
     possible_kwargs = {
@@ -102,7 +105,7 @@ def optimize(
         **kwargs,
     }
 
-    optimized = exp.maybe_parse(expression, dialect=dialect, copy=True)
+    optimized = exp.maybe_parse(expression, dialect=dialect, copy=copy)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
         rule_params = inspect.getfullargspec(rule).args

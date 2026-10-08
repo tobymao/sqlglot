@@ -8318,10 +8318,8 @@ class Parser:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.from_str(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DType.CHAR and (
-            self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET")
-        ):
-            to = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_var_or_string())
+        else:
+            to = self._parse_char_charset(to)
 
         return self.build_cast(
             strict=strict,
@@ -8393,11 +8391,22 @@ class Parser:
         if self._match(TokenType.USING):
             to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_charset_name())
         elif self._match(TokenType.COMMA):
-            to = self._parse_types()
+            to = self._parse_char_charset(self._parse_types())
         else:
             to = None
 
         return self.build_cast(strict=strict, this=this, to=to, safe=safe)
+
+    def _parse_char_charset(self, to: exp.Expr | None) -> exp.Expr | None:
+        # MySQL: CHAR[(N)] CHARACTER SET charset_name, the length is kept
+        if (
+            isinstance(to, exp.DataType)
+            and to.this == exp.DType.CHAR
+            and (self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET"))
+        ):
+            to.set("this", exp.DType.CHARACTER_SET)
+            to.set("kind", self._parse_var_or_string())
+        return to
 
     def _parse_xml_element(self) -> exp.XMLElement:
         if self._match_text_seq("EVALNAME"):

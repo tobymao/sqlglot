@@ -134,9 +134,12 @@ class TestTrino(Validator):
                 for precision, fraction in enumerate(("", ".1", ".10", ".100")):
                     with self.subTest(kind=kind, zone=zone, precision=precision):
                         literal = f"'{value}{fraction}{zone}'"
-                        self.validate_identity(
+                        self.validate_all(
                             f"SELECT {kind} {literal}",
-                            f"SELECT CAST({literal} AS {kind}({precision}){suffix})",
+                            write={
+                                "presto": f"SELECT CAST({literal} AS {kind}{suffix})",
+                                "trino": f"SELECT CAST({literal} AS {kind}({precision}){suffix})",
+                            },
                         )
 
                 for precision in ("", "(0)", "(2)", "(6)"):

@@ -486,6 +486,12 @@ class TestMySQL(Validator):
                 1,
             ),
             ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 0, 2),
+            (
+                "ALTER TABLE t ADD c INT, AUTO_INCREMENT=5, ADD d INT",
+                "ALTER TABLE t ADD COLUMN c INT, ADD COLUMN d INT, AUTO_INCREMENT=5",
+                2,
+                1,
+            ),
             ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", None, 1, 1),
             ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", None, 1, 1),
             ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", None, 1, 2),
@@ -523,6 +529,10 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD COLUMN a INT, DROP b, ADD COLUMN c INT",
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT",
         ).assert_is(exp.Alter)
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c INT SECONDARY_ENGINE_ATTRIBUTE='{}', ADD COLUMN z INT",
+            check_command_warning=True,
+        )
 
     def test_column_key_constraint(self):
         self.validate_identity(

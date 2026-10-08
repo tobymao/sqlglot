@@ -254,6 +254,9 @@ class TestStarrocks(Validator):
 
         # RENAME table without TO keyword
         self.validate_identity("ALTER TABLE t1 RENAME t2")
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c INT TO r1, ADD COLUMN d INT", check_command_warning=True
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")

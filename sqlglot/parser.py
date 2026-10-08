@@ -9457,20 +9457,25 @@ class Parser:
 
         actions = ensure_list(parser(self) if parser else None)
         if actions or options:
-            # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
-            # The comma before them may have already been consumed by the previous parser
-            while (
-                self.ALTER_TABLE_MIXED_ACTIONS
-                and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
-                and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
-                and self._match_texts(self.ALTER_PARSERS)
+            # Actions of different kinds and table options may alternate, e.g. MySQL's
+            # ADD c INT, AUTO_INCREMENT=5, ADD d INT. The comma before an item may have already
+            # been consumed by the previous parser
+            while self.ALTER_TABLE_MIXED_ACTIONS and (
+                self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA
             ):
-                parser = self.ALTER_PARSERS[self._prev.text.upper()]
-                parsed = ensure_list(self._try_parse(lambda: parser(self)))
-                if not parsed or any(isinstance(action, exp.Command) for action in parsed):
-                    return self._parse_as_command(start)
+                if not self._match_texts(
+                    self.PROPERTY_PARSERS, advance=False
+                ) and self._match_texts(self.ALTER_PARSERS):
+                    parser = self.ALTER_PARSERS[self._prev.text.upper()]
+                    parsed = ensure_list(self._try_parse(lambda: parser(self)))
+                    if not parsed or any(isinstance(action, exp.Command) for action in parsed):
+                        return self._parse_as_command(start)
 
-                actions.extend(parsed)
+                    actions.extend(parsed)
+                elif properties := self._try_parse(self._parse_properties):
+                    options.extend(properties.expressions)
+                else:
+                    break
 
             not_valid = self._match_text_seq("NOT", "VALID")
             if properties := self._try_parse(self._parse_properties):

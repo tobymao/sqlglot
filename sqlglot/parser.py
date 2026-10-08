@@ -9866,8 +9866,8 @@ class Parser:
 
     def _parse_comprehension(self, this: exp.Expr | None) -> exp.Comprehension | None:
         index = self._index
-        expression = self._parse_column()
-        position = self._match(TokenType.COMMA) and self._parse_column()
+        expression = self._parse_id_var()
+        position = self._parse_id_var() if self._match(TokenType.COMMA) else None
 
         if not self._match(TokenType.IN):
             self._retreat(index - 1)

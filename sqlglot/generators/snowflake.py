@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     map_date_part,
     max_or_greatest,
     min_or_least,
+    no_filter_sql,
     no_make_interval_sql,
     no_timestamp_sql,
     nth_value_from_sql,
@@ -461,6 +462,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.Extract: lambda self, e: self.func(
             "DATE_PART", map_date_part(e.this, self.dialect), e.expression
         ),
+        exp.Filter: no_filter_sql,
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
         exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
         exp.HandlerProperty: lambda self, e: f"HANDLER = {self.sql(e, 'this')}",
@@ -1145,53 +1147,6 @@ class SnowflakeGenerator(generator.Generator):
             # omit the default window from window ranking functions
             expression.set("spec", None)
         return super().window_sql(expression)
-
-    def filter_sql(self, expression: exp.Filter) -> str:
-        # Snowflake doesn't support FILTER (WHERE cond), so we rewrite it into an
-        # equivalent conditional aggregation, i.e. wrap the input values in an IFF
-        agg = expression.this
-        agg_arg = seq_get(agg.expressions, 0) if isinstance(agg, exp.Anonymous) else agg.this
-        cond = expression.expression.this
-
-        if isinstance(agg, exp.WithinGroup):
-            # Ordered-set aggregates take their input from the ORDER BY key, so the
-            # condition has to wrap that instead of the aggregate's own argument
-            if isinstance(agg_arg, (exp.Mode, *exp.PERCENTILES)):
-                for ordered in agg.expression.expressions:
-                    key = ordered.this
-                    key.replace(exp.If(this=cond.copy(), true=key.copy()))
-
-                return self.sql(agg)
-
-            # Besides the percentile functions, these are the only functions Snowflake
-            # accepts WITHIN GROUP for, so anything else can't be rewritten correctly
-            if isinstance(agg_arg, (exp.ArrayAgg, exp.GroupConcat)):
-                agg_arg = agg_arg.this
-            else:
-                self.unsupported("Unable to rewrite FILTER into the aggregate's arguments")
-                return self.sql(agg)
-
-        # `COUNT(*/t.*) FILTER (WHERE cond)` counts qualifying rows, but a star can't be an IFF
-        # argument: `IFF(cond, *, NULL)` expands to multiple columns once the table has 2+ of
-        # them, which Snowflake rejects. Use its native COUNT_IF instead.
-        if isinstance(agg, exp.Count) and isinstance(agg_arg, exp.Expression) and agg_arg.is_star:
-            return self.func("COUNT_IF", cond)
-
-        # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
-        # condition has to wrap the values underneath them rather than the whole clause --
-        # `IFF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.
-        if isinstance(agg_arg, exp.Order):
-            agg_arg = agg_arg.this
-
-        if isinstance(agg_arg, exp.Distinct):
-            targets = agg_arg.expressions
-        else:
-            targets = [agg_arg]
-
-        for target in targets:
-            target.replace(exp.If(this=cond.copy(), true=target.copy()))
-
-        return self.sql(agg)
 
     def withingroup_sql(self, expression: exp.WithinGroup) -> str:
         # Snowflake's MODE doesn't support the ordered-set syntax, i.e. it only

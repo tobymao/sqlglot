@@ -1812,7 +1812,8 @@ class Generator:
         if type_value == exp.DType.USERDEFINED and expression.args.get("kind"):
             type_sql = self.sql(expression, "kind")
         elif type_value == exp.DType.CHARACTER_SET:
-            return f"CHAR CHARACTER SET {self.sql(expression, 'kind')}"
+            char = f"CHAR({interior})" if interior else "CHAR"
+            return f"{char} CHARACTER SET {self.sql(expression, 'kind')}"
         else:
             type_sql = (
                 self.TYPE_MAPPING.get(type_value, type_value.value)

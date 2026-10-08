@@ -977,6 +977,19 @@ class TestMySQL(Validator):
         self.validate_identity(
             "CONVERT('a' USING binary)", "CAST('a' AS CHAR CHARACTER SET binary)"
         )
+        self.validate_identity("SELECT CAST('ab' AS CHAR(4) CHARACTER SET utf8mb4)")
+        self.validate_identity(
+            "SELECT CAST('ab' AS CHAR(4) CHARSET binary)",
+            "SELECT CAST('ab' AS CHAR(4) CHARACTER SET binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT('abc', CHAR(2) CHARACTER SET latin1)",
+            "SELECT CAST('abc' AS CHAR(2) CHARACTER SET latin1)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT('abc', CHAR CHARACTER SET latin1)",
+            "SELECT CAST('abc' AS CHAR CHARACTER SET latin1)",
+        )
         self.validate_identity(
             "SELECT CONVERT(`col` USING `utf8mb4`)",
             "SELECT CAST(`col` AS CHAR CHARACTER SET utf8mb4)",

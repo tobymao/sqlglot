@@ -298,6 +298,35 @@ class TestOptimizer(unittest.TestCase):
             schema=schema,
         )
 
+    def test_optimize_copy(self):
+        sql = "SELECT a + 1 + 1 AS b FROM x"
+        expression = parse_one(sql)
+        optimized = optimizer.optimize(expression, schema=self.schema)
+
+        self.assertIsNot(optimized, expression)
+        self.assertEqual(expression.sql(), sql)
+        self.assertNotEqual(optimized, expression)
+
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                expression = parse_one(sql)
+                result = optimizer.optimize(expression, schema=self.schema, copy=copy)
+                self.assertEqual(result, optimized)
+                if copy:
+                    self.assertIsNot(result, expression)
+                    self.assertEqual(expression.sql(), sql)
+                else:
+                    self.assertIs(result, expression)
+                    self.assertNotEqual(expression.sql(), sql)
+
+                self.assertEqual(optimizer.optimize(sql, schema=self.schema, copy=copy), optimized)
+
+    def test_optimize_copy_root_replacement(self):
+        expression = parse_one("1 + 1")
+        optimized = optimizer.optimize(expression, copy=False)
+        self.assertIsNot(optimized, expression)
+        self.assertEqual(optimized.sql(), "2")
+
     def test_isolate_table_selects(self):
         self.check_file(
             "isolate_table_selects",

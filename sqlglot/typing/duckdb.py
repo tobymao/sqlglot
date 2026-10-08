@@ -119,6 +119,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
             exp.PercentileDisc,
+            exp.Mode,
         }
     },
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},

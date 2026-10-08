@@ -7385,6 +7385,18 @@ BIGINT;
 BIT_XOR(tbl.bit_col);
 BIT;
 
+# dialect: duckdb
+Mode(tbl.int_col);
+INT;
+
+# dialect: duckdb
+Mode(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
+Mode(tbl.date_col);
+DATE;
+
 --------------------------------------
 -- Postgres
 --------------------------------------

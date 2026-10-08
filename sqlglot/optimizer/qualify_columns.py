@@ -655,7 +655,7 @@ def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:
                 ):
                     continue
 
-                column.replace(column.to_dot() if column.table else column.this)
+                column.replace(column.to_dot(include_dots=False))
                 converted = True
 
     if converted:

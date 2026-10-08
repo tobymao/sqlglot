@@ -74,7 +74,7 @@ def qualify_columns(
 
         _separate_pseudocolumns(scope, pseudocolumns)
 
-        resolver = Resolver(scope, schema, infer_schema=infer_schema)
+        resolver = Resolver(scope, schema)
 
         _qualify_comprehensions(scope, resolver)
 

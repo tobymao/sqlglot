@@ -246,6 +246,13 @@ class MySQLParser(parser.Parser):
         "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint()),
         "INVISIBLE": lambda self: self.expression(exp.InvisibleColumnConstraint()),
+        # MySQL defines ASCII as latin1, not the ascii character set, and UNICODE as ucs2
+        "ASCII": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("latin1"))
+        ),
+        "UNICODE": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("ucs2"))
+        ),
     }
 
     ALTER_PARSERS = {

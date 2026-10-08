@@ -78,8 +78,12 @@ def qualify_columns(
         _separate_pseudocolumns(scope, pseudocolumns)
 
         resolver = Resolver(scope, schema, infer_schema=infer_schema)
+
+        _qualify_comprehensions(scope, resolver)
+
         _pop_table_column_aliases(scope.ctes)
         _pop_table_column_aliases(scope.derived_tables)
+
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
         if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
@@ -623,6 +627,39 @@ def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
         return expression.selects[int(node.this) - 1].assert_is(exp.Alias)
     except IndexError:
         raise OptimizeError(f"Unknown output column: {node.name}")
+
+
+def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:
+    converted = False
+    for comprehension in scope.comprehensions:
+        names = {
+            variable.name
+            for key in ("expression", "position")
+            if (variable := comprehension.args.get(key)) is not None
+        }
+        for key in ("this", "condition"):
+            body = comprehension.args.get(key)
+            if body is None:
+                continue
+
+            for column in find_all_in_scope(body, exp.Column):
+                parts = column.parts
+                if parts[0].name not in names:
+                    continue
+
+                # Local table-qualified columns take precedence over lambda struct fields.
+                if (
+                    len(parts) > 1
+                    and parts[0].name in scope.selected_sources
+                    and parts[1].name in resolver.get_source_columns(parts[0].name)
+                ):
+                    continue
+
+                column.replace(column.to_dot(include_dots=False))
+                converted = True
+
+    if converted:
+        scope.clear_cache()
 
 
 def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:

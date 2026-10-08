@@ -51,7 +51,7 @@ class TestLineage(unittest.TestCase):
         # test that sql is not modified
         sql = "SELECT a FROM x"
         ast = sqlglot.parse_one(sql)
-        node = lineage("a", ast)
+        node = lineage("a", ast, schema={"x": {"a": "INT"}})
         self.assertEqual(ast.sql(), sql)
 
         # test that sources are not modified
@@ -60,7 +60,7 @@ class TestLineage(unittest.TestCase):
         source_sql = "SELECT a FROM y"
         source = sqlglot.parse_one(source_sql)
 
-        node = lineage("a", ast, sources={"x": source})
+        node = lineage("a", ast, schema={"y": {"a": "INT"}}, sources={"x": source})
 
         self.assertEqual(source.sql(), source_sql)
 
@@ -150,6 +150,8 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "*",
             "SELECT * from x JOIN y USING (uid)",
+            schema={"x": {"uid": "INT"}, "y": {"uid": "INT"}},
+            expand_stars=False,
         )
         self.assertEqual(
             node.source.sql(),
@@ -171,6 +173,8 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "*",
             "SELECT x.* from x JOIN y USING (uid)",
+            schema={"x": {"uid": "INT"}, "y": {"uid": "INT"}},
+            expand_stars=False,
         )
         self.assertEqual(
             node.source.sql(),
@@ -188,6 +192,8 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "a",
             "WITH y AS (SELECT * FROM x) SELECT a FROM y JOIN z USING (uid)",
+            schema={"x": {"a": "INT", "uid": "INT"}, "z": {"uid": "INT"}},
+            expand_stars=False,
         )
         self.assertEqual(
             node.source.sql(),
@@ -208,6 +214,7 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "a",
             "SELECT a FROM y",
+            schema={},
             sources={"y": "SELECT a FROM (VALUES (1), (2)) AS t (a)"},
         )
         self.assertEqual(
@@ -259,15 +266,18 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.downstream, [])
 
     def test_lineage_union(self) -> None:
+        schema = {"a": {"ax": "INT"}, "b": {"bx": "INT"}, "c": {"cx": "INT"}}
         node = lineage(
             "x",
             "SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c",
+            schema=schema,
         )
         assert len(node.downstream) == 3
 
         node = lineage(
             "x",
             "SELECT x FROM (SELECT ax AS x FROM a UNION SELECT bx FROM b UNION SELECT cx FROM c)",
+            schema=schema,
         )
         assert len(node.downstream) == 3
 
@@ -336,6 +346,7 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "output",
             "SELECT (SELECT max(t3.my_column) my_column FROM foo t3) AS output FROM table3",
+            schema={"foo": {"my_column": "INT"}},
         )
         self.assertEqual(node.name, "output")
         node = node.downstream[0]
@@ -393,6 +404,7 @@ class TestLineage(unittest.TestCase):
               ) AS baz
             )
             """,
+            schema={},
         )
         self.assertEqual(node.name, "a")
         self.assertEqual(len(node.downstream), 2)
@@ -409,6 +421,7 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "a",
             "SELECT a FROM (SELECT a FROM x) subquery",
+            schema={"x": {"a": "INT"}},
         )
         self.assertEqual(node.name, "a")
         self.assertEqual(len(node.downstream), 1)
@@ -419,6 +432,7 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "a",
             "SELECT a FROM (SELECT a FROM x)",
+            schema={"x": {"a": "INT"}},
         )
         self.assertEqual(node.name, "a")
         self.assertEqual(len(node.downstream), 1)
@@ -488,7 +502,9 @@ class TestLineage(unittest.TestCase):
         SELECT a FROM attached
         """
 
-        node = lineage("a", query)
+        node = lineage(
+            "a", query, schema={"t1": {"a": "INT"}, "t2": {"a": "INT"}, "t3": {"a": "INT"}}
+        )
 
         visited: set[int] = set()
         stack = [(node, frozenset([id(node)]))]
@@ -570,20 +586,24 @@ class TestLineage(unittest.TestCase):
         node = lineage(
             "b",
             "with _data as (select [struct(1 as a, 2 as b)] as col) select b from _data cross join unnest(col)",
+            schema={},
         )
         self.assertEqual(node.name, "b")
 
     def test_lineage_normalize(self) -> None:
-        node = lineage("a", "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+        node = lineage(
+            "a", "WITH x AS (SELECT 1 a) SELECT a FROM x", schema={}, dialect="snowflake"
+        )
         self.assertEqual(node.name, "A")
 
         with self.assertRaises(sqlglot.errors.SqlglotError):
-            lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", dialect="snowflake")
+            lineage('"a"', "WITH x AS (SELECT 1 a) SELECT a FROM x", schema={}, dialect="snowflake")
 
         with self.assertRaises(sqlglot.errors.SqlglotError):
             lineage(
                 "b",
                 "SELECT a,b FROM table1 UNION ALL BY NAME SELECT a FROM table2",
+                schema={"table1": {"a": "INT", "b": "INT"}, "table2": {"a": "INT"}},
                 dialect="duckdb",
             )
 
@@ -601,7 +621,7 @@ class TestLineage(unittest.TestCase):
         ) subq
         """
 
-        node = lineage("y", sql, dialect="oracle")
+        node = lineage("y", sql, schema={"s": {"t": {"x": "INT", "y": "INT"}}}, dialect="oracle")
 
         self.assertEqual(node.name, "Y")
         self.assertEqual(node.expression.sql(dialect="oracle"), "SUBQ.Y AS Y")
@@ -688,7 +708,7 @@ class TestLineage(unittest.TestCase):
         )
         select other_a from t
         """
-        node = lineage("other_a", sql)
+        node = lineage("other_a", sql, schema={"sample_data": {"value": "INT", "category": "TEXT"}})
 
         self.assertEqual(node.downstream[0].name, "t.other_a")
         self.assertEqual(node.downstream[0].reference_node_name, "t")
@@ -704,7 +724,11 @@ class TestLineage(unittest.TestCase):
             '2023_Q3'))
         ORDER BY empid;
         """
-        node = lineage("empid", sql)
+        node = lineage(
+            "empid",
+            sql,
+            schema={"quarterly_sales": {"empid": "INT", "amount": "INT", "quarter": "VARCHAR"}},
+        )
 
         self.assertEqual(node.downstream[0].name, "quarterly_sales.empid")
 
@@ -720,7 +744,11 @@ class TestLineage(unittest.TestCase):
         )
         select empid from t
         """
-        node = lineage("empid", sql)
+        node = lineage(
+            "empid",
+            sql,
+            schema={"quarterly_sales": {"empid": "INT", "amount": "INT", "quarter": "VARCHAR"}},
+        )
 
         self.assertEqual(node.downstream[0].name, "t.empid")
         self.assertEqual(node.downstream[0].reference_node_name, "t")
@@ -829,7 +857,7 @@ class TestLineage(unittest.TestCase):
         WITH src AS (SELECT * FROM monthly_sales)
         SELECT d FROM src UNPIVOT(sales FOR month IN (jan, feb)) AS t(e, d, m, s)
         """
-        node = lineage("d", sql, dialect="snowflake")
+        node = lineage("d", sql, schema={}, dialect="snowflake")
         self.assertEqual([d.name for d in node.downstream], ["SRC.D"])
 
     def test_chained_pivots(self) -> None:
@@ -980,7 +1008,7 @@ class TestLineage(unittest.TestCase):
         JOIN TABLE(FLATTEN(events)) AS f
         """
 
-        schema = {"database_name": {"schema_name": {"table_name": {"events": "ARRAY<VARIANT>"}}}}
+        schema = {"database_name": {"schema_name": {"table_name": {"events": "ARRAY"}}}}
         lateral_node = lineage("external_id", lateral_flatten, schema=schema, dialect="snowflake")
         table_node = lineage("external_id", table_flatten, schema=schema, dialect="snowflake")
 
@@ -1281,7 +1309,7 @@ class TestLineage(unittest.TestCase):
         )
         scope = build_scope(qualified)
 
-        from_scope = lineage(None, qualified, scope=scope)
+        from_scope = lineage(None, qualified, schema=schema, scope=scope)
         from_sql = lineage(None, sql, schema=schema)
 
         self.assertEqual(set(from_scope), set(from_sql))

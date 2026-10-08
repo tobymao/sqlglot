@@ -79,17 +79,21 @@ class Node:
 
 
 @t.overload
-def lineage(column: str | exp.Column, sql: str | exp.Expr, **kwargs: t.Any) -> Node: ...
+def lineage(
+    column: str | exp.Column, sql: str | exp.Expr, schema: dict | Schema, **kwargs: t.Any
+) -> Node: ...
 
 
 @t.overload
-def lineage(column: None, sql: str | exp.Expr, **kwargs: t.Any) -> dict[str, Node]: ...
+def lineage(
+    column: None, sql: str | exp.Expr, schema: dict | Schema, **kwargs: t.Any
+) -> dict[str, Node]: ...
 
 
 def lineage(
     column: str | exp.Column | None,
     sql: str | exp.Expr,
-    schema: dict | Schema | None = None,
+    schema: dict | Schema,
     sources: Mapping[str, str | exp.Query] | None = None,
     dialect: DialectType = None,
     scope: Scope | None = None,
@@ -197,12 +201,12 @@ def to_node(
     column: str | int,
     scope: Scope,
     dialect: DialectType,
+    schema: Schema,
     scope_name: str | None = None,
     upstream: Node | None = None,
     source_name: str | None = None,
     reference_node_name: str | None = None,
     trim_selects: bool = True,
-    schema: Schema | None = None,
     _cache: dict[tuple, Node] | None = None,
     _scope_meta: dict[int, tuple[bool, dict[str, exp.Expr]]] | None = None,
     on_node: t.Callable[[Node], None] | None = None,
@@ -396,6 +400,15 @@ def to_node(
         table = c.table
         col_source: exp.Table | Scope | None = scope.sources.get(table)
 
+        # Lineage-specific single-source inference: when the optimizer could not qualify a
+        # column (e.g. no schema was provided), attribute it to the sole named source so
+        # the graph remains accurate rather than degrading to a Placeholder leaf.
+        if col_source is None and not table:
+            named_sources = {k: v for k, v in scope.sources.items() if k}
+            if len(named_sources) == 1:
+                table, col_source = next(iter(named_sources.items()))
+                c.set("table", exp.to_identifier(table))
+
         if isinstance(col_source, Scope):
             reference_node_name = None
             if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
@@ -497,7 +510,7 @@ def to_node(
     return node
 
 
-def _pre_pivot_columns(pivot: exp.Pivot, scope: Scope, schema: Schema | None = None) -> list[str]:
+def _pre_pivot_columns(pivot: exp.Pivot, scope: Scope, schema: Schema) -> list[str]:
     """
     The columns the first operator of a chain sees, taken from the projections of a
     derived table or CTE source, or from the schema for a physical table. Returns an
@@ -519,7 +532,7 @@ def _pre_pivot_columns(pivot: exp.Pivot, scope: Scope, schema: Schema | None = N
 
 
 def _pivot_chain_mapping(
-    pivots: list[exp.Pivot], scope: Scope, schema: Schema | None = None
+    pivots: list[exp.Pivot], scope: Scope, schema: Schema
 ) -> tuple[dict[str, str], dict[str, list[exp.Column]]]:
     """
     Fold a chain of (UN)PIVOT operators into a single view of its output, since each one

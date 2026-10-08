@@ -64,6 +64,9 @@ class Resolver:
             except OptimizeError:
                 pass
 
+        if not table_name:
+            return None
+
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
 

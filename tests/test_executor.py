@@ -1715,7 +1715,7 @@ class TestExecutor(unittest.TestCase):
               AVG(bill_depth_mm) AS avg_bill_depth
             FROM penguins
             """,
-                validate_qualify_columns=False,
+                schema={"penguins": {"bill_length_mm": "DOUBLE", "bill_depth_mm": "DOUBLE"}},
             )
         )
 

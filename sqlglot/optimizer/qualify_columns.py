@@ -83,7 +83,7 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
-        if (dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
+        if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
             _expand_alias_refs(
                 scope,
                 resolver,
@@ -544,7 +544,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
             for agg in original.find_all(exp.AggFunc):
                 for col in agg.find_all(exp.Column):
                     if not col.table:
-                        col.set("table", resolver.get_table(col.name))
+                        if table := resolver.get_table(col.name):
+                            col.set("table", table)
 
             original.replace(expanded)
 

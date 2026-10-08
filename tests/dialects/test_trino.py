@@ -127,6 +127,32 @@ class TestTrino(Validator):
                     with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
                         expression.sql("trino", unsupported_level=ErrorLevel.RAISE)
 
+    def test_temporal_literal_precision(self):
+        for kind, value in (("TIMESTAMP", "2020-01-01 00:00:00"), ("TIME", "12:00:00")):
+            for zone in ("", " +02:00"):
+                suffix = " WITH TIME ZONE" if zone else ""
+                for precision, fraction in enumerate(("", ".1", ".10", ".100")):
+                    with self.subTest(kind=kind, zone=zone, precision=precision):
+                        literal = f"'{value}{fraction}{zone}'"
+                        self.validate_identity(
+                            f"SELECT {kind} {literal}",
+                            f"SELECT CAST({literal} AS {kind}({precision}){suffix})",
+                        )
+
+                for precision in ("", "(0)", "(2)", "(6)"):
+                    self.validate_identity(
+                        f"SELECT CAST('{value}.123{zone}' AS {kind}{precision}{suffix})"
+                    )
+
+        self.validate_identity(
+            "SELECT TIMESTAMP '2020-01-01'",
+            "SELECT CAST('2020-01-01' AS TIMESTAMP(0))",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD('MILLISECOND', 1, TIMESTAMP '2020-01-01 00:00:00')",
+            "SELECT DATE_ADD('MILLISECOND', 1, CAST('2020-01-01 00:00:00' AS TIMESTAMP(0)))",
+        )
+
     def test_trino(self):
         self.validate_identity("REFRESH MATERIALIZED VIEW mynamespace.test_view")
         self.validate_identity("JSON_QUERY(m.properties, 'lax $.area' OMIT QUOTES NULL ON ERROR)")
@@ -145,11 +171,11 @@ class TestTrino(Validator):
         )
         self.validate_identity(
             "SELECT TIMESTAMP '2012-10-31 01:00 -2'",
-            "SELECT CAST('2012-10-31 01:00 -2' AS TIMESTAMP WITH TIME ZONE)",
+            "SELECT CAST('2012-10-31 01:00 -2' AS TIMESTAMP(0) WITH TIME ZONE)",
         )
         self.validate_identity(
             "SELECT TIMESTAMP '2012-10-31 01:00 +2'",
-            "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP WITH TIME ZONE)",
+            "SELECT CAST('2012-10-31 01:00 +2' AS TIMESTAMP(0) WITH TIME ZONE)",
         )
         self.validate_identity(
             "SELECT TIMESTAMP '2026-03-01 00:00:00.1234'",
@@ -170,18 +196,18 @@ class TestTrino(Validator):
 
         self.validate_identity(
             "SELECT TIME '01:02:03.456 -08:00'",
-            "SELECT CAST('01:02:03.456 -08:00' AS TIME WITH TIME ZONE)",
+            "SELECT CAST('01:02:03.456 -08:00' AS TIME(3) WITH TIME ZONE)",
         )
         self.validate_identity(
             "SELECT TIME '01:02:03.456'",
-            "SELECT CAST('01:02:03.456' AS TIME)",
+            "SELECT CAST('01:02:03.456' AS TIME(3))",
         )
 
         self.validate_all(
             "SELECT TIME '01:02:03.456 -08:00'",
             write={
                 "duckdb": "SELECT CAST('01:02:03.456 -08:00' AS TIMETZ)",
-                "trino": "SELECT CAST('01:02:03.456 -08:00' AS TIME WITH TIME ZONE)",
+                "trino": "SELECT CAST('01:02:03.456 -08:00' AS TIME(3) WITH TIME ZONE)",
             },
         )
 
@@ -200,7 +226,7 @@ class TestTrino(Validator):
             "SELECT TIMESTAMP '2012-10-31 01:00:00 +02:00'",
             write={
                 "duckdb": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMPTZ)",
-                "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP WITH TIME ZONE)",
+                "trino": "SELECT CAST('2012-10-31 01:00:00 +02:00' AS TIMESTAMP(0) WITH TIME ZONE)",
             },
         )
         self.validate_all(

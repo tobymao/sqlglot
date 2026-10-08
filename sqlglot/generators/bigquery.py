@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     inline_array_unless_query,
     max_or_greatest,
     min_or_least,
+    no_filter_sql,
     no_ilike_sql,
     regexp_replace_sql,
     rename_func,
@@ -335,6 +336,7 @@ class BigQueryGenerator(generator.Generator):
         exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
         exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
         exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
+        exp.Filter: no_filter_sql,
         exp.FromTimeZone: lambda self, e: self.func(
             "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
         ),

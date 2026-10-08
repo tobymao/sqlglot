@@ -1398,6 +1398,71 @@ def no_map_from_entries_sql(self: Generator, expression: exp.MapFromEntries) -> 
     return ""
 
 
+def no_filter_sql(self: Generator, expression: exp.Filter) -> str:
+    # Rewrite `AGG(x) FILTER (WHERE cond)` into an equivalent conditional aggregation, i.e. wrap
+    # the input values in an IF, which works because aggregate functions skip NULLs
+    agg = expression.this
+    # IGNORE NULLS can wrap the aggregate, but the condition still belongs to its arguments
+    if isinstance(agg, exp.IgnoreNulls):
+        agg = agg.this
+
+    agg_arg = seq_get(agg.expressions, 0) if isinstance(agg, exp.Anonymous) else agg.this
+    cond = expression.expression.this
+
+    if isinstance(agg, exp.WithinGroup):
+        # Ordered-set aggregates take their input from the ORDER BY key, so the
+        # condition has to wrap that instead of the aggregate's own argument
+        if isinstance(agg_arg, (exp.Mode, *exp.PERCENTILES)):
+            for ordered in agg.expression.expressions:
+                key = ordered.this
+                key.replace(exp.If(this=cond.copy(), true=key.copy(), false=exp.null()))
+
+            return self.sql(expression.this)
+
+        # Besides the ordered-set aggregates, these are the only functions that take WITHIN GROUP
+        # and the input values as arguments, so anything else can't be rewritten correctly
+        if isinstance(agg_arg, (exp.ArrayAgg, exp.GroupConcat)):
+            agg_arg = agg_arg.this
+        else:
+            self.unsupported("Unable to rewrite FILTER into the aggregate's arguments")
+            return self.sql(expression.this)
+
+    # Folding the condition into COUNT_IF's predicate avoids an IF that returns a predicate, which
+    # dialects without a boolean type (e.g. T-SQL) reject
+    if isinstance(agg, exp.CountIf) and not isinstance(agg_arg, exp.Distinct):
+        return self.sql(exp.CountIf(this=exp.and_(cond, agg_arg)))
+
+    # `COUNT(*/t.*) FILTER (WHERE cond)` counts qualifying rows, but a star can't be an IF
+    # argument: `IF(cond, *, NULL)` expands to multiple columns once the table has 2+ of
+    # them. Each dialect generates CountIf in its own way instead, e.g. COUNT_IF or COUNTIF.
+    if isinstance(agg, exp.Count) and (agg_arg is None or agg_arg.is_star):
+        return self.sql(exp.CountIf(this=cond))
+
+    # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
+    # condition has to wrap the values underneath them rather than the whole clause --
+    # `IF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.
+    if isinstance(agg_arg, exp.Order):
+        agg_arg = agg_arg.this
+
+    if isinstance(agg_arg, exp.Distinct):
+        targets = agg_arg.expressions
+    else:
+        targets = [agg_arg]
+
+    for target in targets:
+        target.replace(exp.If(this=cond.copy(), true=target.copy(), false=exp.null()))
+
+    # In dialects where ARRAY_AGG keeps NULLs (e.g. BigQuery, which even fails on them), the
+    # rows that don't satisfy the condition have to be dropped explicitly
+    if isinstance(agg, exp.ArrayAgg) and self.dialect.ARRAY_AGG_INCLUDES_NULLS:
+        # IGNORE NULLS already drops them, so no extra FILTER (WHERE x IS NOT NULL) is needed
+        agg.set("nulls_excluded", None)
+        if agg is expression.this:
+            return self.sql(exp.IgnoreNulls(this=agg))
+
+    return self.sql(expression.this)
+
+
 def property_sql(self: Generator, expression: exp.Property) -> str:
     return f"{self.property_name(expression, string_key=True)}={self.sql(expression, 'value')}"
 

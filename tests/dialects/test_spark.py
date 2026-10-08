@@ -157,6 +157,9 @@ TBLPROPERTIES (
                 "spark": "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
             },
         )
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMNS (a.b INT COMMENT 'x' AFTER c, d.e.f STRING)"
+        )
         self.validate_all(
             "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
             write={

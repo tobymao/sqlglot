@@ -8404,9 +8404,8 @@ class Parser:
             and to.this == exp.DType.CHAR
             and (self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET"))
         ):
-            return exp.DType.CHARACTER_SET.into_expr(
-                kind=self._parse_var_or_string(), expressions=to.expressions
-            )
+            to.set("this", exp.DType.CHARACTER_SET)
+            to.set("kind", self._parse_var_or_string())
         return to
 
     def _parse_xml_element(self) -> exp.XMLElement:

@@ -31,7 +31,6 @@ def qualify_columns(
     schema: dict[str, object] | Schema,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
-    infer_schema: bool | None = None,
     allow_partial_qualification: bool = False,
     dialect: DialectType = None,
 ) -> E:
@@ -52,7 +51,6 @@ def qualify_columns(
         expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether to infer the schema if missing.
         allow_partial_qualification: Whether to allow partial qualification.
 
     Returns:
@@ -64,7 +62,6 @@ def qualify_columns(
     """
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
-    infer_schema = schema.empty if infer_schema is None else infer_schema
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
@@ -77,7 +74,7 @@ def qualify_columns(
 
         _separate_pseudocolumns(scope, pseudocolumns)
 
-        resolver = Resolver(scope, schema, infer_schema=infer_schema)
+        resolver = Resolver(scope, schema)
 
         _qualify_comprehensions(scope, resolver)
 
@@ -86,7 +83,7 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
-        if (schema.empty or dialect.FORCE_EARLY_ALIAS_REF_EXPANSION) and expand_alias_refs:
+        if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
             _expand_alias_refs(
                 scope,
                 resolver,
@@ -104,7 +101,7 @@ def qualify_columns(
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
-        if not schema.empty and expand_alias_refs:
+        if expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
         if is_select:
@@ -435,8 +432,8 @@ def _expand_alias_refs(
                         column.replace(simplified)
                         column = simplified
 
-                    if resolve_table and resolver.schema.empty:
-                        # resolve alias spliced into QUALIFY/HAVING with unqualified columns
+                    if resolve_table:
+                        # Qualify any unqualified columns inside the spliced alias expression.
                         for inner in walk_in_scope(column):
                             if (
                                 isinstance(inner, exp.Column)
@@ -547,7 +544,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
             for agg in original.find_all(exp.AggFunc):
                 for col in agg.find_all(exp.Column):
                     if not col.table:
-                        col.set("table", resolver.get_table(col.name))
+                        if table := resolver.get_table(col.name):
+                            col.set("table", table)
 
             original.replace(expanded)
 

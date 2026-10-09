@@ -21,14 +21,13 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
+    def __init__(self, scope: Scope, schema: Schema) -> None:
         self.scope: Scope = scope
         self.schema: Schema = schema
         self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
-        self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
         self._outer_resolvers: list[Resolver] | None = None
@@ -65,14 +64,8 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and self._infer_schema:
-            sources_without_schema = tuple(
-                source
-                for source, columns in self._get_all_source_columns().items()
-                if not columns or "*" in columns
-            )
-            if len(sources_without_schema) == 1:
-                table_name = sources_without_schema[0]
+        if not table_name:
+            return None
 
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
@@ -96,7 +89,7 @@ class Resolver:
             scope = self.scope
             while scope.can_be_correlated and scope.parent:
                 scope = scope.parent
-                self._outer_resolvers.append(Resolver(scope, self.schema, self._infer_schema))
+                self._outer_resolvers.append(Resolver(scope, self.schema))
         return self._outer_resolvers
 
     @property
@@ -406,7 +399,7 @@ class Resolver:
             table_name = column.table
         else:
             # use the parent scope's resolver to disambiguate the column
-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+            parent_resolver = Resolver(scope, self.schema)
             table_identifier = parent_resolver.get_table(column)
             if not table_identifier:
                 return None

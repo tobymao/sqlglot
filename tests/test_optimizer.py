@@ -1135,7 +1135,7 @@ class TestOptimizer(unittest.TestCase):
         )
 
     def test_correlated_unnest_projection_types(self):
-        for sql, expected in (
+        for sql, schema, expected in (
             (
                 """
                 WITH t AS (
@@ -1146,6 +1146,7 @@ class TestOptimizer(unittest.TestCase):
                     (SELECT MAX(magnitude) FROM UNNEST(items)) AS gallons
                 FROM t
                 """,
+                {},
                 ["STRING", "FLOAT64"],
             ),
             (
@@ -1158,14 +1159,27 @@ class TestOptimizer(unittest.TestCase):
                 ) AS gallons
                 FROM t
                 """,
+                {},
                 ["FLOAT64"],
+            ),
+            (
+                """
+                WITH t AS (SELECT [STRUCT(1 AS b)] AS a FROM tbl)
+                SELECT (SELECT b FROM UNNEST(a)) AS x FROM t
+                """,
+                {"tbl": {"a": "INT64"}},
+                ["INT64"],
             ),
         ):
             with self.subTest(sql=sql):
                 expression = annotate_types(
                     optimizer.qualify.qualify(
-                        parse_one(sql, dialect="bigquery"), dialect="bigquery", infer_schema=False
+                        parse_one(sql, dialect="bigquery"),
+                        dialect="bigquery",
+                        schema=schema,
+                        infer_schema=False,
                     ),
+                    schema=schema,
                     dialect="bigquery",
                 )
                 self.assertEqual([s.type.sql("bigquery") for s in expression.selects], expected)

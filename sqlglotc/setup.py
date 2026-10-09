@@ -49,7 +49,6 @@ def _source_files(src_dir):
         "helper.py",
         "lineage.py",
         "parser.py",
-        "schema.py",
         "serde.py",
         "time.py",
         "tokenizer_core.py",

@@ -1134,6 +1134,52 @@ class TestOptimizer(unittest.TestCase):
             [("id", "INT"), ("m", "VARCHAR"), ("v", "INT")],
         )
 
+    def test_correlated_unnest_projection_types(self):
+        for sql, expected in (
+            (
+                """
+                WITH t AS (
+                    SELECT [STRUCT('a' AS email, CAST(2 AS FLOAT64) AS magnitude)] AS items
+                )
+                SELECT
+                    (SELECT email FROM UNNEST(items)) AS linked_email,
+                    (SELECT MAX(magnitude) FROM UNNEST(items)) AS gallons
+                FROM t
+                """,
+                ["STRING", "FLOAT64"],
+            ),
+            (
+                """
+                WITH t AS (
+                    SELECT [STRUCT([STRUCT(CAST(2 AS FLOAT64) AS magnitude)] AS segments)] AS legs
+                )
+                SELECT (
+                    SELECT MAX(segments[SAFE_OFFSET(0)].magnitude) FROM UNNEST(legs)
+                ) AS gallons
+                FROM t
+                """,
+                ["FLOAT64"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(
+                    optimizer.qualify.qualify(
+                        parse_one(sql, dialect="bigquery"), dialect="bigquery", infer_schema=False
+                    ),
+                    dialect="bigquery",
+                )
+                self.assertEqual([s.type.sql("bigquery") for s in expression.selects], expected)
+
+        with self.assertRaisesRegex(OptimizeError, "Column 'missing' could not be resolved"):
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH t AS (SELECT [STRUCT('a' AS email)] AS items) "
+                    "SELECT (SELECT missing FROM UNNEST(items)) FROM t",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            )
+
     def test_unnest_type_trace_is_memoized(self):
         """Tracing an UNNEST's element type must not re-walk shared parts of the scope graph.
 

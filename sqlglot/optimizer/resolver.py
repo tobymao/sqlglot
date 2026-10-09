@@ -392,7 +392,7 @@ class Resolver:
 
     def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
         """
-        Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
+        Get the type of a column being unnested/exploded from its source scope or table.
 
         Args:
             column: The column expression being unnested/exploded.
@@ -419,10 +419,10 @@ class Resolver:
         self, source: Scope | exp.Table, column: exp.Column
     ) -> exp.DataType | None:
         """
-        Get a column's type by tracing through scopes/tables to find the base table.
+        Get a column's type from annotated projections or underlying table schemas.
 
         Args:
-            source: The source to search - can be a Scope (to iterate its sources) or a Table.
+            source: The scope or table to search.
             column: The column to find the type for.
 
         Returns:
@@ -444,12 +444,19 @@ class Resolver:
             if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 result = col_type
         elif isinstance(source, Scope):
-            # iterate over all sources in the scope
-            for nested_source in source.sources.values():
-                nested_type = self._get_column_type_from_scope(nested_source, column)
-                if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
-                    result = nested_type
-                    break
+            if isinstance(source.expression, exp.Select):
+                for projection in source.expression.selects:
+                    if projection.alias_or_name == column.name:
+                        if projection.type and not projection.type.is_type(exp.DType.UNKNOWN):
+                            result = projection.type
+                        break
+
+            if result is None:
+                for nested_source in source.sources.values():
+                    nested_type = self._get_column_type_from_scope(nested_source, column)
+                    if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
+                        result = nested_type
+                        break
 
         self._column_type_from_scope_cache[cache_key] = result
         return result

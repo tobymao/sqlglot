@@ -9,8 +9,6 @@ from sqlglot.errors import SchemaError
 from sqlglot.helper import dict_depth, first
 from sqlglot.trie import TrieResult, in_trie, new_trie
 
-from sqlglot.helper import trait
-
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import SchemaArgs
@@ -21,7 +19,6 @@ if t.TYPE_CHECKING:
     ColumnMapping = t.Union[dict[str, t.Any], str, list[str]]
 
 
-@trait
 class Schema(abc.ABC):
     """Abstract base class for database schemas"""
 

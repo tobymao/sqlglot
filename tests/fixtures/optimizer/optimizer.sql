@@ -1616,3 +1616,11 @@ SELECT
   ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY
     "T"."ID") OVER (PARTITION BY "T"."GRP") AS "_COL_0"
 FROM "T" AS "T";
+
+# title: simplify CASE to scalar subquery
+SELECT CASE WHEN TRUE THEN (SELECT 1) ELSE (SELECT 2) END AS result;
+SELECT
+  (
+    SELECT
+      1 AS "1"
+  ) AS "result";

@@ -692,7 +692,8 @@ class Simplifier:
 
             if isinstance(node, exp.Condition):
                 simplified = while_changing(
-                    node, lambda e: self._simplify(e, constant_propagation, coalesce_simplification)
+                    t.cast(exp.Expr, node),
+                    lambda e: self._simplify(e, constant_propagation, coalesce_simplification),
                 )
 
                 if node is expression:

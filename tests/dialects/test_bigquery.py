@@ -1511,6 +1511,10 @@ LANGUAGE js AS
             "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)",
             write={"bigquery": "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)"},
         )
+        self.validate_identity("SELECT [(SELECT 1), 2]")
+        self.validate_identity("SELECT [1, (SELECT 2)]")
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a), STRUCT(2 AS a)]")
+        self.validate_identity("SELECT [COALESCE((SELECT 1), 0), 2]")
         self.validate_all(
             "SELECT ARRAY(SELECT DISTINCT x FROM UNNEST(some_numbers) AS x) AS unique_numbers",
             write={

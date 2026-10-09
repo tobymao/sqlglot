@@ -1,3 +1,9 @@
+# title: Preserve CASE branches before an always-true condition
+SELECT CASE WHEN x.a > 1 THEN x.b WHEN TRUE THEN 2 END AS result FROM x;
+SELECT
+  CASE WHEN "x"."a" > 1 THEN "x"."b" ELSE 2 END AS "result"
+FROM "x" AS "x";
+
 # title: lateral
 # execute: false
 SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;

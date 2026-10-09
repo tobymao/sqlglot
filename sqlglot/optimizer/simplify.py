@@ -1446,7 +1446,12 @@ class Simplifier:
                     cond = cond.replace(this.pop().eq(cond))
 
                 if always_true(cond):
-                    return exp.paren(case.args["true"], copy=False)
+                    if case.index == 0:
+                        return exp.paren(case.args["true"], copy=False)
+
+                    expression.set("default", case.args["true"])
+                    expression.set("ifs", expression.args["ifs"][: case.index])
+                    break
 
                 if always_false(cond):
                     case.pop()

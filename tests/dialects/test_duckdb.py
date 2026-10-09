@@ -2178,6 +2178,7 @@ class TestDuckDB(Validator):
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
         self.validate_identity("ARRAY((SELECT id FROM t))")
+        self.validate_identity("[(SELECT id FROM t), 2]")
 
     def test_cast(self):
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")

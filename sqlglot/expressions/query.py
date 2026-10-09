@@ -442,11 +442,24 @@ class QueryBand(Expression):
 
 
 class RecursiveWithSearch(Expression):
-    arg_types = {"kind": True, "this": True, "expression": True, "using": False}
+    arg_types = {
+        "kind": True,
+        "this": True,
+        "expression": True,
+        "to": False,
+        "default": False,
+        "using": False,
+    }
 
 
 class With(Expression):
-    arg_types = {"expressions": False, "recursive": False, "search": False, "udfs": False}
+    arg_types = {
+        "expressions": False,
+        "recursive": False,
+        "search": False,
+        "cycle": False,
+        "udfs": False,
+    }
 
     @property
     def recursive(self) -> bool:

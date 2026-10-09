@@ -1586,8 +1586,10 @@ class Generator:
         )
         search = self.sql(expression, "search")
         search = f" {search}" if search else ""
+        cycle = self.sql(expression, "cycle")
+        cycle = f" {cycle}" if cycle else ""
 
-        sql = f"WITH {recursive}{sql}{search}" if sql else ""
+        sql = f"WITH {recursive}{sql}{search}{cycle}" if sql else ""
         return f"{udfs} {sql}" if udfs and sql else f"{udfs}{sql}"
 
     def cte_sql(self, expression: exp.CTE) -> str:
@@ -6248,12 +6250,16 @@ class Generator:
         kind = self.sql(expression, "kind")
         this = self.sql(expression, "this")
         set = self.sql(expression, "expression")
+        to = self.sql(expression, "to")
+        to = f" TO {to}" if to else ""
+        default = self.sql(expression, "default")
+        default = f" DEFAULT {default}" if default else ""
         using = self.sql(expression, "using")
         using = f" USING {using}" if using else ""
 
         kind_sql = kind if kind == "CYCLE" else f"SEARCH {kind} FIRST BY"
 
-        return f"{kind_sql} {this} SET {set}{using}"
+        return f"{kind_sql} {this} SET {set}{to}{default}{using}"
 
     def parameterizedagg_sql(self, expression: exp.ParameterizedAgg) -> str:
         params = self.expressions(expression, key="params", flat=True)

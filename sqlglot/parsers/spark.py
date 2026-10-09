@@ -129,14 +129,7 @@ class SparkParser(Spark2Parser):
 
     def _parse_field_def(self) -> exp.Expr | None:
         # ALTER TABLE ... ADD COLUMNS (a.b INT) adds field b to the struct column a
-        this = self._parse_field(any_token=True)
-        while this and self._match(TokenType.DOT):
-            part = self._parse_field(any_token=True)
-            if not part:
-                break
-            this = exp.Dot(this=this, expression=part)
-
-        return self._parse_column_def(this)
+        return self._parse_column_def(self._parse_column_ops(self._parse_field(any_token=True)))
 
     def _parse_generated_as_identity(
         self,

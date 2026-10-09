@@ -484,3 +484,37 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
         )
+
+    def test_time_slice(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+        self.validate_identity("SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE)")
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, floor)",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, FLOOR)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (dt DATETIME) PARTITION BY TIME_SLICE(dt, INTERVAL 7 DAY) DISTRIBUTED BY HASH (dt)"
+        )
+
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+            read={
+                "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
+            },
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+                "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt) + INTERVAL 5 MINUTE",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
+            read={
+                "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
+            },
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
+                "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt)",
+            },
+        )

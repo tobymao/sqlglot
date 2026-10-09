@@ -379,3 +379,9 @@ class StarRocksGenerator(MySQLGenerator):
         every = f" EVERY (INTERVAL {every} {unit})" if every and unit else ""
 
         return f"REFRESH{method}{kind}{starts}{every}"
+
+    def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+        interval = exp.Interval(this=expression.expression, unit=expression.unit)
+        kind = expression.text("kind").upper()
+        boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
+        return self.func("TIME_SLICE", expression.this, interval, boundary)

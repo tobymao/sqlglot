@@ -11,7 +11,15 @@ from sqlglot.tokens import TokenType
 def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
     # TIME_SLICE(dt, INTERVAL n unit [, FLOOR | CEIL])
     # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
-    time_slice = build_date_delta_with_interval(exp.TimeSlice)(args)
+    if len(args) < 2:
+        return None
+
+    if isinstance(seq_get(args, 1), exp.Interval):
+        time_slice = build_date_delta_with_interval(exp.TimeSlice)(args)
+        boundary = seq_get(args, 2)
+    else:
+        time_slice = exp.TimeSlice.from_arg_list(args)
+        boundary = seq_get(args, 3)
     if not time_slice:
         return None
 
@@ -19,7 +27,6 @@ def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
     if amount.is_string and is_int(amount.name):
         time_slice.set("expression", exp.Literal.number(amount.name))
 
-    boundary = seq_get(args, 2)
     if boundary:
         time_slice.set(
             "kind", exp.Literal.string("END" if boundary.name.upper() == "CEIL" else "START")

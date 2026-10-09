@@ -487,6 +487,14 @@ class TestStarrocks(Validator):
 
     def test_time_slice(self):
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, 5, 'minute', 'floor')",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, FLOOR)",
+        )
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, 5, 'minute', 'ceil')",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+        )
         self.validate_identity("SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE)")
         self.validate_identity(
             "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, floor)",

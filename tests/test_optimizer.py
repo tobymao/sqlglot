@@ -1139,6 +1139,28 @@ class TestOptimizer(unittest.TestCase):
             (
                 """
                 WITH t AS (
+                    SELECT [STRUCT('a' AS email)] AS items
+                    UNION ALL
+                    SELECT [STRUCT('b' AS email)] AS items
+                )
+                SELECT (SELECT email FROM UNNEST(items)) AS email FROM t
+                """,
+                ["STRING"],
+            ),
+            (
+                """
+                WITH t AS (
+                    SELECT NULL AS items
+                    UNION ALL
+                    SELECT [STRUCT('b' AS email)] AS items
+                )
+                SELECT (SELECT email FROM UNNEST(items)) AS email FROM t
+                """,
+                ["STRING"],
+            ),
+            (
+                """
+                WITH t AS (
                     SELECT [STRUCT('a' AS email, CAST(2 AS FLOAT64) AS magnitude)] AS items
                 )
                 SELECT

@@ -4244,6 +4244,8 @@ class Parser:
                 kind=kind,
                 this=self._parse_id_var(),
                 expression=self._match_text_seq("SET") and self._parse_id_var(),
+                to=self._match_text_seq("TO") and self._parse_bitwise(),
+                default=self._match(TokenType.DEFAULT) and self._parse_bitwise(),
                 using=self._match_text_seq("USING") and self._parse_id_var(),
             )
         )
@@ -4277,11 +4279,23 @@ class Parser:
 
             last_comments = self._prev_comments
 
+        search = self._parse_recursive_with_search()
+
+        # A SEARCH clause can be followed by a CYCLE clause
+        cycle = (
+            self._parse_recursive_with_search()
+            if search
+            and search.args.get("kind") != "CYCLE"
+            and self._match_text_seq("CYCLE", advance=False)
+            else None
+        )
+
         return self.expression(
             exp.With(
                 expressions=expressions,
                 recursive=recursive or None,
-                search=self._parse_recursive_with_search(),
+                search=search,
+                cycle=cycle,
                 udfs=udfs or None,
             ),
             comments=comments,

@@ -30,6 +30,8 @@ _HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
+SETOP_OPERAND_PLACEHOLDER = "\x01SQLGLOT_SETOP_OPERAND\x01"
+
 
 def unsupported_args(
     *args: str | tuple[str, str],
@@ -548,6 +550,9 @@ class Generator:
 
     # Whether set operation operands can be parenthesized without a SELECT wrapper.
     SET_OP_PARENTHESIZED_OPERANDS = True
+
+    # Whether differing set-operation kinds, quantifiers, or modifiers require grouping.
+    SET_OP_MIXED_OPERATORS_REQUIRE_PARENS = False
 
     # Whether parameters from COPY statement are wrapped in parentheses
     COPY_PARAMS_ARE_WRAPPED = True
@@ -1137,6 +1142,26 @@ class Generator:
             )
             for i, line in enumerate(lines)
         )
+
+    def _join_sql_fragments(self, sql_fragments: list[tuple[str, int]]) -> str:
+        if not self.pretty:
+            return "".join(sql for sql, _ in sql_fragments)
+
+        parts: list[str] = []
+        at_line_start = True
+        for sql, indent_level in sql_fragments:
+            if sql:
+                parts.append(
+                    self.indent(
+                        sql,
+                        level=indent_level,
+                        pad=0,
+                        skip_first=not at_line_start,
+                        skip_last=sql.endswith("\n"),
+                    )
+                )
+                at_line_start = sql.endswith("\n")
+        return "".join(parts)
 
     def sql(
         self,
@@ -1933,36 +1958,21 @@ class Generator:
         return f"{side_kind}{op_name}{distinct_or_all}{by_name}{on}"
 
     def set_operations(self, expression: exp.SetOperation) -> str:
-        if not self.SET_OP_MODIFIERS:
-            limit = expression.args.get("limit")
-            order = expression.args.get("order")
-            offset = expression.args.get("offset")
-
-            if limit or order or offset:
-                select = self._move_ctes_to_top_level(
-                    exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
-                )
-
-                for arg in ("limit", "order", "offset"):
-                    if value := expression.args.get(arg):
-                        select.set(arg, value.pop())
-                return self.sql(select)
-
-        sqls: list[str] = []
-        stack: list[str | exp.Expr] = [expression]
+        sql_fragments: list[tuple[str, int]] = []
+        stack: list[tuple[exp.Expr | str, int, bool]] = [(expression, 0, True)]
+        wrapper: tuple[str, str] | None = None
+        separator = self.sep()
+        intersect_tighter = self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+        mixed_requires_parens = self.SET_OP_MIXED_OPERATORS_REQUIRE_PARENS
 
         while stack:
-            node = stack.pop()
+            node, indent_level, render_with_modifiers = stack.pop()
 
-            if isinstance(node, exp.SetOperation):
-                stack.append(node.expression)
-                stack.append(
-                    self.maybe_comment(
-                        self.set_operation(node), comments=node.comments, separated=True
-                    )
-                )
-                stack.append(node.this)
-            else:
+            if isinstance(node, str):
+                sql_fragments.append((node, indent_level))
+                continue
+
+            if not isinstance(node, exp.SetOperation):
                 if (
                     not self.SET_OP_LIMITS
                     and isinstance(node, exp.Select)
@@ -1971,11 +1981,197 @@ class Generator:
                     node = node.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:
                         node = exp.select("*").from_(node, copy=False)
-                sqls.append(self.sql(node))
+                sql_fragments.append((self.sql(node), indent_level))
+                continue
 
-        this = self.sep().join(sqls)
-        this = self.query_modifiers(expression, this)
-        return self.prepend_ctes(expression, this)
+            if render_with_modifiers and (node is not expression or not self.SET_OP_MODIFIERS):
+                select = self._setop_outer_query(node)
+                if select:
+                    if node is expression:
+                        return self.sql(select)
+
+                    prefix, suffix = self._setop_select_shell(select)
+                    sql_fragments.append((prefix, indent_level))
+                    stack.append((suffix, indent_level, False))
+                    stack.append((node, indent_level + 1, True))
+                    continue
+
+            if render_with_modifiers:
+                with_ = self.sql(node, "with_")
+                if with_:
+                    sql_fragments.append((f"{with_}{separator}", indent_level))
+                stack.append((self.query_modifiers(node, ""), indent_level, False))
+
+            left = node.this
+            right = node.expression
+
+            # The parser groups equal-precedence operators from the left. A
+            # lower-precedence left operand needs grouping before INTERSECT;
+            # some dialects also require grouping when operator kinds differ.
+            wrap_left = self._should_wrap_setop(
+                node, left, intersect_tighter, mixed_requires_parens
+            )
+            wrap_right = self._should_wrap_setop(
+                node, right, intersect_tighter, mixed_requires_parens
+            ) or (
+                isinstance(right, exp.SetOperation)
+                and not (
+                    intersect_tighter
+                    and isinstance(right, exp.Intersect)
+                    and not isinstance(node, exp.Intersect)
+                )
+                and not self._setop_operand_flattenable(node, right)
+            )
+            if wrap_left or wrap_right:
+                if wrapper is None:
+                    wrapper = self._wrap_setop_operand()
+                open_wrapper, close_wrapper = wrapper
+
+            # Only grouped set-operation operands render their own CTEs and trailing modifiers.
+            if wrap_right:
+                stack.append((close_wrapper, indent_level, False))
+            stack.append((right, indent_level + bool(wrap_right), bool(wrap_right)))
+            if wrap_right:
+                stack.append((open_wrapper, indent_level, False))
+            stack.append((separator, indent_level, False))
+
+            stack.append(
+                (
+                    self.maybe_comment(
+                        self.set_operation(node), comments=node.comments, separated=True
+                    ),
+                    indent_level,
+                    False,
+                )
+            )
+            stack.append((separator, indent_level, False))
+
+            if wrap_left:
+                stack.append((close_wrapper, indent_level, False))
+            stack.append((left, indent_level + bool(wrap_left), bool(wrap_left)))
+            if wrap_left:
+                stack.append((open_wrapper, indent_level, False))
+
+        return self._join_sql_fragments(sql_fragments)
+
+    def _setop_outer_query(self, expression: exp.SetOperation) -> exp.Select | None:
+        if not self.SET_OP_MODIFIERS and any(
+            expression.args.get(arg) for arg in ("limit", "order", "offset")
+        ):
+            return self._setop_wrap_query(expression, ("limit", "order", "offset"))
+        return None
+
+    def _setop_wrap_query(
+        self, expression: exp.SetOperation, modifiers: tuple[str, ...]
+    ) -> exp.Select:
+        select = self._move_ctes_to_top_level(
+            exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
+        )
+        for arg in modifiers:
+            if value := expression.args.get(arg):
+                expression.set(arg, None)
+                select.set(arg, value)
+        return select
+
+    def _setop_select_shell(self, select: exp.Select) -> tuple[str, str]:
+        subquery = select.args["from_"].this
+        node = subquery.this
+        alias = subquery.args.get("alias")
+        hole = SETOP_OPERAND_PLACEHOLDER
+
+        # Render the SELECT once without rendering the child set operation.
+        subquery.set("this", hole)
+        subquery.set("alias", self.sql(alias.this))
+        try:
+            shell = self.sql(select)
+        finally:
+            subquery.set("this", node)
+            subquery.set("alias", alias)
+
+        prefix, _, remainder = shell.partition(hole)
+        return prefix, remainder
+
+    def _should_wrap_setop(
+        self, node: exp.Expr, setop: exp.Expr, intersect_tighter: bool, mixed_requires_parens: bool
+    ) -> bool:
+        return isinstance(setop, exp.SetOperation) and (
+            self._setop_has_modifiers(setop)
+            or (
+                intersect_tighter
+                and isinstance(node, exp.Intersect)
+                and not isinstance(setop, exp.Intersect)
+            )
+            or (
+                mixed_requires_parens
+                and (
+                    type(setop) is not type(node)
+                    or any(
+                        setop.args.get(arg) != node.args.get(arg)
+                        for arg in ("distinct", "by_name", "side", "kind", "on")
+                    )
+                )
+            )
+        )
+
+    def _wrap_setop_operand(self) -> tuple[str, str]:
+        hole = SETOP_OPERAND_PLACEHOLDER
+        shell = (
+            self.wrap(hole)
+            if self.SET_OP_PARENTHESIZED_OPERANDS
+            else self.sql(exp.select("*").from_(exp.Subquery(this=hole), copy=False))
+        )
+        prefix, _, suffix = shell.partition(hole)
+        return prefix, suffix
+
+    def _setop_has_modifiers(self, expression: exp.SetOperation) -> bool:
+        args = expression.args
+        has_suffix = False
+        for key, value in args.items():
+            if value and key in exp.QUERY_MODIFIERS:
+                has_suffix = True
+                break
+        if not args.get("with_") and not has_suffix:
+            return False
+
+        return bool(
+            (args.get("with_") and self.sql(expression, "with_"))
+            or (has_suffix and self.query_modifiers(expression, ""))
+        )
+
+    def _setop_operand_flattenable(self, node: exp.SetOperation, operand: exp.SetOperation) -> bool:
+        if isinstance(node, exp.Except):
+            return False
+
+        # Follow left operands to check whether removing the right operand's parentheses is safe.
+        # Matching associative operations can regroup; a higher-precedence INTERSECT stays grouped.
+        default_distinct = self.dialect.SET_OP_DISTINCT_BY_DEFAULT[type(node)]
+        distinct = node.args.get("distinct")
+        if distinct is None:
+            distinct = default_distinct
+
+        cursor: exp.Expr = operand
+        while isinstance(cursor, exp.SetOperation):
+            if type(cursor) is not type(node):
+                return (
+                    self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+                    and isinstance(cursor, exp.Intersect)
+                    and isinstance(node, exp.Union)
+                )
+            operand_distinct = cursor.args.get("distinct")
+            if operand_distinct is None:
+                operand_distinct = default_distinct
+            if (
+                self._setop_has_modifiers(cursor)
+                or operand_distinct != distinct
+                or any(
+                    node.args.get(arg) != cursor.args.get(arg)
+                    for arg in ("by_name", "on", "side", "kind")
+                )
+            ):
+                return False
+            cursor = cursor.this
+
+        return True
 
     def fetch_sql(self, expression: exp.Fetch) -> str:
         direction = expression.args.get("direction")

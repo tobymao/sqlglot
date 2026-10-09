@@ -135,6 +135,10 @@ class TestPipeSyntax(Validator):
             "FROM x |> SELECT x1, x2 |> LIMIT 2 OFFSET 2 |> LIMIT 4 OFFSET 2",
             "WITH __tmp1 AS (SELECT x1, x2 FROM x) SELECT * FROM __tmp1 LIMIT 2 OFFSET 4",
         )
+        self.validate_all(
+            "SELECT * FROM (SELECT 1 UNION SELECT 2) LIMIT 1",
+            read={"bigquery": "SELECT 1 UNION DISTINCT SELECT 2 |> LIMIT 1"},
+        )
 
     def test_aggregate(self):
         self.validate_identity(

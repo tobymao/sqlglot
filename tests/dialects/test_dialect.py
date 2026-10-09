@@ -608,6 +608,26 @@ class TestDialect(Validator):
             },
         )
 
+    def test_set_operation_precedence(self):
+        sql = "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3"
+        for dialect in ("postgres", "spark2", "spark"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(sql, read=dialect)
+                self.assertIsInstance(expression, exp.Union)
+                self.assertIsInstance(expression.expression, exp.Intersect)
+
+        for dialect in ("hive", "oracle", "sqlite"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(sql, read=dialect)
+                self.assertIsInstance(expression, exp.Intersect)
+                self.assertIsInstance(expression.this, exp.Union)
+
+        expression = parse_one("SELECT 1 UNION ALL SELECT 2 INTERSECT SELECT 3", read="clickhouse")
+        self.assertIsInstance(expression, exp.Union)
+        self.assertIsInstance(expression.expression, exp.Intersect)
+        self.assertFalse(expression.args.get("distinct"))
+        self.assertFalse(expression.expression.args.get("distinct"))
+
     def test_heredoc_strings(self):
         for dialect in ("clickhouse", "postgres", "redshift"):
             # Invalid matching tag

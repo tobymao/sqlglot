@@ -70,8 +70,10 @@ def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
-def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
-    """Ensures all (unnamed) output columns are aliased for CTEs and Subqueries."""
+def qualify_derived_table_outputs(
+    expression: exp.Expr, query: exp.Select | None = None
+) -> exp.Expr:
+    """Qualifies CTE/Subquery outputs, with an explicit SELECT target for generated wrappers."""
     alias = expression.args.get("alias")
 
     if (
@@ -85,7 +87,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         # We keep track of the unaliased column projection indexes instead of the expressions
         # themselves, because the latter are going to be replaced by new nodes when the aliases
         # are added and hence we won't be able to reach these newly added Alias parents
-        query = expression.this
+        query = query if query is not None else expression.this
         unaliased_column_indexes = (
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )
@@ -292,6 +294,10 @@ class TSQLGenerator(generator.Generator):
         return super().select_sql(expression)
 
     def set_operations(self, expression: exp.SetOperation) -> str:
+        select = self._setop_outer_query(expression)
+        return self.sql(select) if select else super().set_operations(expression)
+
+    def _setop_outer_query(self, expression: exp.SetOperation) -> exp.Select | None:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
         order = expression.args.get("order")
@@ -321,19 +327,19 @@ class TSQLGenerator(generator.Generator):
             or (isinstance(limit, exp.Limit) and not offset)
             or (not order and (offset or isinstance(limit, exp.Fetch)))
         ):
-            select = self._move_ctes_to_top_level(
-                exp.subquery(expression, "_l_0", copy=False).select("*", copy=False)
-            )
-            for arg in SET_OP_MODIFIERS:
-                value = expression.args.get(arg)
-                if value:
-                    expression.set(arg, None)
-                    select.set(arg, value)
-
-            return self.sql(select)
+            select = self._setop_wrap_query(expression, SET_OP_MODIFIERS)
+            query: exp.Expr = expression
+            while isinstance(query, exp.SetOperation):
+                query = query.left.unnest()
+            if isinstance(query, exp.Select) and any(
+                not isinstance(output, (exp.Alias, exp.Aliases, exp.Column, exp.Star))
+                for output in query.selects
+            ):
+                qualify_derived_table_outputs(select.args["from_"].this, query=query)
+            return select
 
         self._prepare_limit_offset(expression)
-        return super().set_operations(expression)
+        return None
 
     def _prepare_limit_offset(self, expression: exp.Query) -> None:
         limit = expression.args.get("limit")

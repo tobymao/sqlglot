@@ -2410,6 +2410,59 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertTrue(subquery_scope.is_correlated_subquery)
         self.assertIn("x.id", [c.sql() for c in subquery_scope.external_columns])
 
+    def test_set_operation_scope_children(self):
+        for expression in (
+            exp.Union(
+                this=exp.select("1 AS a"),
+                expression=exp.Intersect(
+                    this=exp.select("2 AS b"), expression=exp.select("3 AS c")
+                ),
+            ),
+            exp.Intersect(
+                this=exp.Union(this=exp.select("1 AS a"), expression=exp.select("2 AS b")),
+                expression=exp.select("3 AS c"),
+            ),
+            exp.Union(
+                this=exp.select("1 AS a"),
+                expression=exp.Intersect(
+                    this=exp.select("a").from_("c"), expression=exp.select("3")
+                ).with_("c", as_="SELECT 2 AS a"),
+            ),
+        ):
+            with self.subTest(expression=expression):
+                root = build_scope(expression)
+                assert root is not None
+
+                for scope in root.traverse():
+                    if isinstance(scope.expression, exp.SetOperation):
+                        left, right = scope.set_operation_scopes
+                        self.assertIs(left.expression, scope.expression.this.unnest())
+                        self.assertIs(right.expression, scope.expression.expression.unnest())
+
+                        if scope.expression.args.get("with_"):
+                            self.assertIn("c", scope.cte_sources)
+                            cte_scope = scope.cte_sources["c"]
+                            self.assertEqual(scope.cte_scopes, [cte_scope])
+                            self.assertIs(left.selected_sources["c"][1], cte_scope)
+
+                self.assertEqual(
+                    [scope.expression for scope in root.traverse()],
+                    [scope.expression for scope in traverse_scope(expression)],
+                )
+
+    def test_deep_right_nested_set_operation_scopes(self):
+        expression = exp.select("1")
+        for _ in range(1100):
+            expression = exp.Union(this=exp.select("1"), expression=expression, distinct=False)
+
+        scopes = traverse_scope(expression)
+        self.assertEqual(len(scopes), 2201)
+        for scope in scopes:
+            if isinstance(scope.expression, exp.SetOperation):
+                left, right = scope.set_operation_scopes
+                self.assertIs(left.expression, scope.expression.this)
+                self.assertIs(right.expression, scope.expression.expression)
+
     @patch("sqlglot.optimizer.scope.logger")
     def test_scope_warning(self, logger):
         self.assertEqual(len(traverse_scope(parse_one("WITH q AS (@y) SELECT * FROM q"))), 1)
@@ -3307,6 +3360,61 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     lr.selects[0].type
                     == rl.selects[0].type
                     == exp.DataType.build(expected_type, dialect="bigquery")
+                )
+
+    def test_right_nested_set_operation_annotation(self):
+        sql = (
+            "SELECT t.a FROM (SELECT 1 AS a UNION "
+            "(SELECT 2 AS b INTERSECT SELECT CAST(2.5 AS NUMERIC) AS c)) AS t"
+        )
+        annotated = annotate_types(parse_one(sql))
+        self.assertEqual(annotated.selects[0].type.this, exp.DataType.Type.DECIMAL)
+
+    def test_nested_by_name_set_operation_annotation(self):
+        for sql, expected_types in (
+            (
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION "
+                "(SELECT 3 AS c UNION BY NAME SELECT CAST(4.5 AS NUMERIC) AS d)) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.DECIMAL],
+            ),
+            (
+                "SELECT t.a, t.b FROM ((SELECT 1 AS a UNION ALL BY NAME "
+                "SELECT CAST(2 AS BIGINT) AS b) UNION ALL "
+                "SELECT CAST(3 AS BIGINT) AS c, CAST(4 AS DOUBLE) AS d) AS t",
+                [exp.DataType.Type.BIGINT, exp.DataType.Type.DOUBLE],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                annotated = annotate_types(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    [select.type.this for select in annotated.selects],
+                    expected_types,
+                )
+
+    def test_mismatched_set_operation_annotation_fallback(self):
+        # The invalid UNION keeps its left operand's types during annotation.
+        for sql, expected_types in (
+            (
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 'x' AS b "
+                "UNION SELECT CAST(2.5 AS NUMERIC) AS c) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
+            ),
+            (
+                "SELECT t.a, t.b FROM ((SELECT 1 AS a UNION ALL BY NAME "
+                "SELECT 'x' AS b) UNION ALL SELECT 3 AS c) AS t",
+                [exp.DataType.Type.INT, exp.DataType.Type.VARCHAR],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a UNION ALL SELECT 2 AS b, 3 AS c) "
+                "UNION ALL SELECT CAST(4 AS DOUBLE) AS d) AS t",
+                [exp.DataType.Type.DOUBLE],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                annotated = annotate_types(parse_one(sql, read="duckdb"), dialect="duckdb")
+                self.assertEqual(
+                    [select.type.this for select in annotated.selects],
+                    expected_types,
                 )
 
     def test_udtf_annotation(self):

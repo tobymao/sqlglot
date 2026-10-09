@@ -21,6 +21,7 @@ class SQLite(Dialect):
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]

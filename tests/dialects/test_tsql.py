@@ -2763,6 +2763,23 @@ FROM OPENJSON(@json) WITH (
             'SELECT * FROM (SELECT "c") AS subq',
             "SELECT * FROM (SELECT [c] AS [c]) AS subq",
         )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 UNION ALL SELECT 2) AS subq",
+        )
+        self.validate_identity(
+            'SELECT * FROM (SELECT "c" UNION ALL SELECT "d") AS subq',
+            "SELECT * FROM (SELECT [c] UNION ALL SELECT [d]) AS subq",
+        )
+        self.validate_identity(
+            "WITH q AS (SELECT 1 UNION ALL SELECT 2) SELECT * FROM q",
+        )
+        self.validate_identity(
+            "WITH q(v) AS (SELECT 1 UNION ALL SELECT 2) SELECT * FROM q",
+        )
+        self.assertEqual(
+            exp.union("SELECT 1", "SELECT 2", distinct=False).limit(1).sql("tsql"),
+            "SELECT TOP 1 * FROM (SELECT 1 AS [1] UNION ALL SELECT 2) AS _l_0",
+        )
 
         self.validate_all(
             "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) AS c FROM t1) SELECT * FROM t2",
@@ -2770,6 +2787,32 @@ FROM OPENJSON(@json) WITH (
                 "duckdb": "WITH t1(c) AS (SELECT 1), t2 AS (SELECT CAST(c AS INTEGER) FROM t1) SELECT * FROM t2",
             },
         )
+
+    def test_generated_set_operation_output_aliases(self):
+        for sql, expected in (
+            (
+                "SELECT * FROM (SELECT 1 UNION ALL SELECT 2 LIMIT 1) AS subq",
+                "SELECT * FROM (SELECT TOP 1 * FROM "
+                "(SELECT 1 AS [1] UNION ALL SELECT 2) AS _l_0) AS subq",
+            ),
+            (
+                "WITH q AS (SELECT 1 UNION ALL SELECT 2 LIMIT 1) SELECT * FROM q",
+                "WITH q AS (SELECT TOP 1 * FROM "
+                "(SELECT 1 AS [1] UNION ALL SELECT 2) AS _l_0) SELECT * FROM q",
+            ),
+            (
+                "(SELECT 1 UNION ALL SELECT 2) UNION ALL SELECT 3 LIMIT 1",
+                "SELECT TOP 1 * FROM "
+                "((SELECT 1 AS [1] UNION ALL SELECT 2) UNION ALL SELECT 3) AS _l_0",
+            ),
+            (
+                "SELECT (SELECT 1) UNION ALL SELECT 2 LIMIT 1",
+                "SELECT TOP 1 * FROM "
+                "(SELECT (SELECT 1 AS [1]) AS _col_0 UNION ALL SELECT 2) AS _l_0",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(expected, read={"postgres": sql})
 
     def test_declare(self):
         # supported cases

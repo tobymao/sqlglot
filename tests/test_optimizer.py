@@ -1126,10 +1126,7 @@ class TestOptimizer(unittest.TestCase):
             with self.subTest(sql=sql):
                 expression = annotate_types(
                     optimizer.qualify.qualify(
-                        parse_one(sql, dialect="bigquery"),
-                        dialect="bigquery",
-                        schema=schema,
-                        infer_schema=False,
+                        parse_one(sql, dialect="bigquery"), dialect="bigquery", schema=schema
                     ),
                     schema=schema,
                     dialect="bigquery",

@@ -23,6 +23,7 @@ class Array(Expression, Func):
         "expressions": False,
         "bracket_notation": False,
         "struct_name_inheritance": False,
+        "value_constructor": False,
     }
     is_var_len_args = True
 

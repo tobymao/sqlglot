@@ -1344,11 +1344,15 @@ def inline_array_sql(self: Generator, expression: exp.Expr) -> str:
 
 
 def inline_array_unless_query(self: Generator, expression: exp.Expr) -> str:
-    elems = expression.expressions
-    # Only a single-element array can be the ARRAY(<subquery>) constructor; with more elements,
-    # emitting ARRAY(<first element>) would drop the rest.
-    if len(elems) == 1 and isinstance(elems[0], exp.Expr) and elems[0].find(exp.Query):
-        return self.func("ARRAY", elems[0])
+    elem = seq_get(expression.expressions, 0)
+    if (
+        len(expression.expressions) == 1
+        and isinstance(elem, exp.Query)
+        # value_constructor=True keeps scalar subqueries as array elements. In [(SELECT …)], the
+        # subquery supplies one scalar value; in ARRAY(SELECT …) (BigQuery), the query supplies rows.
+        and not expression.args.get("value_constructor")
+    ):
+        return self.func("ARRAY", elem)
     return inline_array_sql(self, expression)
 
 

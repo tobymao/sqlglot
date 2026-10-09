@@ -3513,6 +3513,17 @@ OPTIONS (
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    def test_array(self):
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a)]")
+
     def test_array_agg(self):
         for distinct in ("", "DISTINCT "):
             self.validate_all(

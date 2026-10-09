@@ -2179,6 +2179,16 @@ class TestDuckDB(Validator):
         self.validate_identity("ARRAY(SELECT id FROM t)")
         self.validate_identity("ARRAY((SELECT id FROM t))")
         self.validate_identity("[(SELECT id FROM t), 2]")
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [{'a': (SELECT 1)}]")
+        self.validate_identity("SELECT LIST_VALUE((SELECT 1))", "SELECT [(SELECT 1)]")
 
     def test_cast(self):
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")

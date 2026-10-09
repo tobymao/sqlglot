@@ -149,8 +149,10 @@ def build_array_constructor(
 ) -> exp.Expr:
     array_exp = exp_class(expressions=args)
 
-    if exp_class == exp.Array and dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS:
-        array_exp.set("bracket_notation", bracket_kind == TokenType.L_BRACKET)
+    if exp_class == exp.Array:
+        array_exp.set("value_constructor", len(args) == 1 and isinstance(args[0], exp.Query))
+        if dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS:
+            array_exp.set("bracket_notation", bracket_kind == TokenType.L_BRACKET)
 
     return array_exp
 

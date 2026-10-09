@@ -166,6 +166,7 @@ class PostgresParser(parser.Parser):
             exp.JSONArrayAgg(this=self._parse_lambda(), order=self._parse_order())
         ),
         "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
+        "JSON_VALUE": lambda self: self._parse_json_value(json_path=False),
     }
 
     BITWISE = {

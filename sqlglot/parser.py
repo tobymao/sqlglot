@@ -10624,17 +10624,17 @@ class Parser:
 
         return self.expression(exp_class(**kwargs))
 
-    def _parse_json_value(self) -> exp.JSONValue:
+    def _parse_json_value(self, json_path: bool = True) -> exp.JSONValue:
         this = self._parse_bitwise()
         self._match(TokenType.COMMA)
         path = self._parse_bitwise()
 
-        returning = self._match(TokenType.RETURNING) and self._parse_type()
+        returning = self._match(TokenType.RETURNING) and self._parse_types()
 
         return self.expression(
             exp.JSONValue(
                 this=this,
-                path=self.dialect.to_json_path(path),
+                path=self.dialect.to_json_path(path) if json_path else path,
                 returning=returning,
                 on_condition=self._parse_on_condition(),
             )

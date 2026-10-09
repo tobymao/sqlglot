@@ -8,6 +8,38 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_json_value(self):
+        self.validate_identity("SELECT JSON_VALUE(j, '$.a' RETURNING BIGINT) FROM t")
+        self.validate_identity(
+            """SELECT JSON_VALUE('"2020-01-01T01:02:03"', '$' RETURNING TIMESTAMP WITH TIME ZONE)""",
+            """SELECT JSON_VALUE('"2020-01-01T01:02:03"', '$' RETURNING TIMESTAMPTZ)""",
+        )
+        self.validate_identity("SELECT JSON_VALUE('42', '$' RETURNING BIGINT)", identify=True)
+        self.validate_identity(
+            """SELECT JSON_VALUE(j, p) FROM (VALUES (CAST('{"a":42}' AS JSONB), CAST('$.a' AS JSONPATH))) AS t(j, p)"""
+        )
+        self.validate_identity("""SELECT JSON_VALUE('{"a":42}', '$' || '.a')""")
+        self.validate_identity(
+            """SELECT JSON_VALUE('{"a":42}', CASE WHEN TRUE THEN '$.a' ELSE '$.b' END)"""
+        )
+        for sql in (
+            """SELECT JSON_VALUE('{"a":42}', '$.a')""",
+            """SELECT JSON_VALUE('{"a":{"b":42}}', '$.a.b' RETURNING BIGINT)""",
+            """SELECT JSON_VALUE('{"my key":42}', '$."my key"' RETURNING BIGINT)""",
+            """SELECT JSON_VALUE('[1,2]', 'strict $[1]' RETURNING BIGINT)""",
+            """SELECT JSON_VALUE('[1,2]', 'strict $[*]' DEFAULT 9 ON ERROR)""",
+            """SELECT JSON_VALUE('{"a":[1,2,3]}', 'lax $.a[*] ? (@ > 2)' RETURNING BIGINT)""",
+            """SELECT JSON_VALUE('{}', '$.a' RETURNING BIGINT DEFAULT 7 ON EMPTY DEFAULT 9 ON ERROR)""",
+            """SELECT JSON_VALUE('{"a":"bad"}', '$.a' RETURNING BIGINT NULL ON EMPTY NULL ON ERROR)""",
+            """SELECT JSON_VALUE('{"a":42}', '$.a' RETURNING BIGINT ERROR ON EMPTY ERROR ON ERROR)""",
+            """SELECT JSON_VALUE('"123.45"', '$' RETURNING DECIMAL(5, 2))""",
+        ):
+            expression = self.validate_identity(sql).find(exp.JSONValue)
+            self.assertIsNotNone(expression)
+            self.assertIsInstance(expression.args["path"], exp.Literal)
+            if expression.args.get("returning"):
+                self.assertIsInstance(expression.args["returning"], exp.DataType)
+
     def test_postgres(self):
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this

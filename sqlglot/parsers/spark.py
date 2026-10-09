@@ -127,6 +127,10 @@ class SparkParser(Spark2Parser):
         **Spark2Parser.STATEMENT_PARSERS,
     }
 
+    def _parse_field_def(self) -> exp.Expr | None:
+        # ALTER TABLE ... ADD COLUMNS (a.b INT) adds field b to the struct column a
+        return self._parse_column_def(self._parse_column_ops(self._parse_field(any_token=True)))
+
     def _parse_generated_as_identity(
         self,
     ) -> (

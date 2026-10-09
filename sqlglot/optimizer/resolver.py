@@ -7,7 +7,6 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get, SingleValuedMapping
-from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import Scope
 
 if t.TYPE_CHECKING:
@@ -451,13 +450,6 @@ class Resolver:
                         if projection.type and not projection.type.is_type(exp.DType.UNKNOWN):
                             result = projection.type
                         break
-            elif isinstance(source.expression, exp.SetOperation):
-                annotator = TypeAnnotator(self.schema)
-                setop_type = annotator._get_setop_column_types(source.expression).get(column.name)
-                if setop_type is not None:
-                    col_type = exp.DataType.build(setop_type)
-                    if not col_type.is_type(exp.DType.UNKNOWN):
-                        result = col_type
 
             if result is None:
                 for nested_source in source.sources.values():

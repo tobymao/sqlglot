@@ -73,6 +73,21 @@ class OracleParser(parser.Parser):
             and self.expression(exp.TemporaryProperty(this="PRIVATE"))
         ),
         "FORCE": lambda self: self.expression(exp.ForceProperty()),
+        "PCTFREE": lambda self: self._parse_oracle_physical_attribute("PCTFREE"),
+        "PCTUSED": lambda self: self._parse_oracle_physical_attribute("PCTUSED"),
+        "INITRANS": lambda self: self._parse_oracle_physical_attribute("INITRANS"),
+        "MAXTRANS": lambda self: self._parse_oracle_physical_attribute("MAXTRANS"),
+        "LOGGING": lambda self: self.expression(exp.LogProperty(no=False)),
+        "NOLOGGING": lambda self: self.expression(exp.LogProperty(no=True)),
+        "NOCOMPRESS": lambda self: self.expression(exp.CompressProperty(no=True)),
+        "COMPRESS": lambda self: self._parse_oracle_compress(),
+        "CACHE": lambda self: self.expression(exp.Property(this=exp.var("CACHE"))),
+        "NOCACHE": lambda self: self.expression(exp.Property(this=exp.var("NOCACHE"))),
+        "PARALLEL": lambda self: self.expression(
+            exp.Property(this=exp.var("PARALLEL"), value=self._parse_number())
+        ),
+        "NOPARALLEL": lambda self: self.expression(exp.Property(this=exp.var("NOPARALLEL"))),
+        "SEGMENT": lambda self: self._parse_segment_property(),
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -260,3 +275,34 @@ class OracleParser(parser.Parser):
             return self._parse_schema(this=this)
 
         return this
+
+    def _parse_oracle_physical_attribute(self, name: str) -> exp.Property:
+        self._match(TokenType.EQ)
+        value = self._parse_number() or self._parse_var(any_token=True)
+        return self.expression(exp.Property(this=exp.var(name), value=value))
+
+    def _parse_oracle_compress(self) -> exp.CompressProperty:
+        options = []
+        if self._match_text_seq("BASIC"):
+            options.append("BASIC")
+        elif self._match_text_seq("FOR"):
+            options.append("FOR")
+            if self._match_text_seq("OLTP"):
+                options.append("OLTP")
+            elif self._match_texts(("QUERY", "ARCHIVE")):
+                options.append(self._prev.text.upper())
+                if self._match_texts(("LOW", "HIGH")):
+                    options.append(self._prev.text.upper())
+
+        value = exp.var(" ".join(options)) if options else None
+        return self.expression(exp.CompressProperty(this=value))
+
+    def _parse_segment_property(self) -> exp.SegmentProperty | None:
+        if self._match_text_seq("CREATION"):
+            creation = self._match_texts(("IMMEDIATE", "DEFERRED")) and self._prev.text.upper()
+            return self.expression(
+                exp.SegmentProperty(
+                    this=exp.var(creation) if creation else None,
+                )
+            )
+        return None

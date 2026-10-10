@@ -1401,8 +1401,10 @@ class Parser:
         "STABLE": lambda self: self.expression(
             exp.StabilityProperty(this=exp.Literal.string("STABLE"))
         ),
+        "STORAGE": lambda self: self._parse_storage_property(),
         "STORED": lambda self: self._parse_stored(),
         "SYSTEM_VERSIONING": lambda self: self._parse_system_versioning_property(),
+        "TABLESPACE": lambda self: self._parse_tablespace(),
         "TBLPROPERTIES": lambda self: self._parse_wrapped_properties(),
         "TEMP": lambda self: self.expression(exp.TemporaryProperty()),
         "TEMPORARY": lambda self: self.expression(exp.TemporaryProperty()),
@@ -3036,6 +3038,36 @@ class Parser:
         self._match(TokenType.ALIAS)
 
         return self.expression(exp_class(this=self._parse_unquoted_field(), **kwargs))
+
+    def _parse_tablespace(self) -> exp.TableSpaceProperty:
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.TableSpaceProperty(
+                this=self._parse_unquoted_field() or self._parse_var(any_token=True)
+            )
+        )
+
+    def _parse_storage_property(self) -> exp.StorageProperty:
+        if self._match(TokenType.L_PAREN):
+            start = self._curr
+            end = None
+            paren = 1
+            while self._curr and paren > 0:
+                if self._curr.token_type == TokenType.L_PAREN:
+                    paren += 1
+                elif self._curr.token_type == TokenType.R_PAREN:
+                    paren -= 1
+                    if paren == 0:
+                        break
+
+                end = self._curr
+                self._advance()
+
+            self._match_r_paren()
+            this = exp.var(self._find_sql(start, end).strip()) if start and end else None
+            return self.expression(exp.StorageProperty(this=this))
+
+        return self.expression(exp.StorageProperty(this=self._parse_var(any_token=True)))
 
     def _parse_properties(self, before: bool | None = None) -> exp.Properties | None:
         properties = []

@@ -720,6 +720,7 @@ class Generator:
         exp.ChecksumProperty: exp.Properties.Location.POST_NAME,
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ComputeProperty: exp.Properties.Location.POST_CREATE,
+        exp.CompressProperty: exp.Properties.Location.POST_SCHEMA,
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
@@ -795,13 +796,16 @@ class Generator:
         exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.TriggerProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.SegmentProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.StorageHandlerProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StorageProperty: exp.Properties.Location.POST_SCHEMA,
         exp.StreamingTableProperty: exp.Properties.Location.POST_CREATE,
         exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Tags: exp.Properties.Location.POST_WITH,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ToTableProperty: exp.Properties.Location.POST_SCHEMA,
@@ -6522,6 +6526,21 @@ class Generator:
     def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
         props = self.expressions(expression, sep=" ")
         return f"MODIFY {props}"
+
+    def tablespaceproperty_sql(self, expression: exp.TableSpaceProperty) -> str:
+        return f"TABLESPACE {self.sql(expression, 'this')}"
+
+    def storageproperty_sql(self, expression: exp.StorageProperty) -> str:
+        this = self.sql(expression, "this")
+        return f"STORAGE ({this})" if this else "STORAGE ()"
+
+    def compressproperty_sql(self, expression: exp.CompressProperty) -> str:
+        no = "NO" if expression.args.get("no") else ""
+        this = self.sql(expression, "this")
+        return f"{no}COMPRESS{' ' + this if this else ''}"
+
+    def segmentproperty_sql(self, expression: exp.SegmentProperty) -> str:
+        return f"SEGMENT CREATION {self.sql(expression, 'this')}"
 
     def usingproperty_sql(self, expression: exp.UsingProperty) -> str:
         kind = expression.args.get("kind")

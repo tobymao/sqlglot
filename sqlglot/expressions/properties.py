@@ -99,6 +99,10 @@ class ComputeProperty(Property):
     arg_types = {}
 
 
+class CompressProperty(Property):
+    arg_types = {"this": False, "no": False}
+
+
 class CopyGrantsProperty(Property):
     arg_types = {}
 
@@ -477,6 +481,10 @@ class SettingsProperty(Property):
     arg_types = {"expressions": True}
 
 
+class SegmentProperty(Property):
+    arg_types = {"this": True}
+
+
 class SortKeyProperty(Property):
     arg_types = {"this": True, "compound": False}
 
@@ -494,6 +502,14 @@ class StabilityProperty(Property):
 
 
 class StorageHandlerProperty(Property):
+    arg_types = {"this": True}
+
+
+class StorageProperty(Property):
+    arg_types = {"this": True}
+
+
+class TableSpaceProperty(Property):
     arg_types = {"this": True}
 
 
@@ -605,6 +621,7 @@ class Properties(Expression):
         "CLUSTERED_BY": ClusteredByProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "COMPRESS": CompressProperty,
         "CREDENTIALS": CredentialsProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
@@ -619,7 +636,10 @@ class Properties(Expression):
         "PARTITIONED_BY": PartitionedByProperty,
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
+        "SEGMENT": SegmentProperty,
         "SORTKEY": SortKeyProperty,
+        "STORAGE": StorageProperty,
+        "TABLESPACE": TableSpaceProperty,
         "ENCODE": EncodeProperty,
         "INCLUDE": IncludeProperty,
     }

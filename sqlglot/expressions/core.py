@@ -2211,7 +2211,7 @@ class Like(Expression, Binary, Predicate):
 
 
 class Match(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "kind": False, "analyzer": False}
 
 
 class LT(Expression, Binary, Predicate):

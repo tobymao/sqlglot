@@ -4688,6 +4688,8 @@ class Generator:
         return self._like_sql(expression)
 
     def match_sql(self, expression: exp.Match) -> str:
+        if expression.args.get("kind") or expression.args.get("analyzer"):
+            self.unsupported("MATCH variants and USING ANALYZER are not supported in this dialect")
         return self.binary(expression, "MATCH")
 
     def similarto_sql(self, expression: exp.SimilarTo) -> str:

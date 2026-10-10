@@ -1310,6 +1310,7 @@ FROM json_data, field_ids""",
         self.validate_identity("CREATE TABLE t (c CHAR(2) UNIQUE NOT NULL) INHERITS (t1)")
         self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
         self.validate_identity("CREATE TABLE t (id INT) TABLESPACE ts")
+        self.validate_identity("CREATE TABLE t (id INT) WITH (fillfactor=70) TABLESPACE ts")
         self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY")

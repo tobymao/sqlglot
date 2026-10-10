@@ -111,21 +111,9 @@ class OracleGenerator(generator.Generator):
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
-        exp.Property: exp.Properties.Location.POST_SCHEMA,
         exp.LogProperty: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
-
-    def property_sql(self, expression: exp.Property) -> str:
-        property_cls = expression.__class__
-        if property_cls == exp.Property:
-            value = self.sql(expression, "value")
-            name = self.property_name(expression)
-            if value:
-                return f"{name} {value}"
-            return name
-
-        return super().property_sql(expression)
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):

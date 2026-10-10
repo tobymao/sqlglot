@@ -329,6 +329,10 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+class ParallelProperty(Property):
+    arg_types = {"this": False, "no": False}
+
+
 class PartitionedByBucket(Property):
     arg_types = {"this": True, "expression": True}
 
@@ -481,6 +485,10 @@ class SettingsProperty(Property):
     arg_types = {"expressions": True}
 
 
+class PhysicalAttributeProperty(Property):
+    arg_types = {"this": True, "value": False}
+
+
 class SegmentProperty(Property):
     arg_types = {"this": True}
 
@@ -506,7 +514,7 @@ class StorageHandlerProperty(Property):
 
 
 class StorageProperty(Property):
-    arg_types = {"this": True}
+    arg_types = {"this": True, "wrapped": False}
 
 
 class TableSpaceProperty(Property):
@@ -633,7 +641,9 @@ class Properties(Expression):
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
         "LOCK": LockProperty,
+        "PARALLEL": ParallelProperty,
         "PARTITIONED_BY": PartitionedByProperty,
+        "PHYSICAL_ATTRIBUTE": PhysicalAttributeProperty,
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
         "SEGMENT": SegmentProperty,

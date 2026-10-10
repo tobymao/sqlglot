@@ -772,8 +772,10 @@ class Generator:
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.ParallelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedOfProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PhysicalAttributeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PrimaryKey: exp.Properties.Location.POST_SCHEMA,
         exp.Property: exp.Properties.Location.POST_WITH,
         exp.RefreshTriggerProperty: exp.Properties.Location.POST_SCHEMA,
@@ -6532,7 +6534,22 @@ class Generator:
 
     def storageproperty_sql(self, expression: exp.StorageProperty) -> str:
         this = self.sql(expression, "this")
-        return f"STORAGE ({this})" if this else "STORAGE ()"
+        if expression.args.get("wrapped"):
+            return f"STORAGE ({this})" if this else "STORAGE ()"
+
+        return f"STORAGE {this}" if this else "STORAGE"
+
+    def parallelproperty_sql(self, expression: exp.ParallelProperty) -> str:
+        if expression.args.get("no"):
+            return "NOPARALLEL"
+
+        this = self.sql(expression, "this")
+        return f"PARALLEL {this}" if this else "PARALLEL"
+
+    def physicalattributeproperty_sql(self, expression: exp.PhysicalAttributeProperty) -> str:
+        this = self.sql(expression, "this")
+        value = self.sql(expression, "value")
+        return f"{this} {value}" if value else this
 
     def compressproperty_sql(self, expression: exp.CompressProperty) -> str:
         no = "NO" if expression.args.get("no") else ""

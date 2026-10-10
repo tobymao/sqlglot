@@ -41,6 +41,12 @@ class TestOracle(Validator):
         self.validate_identity(
             "CREATE TABLE t (id NUMBER) SEGMENT CREATION IMMEDIATE PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING STORAGE (INITIAL 65536 NEXT 1048576) TABLESPACE ts"
         )
+        self.validate_identity("CREATE TABLE t (id NUMBER) NOCACHE")
+        self.validate_identity("CREATE TABLE t (id NUMBER) CACHE")
+        self.validate_identity("CREATE TABLE t (id NUMBER) PARALLEL")
+        self.validate_identity("CREATE TABLE t (id NUMBER) NOPARALLEL")
+        self.validate_identity("CREATE TABLE t (id NUMBER) PARALLEL 4")
+        self.validate_identity("CREATE TABLE t (id INT) WITH (x=1)")
 
         create = self.parse_one(
             "CREATE TABLE t (id NUMBER) TABLESPACE ts PCTFREE 10 STORAGE (INITIAL 64K)"
@@ -50,7 +56,7 @@ class TestOracle(Validator):
         self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
         self.assertEqual(
             [type(p) for p in create.args["properties"].expressions],
-            [exp.TableSpaceProperty, exp.Property, exp.StorageProperty],
+            [exp.TableSpaceProperty, exp.PhysicalAttributeProperty, exp.StorageProperty],
         )
         self.validate_identity("REGEXP_REPLACE('source', 'search')")
         self.validate_identity("TIMESTAMP(3) WITH TIME ZONE")

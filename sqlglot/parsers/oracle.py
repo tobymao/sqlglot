@@ -81,12 +81,10 @@ class OracleParser(parser.Parser):
         "NOLOGGING": lambda self: self.expression(exp.LogProperty(no=True)),
         "NOCOMPRESS": lambda self: self.expression(exp.CompressProperty(no=True)),
         "COMPRESS": lambda self: self._parse_oracle_compress(),
-        "CACHE": lambda self: self.expression(exp.Property(this=exp.var("CACHE"))),
-        "NOCACHE": lambda self: self.expression(exp.Property(this=exp.var("NOCACHE"))),
         "PARALLEL": lambda self: self.expression(
-            exp.Property(this=exp.var("PARALLEL"), value=self._parse_number())
+            exp.ParallelProperty(this=self._parse_number(), no=False)
         ),
-        "NOPARALLEL": lambda self: self.expression(exp.Property(this=exp.var("NOPARALLEL"))),
+        "NOPARALLEL": lambda self: self.expression(exp.ParallelProperty(no=True)),
         "SEGMENT": lambda self: self._parse_segment_property(),
     }
 
@@ -276,10 +274,10 @@ class OracleParser(parser.Parser):
 
         return this
 
-    def _parse_oracle_physical_attribute(self, name: str) -> exp.Property:
+    def _parse_oracle_physical_attribute(self, name: str) -> exp.PhysicalAttributeProperty:
         self._match(TokenType.EQ)
         value = self._parse_number() or self._parse_var(any_token=True)
-        return self.expression(exp.Property(this=exp.var(name), value=value))
+        return self.expression(exp.PhysicalAttributeProperty(this=exp.var(name), value=value))
 
     def _parse_oracle_compress(self) -> exp.CompressProperty:
         options = []

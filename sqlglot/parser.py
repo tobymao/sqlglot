@@ -3048,6 +3048,7 @@ class Parser:
         )
 
     def _parse_storage_property(self) -> exp.StorageProperty:
+        self._match(TokenType.EQ)
         if self._match(TokenType.L_PAREN):
             start = self._curr
             end = None
@@ -3065,9 +3066,11 @@ class Parser:
 
             self._match_r_paren()
             this = exp.var(self._find_sql(start, end).strip()) if start and end else None
-            return self.expression(exp.StorageProperty(this=this))
+            return self.expression(exp.StorageProperty(this=this, wrapped=True))
 
-        return self.expression(exp.StorageProperty(this=self._parse_var(any_token=True)))
+        return self.expression(
+            exp.StorageProperty(this=self._parse_var(any_token=True), wrapped=False)
+        )
 
     def _parse_properties(self, before: bool | None = None) -> exp.Properties | None:
         properties = []

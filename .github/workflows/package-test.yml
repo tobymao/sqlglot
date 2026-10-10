@@ -11,14 +11,16 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
     steps:
     - uses: actions/checkout@v5
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
+        # The last action version still considers 3.15 as prerelease:
+        allow-prereleases: true
     # Extract mypy pin so the build cache busts whenever it bumps. mypyc's
     # separate=True build cache is layout-sensitive across mypy versions, so a
     # cache produced by one version cannot be safely reused by another.

@@ -120,6 +120,11 @@ class OracleGenerator(generator.Generator):
         this = expression.this
         return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
 
+    def version_sql(self, expression: exp.Version) -> str:
+        if expression.text("kind") == "AS OF":
+            return f"AS OF {expression.name} {self.sql(expression, 'expression')}"
+        return super().version_sql(expression)
+
     def offset_sql(self, expression: exp.Offset) -> str:
         return f"{super().offset_sql(expression)} ROWS"
 

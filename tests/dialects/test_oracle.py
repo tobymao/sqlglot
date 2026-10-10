@@ -6,6 +6,109 @@ from sqlglot.optimizer.qualify import qualify
 class TestOracle(Validator):
     dialect = "oracle"
 
+    def test_partition_selection(self):
+        for keyword in ("PARTITION", "SUBPARTITION"):
+            for name in ("p1", '"P1"'):
+                for alias in ("", " s"):
+                    with self.subTest(keyword=keyword, name=name, alias=alias):
+                        sql = f'SELECT * FROM "SH"."SALES" {keyword}({name}){alias}'
+                        table = self.validate_identity(sql).find(exp.Table)
+                        partition = table.args["partition"]
+                        self.assertIsInstance(partition, exp.Partition)
+                        self.assertEqual(partition.args["subpartition"], keyword == "SUBPARTITION")
+                        self.assertEqual(partition.expressions[0].sql("oracle"), name)
+                        self.assertEqual(table.alias, alias.strip())
+
+        self.validate_identity(
+            'SELECT * FROM "SH"."SALES" PARTITION ("P1") s',
+            'SELECT * FROM "SH"."SALES" PARTITION("P1") s',
+        )
+        self.validate_identity(
+            "SELECT s.col1 FROM sales PARTITION(p1) s JOIN sales SUBPARTITION(sp1) t ON s.id = t.id"
+        )
+
+    def test_insert_partition(self):
+        for keyword in ("PARTITION", "SUBPARTITION"):
+            for alias in ("", " s"):
+                for columns in ("", " (col1)"):
+                    with self.subTest(keyword=keyword, alias=alias, columns=columns):
+                        sql = f"INSERT INTO sales {keyword}(p1){alias}{columns} VALUES (1)"
+                        insert = self.validate_identity(sql)
+                        table = insert.find(exp.Table)
+                        self.assertIsInstance(table.args["partition"], exp.Partition)
+                        self.assertEqual(
+                            table.args["partition"].args["subpartition"], keyword == "SUBPARTITION"
+                        )
+                        self.assertEqual(table.alias, alias.strip())
+                        if columns:
+                            self.assertIsInstance(insert.this, exp.Schema)
+                            self.assertEqual(insert.this.expressions[0].name, "col1")
+
+        self.validate_identity(
+            "INSERT INTO sales PARTITION (p1) (col1) VALUES (1)",
+            "INSERT INTO sales PARTITION(p1) (col1) VALUES (1)",
+        )
+        self.validate_identity('INSERT INTO "SH"."SALES" SUBPARTITION("P1") s (col1) VALUES (1)')
+        self.validate_identity("INSERT INTO sales s (col1) VALUES (1)")
+        self.validate_identity('INSERT INTO sales "PARTITION" (col1) VALUES (1)')
+        self.validate_identity("INSERT INTO sales PARTITION(p1) (col1) SELECT col1 FROM source")
+
+    def test_flashback(self):
+        for kind, value in (
+            ("SCN", "123456"),
+            ("SCN", ":scn"),
+            ("SCN", "(123456 + 1)"),
+            ("SCN", "123456 + 1"),
+            ("TIMESTAMP", "SYSTIMESTAMP"),
+            ("TIMESTAMP", "SYSDATE - 1 / 24"),
+            ("TIMESTAMP", "SYSTIMESTAMP - INTERVAL '1' HOUR"),
+            (
+                "TIMESTAMP",
+                "TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS')",
+            ),
+        ):
+            for alias in ("", " s"):
+                with self.subTest(kind=kind, value=value, alias=alias):
+                    sql = f'SELECT * FROM "SH"."SALES" AS OF {kind} {value}{alias}'
+                    table = self.validate_identity(sql).find(exp.Table)
+                    version = table.args["version"]
+                    self.assertIsInstance(version, exp.Version)
+                    self.assertEqual(version.this, kind)
+                    self.assertEqual(version.text("kind"), "AS OF")
+                    self.assertEqual(version.expression.sql("oracle"), value)
+                    self.assertEqual(table.alias, alias.strip())
+
+        self.validate_identity("SELECT * FROM sales PARTITION(p1) AS OF SCN 123456 s")
+        self.validate_identity("SELECT * FROM sales SAMPLE (10) AS OF SCN 123456 s")
+        self.validate_identity(
+            "SELECT * FROM sales SUBPARTITION(sp1) SAMPLE (10) AS OF TIMESTAMP SYSDATE - 1 s WHERE s.id = 1"
+        )
+        self.validate_all(
+            "SELECT * FROM sales SAMPLE (10) AS OF TIMESTAMP '2026-10-10 12:00:00' s",
+            read={
+                "spark": "SELECT * FROM sales TIMESTAMP AS OF '2026-10-10 12:00:00' TABLESAMPLE (10 PERCENT) AS s",
+            },
+        )
+        self.validate_identity(
+            "SELECT s.col1 FROM sales AS OF SCN 123456 s JOIN sales AS OF SCN 123457 t ON s.id = t.id"
+        )
+        self.validate_identity("SELECT * FROM sales AS s", "SELECT * FROM sales s")
+        self.validate_all(
+            "SELECT * FROM sales AS OF TIMESTAMP '2026-10-10 12:00:00' s",
+            read={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00'",
+            },
+            write={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00'",
+            },
+        )
+        self.assertEqual(
+            exp.Version(this="SCN", kind="AS OF", expression=exp.Literal.number(123456)).sql(
+                "oracle"
+            ),
+            "AS OF SCN 123456",
+        )
+
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
         self.validate_all(

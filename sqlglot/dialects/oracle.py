@@ -82,6 +82,7 @@ class Oracle(Dialect):
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
+            "SUBPARTITION": TokenType.PARTITION,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,

@@ -5190,6 +5190,12 @@ class Parser:
 
         if self.dialect.ALIAS_POST_TABLESAMPLE:
             this.set("sample", self._parse_table_sample())
+            if (
+                this.args.get("sample")
+                and self.dialect.ALIAS_POST_VERSION
+                and not this.args.get("version")
+            ):
+                this.set("version", self._parse_version())
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
         if alias:

@@ -23,6 +23,12 @@ def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
 
 
 class DorisGenerator(MySQLGenerator):
+    def match_sql(self, expression: exp.Match) -> str:
+        kind = expression.text("kind")
+        sql = self.binary(expression, f"MATCH_{kind}" if kind else "MATCH")
+        analyzer = self.sql(expression, "analyzer")
+        return f"{sql} USING ANALYZER {analyzer}" if analyzer else sql
+
     LAST_DAY_SUPPORTS_DATE_PART = False
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
     VARCHAR_REQUIRES_SIZE = False

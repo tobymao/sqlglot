@@ -65,6 +65,22 @@ class Oracle(Dialect):
             for prefix in ("U", "u")
         ]
 
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Literals.html
+        # Alternative quoting, e.g. q'[it's]': the delimiters are part of the quote, so the
+        # text in between is taken as is, without escapes
+        RAW_STRINGS = [
+            (f"{prefix}'{start}", f"{end}'")
+            for prefix in ("q", "Q")
+            for start, end in (
+                ("[", "]"),
+                ("{", "}"),
+                ("(", ")"),
+                ("<", ">"),
+                *((c, c) for c in '!"#$%&*+,-./:;=?@\\^_`|~'),
+            )
+        ]
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
+
         NESTED_COMMENTS = False
 
         KEYWORDS = {

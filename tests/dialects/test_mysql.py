@@ -818,6 +818,8 @@ class TestMySQL(Validator):
             },
         )
         self.validate_identity("CREATE TABLE t (foo VARBINARY(5))")
+        self.validate_identity("CREATE TABLE t (id INT) TABLESPACE ts STORAGE DISK")
+        self.validate_identity("CREATE TABLE t (id INT) TABLESPACE ts STORAGE MEMORY")
         self.validate_all(
             "CREATE TABLE t (foo BLOB)",
             write={

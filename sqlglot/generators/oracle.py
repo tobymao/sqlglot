@@ -106,10 +106,12 @@ class OracleGenerator(generator.Generator):
         exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
         exp.UtcTime: rename_func("UTC_TIME"),
         exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
+        exp.LogProperty: lambda _, e: "NOLOGGING" if e.args.get("no") else "LOGGING",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.LogProperty: exp.Properties.Location.POST_SCHEMA,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 

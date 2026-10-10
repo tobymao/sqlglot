@@ -99,6 +99,10 @@ class ComputeProperty(Property):
     arg_types = {}
 
 
+class CompressProperty(Property):
+    arg_types = {"this": False, "no": False}
+
+
 class CopyGrantsProperty(Property):
     arg_types = {}
 
@@ -325,6 +329,10 @@ class PartitionedByProperty(Property):
     arg_types = {"this": True}
 
 
+class ParallelProperty(Property):
+    arg_types = {"this": False, "no": False}
+
+
 class PartitionedByBucket(Property):
     arg_types = {"this": True, "expression": True}
 
@@ -477,6 +485,14 @@ class SettingsProperty(Property):
     arg_types = {"expressions": True}
 
 
+class PhysicalAttributeProperty(Property):
+    arg_types = {"this": True, "value": False}
+
+
+class SegmentProperty(Property):
+    arg_types = {"this": True}
+
+
 class SortKeyProperty(Property):
     arg_types = {"this": True, "compound": False}
 
@@ -494,6 +510,14 @@ class StabilityProperty(Property):
 
 
 class StorageHandlerProperty(Property):
+    arg_types = {"this": True}
+
+
+class StorageProperty(Property):
+    arg_types = {"this": True, "wrapped": False}
+
+
+class TableSpaceProperty(Property):
     arg_types = {"this": True}
 
 
@@ -605,6 +629,7 @@ class Properties(Expression):
         "CLUSTERED_BY": ClusteredByProperty,
         "COLLATE": CollateProperty,
         "COMMENT": SchemaCommentProperty,
+        "COMPRESS": CompressProperty,
         "CREDENTIALS": CredentialsProperty,
         "DEFINER": DefinerProperty,
         "DISTKEY": DistKeyProperty,
@@ -616,10 +641,15 @@ class Properties(Expression):
         "LANGUAGE": LanguageProperty,
         "LOCATION": LocationProperty,
         "LOCK": LockProperty,
+        "PARALLEL": ParallelProperty,
         "PARTITIONED_BY": PartitionedByProperty,
+        "PHYSICAL_ATTRIBUTE": PhysicalAttributeProperty,
         "RETURNS": ReturnsProperty,
         "ROW_FORMAT": RowFormatProperty,
+        "SEGMENT": SegmentProperty,
         "SORTKEY": SortKeyProperty,
+        "STORAGE": StorageProperty,
+        "TABLESPACE": TableSpaceProperty,
         "ENCODE": EncodeProperty,
         "INCLUDE": IncludeProperty,
     }

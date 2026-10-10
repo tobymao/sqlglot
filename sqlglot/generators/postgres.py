@@ -430,6 +430,41 @@ class PostgresGenerator(generator.Generator):
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
+    def properties_sql(self, expression: exp.Properties) -> str:
+        before_with = []
+        with_properties = []
+        after_with = []
+
+        for p in expression.expressions:
+            p_loc = self.PROPERTIES_LOCATION[p.__class__]
+            if p_loc == exp.Properties.Location.POST_WITH:
+                with_properties.append(p)
+            elif isinstance(p, exp.TableSpaceProperty):
+                after_with.append(p)
+            elif p_loc == exp.Properties.Location.POST_SCHEMA:
+                before_with.append(p)
+
+        before_with_ast = exp.Properties(expressions=before_with)
+        before_with_ast.parent = expression.parent
+
+        with_props_ast = exp.Properties(expressions=with_properties)
+        with_props_ast.parent = expression.parent
+
+        after_with_ast = exp.Properties(expressions=after_with)
+        after_with_ast.parent = expression.parent
+
+        before_props = self.root_properties(before_with_ast)
+        with_props = self.with_properties(with_props_ast)
+        after_props = self.root_properties(after_with_ast)
+
+        if not self.pretty:
+            return " ".join(p for p in (before_props, with_props, after_props) if p)
+
+        if not before_props and with_props:
+            with_props = with_props.lstrip()
+
+        return self.sep().join(p for p in (before_props, with_props, after_props) if p)
+
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
             return super().bytestring_sql(expression)

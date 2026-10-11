@@ -431,39 +431,29 @@ class PostgresGenerator(generator.Generator):
     }
 
     def properties_sql(self, expression: exp.Properties) -> str:
-        before_with = []
-        with_properties = []
-        after_with = []
+        tablespaces = [p for p in expression.expressions if isinstance(p, exp.TableSpaceProperty)]
+        if not tablespaces:
+            return super().properties_sql(expression)
 
-        for p in expression.expressions:
-            p_loc = self.PROPERTIES_LOCATION[p.__class__]
-            if p_loc == exp.Properties.Location.POST_WITH:
-                with_properties.append(p)
-            elif isinstance(p, exp.TableSpaceProperty):
-                after_with.append(p)
-            elif p_loc == exp.Properties.Location.POST_SCHEMA:
-                before_with.append(p)
+        other = [p for p in expression.expressions if not isinstance(p, exp.TableSpaceProperty)]
+        has_other_post_schema = any(
+            self.PROPERTIES_LOCATION.get(p.__class__) == exp.Properties.Location.POST_SCHEMA
+            for p in other
+        )
 
-        before_with_ast = exp.Properties(expressions=before_with)
-        before_with_ast.parent = expression.parent
+        other_props_ast = exp.Properties(expressions=other)
+        other_props_ast.parent = expression.parent
+        other_sql = super().properties_sql(other_props_ast)
 
-        with_props_ast = exp.Properties(expressions=with_properties)
-        with_props_ast.parent = expression.parent
+        if self.pretty and not has_other_post_schema and other_sql:
+            other_sql = other_sql.lstrip()
 
-        after_with_ast = exp.Properties(expressions=after_with)
-        after_with_ast.parent = expression.parent
+        tablespace_ast = exp.Properties(expressions=tablespaces)
+        tablespace_ast.parent = expression.parent
+        tablespace_sql = self.root_properties(tablespace_ast)
 
-        before_props = self.root_properties(before_with_ast)
-        with_props = self.with_properties(with_props_ast)
-        after_props = self.root_properties(after_with_ast)
-
-        if not self.pretty:
-            return " ".join(p for p in (before_props, with_props, after_props) if p)
-
-        if not before_props and with_props:
-            with_props = with_props.lstrip()
-
-        return self.sep().join(p for p in (before_props, with_props, after_props) if p)
+        sep = self.sep() if self.pretty else " "
+        return sep.join(p for p in (other_sql, tablespace_sql) if p)
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):

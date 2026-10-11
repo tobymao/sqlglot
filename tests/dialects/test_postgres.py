@@ -1311,6 +1311,31 @@ FROM json_data, field_ids""",
         self.validate_identity("CREATE TABLE s.t (c CHAR(2) UNIQUE NOT NULL) INHERITS (s.t1, s.t2)")
         self.validate_identity("CREATE TABLE t (id INT) TABLESPACE ts")
         self.validate_identity("CREATE TABLE t (id INT) WITH (fillfactor=70) TABLESPACE ts")
+        self.validate_identity(
+            "CREATE TABLE t (id INT) TABLESPACE ts WITH (fillfactor=70)",
+            "CREATE TABLE t (id INT) WITH (fillfactor=70) TABLESPACE ts",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (id INT) INHERITS (p) WITH (fillfactor=70) TABLESPACE ts"
+        )
+        self.validate_identity("CREATE TABLE t (id INT) INHERITS (p) TABLESPACE ts")
+        self.validate_identity(
+            "CREATE TABLE t (id INT) PARTITION BY RANGE (id) WITH (fillfactor=70) TABLESPACE ts",
+            "CREATE TABLE t (id INT) PARTITION BY RANGE(id) WITH (fillfactor=70) TABLESPACE ts",
+        )
+        self.validate_identity(
+            "CREATE TABLE t WITH (fillfactor=70) TABLESPACE ts AS SELECT 1 AS a"
+        )
+        self.validate_identity(
+            """CREATE TABLE t (
+  id INT
+)
+WITH (
+  fillfactor=70
+)
+TABLESPACE ts""",
+            pretty=True,
+        )
         self.validate_identity("CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'")
         self.validate_identity("TRUNCATE TABLE t1 CONTINUE IDENTITY")
         self.validate_identity("TRUNCATE TABLE t1 RESTART IDENTITY")

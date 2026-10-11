@@ -1251,6 +1251,16 @@ SELECT x.a AS a, x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
 SELECT * FROM x ANTI JOIN y USING (b);
 SELECT x.a AS a, x.b AS b FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
 
+# title: bare USING column after SEMI JOIN resolves to the left table
+# dialect: duckdb
+SELECT b FROM x SEMI JOIN y USING (b);
+SELECT x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
+
+# title: bare USING column in WHERE after ANTI JOIN resolves to the left table
+# dialect: duckdb
+SELECT a FROM x ANTI JOIN y USING (b) WHERE b > 0;
+SELECT x.a AS a FROM x AS x ANTI JOIN y AS y ON x.b = y.b WHERE x.b > 0;
+
 # title: SEMI join USING columns come first
 # dialect: spark
 # execute: false

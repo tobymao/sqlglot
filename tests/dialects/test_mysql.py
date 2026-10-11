@@ -62,6 +62,21 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t DROP KEY k", "ALTER TABLE t DROP INDEX k")
         self.validate_identity("ALTER TABLE t DROP CHECK c").args["actions"][0].assert_is(exp.Drop)
         self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT UNIQUE uq_a (a)", "ALTER TABLE t ADD UNIQUE uq_a (a)"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, CONSTRAINT PRIMARY KEY (a))",
+            "CREATE TABLE t (a INT, PRIMARY KEY (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT CONSTRAINT CHECK (a > 0))",
+            "CREATE TABLE t (a INT CHECK (a > 0))",
+        )
+        self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY (a) REFERENCES p (a)",
+            "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (a)",
+        )
+        self.validate_identity(
             "CREATE TABLE t (a BIGINT SIGNED, b DECIMAL(5, 2) SIGNED)",
             "CREATE TABLE t (a BIGINT, b DECIMAL(5, 2))",
         )

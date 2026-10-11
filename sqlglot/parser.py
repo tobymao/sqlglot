@@ -1542,6 +1542,9 @@ class Parser:
         "TRUNCATE",
     }
 
+    # Kinds that can't be a constraint name, so `CONSTRAINT` directly followed by one is unnamed
+    RESERVED_CONSTRAINT_KINDS: t.ClassVar[set[str]] = set()
+
     NO_PAREN_FUNCTION_PARSERS: t.ClassVar = {
         "ANY": lambda self: self.expression(exp.Any(this=self._parse_bitwise())),
         "CASE": lambda self: self._parse_case(),
@@ -7860,7 +7863,12 @@ class Parser:
         return None
 
     def _parse_column_constraint(self) -> exp.Expr | None:
-        this = self._parse_id_var() if self._match(TokenType.CONSTRAINT) else None
+        this = (
+            self._parse_id_var()
+            if self._match(TokenType.CONSTRAINT)
+            and not self._match_texts(self.RESERVED_CONSTRAINT_KINDS, advance=False)
+            else None
+        )
 
         procedure_option_follows = (
             self._match(TokenType.WITH, advance=False)
@@ -7890,7 +7898,9 @@ class Parser:
         return this
 
     def _parse_constraint(self) -> exp.Expr | None:
-        if not self._match(TokenType.CONSTRAINT):
+        if not self._match(TokenType.CONSTRAINT) or self._match_texts(
+            self.RESERVED_CONSTRAINT_KINDS, advance=False
+        ):
             return self._parse_unnamed_constraint(constraints=self.SCHEMA_UNNAMED_CONSTRAINTS)
 
         return self.expression(

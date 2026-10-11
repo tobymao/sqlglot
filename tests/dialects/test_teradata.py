@@ -369,3 +369,41 @@ class TestTeradata(Validator):
             "SET QUERY_BAND = 'NONE' FOR SESSION"
         )  # quoted NONE should remain quoted
         self.validate_identity("SET QUERY_BAND = '' FOR SESSION")
+
+    def test_window_aggregate_default_frame(self):
+        self.validate_all(
+            "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d) FROM t",
+            write={
+                "teradata": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d) FROM t",
+                "snowflake": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+                "duckdb": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT(*) OVER (ORDER BY d) FROM t",
+            write={
+                "teradata": "SELECT COUNT(*) OVER (ORDER BY d) FROM t",
+                "snowflake": "SELECT COUNT(*) OVER (ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+            write={
+                "teradata": "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+                "snowflake": "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT RANK() OVER (ORDER BY d), ROW_NUMBER() OVER (ORDER BY d), LAG(x) OVER (ORDER BY d), FIRST_VALUE(x) OVER (ORDER BY d) FROM t",
+            write={
+                "snowflake": "SELECT RANK() OVER (ORDER BY d NULLS FIRST), ROW_NUMBER() OVER (ORDER BY d NULLS FIRST), LAG(x) OVER (ORDER BY d NULLS FIRST), FIRST_VALUE(x) OVER (ORDER BY d NULLS FIRST) FROM t",
+            },
+        )
+        self.validate_identity(
+            "SELECT SUM(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t",
+            "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t",
+        )
+        self.validate_identity(
+            "SELECT AVG(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            "SELECT AVG(x) OVER (ORDER BY d) FROM t",
+        )

@@ -1323,9 +1323,7 @@ FROM json_data, field_ids""",
             "CREATE TABLE t (id INT) PARTITION BY RANGE (id) WITH (fillfactor=70) TABLESPACE ts",
             "CREATE TABLE t (id INT) PARTITION BY RANGE(id) WITH (fillfactor=70) TABLESPACE ts",
         )
-        self.validate_identity(
-            "CREATE TABLE t WITH (fillfactor=70) TABLESPACE ts AS SELECT 1 AS a"
-        )
+        self.validate_identity("CREATE TABLE t WITH (fillfactor=70) TABLESPACE ts AS SELECT 1 AS a")
         self.validate_identity(
             """CREATE TABLE t (
   id INT

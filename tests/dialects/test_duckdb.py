@@ -1834,6 +1834,15 @@ class TestDuckDB(Validator):
             },
         )
 
+        # Test 1-based -1 appends (Spark/Databricks), it isn't the 0-based "before last"
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3], [99]) END",
+            read={
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
+                "databricks": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
+            },
+        )
+
     def test_array_remove(self):
         # Test NULL propagation with column reference: Snowflake → DuckDB
         self.validate_all(

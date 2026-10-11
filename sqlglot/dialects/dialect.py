@@ -1304,6 +1304,49 @@ def bracket_to_element_at_sql(self: Generator, expression: exp.Bracket) -> str:
     return self.func("ELEMENT_AT", expression.this, index)
 
 
+@unsupported_args("step")
+def array_slice_to_slice_sql(self: Generator, expression: exp.ArraySlice) -> str:
+    """
+    Generates SLICE(array, start, length). An inclusive end index (e.g. DuckDB's ARRAY_SLICE)
+    is converted into a length using DuckDB's semantics: negative indices count from the end,
+    a start of 0 or before the first element is treated as 1, and an end before the start
+    produces an empty array.
+    """
+    this = expression.this
+    start = expression.args["start"]
+    end = expression.args.get("end")
+
+    if expression.args.get("is_length"):
+        return self.func("SLICE", this, start, end)
+
+    size = exp.ArraySize(this=this.copy())
+
+    if start.is_int and start.to_py() >= 0:
+        start = exp.Literal.number(max(start.to_py(), 1))
+    else:
+        start = (
+            exp.case()
+            .when(exp.or_(start.eq(0), start < -size), 1)
+            .when(start < 0, size + start + 1)
+            .else_(start)
+        )
+
+    length: exp.Expr
+    if end is None:
+        length = size
+    else:
+        if not end.is_int or end.to_py() < 0:
+            end = exp.case().when(end < 0, size + end + 1).else_(end)
+
+        if start.is_int and end.is_int:
+            length = exp.Literal.number(max(end.to_py() - start.to_py() + 1, 0))
+        else:
+            length = end - start + 1
+            length = exp.case().when(length < 0, 0).else_(length)
+
+    return self.func("SLICE", this, start, length)
+
+
 @unsupported_args("accuracy")
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:
     return self.func("APPROX_COUNT_DISTINCT", expression.this)

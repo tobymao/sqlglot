@@ -1793,6 +1793,40 @@ class TestDuckDB(Validator):
                     read={"spark2": source, "spark": source, "databricks": source},
                 )
 
+    def test_array_slice_to_length(self):
+        self.validate_all(
+            "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+            write={
+                "duckdb": "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "databricks": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "presto": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+                "trino": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 0, 2)",
+            write={"spark": "SLICE(x, 1, 2)", "presto": "SLICE(x, 1, 2)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 3, 2)",
+            write={"spark": "SLICE(x, 3, 0)", "presto": "SLICE(x, 3, 0)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 2, -1)",
+            write={
+                "spark": "SLICE(x, 2, CASE WHEN ((CASE WHEN -1 < 0 THEN SIZE(x) + -1 + 1 ELSE -1 END - 2) + 1) < 0 THEN 0 ELSE (CASE WHEN -1 < 0 THEN SIZE(x) + -1 + 1 ELSE -1 END - 2) + 1 END)",
+                "presto": "SLICE(x, 2, CASE WHEN ((CASE WHEN -1 < 0 THEN CARDINALITY(x) + -1 + 1 ELSE -1 END - 2) + 1) < 0 THEN 0 ELSE (CASE WHEN -1 < 0 THEN CARDINALITY(x) + -1 + 1 ELSE -1 END - 2) + 1 END)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, s, e)",
+            write={
+                "spark": "SLICE(x, CASE WHEN s = 0 OR s < -SIZE(x) THEN 1 WHEN s < 0 THEN SIZE(x) + s + 1 ELSE s END, CASE WHEN ((CASE WHEN e < 0 THEN SIZE(x) + e + 1 ELSE e END - CASE WHEN s = 0 OR s < -SIZE(x) THEN 1 WHEN s < 0 THEN SIZE(x) + s + 1 ELSE s END) + 1) < 0 THEN 0 ELSE (CASE WHEN e < 0 THEN SIZE(x) + e + 1 ELSE e END - CASE WHEN s = 0 OR s < -SIZE(x) THEN 1 WHEN s < 0 THEN SIZE(x) + s + 1 ELSE s END) + 1 END)",
+                "presto": "SLICE(x, CASE WHEN s = 0 OR s < -CARDINALITY(x) THEN 1 WHEN s < 0 THEN CARDINALITY(x) + s + 1 ELSE s END, CASE WHEN ((CASE WHEN e < 0 THEN CARDINALITY(x) + e + 1 ELSE e END - CASE WHEN s = 0 OR s < -CARDINALITY(x) THEN 1 WHEN s < 0 THEN CARDINALITY(x) + s + 1 ELSE s END) + 1) < 0 THEN 0 ELSE (CASE WHEN e < 0 THEN CARDINALITY(x) + e + 1 ELSE e END - CASE WHEN s = 0 OR s < -CARDINALITY(x) THEN 1 WHEN s < 0 THEN CARDINALITY(x) + s + 1 ELSE s END) + 1 END)",
+            },
+        )
+
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning
         self.validate_all(

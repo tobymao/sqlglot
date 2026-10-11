@@ -122,7 +122,12 @@ class PrestoParser(parser.Parser):
         "STRPOS": lambda args: exp.StrPosition(
             this=seq_get(args, 0), substr=seq_get(args, 1), occurrence=seq_get(args, 2)
         ),
-        "SLICE": exp.ArraySlice.from_arg_list,
+        "SLICE": lambda args: exp.ArraySlice(
+            this=seq_get(args, 0),
+            start=seq_get(args, 1),
+            end=seq_get(args, 2),
+            is_length=True,
+        ),
         "TO_CHAR": _build_to_char,
         "TO_UNIXTIME": exp.TimeToUnix.from_arg_list,
         "TO_UTF8": lambda args: exp.Encode(

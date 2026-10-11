@@ -1585,6 +1585,13 @@ TBLPROPERTIES (
             },
         )
 
+    def test_array_slice(self):
+        self.validate_identity("SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 3)")
+        self.validate_all(
+            "SELECT SLICE(x, 2, SIZE(x))",
+            read={"clickhouse": "SELECT arraySlice(x, 2)"},
+        )
+
     def test_declare(self):
         self.validate_identity("DECLARE VAR x INT", "DECLARE x INT")
         self.validate_identity("DECLARE x INT")

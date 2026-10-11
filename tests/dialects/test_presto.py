@@ -1430,6 +1430,20 @@ MATCH_RECOGNIZE (
             },
         )
 
+    def test_array_slice(self):
+        self.validate_all(
+            "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 3)",
+            read={
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 3)",
+            },
+            write={
+                "presto": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 3)",
+                "trino": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 3)",
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 3)",
+                "duckdb": "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 4)",
+            },
+        )
+
     def test_json_vs_row_extract(self):
         for dialect in ("trino", "presto"):
             s = parse_one('SELECT col:x:y."special string"', read="snowflake")

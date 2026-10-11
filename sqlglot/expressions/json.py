@@ -100,6 +100,7 @@ class JSONExists(Expression, Func):
         "on_condition": False,
         "from_dcolonqmark": False,
     }
+    _hash_raw_args = True
 
 
 class JSONExtract(Expression, Binary, Func):

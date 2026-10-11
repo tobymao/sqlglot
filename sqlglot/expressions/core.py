@@ -867,7 +867,7 @@ class Expression(Expr):
                     for k in sorted(node.args):
                         v = node.args[k]
                         if v:
-                            hash_ = hash((hash_, k, v))
+                            hash_ = hash((hash_, k, tuple(v) if type(v) is list else v))
                 else:
                     for k in sorted(node.args):
                         v = node.args[k]
@@ -1859,6 +1859,7 @@ class SessionParameter(Expression, Condition):
 
 class Placeholder(Expression, Condition):
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
+    _hash_raw_args = True
 
     @property
     def name(self) -> str:
@@ -1994,6 +1995,7 @@ class Typeof(Expression, Func):
 
 class ParameterizedAgg(Expression, AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
+    _hash_raw_args = True
 
 
 class Anonymous(Expression, Func):
@@ -2008,6 +2010,7 @@ class Anonymous(Expression, Func):
 class AnonymousAggFunc(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+    _hash_raw_args = True
 
 
 class CombinedAggFunc(AnonymousAggFunc):

@@ -84,7 +84,7 @@ class TestOracle(Validator):
             "SELECT * FROM sales SUBPARTITION(sp1) SAMPLE (10) AS OF TIMESTAMP SYSDATE - 1 s WHERE s.id = 1"
         )
         self.validate_all(
-            "SELECT * FROM sales SAMPLE (10) AS OF TIMESTAMP '2026-10-10 12:00:00' s",
+            "SELECT * FROM sales SAMPLE (10) AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
             read={
                 "spark": "SELECT * FROM sales TIMESTAMP AS OF '2026-10-10 12:00:00' TABLESAMPLE (10 PERCENT) AS s",
             },
@@ -94,12 +94,19 @@ class TestOracle(Validator):
         )
         self.validate_identity("SELECT * FROM sales AS s", "SELECT * FROM sales s")
         self.validate_all(
-            "SELECT * FROM sales AS OF TIMESTAMP '2026-10-10 12:00:00' s",
+            "SELECT * FROM sales AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
             read={
                 "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00'",
             },
             write={
-                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00'",
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF PARSE_TIMESTAMP('%F %H:%M:%E6S', '2026-10-10 12:00:00')",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM sales AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00.123456', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
+            read={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00.123456'",
+                "spark": "SELECT * FROM sales TIMESTAMP AS OF '2026-10-10 12:00:00.123456' AS s",
             },
         )
         self.assertEqual(

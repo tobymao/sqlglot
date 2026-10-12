@@ -122,7 +122,13 @@ class OracleGenerator(generator.Generator):
 
     def version_sql(self, expression: exp.Version) -> str:
         if expression.text("kind") == "AS OF":
-            return f"AS OF {expression.name} {self.sql(expression, 'expression')}"
+            value = expression.expression
+            value_sql = (
+                self.func("TO_TIMESTAMP", value, exp.Literal.string("YYYY-MM-DD HH24:MI:SS.FF6"))
+                if expression.name == "TIMESTAMP" and value.is_string
+                else self.sql(value)
+            )
+            return f"AS OF {expression.name} {value_sql}"
         return super().version_sql(expression)
 
     def offset_sql(self, expression: exp.Offset) -> str:

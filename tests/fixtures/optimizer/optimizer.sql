@@ -1107,6 +1107,24 @@ JOIN "x" AS "x"
 GROUP BY
   "x"."a";
 
+# title: unaliased correlated COUNT subquery keeps its alias outside of the COALESCE
+# execute: false
+SELECT x.a, (SELECT COUNT(*) FROM y WHERE y.b = x.a) FROM x;
+WITH "_u_0" AS (
+  SELECT
+    COUNT(*) AS "_col_0",
+    "y"."b" AS "_u_1"
+  FROM "y" AS "y"
+  GROUP BY
+    "y"."b"
+)
+SELECT
+  "x"."a" AS "a",
+  COALESCE("_u_0"."_col_0", 0) AS "_col_1"
+FROM "x" AS "x"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "x"."a";
+
 # title: select * from a cte, which had one of its two columns aliased
 WITH cte(x, y) AS (SELECT 1, 2) SELECT * FROM cte AS cte(a);
 WITH "cte" AS (

@@ -57,7 +57,7 @@ def _generate_as_hive(expression: exp.Expr) -> bool:
                 # CTAS with a leading USING EXTERNAL FUNCTION clause is Trino
                 return not (
                     isinstance(expression.expression, exp.Command)
-                    and (expression.expression.this or "").upper() == "USING"
+                    and expression.expression.text("this").upper() == "USING"
                 )
         else:
             # CREATE VIEW is Trino, but CREATE SCHEMA, CREATE DATABASE, etc, is Hive

@@ -1649,11 +1649,6 @@ class Parser:
 
     DDL_SELECT_TOKENS: t.ClassVar = {TokenType.SELECT, TokenType.WITH, TokenType.L_PAREN}
 
-    # Tokens that may start a CTAS expression even though they are not select tokens.
-    # E.g., an Athena CTAS can include a leading USING EXTERNAL FUNCTION clause:
-    # CREATE TABLE t WITH (format='PARQUET') AS USING EXTERNAL FUNCTION f(x VARCHAR) ...
-    CTAS_STATEMENT_TOKENS: t.ClassVar[frozenset[TokenType]] = frozenset()
-
     PRE_VOLATILE_TOKENS: t.ClassVar = {TokenType.CREATE, TokenType.REPLACE, TokenType.UNIQUE}
 
     TRANSACTION_KIND: t.ClassVar = {"DEFERRED", "IMMEDIATE", "EXCLUSIVE"}
@@ -2715,12 +2710,8 @@ class Parser:
 
             has_alias = self._match(TokenType.ALIAS)
             if not self._match_set(self.DDL_SELECT_TOKENS, advance=False):
-                if has_alias and self._curr.token_type in self.CTAS_STATEMENT_TOKENS:
-                    self._advance()
-                    expression = self.STATEMENT_PARSERS[self._prev.token_type](self)
-                else:
-                    # exp.Properties.Location.POST_ALIAS
-                    extend_props(self._parse_properties())
+                # exp.Properties.Location.POST_ALIAS
+                extend_props(self._parse_properties())
 
             if create_token_type == TokenType.SEQUENCE:
                 expression = self._parse_types()
@@ -2743,7 +2734,7 @@ class Parser:
                     props.append("expressions", sequence_props)
                     extend_props(props)
             else:
-                expression = expression or self._parse_ddl_select()
+                expression = self._parse_ddl_select()
 
                 # Some dialects also support using a table as an alias instead of a SELECT.
                 # Here we fallback to this as an alternative.

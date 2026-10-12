@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.errors import UnsupportedError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -149,6 +149,34 @@ class TestStarrocks(Validator):
 
         self.validate_identity("SELECT * FROM t, GENERATE_SERIES(t.s, t.e)")
 
+    def test_refresh_invalid_mode(self):
+        for clause in ("WITH", "MODE", "WITH SYNC", "WITH ASYNC"):
+            with self.subTest(clause=clause), self.assertRaises(ParseError):
+                self.parse_one(f"REFRESH MATERIALIZED VIEW mv {clause}")
+
+    def test_refresh_unsupported_options(self):
+        partition = "PARTITION START ('2020-02-01') END ('2020-03-01')"
+        for clause in (
+            "",
+            partition,
+            "FORCE",
+            "WITH SYNC MODE",
+            "WITH ASYNC MODE",
+            f"{partition} FORCE WITH SYNC MODE",
+        ):
+            sql = f"REFRESH MATERIALIZED VIEW mv {clause}".rstrip()
+            with self.subTest(clause=clause):
+                self.validate_all(
+                    sql,
+                    write={
+                        "": UnsupportedError if clause else sql,
+                        "postgres": UnsupportedError if clause else sql,
+                    },
+                )
+                self.assertEqual(
+                    self.parse_one(sql).sql("starrocks", unsupported_level=ErrorLevel.RAISE), sql
+                )
+
     def test_ddl(self):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
@@ -163,6 +191,19 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "REFRESH EXTERNAL TABLE hudi1 PARTITION('date=2022-12-20', 'date=2022-12-21')"
         )
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 FORCE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH SYNC MODE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH ASYNC MODE")
+        self.validate_identity(
+            'REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ("2020-02-01") END ("2020-03-01")',
+            "REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01')",
+        )
+        self.validate_identity(
+            "REFRESH MATERIALIZED VIEW db.lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE WITH SYNC MODE"
+        ).assert_is(exp.Refresh)
 
         ddl_sqls = [
             "PARTITION BY (col1, col2)",

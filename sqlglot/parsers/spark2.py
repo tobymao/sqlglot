@@ -122,7 +122,7 @@ class Spark2Parser(HiveParser):
             return super()._parse_drop_column()
 
         exists = self._parse_exists()
-        columns = self._parse_wrapped_csv(self._parse_column, optional=True)
+        columns = self._parse_wrapped_csv(self._parse_field_def, optional=True)
         return self.expression(
             exp.Drop(kind="COLUMNS", tables=[exp.Schema(expressions=columns)], exists=exists)
         )

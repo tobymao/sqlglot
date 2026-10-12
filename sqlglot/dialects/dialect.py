@@ -1304,6 +1304,31 @@ def bracket_to_element_at_sql(self: Generator, expression: exp.Bracket) -> str:
     return self.func("ELEMENT_AT", expression.this, index)
 
 
+def array_slice_to_slice_sql(self: Generator, expression: exp.ArraySlice) -> str:
+    start = expression.args["start"]
+    end = expression.args.get("end")
+
+    # Preserve unmarked slices and bounds that require runtime normalization or narrowing.
+    if (
+        expression.args.get("is_length") is False
+        and expression.args.get("step") is None
+        and start.is_int
+        and 0 <= start.to_py() <= 2**31 - 1
+        and end is not None
+        and end.is_int
+        and 0 <= end.to_py() <= 2**31 - 1
+    ):
+        start_value = max(start.to_py(), 1)
+        return self.func(
+            "SLICE",
+            expression.this,
+            exp.Literal.number(start_value),
+            exp.Literal.number(max(end.to_py() - start_value + 1, 0)),
+        )
+
+    return rename_func("SLICE")(self, expression)
+
+
 @unsupported_args("accuracy")
 def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -> str:
     return self.func("APPROX_COUNT_DISTINCT", expression.this)

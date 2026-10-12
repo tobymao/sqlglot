@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_slice_to_slice_sql,
     bool_xor_sql,
     bracket_to_element_at_sql,
     datestrtodate_sql,
@@ -324,7 +325,7 @@ class PrestoGenerator(generator.Generator):
         exp.ArrayContains: rename_func("CONTAINS"),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("SET_AGG"),
-        exp.ArraySlice: rename_func("SLICE"),
+        exp.ArraySlice: array_slice_to_slice_sql,
         exp.AtTimeZone: rename_func("AT_TIMEZONE"),
         exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
         exp.BitwiseLeftShift: rename_func("BITWISE_LEFT_SHIFT"),

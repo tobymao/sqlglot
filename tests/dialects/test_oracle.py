@@ -1164,6 +1164,14 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             with self.subTest(sql):
                 self.validate_identity(sql, "SELECT 'it''s' FROM dual")
 
+        for prefix in ("nq", "nQ", "Nq", "NQ"):
+            with self.subTest(prefix):
+                self.validate_identity(
+                    f"SELECT {prefix}'[it's]' FROM dual", "SELECT 'it''s' FROM dual"
+                )
+        self.validate_identity("SELECT NQ'{a}' FROM dual", "SELECT 'a' FROM dual")
+        self.validate_identity("SELECT nq'[a''b]' FROM dual", "SELECT 'a''''b' FROM dual")
+
         self.validate_identity("SELECT q'[a''b]' FROM dual", "SELECT 'a''''b' FROM dual")
         self.validate_identity("SELECT q'[a]b]' FROM dual", "SELECT 'a]b' FROM dual")
         self.validate_identity("SELECT q'|\\n|' FROM dual", "SELECT '\\n' FROM dual")

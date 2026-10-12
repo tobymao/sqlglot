@@ -70,7 +70,7 @@ class Oracle(Dialect):
         # text in between is taken as is, without escapes
         RAW_STRINGS = [
             (f"{prefix}'{start}", f"{end}'")
-            for prefix in ("q", "Q")
+            for prefix in ("q", "Q", "nq", "nQ", "Nq", "NQ")
             for start, end in (
                 ("[", "]"),
                 ("{", "}"),

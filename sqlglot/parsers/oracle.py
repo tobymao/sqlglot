@@ -26,6 +26,12 @@ class OracleParser(parser.Parser):
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
     SUPPORTS_PARTITION_SELECTION = True
 
+    VERSION_PHRASES = {
+        **parser.Parser.VERSION_PHRASES,
+        ("AS", "OF", "SCN"): "SCN",
+        ("AS", "OF", "TIMESTAMP"): "TIMESTAMP",
+    }
+
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "TO_BOOLEAN"},
         "CONVERT": exp.ConvertToCharset.from_arg_list,
@@ -243,18 +249,6 @@ class OracleParser(parser.Parser):
 
         self._retreat(index)
         return this
-
-    def _parse_version(self) -> exp.Version | None:
-        if self._match_text_seq("AS", "OF", "SCN"):
-            this = "SCN"
-        elif self._match_text_seq("AS", "OF", "TIMESTAMP"):
-            this = "TIMESTAMP"
-        else:
-            return super()._parse_version()
-
-        return self.expression(
-            exp.Version(this=this, kind="AS OF", expression=self._parse_bitwise())
-        )
 
     def _parse_insert_table(self) -> exp.Expr | None:
         # Oracle does not use AS for INSERT INTO alias

@@ -5274,7 +5274,7 @@ class Parser:
         else:
             self._match_text_seq("AS", "OF")
             kind = "AS OF"
-            expression = self._parse_type()
+            expression = self._parse_bitwise()
 
         return self.expression(exp.Version(this=this, expression=expression, kind=kind))
 

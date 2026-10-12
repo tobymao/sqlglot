@@ -1049,6 +1049,30 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
         self.validate_identity("SELECT CHR(187)")
 
+    def test_alternative_quoting(self):
+        for sql in (
+            "SELECT q'[it's]' FROM dual",
+            "SELECT q'{it's}' FROM dual",
+            "SELECT q'(it's)' FROM dual",
+            "SELECT q'<it's>' FROM dual",
+            "SELECT q'!it's!' FROM dual",
+            "SELECT Q'#it's#' FROM dual",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, "SELECT 'it''s' FROM dual")
+
+        self.validate_identity("SELECT q'[a''b]' FROM dual", "SELECT 'a''''b' FROM dual")
+        self.validate_identity("SELECT q'[a]b]' FROM dual", "SELECT 'a]b' FROM dual")
+        self.validate_identity("SELECT q'|\\n|' FROM dual", "SELECT '\\n' FROM dual")
+
+        expressions = parse(
+            "INSERT INTO t VALUES (q'[a;b]'); CREATE TABLE u (id NUMBER)", read="oracle"
+        )
+        self.assertEqual(
+            [e.sql("oracle") for e in expressions],
+            ["INSERT INTO t VALUES ('a;b')", "CREATE TABLE u (id NUMBER)"],
+        )
+
     def test_full_procedure(self):
         sql = """
         CREATE OR REPLACE PROCEDURE query_emp(

@@ -1793,6 +1793,34 @@ class TestDuckDB(Validator):
                     read={"spark2": source, "spark": source, "databricks": source},
                 )
 
+    def test_array_slice_to_length(self):
+        self.validate_all(
+            "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+            write={
+                "duckdb": "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+                "spark2": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "databricks": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "presto": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+                "trino": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 0, 2)",
+            write={"spark": "SLICE(x, 1, 2)", "presto": "SLICE(x, 1, 2)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 3, 2)",
+            write={"spark": "SLICE(x, 3, 0)", "presto": "SLICE(x, 3, 0)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(CASE WHEN RANDOM() < 0.5 THEN [1] ELSE [1, 2] END, -1, 2)",
+            write={
+                "spark": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY(1) ELSE ARRAY(1, 2) END, -1, 2)",
+                "presto": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY[1] ELSE ARRAY[1, 2] END, -1, 2)",
+            },
+        )
+
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning
         self.validate_all(

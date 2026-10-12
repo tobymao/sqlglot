@@ -313,12 +313,12 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
             conditions.append(lhs.eq(exp.column(identifier, table=join_table)))
 
-            # Set all values in the dict to None, because we only care about the key ordering
-            tables = column_tables.setdefault(identifier, {})
-
             # Do not update the dict if this was a SEMI/ANTI join in
             # order to avoid generating COALESCE columns for this join pair
             if not is_semi_or_anti_join:
+                # Set all values in the dict to None, because we only
+                # care about the key ordering
+                tables = column_tables.setdefault(identifier, {})
                 if table not in tables:
                     tables[table] = None
                 if join_table not in tables:

@@ -28,6 +28,17 @@ class DorisParser(MySQLParser):
     # Unlike MySQL, dropping a column requires the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN = True
 
+    # https://doris.apache.org/docs/sql-manual/basic-element/operators/conditional-operators/full-text-search-operators
+    MATCH_OPERATORS = {
+        "MATCH",
+        "MATCH_ALL",
+        "MATCH_ANY",
+        "MATCH_PHRASE",
+        "MATCH_PHRASE_EDGE",
+        "MATCH_PHRASE_PREFIX",
+        "MATCH_REGEXP",
+    }
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
@@ -59,6 +70,41 @@ class DorisParser(MySQLParser):
         "BUILD": lambda self: self._parse_build_property(),
         "REFRESH": lambda self: self._parse_refresh_property(),
     }
+
+    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+        this = this or self._parse_bitwise()
+        index = self._index
+        negate = self._match(TokenType.NOT)
+
+        # The operators are matched by text instead of being tokenized as keywords, and the
+        # right operand must be a string literal, so an identifier spelled like one of them
+        # that isn't followed by a string still parses as before
+        if (
+            self._curr
+            and self._next
+            and self._curr.token_type == TokenType.VAR
+            and self._next.token_type == TokenType.STRING
+            and self._curr.text.upper() in self.MATCH_OPERATORS
+        ):
+            kind = self._curr.text.upper().partition("_")[2] or None
+            self._advance()
+            expression = self._parse_string()
+
+            analyzer = None
+            if self._match_text_seq("USING", "ANALYZER"):
+                analyzer = self._parse_id_var(any_token=False)
+                if not analyzer:
+                    self.raise_error("Expected an analyzer name after USING ANALYZER")
+
+            this = self.expression(
+                exp.Match(this=this, expression=expression, kind=kind, analyzer=analyzer)
+            )
+            if negate:
+                this = self.expression(exp.Not(this=this))
+        elif negate:
+            self._retreat(index)
+
+        return super()._parse_range(this)
 
     def _parse_partition_property(
         self,

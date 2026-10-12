@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import ParseError, UnsupportedError, exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -157,6 +157,60 @@ class TestDoris(Validator):
                 "doris": "SELECT REGEXP(abc, '%foo%')",
             },
         )
+
+    def test_match(self):
+        for operator, kind in (
+            ("MATCH", None),
+            ("MATCH_ANY", "ANY"),
+            ("MATCH_ALL", "ALL"),
+            ("MATCH_PHRASE", "PHRASE"),
+            ("MATCH_PHRASE_PREFIX", "PHRASE_PREFIX"),
+            ("MATCH_PHRASE_EDGE", "PHRASE_EDGE"),
+            ("MATCH_REGEXP", "REGEXP"),
+        ):
+            with self.subTest(operator):
+                match = self.validate_identity(
+                    f"SELECT * FROM t WHERE c {operator} 'word1 word2'"
+                ).find(exp.Match)
+                self.assertEqual(match.args.get("kind"), kind)
+
+        self.validate_identity("SELECT * FROM t WHERE c MATCH_PHRASE 'word1 word2 ~3'")
+        self.validate_identity("SELECT * FROM t WHERE c MATCH_PHRASE 'word1 word2 ~3+'")
+        self.validate_identity(
+            "SELECT * FROM t WHERE c MATCH 'hello world' USING ANALYZER std_analyzer"
+        )
+        self.validate_identity("SELECT * FROM t WHERE c MATCH_ANY 'x' USING ANALYZER `kw_analyzer`")
+        self.validate_identity(
+            "SELECT * FROM t WHERE c match_regexp '^key_word.*'",
+            "SELECT * FROM t WHERE c MATCH_REGEXP '^key_word.*'",
+        )
+        self.validate_identity(
+            "SELECT * FROM t WHERE NOT c MATCH_ANY 'x' AND d MATCH_ALL 'y' OR e = 1"
+        )
+        self.validate_identity(
+            "SELECT * FROM t WHERE c NOT MATCH_ALL 'word1 word2'",
+            "SELECT * FROM t WHERE NOT c MATCH_ALL 'word1 word2'",
+        )
+        self.validate_identity("SELECT * FROM t WHERE c NOT LIKE 'x%'")
+        self.validate_identity("SELECT c AS match_any FROM t", "SELECT c AS `match_any` FROM t")
+
+        self.validate_all(
+            "SELECT * FROM t WHERE c MATCH 'x'",
+            write={
+                "doris": "SELECT * FROM t WHERE c MATCH 'x'",
+                "sqlite": "SELECT * FROM t WHERE c MATCH 'x'",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t WHERE c MATCH_ALL 'x'",
+            write={
+                "doris": "SELECT * FROM t WHERE c MATCH_ALL 'x'",
+                "sqlite": UnsupportedError,
+            },
+        )
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT * FROM t WHERE c MATCH_ANY 'x' USING ANALYZER")
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")

@@ -106,11 +106,13 @@ class OracleGenerator(generator.Generator):
         exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
         exp.UtcTime: rename_func("UTC_TIME"),
         exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:

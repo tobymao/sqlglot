@@ -76,23 +76,17 @@ class DorisParser(MySQLParser):
         index = self._index
         negate = self._match(TokenType.NOT)
 
-        # The operators are matched by text instead of being tokenized as keywords, and the
-        # right operand must be a string literal, so an identifier spelled like one of them
-        # that isn't followed by a string still parses as before
-        if (
-            self._curr
-            and self._next
-            and self._curr.token_type == TokenType.VAR
-            and self._next.token_type == TokenType.STRING
-            and self._curr.text.upper() in self.MATCH_OPERATORS
-        ):
-            kind = self._curr.text.upper().partition("_")[2] or None
-            self._advance()
-            expression = self._parse_string()
+        if self._curr.token_type == TokenType.VAR and self._match_texts(self.MATCH_OPERATORS):
+            kind = self._prev.text.upper().partition("_")[2] or None
+            expression = self._parse_bitwise()
+            if not expression:
+                # Preserve implicit aliases named after MATCH operators.
+                self._retreat(index)
+                return super()._parse_range(this)
 
             analyzer = None
             if self._match_text_seq("USING", "ANALYZER"):
-                analyzer = self._parse_id_var(any_token=False)
+                analyzer = self._parse_string() or self._parse_id_var(any_token=False)
                 if not analyzer:
                     self.raise_error("Expected an analyzer name after USING ANALYZER")
 

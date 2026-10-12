@@ -173,6 +173,7 @@ class TestDoris(Validator):
                     f"SELECT * FROM t WHERE c {operator} 'word1 word2'"
                 ).find(exp.Match)
                 self.assertEqual(match.args.get("kind"), kind)
+                self.validate_identity(f"SELECT * FROM t WHERE c {operator} ('word1 word2')")
 
         self.validate_identity("SELECT * FROM t WHERE c MATCH_PHRASE 'word1 word2 ~3'")
         self.validate_identity("SELECT * FROM t WHERE c MATCH_PHRASE 'word1 word2 ~3+'")
@@ -180,6 +181,11 @@ class TestDoris(Validator):
             "SELECT * FROM t WHERE c MATCH 'hello world' USING ANALYZER std_analyzer"
         )
         self.validate_identity("SELECT * FROM t WHERE c MATCH_ANY 'x' USING ANALYZER `kw_analyzer`")
+        self.validate_identity("SELECT * FROM t WHERE c MATCH 'x' USING ANALYZER 'standard'")
+        self.validate_identity(
+            "SELECT * FROM t WHERE c NOT MATCH_ANY ('x') USING ANALYZER 'standard'",
+            "SELECT * FROM t WHERE NOT c MATCH_ANY ('x') USING ANALYZER 'standard'",
+        )
         self.validate_identity(
             "SELECT * FROM t WHERE c match_regexp '^key_word.*'",
             "SELECT * FROM t WHERE c MATCH_REGEXP '^key_word.*'",
@@ -193,6 +199,8 @@ class TestDoris(Validator):
         )
         self.validate_identity("SELECT * FROM t WHERE c NOT LIKE 'x%'")
         self.validate_identity("SELECT c AS match_any FROM t", "SELECT c AS `match_any` FROM t")
+        self.validate_identity("SELECT c match_any FROM t", "SELECT c AS `match_any` FROM t")
+        self.validate_identity("SELECT c match_any", "SELECT c AS `match_any`")
 
         self.validate_all(
             "SELECT * FROM t WHERE c MATCH 'x'",

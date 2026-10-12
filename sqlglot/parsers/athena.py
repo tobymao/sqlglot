@@ -19,6 +19,9 @@ class AthenaTrinoParser(TrinoParser):
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 
+    # Athena allows a USING EXTERNAL FUNCTION clause in CTAS: CREATE TABLE ... AS USING ... SELECT ...
+    CTAS_STATEMENT_TOKENS = frozenset({TokenType.USING})
+
 
 class AthenaParser(AthenaTrinoParser):
     def __init__(

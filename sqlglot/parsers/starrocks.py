@@ -241,3 +241,14 @@ class StarRocksParser(MySQLParser):
                 mode=mode,
             )
         )
+
+    def _parse_show_db(self) -> exp.Expr | None:
+        # SHOW TABLES FROM catalog.db
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SHOW_TABLES/
+        return self._parse_table_parts(is_db_reference=True)
+
+    def _parse_show_target(self, this: str) -> exp.Expr | None:
+        # SHOW CREATE TABLE catalog.db.tbl
+        if this in ("COLUMNS", "CREATE TABLE", "CREATE VIEW", "INDEX"):
+            return self._parse_table_parts()
+        return super()._parse_show_target(this)

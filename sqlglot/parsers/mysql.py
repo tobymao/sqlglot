@@ -500,6 +500,12 @@ class MySQLParser(parser.Parser):
 
         return None
 
+    def _parse_show_db(self) -> exp.Expr | None:
+        return self._parse_id_var()
+
+    def _parse_show_target(self, this: str) -> exp.Expr | None:
+        return self._parse_id_var()
+
     def _parse_show_mysql(
         self,
         this: str,
@@ -512,7 +518,7 @@ class MySQLParser(parser.Parser):
         if target:
             if isinstance(target, str):
                 self._match_text_seq(*target.split(" "))
-            target_id = self._parse_id_var()
+            target_id = self._parse_show_target(this)
         else:
             target_id = None
 
@@ -532,7 +538,7 @@ class MySQLParser(parser.Parser):
             db = None
 
             if self._match(TokenType.FROM) or self._match_text_seq("IN"):
-                db = self._parse_id_var()
+                db = self._parse_show_db()
             elif self._match(TokenType.DOT):
                 db = target_id
                 target_id = self._parse_id_var()

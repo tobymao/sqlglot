@@ -583,3 +583,19 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE t (k1 INT, v1 HLL HLL_UNION) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
         ).assert_is(exp.Create)
+
+    def test_show(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SHOW_TABLES/
+        self.validate_identity("SHOW TABLES FROM example_db")
+        self.validate_identity("SHOW TABLES FROM default_catalog.example_db")
+        self.validate_identity(
+            "SHOW TABLES IN hudi_catalog.hudi_db", "SHOW TABLES FROM hudi_catalog.hudi_db"
+        )
+        self.validate_identity("SHOW FULL TABLES FROM default_catalog.example_db LIKE 'a%'")
+
+        self.validate_identity("SHOW CREATE TABLE tbl")
+        self.validate_identity("SHOW CREATE TABLE example_db.tbl")
+        self.validate_identity("SHOW CREATE TABLE hudi_catalog.hudi_db.tbl")
+        self.validate_identity("SHOW CREATE VIEW hudi_catalog.hudi_db.v")
+        self.validate_identity("SHOW FULL COLUMNS FROM hudi_catalog.hudi_db.tbl")
+        self.validate_identity("SHOW INDEX FROM default_catalog.example_db.tbl")

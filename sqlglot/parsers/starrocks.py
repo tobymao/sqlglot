@@ -8,7 +8,7 @@ from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
 # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
-AGGREGATE_COLUMN_CONSTRAINTS = ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL")
+AGGREGATE_COLUMN_CONSTRAINTS = ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL", "HLL_UNION")
 
 
 def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:

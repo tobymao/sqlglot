@@ -4,6 +4,8 @@ from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer import traverse_scope
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
@@ -993,6 +995,50 @@ class TestClickhouse(Validator):
             "SELECT JSONExtractRaw(v, 'a') FROM data",
             read={"snowflake": "SELECT v:a FROM data"},
         )
+
+    def test_json_extract_qualified_roundtrip(self):
+        for dialect, dtype, projections in (
+            (
+                "snowflake",
+                "VARIANT",
+                ("v:a::STRING", "(v:a)::STRING", "GET_PATH(v, 'a')::STRING", "v:a"),
+            ),
+            ("postgres", "JSON", ("v -> 'a'", "v ->> 'a'", "CAST(v -> 'a' AS TEXT)")),
+            (
+                "clickhouse",
+                "String",
+                tuple(
+                    f"{name}(v, {path})"
+                    for name in ("JSONExtractRaw", "JSONExtractString")
+                    for path in ("'1'", "'01'", "'0'", "'-1'", "1", "-1", "'a', 1, 'b'")
+                ),
+            ),
+        ):
+            schema = {"data": {"v": dtype}}
+            for projection in projections:
+                with self.subTest(dialect=dialect, projection=projection):
+                    expression = qualify(
+                        parse_one(f"SELECT {projection} AS result FROM data", read=dialect),
+                        dialect=dialect,
+                        schema=schema,
+                    )
+                    expected = expression.sql("clickhouse")
+                    annotate_types(expression, dialect=dialect, schema=schema)
+                    self.assertEqual(expression.sql("clickhouse"), expected)
+                    self.assertEqual(
+                        parse_one(expression.sql(dialect), read=dialect).sql("clickhouse"),
+                        expected,
+                    )
+
+                    target_schema = {"data": {"v": "String"}, "DATA": {"V": "String"}}
+                    for _ in range(2):
+                        expression = qualify(
+                            parse_one(expected, read="clickhouse"),
+                            dialect="clickhouse",
+                            schema=target_schema,
+                        )
+                        annotate_types(expression, dialect="clickhouse", schema=target_schema)
+                        self.assertEqual(expression.sql("clickhouse"), expected)
 
     def test_global_join(self):
         for kind in ("", "LEFT ", "INNER ", "LEFT ANY ", "FULL OUTER "):

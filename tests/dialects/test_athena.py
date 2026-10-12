@@ -331,6 +331,22 @@ class TestAthena(Validator):
             "CREATE TABLE foo.bar WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col', 'BUCKET(a, 4)']) AS SELECT 1",
         )
 
+    def test_ctas_using_external_function(self):
+        # The USING EXTERNAL FUNCTION clause may directly follow CTAS ... AS
+        # ref: https://docs.aws.amazon.com/athena/latest/ug/querying-udf.html
+        create = self.validate_identity(
+            "CREATE TABLE t WITH (format='PARQUET') AS "
+            "USING EXTERNAL FUNCTION f(x VARCHAR) RETURNS VARCHAR LAMBDA 'l' "
+            "SELECT f('a') AS b",
+            check_command_warning=True,
+        )
+        self.assertIsInstance(create, exp.Create)
+        self.assertIsInstance(create.expression, exp.Command)
+        self.assertEqual(create.expression.text("this"), "USING")
+
+        # Without the USING clause being present, plain CTAS parsing is unaffected
+        self.validate_identity("CREATE TABLE t WITH (format='PARQUET') AS SELECT 1 AS a")
+
     def test_parse_partitioned_by_returns_iceberg_transforms(self):
         # check that parse_into works for PartitionedByProperty and also that correct AST nodes are emitted for Iceberg transforms
         parsed = self.parse_one(

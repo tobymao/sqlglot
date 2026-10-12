@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import string
 import typing as t
 
 from sqlglot import exp, tokens
@@ -76,8 +77,17 @@ class Oracle(Dialect):
                 ("{", "}"),
                 ("(", ")"),
                 ("<", ">"),
-                *((c, c) for c in '!"#$%&*+,-./:;=?@\\^_`|~'),
+                *(
+                    (c, c)
+                    for c in string.ascii_letters + string.digits + string.punctuation
+                    if c not in "[{(<"
+                ),
             )
+        ]
+        NATIONAL_RAW_STRINGS = [
+            (prefix + start, end)
+            for start, end in t.cast(list[tuple[str, str]], RAW_STRINGS)
+            for prefix in ("n", "N")
         ]
         STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
 

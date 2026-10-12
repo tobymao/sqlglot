@@ -674,6 +674,7 @@ class Parser:
             TokenType.HEREDOC_STRING,
             TokenType.HEX_STRING,
             TokenType.IDENTIFIER,
+            TokenType.NATIONAL_RAW_STRING,
             TokenType.NATIONAL_STRING,
             TokenType.RAW_STRING,
             TokenType.STRING,
@@ -1201,9 +1202,10 @@ class Parser:
         TokenType.HEREDOC_STRING: lambda self, token: self.expression(
             exp.RawString(this=token.text), token
         ),
-        TokenType.NATIONAL_STRING: lambda self, token: self.expression(
-            exp.National(this=token.text), token
-        ),
+        **{
+            token_type: lambda self, token: self.expression(exp.National(this=token.text), token)
+            for token_type in (TokenType.NATIONAL_STRING, TokenType.NATIONAL_RAW_STRING)
+        },
         TokenType.RAW_STRING: lambda self, token: self.expression(
             exp.RawString(this=token.text), token
         ),

@@ -45,6 +45,7 @@ class _TokenizerBase:
     BIT_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     BYTE_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     HEX_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    NATIONAL_RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
@@ -93,6 +94,7 @@ class _TokenizerBase:
             **_quotes_to_format(TokenType.BIT_STRING, cls.BIT_STRINGS),
             **_quotes_to_format(TokenType.BYTE_STRING, cls.BYTE_STRINGS),
             **_quotes_to_format(TokenType.HEX_STRING, cls.HEX_STRINGS),
+            **_quotes_to_format(TokenType.NATIONAL_RAW_STRING, cls.NATIONAL_RAW_STRINGS),
             **_quotes_to_format(TokenType.RAW_STRING, cls.RAW_STRINGS),
             **_quotes_to_format(TokenType.HEREDOC_STRING, cls.HEREDOC_STRINGS),
             **_quotes_to_format(TokenType.UNICODE_STRING, cls.UNICODE_STRINGS),
@@ -161,6 +163,7 @@ class Tokenizer(_TokenizerBase):
     BIT_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     BYTE_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     HEX_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    NATIONAL_RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []

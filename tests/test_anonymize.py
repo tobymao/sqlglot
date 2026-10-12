@@ -375,6 +375,7 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ("SELECT 'a''b'", "SELECT 'aaaa'", None),  # the escape is content, so it's masked
             ("SELECT ''", "SELECT ''", None),
             ("SELECT N'nat', x'4141'", "SELECT N'aaa', x'aaab'", "snowflake"),
+            ("SELECT nq'[secret]'", "SELECT nq'[aaaaaa]'", "oracle"),
             ('SELECT "my table"', 'SELECT "aa aaaaa"', None),
             ("SELECT `back tick`", "SELECT `aaaa aaaa`", "mysql"),
             ("SELECT [brack et]", "SELECT [aaaaa aa]", "tsql"),

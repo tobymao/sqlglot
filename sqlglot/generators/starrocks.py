@@ -79,6 +79,7 @@ class StarRocksGenerator(MySQLGenerator):
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
+        exp.DType.HLLSKETCH: "HLL",
         exp.DType.INT128: "LARGEINT",
         exp.DType.TEXT: "STRING",
         exp.DType.TIMESTAMP: "DATETIME",

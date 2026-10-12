@@ -538,3 +538,7 @@ class TestStarrocks(Validator):
                 self.validate_identity(
                     f"CREATE TABLE t (k1 INT, v1 INT {agg} NULL) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
                 ).assert_is(exp.Create)
+
+        self.validate_identity(
+            "CREATE TABLE t (k1 INT, v1 HLL HLL_UNION) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+        ).assert_is(exp.Create)

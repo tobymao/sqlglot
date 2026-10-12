@@ -23,6 +23,7 @@ class StarRocks(MySQL):
 
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
+            "HLL": TokenType.HLLSKETCH,
             "LARGEINT": TokenType.INT128,
             "REFRESH": TokenType.REFRESH,
         }

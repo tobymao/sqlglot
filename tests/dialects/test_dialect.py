@@ -1896,7 +1896,7 @@ class TestDialect(Validator):
             write={
                 "": """JSON_EXTRACT(x, '$["a b"]')""",
                 "bigquery": """JSON_EXTRACT(x, '$[\\'a b\\']')""",
-                "clickhouse": "JSONExtractString(x, 'a b')",
+                "clickhouse": "JSONExtractRaw(x, 'a b')",
                 "duckdb": """x -> '$."a b"'""",
                 "mysql": """JSON_EXTRACT(x, '$."a b"')""",
                 "postgres": "JSON_EXTRACT_PATH(x, 'a b')",
@@ -1913,6 +1913,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y')",
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "duckdb": "x -> 'y'",
                 "doris": "JSON_EXTRACT(x, '$.y')",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
@@ -1924,7 +1925,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
-                "clickhouse": "JSONExtractString(x, 'y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "doris": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
@@ -1968,6 +1969,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[0].z')",
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
+                "clickhouse": "JSONExtractRaw(x, 'y', 1, 'z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -1978,7 +1980,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
-                "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
+                "clickhouse": "JSONExtractRaw(x, 'y', 1, 'z')",
                 "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -2037,7 +2039,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[*]')",
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
-                "clickhouse": "JSONExtractString(x, 'y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "postgres": "JSON_EXTRACT_PATH(x, 'y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "snowflake": "GET_PATH(PARSE_JSON(x), 'y')",

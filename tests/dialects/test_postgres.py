@@ -2021,7 +2021,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             read={"postgres": "SELECT JSONB_EXTRACT(a, n IN (1, 2))"},
         )
 
-        for arrow_op in ("->", "->>"):
+        for arrow_op, clickhouse_func in (("->", "JSONExtractRaw"), ("->>", "JSONExtractString")):
             with self.subTest(f"Ensure {arrow_op} operator roundtrips int values as subscripts"):
                 self.validate_all(
                     f"SELECT foo {arrow_op} 1",
@@ -2038,7 +2038,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     f"SELECT foo {arrow_op} '12'",
                     write={
                         "postgres": f"SELECT foo {arrow_op} '12'",
-                        "clickhouse": "SELECT JSONExtractString(foo, '12')",
+                        "clickhouse": f"SELECT {clickhouse_func}(foo, '12')",
                     },
                 )
 

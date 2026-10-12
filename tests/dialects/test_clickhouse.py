@@ -201,6 +201,7 @@ class TestClickhouse(Validator):
         self.validate_identity("CAST(x AS DECIMAL(38, 2))", "CAST(x AS Decimal(38, 2))")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
+        self.validate_identity("""SELECT JSONExtractRaw('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
@@ -274,6 +275,15 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             """SELECT JSONExtractString('{"a": "hello", "b": [-100, 200.0, 300]}', 'a')"""
+        )
+        self.validate_all(
+            "SELECT JSONExtractRaw(payload, 'amount'), JSONExtractString(payload, 'amount')",
+            read={
+                "postgres": "SELECT payload -> 'amount', payload ->> 'amount'",
+            },
+            write={
+                "postgres": "SELECT JSON_EXTRACT_PATH(payload, 'amount'), JSON_EXTRACT_PATH_TEXT(payload, 'amount')",
+            },
         )
         self.validate_identity(
             "ATTACH DATABASE DEFAULT ENGINE = ORDINARY", check_command_warning=True

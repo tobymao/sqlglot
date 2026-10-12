@@ -326,7 +326,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.IsNan: rename_func("isNaN"),
         exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
         exp.JSONCast: _json_cast_sql,
-        exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
+        exp.JSONExtract: json_extract_segments("JSONExtractRaw", quoted_index=False),
         exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",

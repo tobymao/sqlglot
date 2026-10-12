@@ -706,6 +706,7 @@ class Generator:
     EXPRESSION_PRECEDES_PROPERTIES_CREATABLES: t.ClassVar[set[str]] = set()
 
     PROPERTIES_LOCATION: t.ClassVar = {
+        exp.AggregateKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AllowedValuesProperty: exp.Properties.Location.POST_SCHEMA,
         exp.AlgorithmProperty: exp.Properties.Location.POST_CREATE,
         exp.ApiProperty: exp.Properties.Location.POST_CREATE,
@@ -5044,6 +5045,9 @@ class Generator:
 
     def dictsubproperty_sql(self, expression: exp.DictSubProperty) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'value')}"
+
+    def aggregatekeyproperty_sql(self, expression: exp.AggregateKeyProperty) -> str:
+        return f"AGGREGATE KEY ({self.expressions(expression, flat=True)})"
 
     def duplicatekeyproperty_sql(self, expression: exp.DuplicateKeyProperty) -> str:
         return f"DUPLICATE KEY ({self.expressions(expression, flat=True)})"

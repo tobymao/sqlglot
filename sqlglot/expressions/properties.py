@@ -25,6 +25,10 @@ class AllowedValuesProperty(Expression):
     arg_types = {"expressions": True}
 
 
+class AggregateKeyProperty(Property):
+    arg_types = {"expressions": True}
+
+
 class AlgorithmProperty(Property):
     arg_types = {"this": True}
 

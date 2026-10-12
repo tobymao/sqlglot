@@ -7,6 +7,9 @@ from sqlglot.helper import is_int, seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+AGGREGATE_COLUMN_CONSTRAINTS = ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL")
+
 
 def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
     # TIME_SLICE(dt, INTERVAL n unit [, FLOOR | CEIL])
@@ -69,9 +72,17 @@ class StarRocksParser(MySQLParser):
     PROPERTY_PARSERS = {
         **MySQLParser.PROPERTY_PARSERS,
         "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+        "AGGREGATE": lambda self: self._parse_composite_key_property(exp.AggregateKeyProperty),
         "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         "ROLLUP": lambda self: self._parse_rollup_property(),
         "REFRESH": lambda self: self._parse_refresh_property(),
+    }
+
+    CONSTRAINT_PARSERS = {
+        **MySQLParser.CONSTRAINT_PARSERS,
+        **dict.fromkeys(
+            AGGREGATE_COLUMN_CONSTRAINTS, lambda self: exp.var(self._prev.text.upper())
+        ),
     }
 
     def _parse_rollup_property(self) -> exp.RollupProperty:

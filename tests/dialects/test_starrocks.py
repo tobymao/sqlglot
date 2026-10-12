@@ -526,3 +526,15 @@ class TestStarrocks(Validator):
                 "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt)",
             },
         )
+
+    def test_aggregate_key(self):
+        # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
+        self.validate_identity(
+            "CREATE TABLE aggregate_tbl (site_id LARGEINT NOT NULL COMMENT 'id of site', date DATE NOT NULL COMMENT 'time of event', city_code VARCHAR(20) COMMENT 'city_code of user', pv BIGINT SUM DEFAULT '0' COMMENT 'total page views') AGGREGATE KEY (site_id, date, city_code) DISTRIBUTED BY HASH (site_id)"
+        ).find(exp.AggregateKeyProperty).assert_is(exp.AggregateKeyProperty)
+
+        for agg in ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL"):
+            with self.subTest(agg):
+                self.validate_identity(
+                    f"CREATE TABLE t (k1 INT, v1 INT {agg} NULL) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+                ).assert_is(exp.Create)

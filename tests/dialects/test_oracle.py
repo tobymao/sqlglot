@@ -16,6 +16,93 @@ class TestOracle(Validator):
         with self.assertRaises(UnsupportedError):
             create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
+    def test_create_table_physical_properties(self):
+        for clause in (
+            "PCTFREE 10",
+            "PCTUSED 40",
+            "INITRANS 2",
+            "MAXTRANS 255",
+            "LOGGING",
+            "NOLOGGING",
+            "PCTFREE 10 PCTUSED 40 INITRANS 2 MAXTRANS 255 NOLOGGING",
+            "LOGGING TABLESPACE users PCTFREE 10",
+        ):
+            with self.subTest(clause=clause):
+                create = self.validate_identity(f"CREATE TABLE t (id NUMBER) {clause}").assert_is(
+                    exp.Create
+                )
+                self.assertIsInstance(create.this, exp.Schema)
+                self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+                self.assertIsInstance(
+                    create.args["properties"].expressions[0], exp.PhysicalProperty
+                )
+                with self.assertRaisesRegex(UnsupportedError, "physicalproperty"):
+                    create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_identity(
+            "create table t (id number) pctfree 10 nologging",
+            "CREATE TABLE t (id NUMBER) PCTFREE 10 NOLOGGING",
+        )
+        self.validate_identity('CREATE TABLE "t" ("id" NUMBER) PCTFREE 10 NOLOGGING', identify=True)
+        create = self.validate_identity(
+            "CREATE TABLE t PCTFREE 10 NOLOGGING AS SELECT 1 AS id FROM dual"
+        ).assert_is(exp.Create)
+        self.assertIsInstance(create.expression, exp.Select)
+
+    def test_create_table_storage(self):
+        create = self.validate_identity(
+            "CREATE TABLE t (id NUMBER) TABLESPACE ts PCTFREE 10 STORAGE (INITIAL 64K)"
+        ).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.this, exp.Schema)
+        self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+        tablespace, pctfree, storage = create.args["properties"].expressions
+        self.assertIsInstance(tablespace, exp.TableSpaceProperty)
+        self.assertEqual(pctfree.name, "PCTFREE")
+        self.assertEqual(pctfree.args["value"], exp.Literal.number(10))
+        self.assertIsInstance(storage, exp.StorageProperty)
+        self.assertEqual(storage.expressions[0].name, "INITIAL")
+        self.assertEqual(storage.expressions[0].args["value"], exp.var("64K"))
+
+        for options in (
+            "INITIAL 65536 NEXT 1048576",
+            "INITIAL 64K NEXT 1M MINEXTENTS 1 MAXEXTENTS UNLIMITED MAXSIZE 2M "
+            "PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT "
+            "FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT",
+            "MAXEXTENTS 100 MAXSIZE UNLIMITED BUFFER_POOL KEEP FLASH_CACHE NONE CELL_FLASH_CACHE KEEP",
+            "BUFFER_POOL RECYCLE FLASH_CACHE KEEP CELL_FLASH_CACHE NONE",
+        ):
+            with self.subTest(options=options):
+                create = self.validate_identity(
+                    f"CREATE TABLE t (id NUMBER) STORAGE ({options}) TABLESPACE users LOGGING"
+                ).assert_is(exp.Create)
+                with self.assertRaisesRegex(UnsupportedError, "storageproperty"):
+                    create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_identity(
+            "CREATE TABLE t (id NUMBER) storage (initial 64 k next 1 m) nologging",
+            "CREATE TABLE t (id NUMBER) STORAGE (INITIAL 64K NEXT 1M) NOLOGGING",
+        )
+        create = self.validate_identity(
+            "CREATE TABLE t STORAGE (INITIAL 64K) NOLOGGING AS SELECT 1 AS id FROM dual"
+        ).assert_is(exp.Create)
+        self.assertIsInstance(create.expression, exp.Select)
+        self.validate_identity(
+            "CREATE TABLE t (\n  id NUMBER\n)\nPCTFREE 10\nSTORAGE (INITIAL 64K NEXT 1M)\nLOGGING",
+            pretty=True,
+        )
+
+        for clause in (
+            "PCTFREE",
+            "STORAGE ()",
+            "STORAGE (INITIAL)",
+            "STORAGE (FREELIST 1)",
+            "STORAGE (INITIAL 64K",
+            "STORAGE (INITIAL 64K UNKNOWN 1)",
+        ):
+            with self.subTest(clause=clause), self.assertRaises(ParseError):
+                self.parse_one(f"CREATE TABLE t (id NUMBER) {clause}")
+
     def test_partition_selection(self):
         for keyword in ("PARTITION", "SUBPARTITION"):
             for name in ("p1", '"P1"'):

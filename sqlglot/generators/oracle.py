@@ -113,7 +113,16 @@ class OracleGenerator(generator.Generator):
         **generator.Generator.PROPERTIES_LOCATION,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
         exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PhysicalProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StorageProperty: exp.Properties.Location.POST_SCHEMA,
     }
+
+    def physicalproperty_sql(self, expression: exp.PhysicalProperty) -> str:
+        value = self.sql(expression, "value")
+        return f"{expression.name}{f' {value}' if value else ''}"
+
+    def storageproperty_sql(self, expression: exp.StorageProperty) -> str:
+        return f"STORAGE ({self.expressions(expression, sep=' ', flat=True)})"
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):

@@ -83,6 +83,29 @@ class OracleParser(parser.Parser):
         "TABLESPACE": lambda self: self.expression(
             exp.TableSpaceProperty(this=self._parse_id_var())
         ),
+        **dict.fromkeys(
+            ("PCTFREE", "PCTUSED", "INITRANS", "MAXTRANS"),
+            lambda self: self._parse_physical_property(),
+        ),
+        **dict.fromkeys(
+            ("LOGGING", "NOLOGGING"),
+            lambda self: self.expression(exp.PhysicalProperty(this=self._prev.text.upper())),
+        ),
+        "STORAGE": lambda self: self._parse_storage(),
+    }
+
+    STORAGE_OPTIONS = {
+        "INITIAL",
+        "NEXT",
+        "MINEXTENTS",
+        "MAXEXTENTS",
+        "MAXSIZE",
+        "PCTINCREASE",
+        "FREELISTS",
+        "FREELIST",
+        "BUFFER_POOL",
+        "FLASH_CACHE",
+        "CELL_FLASH_CACHE",
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -112,6 +135,48 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_physical_property(self) -> exp.PhysicalProperty:
+        name = self._prev.text.upper()
+        value = self._parse_number()
+        if value is None:
+            self.raise_error(f"Expected value for {name}")
+        return self.expression(exp.PhysicalProperty(this=name, value=value))
+
+    def _parse_storage(self) -> exp.StorageProperty:
+        def parse_options() -> list[exp.Expr]:
+            options: list[exp.Expr] = []
+            while self._match_texts(self.STORAGE_OPTIONS):
+                name = self._prev.text.upper()
+                if name == "FREELIST":
+                    if not self._match_text_seq("GROUPS"):
+                        self.raise_error("Expected GROUPS after FREELIST")
+                    name = "FREELIST GROUPS"
+
+                if name in ("BUFFER_POOL", "FLASH_CACHE", "CELL_FLASH_CACHE"):
+                    value: exp.Expr | None = self._parse_var_from_options(
+                        {
+                            "KEEP": (),
+                            "DEFAULT": (),
+                            "RECYCLE" if name == "BUFFER_POOL" else "NONE": (),
+                        }
+                    )
+                elif name in ("MAXEXTENTS", "MAXSIZE") and self._match_text_seq("UNLIMITED"):
+                    value = exp.var("UNLIMITED")
+                else:
+                    value = self._parse_number()
+                    if (
+                        value is not None
+                        and name in ("INITIAL", "NEXT", "MAXSIZE")
+                        and self._match_texts(("K", "M", "G", "T", "P", "E"))
+                    ):
+                        value = exp.var(f"{value.name}{self._prev.text.upper()}")
+                if value is None:
+                    self.raise_error(f"Expected value for {name}")
+                options.append(self.expression(exp.PhysicalProperty(this=name, value=value)))
+            return options
+
+        return self.expression(exp.StorageProperty(expressions=self._parse_wrapped(parse_options)))
 
     def _parse_to_number(self) -> exp.ToNumber:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html

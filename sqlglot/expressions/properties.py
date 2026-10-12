@@ -395,6 +395,10 @@ class PartitionedOfProperty(Property):
     arg_types = {"this": True, "expression": True}
 
 
+class PhysicalProperty(Property):
+    arg_types = {"this": True, "value": False}
+
+
 class StreamingTableProperty(Property):
     arg_types = {}
 
@@ -500,6 +504,10 @@ class StabilityProperty(Property):
 
 class StorageHandlerProperty(Property):
     arg_types = {"this": True}
+
+
+class StorageProperty(Property):
+    arg_types = {"expressions": True}
 
 
 class UsingProperty(Property):

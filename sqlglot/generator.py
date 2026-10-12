@@ -804,6 +804,7 @@ class Generator:
         exp.StreamingTableProperty: exp.Properties.Location.POST_CREATE,
         exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Tags: exp.Properties.Location.POST_WITH,
+        exp.TableSpaceProperty: exp.Properties.Location.UNSUPPORTED,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ToTableProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TransientProperty: exp.Properties.Location.POST_CREATE,

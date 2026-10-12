@@ -6,6 +6,16 @@ from sqlglot.optimizer.qualify import qualify
 class TestOracle(Validator):
     dialect = "oracle"
 
+    def test_create_table_tablespace(self):
+        sql = "CREATE TABLE t (id NUMBER) TABLESPACE ts"
+        create = self.validate_identity(sql).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.this, exp.Schema)
+        self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+        self.validate_identity('CREATE TABLE t (id NUMBER) TABLESPACE "Mixed Ts"')
+        with self.assertRaises(UnsupportedError):
+            create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
     def test_partition_selection(self):
         for keyword in ("PARTITION", "SUBPARTITION"):
             for name in ("p1", '"P1"'):

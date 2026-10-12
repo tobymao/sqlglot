@@ -527,6 +527,10 @@ class Tags(Property, ColumnConstraintKind):
     arg_types = {"expressions": True}
 
 
+class TableSpaceProperty(Property):
+    arg_types = {"this": True}
+
+
 class PropertiesLocation(AutoName):
     POST_CREATE = auto()
     POST_NAME = auto()

@@ -74,6 +74,9 @@ class OracleParser(parser.Parser):
             and self.expression(exp.TemporaryProperty(this="PRIVATE"))
         ),
         "FORCE": lambda self: self.expression(exp.ForceProperty()),
+        "TABLESPACE": lambda self: self.expression(
+            exp.TableSpaceProperty(this=self._parse_id_var())
+        ),
     }
 
     QUERY_MODIFIER_PARSERS = {

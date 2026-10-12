@@ -2051,6 +2051,7 @@ class JSONPathPart(Expression):
 
 class JSONPathFilter(JSONPathPart):
     arg_types = {"this": True}
+    _hash_raw_args = True
 
 
 class JSONPathKey(JSONPathPart):
@@ -2060,6 +2061,7 @@ class JSONPathKey(JSONPathPart):
 
 class JSONPathRecursive(JSONPathPart):
     arg_types = {"this": False}
+    _hash_raw_args = True
 
 
 class JSONPathRoot(JSONPathPart):
@@ -2068,6 +2070,7 @@ class JSONPathRoot(JSONPathPart):
 
 class JSONPathScript(JSONPathPart):
     arg_types = {"this": True}
+    _hash_raw_args = True
 
 
 class JSONPathSlice(JSONPathPart):

@@ -315,9 +315,11 @@ class ClickHouseParser(parser.Parser):
         "HAS": exp.ArrayContains.from_arg_list,
         "ILIKE": build_like(exp.ILike),
         "ISINFINITE": exp.IsInf.from_arg_list,
-        "JSONEXTRACTRAW": build_json_extract_path(exp.JSONExtract, zero_based_indexing=False),
+        "JSONEXTRACTRAW": build_json_extract_path(
+            exp.JSONExtract, zero_based_indexing=False, arrow_req_json_type=True
+        ),
         "JSONEXTRACTSTRING": build_json_extract_path(
-            exp.JSONExtractScalar, zero_based_indexing=False
+            exp.JSONExtractScalar, zero_based_indexing=False, arrow_req_json_type=True
         ),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "LIKE": build_like(exp.Like),

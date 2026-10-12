@@ -503,6 +503,14 @@ class ClickHouseGenerator(generator.Generator):
         if isinstance(this, exp.StrToDate) and expression.to == exp.DType.DATETIME.into_expr():
             return self.sql(this)
 
+        this = this.unnest()
+        if (
+            isinstance(this, exp.JSONExtract)
+            and this.args.get("requires_json")
+            and expression.to.is_type(*exp.DataType.TEXT_TYPES)
+        ):
+            return self.func("JSONExtract", this, exp.Literal.string("Nullable(String)"))
+
         return super().cast_sql(expression, safe_prefix=safe_prefix)
 
     def trycast_sql(self, expression: exp.TryCast) -> str:

@@ -282,7 +282,7 @@ class TestClickhouse(Validator):
                 "postgres": "SELECT payload -> 'amount', payload ->> 'amount'",
             },
             write={
-                "postgres": "SELECT JSON_EXTRACT_PATH(payload, 'amount'), JSON_EXTRACT_PATH_TEXT(payload, 'amount')",
+                "postgres": "SELECT payload -> 'amount', payload ->> 'amount'",
             },
         )
         self.validate_identity(
@@ -967,6 +967,32 @@ class TestClickhouse(Validator):
                         self.validate_identity(sql)
 
         self.validate_identity("SELECT []")
+
+    def test_json_extract(self):
+        for name in ("JSONExtractRaw", "JSONExtractString"):
+            for path in ("'1'", "'01'", "'0'", "'-1'", "1", "-1"):
+                with self.subTest(name=name, path=path):
+                    self.validate_identity(f"SELECT {name}(v, {path}) FROM data")
+
+        for sql in (
+            "SELECT v:a::STRING FROM data",
+            "SELECT (v:a)::STRING FROM data",
+            "SELECT GET_PATH(v, 'a')::STRING FROM data",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    "SELECT JSONExtract(JSONExtractRaw(v, 'a'), 'Nullable(String)') FROM data",
+                    read={"snowflake": sql},
+                )
+
+        self.validate_all(
+            "SELECT CAST(JSONExtractRaw(v, 'a') AS Nullable(String)) FROM data",
+            read={"postgres": "SELECT CAST(v -> 'a' AS TEXT) FROM data"},
+        )
+        self.validate_all(
+            "SELECT JSONExtractRaw(v, 'a') FROM data",
+            read={"snowflake": "SELECT v:a FROM data"},
+        )
 
     def test_global_join(self):
         for kind in ("", "LEFT ", "INNER ", "LEFT ANY ", "FULL OUTER "):

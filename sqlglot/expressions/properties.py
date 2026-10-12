@@ -127,6 +127,7 @@ class DatabaseProperty(Property):
 
 class DefinerProperty(Property):
     arg_types = {"this": True}
+    _hash_raw_args = True
 
 
 class DistKeyProperty(Property):

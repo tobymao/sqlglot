@@ -1595,7 +1595,14 @@ class Uncache(Expression):
 
 
 class Refresh(Expression):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "partition_start": False,
+        "partition_end": False,
+        "force": False,
+        "mode": False,
+    }
 
 
 class LockingStatement(Expression):

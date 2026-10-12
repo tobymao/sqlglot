@@ -164,6 +164,19 @@ class TestStarrocks(Validator):
             "REFRESH EXTERNAL TABLE hudi1 PARTITION('date=2022-12-20', 'date=2022-12-21')"
         )
 
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 FORCE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH SYNC MODE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH ASYNC MODE")
+        self.validate_identity(
+            'REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ("2020-02-01") END ("2020-03-01")',
+            "REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01')",
+        )
+        self.validate_identity(
+            "REFRESH MATERIALIZED VIEW db.lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE WITH SYNC MODE"
+        ).assert_is(exp.Refresh)
+
         ddl_sqls = [
             "PARTITION BY (col1, col2)",
             "PARTITION BY DATE_TRUNC('DAY', col2), col1",

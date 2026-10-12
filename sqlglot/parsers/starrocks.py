@@ -208,3 +208,37 @@ class StarRocksParser(MySQLParser):
                 method=method, kind=kind, starts=start, every=every, unit=unit
             )
         )
+
+    def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        if not self._match_text_seq("MATERIALIZED", "VIEW"):
+            return super()._parse_refresh()
+
+        # _parse_table would read PARTITION and FORCE as partition selection and an index hint
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        this = self._parse_table_parts()
+
+        partition_start = None
+        partition_end = None
+        if self._match_text_seq("PARTITION", "START"):
+            partition_start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            partition_end = self._parse_wrapped(self._parse_string)
+
+        force = self._match_text_seq("FORCE")
+        mode = (
+            self._match_text_seq("WITH")
+            and self._match_texts(("SYNC", "ASYNC"))
+            and self._prev.text.upper()
+        )
+        self._match_text_seq("MODE")
+
+        return self.expression(
+            exp.Refresh(
+                this=this,
+                kind="MATERIALIZED VIEW",
+                partition_start=partition_start,
+                partition_end=partition_end,
+                force=force,
+                mode=mode,
+            )
+        )

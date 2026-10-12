@@ -391,16 +391,16 @@ def _array_insert_sql(self: DuckDBGenerator, expression: exp.ArrayInsert) -> str
     # 1-based -1 appends (Spark/Databricks); the 0-based normalization below
     # would otherwise map it onto the prepend branch.
     append = index_offset == 1 and pos_value == -1
-    if not append:
-        # Normalize one-based indexing to zero-based for slice calculations
-        # Spark (1-based) -> Snowflake (0-based):
-        #   Positive: pos=1 -> pos=0 (subtract 1)
-        #   Negative: pos=-2 -> pos=-1 (add 1)
-        # Example: Spark array_insert([a,b,c], -2, d) -> [a,b,d,c] is same as Snowflake pos=-1
-        if pos_value > 0:
-            pos_value = pos_value - index_offset
-        elif pos_value < 0:
-            pos_value = pos_value + index_offset
+
+    # Normalize one-based indexing to zero-based for slice calculations
+    # Spark (1-based) -> Snowflake (0-based):
+    #   Positive: pos=1 -> pos=0 (subtract 1)
+    #   Negative: pos=-2 -> pos=-1 (add 1)
+    # Example: Spark array_insert([a,b,c], -2, d) -> [a,b,d,c] is same as Snowflake pos=-1
+    if pos_value > 0:
+        pos_value = pos_value - index_offset
+    elif pos_value < 0:
+        pos_value = pos_value + index_offset
 
     # Build the appropriate list_concat expression based on position
     if append:

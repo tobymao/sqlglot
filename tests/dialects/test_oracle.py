@@ -1177,6 +1177,14 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "SELECT q'<it's>' FROM dual",
             "SELECT q'!it's!' FROM dual",
             "SELECT Q'#it's#' FROM dual",
+            "SELECT q']it's]' FROM dual",
+            "SELECT q'}it's}' FROM dual",
+            "SELECT q')it's)' FROM dual",
+            "SELECT q'>it's>' FROM dual",
+            "SELECT q''it's'' FROM dual",
+            "SELECT q'ait'sa' FROM dual",
+            "SELECT Q'Ait'sA' FROM dual",
+            "SELECT q'0it's0' FROM dual",
         ):
             with self.subTest(sql):
                 self.validate_identity(sql, "SELECT 'it''s' FROM dual")
@@ -1192,6 +1200,32 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             [e.sql("oracle") for e in expressions],
             ["INSERT INTO t VALUES ('a;b')", "CREATE TABLE u (id NUMBER)"],
         )
+
+    def test_national_alternative_quoting(self):
+        for prefix in ("nq", "nQ", "Nq", "NQ"):
+            for quoted, expected in (
+                ("'[it's]'", "N'it''s'"),
+                ("'{it's}'", "N'it''s'"),
+                ("'(it's)'", "N'it''s'"),
+                ("'<it's>'", "N'it''s'"),
+                ("'!it's!'", "N'it''s'"),
+                ("']it's]'", "N'it''s'"),
+                ("''it's''", "N'it''s'"),
+                ("'Ait'sA'", "N'it''s'"),
+                ("'0it's0'", "N'it''s'"),
+                ("'[a''b]'", "N'a''''b'"),
+                ("'[a]b]'", "N'a]b'"),
+                ("'|\\n|'", "N'\\n'"),
+                ("'[a\nb]'", "N'a\nb'"),
+                ("'[é漢]'", "N'é漢'"),
+                ("'[]'", "N''"),
+                ("'[a;b]'", "N'a;b'"),
+            ):
+                with self.subTest(prefix=prefix, quoted=quoted):
+                    expression = self.validate_identity(
+                        f"SELECT {prefix}{quoted} FROM dual", f"SELECT {expected} FROM dual"
+                    )
+                    self.assertIsInstance(expression.expressions[0], exp.National)
 
     def test_full_procedure(self):
         sql = """

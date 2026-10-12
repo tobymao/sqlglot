@@ -109,6 +109,7 @@ class TokenType(IntEnum):
     BIT_STRING = auto()
     HEX_STRING = auto()
     BYTE_STRING = auto()
+    NATIONAL_RAW_STRING = auto()
     NATIONAL_STRING = auto()
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
@@ -1115,7 +1116,8 @@ class TokenizerCore:
                 if token_type == TokenType.BYTE_STRING
                 else self.string_escapes
             ),
-            raw_string=token_type in (TokenType.RAW_STRING, TokenType.HEREDOC_STRING),
+            raw_string=token_type
+            in (TokenType.RAW_STRING, TokenType.NATIONAL_RAW_STRING, TokenType.HEREDOC_STRING),
             bytes_literal=token_type == TokenType.BYTE_STRING and self.byte_strings_are_bytes,
         )
 

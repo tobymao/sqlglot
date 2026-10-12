@@ -24,6 +24,7 @@ class OracleParser(parser.Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
+    SUPPORTS_PARTITION_SELECTION = True
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "TO_BOOLEAN"},
@@ -243,6 +244,18 @@ class OracleParser(parser.Parser):
         self._retreat(index)
         return this
 
+    def _parse_version(self) -> exp.Version | None:
+        if self._match_text_seq("AS", "OF", "SCN"):
+            this = "SCN"
+        elif self._match_text_seq("AS", "OF", "TIMESTAMP"):
+            this = "TIMESTAMP"
+        else:
+            return super()._parse_version()
+
+        return self.expression(
+            exp.Version(this=this, kind="AS OF", expression=self._parse_bitwise())
+        )
+
     def _parse_insert_table(self) -> exp.Expr | None:
         # Oracle does not use AS for INSERT INTO alias
         # https://docs.oracle.com/en/database/oracle/oracle-database/18/sqlrf/INSERT.html
@@ -250,11 +263,11 @@ class OracleParser(parser.Parser):
         this = self._parse_table_parts(schema=True)
 
         if isinstance(this, exp.Table):
+            this.set("partition", self._parse_partition())
+
             alias_name = self._parse_id_var(any_token=False)
             if alias_name:
                 this.set("alias", exp.TableAlias(this=alias_name))
-
-            this.set("partition", self._parse_partition())
 
             # Now parse the schema (column list) if present
             return self._parse_schema(this=this)

@@ -118,10 +118,13 @@ class Spark2Parser(HiveParser):
     }
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
-        return (
-            self.expression(exp.Drop(tables=[self._parse_schema()], kind="COLUMNS"))
-            if self._match_text_seq("DROP", "COLUMNS")
-            else None
+        if not self._match_text_seq("DROP", "COLUMNS"):
+            return super()._parse_drop_column()
+
+        exists = self._parse_exists()
+        columns = self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        return self.expression(
+            exp.Drop(kind="COLUMNS", tables=[exp.Schema(expressions=columns)], exists=exists)
         )
 
     def _pivot_column_names(self, aggregations: list[exp.Expr]) -> list[str]:

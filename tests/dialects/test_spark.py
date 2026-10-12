@@ -173,6 +173,24 @@ TBLPROPERTIES (
                 ast = self.validate_identity(sql, expected)
                 self.assertIsInstance(ast, exp.Alter)
                 self.assertIsInstance(ast.args["actions"][0], exp.Drop)
+
+        for sql, expected in (
+            ("ALTER TABLE t REPLACE COLUMNS (a INT COMMENT 'c', b STRING)", None),
+            ("ALTER TABLE t REPLACE COLUMNS (from INT)", None),
+            (
+                "ALTER TABLE t REPLACE COLUMNS a INT, b STRING",
+                "ALTER TABLE t REPLACE COLUMNS (a INT, b STRING)",
+            ),
+        ):
+            with self.subTest(sql):
+                ast = self.validate_identity(sql, expected)
+                self.assertIsInstance(ast, exp.Alter)
+                self.assertIsInstance(ast.args["actions"][0], exp.ReplaceColumns)
+
+        # An empty column list is not valid, but it must not raise
+        for sql in ("ALTER TABLE t REPLACE COLUMNS", "ALTER TABLE t REPLACE COLUMNS ()"):
+            with self.subTest(sql):
+                self.assertIsInstance(parse_one(sql, read="spark"), exp.Command)
         self.validate_all(
             "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
             write={

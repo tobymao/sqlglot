@@ -70,10 +70,8 @@ def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
-def qualify_derived_table_outputs(
-    expression: exp.Expr, query: exp.Select | None = None
-) -> exp.Expr:
-    """Qualifies CTE/Subquery outputs, with an explicit SELECT target for generated wrappers."""
+def qualify_derived_table_outputs(expression: exp.Expr, query: exp.Query | None = None) -> exp.Expr:
+    """Qualifies CTE/Subquery outputs using the inner query or an explicit query target."""
     alias = expression.args.get("alias")
 
     if (

@@ -205,13 +205,20 @@ class TestTeradata(Validator):
                 "postgres": "CREATE TABLE a",
                 "presto": "CREATE TABLE a",
                 "redshift": "CREATE TABLE a",
-                "snowflake": "CREATE TABLE a",
+                "snowflake": "CREATE TEMPORARY TABLE a",
                 "spark": "CREATE TABLE a",
                 "sqlite": "CREATE TABLE a",
                 "starrocks": "CREATE TABLE a",
                 "tableau": "CREATE TABLE a",
                 "trino": "CREATE TABLE a",
                 "tsql": "CREATE TABLE a",
+            },
+        )
+        self.validate_all(
+            "CREATE MULTISET VOLATILE TABLE vt (a INT) ON COMMIT PRESERVE ROWS",
+            write={
+                "teradata": "CREATE MULTISET VOLATILE TABLE vt (a INT) ON COMMIT PRESERVE ROWS",
+                "snowflake": "CREATE TEMPORARY TABLE vt (a INT)",
             },
         )
         self.validate_identity(

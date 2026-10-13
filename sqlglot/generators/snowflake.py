@@ -587,6 +587,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, e.args.get("scale")),
         exp.Uuid: rename_func("UUID_STRING"),
         exp.VarMap: lambda self, e: var_map_sql(self, e, "OBJECT_CONSTRUCT"),
+        exp.VolatileProperty: lambda *_: "TEMPORARY",
         exp.Booland: rename_func("BOOLAND"),
         exp.Boolor: rename_func("BOOLOR"),
         exp.WeekOfYear: rename_func("WEEKISO"),
@@ -639,10 +640,10 @@ class SnowflakeGenerator(generator.Generator):
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
         exp.LockingProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.OnCommitProperty: exp.Properties.Location.UNSUPPORTED,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.UNSUPPORTED,
-        exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
     UNSUPPORTED_VALUES_EXPRESSIONS: t.ClassVar = {

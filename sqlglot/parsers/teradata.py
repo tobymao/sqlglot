@@ -95,6 +95,12 @@ class TeradataParser(parser.Parser):
             exp.LockingStatement(this=locking_property, expression=wrapped_query)
         )
 
+    PROPERTY_PARSERS = {
+        **parser.Parser.PROPERTY_PARSERS,
+        # Teradata only uses VOLATILE for tables, e.g. CREATE MULTISET VOLATILE TABLE
+        "VOLATILE": lambda self: self.expression(exp.VolatileProperty()),
+    }
+
     SET_PARSERS = {
         **parser.Parser.SET_PARSERS,
         "QUERY_BAND": lambda self: self._parse_query_band(),

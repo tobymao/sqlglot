@@ -260,6 +260,24 @@ class TestTeradata(Validator):
         )
         self.validate_identity("UPD a SET b = 1", "UPDATE a SET b = 1")
         self.validate_identity("DEL FROM a", "DELETE FROM a")
+        self.validate_identity("DELETE t WHERE a = 1", "DELETE FROM t WHERE a = 1")
+        self.validate_identity("DELETE t FROM t, u WHERE t.a = u.a")
+        self.validate_all(
+            "DELETE FROM t ALL",
+            write={
+                "teradata": "DELETE FROM t",
+                "snowflake": "DELETE FROM t",
+            },
+        )
+        self.validate_all(
+            "DELETE FROM t",
+            read={
+                "teradata": "DELETE t ALL",
+            },
+            write={
+                "snowflake": "DELETE FROM t",
+            },
+        )
 
     def test_datatype(self):
         self.validate_all(

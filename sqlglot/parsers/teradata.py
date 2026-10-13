@@ -32,9 +32,8 @@ class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
-        TokenType.ANTI,
-        TokenType.SEMI,
+    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI}) - {
+        TokenType.ALL,
     }
 
     CHARSET_TRANSLATORS: t.ClassVar = {
@@ -166,6 +165,21 @@ class TeradataParser(parser.Parser):
                 sample.set("percent", exp.Literal.number(percent))
 
         return sample
+
+    # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Statement-Syntax/DELETE/DELETE-Syntax
+    def _parse_delete(self) -> exp.Delete:
+        delete = super()._parse_delete()
+
+        # FROM is optional, so DELETE t means DELETE FROM t
+        tables = delete.args.get("tables")
+        if not delete.this and tables and len(tables) == 1:
+            delete.set("tables", None)
+            delete.set("this", tables[0])
+
+        # DELETE ... ALL removes every row, same as omitting the WHERE clause
+        self._match(TokenType.ALL)
+
+        return delete
 
     def _parse_rangen(self):
         this = self._parse_id_var()

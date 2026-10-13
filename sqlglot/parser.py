@@ -9175,6 +9175,8 @@ class Parser:
         return self.expression(exp.Commit(chain=chain))
 
     def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        start = self._prev
+
         if self._match_text_seq("EXTERNAL", "TABLE"):
             kind = "EXTERNAL TABLE"
         elif self._match(TokenType.TABLE):
@@ -9184,11 +9186,11 @@ class Parser:
         else:
             kind = ""
 
-        this = self._parse_string() or self._parse_table()
-        if not kind and not isinstance(this, exp.Literal):
-            return self._parse_as_command(self._prev)
+        this = self._parse_string()
+        if not this and not kind:
+            return self._parse_as_command(start)
 
-        return self.expression(exp.Refresh(this=this, kind=kind))
+        return self.expression(exp.Refresh(this=this or self._parse_table(), kind=kind))
 
     def _parse_column_def_with_exists(self):
         start = self._index

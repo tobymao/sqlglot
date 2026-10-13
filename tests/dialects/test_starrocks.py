@@ -205,6 +205,12 @@ class TestStarrocks(Validator):
             "REFRESH MATERIALIZED VIEW db.lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE WITH SYNC MODE"
         ).assert_is(exp.Refresh)
 
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/dictionary/REFRESH_DICTIONARY/
+        self.validate_identity("REFRESH DICTIONARY dict_obj", check_command_warning=True)
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/config_vars/REFRESH_CONNECTIONS/
+        self.validate_identity("REFRESH CONNECTIONS", check_command_warning=True)
+        self.validate_identity("REFRESH CONNECTIONS FORCE", check_command_warning=True)
+
         ddl_sqls = [
             "PARTITION BY (col1, col2)",
             "PARTITION BY DATE_TRUNC('DAY', col2), col1",

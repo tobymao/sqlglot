@@ -206,7 +206,6 @@ class TestStarrocks(Validator):
         ).assert_is(exp.Refresh)
 
         self.validate_identity("REFRESH DICTIONARY dict_obj", check_command_warning=True)
-        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/config_vars/REFRESH_CONNECTIONS/
         self.validate_identity("REFRESH CONNECTIONS", check_command_warning=True)
         self.validate_identity("REFRESH CONNECTIONS FORCE", check_command_warning=True)
 

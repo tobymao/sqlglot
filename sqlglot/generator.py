@@ -30,6 +30,9 @@ _HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
+# Size suffixes in data type lengths, e.g. Teradata's CLOB(1M)
+DATA_TYPE_SIZE_MULTIPLIERS = {"K": 1024, "M": 1024**2, "G": 1024**3}
+
 
 def unsupported_args(
     *args: str | tuple[str, str],
@@ -1742,6 +1745,10 @@ class Generator:
         return f"{self.dialect.QUOTE_START}{string}{self.dialect.QUOTE_END}"
 
     def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
+        multiplier = DATA_TYPE_SIZE_MULTIPLIERS.get(expression.text("expression").upper())
+        if multiplier and expression.this.is_int:
+            return self.sql(exp.Literal.number(expression.this.to_py() * multiplier))
+
         this = self.sql(expression, "this")
         specifier = self.sql(expression, "expression")
         specifier = f" {specifier}" if specifier and self.DATA_TYPE_SPECIFIERS_ALLOWED else ""

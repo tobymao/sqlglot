@@ -61,7 +61,9 @@ class TeradataGenerator(generator.Generator):
 
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
+        exp.DType.BLOB: "BLOB",
         exp.DType.GEOMETRY: "ST_GEOMETRY",
+        exp.DType.TEXT: "CLOB",
         exp.DType.DOUBLE: "DOUBLE PRECISION",
         exp.DType.TIMESTAMPTZ: "TIMESTAMP",
     }
@@ -127,6 +129,13 @@ class TeradataGenerator(generator.Generator):
             )
 
         return f" SAMPLE {self.sql(sample) or self.expressions(expression)}"
+
+    def datatypeparam_sql(self, expression: exp.DataTypeParam) -> str:
+        specifier = expression.text("expression").upper()
+        if specifier in generator.DATA_TYPE_SIZE_MULTIPLIERS:
+            return f"{self.sql(expression, 'this')}{specifier}"
+
+        return super().datatypeparam_sql(expression)
 
     def window_sql(self, expression: exp.Window) -> str:
         spec = expression.args.get("spec")

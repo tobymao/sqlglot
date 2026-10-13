@@ -130,6 +130,14 @@ class TestTeradata(Validator):
         )
 
     def test_create(self):
+        self.validate_identity("CREATE TABLE t (a CLOB(2M), b BLOB(1G))")
+        self.validate_all(
+            "CREATE TABLE t (a CLOB(1M), b CLOB(64K), c BLOB(1M))",
+            write={
+                "teradata": "CREATE TABLE t (a CLOB(1M), b CLOB(64K), c BLOB(1M))",
+                "snowflake": "CREATE TABLE t (a VARCHAR(1048576), b VARCHAR(65536), c VARBINARY(1048576))",
+            },
+        )
         self.validate_identity(
             "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
             "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",

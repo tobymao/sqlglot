@@ -49,6 +49,7 @@ class Teradata(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "**": TokenType.DSTAR,
             "^=": TokenType.NEQ,
+            "BLOB": TokenType.BLOB,
             "BYTEINT": TokenType.SMALLINT,
             "COLLECT": TokenType.COMMAND,
             "DEL": TokenType.DELETE,

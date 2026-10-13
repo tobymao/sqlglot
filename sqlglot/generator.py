@@ -3844,6 +3844,8 @@ class Generator:
         return f"CHECK ({this})"
 
     def foreignkey_sql(self, expression: exp.ForeignKey) -> str:
+        this = self.sql(expression, "this")
+        this = f" {this}" if this else ""
         expressions = self.expressions(expression, flat=True)
         expressions = f" ({expressions})" if expressions else ""
         reference = self.sql(expression, "reference")
@@ -3854,7 +3856,7 @@ class Generator:
         update = f" ON UPDATE {update}" if update else ""
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"FOREIGN KEY{expressions}{reference}{delete}{update}{options}"
+        return f"FOREIGN KEY{this}{expressions}{reference}{delete}{update}{options}"
 
     def primarykey_sql(self, expression: exp.PrimaryKey) -> str:
         this = self.sql(expression, "this")

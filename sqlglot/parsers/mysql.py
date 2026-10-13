@@ -712,6 +712,17 @@ class MySQLParser(parser.Parser):
         part_list = self.expression(exp.PartitionList(this=name, expressions=values))
         return self.expression(exp.Partition(expressions=[part_list]))
 
+    def _parse_foreign_key(self) -> exp.ForeignKey:
+        # MySQL only uses this name when CONSTRAINT has none and no existing index fits
+        this = (
+            self._parse_id_var()
+            if self._next and self._next.token_type == TokenType.L_PAREN
+            else None
+        )
+        foreign_key = super()._parse_foreign_key()
+        foreign_key.set("this", this)
+        return foreign_key
+
     def _parse_primary_key(
         self,
         wrapped_optional: bool = False,

@@ -9187,7 +9187,7 @@ class Parser:
             kind = ""
 
         this = self._parse_string()
-        if not this and not kind:
+        if not kind and not isinstance(this, exp.Literal):
             return self._parse_as_command(start)
 
         return self.expression(exp.Refresh(this=this or self._parse_table(), kind=kind))

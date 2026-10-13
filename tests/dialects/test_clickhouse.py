@@ -562,13 +562,13 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT countMatches(SUBSTRING(s, 3), CONCAT('(?is)', 'a.b'))",
+            "SELECT countMatches(substringUTF8(s, 3), CONCAT('(?is)', 'a.b'))",
             read={
                 "snowflake": "SELECT REGEXP_COUNT(s, 'a.b', 3, 'cis')",
             },
         )
         self.validate_all(
-            "SELECT countMatches(SUBSTRING(s, 1), 'a')",
+            "SELECT countMatches(substringUTF8(s, 1), 'a')",
             read={
                 "snowflake": "SELECT REGEXP_COUNT(s, 'a', 1, 'ic')",
             },

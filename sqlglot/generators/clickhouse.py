@@ -558,7 +558,8 @@ class ClickHouseGenerator(generator.Generator):
         parameters = expression.args.get("parameters")
 
         if position:
-            this = exp.Substring(this=this, start=position)
+            # SUBSTRING counts bytes in ClickHouse, the position counts characters
+            this = self.func("substringUTF8", this, position)
 
         if parameters:
             flags = parameters.name if parameters.is_string else ""

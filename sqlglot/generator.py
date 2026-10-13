@@ -2565,6 +2565,9 @@ class Generator:
         expression: exp.TableSample,
         tablesample_keyword: str | None = None,
     ) -> str:
+        if expression.expressions:
+            self.unsupported("Multiple sample sets are not supported")
+
         method = self.sql(expression, "method")
         method = f"{method} " if method and self.TABLESAMPLE_WITH_METHOD else ""
         numerator = self.sql(expression, "bucket_numerator")

@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.errors import UnsupportedError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -12,6 +12,9 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_', 'NULL')")
         self.validate_identity("SELECT ARRAY_JOIN([1, 3, 5, NULL], '_')")
         self.validate_identity("ALTER TABLE a SWAP WITH b")
+        self.validate_identity(
+            "ALTER TABLE t PARTITION BY DATE_TRUNC('MONTH', dt) DISTRIBUTED BY HASH (a) BUCKETS 4"
+        )
         self.validate_identity("SELECT ARRAY_AGG(a) FROM x")
         self.validate_identity("SELECT ST_POINT(10, 20)")
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
@@ -146,6 +149,34 @@ class TestStarrocks(Validator):
 
         self.validate_identity("SELECT * FROM t, GENERATE_SERIES(t.s, t.e)")
 
+    def test_refresh_invalid_mode(self):
+        for clause in ("WITH", "MODE", "WITH SYNC", "WITH ASYNC"):
+            with self.subTest(clause=clause), self.assertRaises(ParseError):
+                self.parse_one(f"REFRESH MATERIALIZED VIEW mv {clause}")
+
+    def test_refresh_unsupported_options(self):
+        partition = "PARTITION START ('2020-02-01') END ('2020-03-01')"
+        for clause in (
+            "",
+            partition,
+            "FORCE",
+            "WITH SYNC MODE",
+            "WITH ASYNC MODE",
+            f"{partition} FORCE WITH SYNC MODE",
+        ):
+            sql = f"REFRESH MATERIALIZED VIEW mv {clause}".rstrip()
+            with self.subTest(clause=clause):
+                self.validate_all(
+                    sql,
+                    write={
+                        "": UnsupportedError if clause else sql,
+                        "postgres": UnsupportedError if clause else sql,
+                    },
+                )
+                self.assertEqual(
+                    self.parse_one(sql).sql("starrocks", unsupported_level=ErrorLevel.RAISE), sql
+                )
+
     def test_ddl(self):
         self.validate_identity("INSERT OVERWRITE my_table SELECT * FROM other_table")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")
@@ -160,6 +191,19 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "REFRESH EXTERNAL TABLE hudi1 PARTITION('date=2022-12-20', 'date=2022-12-21')"
         )
+
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 FORCE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH SYNC MODE")
+        self.validate_identity("REFRESH MATERIALIZED VIEW lo_mv1 WITH ASYNC MODE")
+        self.validate_identity(
+            'REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ("2020-02-01") END ("2020-03-01")',
+            "REFRESH MATERIALIZED VIEW lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01')",
+        )
+        self.validate_identity(
+            "REFRESH MATERIALIZED VIEW db.lo_mv1 PARTITION START ('2020-02-01') END ('2020-03-01') FORCE WITH SYNC MODE"
+        ).assert_is(exp.Refresh)
 
         ddl_sqls = [
             "PARTITION BY (col1, col2)",
@@ -251,6 +295,9 @@ class TestStarrocks(Validator):
 
         # RENAME table without TO keyword
         self.validate_identity("ALTER TABLE t1 RENAME t2")
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c INT TO r1, ADD COLUMN d INT", check_command_warning=True
+        )
 
     def test_identity(self):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
@@ -478,3 +525,61 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE test_table (col1 DATE) PARTITION BY RANGE (col1) (START ('2019-01-01') END ('2021-01-01') EVERY (INTERVAL 1 YEAR), START ('2021-01-01') END ('2021-05-01') EVERY (INTERVAL 1 MONTH), START ('2021-05-01') END ('2021-05-04') EVERY (INTERVAL 1 DAY))"
         )
+
+    def test_time_slice(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, 5, 'minute', 'floor')",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, FLOOR)",
+        )
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, 5, 'minute', 'ceil')",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+        )
+        self.validate_identity("SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE)")
+        self.validate_identity(
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, floor)",
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, FLOOR)",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (dt DATETIME) PARTITION BY TIME_SLICE(dt, INTERVAL 7 DAY) DISTRIBUTED BY HASH (dt)"
+        )
+
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+            read={
+                "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
+            },
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
+                "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt) + INTERVAL 5 MINUTE",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
+            read={
+                "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
+            },
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
+                "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt)",
+            },
+        )
+
+    def test_aggregate_key(self):
+        # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/
+        self.validate_identity(
+            "CREATE TABLE aggregate_tbl (site_id LARGEINT NOT NULL COMMENT 'id of site', date DATE NOT NULL COMMENT 'time of event', city_code VARCHAR(20) COMMENT 'city_code of user', pv BIGINT SUM DEFAULT '0' COMMENT 'total page views') AGGREGATE KEY (site_id, date, city_code) DISTRIBUTED BY HASH (site_id)"
+        ).find(exp.AggregateKeyProperty).assert_is(exp.AggregateKeyProperty)
+
+        for agg in ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL"):
+            with self.subTest(agg):
+                self.validate_identity(
+                    f"CREATE TABLE t (k1 INT, v1 INT {agg} NULL) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+                ).assert_is(exp.Create)
+
+        self.validate_identity(
+            "CREATE TABLE t (k1 INT, v1 HLL HLL_UNION) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
+        ).assert_is(exp.Create)

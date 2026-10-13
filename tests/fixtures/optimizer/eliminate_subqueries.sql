@@ -58,6 +58,10 @@ SELECT a FROM x WHERE b = (SELECT c FROM y WHERE y.a = x.a);
 SELECT a FROM (SELECT b FROM x) AS y CROSS JOIN (SELECT b FROM x) AS z;
 WITH y AS (SELECT b FROM x) SELECT a FROM y AS y CROSS JOIN y AS z;
 
+-- Case-sensitive recursive JSON paths must not share a CTE
+SELECT x.v, y.v FROM (SELECT JSON_EXTRACT(j, '$..Key') AS v FROM t) AS x JOIN (SELECT JSON_EXTRACT(j, '$..key') AS v FROM t) AS y ON x.v = y.v;
+WITH x AS (SELECT JSON_EXTRACT(j, '$..Key') AS v FROM t), y AS (SELECT JSON_EXTRACT(j, '$..key') AS v FROM t) SELECT x.v, y.v FROM x AS x JOIN y AS y ON x.v = y.v;
+
 -- Doubly duplicate CTE
 SELECT * FROM (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS z JOIN (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS q;
 WITH y AS (SELECT * FROM x), z AS (SELECT * FROM x, y AS y) SELECT * FROM z AS z, z AS q;

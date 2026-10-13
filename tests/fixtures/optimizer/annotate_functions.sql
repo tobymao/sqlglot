@@ -119,10 +119,10 @@ UNICODE('bcd');
 INT;
 
 CEIL(tbl.double_col);
-INT;
+DOUBLE;
 
 FLOOR(tbl.double_col);
-INT;
+DOUBLE;
 
 LAST_DAY(tbl.timestamp_col);
 DATE;
@@ -5395,7 +5395,7 @@ DOUBLE;
 
 # dialect: snowflake
 SIGN(tbl.double_col);
-INT;
+DOUBLE;
 
 # dialect: snowflake
 SKEW(tbl.double_col);
@@ -7384,6 +7384,18 @@ BIGINT;
 # dialect: duckdb
 BIT_XOR(tbl.bit_col);
 BIT;
+
+# dialect: duckdb
+Mode(tbl.int_col);
+INT;
+
+# dialect: duckdb
+Mode(tbl.str_col);
+VARCHAR;
+
+# dialect: duckdb
+Mode(tbl.date_col);
+DATE;
 
 --------------------------------------
 -- Postgres

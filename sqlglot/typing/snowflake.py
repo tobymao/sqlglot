@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import seq_get
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_by_numeric_arg
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -239,15 +239,31 @@ def _annotate_str_to_time(self: TypeAnnotator, expression: exp.StrToTime) -> exp
     return expression
 
 
+def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    if expression.this.is_type(*exp.DataType.TEXT_TYPES):
+        # A scale argument changes Snowflake's implicit string coercion from FLOAT to NUMBER.
+        return self._set_type(
+            expression,
+            exp.DType.DOUBLE if expression.args.get("decimals") is None else exp.DType.UNKNOWN,
+        )
+    if expression.this.is_type(exp.DType.VARIANT):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    return annotate_by_numeric_arg(self, expression)
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
+    **{expr_type: {"annotator": _annotate_floor_ceil} for expr_type in {exp.Ceil, exp.Floor}},
+    exp.Sign: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DType.DOUBLE if e.this.is_type(*exp.DataType.FLOAT_TYPES) else exp.DType.INT
+        )
+    },
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.AddMonths,
-            exp.Ceil,
             exp.DateTrunc,
-            exp.Floor,
             exp.Left,
             exp.Mode,
             exp.Pad,

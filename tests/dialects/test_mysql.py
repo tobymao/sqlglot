@@ -56,11 +56,33 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+        self.validate_identity("ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES p (a)")
+        self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY fk (a) REFERENCES p (a)",
+            "ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES p (a)",
+        )
+        self.validate_identity("ALTER TABLE t ADD CONSTRAINT c FOREIGN KEY fk (a) REFERENCES p (a)")
+        self.validate_identity("CREATE TABLE t (a INT, FOREIGN KEY fk (a) REFERENCES p (a))")
         alter = self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
         alter.args["actions"][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")
         self.validate_identity("ALTER TABLE t DROP KEY k", "ALTER TABLE t DROP INDEX k")
         self.validate_identity("ALTER TABLE t DROP CHECK c").args["actions"][0].assert_is(exp.Drop)
+        self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT UNIQUE uq_a (a)", "ALTER TABLE t ADD UNIQUE uq_a (a)"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, CONSTRAINT PRIMARY KEY (a))",
+            "CREATE TABLE t (a INT, PRIMARY KEY (a))",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT CONSTRAINT CHECK (a > 0))",
+            "CREATE TABLE t (a INT CHECK (a > 0))",
+        )
+        self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY (a) REFERENCES p (a)",
+            "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (a)",
+        )
         self.validate_identity(
             "CREATE TABLE t (a BIGINT SIGNED, b DECIMAL(5, 2) SIGNED)",
             "CREATE TABLE t (a BIGINT, b DECIMAL(5, 2))",
@@ -97,6 +119,22 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t AUTO_INCREMENT=3000000000")
         self.validate_identity("ALTER TABLE t COMMENT='hi'")
         self.validate_identity("ALTER TABLE t COMMENT 'hi'", "ALTER TABLE t COMMENT='hi'")
+        self.validate_identity("ALTER TABLE t FORCE").assert_is(exp.Alter)
+        self.validate_identity(
+            "ALTER TABLE t ENGINE=InnoDB PARTITION BY LIST (a) (PARTITION p0 VALUES IN (1))"
+        )
+        for sql in (
+            "ALTER TABLE t PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+            "ALTER TABLE t PARTITION BY RANGE COLUMNS (a, b) (PARTITION p0 VALUES LESS THAN (10, 20))",
+            "ALTER TABLE t PARTITION BY LIST COLUMNS (a) (PARTITION p0 VALUES IN (1, 2))",
+            "ALTER TABLE t PARTITION BY LIST (a) (PARTITION p0 VALUES IN (1) COMMENT = 'x')",
+            "ALTER TABLE t PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB)",
+        ):
+            self.validate_identity(sql, check_command_warning=True)
+        self.validate_identity(
+            "ALTER TABLE t ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8",
+            "ALTER TABLE t ROW_FORMAT=COMPRESSED, KEY_BLOCK_SIZE=8",
+        )
         self.validate_identity("ALTER VIEW v AS SELECT a, b, c, d FROM foo")
         self.validate_identity("ALTER VIEW v AS SELECT * FROM foo WHERE c > 100")
         self.validate_identity(
@@ -270,6 +308,14 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t ADD INDEX k (c(20))")
         self.validate_identity("ALTER TABLE t ADD PRIMARY KEY (c(20))")
         self.validate_identity(
+            "ALTER TABLE t ADD PRIMARY KEY (a) KEY_BLOCK_SIZE=8",
+            "ALTER TABLE t ADD PRIMARY KEY (a) KEY_BLOCK_SIZE = 8",
+        )
+        self.validate_identity("ALTER TABLE t ADD PRIMARY KEY (a) COMMENT 'c'")
+        self.validate_identity(
+            "CREATE TABLE t (a INT, PRIMARY KEY (a) USING BTREE KEY_BLOCK_SIZE = 8 COMMENT 'c')"
+        )
+        self.validate_identity(
             "ALTER TABLE t ADD UNIQUE KEY u (c(20))",
             "ALTER TABLE t ADD UNIQUE u (c(20))",
         )
@@ -289,9 +335,19 @@ class TestMySQL(Validator):
             "ALTER TABLE test_table ALTER COLUMN test_column SET DATA TYPE LONGTEXT",
             "ALTER TABLE test_table MODIFY COLUMN test_column LONGTEXT",
         )
+        self.validate_identity("CREATE TABLE t (a INT) KEY_BLOCK_SIZE=8")
+        self.validate_identity("CREATE TABLE t (a INT) ENGINE=InnoDB KEY_BLOCK_SIZE=8 MAX_ROWS=100")
         self.validate_identity(
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC",
             "CREATE TABLE t (c DATETIME DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP()) DEFAULT CHARACTER SET=utf8 ROW_FORMAT=DYNAMIC",
+        )
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c VARCHAR(25) ASCII NULL, ADD COLUMN a BINARY(16) NULL",
+            "ALTER TABLE t ADD COLUMN c VARCHAR(25) CHARACTER SET latin1 NULL, ADD COLUMN a BINARY(16) NULL",
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a VARCHAR(5) UNICODE BINARY, b VARCHAR(5) BINARY ASCII)",
+            "CREATE TABLE t (a VARCHAR(5) CHARACTER SET ucs2 BINARY, b VARCHAR(5) BINARY CHARACTER SET latin1)",
         )
         for sql, expected in (
             (
@@ -445,22 +501,33 @@ class TestMySQL(Validator):
                     self.assertNotIsInstance(action, exp.Command)
 
         for sql, expected, num_actions, num_options in (
-            ("ALTER TABLE t COMMENT='hi', ADD COLUMN c INT", None, 2, 0),
-            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 1, 1),
+            (
+                "ALTER TABLE t COMMENT='hi', ADD COLUMN c INT",
+                "ALTER TABLE t ADD COLUMN c INT, COMMENT='hi'",
+                1,
+                1,
+            ),
+            ("ALTER TABLE t COMMENT='hi', AUTO_INCREMENT=3000000000", None, 0, 2),
+            (
+                "ALTER TABLE t ADD c INT, AUTO_INCREMENT=5, ADD d INT",
+                "ALTER TABLE t ADD COLUMN c INT, ADD COLUMN d INT, AUTO_INCREMENT=5",
+                2,
+                1,
+            ),
             ("ALTER TABLE t MODIFY COLUMN c INT COMMENT 'col', COMMENT='tbl'", None, 1, 1),
             ("ALTER TABLE t CHANGE COLUMN c d INT, COMMENT='hi'", None, 1, 1),
             ("ALTER TABLE t ADD COLUMN c INT, COMMENT='x', AUTO_INCREMENT=5", None, 1, 2),
             (
                 "ALTER TABLE s.t COMMENT 'notes' AUTO_INCREMENT=5 COMPRESSION='zlib'",
                 "ALTER TABLE s.t COMMENT='notes', AUTO_INCREMENT=5, COMPRESSION='zlib'",
-                1,
-                2,
+                0,
+                3,
             ),
             (
                 "ALTER TABLE t COMMENT='x' AUTO_INCREMENT=5, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
                 "ALTER TABLE t COMMENT='x', AUTO_INCREMENT=5, ENGINE=InnoDB, ROW_FORMAT=DYNAMIC",
-                1,
-                3,
+                0,
+                4,
             ),
             (
                 "ALTER TABLE t ADD COLUMN x INT, ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
@@ -484,6 +551,10 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD COLUMN a INT, DROP b, ADD COLUMN c INT",
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT",
         ).assert_is(exp.Alter)
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMN c INT SECONDARY_ENGINE_ATTRIBUTE='{}', ADD COLUMN z INT",
+            check_command_warning=True,
+        )
 
     def test_column_key_constraint(self):
         self.validate_identity(
@@ -945,6 +1016,19 @@ class TestMySQL(Validator):
         )
         self.validate_identity(
             "CONVERT('a' USING binary)", "CAST('a' AS CHAR CHARACTER SET binary)"
+        )
+        self.validate_identity("SELECT CAST('ab' AS CHAR(4) CHARACTER SET utf8mb4)")
+        self.validate_identity(
+            "SELECT CAST('ab' AS CHAR(4) CHARSET binary)",
+            "SELECT CAST('ab' AS CHAR(4) CHARACTER SET binary)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT('abc', CHAR(2) CHARACTER SET latin1)",
+            "SELECT CAST('abc' AS CHAR(2) CHARACTER SET latin1)",
+        )
+        self.validate_identity(
+            "SELECT CONVERT('abc', CHAR CHARACTER SET latin1)",
+            "SELECT CAST('abc' AS CHAR CHARACTER SET latin1)",
         )
         self.validate_identity(
             "SELECT CONVERT(`col` USING `utf8mb4`)",
@@ -1832,6 +1916,19 @@ COMMENT='客户账户表'"""
             },
         )
 
+    def test_integer_division(self):
+        for source, expected in (
+            ("DIV(10, DIV(4, 2))", "10 DIV (4 DIV 2)"),
+            ("10 / DIV(4, 2)", "10 / (4 DIV 2)"),
+            ("300 * DIV(1000, 300) + 120", "300 * (1000 DIV 300) + 120"),
+            ("DIV(10 + 2, 3 + 1)", "(10 + 2) DIV (3 + 1)"),
+            ("DIV(10, 2) / DIV(4, 3)", "10 DIV 2 / (4 DIV 3)"),
+            ("-DIV(7, 2)", "-(7 DIV 2)"),
+            ("~DIV(7, 3)", "~(7 DIV 3)"),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {expected}", read={"bigquery": f"SELECT {source}"})
+
     def test_safe_div(self):
         self.validate_all(
             "a / b",
@@ -1902,6 +1999,22 @@ COMMENT='客户账户表'"""
             self.validate_identity(
                 f"""SELECT JSON_VALUE({json_doc}, '$.price' RETURNING DECIMAL(4, 2) {on_option} ON EMPTY {on_option} ON ERROR) AS price"""
             )
+
+    def test_weight_string(self):
+        for sql in (
+            "SELECT WEIGHT_STRING('ab')",
+            "SELECT WEIGHT_STRING('1' AS CHAR(1))",
+            "SELECT WEIGHT_STRING('ab' AS BINARY(4))",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql).selects[0].assert_is(exp.WeightString)
+
+        self.validate_identity("SELECT WEIGHT_STRING('ab', 0, 3, 0)").selects[0].assert_is(
+            exp.Anonymous
+        )
+        self.assertEqual(
+            self.parse_one("SELECT weight_string('ab', 0, 3, 0)").selects[0].name, "weight_string"
+        )
 
     def test_grant(self):
         grant_cmds = [

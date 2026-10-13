@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
+    no_filter_sql,
     remove_ts_or_ds_to_date,
     rename_func,
     strposition_sql,
@@ -69,10 +70,8 @@ def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     return f"STRING_AGG({self.format_args(this, separator)}){order}"
 
 
-def qualify_derived_table_outputs(
-    expression: exp.Expr, query: exp.Select | None = None
-) -> exp.Expr:
-    """Qualifies CTE/Subquery outputs, with an explicit SELECT target for generated wrappers."""
+def qualify_derived_table_outputs(expression: exp.Expr, query: exp.Query | None = None) -> exp.Expr:
+    """Qualifies CTE/Subquery outputs using the inner query or an explicit query target."""
     alias = expression.args.get("alias")
 
     if (
@@ -218,6 +217,7 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.Day: remove_ts_or_ds_to_date(),
+        exp.Filter: no_filter_sql,
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,
         exp.If: rename_func("IIF"),
@@ -356,7 +356,7 @@ class TSQLGenerator(generator.Generator):
                 # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
                 expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
-            if isinstance(limit, exp.Limit):
+            if isinstance(limit, exp.Limit) and not limit.is_limit_all:
                 # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                 # we replace here because otherwise TOP would be generated in select_sql
                 limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
@@ -563,6 +563,12 @@ class TSQLGenerator(generator.Generator):
     def count_sql(self, expression: exp.Count) -> str:
         func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"
         return rename_func(func_name)(self, expression)
+
+    def countif_sql(self, expression: exp.CountIf) -> str:
+        # T-SQL has no COUNT_IF, so count the rows where the predicate holds instead
+        return self.func(
+            "COUNT", exp.If(this=expression.this, true=exp.Literal.number(1), false=exp.null())
+        )
 
     def datediff_sql(self, expression: exp.DateDiff) -> str:
         func_name = "DATEDIFF_BIG" if expression.args.get("big_int") else "DATEDIFF"

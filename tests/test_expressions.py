@@ -4,6 +4,7 @@ import sys
 import unittest
 
 from sqlglot import ParseError, alias, exp, parse_one
+from sqlglot.parser import logger as parser_logger
 
 
 class TestExprs(unittest.TestCase):
@@ -77,6 +78,45 @@ class TestExprs(unittest.TestCase):
             exp.Identifier(this="a", temporary=True),
             exp.Identifier(this="a"),
         )
+
+    def test_eq_case_sensitive_text(self):
+        for read, sql in (
+            ("postgres", "E'{}'"),
+            ("postgres", "$${}$$"),
+            ("postgres", "CREATE FUNCTION f() AS $${}$$"),
+            ("postgres", "U&'{}'"),
+            (None, "N'{}'"),
+            (None, "x -> '{}'"),
+            (None, "JSON_EXTRACT(x, '$..{}')"),
+            (None, "JSON_EXTRACT(x, '$[?(@.{})]')"),
+            (None, "JSON_EXTRACT(x, '$[(@.{})]')"),
+            (None, """JSON_EXTRACT(x, '$["{}", "b"]')"""),
+            ("singlestore", "x::?{}"),
+            (None, ":{}"),
+            ("mysql", "CREATE DEFINER=`{}`@`%` VIEW v AS SELECT 1"),
+        ):
+            with self.subTest(sql):
+                self.assertNotEqual(
+                    parse_one(sql.format("a"), read=read), parse_one(sql.format("A"), read=read)
+                )
+
+        # ClickHouse only builds these for exact-case names, so construct them directly
+        for agg in (exp.AnonymousAggFunc, exp.CombinedAggFunc):
+            self.assertNotEqual(
+                agg(this="sumMap", expressions=[]), agg(this="summap", expressions=[])
+            )
+        for agg in (exp.ParameterizedAgg, exp.CombinedParameterizedAgg):
+            self.assertNotEqual(
+                agg(this="quantileGK", expressions=[], params=[]),
+                agg(this="quantilegk", expressions=[], params=[]),
+            )
+
+        self.assertEqual(parse_one("x'FF'", read="postgres"), parse_one("x'ff'", read="postgres"))
+
+        # Command fallback: payload keeps its case, the keyword doesn't
+        with self.assertLogs(parser_logger):
+            self.assertNotEqual(parse_one("GRANT a"), parse_one("GRANT A"))
+            self.assertEqual(parse_one("VACUUM a"), parse_one("vacuum a"))
 
     def test_eq_on_same_instance_short_circuits(self):
         expr = parse_one("1")

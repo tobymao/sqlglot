@@ -117,6 +117,7 @@ class TestParser(unittest.TestCase):
         for dialect, sql, expected in [
             ("postgres", "SELECT TRIM($$leading$$)", "SELECT TRIM('leading')"),
             ("tsql", "SELECT TRIM(N'both')", "SELECT TRIM(N'both')"),
+            ("oracle", "SELECT TRIM(nq'[both]')", "SELECT TRIM(N'both')"),
             ("postgres", 'SELECT TRIM("leading" FROM x)', 'SELECT TRIM("leading" FROM x)'),
             ("mysql", "INSERT `local` (a) VALUES (1)", "INSERT INTO `local` (a) VALUES (1)"),
             (

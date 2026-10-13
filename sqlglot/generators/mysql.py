@@ -123,6 +123,7 @@ class MySQLGenerator(generator.Generator):
 
     INTERVAL_ALLOWS_PLURAL_FORM = False
     LOCKING_READS_SUPPORTED = True
+    CAST_TO_INT_ROUNDS = True
     NULL_ORDERING_SUPPORTED: bool | None = None
     JOIN_HINTS = False
     TABLE_HINTS = True
@@ -141,6 +142,11 @@ class MySQLGenerator(generator.Generator):
     VARCHAR_REQUIRES_SIZE = True
     SUPPORTS_MEDIAN = False
     UPDATE_STATEMENT_SUPPORTS_FROM = False
+
+    ALTER_PARTITION_OPTIONS: t.ClassVar[tuple[type[exp.Expr], ...]] = (
+        exp.PartitionByListProperty,
+        exp.PartitionByRangeProperty,
+    )
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
@@ -213,7 +219,9 @@ class MySQLGenerator(generator.Generator):
             lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e))
         ),
         exp.Trim: trim_sql,
-        exp.Trunc: rename_func("TRUNCATE"),
+        exp.Trunc: lambda self, e: self.func(
+            "TRUNCATE", e.this, e.args.get("decimals") or exp.Literal.number(0)
+        ),
         exp.TryCast: no_trycast_sql,
         exp.TsOrDsAdd: date_add_sql("ADD"),
         exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
@@ -273,6 +281,7 @@ class MySQLGenerator(generator.Generator):
         exp.PartitionedByProperty: exp.Properties.Location.UNSUPPORTED,
         exp.PartitionByRangeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionByListProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Property: exp.Properties.Location.POST_SCHEMA,
     }
 
     LIMIT_FETCH = "LIMIT"
@@ -653,6 +662,20 @@ class MySQLGenerator(generator.Generator):
 
     def dpipe_sql(self, expression: exp.DPipe) -> str:
         return self.func("CONCAT", *expression.flatten())
+
+    def intdiv_sql(self, expression: exp.IntDiv) -> str:
+        this = self.sql(exp._wrap(expression.this, exp.Binary))
+        divisor = self.sql(exp._wrap(expression.expression, exp.Binary))
+        sql = f"{this} {self.maybe_comment('DIV', comments=expression.comments)} {divisor}"
+
+        parent = expression.parent
+        if isinstance(parent, (exp.Neg, exp.BitwiseNot)) or (
+            isinstance(parent, (exp.Mul, exp.Div, exp.IntDiv, exp.Mod))
+            and parent.expression is expression
+        ):
+            return f"({sql})"
+
+        return sql
 
     def extract_sql(self, expression: exp.Extract) -> str:
         unit = expression.name

@@ -6,6 +6,213 @@ from sqlglot.optimizer.qualify import qualify
 class TestOracle(Validator):
     dialect = "oracle"
 
+    def test_create_table_tablespace(self):
+        sql = "CREATE TABLE t (id NUMBER) TABLESPACE ts"
+        create = self.validate_identity(sql).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.this, exp.Schema)
+        self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+        self.validate_identity('CREATE TABLE t (id NUMBER) TABLESPACE "Mixed Ts"')
+        with self.assertRaises(UnsupportedError):
+            create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+    def test_create_table_physical_properties(self):
+        for clause in (
+            "PCTFREE 10",
+            "PCTUSED 40",
+            "INITRANS 2",
+            "MAXTRANS 255",
+            "LOGGING",
+            "NOLOGGING",
+            "PCTFREE 10 PCTUSED 40 INITRANS 2 MAXTRANS 255 NOLOGGING",
+            "LOGGING TABLESPACE users PCTFREE 10",
+        ):
+            with self.subTest(clause=clause):
+                create = self.validate_identity(f"CREATE TABLE t (id NUMBER) {clause}").assert_is(
+                    exp.Create
+                )
+                self.assertIsInstance(create.this, exp.Schema)
+                self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+                self.assertIsInstance(
+                    create.args["properties"].expressions[0], exp.PhysicalProperty
+                )
+                with self.assertRaisesRegex(UnsupportedError, "physicalproperty"):
+                    create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_identity(
+            "create table t (id number) pctfree 10 nologging",
+            "CREATE TABLE t (id NUMBER) PCTFREE 10 NOLOGGING",
+        )
+        self.validate_identity('CREATE TABLE "t" ("id" NUMBER) PCTFREE 10 NOLOGGING', identify=True)
+        create = self.validate_identity(
+            "CREATE TABLE t PCTFREE 10 NOLOGGING AS SELECT 1 AS id FROM dual"
+        ).assert_is(exp.Create)
+        self.assertIsInstance(create.expression, exp.Select)
+
+    def test_create_table_storage(self):
+        create = self.validate_identity(
+            "CREATE TABLE t (id NUMBER) TABLESPACE ts PCTFREE 10 STORAGE (INITIAL 64K)"
+        ).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.this, exp.Schema)
+        self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
+        tablespace, pctfree, storage = create.args["properties"].expressions
+        self.assertIsInstance(tablespace, exp.TableSpaceProperty)
+        self.assertEqual(pctfree.name, "PCTFREE")
+        self.assertEqual(pctfree.args["value"], exp.Literal.number(10))
+        self.assertIsInstance(storage, exp.StorageProperty)
+        self.assertEqual(storage.expressions[0].name, "INITIAL")
+        self.assertEqual(storage.expressions[0].args["value"], exp.var("64K"))
+
+        for options in (
+            "INITIAL 65536 NEXT 1048576",
+            "INITIAL 64K NEXT 1M MINEXTENTS 1 MAXEXTENTS UNLIMITED MAXSIZE 2M "
+            "PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT "
+            "FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT",
+            "MAXEXTENTS 100 MAXSIZE UNLIMITED BUFFER_POOL KEEP FLASH_CACHE NONE CELL_FLASH_CACHE KEEP",
+            "BUFFER_POOL RECYCLE FLASH_CACHE KEEP CELL_FLASH_CACHE NONE",
+        ):
+            with self.subTest(options=options):
+                create = self.validate_identity(
+                    f"CREATE TABLE t (id NUMBER) STORAGE ({options}) TABLESPACE users LOGGING"
+                ).assert_is(exp.Create)
+                with self.assertRaisesRegex(UnsupportedError, "storageproperty"):
+                    create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_identity(
+            "CREATE TABLE t (id NUMBER) storage (initial 64 k next 1 m) nologging",
+            "CREATE TABLE t (id NUMBER) STORAGE (INITIAL 64K NEXT 1M) NOLOGGING",
+        )
+        create = self.validate_identity(
+            "CREATE TABLE t STORAGE (INITIAL 64K) NOLOGGING AS SELECT 1 AS id FROM dual"
+        ).assert_is(exp.Create)
+        self.assertIsInstance(create.expression, exp.Select)
+        self.validate_identity(
+            "CREATE TABLE t (\n  id NUMBER\n)\nPCTFREE 10\nSTORAGE (INITIAL 64K NEXT 1M)\nLOGGING",
+            pretty=True,
+        )
+
+        for clause in (
+            "PCTFREE",
+            "STORAGE ()",
+            "STORAGE (INITIAL)",
+            "STORAGE (FREELIST 1)",
+            "STORAGE (INITIAL 64K",
+            "STORAGE (INITIAL 64K UNKNOWN 1)",
+        ):
+            with self.subTest(clause=clause), self.assertRaises(ParseError):
+                self.parse_one(f"CREATE TABLE t (id NUMBER) {clause}")
+
+    def test_partition_selection(self):
+        for keyword in ("PARTITION", "SUBPARTITION"):
+            for name in ("p1", '"P1"'):
+                for alias in ("", " s"):
+                    with self.subTest(keyword=keyword, name=name, alias=alias):
+                        sql = f'SELECT * FROM "SH"."SALES" {keyword}({name}){alias}'
+                        table = self.validate_identity(sql).find(exp.Table)
+                        partition = table.args["partition"]
+                        self.assertIsInstance(partition, exp.Partition)
+                        self.assertEqual(partition.args["subpartition"], keyword == "SUBPARTITION")
+                        self.assertEqual(partition.expressions[0].sql("oracle"), name)
+                        self.assertEqual(table.alias, alias.strip())
+
+        self.validate_identity(
+            'SELECT * FROM "SH"."SALES" PARTITION ("P1") s',
+            'SELECT * FROM "SH"."SALES" PARTITION("P1") s',
+        )
+        self.validate_identity(
+            "SELECT s.col1 FROM sales PARTITION(p1) s JOIN sales SUBPARTITION(sp1) t ON s.id = t.id"
+        )
+
+    def test_insert_partition(self):
+        for keyword in ("PARTITION", "SUBPARTITION"):
+            for alias in ("", " s"):
+                for columns in ("", " (col1)"):
+                    with self.subTest(keyword=keyword, alias=alias, columns=columns):
+                        sql = f"INSERT INTO sales {keyword}(p1){alias}{columns} VALUES (1)"
+                        insert = self.validate_identity(sql)
+                        table = insert.find(exp.Table)
+                        self.assertIsInstance(table.args["partition"], exp.Partition)
+                        self.assertEqual(
+                            table.args["partition"].args["subpartition"], keyword == "SUBPARTITION"
+                        )
+                        self.assertEqual(table.alias, alias.strip())
+                        if columns:
+                            self.assertIsInstance(insert.this, exp.Schema)
+                            self.assertEqual(insert.this.expressions[0].name, "col1")
+
+        self.validate_identity(
+            "INSERT INTO sales PARTITION (p1) (col1) VALUES (1)",
+            "INSERT INTO sales PARTITION(p1) (col1) VALUES (1)",
+        )
+        self.validate_identity('INSERT INTO "SH"."SALES" SUBPARTITION("P1") s (col1) VALUES (1)')
+        self.validate_identity("INSERT INTO sales s (col1) VALUES (1)")
+        self.validate_identity('INSERT INTO sales "PARTITION" (col1) VALUES (1)')
+        self.validate_identity("INSERT INTO sales PARTITION(p1) (col1) SELECT col1 FROM source")
+
+    def test_flashback(self):
+        for kind, value in (
+            ("SCN", "123456"),
+            ("SCN", ":scn"),
+            ("SCN", "(123456 + 1)"),
+            ("SCN", "123456 + 1"),
+            ("TIMESTAMP", "SYSTIMESTAMP"),
+            ("TIMESTAMP", "SYSDATE - 1 / 24"),
+            ("TIMESTAMP", "SYSTIMESTAMP - INTERVAL '1' HOUR"),
+            (
+                "TIMESTAMP",
+                "TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS')",
+            ),
+        ):
+            for alias in ("", " s"):
+                with self.subTest(kind=kind, value=value, alias=alias):
+                    sql = f'SELECT * FROM "SH"."SALES" AS OF {kind} {value}{alias}'
+                    table = self.validate_identity(sql).find(exp.Table)
+                    version = table.args["version"]
+                    self.assertIsInstance(version, exp.Version)
+                    self.assertEqual(version.this, kind)
+                    self.assertEqual(version.text("kind"), "AS OF")
+                    self.assertEqual(version.expression.sql("oracle"), value)
+                    self.assertEqual(table.alias, alias.strip())
+
+        self.validate_identity("SELECT * FROM sales PARTITION(p1) AS OF SCN 123456 s")
+        self.validate_identity("SELECT * FROM sales SAMPLE (10) AS OF SCN 123456 s")
+        self.validate_identity(
+            "SELECT * FROM sales SUBPARTITION(sp1) SAMPLE (10) AS OF TIMESTAMP SYSDATE - 1 s WHERE s.id = 1"
+        )
+        self.validate_all(
+            "SELECT * FROM sales SAMPLE (10) AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
+            read={
+                "spark": "SELECT * FROM sales TIMESTAMP AS OF '2026-10-10 12:00:00' TABLESAMPLE (10 PERCENT) AS s",
+            },
+        )
+        self.validate_identity(
+            "SELECT s.col1 FROM sales AS OF SCN 123456 s JOIN sales AS OF SCN 123457 t ON s.id = t.id"
+        )
+        self.validate_identity("SELECT * FROM sales AS s", "SELECT * FROM sales s")
+        self.validate_all(
+            "SELECT * FROM sales AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
+            read={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00'",
+            },
+            write={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF PARSE_TIMESTAMP('%F %H:%M:%E6S', '2026-10-10 12:00:00')",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM sales AS OF TIMESTAMP TO_TIMESTAMP('2026-10-10 12:00:00.123456', 'YYYY-MM-DD HH24:MI:SS.FF6') s",
+            read={
+                "bigquery": "SELECT * FROM sales AS s FOR SYSTEM_TIME AS OF '2026-10-10 12:00:00.123456'",
+                "spark": "SELECT * FROM sales TIMESTAMP AS OF '2026-10-10 12:00:00.123456' AS s",
+            },
+        )
+        self.assertEqual(
+            exp.Version(this="SCN", kind="AS OF", expression=exp.Literal.number(123456)).sql(
+                "oracle"
+            ),
+            "AS OF SCN 123456",
+        )
+
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
         self.validate_all(
@@ -673,6 +880,23 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         for query in (f"{body}{start}{connect}", f"{body}{connect}{start}"):
             self.validate_identity(query, pretty, pretty=True)
 
+    def test_recursive_cte(self):
+        cte = "WITH dup_hiredate(eid, emp_last, mgr_id, reportLevel, hire_date, job_id) AS (SELECT employee_id, last_name, manager_id, 0 AS reportLevel, hire_date, job_id FROM employees WHERE manager_id IS NULL UNION ALL SELECT e.employee_id, e.last_name, e.manager_id, r.reportLevel + 1 AS reportLevel, e.hire_date, e.job_id FROM dup_hiredate r, employees e WHERE r.eid = e.manager_id)"
+        select = "SELECT LPAD(' ', 2 * reportLevel) || emp_last AS emp_name, eid, mgr_id, hire_date, job_id"
+        search = "SEARCH DEPTH FIRST BY hire_date SET order1"
+        cycle = "CYCLE hire_date SET is_cycle TO 'Y' DEFAULT 'N'"
+
+        self.validate_identity(f"{cte} {search} {select} FROM dup_hiredate ORDER BY order1")
+        self.validate_identity(f"{cte} {cycle} {select}, is_cycle FROM dup_hiredate")
+
+        with_ = self.validate_identity(
+            f"{cte} {search} {cycle} {select}, is_cycle FROM dup_hiredate ORDER BY order1"
+        ).args["with_"]
+        self.assertEqual(with_.args["search"].args["kind"], "DEPTH")
+        self.assertEqual(with_.args["cycle"].args["kind"], "CYCLE")
+        self.assertEqual(with_.args["cycle"].args["to"], exp.Literal.string("Y"))
+        self.assertEqual(with_.args["cycle"].args["default"], exp.Literal.string("N"))
+
     def test_query_restrictions(self):
         for restriction in ("READ ONLY", "CHECK OPTION"):
             for constraint_name in (" CONSTRAINT name", ""):
@@ -879,7 +1103,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             write={
                 "oracle": "TRUNC(3.14159)",
                 "postgres": "TRUNC(3.14159)",
-                "mysql": "TRUNCATE(3.14159)",
+                "mysql": "TRUNCATE(3.14159, 0)",
                 "tsql": "ROUND(3.14159, 0, 1)",
             },
         )
@@ -1031,6 +1255,64 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
     def test_chr(self):
         self.validate_identity("SELECT CHR(187 USING NCHAR_CS)")
         self.validate_identity("SELECT CHR(187)")
+
+    def test_alternative_quoting(self):
+        for sql in (
+            "SELECT q'[it's]' FROM dual",
+            "SELECT q'{it's}' FROM dual",
+            "SELECT q'(it's)' FROM dual",
+            "SELECT q'<it's>' FROM dual",
+            "SELECT q'!it's!' FROM dual",
+            "SELECT Q'#it's#' FROM dual",
+            "SELECT q']it's]' FROM dual",
+            "SELECT q'}it's}' FROM dual",
+            "SELECT q')it's)' FROM dual",
+            "SELECT q'>it's>' FROM dual",
+            "SELECT q''it's'' FROM dual",
+            "SELECT q'ait'sa' FROM dual",
+            "SELECT Q'Ait'sA' FROM dual",
+            "SELECT q'0it's0' FROM dual",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, "SELECT 'it''s' FROM dual")
+
+        self.validate_identity("SELECT q'[a''b]' FROM dual", "SELECT 'a''''b' FROM dual")
+        self.validate_identity("SELECT q'[a]b]' FROM dual", "SELECT 'a]b' FROM dual")
+        self.validate_identity("SELECT q'|\\n|' FROM dual", "SELECT '\\n' FROM dual")
+
+        expressions = parse(
+            "INSERT INTO t VALUES (q'[a;b]'); CREATE TABLE u (id NUMBER)", read="oracle"
+        )
+        self.assertEqual(
+            [e.sql("oracle") for e in expressions],
+            ["INSERT INTO t VALUES ('a;b')", "CREATE TABLE u (id NUMBER)"],
+        )
+
+    def test_national_alternative_quoting(self):
+        for prefix in ("nq", "nQ", "Nq", "NQ"):
+            for quoted, expected in (
+                ("'[it's]'", "N'it''s'"),
+                ("'{it's}'", "N'it''s'"),
+                ("'(it's)'", "N'it''s'"),
+                ("'<it's>'", "N'it''s'"),
+                ("'!it's!'", "N'it''s'"),
+                ("']it's]'", "N'it''s'"),
+                ("''it's''", "N'it''s'"),
+                ("'Ait'sA'", "N'it''s'"),
+                ("'0it's0'", "N'it''s'"),
+                ("'[a''b]'", "N'a''''b'"),
+                ("'[a]b]'", "N'a]b'"),
+                ("'|\\n|'", "N'\\n'"),
+                ("'[a\nb]'", "N'a\nb'"),
+                ("'[é漢]'", "N'é漢'"),
+                ("'[]'", "N''"),
+                ("'[a;b]'", "N'a;b'"),
+            ):
+                with self.subTest(prefix=prefix, quoted=quoted):
+                    expression = self.validate_identity(
+                        f"SELECT {prefix}{quoted} FROM dual", f"SELECT {expected} FROM dual"
+                    )
+                    self.assertIsInstance(expression.expressions[0], exp.National)
 
     def test_full_procedure(self):
         sql = """

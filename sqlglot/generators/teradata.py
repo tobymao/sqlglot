@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     to_number_with_nls_param,
 )
+from sqlglot.parsers.teradata import is_window_aggregate
 from collections import defaultdict
 
 
@@ -116,6 +117,24 @@ class TeradataGenerator(generator.Generator):
         tablesample_keyword: str | None = None,
     ) -> str:
         return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
+
+    def window_sql(self, expression: exp.Window) -> str:
+        spec = expression.args.get("spec")
+
+        if (
+            spec
+            and expression.args.get("order")
+            and is_window_aggregate(expression)
+            and spec.text("kind").upper() == "ROWS"
+            and spec.text("start").upper() == "UNBOUNDED"
+            and spec.text("start_side").upper() == "PRECEDING"
+            and spec.text("end").upper() == "UNBOUNDED"
+            and spec.text("end_side").upper() == "FOLLOWING"
+        ):
+            # This is the default frame of window aggregates with ORDER BY in Teradata
+            expression.set("spec", None)
+
+        return super().window_sql(expression)
 
     def partitionedbyproperty_sql(self, expression: exp.PartitionedByProperty) -> str:
         return f"PARTITION BY {self.sql(expression, 'this')}"

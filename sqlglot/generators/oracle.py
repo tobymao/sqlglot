@@ -26,6 +26,7 @@ class OracleGenerator(generator.Generator):
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True
     SUPPORTS_MERGE_WHERE = True
+    CAST_TO_INT_ROUNDS = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     DATA_TYPE_SPECIFIERS_ALLOWED = True
@@ -105,12 +106,23 @@ class OracleGenerator(generator.Generator):
         exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
         exp.UtcTime: rename_func("UTC_TIME"),
         exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.PhysicalProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StorageProperty: exp.Properties.Location.POST_SCHEMA,
     }
+
+    def physicalproperty_sql(self, expression: exp.PhysicalProperty) -> str:
+        value = self.sql(expression, "value")
+        return f"{expression.name}{f' {value}' if value else ''}"
+
+    def storageproperty_sql(self, expression: exp.StorageProperty) -> str:
+        return f"STORAGE ({self.expressions(expression, sep=' ', flat=True)})"
 
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         if expression.args.get("sysdate"):
@@ -118,6 +130,17 @@ class OracleGenerator(generator.Generator):
 
         this = expression.this
         return self.func("CURRENT_TIMESTAMP", this) if this else "CURRENT_TIMESTAMP"
+
+    def version_sql(self, expression: exp.Version) -> str:
+        if expression.text("kind") == "AS OF":
+            value = expression.expression
+            value_sql = (
+                self.func("TO_TIMESTAMP", value, exp.Literal.string("YYYY-MM-DD HH24:MI:SS.FF6"))
+                if expression.name == "TIMESTAMP" and value.is_string
+                else self.sql(value)
+            )
+            return f"AS OF {expression.name} {value_sql}"
+        return super().version_sql(expression)
 
     def offset_sql(self, expression: exp.Offset) -> str:
         return f"{super().offset_sql(expression)} ROWS"

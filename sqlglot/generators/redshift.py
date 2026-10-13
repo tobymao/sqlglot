@@ -20,6 +20,7 @@ from sqlglot.helper import seq_get
 class RedshiftGenerator(PostgresGenerator):
     LOCKING_READS_SUPPORTED = False
     QUERY_HINTS = False
+    CAST_TO_INT_ROUNDS = True
     VALUES_AS_TABLE = False
     TZ_TO_WITH_TIME_ZONE = True
     NVL2_SUPPORTED = True
@@ -66,6 +67,7 @@ class RedshiftGenerator(PostgresGenerator):
                 exp.LastDay,
                 exp.SHA2,
                 exp.Getbit,
+                exp.IntDiv,
                 exp.Round,
                 exp.TryCast,
             }

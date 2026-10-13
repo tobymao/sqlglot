@@ -867,7 +867,7 @@ class Expression(Expr):
                     for k in sorted(node.args):
                         v = node.args[k]
                         if v:
-                            hash_ = hash((hash_, k, v))
+                            hash_ = hash((hash_, k, tuple(v) if type(v) is list else v))
                 else:
                     for k in sorted(node.args):
                         v = node.args[k]
@@ -1595,7 +1595,14 @@ class Uncache(Expression):
 
 
 class Refresh(Expression):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "partition_start": False,
+        "partition_end": False,
+        "force": False,
+        "mode": False,
+    }
 
 
 class LockingStatement(Expression):
@@ -1859,6 +1866,7 @@ class SessionParameter(Expression, Condition):
 
 class Placeholder(Expression, Condition):
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
+    _hash_raw_args = True
 
     @property
     def name(self) -> str:
@@ -1994,6 +2002,7 @@ class Typeof(Expression, Func):
 
 class ParameterizedAgg(Expression, AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
+    _hash_raw_args = True
 
 
 class Anonymous(Expression, Func):
@@ -2008,6 +2017,7 @@ class Anonymous(Expression, Func):
 class AnonymousAggFunc(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+    _hash_raw_args = True
 
 
 class CombinedAggFunc(AnonymousAggFunc):
@@ -2211,7 +2221,7 @@ class Like(Expression, Binary, Predicate):
 
 
 class Match(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "kind": False, "analyzer": False}
 
 
 class LT(Expression, Binary, Predicate):

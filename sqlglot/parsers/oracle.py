@@ -24,6 +24,14 @@ class OracleParser(parser.Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
+    SUPPORTS_PARTITION_SELECTION = True
+
+    VERSION_PHRASES = {
+        **parser.Parser.VERSION_PHRASES,
+        ("AS", "OF", "SCN"): "SCN",
+        ("AS", "OF", "TIMESTAMP"): "TIMESTAMP",
+    }
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "TO_BOOLEAN"},
@@ -73,6 +81,32 @@ class OracleParser(parser.Parser):
             and self.expression(exp.TemporaryProperty(this="PRIVATE"))
         ),
         "FORCE": lambda self: self.expression(exp.ForceProperty()),
+        "TABLESPACE": lambda self: self.expression(
+            exp.TableSpaceProperty(this=self._parse_id_var())
+        ),
+        **dict.fromkeys(
+            ("PCTFREE", "PCTUSED", "INITRANS", "MAXTRANS"),
+            lambda self: self._parse_physical_property(),
+        ),
+        **dict.fromkeys(
+            ("LOGGING", "NOLOGGING"),
+            lambda self: self.expression(exp.PhysicalProperty(this=self._prev.text.upper())),
+        ),
+        "STORAGE": lambda self: self._parse_storage(),
+    }
+
+    STORAGE_OPTIONS = {
+        "INITIAL",
+        "NEXT",
+        "MINEXTENTS",
+        "MAXEXTENTS",
+        "MAXSIZE",
+        "PCTINCREASE",
+        "FREELISTS",
+        "FREELIST",
+        "BUFFER_POOL",
+        "FLASH_CACHE",
+        "CELL_FLASH_CACHE",
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -102,6 +136,48 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_physical_property(self) -> exp.PhysicalProperty:
+        name = self._prev.text.upper()
+        value = self._parse_number()
+        if value is None:
+            self.raise_error(f"Expected value for {name}")
+        return self.expression(exp.PhysicalProperty(this=name, value=value))
+
+    def _parse_storage(self) -> exp.StorageProperty:
+        def parse_options() -> list[exp.Expr]:
+            options: list[exp.Expr] = []
+            while self._match_texts(self.STORAGE_OPTIONS):
+                name = self._prev.text.upper()
+                if name == "FREELIST":
+                    if not self._match_text_seq("GROUPS"):
+                        self.raise_error("Expected GROUPS after FREELIST")
+                    name = "FREELIST GROUPS"
+
+                if name in ("BUFFER_POOL", "FLASH_CACHE", "CELL_FLASH_CACHE"):
+                    value: exp.Expr | None = self._parse_var_from_options(
+                        {
+                            "KEEP": (),
+                            "DEFAULT": (),
+                            "RECYCLE" if name == "BUFFER_POOL" else "NONE": (),
+                        }
+                    )
+                elif name in ("MAXEXTENTS", "MAXSIZE") and self._match_text_seq("UNLIMITED"):
+                    value = exp.var("UNLIMITED")
+                else:
+                    value = self._parse_number()
+                    if (
+                        value is not None
+                        and name in ("INITIAL", "NEXT", "MAXSIZE")
+                        and self._match_texts(("K", "M", "G", "T", "P", "E"))
+                    ):
+                        value = exp.var(f"{value.name}{self._prev.text.upper()}")
+                if value is None:
+                    self.raise_error(f"Expected value for {name}")
+                options.append(self.expression(exp.PhysicalProperty(this=name, value=value)))
+            return options
+
+        return self.expression(exp.StorageProperty(expressions=self._parse_wrapped(parse_options)))
 
     def _parse_to_number(self) -> exp.ToNumber:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html
@@ -250,11 +326,11 @@ class OracleParser(parser.Parser):
         this = self._parse_table_parts(schema=True)
 
         if isinstance(this, exp.Table):
+            this.set("partition", self._parse_partition())
+
             alias_name = self._parse_id_var(any_token=False)
             if alias_name:
                 this.set("alias", exp.TableAlias(this=alias_name))
-
-            this.set("partition", self._parse_partition())
 
             # Now parse the schema (column list) if present
             return self._parse_schema(this=this)

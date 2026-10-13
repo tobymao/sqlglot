@@ -21,16 +21,16 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
+    def __init__(self, scope: Scope, schema: Schema) -> None:
         self.scope: Scope = scope
         self.schema: Schema = schema
         self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
-        self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
+        self._outer_resolvers: list[Resolver] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -64,14 +64,8 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and self._infer_schema:
-            sources_without_schema = tuple(
-                source
-                for source, columns in self._get_all_source_columns().items()
-                if not columns or "*" in columns
-            )
-            if len(sources_without_schema) == 1:
-                table_name = sources_without_schema[0]
+        if not table_name:
+            return None
 
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
@@ -88,12 +82,15 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
-    def outer_resolvers(self) -> t.Iterator[Resolver]:
+    def outer_resolvers(self) -> list[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
-        scope = self.scope
-        while scope.can_be_correlated and scope.parent:
-            scope = scope.parent
-            yield Resolver(scope, self.schema, self._infer_schema)
+        if self._outer_resolvers is None:
+            self._outer_resolvers = []
+            scope = self.scope
+            while scope.can_be_correlated and scope.parent:
+                scope = scope.parent
+                self._outer_resolvers.append(Resolver(scope, self.schema))
+        return self._outer_resolvers
 
     @property
     def has_unknown_sources(self) -> bool:
@@ -388,7 +385,7 @@ class Resolver:
 
     def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
         """
-        Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
+        Get the type of a column being unnested/exploded from its source scope or table.
 
         Args:
             column: The column expression being unnested/exploded.
@@ -402,7 +399,7 @@ class Resolver:
             table_name = column.table
         else:
             # use the parent scope's resolver to disambiguate the column
-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+            parent_resolver = Resolver(scope, self.schema)
             table_identifier = parent_resolver.get_table(column)
             if not table_identifier:
                 return None
@@ -415,10 +412,10 @@ class Resolver:
         self, source: Scope | exp.Table, column: exp.Column
     ) -> exp.DataType | None:
         """
-        Get a column's type by tracing through scopes/tables to find the base table.
+        Get a column's type from annotated projections or underlying table schemas.
 
         Args:
-            source: The source to search - can be a Scope (to iterate its sources) or a Table.
+            source: The scope or table to search.
             column: The column to find the type for.
 
         Returns:
@@ -440,12 +437,19 @@ class Resolver:
             if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 result = col_type
         elif isinstance(source, Scope):
-            # iterate over all sources in the scope
-            for nested_source in source.sources.values():
-                nested_type = self._get_column_type_from_scope(nested_source, column)
-                if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
-                    result = nested_type
-                    break
+            if isinstance(source.expression, exp.Select):
+                for projection in source.expression.selects:
+                    if projection.alias_or_name == column.name:
+                        if projection.type and not projection.type.is_type(exp.DType.UNKNOWN):
+                            result = projection.type
+                        break
+
+            if result is None:
+                for nested_source in source.sources.values():
+                    nested_type = self._get_column_type_from_scope(nested_source, column)
+                    if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
+                        result = nested_type
+                        break
 
         self._column_type_from_scope_cache[cache_key] = result
         return result

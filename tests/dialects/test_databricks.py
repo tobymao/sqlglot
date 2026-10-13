@@ -6,6 +6,29 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_match_recognize(self):
+        sql = (
+            "SELECT symbol, start_tstamp, end_tstamp, run_length FROM stock_ticker "
+            "MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp "
+            "MEASURES FIRST(tstamp) AS start_tstamp, LAST(tstamp) AS end_tstamp, "
+            "COUNT(*) AS run_length ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW "
+            "PATTERN (strt up+) DEFINE up AS price > PREV(price))"
+        )
+        expression = self.validate_identity(f"{sql} AS T", f"{sql} T")
+        self.assertIsInstance(expression.args["match"], exp.MatchRecognize)
+        self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
+
+        for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):
+            with self.subTest(rows=rows):
+                self.validate_identity(
+                    "SELECT * FROM stock_ticker MATCH_RECOGNIZE ("
+                    "PARTITION BY symbol ORDER BY tstamp "
+                    "MEASURES MATCH_NUMBER() AS match_no, CLASSIFIER() AS class, "
+                    "LAST(down.tstamp) AS bottom_tstamp "
+                    f"{rows}PATTERN (strt down+ up+) "
+                    "DEFINE down AS price < PREV(price), up AS price > PREV(price))"
+                )
+
     def test_insert_replace_using(self):
         self.validate_identity(
             "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"

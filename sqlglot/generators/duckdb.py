@@ -388,6 +388,10 @@ def _array_insert_sql(self: DuckDBGenerator, expression: exp.ArrayInsert) -> str
 
     pos_value = position.to_py()
 
+    # 1-based -1 appends (Spark/Databricks); the 0-based normalization below
+    # would otherwise map it onto the prepend branch.
+    append = index_offset == 1 and pos_value == -1
+
     # Normalize one-based indexing to zero-based for slice calculations
     # Spark (1-based) -> Snowflake (0-based):
     #   Positive: pos=1 -> pos=0 (subtract 1)
@@ -399,7 +403,10 @@ def _array_insert_sql(self: DuckDBGenerator, expression: exp.ArrayInsert) -> str
         pos_value = pos_value + index_offset
 
     # Build the appropriate list_concat expression based on position
-    if pos_value == 0:
+    if append:
+        # append at end
+        concat_exprs = [this, element_array]
+    elif pos_value == 0:
         # insert at beginning
         concat_exprs = [element_array, this]
     elif pos_value > 0:
@@ -1550,6 +1557,8 @@ class DuckDBGenerator(generator.Generator):
     RENAME_TABLE_WITH_DB = False
     NVL2_SUPPORTED = False
     SEMI_ANTI_JOIN_WITH_SIDE = False
+    CAST_TO_INT_ROUNDS = True
+    SAFE_INT_DIVISION = True
     TABLESAMPLE_KEYWORDS = "USING SAMPLE"
     TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
     LAST_DAY_SUPPORTS_DATE_PART = False
@@ -1565,7 +1574,12 @@ class DuckDBGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = False
 
-    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+    # USING SAMPLE goes after QUALIFY and before ORDER BY / LIMIT
+    # https://duckdb.org/docs/preview/sql/query_syntax/sample
+    AFTER_HAVING_MODIFIER_TRANSFORMS = {
+        **generator.AFTER_HAVING_MODIFIER_TRANSFORMS,
+        "sample": lambda self, e: self.sql(e, "sample"),
+    }
     SUPPORTS_WINDOW_EXCLUDE = True
     COPY_HAS_INTO_KEYWORD = False
     STAR_EXCEPT = "EXCLUDE"
@@ -3119,6 +3133,10 @@ class DuckDBGenerator(generator.Generator):
 
         return timestamp
 
+    def after_limit_modifiers(self, expression: exp.Expr) -> list[str]:
+        locks = self.expressions(expression, key="locks", sep=" ")
+        return [f" {locks}" if locks else ""]
+
     def tablesample_sql(
         self,
         expression: exp.TableSample,
@@ -3571,6 +3589,9 @@ class DuckDBGenerator(generator.Generator):
 
     def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
         """
+        Spark's SLICE uses a length, so normalize negative starts before computing
+        the inclusive end index. Starts before the array produce an empty slice.
+
         Transpiles Snowflake's ARRAY_SLICE (0-indexed, exclusive end) to DuckDB's
         ARRAY_SLICE (1-indexed, inclusive end) by wrapping start and end in CASE
         expressions that adjust the index at query time:
@@ -3589,7 +3610,7 @@ class DuckDBGenerator(generator.Generator):
                     )
                     .else_(start)
                 )
-            if end is not None:
+            if end is not None and not expression.args.get("is_length"):
                 end = (
                     exp.case()
                     .when(
@@ -3599,6 +3620,20 @@ class DuckDBGenerator(generator.Generator):
                     .else_(end)
                 )
 
+        if expression.args.get("is_length") and start is not None and end is not None:
+            if not start.is_int or start.to_py() < 0:
+                size = exp.ArraySize(this=expression.this.copy())
+                start = (
+                    exp.case()
+                    .when(start < -size, size + 1)
+                    .when(start < 0, size + start + 1)
+                    .else_(start)
+                )
+
+            if start.is_int and end.is_int:
+                end = exp.Literal.number(start.to_py() + end.to_py() - 1)
+            else:
+                end = start + exp.cast(end, "BIGINT") - 1
         return self.func("ARRAY_SLICE", expression.this, start, end, expression.args.get("step"))
 
     def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
@@ -4158,6 +4193,31 @@ class DuckDBGenerator(generator.Generator):
                     this=exp.DPipe(this=result, expression=separator), expression=arg
                 )
             return self.sql(result)
+
+        if expression.args.get("flatten") and any(
+            isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY) for arg in args
+        ):
+            arrays = []
+            for arg in args:
+                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY):
+                    arg = exp.cast(arg, "TEXT[]")
+                else:
+                    if (not arg.type or arg.is_type(exp.DType.UNKNOWN)) and not isinstance(
+                        arg, exp.CONSTANTS
+                    ):
+                        self.unsupported(
+                            "Cannot transpile CONCAT_WS with unknown argument types to DuckDB."
+                        )
+                    arg = exp.array(exp.cast(arg, exp.DType.TEXT))
+
+                arrays.append(arg)
+
+            array = (
+                exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
+                if len(arrays) > 1
+                else arrays[0]
+            )
+            return self.func("CONCAT_WS", separator, self.func("ARRAY_TO_STRING", array, separator))
 
         return super().concatws_sql(expression)
 

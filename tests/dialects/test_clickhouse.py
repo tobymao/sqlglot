@@ -4,6 +4,8 @@ from sqlglot.dialects import ClickHouse
 from sqlglot.expressions import convert
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer import traverse_scope
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
 from sqlglot.errors import ErrorLevel
@@ -132,6 +134,22 @@ class TestClickhouse(Validator):
                 "postgres": "VAR_POP(x)",
             },
         )
+        for ch_name, op in (("groupBitAnd", "AND"), ("groupBitOr", "OR"), ("groupBitXor", "XOR")):
+            self.validate_all(
+                f"{ch_name}(x)",
+                read={
+                    "": f"BITWISE_{op}_AGG(x)",
+                    "clickhouse": f"{ch_name}(x)",
+                    "duckdb": f"BIT_{op}(x)",
+                    "postgres": f"BIT_{op}(x)",
+                },
+                write={"duckdb": f"BIT_{op}(x)", "postgres": f"BIT_{op}(x)"},
+            )
+        self.validate_identity("SELECT groupBitAndIf(x, y) FROM t").selects[0].assert_is(
+            exp.CombinedAggFunc
+        )
+        window = self.validate_identity("SELECT groupBitAnd(x) OVER (PARTITION BY y) FROM t")
+        window.selects[0].assert_is(exp.Window).this.assert_is(exp.BitwiseAndAgg)
         self.validate_all(
             "toDayOfMonth(x)",
             read={
@@ -185,6 +203,7 @@ class TestClickhouse(Validator):
         self.validate_identity("CAST(x AS DECIMAL(38, 2))", "CAST(x AS Decimal(38, 2))")
         self.validate_identity("SELECT arrayJoin([1, 2, 3] AS src) AS dst, 'Hello', src")
         self.validate_identity("""SELECT JSONExtractString('{"x": {"y": 1}}', 'x', 'y')""")
+        self.validate_identity("""SELECT JSONExtractRaw('{"x": {"y": 1}}', 'x', 'y')""")
         self.validate_identity("SELECT * FROM table LIMIT 1 BY a, b")
         self.validate_identity("SELECT * FROM table LIMIT 2 OFFSET 1 BY a, b")
         self.validate_identity("TRUNCATE TABLE t1 ON CLUSTER test_cluster")
@@ -258,6 +277,15 @@ class TestClickhouse(Validator):
         )
         self.validate_identity(
             """SELECT JSONExtractString('{"a": "hello", "b": [-100, 200.0, 300]}', 'a')"""
+        )
+        self.validate_all(
+            "SELECT JSONExtractRaw(payload, 'amount'), JSONExtractString(payload, 'amount')",
+            read={
+                "postgres": "SELECT payload -> 'amount', payload ->> 'amount'",
+            },
+            write={
+                "postgres": "SELECT payload -> 'amount', payload ->> 'amount'",
+            },
         )
         self.validate_identity(
             "ATTACH DATABASE DEFAULT ENGINE = ORDINARY", check_command_warning=True
@@ -941,6 +969,76 @@ class TestClickhouse(Validator):
                         self.validate_identity(sql)
 
         self.validate_identity("SELECT []")
+
+    def test_json_extract(self):
+        for name in ("JSONExtractRaw", "JSONExtractString"):
+            for path in ("'1'", "'01'", "'0'", "'-1'", "1", "-1"):
+                with self.subTest(name=name, path=path):
+                    self.validate_identity(f"SELECT {name}(v, {path}) FROM data")
+
+        for sql in (
+            "SELECT v:a::STRING FROM data",
+            "SELECT (v:a)::STRING FROM data",
+            "SELECT GET_PATH(v, 'a')::STRING FROM data",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    "SELECT JSONExtract(JSONExtractRaw(v, 'a'), 'Nullable(String)') FROM data",
+                    read={"snowflake": sql},
+                )
+
+        self.validate_all(
+            "SELECT CAST(JSONExtractRaw(v, 'a') AS Nullable(String)) FROM data",
+            read={"postgres": "SELECT CAST(v -> 'a' AS TEXT) FROM data"},
+        )
+        self.validate_all(
+            "SELECT JSONExtractRaw(v, 'a') FROM data",
+            read={"snowflake": "SELECT v:a FROM data"},
+        )
+
+    def test_json_extract_qualified_roundtrip(self):
+        for dialect, dtype, projections in (
+            (
+                "snowflake",
+                "VARIANT",
+                ("v:a::STRING", "(v:a)::STRING", "GET_PATH(v, 'a')::STRING", "v:a"),
+            ),
+            ("postgres", "JSON", ("v -> 'a'", "v ->> 'a'", "CAST(v -> 'a' AS TEXT)")),
+            (
+                "clickhouse",
+                "String",
+                tuple(
+                    f"{name}(v, {path})"
+                    for name in ("JSONExtractRaw", "JSONExtractString")
+                    for path in ("'1'", "'01'", "'0'", "'-1'", "1", "-1", "'a', 1, 'b'")
+                ),
+            ),
+        ):
+            schema = {"data": {"v": dtype}}
+            for projection in projections:
+                with self.subTest(dialect=dialect, projection=projection):
+                    expression = qualify(
+                        parse_one(f"SELECT {projection} AS result FROM data", read=dialect),
+                        dialect=dialect,
+                        schema=schema,
+                    )
+                    expected = expression.sql("clickhouse")
+                    annotate_types(expression, dialect=dialect, schema=schema)
+                    self.assertEqual(expression.sql("clickhouse"), expected)
+                    self.assertEqual(
+                        parse_one(expression.sql(dialect), read=dialect).sql("clickhouse"),
+                        expected,
+                    )
+
+                    target_schema = {"data": {"v": "String"}, "DATA": {"V": "String"}}
+                    for _ in range(2):
+                        expression = qualify(
+                            parse_one(expected, read="clickhouse"),
+                            dialect="clickhouse",
+                            schema=target_schema,
+                        )
+                        annotate_types(expression, dialect="clickhouse", schema=target_schema)
+                        self.assertEqual(expression.sql("clickhouse"), expected)
 
     def test_global_join(self):
         for kind in ("", "LEFT ", "INNER ", "LEFT ANY ", "FULL OUTER "):

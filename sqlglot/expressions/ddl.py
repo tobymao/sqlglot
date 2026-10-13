@@ -176,6 +176,7 @@ class Set(Expression):
 
 class Heredoc(Expression):
     arg_types = {"this": True, "tag": False}
+    _hash_raw_args = True
 
 
 class SetItem(Expression):
@@ -382,6 +383,7 @@ class Undrop(Expression):
 
 class Command(Expression):
     arg_types = {"this": True, "expression": False}
+    _hash_raw_args = True
 
 
 class Transaction(Expression):
@@ -400,7 +402,7 @@ class Alter(Expression):
     arg_types = {
         "this": False,
         "kind": True,
-        "actions": True,
+        "actions": False,
         "exists": False,
         "only": False,
         "options": False,

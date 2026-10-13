@@ -840,7 +840,7 @@ class TestHive(Validator):
             write={
                 "duckdb": "x // y",
                 "databricks": "x DIV y",
-                "presto": "CAST(CAST(x AS DOUBLE) / y AS INTEGER)",
+                "presto": "CAST(TRUNCATE(CAST(x AS DOUBLE) / y) AS BIGINT)",
                 "spark2": "x DIV y",
                 "spark": "x DIV y",
             },

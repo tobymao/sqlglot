@@ -122,6 +122,13 @@ class DuckDBParser(parser.Parser):
         "ARRAY_REVERSE_SORT": _build_sort_array_desc,
         "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
         "ARRAY_SORT": exp.SortArray.from_arg_list,
+        "ARRAY_SLICE": lambda args: exp.ArraySlice(
+            this=seq_get(args, 0),
+            start=seq_get(args, 1),
+            end=seq_get(args, 2),
+            step=seq_get(args, 3),
+            is_length=False,
+        ),
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
         "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
@@ -166,7 +173,9 @@ class DuckDBParser(parser.Parser):
         "LIST_REVERSE_SORT": _build_sort_array_desc,
         "LIST_SORT": exp.SortArray.from_arg_list,
         "LIST_TRANSFORM": exp.Transform.from_arg_list,
-        "LIST_VALUE": lambda args: exp.Array(expressions=args),
+        "LIST_VALUE": lambda args: exp.Array(
+            expressions=args, value_constructor=len(args) == 1 and isinstance(args[0], exp.Query)
+        ),
         "MAKE_DATE": exp.DateFromParts.from_arg_list,
         "MAKE_TIME": exp.TimeFromParts.from_arg_list,
         "MAKE_TIMESTAMP": _build_make_timestamp,

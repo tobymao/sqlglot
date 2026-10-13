@@ -1,10 +1,28 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA
 
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
+
+def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    # Decimal results and numeric literals need precision inference that we don't model here.
+    if (
+        expression.args.get("decimals") is not None
+        or expression.this.is_type(exp.DType.DECIMAL, exp.DType.UNKNOWN)
+        or expression.this.unnest().is_number
+    ):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+    return self._set_type(expression, exp.DType.BIGINT)
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
+    **{expr_type: {"annotator": _annotate_floor_ceil} for expr_type in {exp.Ceil, exp.Floor}},
     **{
         expr_type: {"returns": exp.DType.BINARY}
         for expr_type in {

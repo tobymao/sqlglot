@@ -692,7 +692,8 @@ class Simplifier:
 
             if isinstance(node, exp.Condition):
                 simplified = while_changing(
-                    node, lambda e: self._simplify(e, constant_propagation, coalesce_simplification)
+                    t.cast(exp.Expr, node),
+                    lambda e: self._simplify(e, constant_propagation, coalesce_simplification),
                 )
 
                 if node is expression:
@@ -1445,7 +1446,12 @@ class Simplifier:
                     cond = cond.replace(this.pop().eq(cond))
 
                 if always_true(cond):
-                    return exp.paren(case.args["true"], copy=False)
+                    if case.index == 0:
+                        return exp.paren(case.args["true"], copy=False)
+
+                    expression.set("default", case.args["true"])
+                    expression.set("ifs", expression.args["ifs"][: case.index])
+                    break
 
                 if always_false(cond):
                     case.pop()
@@ -1729,6 +1735,7 @@ class Gen:
         self.stack.append("TRUE" if e.this else "FALSE")
 
     def bracket_sql(self, e: exp.Bracket) -> None:
+        self._args(e, 2)
         self.stack.extend(
             (
                 "]",

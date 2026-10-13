@@ -246,14 +246,20 @@ class MySQLParser(parser.Parser):
         "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint()),
         "INVISIBLE": lambda self: self.expression(exp.InvisibleColumnConstraint()),
+        # MySQL defines ASCII as latin1, not the ascii character set, and UNICODE as ucs2
+        "ASCII": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("latin1"))
+        ),
+        "UNICODE": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("ucs2"))
+        ),
     }
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
         "CHANGE": lambda self: self._parse_alter_table_modify(rename=True),
         "MODIFY": lambda self: self._parse_alter_table_modify(),
-        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
-        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "FORCE": lambda self: self.expression(exp.ForceProperty()),
     }
 
     ALTER_ALTER_PARSERS = {
@@ -262,6 +268,8 @@ class MySQLParser(parser.Parser):
     }
 
     ADD_CONSTRAINT_KEYWORDS = {"FULLTEXT", "SPATIAL"}
+
+    RESERVED_CONSTRAINT_KINDS = {"CHECK", "FOREIGN KEY", "PRIMARY KEY", "UNIQUE"}
 
     SCHEMA_UNNAMED_CONSTRAINTS = {
         *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
@@ -301,6 +309,7 @@ class MySQLParser(parser.Parser):
 
     ALTER_DROP_REQUIRES_COLUMN = False
     ALTER_TABLE_MIXED_ACTIONS = True
+    ALTER_TABLE_REQUIRES_ACTION = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
@@ -703,12 +712,31 @@ class MySQLParser(parser.Parser):
         part_list = self.expression(exp.PartitionList(this=name, expressions=values))
         return self.expression(exp.Partition(expressions=[part_list]))
 
+    def _parse_foreign_key(self) -> exp.ForeignKey:
+        # MySQL only uses this name when CONSTRAINT has none and no existing index fits
+        this = (
+            self._parse_id_var()
+            if self._next and self._next.token_type == TokenType.L_PAREN
+            else None
+        )
+        foreign_key = super()._parse_foreign_key()
+        foreign_key.set("this", this)
+        return foreign_key
+
     def _parse_primary_key(
         self,
         wrapped_optional: bool = False,
         in_props: bool = False,
         named_primary_key: bool = False,
     ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
-        return super()._parse_primary_key(
+        this = super()._parse_primary_key(
             wrapped_optional=wrapped_optional, in_props=in_props, named_primary_key=True
         )
+        if isinstance(this, exp.PrimaryKey):
+            # KEY_BLOCK_SIZE, COMMENT etc. after the key parts belong to the key, not the table
+            this.set(
+                "options",
+                [*(this.args.get("options") or []), *self._parse_index_constraint_options()],
+            )
+
+        return this

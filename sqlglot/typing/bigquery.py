@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA, TIMESTAMP_EXPRESSIONS
+from sqlglot.typing import EXPRESSION_METADATA, TIMESTAMP_EXPRESSIONS, annotate_int_as_double
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -45,24 +45,6 @@ def _annotate_date_func(self: TypeAnnotator, expression: _DateFunc) -> exp.Expr:
         return self._set_type(expression, _DATE_FUNC_LITERAL_TYPE[type(expression)])
 
     return self._annotate_by_args(expression, "this")
-
-
-def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
-    """
-    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
-    +---------+---------+---------+------------+---------+
-    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    """
-    this: exp.Expr = expression.this
-
-    self._set_type(
-        expression,
-        exp.DType.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
-    )
-    return expression
 
 
 def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
@@ -196,7 +178,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
-        expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
+        expr_type: {"annotator": annotate_int_as_double}
         for expr_type in {
             exp.Avg,
             exp.Ceil,

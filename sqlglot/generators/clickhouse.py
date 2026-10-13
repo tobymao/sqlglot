@@ -295,6 +295,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.ArgMax: arg_max_or_min_no_count("argMax"),
         exp.ArgMin: arg_max_or_min_no_count("argMin"),
         exp.Array: inline_array_sql,
+        exp.BitwiseAndAgg: rename_func("groupBitAnd"),
+        exp.BitwiseOrAgg: rename_func("groupBitOr"),
+        exp.BitwiseXorAgg: rename_func("groupBitXor"),
         exp.CityHash64: rename_func("cityHash64"),
         exp.CastToStrType: rename_func("CAST"),
         exp.CurrentDatabase: rename_func("CURRENT_DATABASE"),
@@ -323,7 +326,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.IsNan: rename_func("isNaN"),
         exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
         exp.JSONCast: _json_cast_sql,
-        exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
+        exp.JSONExtract: json_extract_segments("JSONExtractRaw", quoted_index=False),
         exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",
@@ -499,6 +502,14 @@ class ClickHouseGenerator(generator.Generator):
 
         if isinstance(this, exp.StrToDate) and expression.to == exp.DType.DATETIME.into_expr():
             return self.sql(this)
+
+        this = this.unnest()
+        if (
+            isinstance(this, exp.JSONExtract)
+            and this.args.get("requires_json")
+            and expression.to.is_type(*exp.DataType.TEXT_TYPES)
+        ):
+            return self.func("JSONExtract", this, exp.Literal.string("Nullable(String)"))
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)
 

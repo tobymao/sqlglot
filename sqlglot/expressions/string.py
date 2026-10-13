@@ -260,6 +260,10 @@ class Upper(Expression, Func):
     _sql_names = ["UPPER", "UCASE"]
 
 
+class WeightString(Expression, Func):
+    arg_types = {"this": True, "to": False}
+
+
 # Encoding / base conversion
 
 

@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -302,7 +302,7 @@ def _mergeable(
         on = from_or_join.args.get("on")
         if not on:
             return False
-        selections = [c.name for c in on.find_all(exp.Column) if c.table == inner_name]
+        selections = [c.name for c in find_all_in_scope(on, exp.Column) if c.table == inner_name]
         inner_from = inner_scope.expression.args.get("from_")
         if not inner_from:
             return False

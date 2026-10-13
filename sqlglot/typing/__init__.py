@@ -1,10 +1,52 @@
+from __future__ import annotations
+
 import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import subclasses
 from builtins import type as Type
 
+if t.TYPE_CHECKING:
+    from sqlglot.optimizer.annotate_types import TypeAnnotator
+
 ExprMetadataType = dict[Type[exp.Expr], dict[str, t.Any]]
+
+
+def annotate_by_numeric_arg(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    """
+    Annotates math functions (e.g. FLOOR) that preserve numeric and unknown types, and return INT
+    otherwise.
+
+    Assumes `this` is set, which holds for valid ASTs because it's a required argument.
+    """
+    this: exp.Expr = expression.this
+
+    self._set_type(
+        expression,
+        this.type
+        if this.is_type(exp.DType.UNKNOWN, *exp.DataType.NUMERIC_TYPES)
+        else exp.DType.INT,
+    )
+    return expression
+
+
+def annotate_int_as_double(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    """
+    Annotates math functions (e.g. FLOOR) that return DOUBLE for integers and strings, and the input
+    type otherwise.
+
+    Assumes `this` is set, which holds for valid ASTs because it's a required argument.
+    """
+    this: exp.Expr = expression.this
+
+    self._set_type(
+        expression,
+        exp.DType.DOUBLE
+        if this.is_type(*exp.DataType.INTEGER_TYPES, *exp.DataType.TEXT_TYPES)
+        else this.type,
+    )
+    return expression
+
 
 TIMESTAMP_EXPRESSIONS = {
     exp.CurrentTimestamp,
@@ -141,12 +183,10 @@ EXPRESSION_METADATA: ExprMetadataType = {
         for expr_type in {
             exp.Ascii,
             exp.BitLength,
-            exp.Ceil,
             exp.DatetimeDiff,
             exp.DayOfMonth,
             exp.DayOfWeek,
             exp.DayOfYear,
-            exp.Floor,
             exp.Getbit,
             exp.Hour,
             exp.TimestampDiff,
@@ -254,6 +294,13 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.UnixToStr,
             exp.UnixToTimeStr,
             exp.Upper,
+        }
+    },
+    **{
+        expr_type: {"annotator": annotate_by_numeric_arg}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
         }
     },
     **{

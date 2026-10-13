@@ -1511,6 +1511,10 @@ LANGUAGE js AS
             "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)",
             write={"bigquery": "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)"},
         )
+        self.validate_identity("SELECT [(SELECT 1), 2]")
+        self.validate_identity("SELECT [1, (SELECT 2)]")
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a), STRUCT(2 AS a)]")
+        self.validate_identity("SELECT [COALESCE((SELECT 1), 0), 2]")
         self.validate_all(
             "SELECT ARRAY(SELECT DISTINCT x FROM UNNEST(some_numbers) AS x) AS unique_numbers",
             write={
@@ -3508,6 +3512,17 @@ OPTIONS (
             self.assertEqual(qualified.sql("bigquery"), "SELECT * FROM `P`.`D`.`T` AS `T`")
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    def test_array(self):
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a)]")
 
     def test_array_agg(self):
         for distinct in ("", "DISTINCT "):

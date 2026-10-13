@@ -2,7 +2,9 @@ import unittest
 
 from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
-from sqlglot.schema import MappingSchema, ensure_schema
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
+from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
 
 class TestSchema(unittest.TestCase):
@@ -340,3 +342,31 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(found, {"c": "int"})
         found = schema.find(exp.to_table("x"), ensure_data_types=True)
         self.assertEqual(found, {"c": exp.DataType.build("int")})
+
+    def test_custom_schema(self):
+        class CustomSchema(Schema):
+            def add_table(
+                self, table, column_mapping=None, dialect=None, normalize=None, match_depth=True
+            ):
+                pass
+
+            def column_names(self, table, only_visible=False, dialect=None, normalize=None):
+                return ["a"]
+
+            def get_column_type(self, table, column, dialect=None, normalize=None):
+                return exp.DataType.build("int")
+
+            @property
+            def supported_table_args(self):
+                return ("this",)
+
+            @property
+            def empty(self):
+                return False
+
+        schema = CustomSchema()
+        expression = annotate_types(
+            qualify(parse_one("SELECT * FROM t"), schema=schema), schema=schema
+        )
+        self.assertEqual(expression.sql(), 'SELECT "t"."a" AS "a" FROM "t" AS "t"')
+        self.assertEqual(expression.selects[0].type.sql(), "INT")

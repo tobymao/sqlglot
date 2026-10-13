@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import string
 import typing as t
 
 from sqlglot import exp, tokens
@@ -66,6 +67,31 @@ class Oracle(Dialect):
             for prefix in ("U", "u")
         ]
 
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Literals.html
+        # Alternative quoting, e.g. q'[it's]': the delimiters are part of the quote, so the
+        # text in between is taken as is, without escapes
+        RAW_STRINGS = [
+            (f"{prefix}'{start}", f"{end}'")
+            for prefix in ("q", "Q")
+            for start, end in (
+                ("[", "]"),
+                ("{", "}"),
+                ("(", ")"),
+                ("<", ">"),
+                *(
+                    (c, c)
+                    for c in string.ascii_letters + string.digits + string.punctuation
+                    if c not in "[{(<"
+                ),
+            )
+        ]
+        NATIONAL_RAW_STRINGS = [
+            (prefix + start, end)
+            for start, end in t.cast(list[tuple[str, str]], RAW_STRINGS)
+            for prefix in ("n", "N")
+        ]
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
+
         NESTED_COMMENTS = False
 
         KEYWORDS = {
@@ -83,6 +109,7 @@ class Oracle(Dialect):
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
+            "SUBPARTITION": TokenType.PARTITION,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,

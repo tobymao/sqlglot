@@ -149,8 +149,10 @@ def build_array_constructor(
 ) -> exp.Expr:
     array_exp = exp_class(expressions=args)
 
-    if exp_class == exp.Array and dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS:
-        array_exp.set("bracket_notation", bracket_kind == TokenType.L_BRACKET)
+    if exp_class == exp.Array:
+        array_exp.set("value_constructor", len(args) == 1 and isinstance(args[0], exp.Query))
+        if dialect.HAS_DISTINCT_ARRAY_CONSTRUCTORS:
+            array_exp.set("bracket_notation", bracket_kind == TokenType.L_BRACKET)
 
     return array_exp
 
@@ -672,6 +674,7 @@ class Parser:
             TokenType.HEREDOC_STRING,
             TokenType.HEX_STRING,
             TokenType.IDENTIFIER,
+            TokenType.NATIONAL_RAW_STRING,
             TokenType.NATIONAL_STRING,
             TokenType.RAW_STRING,
             TokenType.STRING,
@@ -1206,9 +1209,10 @@ class Parser:
         TokenType.HEREDOC_STRING: lambda self, token: self.expression(
             exp.RawString(this=token.text), token
         ),
-        TokenType.NATIONAL_STRING: lambda self, token: self.expression(
-            exp.National(this=token.text), token
-        ),
+        **{
+            token_type: lambda self, token: self.expression(exp.National(this=token.text), token)
+            for token_type in (TokenType.NATIONAL_STRING, TokenType.NATIONAL_RAW_STRING)
+        },
         TokenType.RAW_STRING: lambda self, token: self.expression(
             exp.RawString(this=token.text), token
         ),
@@ -1547,6 +1551,9 @@ class Parser:
         "TRUNCATE",
     }
 
+    # Kinds that can't be a constraint name, so `CONSTRAINT` directly followed by one is unnamed
+    RESERVED_CONSTRAINT_KINDS: t.ClassVar[set[str]] = set()
+
     NO_PAREN_FUNCTION_PARSERS: t.ClassVar = {
         "ANY": lambda self: self.expression(exp.Any(this=self._parse_bitwise())),
         "CASE": lambda self: self._parse_case(),
@@ -1598,6 +1605,7 @@ class Parser:
         "TRIM": lambda self: self._parse_trim(),
         "TRY_CAST": lambda self: self._parse_cast(False, safe=True),
         "TRY_CONVERT": lambda self: self._parse_convert(False, safe=True),
+        "WEIGHT_STRING": lambda self: self._parse_weight_string(),
         "XMLELEMENT": lambda self: self._parse_xml_element(),
         "XMLTABLE": lambda self: self._parse_xml_table(),
     }
@@ -1927,6 +1935,9 @@ class Parser:
 
     # Whether an ALTER can combine different actions, e.g. ADD COLUMN a INT, DROP COLUMN b
     ALTER_TABLE_MIXED_ACTIONS: t.ClassVar = False
+
+    # Whether an ALTER TABLE needs an action, e.g. MySQL's ALTER TABLE t ENGINE=InnoDB has none
+    ALTER_TABLE_REQUIRES_ACTION: t.ClassVar = True
 
     # Whether changing a column's type with ALTER COLUMN requires the TYPE keyword
     ALTER_COLUMN_TYPE_REQUIRES_KEYWORD: t.ClassVar = False
@@ -4247,6 +4258,8 @@ class Parser:
                 kind=kind,
                 this=self._parse_id_var(),
                 expression=self._match_text_seq("SET") and self._parse_id_var(),
+                to=self._match_text_seq("TO") and self._parse_bitwise(),
+                default=self._match(TokenType.DEFAULT) and self._parse_bitwise(),
                 using=self._match_text_seq("USING") and self._parse_id_var(),
             )
         )
@@ -4280,11 +4293,23 @@ class Parser:
 
             last_comments = self._prev_comments
 
+        search = self._parse_recursive_with_search()
+
+        # A SEARCH clause can be followed by a CYCLE clause
+        cycle = (
+            self._parse_recursive_with_search()
+            if search
+            and search.args.get("kind") != "CYCLE"
+            and self._match_text_seq("CYCLE", advance=False)
+            else None
+        )
+
         return self.expression(
             exp.With(
                 expressions=expressions,
                 recursive=recursive or None,
-                search=self._parse_recursive_with_search(),
+                search=search,
+                cycle=cycle,
                 udfs=udfs or None,
             ),
             comments=comments,
@@ -5177,6 +5202,12 @@ class Parser:
 
         if self.dialect.ALIAS_POST_TABLESAMPLE:
             this.set("sample", self._parse_table_sample())
+            if (
+                this.args.get("sample")
+                and self.dialect.ALIAS_POST_VERSION
+                and not this.args.get("version")
+            ):
+                this.set("version", self._parse_version())
 
         alias = self._parse_table_alias(alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS)
         if alias:
@@ -5252,7 +5283,7 @@ class Parser:
         else:
             self._match_text_seq("AS", "OF")
             kind = "AS OF"
-            expression = self._parse_type()
+            expression = self._parse_bitwise()
 
         return self.expression(exp.Version(this=this, expression=expression, kind=kind))
 
@@ -5865,9 +5896,9 @@ class Parser:
 
             else:
                 if self.dialect.SUPPORTS_LIMIT_ALL and self._match(TokenType.ALL):
-                    return this
-
-                expression = self._parse_term(parse_mod=False)
+                    expression = exp.var("ALL")
+                else:
+                    expression = self._parse_term(parse_mod=False)
             limit_options = self._parse_limit_options()
 
             if self._match(TokenType.COMMA):
@@ -6589,15 +6620,15 @@ class Parser:
                 literal = this.name
                 this = self._parse_column_ops(this)
 
-                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
-                if parser:
-                    return parser(self, this, data_type)
-
                 if self.ZONE_AWARE_TIMESTAMP_CONSTRUCTOR and TIME_ZONE_RE.search(literal):
                     if data_type.is_type(exp.DType.TIMESTAMP):
                         data_type = exp.DType.TIMESTAMPTZ.into_expr()
                     elif data_type.is_type(exp.DType.TIME):
                         data_type = exp.DType.TIMETZ.into_expr()
+
+                parser = self.TYPE_LITERAL_PARSERS.get(data_type.this)
+                if parser:
+                    return parser(self, this, data_type)
 
                 return self.expression(exp.Cast(this=this, to=data_type))
 
@@ -7902,7 +7933,12 @@ class Parser:
         return None
 
     def _parse_column_constraint(self) -> exp.Expr | None:
-        this = self._parse_id_var() if self._match(TokenType.CONSTRAINT) else None
+        this = (
+            self._parse_id_var()
+            if self._match(TokenType.CONSTRAINT)
+            and not self._match_texts(self.RESERVED_CONSTRAINT_KINDS, advance=False)
+            else None
+        )
 
         procedure_option_follows = (
             self._match(TokenType.WITH, advance=False)
@@ -7932,7 +7968,9 @@ class Parser:
         return this
 
     def _parse_constraint(self) -> exp.Expr | None:
-        if not self._match(TokenType.CONSTRAINT):
+        if not self._match(TokenType.CONSTRAINT) or self._match_texts(
+            self.RESERVED_CONSTRAINT_KINDS, advance=False
+        ):
             return self._parse_unnamed_constraint(constraints=self.SCHEMA_UNNAMED_CONSTRAINTS)
 
         return self.expression(
@@ -8319,6 +8357,18 @@ class Parser:
             tokens={TokenType.BINARY, TokenType.IDENTIFIER},
         )
 
+    def _parse_weight_string(self) -> exp.WeightString | exp.Anonymous:
+        name = self._tokens[self._index - 2].text
+        args = self._parse_csv(self._parse_assignment)
+
+        # MySQL also accepts an undocumented WEIGHT_STRING(str, n, n, n) form
+        if len(args) != 1:
+            return self.expression(exp.Anonymous(this=name, expressions=args))
+
+        return self.expression(
+            exp.WeightString(this=args[0], to=self._match(TokenType.ALIAS) and self._parse_types())
+        )
+
     def _parse_cast(self, strict: bool, safe: bool | None = None) -> exp.Expr:
         this = self._parse_assignment()
 
@@ -8364,10 +8414,8 @@ class Parser:
             self.raise_error("Expected TYPE after CAST")
         elif isinstance(to, exp.Identifier):
             to = exp.DataType.from_str(to.name, dialect=self.dialect, udt=True)
-        elif to.this == exp.DType.CHAR and (
-            self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET")
-        ):
-            to = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_var_or_string())
+        else:
+            to = self._parse_char_charset(to)
 
         return self.build_cast(
             strict=strict,
@@ -8439,11 +8487,22 @@ class Parser:
         if self._match(TokenType.USING):
             to: exp.Expr | None = exp.DType.CHARACTER_SET.into_expr(kind=self._parse_charset_name())
         elif self._match(TokenType.COMMA):
-            to = self._parse_types()
+            to = self._parse_char_charset(self._parse_types())
         else:
             to = None
 
         return self.build_cast(strict=strict, this=this, to=to, safe=safe)
+
+    def _parse_char_charset(self, to: exp.Expr | None) -> exp.Expr | None:
+        # MySQL: CHAR[(N)] CHARACTER SET charset_name, the length is kept
+        if (
+            isinstance(to, exp.DataType)
+            and to.this == exp.DType.CHAR
+            and (self._match(TokenType.CHARACTER_SET) or self._match_text_seq("CHARACTER", "SET"))
+        ):
+            to.set("this", exp.DType.CHARACTER_SET)
+            to.set("kind", self._parse_var_or_string())
+        return to
 
     def _parse_xml_element(self) -> exp.XMLElement:
         if self._match_text_seq("EVALNAME"):
@@ -9470,35 +9529,53 @@ class Parser:
             this = None
             check = None
             cluster = None
+            parser = self.ALTER_PARSERS.get(alter_token.text.upper())
         else:
             this = self._parse_table(schema=True, parse_partition=self.ALTER_TABLE_PARTITIONS)
             check = self._match_text_seq("WITH", "CHECK")
             cluster = self._parse_on_property() if self._match(TokenType.ON) else None
+            parser = (
+                self.ALTER_PARSERS[self._prev.text.upper()]
+                if self._match_texts(self.ALTER_PARSERS)
+                else None
+            )
 
-            if self._next:
-                self._advance()
+        options: list[exp.Expr] = []
+        if (
+            not parser
+            and alter_token.token_type == TokenType.TABLE
+            and not self.ALTER_TABLE_REQUIRES_ACTION
+        ):
+            # Table options may precede the actions, e.g. MySQL's ENGINE=InnoDB, ADD COLUMN a INT.
+            # A clause the property parser rejects, like PARTITION BY RANGE ... MAXVALUE, stays a Command
+            properties = self._try_parse(self._parse_properties)
+            options = properties.expressions if properties else []
 
-        parser = self.ALTER_PARSERS.get(self._prev.text.upper()) if self._prev else None
-        actions = ensure_list(parser(self)) if parser else None
-        if actions:
-            # More actions of a different kind may follow, e.g. ADD COLUMN a INT, DROP COLUMN b.
-            # The comma before them may have already been consumed by the previous action's parser
-            while (
-                self.ALTER_TABLE_MIXED_ACTIONS
-                and (self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA)
-                and not self._match_texts(self.PROPERTY_PARSERS, advance=False)
-                and self._match_texts(self.ALTER_PARSERS)
+        actions = ensure_list(parser(self) if parser else None)
+        if actions or options:
+            # Actions of different kinds and table options may alternate, e.g. MySQL's
+            # ADD c INT, AUTO_INCREMENT=5, ADD d INT. The comma before an item may have already
+            # been consumed by the previous parser
+            while self.ALTER_TABLE_MIXED_ACTIONS and (
+                self._match(TokenType.COMMA) or self._prev.token_type == TokenType.COMMA
             ):
-                parser = self.ALTER_PARSERS[self._prev.text.upper()]
-                parsed = ensure_list(self._try_parse(lambda: parser(self)))
-                if not parsed or any(isinstance(action, exp.Command) for action in parsed):
-                    return self._parse_as_command(start)
+                if not self._match_texts(
+                    self.PROPERTY_PARSERS, advance=False
+                ) and self._match_texts(self.ALTER_PARSERS):
+                    parser = self.ALTER_PARSERS[self._prev.text.upper()]
+                    parsed = ensure_list(self._try_parse(lambda: parser(self)))
+                    if not parsed or any(isinstance(action, exp.Command) for action in parsed):
+                        return self._parse_as_command(start)
 
-                actions.extend(parsed)
+                    actions.extend(parsed)
+                elif properties := self._try_parse(self._parse_properties):
+                    options.extend(properties.expressions)
+                else:
+                    break
 
             not_valid = self._match_text_seq("NOT", "VALID")
-            properties = self._parse_properties()
-            options = properties.expressions if properties else []
+            if properties := self._try_parse(self._parse_properties):
+                options.extend(properties.expressions)
             cascade = self.dialect.ALTER_TABLE_SUPPORTS_CASCADE and self._match_text_seq("CASCADE")
 
             if not self._curr:
@@ -9899,8 +9976,8 @@ class Parser:
 
     def _parse_comprehension(self, this: exp.Expr | None) -> exp.Comprehension | None:
         index = self._index
-        expression = self._parse_column()
-        position = self._match(TokenType.COMMA) and self._parse_column()
+        expression = self._parse_id_var()
+        position = self._parse_id_var() if self._match(TokenType.COMMA) else None
 
         if not self._match(TokenType.IN):
             self._retreat(index - 1)
@@ -10424,9 +10501,19 @@ class Parser:
     def _parse_pipe_syntax_limit(self, query: exp.Select) -> exp.Select:
         limit = self._parse_limit()
         offset = self._parse_offset()
-        if limit:
+        if isinstance(limit, exp.Limit):
             curr_limit = query.args.get("limit", limit)
-            if curr_limit.expression.to_py() >= limit.expression.to_py():
+            curr_is_limit_all = isinstance(curr_limit, exp.Limit) and curr_limit.is_limit_all
+
+            # LIMIT ALL means "no cap", so it's never tighter than a numeric limit.
+            if limit.is_limit_all:
+                should_replace = curr_is_limit_all
+            else:
+                should_replace = (
+                    curr_is_limit_all or curr_limit.expression.to_py() >= limit.expression.to_py()
+                )
+
+            if should_replace:
                 query.limit(limit, copy=False)
         if offset:
             curr_offset = query.args.get("offset")
@@ -10617,17 +10704,17 @@ class Parser:
 
         return self.expression(exp_class(**kwargs))
 
-    def _parse_json_value(self) -> exp.JSONValue:
+    def _parse_json_value(self, json_path: bool = True) -> exp.JSONValue:
         this = self._parse_bitwise()
         self._match(TokenType.COMMA)
         path = self._parse_bitwise()
 
-        returning = self._match(TokenType.RETURNING) and self._parse_type()
+        returning = self._match(TokenType.RETURNING) and self._parse_types()
 
         return self.expression(
             exp.JSONValue(
                 this=this,
-                path=self.dialect.to_json_path(path),
+                path=self.dialect.to_json_path(path) if json_path else path,
                 returning=returning,
                 on_condition=self._parse_on_condition(),
             )

@@ -133,8 +133,8 @@ SELECT DATE(a), DATE(b) AS c FROM x GROUP BY 1, 2;
 SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(x.b);
 
 # execute: false
-SELECT (SELECT MIN(a) FROM UNNEST([1, 2])) AS f FROM x GROUP BY 1;
-SELECT (SELECT MIN(_0.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS _0) AS f FROM x AS x GROUP BY 1;
+SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS t(a)) AS f FROM x GROUP BY 1;
+SELECT (SELECT MIN(t.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS t(a)) AS f FROM x AS x GROUP BY 1;
 
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
@@ -201,9 +201,23 @@ SELECT DATE_TRUNC('WEEK', x.a) AS a FROM x AS x;
 SELECT DATE_TRUNC(a, MONTH) AS a FROM x;
 SELECT DATE_TRUNC(x.a, MONTH) AS a FROM x AS x;
 
+# title: oracle cannot reference select aliases, so z is a source column
+# dialect: oracle
 # execute: false
-SELECT x FROM READ_PARQUET('path.parquet', hive_partition=1);
-SELECT _0.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS _0;
+# schema: {"t": {"z": "INT"}}
+SELECT 1 AS z, z + 1 AS w FROM (SELECT * FROM t) c;
+SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT T.Z AS Z FROM T T) C;
+
+# execute: false
+SELECT t.x FROM READ_PARQUET('path.parquet', hive_partition=1) AS t;
+SELECT t.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS t;
+
+# title: oracle WHERE column sharing a projection alias name is a source column
+# dialect: oracle
+# execute: false
+# schema: {"t": {"z": "INT"}}
+SELECT 1 AS z FROM (SELECT * FROM t) c WHERE z > 0;
+SELECT 1 AS Z FROM (SELECT T.Z AS Z FROM T T) C WHERE C.Z > 0;
 
 # execute: false
 select * from (values (1, 2));
@@ -300,8 +314,9 @@ SELECT g.generate_series AS generate_series FROM generate_series(0, 10) AS g(gen
 
 # execute: false
 # dialect: snowflake
-SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)) ORDER BY empid;
-SELECT * FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0 ORDER BY _0.EMPID;
+# schema: {"quarterly_sales": {"amount": "DOUBLE", "quarter": "INT", "empid": "INT"}}
+SELECT empid FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter));
+SELECT _0.EMPID AS EMPID FROM QUARTERLY_SALES AS QUARTERLY_SALES PIVOT(SUM(QUARTERLY_SALES.AMOUNT) FOR QUARTERLY_SALES.QUARTER IN (ANY ORDER BY QUARTER)) AS _0;
 
 # execute: false
 # schema: {"t": {"x": "DOUBLE"}}
@@ -809,12 +824,18 @@ SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE COALES
 SELECT b FROM x JOIN y USING (b) JOIN z USING (b);
 SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
 
+# dialect: duckdb
 SELECT * FROM x JOIN y USING(b);
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: USING columns after a comma join keep their position
+SELECT * FROM w, x JOIN y USING (b);
+SELECT w.d AS d, w.e AS e, x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM w AS w, x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT x.* FROM x JOIN y USING(b);
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
+# dialect: duckdb
 SELECT * FROM x LEFT JOIN y USING(b);
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
 
@@ -878,6 +899,7 @@ WITH t1 AS (SELECT 1 AS id), t2 AS (SELECT 2 AS id) SELECT STRUCT(COALESCE(t1.id
 SELECT b FROM x NATURAL JOIN y;
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
 
+# dialect: duckdb
 SELECT * FROM x NATURAL JOIN y;
 SELECT x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
 
@@ -1122,6 +1144,7 @@ SELECT * FROM ((SELECT * FROM tbl));
 SELECT * FROM ((SELECT * FROM tbl AS tbl) AS _0);
 
 # execute: false
+# schema: {"t1": {"c": "INT"}}
 SELECT * FROM ((SELECT c FROM t1) CROSS JOIN t2);
 SELECT * FROM ((SELECT t1.c AS c FROM t1 AS t1) AS _0 CROSS JOIN t2 AS t2);
 
@@ -1219,18 +1242,44 @@ SELECT X.A AS FOO FROM X AS X WHERE X.A = 1;
 --------------------------------------
 
 # title: SEMI JOIN table is excluded from the scope
+# dialect: duckdb
 SELECT * FROM x SEMI JOIN y USING (b);
 SELECT x.a AS a, x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
 
 # title: ANTI JOIN table is excluded from the scope
+# dialect: duckdb
 SELECT * FROM x ANTI JOIN y USING (b);
 SELECT x.a AS a, x.b AS b FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
 
+# title: bare USING column after SEMI JOIN resolves to the left table
+# dialect: duckdb
+SELECT b FROM x SEMI JOIN y USING (b);
+SELECT x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
+
+# title: bare USING column in WHERE after ANTI JOIN resolves to the left table
+# dialect: duckdb
+SELECT a FROM x ANTI JOIN y USING (b) WHERE b > 0;
+SELECT x.a AS a FROM x AS x ANTI JOIN y AS y ON x.b = y.b WHERE x.b > 0;
+
+# title: SEMI join USING columns come first
+# dialect: spark
+# execute: false
+SELECT * FROM x LEFT SEMI JOIN y USING (b);
+SELECT x.b AS b, x.a AS a FROM x AS x LEFT SEMI JOIN y AS y ON x.b = y.b;
+
+# title: SEMI join USING columns precede those of earlier joins
+# dialect: spark
+# execute: false
+SELECT * FROM x JOIN y USING (b) LEFT SEMI JOIN z USING (c);
+SELECT y.c AS c, COALESCE(x.b, y.b) AS b, x.a AS a FROM x AS x JOIN y AS y ON x.b = y.b LEFT SEMI JOIN z AS z ON y.c = z.c;
+
 # title: SEMI + normal joins reinclude the table on scope
+# dialect: duckdb
 SELECT * FROM x SEMI JOIN y USING (b) JOIN y USING (b);
 SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x SEMI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
 
 # title: ANTI + normal joins reinclude the table on scope
+# dialect: duckdb
 SELECT * FROM x ANTI JOIN y USING (b) JOIN y USING (b);
 SELECT x.a AS a, COALESCE(x.b, y_2.b) AS b, y_2.c AS c FROM x AS x ANTI JOIN y AS y ON x.b = y.b JOIN y AS y_2 ON x.b = y_2.b;
 
@@ -1398,3 +1447,10 @@ WITH T AS (SELECT * FROM SOURCE AS SOURCE) SELECT T.$1 AS _COL_0 FROM T AS T;
 # dialect: snowflake
 SELECT x.$2 FROM unknown AS x(alias_name);
 SELECT X.$2 AS _COL_0 FROM UNKNOWN AS X(ALIAS_NAME);
+
+
+# title: MySQL lists multiple USING columns first in the left table's order
+# dialect: mysql
+# execute: false
+SELECT * FROM y JOIN z USING (c, b);
+SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.c = z.c AND y.b = z.b;

@@ -1,5 +1,4 @@
 import json
-import os
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
@@ -29,8 +28,6 @@ from tests.helpers import (
     string_to_bool,
 )
 
-STRICT_SCHEMA = os.environ.get("STRICT_SCHEMA") == "1"
-
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
     return func(parse_one(sql, read=read_dialect), **kwargs)
@@ -43,7 +40,6 @@ def qualify_then_canonicalize(expression, **qualify_kwargs):
 def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
     expression = optimizer.qualify.qualify(
         expression,
-        infer_schema=not STRICT_SCHEMA,
         validate_qualify_columns=validate_qualify_columns,
         identify=False,
         **kwargs,
@@ -53,9 +49,10 @@ def qualify_columns(expression, validate_qualify_columns=True, **kwargs):
 
 def pushdown_projections(expression, **kwargs):
     expression = optimizer.qualify_tables.qualify_tables(expression)
-    expression = optimizer.qualify_columns.qualify_columns(
-        expression, infer_schema=not STRICT_SCHEMA, **kwargs
+    expression = optimizer.normalize_identifiers.normalize_identifiers(
+        expression, dialect=kwargs.get("dialect")
     )
+    expression = optimizer.qualify_columns.qualify_columns(expression, **kwargs)
     expression = optimizer.pushdown_projections.pushdown_projections(expression)
     return expression
 
@@ -289,11 +286,39 @@ class TestOptimizer(unittest.TestCase):
         self.check_file(
             "optimizer",
             optimizer.optimize,
-            infer_schema=not STRICT_SCHEMA,
             pretty=True,
             execute=True,
             schema=schema,
         )
+
+    def test_optimize_copy(self):
+        sql = "SELECT a + 1 + 1 AS b FROM x"
+        expression = parse_one(sql)
+        optimized = optimizer.optimize(expression, schema=self.schema)
+
+        self.assertIsNot(optimized, expression)
+        self.assertEqual(expression.sql(), sql)
+        self.assertNotEqual(optimized, expression)
+
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                expression = parse_one(sql)
+                result = optimizer.optimize(expression, schema=self.schema, copy=copy)
+                self.assertEqual(result, optimized)
+                if copy:
+                    self.assertIsNot(result, expression)
+                    self.assertEqual(expression.sql(), sql)
+                else:
+                    self.assertIs(result, expression)
+                    self.assertNotEqual(expression.sql(), sql)
+
+                self.assertEqual(optimizer.optimize(sql, schema=self.schema, copy=copy), optimized)
+
+    def test_optimize_copy_root_replacement(self):
+        expression = parse_one("1 + 1")
+        optimized = optimizer.optimize(expression, copy=False)
+        self.assertIsNot(optimized, expression)
+        self.assertEqual(optimized.sql(), "2")
 
     def test_isolate_table_selects(self):
         self.check_file(
@@ -647,7 +672,6 @@ class TestOptimizer(unittest.TestCase):
                     "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT x + 1 FROM t AS child WHERE x < 10) SELECT * FROM t"
                 ),
                 schema={},
-                infer_schema=False,
             ).sql(),
             "WITH RECURSIVE t AS (SELECT 1 AS x UNION ALL SELECT child.x + 1 AS _col_0 FROM t AS child WHERE child.x < 10) SELECT t.x AS x FROM t",
         )
@@ -665,7 +689,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one("WITH x AS (SELECT a FROM db.y) SELECT z FROM db.x"),
                 schema={"db": {"x": {"z": "int"}, "y": {"a": "int"}}},
-                infer_schema=False,
             ).sql(),
             "WITH x AS (SELECT y.a AS a FROM db.y) SELECT x.z AS z FROM db.x",
         )
@@ -674,7 +697,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one("select y from x"),
                 schema={},
-                infer_schema=False,
             ).sql(),
             "SELECT y AS y FROM x",
         )
@@ -686,7 +708,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one('SELECT "C1" FROM t', read="trino"),
                 schema={},
-                infer_schema=False,
                 dialect="trino",
             ).sql(dialect="trino"),
             'SELECT "C1" AS "C1" FROM t',
@@ -696,7 +717,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one('SELECT ("C1") FROM t', read="trino"),
                 schema={},
-                infer_schema=False,
                 dialect="trino",
             ).sql(dialect="trino"),
             'SELECT ("C1") AS "C1" FROM t',
@@ -717,7 +737,6 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT Cc FROM (SELECT Cc FROM t) AS s", read="snowflake"),
                 schema={},
-                infer_schema=False,
                 dialect="snowflake",
             ).sql(dialect="snowflake"),
             "SELECT s.Cc AS Cc FROM (SELECT Cc AS Cc FROM t) AS s",
@@ -982,41 +1001,6 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
-    def test_unpivot_unknown_schema(self):
-        self.assertEqual(
-            qualify(
-                parse_one(
-                    "SELECT i.other_col FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
-                    dialect="snowflake",
-                ),
-                dialect="snowflake",
-            ).sql(dialect="snowflake"),
-            'SELECT "I"."OTHER_COL" AS "OTHER_COL" FROM "MY_TABLE" AS "I" '
-            'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
-        )
-        self.assertEqual(
-            qualify(
-                parse_one(
-                    "SELECT i.a FROM my_table AS i UNPIVOT(v FOR k IN (a, b))",
-                    dialect="snowflake",
-                ),
-                dialect="snowflake",
-            ).sql(dialect="snowflake"),
-            'SELECT "I"."A" AS "A" FROM "MY_TABLE" AS "I" '
-            'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"',
-        )
-        self.assertEqual(
-            qualify(
-                parse_one(
-                    "SELECT i.z FROM my_table AS i UNPIVOT(v FOR k IN (a, b)) AS i(w, x, y, z)",
-                    dialect="snowflake",
-                ),
-                dialect="snowflake",
-            ).sql(dialect="snowflake"),
-            'SELECT "I"."Z" AS "Z" FROM "MY_TABLE" AS "I" '
-            'UNPIVOT("V" FOR "K" IN ("A", "B")) AS "I"("W", "X", "Y", "Z")',
-        )
-
     def test_multiple_pivots_annotate_types(self):
         # NOTE: the value column takes the type of the first IN-list entry, so the columns
         # folded by a single operator are kept uniformly typed here
@@ -1101,6 +1085,63 @@ class TestOptimizer(unittest.TestCase):
             [(s.alias_or_name, s.type.sql()) for s in expression.selects],
             [("id", "INT"), ("m", "VARCHAR"), ("v", "INT")],
         )
+
+    def test_correlated_unnest_projection_types(self):
+        for sql, schema, expected in (
+            (
+                """
+                WITH t AS (
+                    SELECT [STRUCT('a' AS email, CAST(2 AS FLOAT64) AS magnitude)] AS items
+                )
+                SELECT
+                    (SELECT email FROM UNNEST(items)) AS linked_email,
+                    (SELECT MAX(magnitude) FROM UNNEST(items)) AS gallons
+                FROM t
+                """,
+                {},
+                ["STRING", "FLOAT64"],
+            ),
+            (
+                """
+                WITH t AS (
+                    SELECT [STRUCT([STRUCT(CAST(2 AS FLOAT64) AS magnitude)] AS segments)] AS legs
+                )
+                SELECT (
+                    SELECT MAX(segments[SAFE_OFFSET(0)].magnitude) FROM UNNEST(legs)
+                ) AS gallons
+                FROM t
+                """,
+                {},
+                ["FLOAT64"],
+            ),
+            (
+                """
+                WITH t AS (SELECT [STRUCT(1 AS b)] AS a FROM tbl)
+                SELECT (SELECT b FROM UNNEST(a)) AS x FROM t
+                """,
+                {"tbl": {"a": "INT64"}},
+                ["INT64"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(
+                    optimizer.qualify.qualify(
+                        parse_one(sql, dialect="bigquery"), dialect="bigquery", schema=schema
+                    ),
+                    schema=schema,
+                    dialect="bigquery",
+                )
+                self.assertEqual([s.type.sql("bigquery") for s in expression.selects], expected)
+
+        with self.assertRaisesRegex(OptimizeError, "Column 'missing' could not be resolved"):
+            optimizer.qualify.qualify(
+                parse_one(
+                    "WITH t AS (SELECT [STRUCT('a' AS email)] AS items) "
+                    "SELECT (SELECT missing FROM UNNEST(items)) FROM t",
+                    dialect="bigquery",
+                ),
+                dialect="bigquery",
+            )
 
     def test_unnest_type_trace_is_memoized(self):
         """Tracing an UNNEST's element type must not re-walk shared parts of the scope graph.
@@ -1554,9 +1595,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             'SELECT -99 AS "e" GROUP BY 1',
         )
 
-        # check order of lateral expansion with no schema
         self.assertEqual(
-            optimizer.optimize("SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e").sql(),
+            optimizer.optimize(
+                "SELECT a + 1 AS d, d + 1 AS e FROM x WHERE e > 1 GROUP BY e",
+                schema={"x": {"a": "INT"}},
+            ).sql(),
             'SELECT "x"."a" + 1 AS "d", "x"."a" + 1 + 1 AS "e" FROM "x" AS "x" WHERE ("x"."a" + 2) > 1 GROUP BY "x"."a" + 1 + 1',
         )
 
@@ -1565,7 +1608,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.qualify_columns.qualify_columns(
                 parse_one("SELECT CAST(x AS INT) AS y FROM z AS z"),
                 schema=unused_schema,
-                infer_schema=False,
             ).sql(),
             "SELECT CAST(x AS INT) AS y FROM z AS z",
         )
@@ -1700,6 +1742,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ),
             dialect="duckdb",
             identify=False,
+            schema={"t": {"z": "INT", "d": "INT"}},
         )
         original = expression.copy()
         optimizer.pushdown_projections.pushdown_projections(expression, journal=journal)
@@ -2039,10 +2082,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         # In T-SQL and Redshift, SELECT a + b can produce a NULL, so we can't transpile it
         # into a CONCAT in Postgres, because that coalesces NULL values with empty strings
-        ast = optimize("SELECT CAST(a AS TEXT) + CAST(b AS TEXT) FROM t", dialect="tsql")
+        ast = optimize(
+            "SELECT CAST(a AS TEXT) + CAST(b AS TEXT) FROM t",
+            dialect="tsql",
+            schema={"t": {"a": "TEXT", "b": "TEXT"}},
+        )
         self.assertEqual(
             ast.sql("postgres"),
-            'SELECT CAST("t"."a" AS TEXT) || CAST("t"."b" AS TEXT) AS "_col_0" FROM "t" AS "t"',
+            'SELECT "t"."a" || "t"."b" AS "_col_0" FROM "t" AS "t"',
         )
 
         # DateDiff args without inferred types should not crash _coerce_datediff_args.
@@ -3041,8 +3088,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             annotate_types(
                 optimizer.qualify.qualify(
                     parse_one(
-                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x"
-                    )
+                        "SELECT x FROM UNNEST(GENERATE_DATE_ARRAY('2021-01-01', current_date(), interval 1 day)) AS x",
+                        dialect="bigquery",
+                    ),
+                    validate_qualify_columns=False,
+                    dialect="bigquery",
                 )
             )
             .selects[0]
@@ -3054,8 +3104,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             annotate_types(
                 optimizer.qualify.qualify(
                     parse_one(
-                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x"
-                    )
+                        "SELECT x FROM UNNEST(GENERATE_TIMESTAMP_ARRAY('2016-10-05 00:00:00', '2016-10-06 02:00:00', interval 1 day)) AS x",
+                        dialect="bigquery",
+                    ),
+                    validate_qualify_columns=False,
+                    dialect="bigquery",
                 )
             )
             .selects[0]
@@ -3528,12 +3581,38 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_semistructured(self):
         query = parse_one("select a.b:c from d", read="snowflake")
-        qualified = optimizer.qualify.qualify(query)
+        qualified = optimizer.qualify.qualify(query, validate_qualify_columns=False)
         self.assertEqual(qualified.expressions[0].alias, "c")
 
     def test_gen(self):
         for func in exp.ALL_FUNCTIONS:
             self.assertIsInstance(optimizer.simplify.gen(func()), str)
+
+    def test_gen_bracket(self):
+        for sql, expected in (
+            ("a[i]", "a[i]"),
+            ("a[OFFSET(i)]", "a[i]:offset,0,:safe,False"),
+            ("a[ORDINAL(i)]", "a[i]:offset,1,:safe,False"),
+            ("a[SAFE_OFFSET(i)]", "a[i]:offset,0,:safe,True"),
+            ("a[SAFE_ORDINAL(i)]", "a[i]:offset,1,:safe,True"),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    optimizer.simplify.gen(parse_one(sql, dialect="bigquery")), expected
+                )
+
+        for flag in ("returns_list_for_maps", "json_access"):
+            with self.subTest(flag=flag):
+                bracket = parse_one("a[i]")
+                bracket.set(flag, True)
+                self.assertEqual(optimizer.simplify.gen(bracket), f"a[i]:{flag},True")
+
+        predicates = {
+            f"a[{access}(i)] = 1" for access in ("OFFSET", "ORDINAL", "SAFE_OFFSET", "SAFE_ORDINAL")
+        }
+        expression = parse_one(" AND ".join(sorted(predicates)), dialect="bigquery")
+        simplified = optimizer.simplify.simplify(expression)
+        self.assertEqual({e.sql("bigquery") for e in simplified.flatten()}, predicates)
 
     def test_normalization_distance(self):
         def gen_expr(depth: int) -> exp.Expr:

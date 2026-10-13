@@ -19,6 +19,14 @@ class AthenaTrinoParser(TrinoParser):
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 
+    DDL_SELECT_TOKENS = {*TrinoParser.DDL_SELECT_TOKENS, TokenType.USING}
+
+    def _parse_ddl_select(self) -> exp.Expr | None:
+        if self._match(TokenType.USING):
+            return self._parse_as_command(self._prev)
+
+        return super()._parse_ddl_select()
+
 
 class AthenaParser(AthenaTrinoParser):
     def __init__(

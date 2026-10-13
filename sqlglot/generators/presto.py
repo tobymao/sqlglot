@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_slice_to_slice_sql,
     bool_xor_sql,
     bracket_to_element_at_sql,
     datestrtodate_sql,
@@ -256,11 +257,13 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 class PrestoGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_TEMPORAL_PRECISION = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
+    CAST_TO_INT_ROUNDS = True
     TABLE_HINTS = False
     QUERY_HINTS = False
     IS_BOOL_ALLOWED = False
@@ -322,7 +325,7 @@ class PrestoGenerator(generator.Generator):
         exp.ArrayContains: rename_func("CONTAINS"),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("SET_AGG"),
-        exp.ArraySlice: rename_func("SLICE"),
+        exp.ArraySlice: array_slice_to_slice_sql,
         exp.AtTimeZone: rename_func("AT_TIMEZONE"),
         exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
         exp.BitwiseLeftShift: rename_func("BITWISE_LEFT_SHIFT"),
@@ -497,6 +500,13 @@ class PrestoGenerator(generator.Generator):
         "where",
         "with",
     }
+
+    def datatype_sql(self, expression: exp.DataType) -> str:
+        if not self.SUPPORTS_TEMPORAL_PRECISION and expression.this in exp.DataType.TEMPORAL_TYPES:
+            if expression.expressions and expression.expressions[0].name != "3":
+                self.unsupported("Presto only supports millisecond precision for temporal types")
+            expression.set("expressions", None)
+        return super().datatype_sql(expression)
 
     def extract_sql(self, expression: exp.Extract) -> str:
         date_part = expression.name

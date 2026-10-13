@@ -357,8 +357,8 @@ class TSQLParser(parser.Parser):
     }
 
     # T-SQL does not allow BEGIN to be used as an identifier
-    ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
-    ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
+    ID_VAR_TOKENS = (parser.Parser.ID_VAR_TOKENS | {TokenType.RETURNING}) - {TokenType.BEGIN}
+    ALIAS_TOKENS = (parser.Parser.ALIAS_TOKENS | {TokenType.RETURNING}) - {TokenType.BEGIN}
     TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI}) - {
         TokenType.BEGIN
     }

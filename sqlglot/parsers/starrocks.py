@@ -3,9 +3,38 @@ from __future__ import annotations
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
-from sqlglot.helper import seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
+
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+AGGREGATE_COLUMN_CONSTRAINTS = ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL", "HLL_UNION")
+
+
+def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
+    # TIME_SLICE(dt, INTERVAL n unit [, FLOOR | CEIL])
+    # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+    if len(args) < 2:
+        return None
+
+    if isinstance(seq_get(args, 1), exp.Interval):
+        time_slice = build_date_delta_with_interval(exp.TimeSlice)(args)
+        boundary = seq_get(args, 2)
+    else:
+        time_slice = exp.TimeSlice.from_arg_list(args)
+        boundary = seq_get(args, 3)
+    if not time_slice:
+        return None
+
+    amount = time_slice.expression
+    if amount.is_string and is_int(amount.name):
+        time_slice.set("expression", exp.Literal.number(amount.name))
+
+    if boundary:
+        time_slice.set(
+            "kind", exp.Literal.string("END" if boundary.name.upper() == "CEIL" else "START")
+        )
+    return time_slice
 
 
 class StarRocksParser(MySQLParser):
@@ -37,14 +66,23 @@ class StarRocksParser(MySQLParser):
         # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+        "TIME_SLICE": _build_time_slice,
     }
 
     PROPERTY_PARSERS = {
         **MySQLParser.PROPERTY_PARSERS,
         "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+        "AGGREGATE": lambda self: self._parse_composite_key_property(exp.AggregateKeyProperty),
         "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         "ROLLUP": lambda self: self._parse_rollup_property(),
         "REFRESH": lambda self: self._parse_refresh_property(),
+    }
+
+    CONSTRAINT_PARSERS = {
+        **MySQLParser.CONSTRAINT_PARSERS,
+        **dict.fromkeys(
+            AGGREGATE_COLUMN_CONSTRAINTS, lambda self: exp.var(self._prev.text.upper())
+        ),
     }
 
     def _parse_rollup_property(self) -> exp.RollupProperty:
@@ -168,5 +206,38 @@ class StarRocksParser(MySQLParser):
         return self.expression(
             exp.RefreshTriggerProperty(
                 method=method, kind=kind, starts=start, every=every, unit=unit
+            )
+        )
+
+    def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        if not self._match_text_seq("MATERIALIZED", "VIEW"):
+            return super()._parse_refresh()
+
+        # _parse_table would read PARTITION and FORCE as partition selection and an index hint
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        this = self._parse_table_parts()
+
+        partition_start = None
+        partition_end = None
+        if self._match_text_seq("PARTITION", "START"):
+            partition_start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            partition_end = self._parse_wrapped(self._parse_string)
+
+        force = self._match_text_seq("FORCE")
+        mode = None
+        if self._match_text_seq("WITH", "SYNC", "MODE"):
+            mode = "SYNC"
+        elif self._match_text_seq("WITH", "ASYNC", "MODE"):
+            mode = "ASYNC"
+
+        return self.expression(
+            exp.Refresh(
+                this=this,
+                kind="MATERIALIZED VIEW",
+                partition_start=partition_start,
+                partition_end=partition_end,
+                force=force,
+                mode=mode,
             )
         )

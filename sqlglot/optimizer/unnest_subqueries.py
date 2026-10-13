@@ -337,9 +337,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
-        if is_subquery_projection and select.parent.alias:
-            alias = exp.alias_(alias, select.parent.alias)
-
         # COUNT always returns 0 on empty datasets, so we need take that into consideration here
         # by transforming all counts into 0 and using that as the coalesced value
         if find_in_scope(value, exp.Count):
@@ -352,6 +349,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return node
 
             alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
+
+        if is_subquery_projection and select.parent.alias:
+            alias = exp.alias_(alias, select.parent.alias)
 
         select.parent.replace(alias)
 

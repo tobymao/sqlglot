@@ -8,9 +8,10 @@ from sqlglot.generators.postgres import PostgresGenerator
 class RisingWaveGenerator(PostgresGenerator):
     LOCKING_READS_SUPPORTED = False
     SUPPORTS_BETWEEN_FLAGS = False
+    CAST_TO_INT_ROUNDS = True
 
     TRANSFORMS = {
-        **PostgresGenerator.TRANSFORMS,
+        **{k: v for k, v in PostgresGenerator.TRANSFORMS.items() if k != exp.IntDiv},
         exp.FileFormatProperty: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
     }
 

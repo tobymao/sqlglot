@@ -7,6 +7,26 @@ from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.trie import new_trie
 
+# Ranking and navigation functions don't take a frame and FIRST_VALUE/LAST_VALUE have their own default
+NON_FRAMED_WINDOW_FUNCTIONS = (
+    exp.CumeDist,
+    exp.DenseRank,
+    exp.FirstValue,
+    exp.Lag,
+    exp.LastValue,
+    exp.Lead,
+    exp.NthValue,
+    exp.Ntile,
+    exp.PercentRank,
+    exp.Rank,
+)
+
+
+def is_window_aggregate(window: exp.Window) -> bool:
+    return isinstance(window.this, exp.AggFunc) and not isinstance(
+        window.this, NON_FRAMED_WINDOW_FUNCTIONS
+    )
+
 
 class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
@@ -206,3 +226,27 @@ class TeradataParser(parser.Parser):
             this = self.expression(exp.FormatPhrase(this=this, format=fmt_string))
 
         return this
+
+    def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
+        window = super()._parse_window(this, alias)
+
+        # Unlike ANSI, Teradata window aggregates with ORDER BY and no ROWS clause span the whole partition
+        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Functions-Expressions-and-Predicates/Ordered-Analytical/Window-Aggregate-Functions/The-Window-Specification/ANSI-Compliance
+        if (
+            isinstance(window, exp.Window)
+            and window.args.get("order")
+            and not window.args.get("spec")
+            and is_window_aggregate(window)
+        ):
+            window.set(
+                "spec",
+                exp.WindowSpec(
+                    kind="ROWS",
+                    start="UNBOUNDED",
+                    start_side="PRECEDING",
+                    end="UNBOUNDED",
+                    end_side="FOLLOWING",
+                ),
+            )
+
+        return window

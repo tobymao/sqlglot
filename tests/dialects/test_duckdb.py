@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -1745,6 +1745,82 @@ class TestDuckDB(Validator):
                 ],
             )
 
+    def test_spark_array_slice(self):
+        source = "SELECT SLICE(SPLIT('abcdef', ''), 2, 4) AS chars"
+        target = "SELECT ARRAY_SLICE(STR_SPLIT_REGEX('abcdef', ''), 2, 5) AS chars"
+        self.validate_all(target, read={"spark": source})
+
+        for dialect in ("spark2", "spark", "databricks"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(source, read=dialect)
+                self.assertEqual(expression.sql(dialect), source)
+                self.assertEqual(expression.sql("duckdb"), target)
+
+    def test_spark_array_slice_bounds(self):
+        for source, target in (
+            ("SLICE(ARRAY(1, 2, 3), 1, 2)", "ARRAY_SLICE([1, 2, 3], 1, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 4)", "ARRAY_SLICE([1, 2, 3], 2, 5)"),
+            ("SLICE(ARRAY(1, 2, 3), 3, 0)", "ARRAY_SLICE([1, 2, 3], 3, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 2147483647)", "ARRAY_SLICE([1, 2, 3], 2, 2147483648)"),
+            (
+                "SLICE(ARRAY(1, 2, 3), -2, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END, (CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(ARRAY(1, 2, 3), -4, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END, (CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(NULL, 2, 1)",
+                "ARRAY_SLICE(NULL, 2, 2)",
+            ),
+            (
+                "SLICE(a, s, n)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, 2, n)",
+                "ARRAY_SLICE(a, 2, (2 + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, s, 2)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(2 AS BIGINT)) - 1)",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    target,
+                    read={"spark2": source, "spark": source, "databricks": source},
+                )
+
+    def test_array_slice_to_length(self):
+        self.validate_all(
+            "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+            write={
+                "duckdb": "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+                "spark2": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "databricks": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "presto": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+                "trino": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 0, 2)",
+            write={"spark": "SLICE(x, 1, 2)", "presto": "SLICE(x, 1, 2)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 3, 2)",
+            write={"spark": "SLICE(x, 3, 0)", "presto": "SLICE(x, 3, 0)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(CASE WHEN RANDOM() < 0.5 THEN [1] ELSE [1, 2] END, -1, 2)",
+            write={
+                "spark": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY(1) ELSE ARRAY(1, 2) END, -1, 2)",
+                "presto": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY[1] ELSE ARRAY[1, 2] END, -1, 2)",
+            },
+        )
+
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning
         self.validate_all(
@@ -1783,6 +1859,15 @@ class TestDuckDB(Validator):
                 "": "ARRAY_INSERT([1, 2, 3], -1, 99)",
                 "snowflake": "ARRAY_INSERT([1, 2, 3], -1, 99)",
                 "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), -2, 99)",
+            },
+        )
+
+        # Test 1-based -1 appends (Spark/Databricks), it isn't the 0-based "before last"
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3], [99]) END",
+            read={
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
+                "databricks": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
             },
         )
 
@@ -2105,6 +2190,9 @@ class TestDuckDB(Validator):
             "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
             "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)",
         )
+        self.validate_identity(
+            "SELECT a, COUNT(*) OVER w AS c FROM tbl WHERE a > 0 GROUP BY a HAVING COUNT(*) > 0 WINDOW w AS (ORDER BY a) QUALIFY c > 0 USING SAMPLE SYSTEM (50 PERCENT) ORDER BY a LIMIT 3 OFFSET 1"
+        )
 
         self.validate_all(
             "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
@@ -2127,6 +2215,17 @@ class TestDuckDB(Validator):
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
         self.validate_identity("ARRAY((SELECT id FROM t))")
+        self.validate_identity("[(SELECT id FROM t), 2]")
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [{'a': (SELECT 1)}]")
+        self.validate_identity("SELECT LIST_VALUE((SELECT 1))", "SELECT [(SELECT 1)]")
 
     def test_cast(self):
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
@@ -3062,3 +3161,121 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+    def test_concat_ws(self):
+        self.validate_identity("SELECT CONCAT_WS('-', 'a', 'b')")
+        self.validate_identity("SELECT CONCAT_WS('-', ['a', NULL, 'b'])")
+
+        for source, target in (
+            (
+                "CONCAT_WS('', ARRAY('a', 'b'))",
+                "CONCAT_WS('', ARRAY_TO_STRING(CAST(['a', 'b'] AS TEXT[]), ''))",
+            ),
+            (
+                "CONCAT_WS(',', ARRAY('b', 'c', 'd', 'e'))",
+                "CONCAT_WS(',', ARRAY_TO_STRING(CAST(['b', 'c', 'd', 'e'] AS TEXT[]), ','))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('a', NULL, '', 'b'))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST(['a', NULL, '', 'b'] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY())",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(NULL))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([NULL] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS(NULL, ARRAY())",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(CAST([] AS TEXT[]), NULL))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(1, 2), 'x')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST([1, 2] AS TEXT[]), [CAST('x' AS TEXT)]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS(NULL, CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), NULL))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), 'ghi')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), [CAST('ghi' AS TEXT)]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), ARRAY('bla', 'bob'))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), CAST(['bla', 'bob'] AS TEXT[])), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', 'x', ARRAY(), ARRAY(NULL), CAST(NULL AS ARRAY<STRING>), NULL, 'y')",
+                (
+                    "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT([CAST('x' AS TEXT)], CAST([] AS TEXT[]), "
+                    "CAST([NULL] AS TEXT[]), TRY_CAST(NULL AS TEXT[]), [CAST(NULL AS TEXT)], [CAST('y' AS TEXT)]), '-'))"
+                ),
+            ),
+            (
+                "CONCAT_WS('-', 1, NULL, 'a')",
+                "CONCAT_WS('-', 1, NULL, 'a')",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {target}", read={"spark": f"SELECT {source}"})
+
+    def test_concat_ws_typed(self):
+        for a_type, b_type, expected in (
+            (
+                "ARRAY<STRING>",
+                "STRING",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
+                ),
+            ),
+            (
+                "ARRAY<STRING>",
+                "ARRAY<STRING>",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "CAST(t.b AS TEXT[])), t.sep))"
+                ),
+            ),
+            (
+                "ARRAY<INT>",
+                "INT",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
+                ),
+            ),
+        ):
+            with self.subTest(a_type=a_type, b_type=b_type):
+                expression = annotate_types(
+                    parse_one("SELECT CONCAT_WS(t.sep, t.a, t.b) FROM t", read="spark"),
+                    schema={"t": {"sep": "STRING", "a": a_type, "b": b_type}},
+                    dialect="spark",
+                )
+                self.assertEqual(
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT {expected} FROM t",
+                )
+
+    def test_concat_ws_unknown_types(self):
+        for annotated in (False, True):
+            with self.subTest(annotated=annotated):
+                expression = parse_one(
+                    "SELECT CONCAT_WS('-', ARRAY('a'), t.b) FROM t", read="spark"
+                )
+                if annotated:
+                    expression = annotate_types(expression, dialect="spark")
+
+                with self.assertLogs(generator_logger) as logs:
+                    expression.sql("duckdb")
+                self.assertIn("CONCAT_WS with unknown argument types", logs.output[0])
+
+                with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)

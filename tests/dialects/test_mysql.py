@@ -56,6 +56,11 @@ class TestMySQL(Validator):
         self.validate_identity("ALTER TABLE t1 ADD COLUMN x INT, ALGORITHM=INPLACE, LOCK=EXCLUSIVE")
         self.validate_identity("ALTER TABLE t ADD INDEX `i` (`c`)")
         self.validate_identity("ALTER TABLE t ADD UNIQUE `i` (`c`)")
+        self.validate_identity("ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES p (a)")
+        self.validate_identity(
+            "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY fk (a) REFERENCES p (a)",
+            "ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES p (a)",
+        )
         alter = self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
         alter.args["actions"][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")

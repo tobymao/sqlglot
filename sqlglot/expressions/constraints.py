@@ -208,6 +208,7 @@ class Constraint(Expression):
 
 class ForeignKey(Expression):
     arg_types = {
+        "this": False,
         "expressions": False,
         "reference": False,
         "delete": False,

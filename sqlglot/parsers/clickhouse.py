@@ -297,6 +297,7 @@ class ClickHouseParser(parser.Parser):
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,
+        "COUNTMATCHES": exp.RegexpCount.from_arg_list,
         "CITYHASH64": exp.CityHash64.from_arg_list,
         "COSINEDISTANCE": exp.CosineDistance.from_arg_list,
         "VERSION": exp.CurrentVersion.from_arg_list,

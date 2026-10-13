@@ -61,6 +61,8 @@ class TestMySQL(Validator):
             "ALTER TABLE t ADD CONSTRAINT FOREIGN KEY fk (a) REFERENCES p (a)",
             "ALTER TABLE t ADD FOREIGN KEY fk (a) REFERENCES p (a)",
         )
+        self.validate_identity("ALTER TABLE t ADD CONSTRAINT c FOREIGN KEY fk (a) REFERENCES p (a)")
+        self.validate_identity("CREATE TABLE t (a INT, FOREIGN KEY fk (a) REFERENCES p (a))")
         alter = self.validate_identity("ALTER TABLE t DROP PRIMARY KEY")
         alter.args["actions"][0].assert_is(exp.DropPrimaryKey)
         self.validate_identity("ALTER TABLE t DROP COLUMN c, DROP PRIMARY KEY, DROP INDEX `i`")

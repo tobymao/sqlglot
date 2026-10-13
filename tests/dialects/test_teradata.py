@@ -13,6 +13,13 @@ class TestTeradata(Validator):
                 "teradata": "RANDOM(l, u)",
             },
         )
+        self.validate_all(
+            "SELECT RANDOM(1, 100)",
+            write={
+                "teradata": "SELECT RANDOM(1, 100)",
+                "snowflake": "SELECT UNIFORM(1, 100, RANDOM())",
+            },
+        )
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")
         self.validate_identity("SELECT TOP 10 * FROM tbl")
         self.validate_identity("SELECT * FROM tbl SAMPLE 5")

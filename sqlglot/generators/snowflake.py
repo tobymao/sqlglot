@@ -31,6 +31,8 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import find_new_name, flatten, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
+    RANDOM_LOWER,
+    RANDOM_UPPER,
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
     TIMESTAMP_TYPES,
     SnowflakeParser,
@@ -550,7 +552,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
         exp.StartsWith: rename_func("STARTSWITH"),
         exp.EndsWith: rename_func("ENDSWITH"),
-        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.StrPosition: lambda self, e: strposition_sql(
             self, e, func_name="CHARINDEX", supports_position=True
         ),
@@ -1110,6 +1111,14 @@ class SnowflakeGenerator(generator.Generator):
             expression.set("part_index", exp.Literal.number(1))
 
         return rename_func("SPLIT_PART")(self, expression)
+
+    def rand_sql(self, expression: exp.Rand) -> str:
+        lower = expression.args.get("lower")
+        upper = expression.args.get("upper")
+        if lower and upper and (lower, upper) != (RANDOM_LOWER, RANDOM_UPPER):
+            return self.sql(exp.Uniform(this=lower, expression=upper, seed=expression.this))
+
+        return self.func("RANDOM", expression.this)
 
     def uniform_sql(self, expression: exp.Uniform) -> str:
         gen = expression.args.get("gen")

@@ -70,6 +70,11 @@ def _build_date_from_parts(args: list) -> exp.DateFromParts:
     )
 
 
+# RANDOM() returns a 64-bit integer, i.e. a value in [-2^63, 2^63-1] (as floats to avoid overflow)
+RANDOM_LOWER = exp.Literal.number(-9223372036854775808.0)
+RANDOM_UPPER = exp.Literal.number(9223372036854775807.0)
+
+
 # Timestamp types used in _build_datetime
 TIMESTAMP_TYPES = {
     exp.DType.TIMESTAMP: "TO_TIMESTAMP",
@@ -576,9 +581,7 @@ class SnowflakeParser(parser.Parser):
         "REGEXP_SUBSTR": _build_regexp_extract(exp.RegexpExtract),
         "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
         "RANDOM": lambda args: exp.Rand(
-            this=seq_get(args, 0),
-            lower=exp.Literal.number(-9223372036854775808.0),  # -2^63 as float to avoid overflow
-            upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            this=seq_get(args, 0), lower=RANDOM_LOWER.copy(), upper=RANDOM_UPPER.copy()
         ),
         "REPLACE": build_replace_with_optional_replacement,
         "RIGHT": lambda args: exp.Right(

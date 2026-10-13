@@ -166,7 +166,12 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
         or isinstance(parent, exp.Paren)
         or not isinstance(this, exp.Binary)
         or (isinstance(this, exp.Add) and isinstance(parent, exp.Add))
-        or (isinstance(this, exp.Mul) and isinstance(parent, exp.Mul))
+        or (
+            isinstance(this, exp.Mul)
+            and isinstance(parent, exp.Mul)
+            # left operand's Mod/Div/IntDiv would be exposed to the parent's chain if unwrapped
+            and not isinstance(this.this, (exp.Mod, exp.Div, exp.IntDiv))
+        )
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):
         return this

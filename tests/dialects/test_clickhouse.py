@@ -552,6 +552,28 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
+            "SELECT countMatches(s, 'a')",
+            read={
+                "clickhouse": "SELECT countMatches(s, 'a')",
+                "snowflake": "SELECT REGEXP_COUNT(s, 'a')",
+            },
+            write={
+                "snowflake": "SELECT REGEXP_COUNT(s, 'a')",
+            },
+        )
+        self.validate_all(
+            "SELECT countMatches(substringUTF8(s, 3), CONCAT('(?is)', 'a.b'))",
+            read={
+                "snowflake": "SELECT REGEXP_COUNT(s, 'a.b', 3, 'cis')",
+            },
+        )
+        self.validate_all(
+            "SELECT countMatches(substringUTF8(s, 1), 'a')",
+            read={
+                "snowflake": "SELECT REGEXP_COUNT(s, 'a', 1, 'ic')",
+            },
+        )
+        self.validate_all(
             "SELECT '\\0'",
             read={
                 "mysql": "SELECT '\0'",

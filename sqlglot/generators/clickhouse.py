@@ -551,6 +551,30 @@ class ClickHouseGenerator(generator.Generator):
     def neq_sql(self, expression: exp.NEQ) -> str:
         return self._any_to_has(expression, super().neq_sql, "NOT ")
 
+    def regexpcount_sql(self, expression: exp.RegexpCount) -> str:
+        this = expression.this
+        pattern = expression.expression
+        position = expression.args.get("position")
+        parameters = expression.args.get("parameters")
+
+        if position:
+            # SUBSTRING counts bytes in ClickHouse, the position counts characters
+            this = self.func("substringUTF8", this, position)
+
+        if parameters:
+            flags = parameters.name if parameters.is_string else ""
+            if not parameters.is_string or set(flags) - set("cims"):
+                self.unsupported("Only literal 'c', 'i', 'm' and 's' regexp flags are supported")
+            # "c" (case-sensitive) is the default, and the last of "c" and "i" wins
+            if flags.rfind("c") > flags.rfind("i"):
+                flags = flags.replace("i", "")
+            flags = "".join(f for f in flags if f in "ims")
+            if flags:
+                # countMatches has no flags argument, so they are embedded in the pattern
+                pattern = self.func("CONCAT", exp.Literal.string(f"(?{flags})"), pattern)
+
+        return self.func("countMatches", this, pattern)
+
     def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
         # Manually add a flag to make the search case-insensitive
         regex = self.func("CONCAT", "'(?i)'", expression.expression)

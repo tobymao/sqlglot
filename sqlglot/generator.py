@@ -1994,10 +1994,8 @@ class Generator:
                     if node is expression:
                         return self.sql(select)
 
-                    prefix, suffix = self._setop_select_shell(select)
-                    sql_fragments.append((prefix, indent_level))
-                    stack.append((suffix, indent_level, False))
-                    stack.append((node, indent_level + 1, True))
+                    # Unlike flat set-operation chains, generated SELECT wrappers recurse.
+                    sql_fragments.append((self.sql(select), indent_level))
                     continue
 
             if render_with_modifiers:
@@ -2076,24 +2074,6 @@ class Generator:
                 expression.set(arg, None)
                 select.set(arg, value)
         return select
-
-    def _setop_select_shell(self, select: exp.Select) -> tuple[str, str]:
-        subquery = select.args["from_"].this
-        node = subquery.this
-        alias = subquery.args.get("alias")
-        hole = SETOP_OPERAND_PLACEHOLDER
-
-        # Render the SELECT once without rendering the child set operation.
-        subquery.set("this", hole)
-        subquery.set("alias", self.sql(alias.this))
-        try:
-            shell = self.sql(select)
-        finally:
-            subquery.set("this", node)
-            subquery.set("alias", alias)
-
-        prefix, _, remainder = shell.partition(hole)
-        return prefix, remainder
 
     def _should_wrap_setop(
         self, node: exp.Expr, setop: exp.Expr, intersect_tighter: bool, mixed_requires_parens: bool

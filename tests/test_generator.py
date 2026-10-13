@@ -395,10 +395,30 @@ class TestGenerator(unittest.TestCase):
             reparsed = reparsed.this.unnest()
             prefix = prefix.this
 
-        for dialect, modifier in (("tsql", "TOP 1"), ("clickhouse", "LIMIT 1")):
-            nested = exp.select("1")
-            for _ in range(130):
-                nested = exp.union("SELECT 2", nested, distinct=False).limit(1)
-            sql = nested.sql(dialect, pretty=True, copy=False)
-            self.assertEqual(sql.count("UNION ALL"), 130)
-            self.assertEqual(sql.count(modifier), 130)
+    def test_nested_setop_generated_wrappers(self):
+        branch = exp.union("SELECT 1 AS x", "SELECT 2 AS x", distinct=False).limit(1)
+        tree = exp.union("SELECT 0 AS x", branch, distinct=False).limit(2)
+
+        for dialect, expected in (
+            (
+                "tsql",
+                "SELECT TOP 2 * FROM (SELECT 0 AS x UNION ALL "
+                "(SELECT TOP 1 * FROM (SELECT 1 AS x UNION ALL SELECT 2 AS x) AS _l_0)) AS _l_0",
+            ),
+            (
+                "clickhouse",
+                "SELECT * FROM (SELECT 0 AS x UNION ALL "
+                "(SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 AS x) AS _l_0 LIMIT 1)) "
+                "AS _l_0 LIMIT 2",
+            ),
+        ):
+            for pretty in (False, True):
+                with self.subTest(dialect=dialect, pretty=pretty):
+                    sql = tree.sql(dialect, pretty=pretty)
+                    reparsed = parse_one(sql, read=dialect)
+                    self.assertEqual(reparsed.sql(dialect), expected)
+                    self.assertEqual(reparsed.args["limit"].expression.name, "2")
+                    setop = reparsed.args["from_"].this.this
+                    self.assertIsNone(setop.args.get("limit"))
+                    inner = setop.expression.unnest()
+                    self.assertEqual(inner.args["limit"].expression.name, "1")

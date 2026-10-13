@@ -638,6 +638,7 @@ class SnowflakeGenerator(generator.Generator):
         **generator.Generator.PROPERTIES_LOCATION,
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
+        exp.LockingProperty: exp.Properties.Location.UNSUPPORTED,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SetProperty: exp.Properties.Location.UNSUPPORTED,

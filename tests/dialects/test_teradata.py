@@ -65,6 +65,21 @@ class TestTeradata(Validator):
             "CREATE VIEW view_b AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b"
         )
 
+        self.validate_all(
+            "LOCKING ROW FOR ACCESS SELECT * FROM t",
+            write={
+                "teradata": "LOCKING ROW FOR ACCESS SELECT * FROM t",
+                "snowflake": "SELECT * FROM t",
+            },
+        )
+        self.validate_all(
+            "CREATE VIEW v AS LOCKING ROW FOR ACCESS SELECT * FROM t",
+            write={
+                "teradata": "CREATE VIEW v AS LOCKING ROW FOR ACCESS SELECT * FROM t",
+                "snowflake": "CREATE VIEW v AS SELECT * FROM t",
+            },
+        )
+
     def test_update(self):
         self.validate_all(
             "UPDATE A FROM schema.tableA AS A, (SELECT col1 FROM schema.tableA GROUP BY col1) AS B SET col2 = '' WHERE A.col1 = B.col1",

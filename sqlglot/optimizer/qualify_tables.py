@@ -202,13 +202,12 @@ def qualify_tables(
                     if explicit:
                         function_columns = explicit
                     else:
-                        arg = table_this.this
                         if (
-                            arg
-                            and not arg.type
-                            and not scope_annotated
+                            not scope_annotated
                             and annotator
                             and callable(dialect.TVF_COLUMNS.get(type(table_this)))
+                            and table_this.this
+                            and not table_this.this.type
                         ):
                             annotator.annotate_scope(scope)
                             scope_annotated = True
@@ -268,13 +267,12 @@ def qualify_tables(
                     )
                 elif isinstance(udtf, (exp.Func, exp.TableFromRows, exp.Lateral)):
                     func = udtf.this if isinstance(udtf, (exp.TableFromRows, exp.Lateral)) else udtf
-                    arg = func.this
                     if (
-                        arg
-                        and not arg.type
-                        and not scope_annotated
+                        not scope_annotated
                         and annotator
                         and callable(dialect.TVF_COLUMNS.get(type(func)))
+                        and func.this
+                        and not func.this.type
                     ):
                         annotator.annotate_scope(scope)
                         scope_annotated = True

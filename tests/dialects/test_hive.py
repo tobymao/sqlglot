@@ -217,6 +217,15 @@ class TestHive(Validator):
         )
         self.assertIsInstance(replace.args["actions"][0], exp.ReplaceColumns)
 
+        # Column definitions we can't parse yet keep falling back to a Command
+        for sql in (
+            "ALTER TABLE t REPLACE COLUMNS (a INT COMMENT 'it''s')",
+            "ALTER TABLE t REPLACE COLUMNS (a UNIONTYPE<INT, STRING>)",
+            "ALTER TABLE t REPLACE COLUMNS (a TIMESTAMPLOCALTZ)",
+        ):
+            with self.subTest(sql):
+                self.assertIsInstance(self.validate_identity(sql), exp.Command)
+
         self.validate_identity(
             """CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS TERMINATED BY '1' WITH SERDEPROPERTIES ('input.regex'='')""",
         )

@@ -289,7 +289,9 @@ class HiveParser(parser.Parser):
         if not self._match_text_seq("COLUMNS"):
             return None
 
-        expressions = self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        expressions = self._try_parse(
+            lambda: self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        )
         return self.expression(exp.ReplaceColumns(expressions=expressions)) if expressions else None
 
     def _parse_using_property(self) -> exp.Property:

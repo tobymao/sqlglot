@@ -130,6 +130,8 @@ class MySQLParser(parser.Parser):
         ),
         "SCHEMA": exp.CurrentSchema.from_arg_list,
         "DATABASE": exp.CurrentSchema.from_arg_list,
+        "STD": exp.StddevPop.from_arg_list,
+        "STDDEV": exp.StddevPop.from_arg_list,
         "STR_TO_DATE": _str_to_date,
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TO_DAYS": lambda args: exp.paren(
@@ -140,6 +142,7 @@ class MySQLParser(parser.Parser):
             )
             + 1
         ),
+        "VARIANCE": exp.VariancePop.from_arg_list,
         "VERSION": exp.CurrentVersion.from_arg_list,
         "WEEK": lambda args: exp.Week(
             this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)

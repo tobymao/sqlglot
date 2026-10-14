@@ -35,6 +35,11 @@ class Snowflake(Dialect):
     UUID_IS_STRING_TYPE = True
     STAR_ILIKE_BACKSLASH_ESCAPE = True
 
+    # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
+    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
+        exp.SplitToTable: ("seq", "index", "value"),
+    }
+
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     # https://docs.snowflake.com/en/en/sql-reference/functions/initcap

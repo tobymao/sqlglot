@@ -587,3 +587,17 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "CREATE TABLE t (k1 INT, v1 HLL HLL_UNION) AGGREGATE KEY (k1) DISTRIBUTED BY HASH (k1)"
         ).assert_is(exp.Create)
+
+    def test_datediff(self):
+        # DATEDIFF compares only the date parts, unlike DATE_DIFF('DAY', ...)
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/datediff/
+        self.validate_all(
+            "SELECT DATEDIFF(CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))",
+            write={
+                "starrocks": "SELECT DATEDIFF(CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))",
+                "duckdb": "SELECT DATE_DIFF('DAY', CAST('2026-03-10 23:00:00' AS TIMESTAMP), CAST('2026-03-11 01:00:00' AS TIMESTAMP))",
+            },
+        )
+        self.validate_identity(
+            "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
+        )

@@ -52,9 +52,6 @@ class StarRocksParser(MySQLParser):
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": build_timestamp_trunc,
-        "DATEDIFF": lambda args: exp.DateDiff(
-            this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
-        ),
         "DATE_DIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
         ),

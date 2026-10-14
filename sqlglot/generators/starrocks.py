@@ -114,9 +114,7 @@ class StarRocksGenerator(MySQLGenerator):
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
-        exp.DateDiff: lambda self, e: self.func(
-            "DATE_DIFF", weekstart_unit_to_str(self, e), e.this, e.expression
-        ),
+        exp.DateDiff: lambda self, e: self.datediff_sql(e),
         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
@@ -394,6 +392,20 @@ class StarRocksGenerator(MySQLGenerator):
         mode = f" WITH {mode} MODE" if mode else ""
 
         return f"REFRESH {kind}{this}{partition}{force}{mode}"
+
+    def datediff_sql(self, expression: exp.DateDiff) -> str:
+        # DATEDIFF compares only the date parts, whereas DATE_DIFF counts elapsed units
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/datediff/
+        unit = expression.args.get("unit")
+        if expression.args.get("date_part_boundary") and (not unit or unit.name.upper() == "DAY"):
+            return self.func("DATEDIFF", expression.this, expression.expression)
+
+        return self.func(
+            "DATE_DIFF",
+            weekstart_unit_to_str(self, expression),
+            expression.this,
+            expression.expression,
+        )
 
     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
         interval = exp.Interval(this=expression.expression, unit=expression.unit)

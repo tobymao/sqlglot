@@ -101,7 +101,9 @@ class StarRocksGenerator(MySQLGenerator):
         # StarRocks uses the native TRIM(str, chars)/LTRIM/RTRIM function form, not
         # MySQL's TRIM(chars FROM str) syntax, so it falls back to the base generator.
         **{
-            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
+            k: v
+            for k, v in MySQLGenerator.TRANSFORMS.items()
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Trim)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -114,7 +116,6 @@ class StarRocksGenerator(MySQLGenerator):
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
-        exp.DateDiff: lambda self, e: self.datediff_sql(e),
         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,

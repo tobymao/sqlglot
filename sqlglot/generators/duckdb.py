@@ -4171,7 +4171,7 @@ class DuckDBGenerator(generator.Generator):
                     this=exp.Transform(
                         this=expression.this,
                         expression=exp.Lambda(
-                            this=exp.Coalesce(this=x, expressions=[null]),
+                            this=exp.Coalesce(this=exp.cast(x, "TEXT"), expressions=[null]),
                             expressions=[x],
                         ),
                     ),

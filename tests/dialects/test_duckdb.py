@@ -149,6 +149,13 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT ARRAY_TO_STRING(LIST_TRANSFORM([1, 2, 3, NULL, 5], x -> COALESCE(CAST(x AS TEXT), '*')), ',')",
+            read={
+                "postgres": "SELECT ARRAY_TO_STRING(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
+                "presto": "SELECT ARRAY_JOIN(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
+            },
+        )
+        self.validate_all(
             "SELECT SUM(X) OVER (ORDER BY x)",
             write={
                 "bigquery": "SELECT SUM(X) OVER (ORDER BY x)",

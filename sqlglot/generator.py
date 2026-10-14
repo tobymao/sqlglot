@@ -3781,6 +3781,7 @@ class Generator:
 
         return f"EXTRACT({this_sql} FROM {expression_sql})"
 
+    @function_syntax
     def trim_sql(self, expression: exp.Trim) -> str:
         trim_type = self.sql(expression, "position")
 
@@ -3889,6 +3890,7 @@ class Generator:
         self.unsupported("TIMESERIES primary key columns are not supported")
         return self.sql(expression, "this")
 
+    @function_syntax
     def if_sql(self, expression: exp.If) -> str:
         return self.case_sql(exp.Case(ifs=[expression], default=expression.args.get("false")))
 

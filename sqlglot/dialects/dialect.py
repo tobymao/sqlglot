@@ -1339,6 +1339,7 @@ def approx_count_distinct_sql(self: Generator, expression: exp.ApproxDistinct) -
 def if_sql(
     name: str = "IF", false_value: exp.Expr | str | None = None
 ) -> t.Callable[[Generator, exp.If], str]:
+    @function_syntax
     def _if_sql(self: Generator, expression: exp.If) -> str:
         return self.func(
             name,
@@ -1867,6 +1868,7 @@ def date_trunc_to_time(args: BuilderArgs) -> exp.DateTrunc | exp.TimestampTrunc:
 
 
 def date_add_interval_sql(data_type: str, kind: str) -> t.Callable[[Generator, exp.Expr], str]:
+    @function_syntax
     def func(self: Generator, expression: exp.Expr) -> str:
         this = self.sql(expression, "this")
         interval = exp.Interval(this=expression.expression, unit=unit_to_var(expression))

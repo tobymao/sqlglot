@@ -27,7 +27,7 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     sha2_digest_sql,
 )
-from sqlglot.generator import unsupported_args
+from sqlglot.generator import function_syntax, unsupported_args
 from sqlglot.helper import seq_get
 
 logger = logging.getLogger("sqlglot")
@@ -329,7 +329,6 @@ class BigQueryGenerator(generator.Generator):
         exp.Create: _create_sql,
         exp.CTE: transforms.preprocess([_pushdown_cte_column_names]),
         exp.DateAdd: date_add_interval_sql("DATE", "ADD"),
-        exp.DateDiff: lambda self, e: self.func("DATE_DIFF", e.this, e.expression, unit_to_var(e)),
         exp.DateFromParts: rename_func("DATE"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: date_add_interval_sql("DATE", "SUB"),
@@ -588,6 +587,12 @@ class BigQueryGenerator(generator.Generator):
             return "WEEK"
 
         return self.func("WEEK", expression.this)
+
+    @function_syntax
+    def datediff_sql(self, expression: exp.DateDiff) -> str:
+        return self.func(
+            "DATE_DIFF", expression.this, expression.expression, unit_to_var(expression)
+        )
 
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit

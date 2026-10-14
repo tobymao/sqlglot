@@ -483,11 +483,9 @@ WITH "customer_2" AS (
     SUM(
       (
         (
-          (
-            "catalog_sales"."cs_ext_list_price" - "catalog_sales"."cs_ext_wholesale_cost" - "catalog_sales"."cs_ext_discount_amt"
-          ) + "catalog_sales"."cs_ext_sales_price"
-        ) / 2
-      )
+          "catalog_sales"."cs_ext_list_price" - "catalog_sales"."cs_ext_wholesale_cost" - "catalog_sales"."cs_ext_discount_amt"
+        ) + "catalog_sales"."cs_ext_sales_price"
+      ) / 2
     ) AS "year_total",
     'c' AS "sale_type"
   FROM "customer_2" AS "customer"
@@ -514,11 +512,9 @@ WITH "customer_2" AS (
     SUM(
       (
         (
-          (
-            "web_sales"."ws_ext_list_price" - "web_sales"."ws_ext_wholesale_cost" - "web_sales"."ws_ext_discount_amt"
-          ) + "web_sales"."ws_ext_sales_price"
-        ) / 2
-      )
+          "web_sales"."ws_ext_list_price" - "web_sales"."ws_ext_wholesale_cost" - "web_sales"."ws_ext_discount_amt"
+        ) + "web_sales"."ws_ext_sales_price"
+      ) / 2
     ) AS "year_total",
     'w' AS "sale_type"
   FROM "customer_2" AS "customer"
@@ -12471,9 +12467,7 @@ FROM "tmp1" AS "tmp1"
 WHERE
   CASE
     WHEN "tmp1"."avg_monthly_sales" <> 0
-    THEN (
-      ABS("tmp1"."sum_sales" - "tmp1"."avg_monthly_sales") / "tmp1"."avg_monthly_sales"
-    )
+    THEN ABS("tmp1"."sum_sales" - "tmp1"."avg_monthly_sales") / "tmp1"."avg_monthly_sales"
     ELSE NULL
   END > 0.1
 ORDER BY

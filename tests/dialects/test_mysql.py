@@ -9,6 +9,21 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_statistical_aggregates(self):
+        self.validate_all(
+            "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t",
+            read={
+                "mysql": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "starrocks": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "doris": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "singlestore": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+            },
+            write={"duckdb": "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t"},
+        )
+        self.validate_identity(
+            "SELECT STDDEV_POP(x), VAR_POP(x), STDDEV_SAMP(x), VAR_SAMP(x) FROM t"
+        )
+
     def test_insert_value(self):
         self.validate_identity("INSERT INTO t VALUE (1)", "INSERT INTO t VALUES (1)")
         self.validate_identity(

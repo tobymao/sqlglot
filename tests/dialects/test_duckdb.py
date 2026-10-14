@@ -974,6 +974,10 @@ class TestDuckDB(Validator):
             write={
                 "": "VARIANCE_POP(x)",
                 "duckdb": "VAR_POP(x)",
+                "mysql": "VAR_POP(x)",
+                "starrocks": "VAR_POP(x)",
+                "doris": "VAR_POP(x)",
+                "singlestore": "VAR_POP(x)",
             },
         )
         self.validate_all(
@@ -1390,6 +1394,10 @@ class TestDuckDB(Validator):
             "VARIANCE(a)",
             write={
                 "duckdb": "VARIANCE(a)",
+                "mysql": "VAR_SAMP(a)",
+                "starrocks": "VAR_SAMP(a)",
+                "doris": "VAR_SAMP(a)",
+                "singlestore": "VAR_SAMP(a)",
                 "clickhouse": "varSamp(a)",
             },
         )
@@ -1397,6 +1405,10 @@ class TestDuckDB(Validator):
             "STDDEV(a)",
             write={
                 "duckdb": "STDDEV(a)",
+                "mysql": "STDDEV_SAMP(a)",
+                "starrocks": "STDDEV_SAMP(a)",
+                "doris": "STDDEV_SAMP(a)",
+                "singlestore": "STDDEV_SAMP(a)",
                 "clickhouse": "stddevSamp(a)",
             },
         )

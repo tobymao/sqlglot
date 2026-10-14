@@ -36,7 +36,8 @@ class Snowflake(Dialect):
     STAR_ILIKE_BACKSLASH_ESCAPE = True
 
     # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
-    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
+    TVF_COLUMNS = {
+        **Dialect.TVF_COLUMNS,
         exp.SplitToTable: ("seq", "index", "value"),
     }
 

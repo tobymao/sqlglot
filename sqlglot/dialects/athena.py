@@ -78,35 +78,24 @@ class Athena(Trino):
             try:
                 tokens = super().tokenize(sql)
             except TokenError:
-                engine_tokens = self._tokenize_by_engine(sql)
-                if engine_tokens is None:
-                    raise
-                return engine_tokens
+                # Combined rules can reject literals valid in only one engine.
+                for tokenizer, hive in (
+                    (self._trino_tokenizer, False),
+                    (self._hive_tokenizer, True),
+                ):
+                    try:
+                        tokens = tokenizer.tokenize(sql)
+                    except TokenError:
+                        continue
+
+                    if _tokenize_as_hive(tokens) == hive:
+                        return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + tokens if hive else tokens
+                raise
 
             if _tokenize_as_hive(tokens):
                 return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + self._hive_tokenizer.tokenize(sql)
 
             return self._trino_tokenizer.tokenize(sql)
-
-        def _tokenize_by_engine(self, sql: str) -> list[Token] | None:
-            # The combined rules reject literals that are valid in a single engine, e.g. '\' in
-            # Trino or "a\"b" in Hive, so each engine is tried with its own rules instead and is
-            # only used if its tokens are routed to it
-            try:
-                tokens = self._trino_tokenizer.tokenize(sql)
-                if not _tokenize_as_hive(tokens):
-                    return tokens
-            except TokenError:
-                pass
-
-            try:
-                tokens = self._hive_tokenizer.tokenize(sql)
-                if _tokenize_as_hive(tokens):
-                    return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + tokens
-            except TokenError:
-                pass
-
-            return None
 
     Parser = AthenaParser
 

@@ -1,5 +1,5 @@
 from sqlglot import exp
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, TokenError
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
 
@@ -42,6 +42,19 @@ class TestAthena(Validator):
             identify=True,
         )
 
+    def test_tokenizer_errors(self):
+        for sql in (
+            "SELECT 'unterminated",
+            r"SELECT 'it\'s'",
+            r'''SELECT "a\"b"''',
+            r"CREATE EXTERNAL TABLE t (x INT COMMENT '\')",
+        ):
+            with self.subTest(sql), self.assertRaises(TokenError):
+                self.parse_one(sql)
+
+        with self.assertRaises(ParseError):
+            self.parse_one(r"SELECT '\' +")
+
     def test_func_builder(self):
         args = (exp.Literal.string("-"), exp.column("a"), exp.column("b"))
         self.assertEqual(
@@ -74,6 +87,10 @@ class TestAthena(Validator):
         )
 
     def test_ddl(self):
+        self.validate_identity(
+            r'''CREATE DATABASE foo COMMENT "a\"b"''',
+            "CREATE DATABASE foo COMMENT 'a\"b'",
+        )
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
         self.validate_identity(

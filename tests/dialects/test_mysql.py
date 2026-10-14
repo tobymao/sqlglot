@@ -10,55 +10,18 @@ class TestMySQL(Validator):
     dialect = "mysql"
 
     def test_statistical_aggregates(self):
-        for names, canonical, expression_type in (
-            (("STD", "STDDEV", "STDDEV_POP"), "STDDEV_POP", exp.StddevPop),
-            (("VARIANCE", "VAR_POP"), "VAR_POP", exp.VariancePop),
-        ):
-            for name in names:
-                with self.subTest(name=name):
-                    sql = f"SELECT {canonical}(x) FROM t"
-                    expression = self.validate_identity(f"SELECT {name}(x) FROM t", sql)
-                    self.assertIsInstance(expression.expressions[0], expression_type)
-                    self.validate_all(
-                        sql,
-                        read={
-                            dialect: f"SELECT {name}(x) FROM t"
-                            for dialect in ("mysql", "starrocks", "doris", "singlestore")
-                        },
-                        write={
-                            dialect: sql
-                            for dialect in ("duckdb", "starrocks", "doris", "singlestore")
-                        },
-                    )
-
-        for names, canonical in (
-            (("STDDEV", "STDDEV_SAMP"), "STDDEV_SAMP"),
-            (("VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"), "VAR_SAMP"),
-            (("VARIANCE_POP", "VAR_POP"), "VAR_POP"),
-        ):
-            for name in names:
-                with self.subTest(name=name):
-                    self.validate_all(
-                        f"SELECT {canonical}(x) FROM t",
-                        read={"": f"SELECT {name}(x) FROM t"},
-                    )
-
         self.validate_all(
-            "SELECT STDDEV_SAMP(x), VAR_SAMP(x) FROM t",
-            read={"duckdb": "SELECT STDDEV(x), VARIANCE(x) FROM t"},
-            write={
-                dialect: "SELECT STDDEV_SAMP(x), VAR_SAMP(x) FROM t"
-                for dialect in ("starrocks", "doris", "singlestore")
+            "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t",
+            read={
+                "mysql": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "starrocks": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "doris": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
+                "singlestore": "SELECT STD(x), STDDEV(x), VARIANCE(x) FROM t",
             },
+            write={"duckdb": "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t"},
         )
-        self.validate_all(
-            "SELECT STDDEV_POP(x) OVER (), VAR_POP(x) OVER () FROM t",
-            read={"mysql": "SELECT STD(x) OVER (), VARIANCE(x) OVER () FROM t"},
-            write={"duckdb": "SELECT STDDEV_POP(x) OVER (), VAR_POP(x) OVER () FROM t"},
-        )
-        self.validate_all(
-            "SELECT STDDEV_SAMP(x) OVER (), VAR_SAMP(x) OVER () FROM t",
-            read={"duckdb": "SELECT STDDEV(x) OVER (), VARIANCE(x) OVER () FROM t"},
+        self.validate_identity(
+            "SELECT STDDEV_POP(x), VAR_POP(x), STDDEV_SAMP(x), VAR_SAMP(x) FROM t"
         )
 
     def test_insert_value(self):

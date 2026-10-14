@@ -13,6 +13,7 @@ from sqlglot import Dialect, exp
 from sqlglot.helper import first, merge_ranges, while_changing
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.scope import find_all_in_scope, walk_in_scope
+from sqlglot.parser import Parser
 from sqlglot.schema import ensure_schema
 
 
@@ -130,6 +131,17 @@ def flatten(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+FACTOR_TIER = tuple(Parser.FACTOR.values())
+
+
+def _is_pure_mul_chain(node: exp.Expr) -> bool:
+    while isinstance(node, FACTOR_TIER):
+        if not isinstance(node, exp.Mul):
+            return False
+        node = node.this
+    return True
+
+
 def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     if not isinstance(expression, exp.Paren):
         return expression
@@ -169,8 +181,8 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
         or (
             isinstance(this, exp.Mul)
             and isinstance(parent, exp.Mul)
-            # left operand's Mod/Div/IntDiv would be exposed to the parent's chain if unwrapped
-            and not isinstance(this.this, (exp.Mod, exp.Div, exp.IntDiv))
+            # a left operand never regroups when unwrapped; a right operand does unless pure Mul
+            and (parent.this is expression or _is_pure_mul_chain(this.this))
         )
         or (isinstance(this, exp.Mul) and isinstance(parent, (exp.Add, exp.Sub)))
     ):

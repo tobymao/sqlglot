@@ -10,14 +10,25 @@ from sqlglot.errors import ParseError, TokenError
 from sqlglot.expressions.core import (
     Alias,
     Anonymous,
+    AtTimeZone,
+    Between,
+    Binary,
+    BitwiseNot,
     Boolean,
+    Bracket,
     Column,
     Condition,
+    Dot,
     EQ,
     Expr,
+    Func,
     Identifier,
+    In,
     Literal,
+    Neg,
+    Not,
     Null,
+    Paren,
     Placeholder,
     TABLE_PARTS,
     Var,
@@ -36,6 +47,8 @@ from sqlglot.expressions.query import (
     From,
     Schema,
     Select,
+    SetOperation,
+    Subquery,
     Table,
     TableAlias,
     Tuple,
@@ -44,7 +57,7 @@ from sqlglot.expressions.query import (
     With,
     Query,
 )
-from sqlglot.expressions.ddl import Alter, AlterRename, RenameColumn
+from sqlglot.expressions.ddl import Alter, AlterRename, Create, RenameColumn
 from sqlglot.expressions.dml import Delete, Insert, Merge, Update, When, Whens
 from sqlglot.expressions.functions import Case, Cast
 from sqlglot.expressions.array import Array
@@ -53,11 +66,10 @@ from sqlglot.expressions.array import Array
 if t.TYPE_CHECKING:
     from collections.abc import Sequence, Iterable, Iterator
     from sqlglot.dialects.dialect import DialectType
-    from sqlglot.expressions.core import ExpOrStr, Func
+    from sqlglot.expressions.core import ExpOrStr
     from sqlglot.expressions.datatypes import DATA_TYPE
     from sqlglot._typing import ParserArgs, ParserNoDialectArgs, E, P
     from typing_extensions import Unpack, Concatenate
-    from sqlglot.expressions.core import Dot
 
 
 def select(
@@ -849,6 +861,43 @@ def replace_tables(
     return expression.transform(_replace_tables, copy=copy)  # type: ignore
 
 
+OPERATORS = (AtTimeZone, Between, Binary, BitwiseNot, In, Neg, Not)
+
+
+def _is_operand(placeholder: Placeholder) -> bool:
+    parent = placeholder.parent
+    if isinstance(parent, (Bracket, In)):
+        return placeholder.arg_key == "this"
+    return isinstance(parent, OPERATORS)
+
+
+def _takes_query(placeholder: Placeholder) -> bool:
+    parent = placeholder.parent
+    if isinstance(parent, In):
+        return placeholder.arg_key == "expressions" and len(parent.expressions) == 1
+    if isinstance(parent, Func):
+        return len(list(parent.iter_expressions())) == 1
+    if isinstance(parent, Table):
+        return isinstance(parent.parent, (Create, Subquery))
+    return not parent or isinstance(parent, (CTE, Paren, SetOperation))
+
+
+def _replace_placeholder(placeholder: Placeholder, expression: Expr) -> Expr:
+    if (
+        isinstance(expression, Query)
+        and not isinstance(expression, Subquery)
+        and not _takes_query(placeholder)
+    ):
+        return expression.subquery(copy=False)
+    if (
+        _is_operand(placeholder)
+        and isinstance(expression, OPERATORS)
+        and not isinstance(expression, Dot)
+    ):
+        return Paren(this=expression)
+    return expression
+
+
 def replace_placeholders(expression: Expr, *args: object, **kwargs: t.Any) -> Expr:
     """Replace placeholders in an expression.
 
@@ -874,10 +923,10 @@ def replace_placeholders(expression: Expr, *args: object, **kwargs: t.Any) -> Ex
             if node.this:
                 new_name = kwargs.get(node.this)
                 if new_name is not None:
-                    return convert(new_name)
+                    return _replace_placeholder(node, convert(new_name))
             else:
                 try:
-                    return convert(next(args))
+                    return _replace_placeholder(node, convert(next(args)))
                 except StopIteration:
                     pass
         return node

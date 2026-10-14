@@ -3,10 +3,13 @@ from __future__ import annotations
 import logging
 import re
 import typing as t
+from decimal import Decimal
+from fractions import Fraction
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
+    array_sort_order,
     date_add_interval_sql,
     datestrtodate_sql,
     filter_array_using_unnest,
@@ -176,6 +179,81 @@ def _array_contains_sql(self: BigQueryGenerator, expression: exp.ArrayContains) 
     )
 
 
+def _widen_decimal(expression: exp.Expr) -> exp.Expr:
+    # NUMERIC holds at most 29 integer and 9 fractional digits, e.g. DECIMAL(38, 0) needs BIGNUMERIC
+    for node in expression.find_all(exp.DataType):
+        if node.is_type(exp.DType.DECIMAL) and node.expressions:
+            precision, *rest = (param.this for param in node.expressions)
+            scale = rest[0] if rest else exp.Literal.number(0)
+            if precision.is_int and scale.is_int:
+                scale_digits = int(scale.name)
+                if int(precision.name) - scale_digits > 29 or scale_digits > 9:
+                    node.set("this", exp.DType.BIGDECIMAL)
+    return expression
+
+
+def _extract_part(part: str) -> t.Callable[[BigQueryGenerator, exp.Func], str]:
+    return lambda self, e: self.sql(exp.func("EXTRACT", exp.var(part), e.this, copy=False))
+
+
+def _day_of_week_iso_sql(self: BigQueryGenerator, expression: exp.DayOfWeekIso) -> str:
+    # DAYOFWEEK is Sunday=1..Saturday=7, ISO is Monday=1..Sunday=7
+    template: exp.Expr = exp.maybe_parse("(MOD(EXTRACT(DAYOFWEEK FROM :this) + 5, 7) + 1)")
+    return self.sql(exp.replace_placeholders(template, this=expression.this))
+
+
+def _array_agg_fold_sql(
+    self: BigQueryGenerator, expression: exp.ArrayDistinct | exp.ArraySort
+) -> str:
+    distinct = False
+    sort: exp.ArraySort | None = None
+    agg: exp.Expr = expression
+    while isinstance(agg, (exp.ArrayDistinct, exp.ArraySort)) and not agg.expression:
+        if isinstance(agg, exp.ArrayDistinct):
+            distinct = True
+        elif sort is None:
+            sort = agg
+        agg = agg.this
+
+    order = array_sort_order(sort) if sort else None
+
+    # An ARRAY_AGG with its own ORDER BY or LIMIT can't take another
+    if (
+        not isinstance(agg, exp.ArrayAgg)
+        or isinstance(agg.this, (exp.Order, exp.Limit))
+        or (sort is not None and order is None)
+    ):
+        self.unsupported(
+            f"{expression.sql_name()} is only supported on an ARRAY_AGG without ORDER BY or LIMIT and with a literal order"
+        )
+        return self.func(expression.sql_name(), expression.this, expression.expression)
+
+    value = agg.this
+    if isinstance(value, exp.Distinct):
+        distinct, value = True, value.expressions[0]
+
+    folded: exp.Expr = exp.Distinct(expressions=[value]) if distinct else value
+    if order is not None:
+        asc, nulls_first = order
+        keys = [exp.Ordered(this=value.copy(), desc=not asc or None, nulls_first=asc)]
+
+        # Aggregate ORDER BY only puts NULLs first when ascending, so other placements need a key
+        if nulls_first is not None and nulls_first != asc:
+            if distinct:
+                self.unsupported("ARRAY_AGG(DISTINCT) only puts NULLs first when ascending")
+            else:
+                is_null = value.copy().is_(exp.null())
+                keys.insert(
+                    0,
+                    exp.Ordered(
+                        this=is_null, desc=nulls_first or None, nulls_first=not nulls_first
+                    ),
+                )
+        folded = exp.Order(this=folded, expressions=keys)
+    agg.set("this", folded)
+    return self.sql(agg)
+
+
 def _ts_or_ds_add_sql(self: BigQueryGenerator, expression: exp.TsOrDsAdd) -> str:
     return date_add_interval_sql("DATE", "ADD")(self, ts_or_ds_add_cast(expression))
 
@@ -311,6 +389,8 @@ class BigQueryGenerator(generator.Generator):
         exp.ArgMin: arg_max_or_min_no_count("MIN_BY"),
         exp.Array: inline_array_unless_query,
         exp.ArrayContains: _array_contains_sql,
+        exp.ArrayDistinct: _array_agg_fold_sql,
+        exp.ArraySort: _array_agg_fold_sql,
         exp.ArrayFilter: filter_array_using_unnest,
         exp.ArrayRemove: filter_array_using_unnest,
         exp.BitwiseAndAgg: rename_func("BIT_AND"),
@@ -318,7 +398,9 @@ class BigQueryGenerator(generator.Generator):
         exp.BitwiseXorAgg: rename_func("BIT_XOR"),
         exp.BitwiseCount: rename_func("BIT_COUNT"),
         exp.ByteLength: rename_func("BYTE_LENGTH"),
-        exp.Cast: transforms.preprocess([transforms.remove_precision_parameterized_types]),
+        exp.Cast: transforms.preprocess(
+            [_widen_decimal, transforms.remove_precision_parameterized_types]
+        ),
         exp.CollateProperty: lambda self, e: (
             f"DEFAULT COLLATE {self.sql(e, 'this')}"
             if e.args.get("default")
@@ -336,6 +418,10 @@ class BigQueryGenerator(generator.Generator):
         exp.DatetimeAdd: date_add_interval_sql("DATETIME", "ADD"),
         exp.DatetimeSub: date_add_interval_sql("DATETIME", "SUB"),
         exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
+        exp.Day: _extract_part("DAY"),
+        exp.DayOfMonth: _extract_part("DAY"),
+        exp.DayOfWeekIso: _day_of_week_iso_sql,
+        exp.DayOfYear: _extract_part("DAYOFYEAR"),
         exp.Filter: no_filter_sql,
         exp.FromTimeZone: lambda self, e: self.func(
             "DATETIME", self.func("TIMESTAMP", e.this, e.args.get("zone")), "'UTC'"
@@ -346,6 +432,7 @@ class BigQueryGenerator(generator.Generator):
         ),
         exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
         exp.HexString: lambda self, e: self.hexstring_sql(e, binary_function_repr="FROM_HEX"),
+        exp.Hour: _extract_part("HOUR"),
         exp.If: if_sql(false_value="NULL"),
         exp.ILike: no_ilike_sql,
         exp.IntDiv: rename_func("DIV"),
@@ -366,12 +453,14 @@ class BigQueryGenerator(generator.Generator):
         exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
         exp.MD5Digest: rename_func("MD5"),
         exp.Min: min_or_least,
+        exp.Month: _extract_part("MONTH"),
         exp.Normalize: lambda self, e: self.func(
             "NORMALIZE_AND_CASEFOLD" if e.args.get("is_casefold") else "NORMALIZE",
             e.this,
             e.args.get("form"),
         ),
         exp.PartitionedByProperty: lambda self, e: f"PARTITION BY {self.sql(e, 'this')}",
+        exp.Quarter: _extract_part("QUARTER"),
         exp.RegexpExtract: lambda self, e: self.func(
             "REGEXP_EXTRACT",
             e.this,
@@ -431,6 +520,8 @@ class BigQueryGenerator(generator.Generator):
         exp.Uuid: lambda *_: "GENERATE_UUID()",
         exp.Values: _derived_table_values_to_unnest,
         exp.VariancePop: rename_func("VAR_POP"),
+        exp.WeekOfYear: _extract_part("ISOWEEK"),
+        exp.Year: _extract_part("YEAR"),
         exp.SafeDivide: rename_func("SAFE_DIVIDE"),
     }
 
@@ -581,6 +672,40 @@ class BigQueryGenerator(generator.Generator):
         "with",
         "within",
     }
+
+    def frombase_sql(self, expression: exp.FromBase) -> str:
+        # Hex is the only base BigQuery can cast from, and the sign goes before the prefix, e.g. -0xff
+        if expression.expression.name != "16":
+            self.unsupported("FROM_BASE is only supported for base 16")
+            return self.function_fallback_sql(expression)
+
+        prefixed = exp.func(
+            "REGEXP_REPLACE",
+            expression.this,
+            exp.Literal.string("^([+-]?)"),
+            exp.Literal.string("\\10x"),
+            copy=False,
+        )
+        return self.sql(exp.cast(prefixed, exp.DType.BIGINT, copy=False))
+
+    def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+        # The k/n quantile is APPROX_QUANTILES(x, n)[k], e.g. 0.95 -> n = 20, k = 19. n is at most
+        # 100,000, so the quantile has at most 5 decimal places, and Decimal comparisons are exact
+        quantile = expression.args["quantile"]
+        weight = expression.args.get("weight")
+        value = Decimal(quantile.to_py()) if quantile.is_number else None
+        if (
+            value is None
+            or not 0 <= value <= 1
+            or round(value, 5) != value
+            or (weight and weight.name != "1")
+        ):
+            self.unsupported("APPROX_QUANTILE needs a literal quantile and no weight")
+            return self.function_fallback_sql(expression)
+
+        fraction = Fraction(value)
+        quantiles = exp.func("APPROX_QUANTILES", expression.this, fraction.denominator, copy=False)
+        return self.sql(quantiles[fraction.numerator])
 
     def weekstart_sql(self, expression: exp.WeekStart) -> str:
         if expression.this.name.upper() == "SUNDAY":

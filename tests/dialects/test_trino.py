@@ -7,6 +7,102 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_bigquery_functions(self):
+        for trino_fn, part in (
+            ("YEAR", "YEAR"),
+            ("MONTH", "MONTH"),
+            ("QUARTER", "QUARTER"),
+            ("HOUR", "HOUR"),
+            ("DAY", "DAY"),
+            ("DAY_OF_MONTH", "DAY"),
+            ("DAY_OF_YEAR", "DAYOFYEAR"),
+            ("WEEK_OF_YEAR", "ISOWEEK"),
+        ):
+            with self.subTest(trino_fn):
+                self.validate_all(
+                    f"{trino_fn}(x)",
+                    write={"bigquery": f"EXTRACT({part} FROM x)"},
+                )
+
+        # Trino's day_of_week is Monday=1..Sunday=7, BigQuery's DAYOFWEEK is Sunday=1..Saturday=7
+        self.validate_all(
+            "DAY_OF_WEEK(x) * 2",
+            write={"bigquery": "(MOD(EXTRACT(DAYOFWEEK FROM x) + 5, 7) + 1) * 2"},
+        )
+        self.validate_all(
+            "CAST(FROM_BASE(SUBSTR(TO_HEX(MD5(CAST(CAST(col AS VARCHAR) AS VARBINARY))),1,14),16) AS DECIMAL(38, 0))",
+            write={
+                "bigquery": "CAST(CAST(REGEXP_REPLACE(SUBSTRING(UPPER(TO_HEX(MD5(CAST(CAST(col AS STRING) AS BYTES)))), 1, 14), '^([+-]?)', '\\\\10x') AS INT64) AS BIGNUMERIC)",
+            },
+        )
+        self.validate_all(
+            "FROM_BASE('-ff', 16)",
+            write={"bigquery": "CAST(REGEXP_REPLACE('-ff', '^([+-]?)', '\\\\10x') AS INT64)"},
+        )
+        for sql, expected in (
+            ("APPROX_PERCENTILE(col, 1, 0.5, 0.001)", "APPROX_QUANTILES(col, 2)[1]"),
+            # APPROX_QUANTILES takes at most 100,000 buckets
+            ("APPROX_PERCENTILE(col, 0.00001)", "APPROX_QUANTILES(col, 100000)[1]"),
+            ("APPROX_PERCENTILE(col, 0.95)", "APPROX_QUANTILES(col, 20)[19]"),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    parse_one(sql, read="trino").sql(
+                        "bigquery", unsupported_level=ErrorLevel.RAISE
+                    ),
+                    expected,
+                )
+
+        for sql, expected, warning in (
+            ("FROM_BASE(s, 2)", "FROM_BASE(s, 2)", "FROM_BASE is only supported for base 16"),
+            (
+                "APPROX_PERCENTILE(col, 2, 0.5, 0.01)",
+                "APPROX_QUANTILE(col, 0.5, 0.01, 2)",
+                "APPROX_QUANTILE needs a literal quantile and no weight",
+            ),
+            *(
+                (
+                    f"APPROX_PERCENTILE(col, {args})",
+                    f"APPROX_QUANTILE(col, {args})",
+                    "APPROX_QUANTILE needs a literal quantile and no weight",
+                )
+                for args in (
+                    "q",
+                    "-0.5",
+                    "1.5",
+                    "0.000001",
+                    "1e-1000000",
+                    "1e1000000000",
+                    "0.50000000000000000000000000001",
+                )
+            ),
+        ):
+            with self.subTest(sql), self.assertLogs(generator_logger, level="WARNING") as cm:
+                self.assertEqual(parse_one(sql, read="trino").sql("bigquery"), expected)
+            self.assertIn(warning, cm.output[0])
+
+    def test_decimal_beyond_numeric_range(self):
+        # BigQuery's NUMERIC holds at most 29 integer digits and 9 fractional digits
+        self.validate_all(
+            "CAST(x AS DECIMAL(30, 0))",
+            write={"bigquery": "CAST(x AS BIGNUMERIC)"},
+        )
+        self.validate_all(
+            "CAST(x AS DECIMAL(29, 0))",
+            write={"bigquery": "CAST(x AS NUMERIC)"},
+        )
+        self.validate_all(
+            "CAST(x AS DECIMAL(20, 10))",
+            write={"bigquery": "CAST(x AS BIGNUMERIC)"},
+        )
+        for sql in ("CAST(x AS DECIMAL(p, 0))", "CAST(x AS DECIMAL(38, s))"):
+            with self.subTest(sql):
+                self.validate_all(sql, write={"bigquery": "CAST(x AS NUMERIC)"})
+        self.validate_all(
+            "CAST(x AS DECIMAL(38))",
+            write={"bigquery": "CAST(x AS BIGNUMERIC)"},
+        )
+
     def test_fetch(self):
         self.validate_identity(
             "SELECT * FROM t ORDER BY x FETCH FIRST 1 ROW ONLY",

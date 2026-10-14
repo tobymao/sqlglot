@@ -1407,7 +1407,6 @@ class TestDialect(Validator):
                 write={
                     dialect: f"{unit}(x)"
                     for dialect in (
-                        "bigquery",
                         "drill",
                         "duckdb",
                         "mysql",
@@ -1672,6 +1671,69 @@ class TestDialect(Validator):
                 "trino": "ARRAY_SORT(x, (a, b) -> a - b)",
             },
         )
+
+        # BigQuery can't sort an aggregate's result, so the sort folds into the ARRAY_AGG
+        distinct_nulls = "ARRAY_AGG(DISTINCT) only puts NULLs first when ascending"
+        unfoldable = (
+            "is only supported on an ARRAY_AGG without ORDER BY or LIMIT and with a literal order"
+        )
+        for read, sql, expected in (
+            ("trino", "ARRAY_SORT(ARRAY_AGG(x))", "ARRAY_AGG(x ORDER BY x IS NULL, x)"),
+            ("duckdb", "LIST_SORT(LIST(x), 'ASC', 'NULLS FIRST')", "ARRAY_AGG(x ORDER BY x)"),
+            ("duckdb", "ARRAY_REVERSE_SORT(LIST(x))", "ARRAY_AGG(x ORDER BY x DESC)"),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(x), 'DESC', 'NULLS FIRST')",
+                "ARRAY_AGG(x ORDER BY x IS NULL DESC, x DESC)",
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(DISTINCT x), 'ASC', 'NULLS FIRST')",
+                "ARRAY_AGG(DISTINCT x ORDER BY x)",
+            ),
+            ("trino", "ARRAY_DISTINCT(ARRAY_AGG(x))", "ARRAY_AGG(DISTINCT x)"),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(DISTINCT x))",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x)", distinct_nulls),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x)))",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x)", distinct_nulls),
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
+            ),
+            (
+                "spark",
+                "SORT_ARRAY(COLLECT_LIST(x), y)",
+                (
+                    "ARRAY_SORT(ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL))",
+                    f"ARRAY_SORT {unfoldable}",
+                ),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(x ORDER BY y))",
+                ("ARRAY_SORT(ARRAY_AGG(x ORDER BY y))", f"ARRAY_SORT {unfoldable}"),
+            ),
+            (
+                "",
+                "ARRAY_SORT(ARRAY_AGG(x LIMIT 2))",
+                ("ARRAY_SORT(ARRAY_AGG(x LIMIT 2))", f"ARRAY_SORT {unfoldable}"),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(x), (a, b) -> 0)",
+                ("ARRAY_SORT(ARRAY_AGG(x), (a, b) -> 0)", f"ARRAY_SORT {unfoldable}"),
+            ),
+            ("trino", "ARRAY_SORT(x)", ("ARRAY_SORT(x)", f"ARRAY_SORT {unfoldable}")),
+            ("trino", "ARRAY_DISTINCT(x)", ("ARRAY_DISTINCT(x)", f"ARRAY_DISTINCT {unfoldable}")),
+        ):
+            self._validate_array_sort(read, sql, {"bigquery": expected})
 
         # Test basic syntax transpilation for ARRAY_PREPEND
         self.validate_all(

@@ -11,6 +11,8 @@ class TestAthena(Validator):
     def test_athena(self):
         self.validate_identity(r"SELECT '\d+'")
         self.validate_identity("SELECT 'foo''bar'")
+        self.validate_identity(r"SELECT '\'")
+        self.validate_identity(r"SELECT * FROM t WHERE name LIKE 'a\_%' ESCAPE '\'")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/' TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
         )

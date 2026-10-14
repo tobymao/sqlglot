@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from sqlglot import tokens
 from sqlglot.dialects.dialect import DialectType
+from sqlglot.errors import TokenError
 from sqlglot.generators.athena import AthenaGenerator
 from sqlglot.parsers.athena import AthenaParser
 from sqlglot.tokens import TokenType, Token
@@ -74,12 +75,38 @@ class Athena(Trino):
             self._trino_tokenizer = _TrinoTokenizer(Trino())
 
         def tokenize(self, sql: str) -> list[Token]:
-            tokens = super().tokenize(sql)
+            try:
+                tokens = super().tokenize(sql)
+            except TokenError:
+                engine_tokens = self._tokenize_by_engine(sql)
+                if engine_tokens is None:
+                    raise
+                return engine_tokens
 
             if _tokenize_as_hive(tokens):
                 return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + self._hive_tokenizer.tokenize(sql)
 
             return self._trino_tokenizer.tokenize(sql)
+
+        def _tokenize_by_engine(self, sql: str) -> list[Token] | None:
+            # The combined rules reject literals that are valid in a single engine, e.g. '\' in
+            # Trino or "a\"b" in Hive, so each engine is tried with its own rules instead and is
+            # only used if its tokens are routed to it
+            try:
+                tokens = self._trino_tokenizer.tokenize(sql)
+                if not _tokenize_as_hive(tokens):
+                    return tokens
+            except TokenError:
+                pass
+
+            try:
+                tokens = self._hive_tokenizer.tokenize(sql)
+                if _tokenize_as_hive(tokens):
+                    return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + tokens
+            except TokenError:
+                pass
+
+            return None
 
     Parser = AthenaParser
 

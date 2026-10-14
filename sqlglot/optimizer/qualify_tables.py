@@ -6,16 +6,18 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import name_sequence, seq_get, ensure_list
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.schema import Schema, ensure_schema
 
 
-def tvf_columns(func: exp.Expr, dialect: Dialect) -> tuple[str, ...] | int | None:
-    """TVF_COLUMNS lookup resolving callables; returns tuple of names, int arity, or None."""
+def tvf_columns(func: exp.Expr, dialect: Dialect) -> tuple[str, ...] | None:
+    """TVF_COLUMNS lookup resolving callables; returns tuple of names, empty tuple (UNKNOWABLE), or None."""
     value = dialect.TVF_COLUMNS.get(type(func))
     if callable(value):
         value = value(func, dialect)
-    return value if value is None or isinstance(value, (tuple, int)) else tuple(ensure_list(value))
+    return value
 
 
 def raise_unknown_tvf(func: exp.Expr) -> t.NoReturn:
@@ -28,8 +30,7 @@ def raise_unknown_tvf(func: exp.Expr) -> t.NoReturn:
         display_name = type(func).__name__
 
     raise OptimizeError(
-        f"TVF {display_name} output schema is unknown; "
-        "supply an explicit column alias list, e.g. AS t(c1, c2, ...)"
+        f"TVF {display_name} output schema is unknown; supply an explicit column alias list"
     )
 
 
@@ -45,6 +46,7 @@ def qualify_tables(
     on_qualify: t.Callable[[exp.Table], None] | None = None,
     dialect: DialectType = None,
     canonicalize_table_aliases: bool = False,
+    schema: dict[str, object] | Schema | None = None,
 ) -> E:
     """
     Rewrite sqlglot AST to have fully qualified tables. Join constructs such as
@@ -74,6 +76,7 @@ def qualify_tables(
     """
     dialect = Dialect.get_or_raise(dialect)
     next_alias_name = name_sequence("_")
+    annotator = TypeAnnotator(ensure_schema(schema, dialect=dialect)) if schema else None
 
     if db := db or None:
         db = exp.parse_identifier(db, dialect=dialect)
@@ -174,6 +177,7 @@ def qualify_tables(
                 _set_alias(pivot, canonical_aliases)
 
         table_aliases = {}
+        scope_annotated = False
 
         for name, source in scope.sources.items():
             # A source can appear in many scopes, e.g. as a lateral source of a UDTF scope or as a CTE
@@ -198,8 +202,18 @@ def qualify_tables(
                     if explicit:
                         function_columns = explicit
                     else:
+                        arg = table_this.this
+                        if (
+                            arg
+                            and not arg.type
+                            and not scope_annotated
+                            and annotator
+                            and callable(dialect.TVF_COLUMNS.get(type(table_this)))
+                        ):
+                            annotator.annotate_scope(scope)
+                            scope_annotated = True
                         tvf = tvf_columns(table_this, dialect)
-                        if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+                        if tvf is Dialect.UNKNOWABLE_TVF_COLUMNS:
                             raise_unknown_tvf(table_this)
                         default = tvf if isinstance(tvf, tuple) else None
                         if not table_alias:
@@ -254,8 +268,18 @@ def qualify_tables(
                     )
                 elif isinstance(udtf, (exp.Func, exp.TableFromRows, exp.Lateral)):
                     func = udtf.this if isinstance(udtf, (exp.TableFromRows, exp.Lateral)) else udtf
+                    arg = func.this
+                    if (
+                        arg
+                        and not arg.type
+                        and not scope_annotated
+                        and annotator
+                        and callable(dialect.TVF_COLUMNS.get(type(func)))
+                    ):
+                        annotator.annotate_scope(scope)
+                        scope_annotated = True
                     tvf = tvf_columns(func, dialect)
-                    if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+                    if tvf is Dialect.UNKNOWABLE_TVF_COLUMNS:
                         raise_unknown_tvf(func)
                     if not isinstance(tvf, tuple):
                         continue

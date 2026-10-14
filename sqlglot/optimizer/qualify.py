@@ -87,6 +87,7 @@ def qualify(
         dialect=dialect,
         on_qualify=on_qualify,
         canonicalize_table_aliases=canonicalize_table_aliases,
+        schema=schema,
     )
 
     if isolate_tables:

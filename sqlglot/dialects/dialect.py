@@ -845,14 +845,14 @@ class Dialect(metaclass=_Dialect):
     Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
     """
 
-    UNKNOWABLE_TVF_COLUMNS = -1
+    UNKNOWABLE_TVF_COLUMNS: tuple[str, ...] = ()
     """TVF_COLUMNS sentinel: schema is unknowable, user must supply AS t(c1, c2)."""
 
     TVF_COLUMNS: dict[
         Type[exp.Expr],
-        tuple[str, ...] | int | t.Callable[[exp.Expr, Dialect], tuple[str, ...] | int],
+        tuple[str, ...] | t.Callable[[exp.Expr, Dialect], tuple[str, ...]],
     ] = {}
-    """TVF output schema: tuple of names, int arity, callable, or UNKNOWABLE_TVF_COLUMNS."""
+    """TVF output schema: tuple of names, callable, or UNKNOWABLE_TVF_COLUMNS sentinel."""
 
     DEFAULT_NULL_TYPE = exp.DType.UNKNOWN
     """

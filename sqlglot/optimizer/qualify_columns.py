@@ -1432,7 +1432,14 @@ def qualify_outputs(
                 alias_identifier = exp.to_identifier(f"_col_{col_idx}")
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
-        elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
+        elif isinstance(selection, exp.Aliases):
+            for k, inner in enumerate(selection.expressions):
+                outer_name = aliased_column if k == 0 else next(outer_cols, None)
+                if outer_name:
+                    selection.expressions[k] = exp.to_identifier(outer_name)
+            col_idx += len(selection.expressions) - 1
+            aliased_column = None
+        elif not isinstance(selection, exp.Alias) and not selection.is_star:
             # if the TVF has callable column information, annotate the scope
             if (
                 callable(dialect.TVF_COLUMNS.get(type(selection)))
@@ -1443,7 +1450,7 @@ def qualify_outputs(
                 scope_annotated = True
 
             tvf = tvf_columns(selection, dialect)
-            if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+            if tvf is Dialect.UNKNOWABLE_TVF_COLUMNS:
                 raise_unknown_tvf(selection)
             canonical = tvf if isinstance(tvf, tuple) else None
             arity = len(canonical) if canonical else 1

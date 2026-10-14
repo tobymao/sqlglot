@@ -1440,11 +1440,13 @@ def qualify_outputs(
             col_idx += len(selection.expressions) - 1
             aliased_column = None
         elif not isinstance(selection, exp.Alias) and not selection.is_star:
-            # if the TVF has callable column information, annotate the scope
+            # if the TVF needs callable column information, annotate the scope
             if (
-                callable(dialect.TVF_COLUMNS.get(type(selection)))
+                not scope_annotated
                 and annotator is not None
-                and not scope_annotated
+                and callable(dialect.TVF_COLUMNS.get(type(selection)))
+                and selection.this
+                and not selection.this.type
             ):
                 annotator.annotate_scope(scope)
                 scope_annotated = True

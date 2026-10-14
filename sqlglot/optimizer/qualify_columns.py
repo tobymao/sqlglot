@@ -7,6 +7,7 @@ from collections import Counter
 
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import Dialect, DialectType, UsingColumnOrder
+from sqlglot.optimizer.qualify_tables import tvf_columns, raise_unknown_tvf
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
@@ -114,7 +115,7 @@ def qualify_columns(
                     pseudocolumns,
                     annotator,
                 )
-            qualify_outputs(scope, dialect=dialect)
+            qualify_outputs(scope, dialect=dialect, annotator=annotator)
 
         _expand_group_by(scope, dialect)
 
@@ -203,6 +204,11 @@ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
     """
     for derived_table in derived_tables:
         if isinstance(derived_table.parent, exp.With) and derived_table.parent.recursive:
+            continue
+        # TVF column lists are output schemas, not renames — stripping would lose names.
+        if isinstance(derived_table, exp.UDTF) or isinstance(
+            derived_table.args.get("this"), exp.Func
+        ):
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
@@ -621,10 +627,21 @@ def _expand_positional_references(
 
 
 def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
-    try:
-        return expression.selects[int(node.this) - 1].assert_is(exp.Alias)
-    except IndexError:
-        raise OptimizeError(f"Unknown output column: {node.name}")
+    pos = int(node.this)
+    remaining = pos
+    for selection in expression.selects:
+        if isinstance(selection, exp.Aliases):
+            arity = len(selection.expressions)
+            if remaining <= arity:
+                col_name = selection.expressions[remaining - 1]
+                # Keep the UDTF in .this so the Explode/Unnest short-circuit preserves the ordinal.
+                return t.cast(exp.Alias, exp.alias_(selection.this.copy(), col_name.copy()))
+            remaining -= arity
+        else:
+            if remaining == 1:
+                return selection.assert_is(exp.Alias)
+            remaining -= 1
+    raise OptimizeError(f"Unknown output column: {node.name}")
 
 
 def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:
@@ -1380,7 +1397,11 @@ def _add_replace_columns(
         replace_columns[id(table)] = columns
 
 
-def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> None:
+def qualify_outputs(
+    scope_or_expression: Scope | exp.Expr,
+    dialect: Dialect,
+    annotator: TypeAnnotator | None = None,
+) -> None:
     """Ensure all output columns are aliased"""
     if isinstance(scope_or_expression, exp.Expr):
         scope = build_scope(scope_or_expression)
@@ -1395,41 +1416,75 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
         return
 
     new_selections = []
+    col_idx = 0
+    # Consume outer_columns as an iterator so multi-arity UDTFs can pull N names each.
+    outer_cols = iter(scope.outer_columns)
+    scope_annotated = False
 
-    for i, (selection, aliased_column) in enumerate(
-        itertools.zip_longest(expression.selects, scope.outer_columns)
-    ):
-        if selection is None or isinstance(selection, exp.QueryTransform):
+    for selection in expression.selects:
+        if isinstance(selection, exp.QueryTransform):
             break
+
+        aliased_column = next(outer_cols, None)
 
         if isinstance(selection, exp.Subquery):
             if not selection.output_name:
-                alias_identifier = exp.to_identifier(f"_col_{i}")
+                alias_identifier = exp.to_identifier(f"_col_{col_idx}")
                 dialect.normalize_identifier(alias_identifier)
                 selection.set("alias", exp.TableAlias(this=alias_identifier))
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
-            unwrapped = selection.unnest()
-            if isinstance(unwrapped, exp.Column):
-                source_identifier = unwrapped.this
-            elif isinstance(unwrapped, exp.Dot):
-                source_identifier = unwrapped.expression
-            else:
-                source_identifier = None
+            # if the TVF has callable column information, annotate the scope
+            if (
+                callable(dialect.TVF_COLUMNS.get(type(selection)))
+                and annotator is not None
+                and not scope_annotated
+            ):
+                annotator.annotate_scope(scope)
+                scope_annotated = True
 
-            selection = alias(
-                selection,
-                alias=selection.output_name or f"_col_{i}",
-                copy=False,
-            )
-            if isinstance(source_identifier, exp.Identifier):
-                # The alias copies the exact spelling of an existing identifier, so folding it
-                # here would desync it from other occurrences of that identifier; its casing
-                # is `normalize_identifiers`' concern, which has already run (or was skipped
-                # deliberately) by this point
-                if source_identifier.quoted:
-                    selection.args["alias"].set("quoted", True)
+            tvf = tvf_columns(selection, dialect)
+            if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+                raise_unknown_tvf(selection)
+            canonical = tvf if isinstance(tvf, tuple) else None
+            arity = len(canonical) if canonical else 1
+            if arity > 1:
+                names: list[exp.Identifier] = []
+                for k in range(arity):
+                    outer_name = aliased_column if k == 0 else next(outer_cols, None)
+                    # Prefer outer rename, then registry canonical name, then _col_N fallback.
+                    if outer_name:
+                        names.append(exp.to_identifier(outer_name))
+                    elif canonical and k < len(canonical):
+                        names.append(dialect.normalize_identifier(exp.to_identifier(canonical[k])))
+                    else:
+                        names.append(
+                            dialect.normalize_identifier(exp.to_identifier(f"_col_{col_idx + k}"))
+                        )
+                selection = exp.Aliases(this=selection, expressions=names)
+                col_idx += arity - 1
+                # aliased_column already consumed into the Aliases expressions.
+                aliased_column = None
             else:
-                dialect.normalize_identifier(selection.args["alias"])
+                unwrapped = selection.unnest()
+                if isinstance(unwrapped, exp.Column):
+                    source_identifier = unwrapped.this
+                elif isinstance(unwrapped, exp.Dot):
+                    source_identifier = unwrapped.expression
+                else:
+                    source_identifier = None
+
+                selection = alias(
+                    selection,
+                    alias=selection.output_name or f"_col_{col_idx}",
+                    copy=False,
+                )
+                if isinstance(source_identifier, exp.Identifier):
+                    # Alias mirrors a source identifier; casing is normalize_identifiers' job.
+                    if source_identifier.quoted:
+                        selection.args["alias"].set("quoted", True)
+                else:
+                    dialect.normalize_identifier(selection.args["alias"])
+        col_idx += 1
         if aliased_column:
             selection.set("alias", exp.to_identifier(aliased_column))
 

@@ -1114,7 +1114,8 @@ class SetOperation(Expression, Query):
                 return list(dict.fromkeys(left + right))
 
             expr = expr.this.unnest()
-        return _named_selects(expr)
+        # Dispatch to the leaf to expand multi-arity Aliases into correct output names
+        return expr.named_selects if isinstance(expr, Selectable) else _named_selects(expr)
 
     @property
     def is_star(self) -> bool:

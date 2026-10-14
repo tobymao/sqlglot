@@ -4,9 +4,34 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
+from sqlglot.errors import OptimizeError
 from sqlglot.helper import name_sequence, seq_get, ensure_list
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.scope import Scope, traverse_scope
+
+
+def tvf_columns(func: exp.Expr, dialect: Dialect) -> tuple[str, ...] | int | None:
+    """TVF_COLUMNS lookup resolving callables; returns tuple of names, int arity, or None."""
+    value = dialect.TVF_COLUMNS.get(type(func))
+    if callable(value):
+        value = value(func, dialect)
+    return value if value is None or isinstance(value, (tuple, int)) else tuple(ensure_list(value))
+
+
+def raise_unknown_tvf(func: exp.Expr) -> t.NoReturn:
+    display_name = None
+    if isinstance(func, exp.Anonymous):
+        display_name = func.name
+    elif isinstance(func, exp.Func):
+        display_name = func.sql_name()
+    else:
+        display_name = type(func).__name__
+
+    raise OptimizeError(
+        f"TVF {display_name} output schema is unknown; "
+        "supply an explicit column alias list, e.g. AS t(c1, c2, ...)"
+    )
+
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -167,17 +192,25 @@ def qualify_tables(
                 table_this = source.this
                 table_alias = source.args.get("alias")
                 function_columns: Sequence[str | exp.Identifier | exp.ColumnDef] | None = None
+                # TVF in a FROM: honour explicit AS t(c,...), else consult registry.
                 if isinstance(table_this, exp.Func):
-                    if not table_alias:
-                        function_columns = ensure_list(
-                            dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(table_this))
-                        )
-                    elif columns := table_alias.columns:
-                        function_columns = columns
-                    elif type(table_this) in dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES:
-                        function_columns = ensure_list(source.alias_or_name)
-                        source.set("alias", None)
-                        name = ""
+                    explicit = table_alias.columns if table_alias else None
+                    if explicit:
+                        function_columns = explicit
+                    else:
+                        tvf = tvf_columns(table_this, dialect)
+                        if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+                            raise_unknown_tvf(table_this)
+                        default = tvf if isinstance(tvf, tuple) else None
+                        if not table_alias:
+                            function_columns = default
+                        elif default is not None:
+                            if len(default) == 1:
+                                function_columns = ensure_list(source.alias_or_name)
+                                source.set("alias", None)
+                                name = ""
+                            else:
+                                function_columns = default
 
                 _set_alias(
                     source,
@@ -210,25 +243,29 @@ def qualify_tables(
 
                 table_alias = udtf.args["alias"]
 
-                if isinstance(udtf, exp.Values) and not table_alias.columns:
-                    column_aliases = [
+                # User-supplied column list wins; the registry only fills gaps.
+                if table_alias.columns:
+                    continue
+
+                if isinstance(udtf, exp.Values):
+                    cols: t.Iterable[exp.Expr] = (
                         normalize_identifiers(i, dialect=dialect)
                         for i in dialect.generate_values_aliases(udtf)
-                    ]
-                    table_alias.set("columns", column_aliases)
-                elif (
-                    isinstance(udtf, exp.TableFromRows)
-                    or (isinstance(udtf, exp.Lateral) and isinstance(udtf.this, exp.UDTF))
-                ) and not table_alias.columns:
-                    default_columns = dialect.DEFAULT_FUNCTIONS_COLUMN_NAMES.get(type(udtf.this))
-                    if default_columns:
-                        table_alias.set(
-                            "columns",
-                            [
-                                normalize_identifiers(exp.to_identifier(c), dialect=dialect)
-                                for c in ensure_list(default_columns)
-                            ],
-                        )
+                    )
+                elif isinstance(udtf, (exp.Func, exp.TableFromRows, exp.Lateral)):
+                    func = udtf.this if isinstance(udtf, (exp.TableFromRows, exp.Lateral)) else udtf
+                    tvf = tvf_columns(func, dialect)
+                    if tvf == Dialect.UNKNOWABLE_TVF_COLUMNS:
+                        raise_unknown_tvf(func)
+                    if not isinstance(tvf, tuple):
+                        continue
+                    cols = (
+                        normalize_identifiers(exp.to_identifier(c), dialect=dialect) for c in tvf
+                    )
+                else:
+                    continue
+
+                table_alias.set("columns", list(cols))
 
         for table in scope.tables:
             if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):

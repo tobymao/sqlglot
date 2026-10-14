@@ -13,8 +13,9 @@ class StarRocks(MySQL):
     INDEX_OFFSET = 1
     USING_COLUMN_ORDER = UsingColumnOrder.USING_LIST
 
-    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
-        exp.GenerateSeries: "generate_series",
+    TVF_COLUMNS = {
+        **MySQL.TVF_COLUMNS,
+        exp.GenerateSeries: ("generate_series",),
     }
 
     class Tokenizer(MySQL.Tokenizer):

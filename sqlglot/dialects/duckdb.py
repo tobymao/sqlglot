@@ -38,6 +38,16 @@ class DuckDB(Dialect):
         "DAYOFWEEKISO": "ISODOW",
     }
 
+    # DuckDB UNNEST yields `unnest`, plus `ordinality` when WITH ORDINALITY is set.
+    TVF_COLUMNS = {
+        **Dialect.TVF_COLUMNS,
+        exp.Unnest: lambda func, _d: (
+            ("unnest", "ordinality") if func.args.get("offset") else ("unnest",)
+        ),
+        exp.ReadParquet: Dialect.UNKNOWABLE_TVF_COLUMNS,
+        exp.ReadCSV: Dialect.UNKNOWABLE_TVF_COLUMNS,
+    }
+
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     DATE_PART_MAPPING.pop("WEEKDAY")

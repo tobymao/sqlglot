@@ -15,6 +15,14 @@ from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.typing.hive import EXPRESSION_METADATA
 
 
+# Spark EXPLODE arity depends on arg type: ARRAY→(col,), MAP→(key,value); POS prepends pos.
+def _explode_columns(func: exp.Expr, _dialect: Dialect) -> tuple[str, ...]:
+    arg = func.this
+    is_map = isinstance(arg, exp.VarMap) or (arg.type and arg.type.is_type(exp.DType.MAP))
+    base: tuple[str, ...] = ("key", "value") if is_map else ("col",)
+    return (("pos",) + base) if isinstance(func, exp.Posexplode) else base
+
+
 class Hive(Dialect):
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
@@ -27,6 +35,17 @@ class Hive(Dialect):
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+
+    # INLINE/STACK column count depends on literal argument values; defer to the user.
+    TVF_COLUMNS = {
+        **Dialect.TVF_COLUMNS,
+        exp.Explode: _explode_columns,
+        exp._ExplodeOuter: _explode_columns,
+        exp.Posexplode: _explode_columns,
+        exp.PosexplodeOuter: _explode_columns,
+        exp.Inline: Dialect.UNKNOWABLE_TVF_COLUMNS,
+        exp.Stack: Dialect.UNKNOWABLE_TVF_COLUMNS,
+    }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

@@ -845,13 +845,14 @@ class Dialect(metaclass=_Dialect):
     Whether JSON_EXTRACT_SCALAR returns null if a non-scalar value is selected.
     """
 
-    DEFAULT_FUNCTIONS_COLUMN_NAMES: dict[Type[exp.Func], str | tuple[str, ...]] = {}
-    """
-    Maps function expressions to their default output column name(s).
+    UNKNOWABLE_TVF_COLUMNS = -1
+    """TVF_COLUMNS sentinel: schema is unknowable, user must supply AS t(c1, c2)."""
 
-    For example, in Postgres, generate_series function outputs a column named "generate_series" by default,
-    so we map the ExplodingGenerateSeries expression to "generate_series" string.
-    """
+    TVF_COLUMNS: dict[
+        Type[exp.Expr],
+        tuple[str, ...] | int | t.Callable[[exp.Expr, Dialect], tuple[str, ...] | int],
+    ] = {}
+    """TVF output schema: tuple of names, int arity, callable, or UNKNOWABLE_TVF_COLUMNS."""
 
     DEFAULT_NULL_TYPE = exp.DType.UNKNOWN
     """

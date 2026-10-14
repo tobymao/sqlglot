@@ -24,8 +24,9 @@ class Postgres(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
 
-    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
-        exp.ExplodingGenerateSeries: "generate_series",
+    TVF_COLUMNS = {
+        **Dialect.TVF_COLUMNS,
+        exp.ExplodingGenerateSeries: ("generate_series",),
     }
 
     TIME_MAPPING = {

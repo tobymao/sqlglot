@@ -179,8 +179,8 @@ SELECT x FROM t, LATERAL UNNEST(t.xs), LATERAL UNNEST(t.ys);
 SELECT x FROM c.db.t AS t, LATERAL UNNEST(t.xs) AS _0, LATERAL UNNEST(t.ys) AS _1;
 
 # title: table with ordinality
-SELECT * FROM t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
-SELECT * FROM c.db.t AS t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json;
+SELECT * FROM t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json(value, ordinality);
+SELECT * FROM c.db.t AS t CROSS JOIN JSON_ARRAY_ELEMENTS(t.response) WITH ORDINALITY AS kv_json(value, ordinality);
 
 # title: alter table
 ALTER TABLE t ADD PRIMARY KEY (id) NOT ENFORCED;

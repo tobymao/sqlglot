@@ -413,6 +413,77 @@ class TestExprs(unittest.TestCase):
             "SELECT * FROM foo WHERE x > 0 AND y IS FALSE",
         )
 
+        for sql, replacement, expected in (
+            (":x * 2", "a + b", "(a + b) * 2"),
+            ("(:x) * 2", "a + b", "(a + b) * 2"),
+            ("NOT :x", "a = 1 OR b = 2", "NOT (a = 1 OR b = 2)"),
+            ("-:x", "a + b", "-(a + b)"),
+            ("~:x", "a + b", "~(a + b)"),
+            (":x AND c", "a OR b", "(a OR b) AND c"),
+            ("? - c", "a - b", "(a - b) - c"),
+            ("c - ?", "a - b", "c - (a - b)"),
+            (":x + 1", "a * b", "(a * b) + 1"),
+            (":x[1]", "a + b", "(a + b)[1]"),
+            (":x AT TIME ZONE 'UTC'", "a + b", "(a + b) AT TIME ZONE 'UTC'"),
+            (":x + 1", "SELECT 1", "(SELECT 1) + 1"),
+            ("ABS(:x)", "a - b", "ABS(a - b)"),
+            ("SELECT :x", "a + b", "SELECT a + b"),
+            ("SELECT :x AS y", "a OR b", "SELECT a OR b AS y"),
+            ("x IN (:x, 1)", "a + b", "x IN (a + b, 1)"),
+            ("COALESCE(:x, 1)", "a + b", "COALESCE(a + b, 1)"),
+            (":x[1]", "a", "a[1]"),
+            (":x * 2", "ABS(a)", "ABS(a) * 2"),
+            (":x * 2", "a.b.c.d.e", "a.b.c.d.e * 2"),
+            (
+                "SELECT * FROM t WHERE EXISTS(:x)",
+                "SELECT 1",
+                "SELECT * FROM t WHERE EXISTS(SELECT 1)",
+            ),
+            (":x", "a OR b", "a OR b"),
+            ("x IN :x", "(1, 2)", "x IN (1, 2)"),
+            ("x IN :x", "(SELECT 1)", "x IN (SELECT 1)"),
+            (":x BETWEEN 1 AND 2", "a OR b", "(a OR b) BETWEEN 1 AND 2"),
+            ("c = :x", "a IN (1, 2)", "c = (a IN (1, 2))"),
+            ("SELECT * FROM :x", exp.to_table("db.t"), "SELECT * FROM db.t"),
+            ("x IS :x", exp.null(), "x IS NULL"),
+            (
+                "SELECT * FROM :x",
+                exp.values([(1, 2)], alias="v", columns=["a", "b"]),
+                "SELECT * FROM (VALUES (1, 2)) AS v(a, b)",
+            ),
+            (
+                "SELECT * FROM t ORDER BY :x",
+                exp.column("x").desc(),
+                "SELECT * FROM t ORDER BY x DESC",
+            ),
+            ("x = ANY(:x)", "SELECT 1", "x = ANY(SELECT 1)"),
+            ("d + :x", "INTERVAL 1 DAY", "d + INTERVAL '1' DAY"),
+            (":x", "SELECT 1", "SELECT 1"),
+            ("x IN :x", "SELECT 1", "x IN (SELECT 1)"),
+            ("x IN (:x)", "SELECT 1", "x IN (SELECT 1)"),
+            (":x IN (1)", "SELECT 1", "(SELECT 1) IN (1)"),
+            ("x >= ALL(:x)", "SELECT 1", "x >= ALL(SELECT 1)"),
+            ("x IN (:x, 3)", "SELECT 1", "x IN ((SELECT 1), 3)"),
+            ("SELECT * FROM :x", "SELECT 1", "SELECT * FROM (SELECT 1)"),
+            ("SELECT * FROM (:x) AS s", "SELECT 1", "SELECT * FROM (SELECT 1) AS s"),
+            ("SELECT :x AS y", "SELECT 1", "SELECT (SELECT 1) AS y"),
+            ("COALESCE(:x, 1)", "SELECT 1", "COALESCE((SELECT 1), 1)"),
+            ("WITH a AS (:x) SELECT * FROM a", "SELECT 1", "WITH a AS (SELECT 1) SELECT * FROM a"),
+            (":x UNION SELECT 2", "SELECT 1", "SELECT 1 UNION SELECT 2"),
+            ("CREATE TABLE t AS :x", "SELECT 1", "CREATE TABLE t AS SELECT 1"),
+        ):
+            with self.subTest(sql=sql, replacement=replacement):
+                replacement = exp.maybe_parse(replacement)
+                self.assertEqual(
+                    exp.replace_placeholders(parse_one(sql), replacement, x=replacement).sql(),
+                    expected,
+                )
+
+        self.assertIsInstance(
+            exp.replace_placeholders(parse_one(":x + 1"), x=parse_one("SELECT 1")).this,
+            exp.Subquery,
+        )
+
     def test_function_building(self):
         self.assertEqual(exp.func("max", 1).sql(), "MAX(1)")
         self.assertEqual(exp.func("max", 1, 2).sql(), "MAX(1, 2)")

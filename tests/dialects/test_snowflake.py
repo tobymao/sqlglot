@@ -3337,7 +3337,7 @@ class TestSnowflake(Validator):
             "NORMAL(0, 1, 42)",
             write={
                 "snowflake": "NORMAL(0, 1, 42)",
-                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(42 + 1)) % 1000000) / 1000000.0))",
+                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * ((ABS(HASH(42 + 1)) % 1000000) / 1000000.0)))",
             },
         )
         self.validate_all(
@@ -3351,7 +3351,7 @@ class TestSnowflake(Validator):
             "NORMAL(10.5, 2.5, RANDOM(5))",
             write={
                 "snowflake": "NORMAL(10.5, 2.5, RANDOM(5))",
-                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(5 + 1)) % 1000000) / 1000000.0))",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * ((ABS(HASH(5 + 1)) % 1000000) / 1000000.0)))",
             },
         )
         self.validate_all(

@@ -66,7 +66,9 @@ class StarRocksParser(MySQLParser):
         # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+        "STDDEV": exp.Stddev.from_arg_list,
         "TIME_SLICE": _build_time_slice,
+        "VARIANCE": exp.Variance.from_arg_list,
     }
 
     PROPERTY_PARSERS = {

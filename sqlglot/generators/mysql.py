@@ -195,6 +195,7 @@ class MySQLGenerator(generator.Generator):
                 transforms.unnest_generate_date_array_using_recursive_cte,
             ]
         ),
+        exp.Stddev: rename_func("STDDEV_SAMP"),
         exp.StrPosition: lambda self, e: strposition_sql(
             self, e, func_name="LOCATE", supports_position=True
         ),
@@ -228,6 +229,8 @@ class MySQLGenerator(generator.Generator):
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         exp.Unicode: lambda self, e: f"ORD(CONVERT({self.sql(e.this)} USING utf32))",
         exp.UnixToTime: _unix_to_time_sql,
+        exp.Variance: rename_func("VAR_SAMP"),
+        exp.VariancePop: rename_func("VAR_POP"),
         exp.Week: remove_ts_or_ds_to_date(),
         exp.WeekOfYear: remove_ts_or_ds_to_date(rename_func("WEEKOFYEAR")),
         exp.Year: remove_ts_or_ds_to_date(),

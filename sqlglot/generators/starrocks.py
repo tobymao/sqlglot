@@ -145,6 +145,8 @@ class StarRocksGenerator(MySQLGenerator):
         exp.UnixToStr: lambda self, e: self.func("FROM_UNIXTIME", e.this, self.format_time(e)),
         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
         exp.VarMap: lambda self, e: var_map_sql(self, e, "MAP"),
+        exp.Stddev: rename_func("STDDEV"),
+        exp.Variance: rename_func("VARIANCE"),
     }
 
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/keywords/#reserved-keywords

@@ -50,7 +50,9 @@ class DorisParser(MySQLParser):
         "MONTHS_ADD": exp.AddMonths.from_arg_list,
         "REGEXP": exp.RegexpLike.from_arg_list,
         "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
+        "STDDEV": exp.Stddev.from_arg_list,
         "TO_DATE": exp.TsOrDsToDate.from_arg_list,
+        "VARIANCE": exp.Variance.from_arg_list,
     }
 
     FUNCTION_PARSERS = {

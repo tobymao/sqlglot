@@ -94,6 +94,8 @@ class DorisGenerator(MySQLGenerator):
             "FROM_UNIXTIME", e.this, time_format("doris")(self, e)
         ),
         exp.UnixToTime: rename_func("FROM_UNIXTIME"),
+        exp.Stddev: rename_func("STDDEV"),
+        exp.Variance: rename_func("VARIANCE"),
     }
 
     # https://github.com/apache/doris/blob/e4f41dbf1ec03f5937fdeba2ee1454a20254015b/fe/fe-core/src/main/antlr4/org/apache/doris/nereids/DorisLexer.g4#L93

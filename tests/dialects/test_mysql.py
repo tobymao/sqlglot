@@ -1339,6 +1339,34 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT STDDEV_POP(x), VAR_POP(x)",
+            read={
+                "mysql": "SELECT STDDEV(x), VARIANCE(x)",
+            },
+            write={
+                "duckdb": "SELECT STDDEV_POP(x), VAR_POP(x)",
+                "mysql": "SELECT STDDEV_POP(x), VAR_POP(x)",
+                "postgres": "SELECT STDDEV_POP(x), VAR_POP(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT STDDEV_POP(x)",
+            read={
+                "mysql": "SELECT STD(x)",
+            },
+            write={
+                "duckdb": "SELECT STDDEV_POP(x)",
+                "mysql": "SELECT STDDEV_POP(x)",
+                "postgres": "SELECT STDDEV_POP(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT STDDEV_SAMP(x), VAR_SAMP(x)",
+            read={
+                "duckdb": "SELECT STDDEV(x), VARIANCE(x)",
+            },
+        )
+        self.validate_all(
             "CURDATE()",
             write={
                 "mysql": "CURRENT_DATE",

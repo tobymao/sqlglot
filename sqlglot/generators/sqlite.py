@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     rename_func,
     strposition_sql,
 )
-from sqlglot.generator import unsupported_args
+from sqlglot.generator import function_syntax, unsupported_args
 from sqlglot.tokens import TokenType
 
 
@@ -272,6 +272,7 @@ class SQLiteGenerator(generator.Generator):
         modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
         return self.func("DATE", expression.this, modifier)
 
+    @function_syntax
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):
             return self.func("DATE", expression.this)

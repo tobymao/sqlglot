@@ -17,7 +17,7 @@ from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
-    from sqlglot._typing import E
+    from sqlglot._typing import E, P
     from sqlglot.dialects.dialect import DialectType
 
     G = t.TypeVar("G", bound="Generator")
@@ -29,6 +29,14 @@ _HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
 
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
+
+_FUNCTION_SYNTAX: set[t.Callable[..., str]] = set()
+
+
+def function_syntax(func: t.Callable[P, str]) -> t.Callable[P, str]:
+    """Mark a handler that safely delimits its scalar arguments in every generation branch."""
+    _FUNCTION_SYNTAX.add(func)
+    return func
 
 
 def unsupported_args(
@@ -973,12 +981,22 @@ class Generator:
 
         self._quote_json_path_key_using_brackets = True
 
-        cls = type(self)
+        self._dispatch = self.get_dispatch()
+
+    @classmethod
+    def get_dispatch(cls) -> dict[type[exp.Expr], t.Callable[..., str]]:
+        """Return the cached SQL handlers for this generator class."""
         dispatch = _DISPATCH_CACHE.get(cls)
         if dispatch is None:
             dispatch = _build_dispatch(cls)
             _DISPATCH_CACHE[cls] = dispatch
-        self._dispatch = dispatch
+        return dispatch
+
+    @classmethod
+    def can_unwrap_func_args(cls, expression_type: type[exp.Func]) -> bool:
+        """Whether the selected handler safely delimits scalar arguments."""
+        handler = cls.get_dispatch().get(expression_type, cls.function_fallback_sql)
+        return handler in _FUNCTION_SYNTAX
 
     def generate(self, expression: exp.Expr, copy: bool = True) -> str:
         """
@@ -4099,6 +4117,7 @@ class Generator:
         options = f" {options}" if options else ""
         return f"REFERENCES {this}{expressions}{options}"
 
+    @function_syntax
     def anonymous_sql(self, expression: exp.Anonymous) -> str:
         # We don't normalize qualified functions such as a.b.foo(), because they can be case-sensitive
         parent = expression.parent
@@ -4232,6 +4251,7 @@ class Generator:
     def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
         return self.binary(expression, "^")
 
+    @function_syntax
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         format_sql = self.sql(expression, "format")
         format_sql = f" FORMAT {format_sql}" if format_sql else ""
@@ -4795,6 +4815,7 @@ class Generator:
 
         return self.function_fallback_sql(expression)
 
+    @function_syntax
     def function_fallback_sql(self, expression: exp.Func) -> str:
         args = []
 

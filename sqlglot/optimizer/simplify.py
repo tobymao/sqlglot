@@ -144,12 +144,20 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     if isinstance(parent, (exp.SubqueryPredicate, exp.Bracket)):
         return expression
 
+    dialect = Dialect.get_or_raise(dialect)
     if (
-        Dialect.get_or_raise(dialect).REQUIRES_PARENTHESIZED_STRUCT_ACCESS
+        dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
         and isinstance(parent, exp.Dot)
         and (isinstance(parent.right, (exp.Identifier, exp.Star)))
     ):
         return expression
+
+    if (
+        isinstance(parent, exp.Func)
+        and not isinstance(parent, exp.Connector)
+        and not isinstance(this, (exp.Literal, exp.Column))
+    ):
+        return this if dialect.generator_class.can_unwrap_func_args(type(parent)) else expression
 
     if isinstance(this, (exp.Predicate, exp.Not)):
         if (

@@ -11,8 +11,10 @@ from sqlglot.dialects.dialect import (
     weekstart_unit_to_str,
 )
 from sqlglot.generators.mysql import MySQLGenerator
+from sqlglot.generator import function_syntax
 
 
+@function_syntax
 def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
     return self.func(
         "LAG" if isinstance(expression, exp.Lag) else "LEAD",

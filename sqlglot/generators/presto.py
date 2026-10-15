@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_sort_order,
     array_slice_to_slice_sql,
     bool_xor_sql,
     bracket_to_element_at_sql,
@@ -59,12 +60,18 @@ def _initcap_sql(self: PrestoGenerator, expression: exp.Initcap) -> str:
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
 
-def _no_sort_array(self: PrestoGenerator, expression: exp.SortArray) -> str:
-    if expression.args.get("asc") == exp.false():
-        comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
-    else:
-        comparator = None
-    return self.func("ARRAY_SORT", expression.this, comparator)
+def _array_sort_sql(self: PrestoGenerator, expression: exp.ArraySort) -> str:
+    if expression.expression:
+        return self.func("ARRAY_SORT", expression.this, expression.expression)
+
+    # ARRAY_SORT puts NULLs last, so reversing it sorts descending with NULLs first
+    asc, nulls_first = array_sort_order(expression) or (True, True)
+    if nulls_first == asc:
+        self.unsupported(
+            "ARRAY_SORT can't sort ascending with NULLs first or descending with NULLs last"
+        )
+    sort = self.func("ARRAY_SORT", expression.this)
+    return sort if asc else self.func("REVERSE", sort)
 
 
 def _schema_sql(self: PrestoGenerator, expression: exp.Schema) -> str:
@@ -323,6 +330,7 @@ class PrestoGenerator(generator.Generator):
         exp.ArrayAny: rename_func("ANY_MATCH"),
         exp.ArrayConcat: rename_func("CONCAT"),
         exp.ArrayContains: rename_func("CONTAINS"),
+        exp.ArraySort: _array_sort_sql,
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("SET_AGG"),
         exp.ArraySlice: array_slice_to_slice_sql,
@@ -391,7 +399,6 @@ class PrestoGenerator(generator.Generator):
                 amend_exploded_column_table,
             ]
         ),
-        exp.SortArray: _no_sort_array,
         exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
         exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
         exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",

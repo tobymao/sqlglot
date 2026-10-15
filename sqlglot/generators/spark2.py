@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
+    array_sort_order,
     array_slice_to_slice_sql,
     bracket_to_element_at_sql,
     is_parse_json,
@@ -18,6 +19,26 @@ from sqlglot.transforms import (
     ctas_with_tmp_tables_to_create_tmp_view,
     move_schema_columns_to_partitioned_by,
 )
+
+
+def _array_sort_sql(self: Spark2Generator, expression: exp.ArraySort) -> str:
+    if expression.expression:
+        return self.func("ARRAY_SORT", expression.this, expression.expression)
+
+    # ARRAY_SORT puts NULLs last, while SORT_ARRAY puts them first exactly when ascending
+    order = array_sort_order(expression)
+    if order is None:
+        asc = expression.args.get("asc")
+        if expression.args.get("nulls_first") != asc:
+            self.unsupported("SORT_ARRAY puts NULLs first exactly when ascending")
+        return self.func("SORT_ARRAY", expression.this, asc)
+
+    asc, nulls_first = order
+    if asc:
+        return self.func("SORT_ARRAY" if nulls_first else "ARRAY_SORT", expression.this)
+    if nulls_first:
+        return self.func("REVERSE", self.func("ARRAY_SORT", expression.this))
+    return self.func("SORT_ARRAY", expression.this, exp.false())
 
 
 def _json_format_sql(self: Spark2Generator, expression: exp.JSONFormat) -> str:
@@ -135,6 +156,7 @@ class Spark2Generator(HiveGenerator):
         k: v
         for k, v in {
             **HiveGenerator.TRANSFORMS,
+            exp.ArraySort: _array_sort_sql,
             exp.ApproxDistinct: rename_func("APPROX_COUNT_DISTINCT"),
             exp.ArraySum: lambda self, e: (
                 f"AGGREGATE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)"
@@ -202,7 +224,6 @@ class Spark2Generator(HiveGenerator):
             exp.WithinGroup: transforms.preprocess(
                 [transforms.remove_within_group_for_percentiles]
             ),
-            exp.ArraySort: None,
             exp.ILike: None,
             exp.Left: None,
             exp.MonthsBetween: None,

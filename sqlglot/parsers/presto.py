@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.parser import build_array_sort_nulls_last
 from sqlglot.dialects.dialect import (
     binary_from_function,
     build_formatted_time,
@@ -76,6 +77,7 @@ class PrestoParser(parser.Parser):
         "ARBITRARY": exp.AnyValue.from_arg_list,
         "APPROX_DISTINCT": exp.ApproxDistinct.from_arg_list,
         "APPROX_PERCENTILE": _build_approx_percentile,
+        "ARRAY_SORT": build_array_sort_nulls_last,
         "BITWISE_AND": binary_from_function(exp.BitwiseAnd),
         "BITWISE_NOT": lambda args: exp.BitwiseNot(this=seq_get(args, 0)),
         "BITWISE_OR": binary_from_function(exp.BitwiseOr),

@@ -65,6 +65,22 @@ def build_like(args: BuilderArgs) -> exp.Escape | exp.Like:
     return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
 
 
+def build_sort_array(args: BuilderArgs) -> exp.ArraySort:
+    # SORT_ARRAY puts NULLs first exactly when ascending
+    asc = seq_get(args, 1)
+    nulls_first = exp.true() if asc is None else asc.copy()
+    return exp.ArraySort(this=seq_get(args, 0), asc=asc, nulls_first=nulls_first)
+
+
+def build_array_sort_nulls_last(args: BuilderArgs) -> exp.ArraySort:
+    comparator = seq_get(args, 1)
+    return exp.ArraySort(
+        this=seq_get(args, 0),
+        expression=comparator,
+        nulls_first=None if comparator else exp.false(),
+    )
+
+
 def binary_range_parser(
     expr_type: Type[exp.Expr], reverse_args: bool = False
 ) -> t.Callable[[Parser, exp.Expr | None], exp.Expr | None]:
@@ -378,6 +394,7 @@ class Parser:
         **{name: func.from_arg_list for name, func in exp.FUNCTION_BY_NAME.items()},
         **dict.fromkeys(("COALESCE", "IFNULL", "NVL"), build_coalesce),
         "ARRAY": lambda args, dialect: exp.Array(expressions=args),
+        "SORT_ARRAY": build_sort_array,
         "ARRAYAGG": lambda args, dialect: exp.ArrayAgg(
             this=seq_get(args, 0), nulls_excluded=dialect.ARRAY_AGG_INCLUDES_NULLS is None or None
         ),

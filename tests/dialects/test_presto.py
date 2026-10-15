@@ -1071,24 +1071,8 @@ class TestPresto(Validator):
         self.validate_all(
             "SELECT ARRAY_SORT(x, (left, right) -> -1)",
             write={
-                "duckdb": "SELECT ARRAY_SORT(x)",
                 "presto": 'SELECT ARRAY_SORT(x, ("left", "right") -> -1)',
-                "hive": "SELECT SORT_ARRAY(x)",
                 "spark": "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x)",
-            write={
-                "presto": "SELECT ARRAY_SORT(x)",
-                "hive": "SELECT SORT_ARRAY(x)",
-                "spark": "SELECT ARRAY_SORT(x)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x, (left, right) -> -1)",
-            write={
-                "hive": UnsupportedError,
             },
         )
         self.validate_all(

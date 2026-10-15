@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import HiveParser
-from sqlglot.parser import build_trim
+from sqlglot.parser import build_array_sort_nulls_last, build_trim
 from sqlglot.tokens import TokenType
 
 
@@ -43,6 +43,7 @@ class Spark2Parser(HiveParser):
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,
+        "ARRAY_SORT": build_array_sort_nulls_last,
         "BOOLEAN": build_as_cast("boolean"),
         "DATE": build_as_cast("date"),
         "DATE_TRUNC": lambda args: exp.TimestampTrunc(

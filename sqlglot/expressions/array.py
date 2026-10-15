@@ -98,15 +98,11 @@ class ArraySlice(Expression, Func):
 
 
 class ArraySort(Expression, Func):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expression": False, "asc": False, "nulls_first": False}
 
 
 class Shuffle(Expression, Func):
     pass
-
-
-class SortArray(Expression, Func):
-    arg_types = {"this": True, "asc": False, "nulls_first": False}
 
 
 # Array predicates / search

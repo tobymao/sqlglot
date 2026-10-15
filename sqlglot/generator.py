@@ -6056,6 +6056,13 @@ class Generator:
             exp.TimestampDiff(this=expression.this, expression=start_ts, unit=exp.var("SECONDS"))
         )
 
+    def arraysort_sql(self, expression: exp.ArraySort) -> str:
+        asc = expression.args.get("asc")
+        nulls_first = expression.args.get("nulls_first")
+        if (asc and asc != exp.true()) or (nulls_first and nulls_first != exp.false()):
+            self.unsupported("ARRAY_SORT only sorts ascending with NULLs last")
+        return self.func("ARRAY_SORT", expression.this, expression.expression)
+
     def arraysize_sql(self, expression: exp.ArraySize) -> str:
         dim = expression.expression
 

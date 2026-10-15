@@ -318,7 +318,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Limit,
             exp.NthValue,
             exp.Order,
-            exp.SortArray,
+            exp.ArraySort,
             exp.Window,
         }
     },

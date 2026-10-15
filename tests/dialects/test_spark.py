@@ -976,9 +976,7 @@ TBLPROPERTIES (
         self.validate_all(
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={
-                "duckdb": "ARRAY_SORT(x)",
                 "presto": 'ARRAY_SORT(x, ("left", "right") -> -1)',
-                "hive": "SORT_ARRAY(x)",
                 "spark": "ARRAY_SORT(x, (left, right) -> -1)",
             },
         )
@@ -1066,15 +1064,6 @@ TBLPROPERTIES (
                 "hive": "MAP(ARRAY(1), c)",
                 "spark": "MAP_FROM_ARRAYS(ARRAY(1), c)",
                 "snowflake": "OBJECT_CONSTRUCT([1], c)",
-            },
-        )
-        self.validate_all(
-            "SELECT ARRAY_SORT(x)",
-            write={
-                "duckdb": "SELECT ARRAY_SORT(x)",
-                "presto": "SELECT ARRAY_SORT(x)",
-                "hive": "SELECT SORT_ARRAY(x)",
-                "spark": "SELECT ARRAY_SORT(x)",
             },
         )
         self.validate_all(

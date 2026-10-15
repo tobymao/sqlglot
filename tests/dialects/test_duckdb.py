@@ -1187,40 +1187,30 @@ class TestDuckDB(Validator):
                 "spark": "STRUCT('value1' AS key1, 42 AS key2)",
             },
         )
-        self.validate_all(
-            "ARRAY_REVERSE_SORT(x)",
-            write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
-                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
-                "hive": "SORT_ARRAY(x, FALSE)",
-                "spark": "SORT_ARRAY(x, FALSE)",
-            },
-        )
-        self.validate_all(
-            "LIST_REVERSE_SORT(x)",
-            write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
-                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
-                "hive": "SORT_ARRAY(x, FALSE)",
-                "spark": "SORT_ARRAY(x, FALSE)",
-            },
-        )
-        self.validate_all(
-            "LIST_SORT(x)",
-            write={
-                "duckdb": "LIST_SORT(x)",
-                "presto": "ARRAY_SORT(x)",
-                "hive": "SORT_ARRAY(x)",
-                "spark": "SORT_ARRAY(x)",
-            },
-        )
-        self.validate_identity("SELECT LIST_SORT(x, 'ASC')")
-        self.validate_identity("SELECT LIST_SORT(x, 'DESC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC')", "SELECT LIST_SORT(x)")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC')", "SELECT ARRAY_REVERSE_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS FIRST')")
-        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')", "SELECT LIST_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')")
-        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')")
+        self.validate_identity(
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')", "SELECT ARRAY_REVERSE_SORT(x)"
+        )
+        self.validate_identity(
+            "SELECT LIST_SORT(x, 'desc', 'nulls first')",
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+        )
+        self.validate_identity(
+            "SELECT ARRAY_REVERSE_SORT(x, 'NULLS FIRST')",
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+        )
+        self.validate_identity("SELECT LIST_REVERSE_SORT(x)", "SELECT ARRAY_REVERSE_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'foo')")
+        self.validate_identity('SELECT LIST_SORT(x, "asc")')
+        self.validate_identity("SELECT ARRAY_SORT(x, 'ASC', 'bad')")
+        self.validate_all(
+            "LIST_SORT(x, 'DE' || 'SC')", write={"snowflake": "LIST_SORT(x, 'DE' || 'SC')"}
+        )
         self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS' || ' FIRST')")
         self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC', 'NULLS' || ' FIRST')")
         self.validate_all(

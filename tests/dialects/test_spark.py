@@ -190,7 +190,9 @@ TBLPROPERTIES (
         # An empty column list is not valid, but it must not raise
         for sql in ("ALTER TABLE t REPLACE COLUMNS", "ALTER TABLE t REPLACE COLUMNS ()"):
             with self.subTest(sql):
-                self.assertIsInstance(parse_one(sql, read="spark"), exp.Command)
+                self.assertIsInstance(
+                    self.validate_identity(sql, check_command_warning=True), exp.Command
+                )
         self.validate_all(
             "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
             write={

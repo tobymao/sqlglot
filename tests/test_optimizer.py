@@ -1298,6 +1298,31 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
 
+    def test_qualify_positional_references_uncache(self):
+        schema = MappingSchema({"t": {"s": "STRUCT<x INT64>"}}, dialect="bigquery")
+
+        for modifier in ("ORDER BY 1", "GROUP BY 1", "GROUP BY 1 ORDER BY 1"):
+            with self.subTest(modifier=modifier):
+                tree = parse_one(
+                    f"WITH c AS (SELECT s.* FROM t {modifier}) SELECT _PARTITIONTIME FROM t, c",
+                    dialect="bigquery",
+                )
+                # Keep discarded ordinals alive so the check cannot depend on address reuse.
+                ordinals = list(tree.find_all(exp.Literal))
+                annotator = TypeAnnotator(schema)
+                with patch(
+                    "sqlglot.optimizer.qualify_columns.TypeAnnotator", return_value=annotator
+                ):
+                    qualified = qualify(tree, schema=schema, dialect="bigquery")
+
+                for ordinal in ordinals:
+                    self.assertIsNotNone(ordinal.type)
+                    self.assertNotIn(id(ordinal), annotator._visited)
+
+                pseudo = qualified.find(exp.Pseudocolumn)
+                assert pseudo is not None
+                self.assertTrue(pseudo.is_type(exp.DType.UNKNOWN))
+
     def test_qualify_snowflake_positional_column_with_visible_schema(self):
         visible_schema = MappingSchema(
             {"t": {"hidden": "INT", "HAS SPACE": "INT"}},

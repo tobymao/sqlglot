@@ -116,11 +116,11 @@ def qualify_columns(
                 )
             qualify_outputs(scope, dialect=dialect)
 
-        _expand_group_by(scope, dialect)
+        _expand_group_by(scope, dialect, annotator)
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, annotator)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -502,17 +502,20 @@ def _expand_alias_refs(
         scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
+def _expand_group_by(scope: Scope, dialect: Dialect, annotator: TypeAnnotator) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
         return
 
+    annotator.uncache(group)
     group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, annotator: TypeAnnotator
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -531,6 +534,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         if not isinstance(modifier, exp.Expr):
             continue
 
+        annotator.uncache(modifier)
         modifier_expressions = modifier.expressions
         if modifier_key == "order":
             modifier_expressions = [ordered.this for ordered in modifier_expressions]

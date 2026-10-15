@@ -224,7 +224,9 @@ class TestHive(Validator):
             "ALTER TABLE t REPLACE COLUMNS (a TIMESTAMPLOCALTZ)",
         ):
             with self.subTest(sql):
-                self.assertIsInstance(self.validate_identity(sql), exp.Command)
+                self.assertIsInstance(
+                    self.validate_identity(sql, check_command_warning=True), exp.Command
+                )
 
         self.validate_identity(
             """CREATE EXTERNAL TABLE x (y INT) ROW FORMAT SERDE 'serde' ROW FORMAT DELIMITED FIELDS TERMINATED BY '1' WITH SERDEPROPERTIES ('input.regex'='')""",

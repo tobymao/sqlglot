@@ -508,8 +508,13 @@ def _expand_group_by(scope: Scope, dialect: Dialect, annotator: TypeAnnotator) -
     if not group:
         return
 
-    annotator.uncache(group)
-    group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
+    expanded = _expand_positional_references(scope, group.expressions, dialect)
+    for original, replacement in zip(group.expressions, expanded):
+        if original is not replacement:
+            annotator.uncache(original)
+
+    annotator.uncache(group, deep=False)
+    group.set("expressions", expanded)
     expression.set("group", group)
 
 
@@ -534,7 +539,7 @@ def _expand_order_by_and_distinct_on(
         if not isinstance(modifier, exp.Expr):
             continue
 
-        annotator.uncache(modifier)
+        annotator.uncache(modifier, deep=False)
         modifier_expressions = modifier.expressions
         if modifier_key == "order":
             modifier_expressions = [ordered.this for ordered in modifier_expressions]
@@ -551,7 +556,11 @@ def _expand_order_by_and_distinct_on(
                         if table := resolver.get_table(col.name):
                             col.set("table", table)
 
-            original.replace(expanded)
+            if original is not expanded:
+                annotator.uncache(original)
+                if original.parent:
+                    annotator.uncache(original.parent, deep=False)
+                original.replace(expanded)
 
         if expr.args.get("group"):
             selects = {
@@ -562,8 +571,11 @@ def _expand_order_by_and_distinct_on(
 
             for node in modifier_expressions:
                 # Remaining ordinals reference duplicate aliases and must stay positional.
-                if not node.is_int:
-                    node.replace(selects.get(node, node))
+                if not node.is_int and (replacement := selects.get(node)) is not None:
+                    annotator.uncache(node)
+                    if node.parent:
+                        annotator.uncache(node.parent, deep=False)
+                    node.replace(replacement)
 
 
 def _expand_positional_references(

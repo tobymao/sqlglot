@@ -1323,6 +1323,43 @@ class TestOptimizer(unittest.TestCase):
                 assert pseudo is not None
                 self.assertTrue(pseudo.is_type(exp.DType.UNKNOWN))
 
+    def test_qualify_order_by_expression_uncache(self):
+        schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
+        tree = parse_one(
+            "SELECT s.*, a + 1 AS v FROM t GROUP BY 1, 2 ORDER BY a + 1", dialect="bigquery"
+        )
+        discarded = list(tree.args["order"].expressions[0].this.walk())
+        annotator = TypeAnnotator(schema)
+        with patch("sqlglot.optimizer.qualify_columns.TypeAnnotator", return_value=annotator):
+            qualified = qualify(tree, schema=schema, dialect="bigquery")
+
+        for node in discarded:
+            self.assertIsNotNone(node.type)
+            self.assertNotIn(id(node), annotator._visited)
+        self.assertEqual(qualified.args["order"].expressions[0].this.name, "v")
+
+    def test_qualify_order_by_subquery_types(self):
+        schema = {"t": {"x": "STRING", "s": "STRUCT<a INT64>"}, "u": {"x": "INT64"}}
+
+        for table_alias in ("t", "u"):
+            for projection, ordinal in (("x", ""), ("s.*", "1, ")):
+                with self.subTest(table_alias=table_alias, projection=projection):
+                    qualified = qualify(
+                        parse_one(
+                            f"SELECT {table_alias}.{projection} FROM t AS {table_alias} "
+                            f"ORDER BY {ordinal}(SELECT MAX(u.x) FROM u)",
+                            dialect="bigquery",
+                        ),
+                        schema=schema,
+                        dialect="bigquery",
+                    )
+                    subquery = qualified.find(exp.Subquery)
+                    assert subquery is not None
+                    column = subquery.find(exp.Column)
+                    assert column is not None
+                    self.assertTrue(column.is_type(exp.DType.BIGINT))
+                    self.assertTrue(subquery.this.selects[0].is_type(exp.DType.BIGINT))
+
     def test_qualify_snowflake_positional_column_with_visible_schema(self):
         visible_schema = MappingSchema(
             {"t": {"hidden": "INT", "HAS SPACE": "INT"}},

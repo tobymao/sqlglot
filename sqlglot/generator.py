@@ -4517,6 +4517,9 @@ class Generator:
     def addconstraint_sql(self, expression: exp.AddConstraint) -> str:
         return f"ADD {self.expressions(expression, indent=False)}"
 
+    def replacecolumns_sql(self, expression: exp.ReplaceColumns) -> str:
+        return f"REPLACE COLUMNS ({self.expressions(expression, flat=True)})"
+
     def addpartition_sql(self, expression: exp.AddPartition) -> str:
         exists = "IF NOT EXISTS " if expression.args.get("exists") else ""
         location = self.sql(expression, "location")

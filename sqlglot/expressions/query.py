@@ -2020,6 +2020,10 @@ class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
 
 
+class ReplaceColumns(Expression):
+    arg_types = {"expressions": True}
+
+
 class ReplacePartition(Expression):
     arg_types = {"expression": True, "source": True}
 

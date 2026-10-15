@@ -3471,6 +3471,48 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             parse_one('SELECT "a"."a" AS "a", "a"."b" AS "b" FROM "a" AS "a"'),
         )
 
+    def test_pseudocolumn_uncache_and_id_collision(self):
+        schema = {"d": {"t": {"id": "INTEGER", "ts": "TIMESTAMP"}}}
+        sql = "SELECT a.id FROM `p`.`d`.`t` AS a WHERE _PARTITIONTIME >= TIMESTAMP('2026-01-01')"
+        tree = parse_one(sql, dialect="bigquery")
+
+        qualified = qualify(
+            tree,
+            schema=schema,
+            dialect="bigquery",
+            validate_qualify_columns=False,
+            allow_partial_qualification=True,
+        )
+        pseudo = qualified.find(exp.Pseudocolumn)
+        self.assertIsNotNone(pseudo)
+        self.assertIsNotNone(pseudo.type)
+        self.assertEqual(pseudo.type.this, exp.DType.UNKNOWN)
+
+        # Ensure _separate_pseudocolumns evicts replaced column from annotator cache
+        tree_to_uncache = parse_one("SELECT _PARTITIONTIME FROM t", dialect="bigquery")
+        col = tree_to_uncache.find(exp.Column)
+        annotator = TypeAnnotator(MappingSchema({}, dialect="bigquery"))
+        annotator._visited.add(id(col))
+        optimizer.qualify_columns._separate_pseudocolumns(
+            build_scope(tree_to_uncache),
+            sqlglot.Dialect.get_or_raise("bigquery").PSEUDOCOLUMNS,
+            annotator,
+        )
+        self.assertNotIn(id(col), annotator._visited)
+
+        # Ensure address collision with a discarded node does not prevent annotation
+        tree_collision = parse_one(sql, dialect="bigquery")
+        for c in tree_collision.find_all(exp.Column):
+            if c.name.upper() == "_PARTITIONTIME":
+                pseudo_node = exp.Pseudocolumn(**c.args)
+                c.replace(pseudo_node)
+                annotator._visited.add(id(pseudo_node))
+                break
+
+        annotator.annotate(tree_collision)
+        self.assertIsNotNone(pseudo_node.type)
+        self.assertEqual(pseudo_node.type.this, exp.DType.UNKNOWN)
+
     def test_semistructured(self):
         query = parse_one("select a.b:c from d", read="snowflake")
         qualified = optimizer.qualify.qualify(query, validate_qualify_columns=False)

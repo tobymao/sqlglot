@@ -72,7 +72,7 @@ def qualify_columns(
         scope_expression = scope.expression
         is_select = isinstance(scope_expression, exp.Select)
 
-        _separate_pseudocolumns(scope, pseudocolumns)
+        _separate_pseudocolumns(scope, pseudocolumns, annotator)
 
         resolver = Resolver(scope, schema)
 
@@ -173,7 +173,9 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
     return expression
 
 
-def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
+def _separate_pseudocolumns(
+    scope: Scope, pseudocolumns: set[str], annotator: TypeAnnotator | None = None
+) -> None:
     if not pseudocolumns:
         return
 
@@ -188,6 +190,9 @@ def _separate_pseudocolumns(scope: Scope, pseudocolumns: set[str]) -> None:
         if name != "LEVEL" or (
             isinstance(scope_expression, exp.Select) and scope_expression.args.get("connect")
         ):
+            if annotator:
+                annotator.uncache(column)
+
             column.replace(exp.Pseudocolumn(**column.args))
             has_pseudocolumns = True
 

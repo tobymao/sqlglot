@@ -461,7 +461,7 @@ class TypeAnnotator:
         while stack:
             expr, children_annotated = stack.pop()
 
-            if id(expr) in self._visited or (
+            if (id(expr) in self._visited and expr.type is not None) or (
                 not self._overwrite_types and expr.type and not expr.is_type(exp.DType.UNKNOWN)
             ):
                 continue  # We've already inferred the expression's type

@@ -6,6 +6,15 @@ from tests.dialects.test_dialect import Validator
 class TestStarrocks(Validator):
     dialect = "starrocks"
 
+    def test_like(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/like-predicate-functions/like/
+        self.validate_all(
+            "SELECT LIKE('xyz', 'x%')",
+            write={"starrocks": "SELECT 'xyz' LIKE 'x%'", "duckdb": "SELECT 'xyz' LIKE 'x%'"},
+        )
+        self.validate_identity("SELECT a LIKE 'x%'")
+        self.validate_all("SELECT LIKE(NULL, 'x%')", write={"starrocks": "SELECT NULL LIKE 'x%'"})
+
     def test_starrocks(self):
         self.assertEqual(self.validate_identity("arr[1]").expressions[0], exp.Literal.number(0))
 

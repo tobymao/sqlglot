@@ -160,6 +160,30 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
         return
 
+    # determine location of join that owns the ON clause whose subquery we will decorrelate
+    on_clause_join_index = None
+    on_clause_ancestor = (
+        parent_predicate.find_ancestor(exp.Join, exp.Select) if parent_predicate else None
+    )
+    if (
+        isinstance(on_clause_ancestor, exp.Join)
+        and on_clause_ancestor.parent is parent_select
+        and on_clause_ancestor.args.get("on")
+        and not on_clause_ancestor.side
+        and on_clause_ancestor.kind in ("", "INNER")
+        and not on_clause_ancestor.method
+        and not on_clause_ancestor.args.get("match_condition")
+    ):
+        parent_from = parent_select.args.get("from_")
+        available_source_aliases = {parent_from.this.alias_or_name} if parent_from else set()
+        for index, join in enumerate(parent_select.args.get("joins") or []):
+            if join is on_clause_ancestor:
+                if all(column.table in available_source_aliases for column in external_columns):
+                    on_clause_join_index = index
+                break
+            if not join.is_semi_or_anti_join:
+                available_source_aliases.add(join.alias_or_name)
+
     if isinstance(parent_predicate, exp.Exists):
         if select.args.get("having") or select.args.get("qualify"):
             return
@@ -389,6 +413,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         join_alias=table_alias,
         copy=False,
     )
+
+    if on_clause_join_index is not None:
+        # Move the generated LEFT JOIN before the join that owns the ON clause
+        joins = parent_select.args["joins"]
+        parent_select.set("joins", joins.pop(), index=on_clause_join_index, overwrite=False)
 
 
 def _is_negated(expression: exp.Expression) -> bool:

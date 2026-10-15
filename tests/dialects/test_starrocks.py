@@ -6,10 +6,6 @@ from tests.dialects.test_dialect import Validator
 class TestStarrocks(Validator):
     dialect = "starrocks"
 
-    def test_like(self):
-        # https://docs.starrocks.io/docs/sql-reference/sql-functions/like-predicate-functions/like/
-        self.validate_identity("SELECT LIKE('xyz', 'x%')", "SELECT 'xyz' LIKE 'x%'")
-
     def test_starrocks(self):
         self.assertEqual(self.validate_identity("arr[1]").expressions[0], exp.Literal.number(0))
 
@@ -23,6 +19,7 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ST_POINT(10, 20)")
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
         self.validate_identity("ARRAY_FLATTEN(arr)").assert_is(exp.Flatten)
+        self.validate_identity("SELECT LIKE('xyz', 'x%')", "SELECT 'xyz' LIKE 'x%'")
 
         self.validate_all(
             "SELECT * FROM t WHERE cond",

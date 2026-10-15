@@ -40,7 +40,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import ensure_list, seq_get, to_int
 
 
 DATE_DIFF_FACTOR = {
@@ -579,8 +579,13 @@ class PostgresGenerator(generator.Generator):
 
         this = expression.this
         if unit.startswith("quarter") and isinstance(this, exp.Literal):
-            this.replace(exp.Literal.string(int(this.to_py()) * 3))
-            expression.args["unit"].replace(exp.var("MONTH"))
+            # Postgres has no QUARTER unit and no exponents in interval strings
+            quarters = to_int(this.to_py())
+            if quarters is None:
+                self.unsupported("Postgres intervals need a whole number of quarters")
+            else:
+                this.replace(exp.Literal.string(quarters * 3))
+                expression.args["unit"].replace(exp.var("MONTH"))
 
         return super().interval_sql(expression)
 

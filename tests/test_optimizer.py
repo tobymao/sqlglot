@@ -1451,6 +1451,15 @@ class TestOptimizer(unittest.TestCase):
         expression = parse_one(union_sql)
         self.assertEqual(optimizer.simplify.simplify(expression).sql(), union_sql)
 
+        expression = parse_one(
+            "CAST('2020-01-01' AS DATE) + INTERVAL '1' DAY = CAST('2020-01-02' AS DATE)"
+        )
+        expression.find(exp.Interval).set("this", exp.Literal.number("1e1000000000"))
+        self.assertEqual(
+            simplify(expression).sql(),
+            "CAST('2020-01-01' AS DATE) + INTERVAL 1e1000000000 DAY = CAST('2020-01-02' AS DATE)",
+        )
+
         # Ensure simplify mutates the AST properly
         expression = parse_one("SELECT 1 + 2")
         simplify(expression.selects[0])

@@ -8,6 +8,7 @@ import sys
 import typing as t
 from collections.abc import Collection, Set, Iterable, Sequence, Iterator, Mapping
 from copy import copy
+from decimal import Decimal, InvalidOperation
 from difflib import get_close_matches
 from enum import Enum
 from itertools import count
@@ -243,6 +244,22 @@ def find_new_name(taken: Collection[str], base: str) -> str:
 
 def is_int(text: str) -> bool:
     return is_type(text, int)
+
+
+def to_int(value: str | int | Decimal, max_digits: int = 4300) -> int | None:
+    """Unlike int(), never materializes a huge int from a short exponent like 1e1000000."""
+    try:
+        number = Decimal(value)
+    except InvalidOperation:
+        return None
+
+    if (
+        not number.is_finite()
+        or number.adjusted() >= max_digits
+        or number != number.to_integral_value()
+    ):
+        return None
+    return int(number)
 
 
 def is_float(text: str) -> bool:

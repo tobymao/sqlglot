@@ -417,8 +417,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if on_clause_join_index is not None:
         # Move the generated LEFT JOIN before the join that owns the ON clause
         joins = parent_select.args["joins"]
-        joins.insert(on_clause_join_index, joins.pop())
-        parent_select.set("joins", joins)
+        parent_select.set("joins", joins.pop(), index=on_clause_join_index, overwrite=False)
 
 
 def _is_negated(expression: exp.Expression) -> bool:

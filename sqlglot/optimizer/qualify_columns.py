@@ -116,11 +116,11 @@ def qualify_columns(
                 )
             qualify_outputs(scope, dialect=dialect)
 
-        _expand_group_by(scope, dialect)
+        _expand_group_by(scope, dialect, annotator)
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, annotator)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -502,17 +502,25 @@ def _expand_alias_refs(
         scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
+def _expand_group_by(scope: Scope, dialect: Dialect, annotator: TypeAnnotator) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
         return
 
-    group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
+    expanded = _expand_positional_references(scope, group.expressions, dialect)
+    for original, replacement in zip(group.expressions, expanded):
+        if original is not replacement:
+            annotator.uncache(original)
+
+    annotator.uncache(group, deep=False)
+    group.set("expressions", expanded)
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, annotator: TypeAnnotator
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -531,6 +539,7 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
         if not isinstance(modifier, exp.Expr):
             continue
 
+        annotator.uncache(modifier, deep=False)
         modifier_expressions = modifier.expressions
         if modifier_key == "order":
             modifier_expressions = [ordered.this for ordered in modifier_expressions]
@@ -547,7 +556,11 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                         if table := resolver.get_table(col.name):
                             col.set("table", table)
 
-            original.replace(expanded)
+            if original is not expanded:
+                annotator.uncache(original)
+                if original.parent:
+                    annotator.uncache(original.parent, deep=False)
+                original.replace(expanded)
 
         if expr.args.get("group"):
             selects = {
@@ -558,8 +571,11 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
             for node in modifier_expressions:
                 # Remaining ordinals reference duplicate aliases and must stay positional.
-                if not node.is_int:
-                    node.replace(selects.get(node, node))
+                if not node.is_int and (replacement := selects.get(node)) is not None:
+                    annotator.uncache(node)
+                    if node.parent:
+                        annotator.uncache(node.parent, deep=False)
+                    node.replace(replacement)
 
 
 def _expand_positional_references(

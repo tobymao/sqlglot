@@ -2774,6 +2774,17 @@ def build_timetostr_or_tochar(
     return exp.ToChar.from_arg_list(args)
 
 
+def array_sort_order(expression: exp.ArraySort) -> tuple[bool, bool | None] | None:
+    """Whether an ArraySort is ascending and puts NULLs first, or None if either isn't a literal."""
+    asc = expression.args.get("asc") or exp.true()
+    nulls_first = expression.args.get("nulls_first")
+    if not isinstance(asc, exp.Boolean):
+        return None
+    if nulls_first is None:
+        return asc.this, None
+    return (asc.this, nulls_first.this) if isinstance(nulls_first, exp.Boolean) else None
+
+
 def build_replace_with_optional_replacement(args: BuilderArgs) -> exp.Replace:
     return exp.Replace(
         this=seq_get(args, 0),

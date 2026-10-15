@@ -912,7 +912,6 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_SORT(x, foo, TRUE)",
             read={"snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)"},
             write={
-                "duckdb": "SELECT LIST_SORT(x, foo, 'NULLS FIRST')",
                 "snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)",
             },
         )

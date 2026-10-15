@@ -182,6 +182,20 @@ def _transform_generate_date_array(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+@unsupported_args(("expression", "Snowflake's ARRAY_SORT does not support a comparator."))
+def _array_sort_sql(self: SnowflakeGenerator, expression: exp.ArraySort) -> str:
+    # NULLs default to last when ascending and first when descending
+    asc = expression.args.get("asc")
+    nulls_first = expression.args.get("nulls_first")
+    if asc is None and nulls_first == exp.false():
+        nulls_first = None
+    elif asc is None and nulls_first is not None:
+        asc = exp.true()
+    elif asc == exp.false() and nulls_first == exp.true():
+        nulls_first = None
+    return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
+
+
 def _regexpextract_sql(
     self: SnowflakeGenerator, expression: exp.RegexpExtract | exp.RegexpExtractAll
 ) -> str:
@@ -412,6 +426,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
         exp.ArrayOverlaps: rename_func("ARRAYS_OVERLAP"),
+        exp.ArraySort: _array_sort_sql,
         exp.AtTimeZone: lambda self, e: self.func("CONVERT_TIMEZONE", e.args.get("zone"), e.this),
         exp.BitwiseOr: rename_func("BITOR"),
         exp.BitwiseXor: rename_func("BITXOR"),
@@ -607,13 +622,6 @@ class SnowflakeGenerator(generator.Generator):
             # `IDENTIFIER(...)` invoked as a function, e.g. `IDENTIFIER('my_func')(1, 2)`
             return self.func(this, *expression.expressions, normalize=False)
         return this
-
-    def sortarray_sql(self, expression: exp.SortArray) -> str:
-        asc = expression.args.get("asc")
-        nulls_first = expression.args.get("nulls_first")
-        if asc == exp.false() and nulls_first == exp.true():
-            nulls_first = None
-        return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
 
     SUPPORTED_JSON_PATH_PARTS = {
         exp.JSONPathKey,

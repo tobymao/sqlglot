@@ -6,6 +6,7 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
+    build_trunc,
     rename_func,
     weekstart_unit_to_str,
     inline_array_sql,
@@ -63,6 +64,29 @@ class StarRocksGenerator(MySQLGenerator):
     UPDATE_STATEMENT_SUPPORTS_FROM = True
     INSERT_OVERWRITE = " OVERWRITE"
     CAST_TO_INT_ROUNDS = False
+
+    ORACLE_TRUNC_UNITS = {
+        "DD": "DAY",
+        "DDD": "DAY",
+        "J": "DAY",
+        "MM": "MONTH",
+        "MON": "MONTH",
+        "MONTH": "MONTH",
+        "RM": "MONTH",
+        "Q": "QUARTER",
+        "YYYY": "YEAR",
+        "YYY": "YEAR",
+        "YY": "YEAR",
+        "Y": "YEAR",
+        "YEAR": "YEAR",
+        "SYYYY": "YEAR",
+        "SYEAR": "YEAR",
+        "HH": "HOUR",
+        "HH12": "HOUR",
+        "HH24": "HOUR",
+        "MI": "MINUTE",
+        "IW": "WEEK",
+    }
 
     # StarRocks doesn't support "IS TRUE/FALSE" syntax.
     IS_BOOL_ALLOWED = False
@@ -413,3 +437,37 @@ class StarRocksGenerator(MySQLGenerator):
         kind = expression.text("kind").upper()
         boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
         return self.func("TIME_SLICE", expression.this, interval, boundary)
+
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        unit = expression.unit
+        if expression.args.get("unit_is_format"):
+            name = unit.name.upper()
+            if name in ("DAY", "DY", "D"):
+                self.unsupported("Oracle TRUNC week start requires NLS_TERRITORY")
+            elif name in ("WW", "W"):
+                day = exp.TimestampTrunc(this=expression.this.copy(), unit=exp.var("DAY"))
+                anchor = exp.TimestampTrunc(
+                    this=expression.this.copy(), unit=exp.var("YEAR" if name == "WW" else "MONTH")
+                )
+                offset = exp.Mod(
+                    this=exp.DateDiff(this=day.copy(), expression=anchor, unit=exp.var("DAY")),
+                    expression=exp.Literal.number(7),
+                )
+                return self.sql(exp.DateSub(this=day, expression=offset, unit=exp.var("DAY")))
+            elif name in self.ORACLE_TRUNC_UNITS:
+                unit = exp.Literal.string(self.ORACLE_TRUNC_UNITS[name])
+            else:
+                self.unsupported(f"Unsupported Oracle TRUNC format: {name}")
+        return self.func("DATE_TRUNC", unit, expression.this)
+
+    def anonymous_sql(self, expression: exp.Anonymous) -> str:
+        if expression.name.upper() == "TRUNC":
+            resolved = build_trunc(
+                expression.expressions, self.dialect, default_date_trunc_unit="DAY"
+            )
+            if not isinstance(resolved, exp.Anonymous):
+                return self.sql(resolved)
+            self.unsupported(
+                "TRUNC requires input types to distinguish numeric and date truncation"
+            )
+        return super().anonymous_sql(expression)

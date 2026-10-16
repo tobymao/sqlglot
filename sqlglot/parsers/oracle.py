@@ -20,6 +20,13 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
     return build_formatted_time(exp.StrToTime)(args, dialect)
 
 
+def _build_trunc(args: list, dialect: Dialect) -> exp.Expr:
+    result = build_trunc(args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD")
+    if isinstance(result, exp.DateTrunc):
+        result.set("unit_is_format", True)
+    return result
+
+
 class OracleParser(parser.Parser):
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
@@ -41,9 +48,7 @@ class OracleParser(parser.Parser):
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_TIMESTAMP": _build_to_timestamp,
         "TO_DATE": build_formatted_time(exp.StrToDate),
-        "TRUNC": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
-        ),
+        "TRUNC": _build_trunc,
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

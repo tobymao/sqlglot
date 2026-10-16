@@ -1,6 +1,8 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 
 
 class TestStarrocks(Validator):
@@ -602,3 +604,47 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+
+    def test_oracle_trunc(self):
+        for model, unit in (
+            ("DD", "DAY"),
+            ("DDD", "DAY"),
+            ("MM", "MONTH"),
+            ("HH24", "HOUR"),
+            ("MI", "MINUTE"),
+            ("IW", "WEEK"),
+        ):
+            self.validate_all(
+                f"SELECT DATE_TRUNC('{unit}', d) FROM t",
+                read={"oracle": f"SELECT TRUNC(d, '{model}') FROM t"},
+            )
+        for model in ("DAY", "DY", "D", "CC"):
+            with self.assertRaises(UnsupportedError):
+                parse_one(f"SELECT TRUNC(d, '{model}') FROM t", read="oracle").sql(
+                    "starrocks", unsupported_level=ErrorLevel.RAISE
+                )
+        with self.assertRaises(UnsupportedError):
+            parse_one("SELECT TRUNC(d) FROM t", read="oracle").sql(
+                "starrocks", unsupported_level=ErrorLevel.RAISE
+            )
+        schema = {"T_DATES": {"D": "DATE", "N": "NUMBER"}}
+        e = qualify(
+            parse_one("SELECT TRUNC(d), TRUNC(n) FROM t_dates", read="oracle"),
+            dialect="oracle",
+            schema=schema,
+            identify=False,
+        )
+        e = annotate_types(e, schema=schema, dialect="oracle")
+        self.assertEqual(
+            e.sql("starrocks", unsupported_level=ErrorLevel.RAISE),
+            "SELECT DATE_TRUNC('DAY', T_DATES.D) AS _COL_0, TRUNCATE(T_DATES.N, 0) AS _COL_1 FROM T_DATES AS T_DATES",
+        )
+
+    def test_oracle_calendar_trunc_anchors(self):
+        for model, anchor in (("WW", "YEAR"), ("W", "MONTH")):
+            result = parse_one(f"SELECT TRUNC(d, '{model}') FROM t", read="oracle").sql(
+                "starrocks", unsupported_level=ErrorLevel.RAISE
+            )
+            self.assertIn(f"DATE_TRUNC('{anchor}', d)", result)
+            self.assertIn("% 7", result)
+            self.assertIn("DATE_SUB", result)

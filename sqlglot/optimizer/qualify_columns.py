@@ -116,11 +116,11 @@ def qualify_columns(
                 )
             qualify_outputs(scope, dialect=dialect)
 
-        _expand_group_by(scope, dialect, annotator)
+        _expand_group_by(scope, dialect)
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver, annotator)
+        _expand_order_by_and_distinct_on(scope, resolver)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -502,25 +502,17 @@ def _expand_alias_refs(
         scope.clear_cache()
 
 
-def _expand_group_by(scope: Scope, dialect: Dialect, annotator: TypeAnnotator) -> None:
+def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression = scope.expression
     group = expression.args.get("group")
     if not group:
         return
 
-    expanded = _expand_positional_references(scope, group.expressions, dialect)
-    for original, replacement in zip(group.expressions, expanded):
-        if original is not replacement:
-            annotator.uncache(original)
-
-    annotator.uncache(group, deep=False)
-    group.set("expressions", expanded)
+    group.set("expressions", _expand_positional_references(scope, group.expressions, dialect))
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(
-    scope: Scope, resolver: Resolver, annotator: TypeAnnotator
-) -> None:
+def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -539,7 +531,6 @@ def _expand_order_by_and_distinct_on(
         if not isinstance(modifier, exp.Expr):
             continue
 
-        annotator.uncache(modifier, deep=False)
         modifier_expressions = modifier.expressions
         if modifier_key == "order":
             modifier_expressions = [ordered.this for ordered in modifier_expressions]
@@ -556,11 +547,7 @@ def _expand_order_by_and_distinct_on(
                         if table := resolver.get_table(col.name):
                             col.set("table", table)
 
-            if original is not expanded:
-                annotator.uncache(original)
-                if original.parent:
-                    annotator.uncache(original.parent, deep=False)
-                original.replace(expanded)
+            original.replace(expanded)
 
         if expr.args.get("group"):
             selects = {
@@ -571,11 +558,8 @@ def _expand_order_by_and_distinct_on(
 
             for node in modifier_expressions:
                 # Remaining ordinals reference duplicate aliases and must stay positional.
-                if not node.is_int and (replacement := selects.get(node)) is not None:
-                    annotator.uncache(node)
-                    if node.parent:
-                        annotator.uncache(node.parent, deep=False)
-                    node.replace(replacement)
+                if not node.is_int:
+                    node.replace(selects.get(node, node))
 
 
 def _expand_positional_references(
@@ -1087,12 +1071,11 @@ def _expand_stars(
     coalesced_columns = set()
     dialect = resolver.dialect
 
-    annotated_ahead = dialect.SUPPORTS_STRUCT_STAR_EXPANSION and any(
-        isinstance(col, exp.Dot) for col in scope.stars
-    )
-    if annotated_ahead:
-        # Found struct expansion, annotate scope ahead of time
-        annotator.annotate_scope(scope)
+    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+        for star in scope.stars:
+            if isinstance(star, exp.Dot):
+                # Struct star expansion needs the type of the struct column ahead of time
+                annotator.annotate_in_scope(star, scope)
 
     scope_expression = scope.expression
 
@@ -1134,9 +1117,6 @@ def _expand_stars(
                     struct_fields = []
 
                 if struct_fields:
-                    if annotated_ahead:
-                        annotator.uncache(expression)
-
                     star = expression.expression
                     excluded = {e.name for e in star.args.get("except_") or []}
                     replaced = {e.alias: e for e in star.args.get("replace") or []}
@@ -1283,16 +1263,8 @@ def _expand_stars(
 
         new_selections[start:start] = [s for s in using_selections.values() if s is not None]
 
-        if annotated_ahead:
-            # The star projection was replaced by the expansions above
-            annotator.uncache(expression)
-
     # Ensures we don't overwrite the initial selections with an empty list
     if new_selections and isinstance(scope_expression, exp.Select):
-        if annotated_ahead:
-            # The mutation below would otherwise be skipped by the final annotation pass
-            annotator.uncache(scope_expression, deep=False)
-
         scope_expression.set("expressions", new_selections)
         # The parent scope sees this scope's columns, so they must reflect the expansions
         scope.clear_cache()

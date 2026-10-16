@@ -63,7 +63,14 @@ def qualify_columns(
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
     dialect = schema.dialect or Dialect()
+
     pseudocolumns = dialect.PSEUDOCOLUMNS
+
+    # Struct star expansion needs the projection types of source scopes
+    # e.g. WITH c AS (SELECT s FROM t) SELECT c.s.* FROM c needs the type of c.s
+    annotate_scopes = dialect.ANNOTATE_ALL_SCOPES or (
+        dialect.SUPPORTS_STRUCT_STAR_EXPANSION and expand_stars
+    )
 
     for scope in traverse_scope(expression):
         if dialect.PREFER_CTE_ALIAS_COLUMN:
@@ -104,23 +111,15 @@ def qualify_columns(
         if expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
-        struct_stars: list[exp.Dot] = []
         if is_select:
             if expand_stars:
-                if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
-                    struct_stars = [s for s in scope.stars if isinstance(s, exp.Dot)]
-
-                # Struct star expansion needs the types of the struct values ahead of time. The
-                # rest of the scope, e.g. REPLACE expressions, is annotated after it's rewritten
-                for struct_star in struct_stars:
-                    annotator.annotate_in_scope(struct_star.this, scope)
-
                 _expand_stars(
                     scope,
                     resolver,
                     using_column_tables,
                     using_columns,
                     pseudocolumns,
+                    annotator,
                 )
             qualify_outputs(scope, dialect=dialect)
 
@@ -130,8 +129,7 @@ def qualify_columns(
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
         _expand_order_by_and_distinct_on(scope, resolver)
 
-        # Parent scopes may need the types of this scope's projections to expand their struct stars
-        if dialect.ANNOTATE_ALL_SCOPES or struct_stars:
+        if annotate_scopes:
             annotator.annotate_scope(scope)
 
     return expression
@@ -1067,6 +1065,7 @@ def _expand_stars(
     using_column_tables: dict[str, t.Any],
     using_columns: list[str],
     pseudocolumns: set[str],
+    annotator: TypeAnnotator,
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -1078,6 +1077,13 @@ def _expand_stars(
 
     coalesced_columns = set()
     dialect = resolver.dialect
+
+    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+        # Struct star expansion needs the types of the struct values ahead of time. The rest of
+        # the scope, e.g. REPLACE expressions, is annotated after it's rewritten
+        for struct_star in scope.stars:
+            if isinstance(struct_star, exp.Dot):
+                annotator.annotate_in_scope(struct_star.this, scope)
 
     scope_expression = scope.expression
 

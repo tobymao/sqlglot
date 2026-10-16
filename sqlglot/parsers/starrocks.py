@@ -61,6 +61,7 @@ class StarRocksParser(MySQLParser):
         ),
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
         "LIKE": build_like(exp.Like),
+        "TO_DAYS": exp.ToDays.from_arg_list,
         "REGEXP": exp.RegexpLike.from_arg_list,
         # StarRocks' MAP() is a variadic constructor: MAP(k1, v1, k2, v2, ...)
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/

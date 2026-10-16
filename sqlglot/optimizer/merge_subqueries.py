@@ -488,7 +488,6 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
     group = outer_scope.expression.args.get("group")
 
     # Replace columns with the projection expression in the inner query
-    any_merged = False
     for expression in inner_scope.expression.expressions:
         projection_name = expression.alias_or_name
         if not projection_name:
@@ -496,8 +495,6 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
         columns_to_replace = outer_columns.get(projection_name, [])
         if not columns_to_replace:
             continue
-
-        any_merged = True
 
         expression = expression.unalias()
         must_wrap_expression = not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
@@ -545,7 +542,7 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
 
             column.replace(replacement)
 
-    if any_merged:
+    if outer_columns:
         for scope in outer_scope.traverse():
             scope.clear_cache()
 

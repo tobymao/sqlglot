@@ -1836,55 +1836,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
         self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
 
-    def test_merge_subqueries_correlated_source_rename(self):
-        for rules in (
-            optimizer.RULES,
-            [qualify, optimizer.merge_subqueries.merge_subqueries],
-        ):
-            for outer_alias, subquery, correlated in (
-                ("z", "SELECT 1 FROM x AS x3 WHERE x3.a < z.b", True),
-                ("outer_z", "SELECT 1 FROM x AS x3 WHERE x3.a < z.b", True),
-                (
-                    "z",
-                    "SELECT 1 FROM x AS x3 WHERE x3.a < z.b "
-                    "AND EXISTS (SELECT 1 FROM x AS x4 WHERE x4.a < z.b)",
-                    True,
-                ),
-                (
-                    "z",
-                    "SELECT 1 FROM x AS x3 WHERE x3.a < z.b "
-                    "UNION ALL SELECT 1 FROM x AS x4 WHERE x4.a < z.b",
-                    True,
-                ),
-                (
-                    "z",
-                    "SELECT 1 FROM x AS x3 WHERE x3.a < z.b "
-                    "AND EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b)",
-                    True,
-                ),
-                ("z", "SELECT 1 FROM x AS z WHERE z.a > z.b", False),
-            ):
-                with self.subTest(rules=rules, outer_alias=outer_alias, subquery=subquery):
-                    sql = (
-                        "SELECT d.b FROM (SELECT z.b FROM x AS y1 "
-                        f"JOIN z AS z ON EXISTS ({subquery})) AS d "
-                        f"CROSS JOIN z AS {outer_alias}"
-                    )
-                    merged = optimizer.optimize(sql, schema=self.schema, rules=rules)
-                    on_clause_join = merged.args["joins"][0]
-                    source_alias = on_clause_join.this.alias_or_name
-                    self.assertEqual(merged.selects[0].unalias().table, source_alias)
-
-                    scopes = traverse_scope(merged)
-                    self.assertEqual(
-                        {column.table for scope in scopes for column in scope.external_columns},
-                        {source_alias} if correlated else set(),
-                    )
-                    for scope in scopes:
-                        source = scope.sources.get("z")
-                        if isinstance(source, exp.Table) and source.name == "x":
-                            self.assertEqual(scope.external_columns, [])
-
     def test_merge_subqueries_copy_budget(self):
         # Each CTE references its source's projection twice, so merging the whole chain would
         # double the expression at every step

@@ -630,3 +630,51 @@ SELECT x_2.a AS a FROM x AS x_2 JOIN x AS x ON x_2.a = x.a;
 # title: Each reference that needs wrapping gets a single pair of parentheses
 WITH q AS (SELECT a + b AS c FROM x) SELECT q.c * 1 AS c1, q.c * 2 AS c2, q.c * 3 AS c3 FROM q;
 SELECT (x.a + x.b) * 1 AS c1, (x.a + x.b) * 2 AS c2, (x.a + x.b) * 3 AS c3 FROM x AS x;
+
+# title: Derived-table merge preserves a correlated JOIN ON reference after source renaming
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b)) AS d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b) CROSS JOIN z AS z;
+
+# title: Derived-table merge preserves a correlated JOIN ON reference with a distinct outer alias
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b)) AS d CROSS JOIN z AS outer_z;
+SELECT z.b AS b FROM x AS y1 JOIN z AS z ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z.b) CROSS JOIN z AS outer_z;
+
+# title: Derived-table merge renames correlated references through nested JOIN ON subqueries
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b AND EXISTS (SELECT 1 FROM x AS x4 WHERE x4.a < z.b))) AS d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b AND EXISTS(SELECT 1 AS "1" FROM x AS x4 WHERE x4.a < z_2.b)) CROSS JOIN z AS z;
+
+# title: Derived-table merge renames correlated references in a JOIN ON UNION ALL subquery
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b UNION ALL SELECT 1 FROM x AS x4 WHERE x4.a < z.b)) AS d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b UNION ALL SELECT 1 AS "1" FROM x AS x4 WHERE x4.a < z_2.b) CROSS JOIN z AS z;
+
+# title: Derived-table merge renames correlated references without changing a locally shadowed alias
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b AND EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b))) AS d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b AND EXISTS(SELECT 1 AS "1" FROM x AS z WHERE z.a > z.b)) CROSS JOIN z AS z;
+
+# title: Derived-table merge leaves an uncorrelated locally shadowed alias unchanged
+SELECT d.b FROM (SELECT z.b FROM x AS y1 JOIN (SELECT b FROM z) AS z ON EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b)) AS d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS z WHERE z.a > z.b) CROSS JOIN z AS z;
+
+# title: CTE merge preserves a correlated JOIN ON reference after source renaming
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b)) SELECT d.b FROM d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b) CROSS JOIN z AS z;
+
+# title: CTE merge preserves a correlated JOIN ON reference with a distinct outer alias
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b)) SELECT d.b FROM d CROSS JOIN z AS outer_z;
+SELECT z.b AS b FROM x AS y1 JOIN z AS z ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z.b) CROSS JOIN z AS outer_z;
+
+# title: CTE merge renames correlated references through nested JOIN ON subqueries
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b AND EXISTS (SELECT 1 FROM x AS x4 WHERE x4.a < z.b))) SELECT d.b FROM d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b AND EXISTS(SELECT 1 AS "1" FROM x AS x4 WHERE x4.a < z_2.b)) CROSS JOIN z AS z;
+
+# title: CTE merge renames correlated references in a JOIN ON UNION ALL subquery
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b UNION ALL SELECT 1 FROM x AS x4 WHERE x4.a < z.b)) SELECT d.b FROM d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b UNION ALL SELECT 1 AS "1" FROM x AS x4 WHERE x4.a < z_2.b) CROSS JOIN z AS z;
+
+# title: CTE merge renames correlated references without changing a locally shadowed alias
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS x3 WHERE x3.a < z.b AND EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b))) SELECT d.b FROM d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS x3 WHERE x3.a < z_2.b AND EXISTS(SELECT 1 AS "1" FROM x AS z WHERE z.a > z.b)) CROSS JOIN z AS z;
+
+# title: CTE merge leaves an uncorrelated locally shadowed alias unchanged
+WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b)) SELECT d.b FROM d CROSS JOIN z AS z;
+SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS z WHERE z.a > z.b) CROSS JOIN z AS z;

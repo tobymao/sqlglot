@@ -554,7 +554,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                         if table := resolver.get_table(col.name):
                             col.set("table", table)
 
-            original.replace(expanded)
+            if original is not expanded:
+                original.replace(expanded)
 
         if expr.args.get("group"):
             selects = {
@@ -565,8 +566,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
 
             for node in modifier_expressions:
                 # Remaining ordinals reference duplicate aliases and must stay positional.
-                if not node.is_int:
-                    node.replace(selects.get(node, node))
+                if not node.is_int and (replacement := selects.get(node)) is not None:
+                    node.replace(replacement)
 
 
 def _expand_positional_references(

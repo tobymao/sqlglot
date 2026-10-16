@@ -17,6 +17,7 @@ from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_
 from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -1298,6 +1299,27 @@ class TestOptimizer(unittest.TestCase):
             ["INT64", "STRING"],
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
+
+    def test_qualify_unchanged_distinct_on(self):
+        schema = MappingSchema({"t": {"a": "INT", "b": "INT", "c": "INT"}}, dialect="postgres")
+
+        for group_by in ("", " GROUP BY t.a, t.b, t.c"):
+            with self.subTest(group_by=group_by):
+                tree = parse_one(
+                    f"SELECT DISTINCT ON (t.a, t.b, t.c) 1 AS v FROM t{group_by}",
+                    dialect="postgres",
+                )
+                scope = build_scope(tree)
+                assert scope is not None
+                distinct_on = tree.args["distinct"].args["on"]
+                original_hash = hash(distinct_on)
+
+                optimizer.qualify_columns._expand_order_by_and_distinct_on(
+                    scope, Resolver(scope, schema)
+                )
+
+                # Replacing a key with itself unnecessarily invalidates the whole tuple's hash.
+                self.assertEqual(distinct_on._hash, original_hash)
 
     def test_qualify_positional_references_types(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>"}}, dialect="bigquery")

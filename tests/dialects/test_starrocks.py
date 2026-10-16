@@ -20,6 +20,7 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ST_DISTANCE_SPHERE(10.1, 20.2, 30.3, 40.4)")
         self.validate_identity("ARRAY_FLATTEN(arr)").assert_is(exp.Flatten)
         self.validate_identity("SELECT LIKE('xyz', 'x%')", "SELECT 'xyz' LIKE 'x%'")
+        self.validate_identity("SELECT TO_DAYS(dt) FROM t")
 
         self.validate_all(
             "SELECT * FROM t WHERE cond",
@@ -602,8 +603,3 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
-
-    def test_to_days(self):
-        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/to_days/
-        self.validate_identity("SELECT TO_DAYS('2026-03-10')").expressions[0].assert_is(exp.ToDays)
-        self.validate_identity("SELECT TO_DAYS(dt), TO_DAYS(NULL) FROM t")

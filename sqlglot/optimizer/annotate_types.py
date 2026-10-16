@@ -423,10 +423,8 @@ class TypeAnnotator:
                     self._set_type(table_column, source.expression.meta["query_type"])
 
     def annotate_scope(self, scope: Scope) -> None:
-        self._annotate_table_columns(scope)
-
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expression(scope.expression, scope)
+        self.annotate_in_scope(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):

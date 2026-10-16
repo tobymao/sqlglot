@@ -1,4 +1,5 @@
 import json
+import sys
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
@@ -1366,17 +1367,15 @@ class TestOptimizer(unittest.TestCase):
                 assert struct_value is not None
                 self.assertTrue(struct_value.is_type(exp.DType.STRUCT))
 
-    def test_annotate_types_discarded_node_id_reuse(self):
+    def test_annotate_types_keeps_cached_nodes_alive(self):
         annotator = TypeAnnotator(MappingSchema())
-        old = parse_one(f"SELECT {', '.join(['1'] * 100)}")
-        annotator.annotate(old)
+        node = exp.Literal.number(1)
+        references = sys.getrefcount(node)
+        annotator.annotate(node)
+        self.assertGreater(sys.getrefcount(node), references)
 
-        # Drop the last references to the annotated projections, so that the new literals are
-        # likely to be allocated at their addresses and must not be mistaken for annotated ones
-        old.set("expressions", None)
-        tree = exp.select(*(exp.Literal.string("a") for _ in range(100)))
-        annotator.annotate(tree)
-        self.assertTrue(all(s.is_type(exp.DType.VARCHAR) for s in tree.selects))
+        annotator.clear()
+        self.assertEqual(sys.getrefcount(node), references)
 
     def test_qualify_order_by_subquery_types(self):
         schema = {"t": {"x": "STRING", "s": "STRUCT<a INT64>"}, "u": {"x": "INT64"}}

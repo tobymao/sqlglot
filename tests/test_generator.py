@@ -1,6 +1,7 @@
 import unittest
 
 from sqlglot import exp, parse_one
+from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.expressions import Expression, Func
 from sqlglot.parsers.snowflake import SnowflakeParser
 from tests.helpers import is_compiled
@@ -144,3 +145,11 @@ class TestGenerator(unittest.TestCase):
             type_str,
             "MAP<\n  INT,\n  DECIMAL(38, 9)\n>",
         )
+
+    def test_unsupported_property_is_dropped(self):
+        expression = parse_one("CREATE TABLE t (a INT) ROW FORMAT SERDE 's'", read="athena")
+
+        self.assertEqual(expression.sql(dialect="postgres"), "CREATE TABLE t (a INT)")
+
+        with self.assertRaises(UnsupportedError):
+            expression.sql(dialect="postgres", unsupported_level=ErrorLevel.RAISE)

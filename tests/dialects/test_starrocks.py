@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -602,3 +602,19 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+
+    def test_oracle_keep(self):
+        e = parse_one(
+            "SELECT MAX(v) KEEP (DENSE_RANK LAST ORDER BY dt), SUM(v) KEEP (DENSE_RANK LAST ORDER BY dt) FROM t",
+            read="oracle",
+        )
+        sql = e.sql("starrocks", unsupported_level=ErrorLevel.RAISE)
+        lowered = self.parse_one(sql)
+        self.assertEqual(len(list(lowered.find_all(exp.DenseRank))), 2)
+        self.assertIsNone(lowered.find(exp.RowNumber))
+        self.assertTrue(all(e.find(exp.If) for e in lowered.expressions))
+        with self.assertRaises(UnsupportedError):
+            parse_one(
+                "SELECT MAX(v) KEEP (DENSE_RANK LAST ORDER BY dt) OVER (PARTITION BY k) FROM t",
+                read="oracle",
+            ).sql("starrocks", unsupported_level=ErrorLevel.RAISE)

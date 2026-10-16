@@ -14,6 +14,107 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import Generator
 from sqlglot.generators.mysql import MySQLGenerator
+from sqlglot.helper import find_new_name
+
+
+def _eliminate_keep(expression: exp.Expr) -> exp.Expr:
+    if not isinstance(expression, exp.Select):
+        return expression
+
+    keeps = [
+        w
+        for w in expression.find_all(exp.Window)
+        if w.text("over").upper() == "KEEP"
+        and w.find_ancestor(exp.Select) is expression
+        and not isinstance(w.parent, exp.Window)
+    ]
+    if not keeps:
+        return expression
+    if any(
+        not isinstance(
+            w.this,
+            (exp.Max, exp.Min, exp.Sum, exp.Avg, exp.Count, exp.Stddev, exp.Variance),
+        )
+        or not w.args.get("order")
+        or w.alias.upper() != "DENSE_RANK"
+        for w in keeps
+    ):
+        return expression
+    if any(s.find_ancestor(exp.Select) is expression for s in expression.find_all(exp.Subquery)):
+        return expression
+
+    aliases = {s.alias for s in expression.selects if s.alias}
+    columns: dict[str, exp.Column] = {}
+    for column in expression.find_all(exp.Column):
+        order = column.find_ancestor(exp.Order)
+        if column.find_ancestor(exp.Select) is expression and not (
+            not column.table and column.name in aliases and order and order.parent is expression
+        ):
+            columns.setdefault(column.sql(), column)
+
+    names = {c.name for c in columns.values()} | aliases
+    mapping = {}
+    projections = []
+    for key, column in columns.items():
+        name = find_new_name(names, "_keep_col")
+        names.add(name)
+        mapping[key] = name
+        projections.append(column.copy().as_(name))
+
+    group = expression.args.get("group")
+    # Grouping sets require a different rank for every grouping level.
+    if group and any(group.args.get(k) for k in ("rollup", "cube", "grouping_sets", "all")):
+        return expression
+    if group and any(g.is_number for g in group.expressions):
+        return expression
+
+    for keep in keeps:
+        name = find_new_name(names, "_keep_rank")
+        names.add(name)
+        order = keep.args["order"].copy()
+        if keep.args.get("first") is False:
+            for ordered in order.expressions:
+                ordered.set("desc", not ordered.args.get("desc"))
+                ordered.set("nulls_first", not ordered.args.get("nulls_first"))
+        projections.append(
+            exp.Window(
+                this=exp.DenseRank(),
+                partition_by=[g.copy() for g in group.expressions] if group else [],
+                order=order,
+                over="OVER",
+            ).as_(name)
+        )
+
+        aggregate = keep.this.copy()
+        arg = aggregate.this
+        if isinstance(arg, exp.Star):
+            arg = exp.Literal.number(1)
+        condition = exp.EQ(this=exp.column(name), expression=exp.Literal.number(1))
+        if isinstance(arg, exp.Distinct):
+            arg.set("expressions", [exp.If(this=condition.copy(), true=a) for a in arg.expressions])
+        else:
+            arg = exp.If(this=condition, true=arg)
+        aggregate.set("this", arg)
+        keep.replace(aggregate)
+
+    source = exp.Select(expressions=projections)
+    for key in ("from_", "joins", "where"):
+        if value := expression.args.get(key):
+            source.set(key, value)
+            expression.set(key, None)
+
+    def replace_column(node: exp.Expr) -> exp.Expr:
+        if isinstance(node, exp.Column) and node.find_ancestor(exp.Select) is expression:
+            order = node.find_ancestor(exp.Order)
+            if not node.table and node.name in aliases and order and order.parent is expression:
+                return node
+            if name := mapping.get(node.sql()):
+                return exp.column(name)
+        return node
+
+    expression.transform(replace_column, copy=False)
+    expression.set("from_", exp.From(this=source.subquery(find_new_name(names, "_keep"))))
+    return expression
 
 
 def _eliminate_between_in_delete(expression: exp.Expr) -> exp.Expr:
@@ -129,6 +230,7 @@ class StarRocksGenerator(MySQLGenerator):
         # (QUALIFY, FULL OUTER JOIN, SEMI/ANTI JOIN)
         exp.Select: transforms.preprocess(
             [
+                _eliminate_keep,
                 transforms.eliminate_distinct_on,
                 transforms.unnest_generate_date_array_using_recursive_cte,
             ]
@@ -413,3 +515,8 @@ class StarRocksGenerator(MySQLGenerator):
         kind = expression.text("kind").upper()
         boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
         return self.func("TIME_SLICE", expression.this, interval, boundary)
+
+    def window_sql(self, expression: exp.Window) -> str:
+        if expression.text("over").upper() == "KEEP":
+            self.unsupported("This KEEP aggregation cannot be lowered to StarRocks")
+        return super().window_sql(expression)

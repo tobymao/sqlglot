@@ -127,7 +127,7 @@ def qualify_columns(
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, annotator if annotate_scopes else None)
 
         if annotate_scopes:
             annotator.annotate_scope(scope)
@@ -519,7 +519,9 @@ def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, annotator: TypeAnnotator | None = None
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -558,6 +560,13 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                 original.replace(expanded)
 
         if expr.args.get("group"):
+            if annotator:
+                # Source scopes are typed, so resolve path case before matching projections.
+                for candidate in itertools.chain(expression.selects, modifier_expressions):
+                    for root in walk_in_scope(candidate):
+                        if root.meta_get("dot_parts"):
+                            annotator.annotate_expression(root, scope)
+
             selects = {
                 s.this: exp.column(s.alias_or_name)
                 for s in expression.selects

@@ -1363,6 +1363,48 @@ class TestOptimizer(unittest.TestCase):
                 self.assertEqual(order.name, "v")
                 self.assertTrue(order.is_type(dtype))
 
+    def test_qualify_order_by_case_sensitive_paths(self):
+        for dtype, projection, ordering, expected in (
+            (
+                "JSON",
+                "JSON_VALUE(j.Foo)",
+                "JSON_VALUE(j.foo)",
+                "ORDER BY ANY_VALUE(JSON_VALUE(`t`.`j`.`foo`, '$'))",
+            ),
+            ("JSON", "JSON_VALUE(j.Foo)", "JSON_VALUE(j.Foo)", "ORDER BY `v`"),
+            ("STRUCT<Foo STRING>", "j.Foo", "j.foo", "ORDER BY `v`"),
+            (
+                "STRING",
+                "JSON_VALUE(PARSE_JSON(j).Foo)",
+                "JSON_VALUE(PARSE_JSON(j).foo)",
+                "ORDER BY ANY_VALUE(JSON_VALUE(PARSE_JSON(`t`.`j`).`foo`, '$'))",
+            ),
+        ):
+            with self.subTest(dtype=dtype, ordering=ordering):
+                qualified = qualify(
+                    parse_one(
+                        f"SELECT s.*, ANY_VALUE({projection}) AS v FROM t "
+                        f"GROUP BY 1 ORDER BY ANY_VALUE({ordering})",
+                        dialect="bigquery",
+                    ),
+                    schema={"t": {"s": "STRUCT<x INT64>", "j": dtype}},
+                    dialect="bigquery",
+                )
+                self.assertEqual(qualified.args["order"].sql("bigquery"), expected)
+
+        schema = {"t": {"a": "INT", "j": "JSON"}}
+        qualified = qualify(
+            parse_one(
+                "WITH c AS (SELECT a, j FROM t) "
+                "SELECT a, ANY_VALUE(c.j.Foo) AS v FROM c GROUP BY a ORDER BY a",
+                dialect="duckdb",
+            ),
+            schema=schema,
+            dialect="duckdb",
+        )
+        annotated = annotate_types(qualified, schema=schema, dialect="duckdb")
+        self.assertEqual(annotated.selects[1].this.sql("duckdb"), 'ANY_VALUE("c"."j"."Foo")')
+
     def test_qualify_star_replace_types(self):
         schema = {"t": {"s": "STRUCT<x INT64>", "a": "INT64"}, "u": {"c": "FLOAT64"}}
 

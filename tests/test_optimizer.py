@@ -1367,6 +1367,41 @@ class TestOptimizer(unittest.TestCase):
                 assert struct_value is not None
                 self.assertTrue(struct_value.is_type(exp.DType.STRUCT))
 
+    def test_qualify_struct_stars_annotate_table_references_once(self):
+        schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
+
+        for stars in (0, 1, 5):
+            with self.subTest(stars=stars):
+                sql = f"SELECT {', '.join(['s.*'] * stars + ['t AS whole'])} FROM t"
+                with patch.object(schema, "find", wraps=schema.find) as find:
+                    qualified = qualify(parse_one(sql, dialect="bigquery"), schema=schema)
+
+                self.assertEqual(
+                    sum(bool(call.kwargs.get("ensure_data_types")) for call in find.call_args_list),
+                    1,
+                )
+                self.assertEqual(
+                    qualified.selects[-1].type.sql("bigquery"), "STRUCT<s STRUCT<x INT64>, a INT64>"
+                )
+
+    def test_annotate_expression_table_references(self):
+        schema = MappingSchema({"t": {"a": "INT64"}}, dialect="bigquery")
+        tree = parse_one(
+            "SELECT IF(TRUE, t, NULL) AS r, t AS untouched FROM t", dialect="bigquery"
+        ).transform(
+            lambda node: exp.TableColumn(this=node.this) if isinstance(node, exp.Column) else node
+        )
+        scope = build_scope(tree)
+        assert scope is not None
+        annotator = TypeAnnotator(schema)
+
+        annotator.annotate_expression(tree.selects[0], scope)
+        self.assertEqual(tree.selects[0].type.sql("bigquery"), "STRUCT<a INT64>")
+        self.assertIsNone(tree.selects[1].this.type)
+
+        annotator.annotate_scope(scope)
+        self.assertEqual(tree.selects[1].type.sql("bigquery"), "STRUCT<a INT64>")
+
     def test_annotate_types_keeps_cached_nodes_alive(self):
         annotator = TypeAnnotator(MappingSchema())
         node = exp.Literal.number(1)

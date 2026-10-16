@@ -1083,7 +1083,7 @@ def _expand_stars(
         # the scope, e.g. REPLACE expressions, is annotated after it's rewritten
         for struct_star in scope.stars:
             if isinstance(struct_star, exp.Dot):
-                annotator.annotate_in_scope(struct_star.this, scope)
+                annotator.annotate_expression(struct_star.this, scope)
 
     scope_expression = scope.expression
 

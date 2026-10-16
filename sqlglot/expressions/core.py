@@ -2121,7 +2121,7 @@ class Ordered(Expression):
 
 
 class Add(Expression, Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "date_arithmetic": False}
 
 
 class BitwiseAnd(Expression, Binary):
@@ -2257,7 +2257,7 @@ class SimilarTo(Expression, Binary, Predicate):
 
 
 class Sub(Expression, Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "date_arithmetic": False}
 
 
 class Adjacent(Expression, Binary, Predicate):

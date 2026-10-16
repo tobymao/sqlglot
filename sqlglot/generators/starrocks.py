@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
@@ -413,3 +414,41 @@ class StarRocksGenerator(MySQLGenerator):
         kind = expression.text("kind").upper()
         boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
         return self.func("TIME_SLICE", expression.this, interval, boundary)
+
+    def add_sql(self, expression: exp.Add) -> str:
+        if not expression.args.get("date_arithmetic"):
+            return super().add_sql(expression)
+        left, right = expression.this, expression.expression
+        if right.is_type(exp.DType.DATE, exp.DType.DATETIME):
+            left, right = right, left
+        if left.is_type(exp.DType.DATE, exp.DType.DATETIME) and right.is_type(
+            *exp.DataType.NUMERIC_TYPES
+        ):
+            return self.sql(self._date_number_arithmetic(left, right, subtract=False))
+        return super().add_sql(expression)
+
+    def sub_sql(self, expression: exp.Sub) -> str:
+        if not expression.args.get("date_arithmetic"):
+            return super().sub_sql(expression)
+        left, right = expression.this, expression.expression
+        if left.is_type(exp.DType.DATE, exp.DType.DATETIME):
+            if right.is_type(exp.DType.DATE, exp.DType.DATETIME):
+                return self.sql(
+                    exp.Div(
+                        this=exp.DateDiff(this=left, expression=right, unit=exp.var("SECOND")),
+                        expression=exp.Literal.number("86400.0"),
+                    )
+                )
+            if right.is_type(*exp.DataType.NUMERIC_TYPES):
+                return self.sql(self._date_number_arithmetic(left, right, subtract=True))
+        return super().sub_sql(expression)
+
+    def _date_number_arithmetic(self, date: exp.Expr, number: exp.Expr, subtract: bool) -> exp.Expr:
+        # Sub-second rounding needs validation against Oracle before it can be emulated.
+        if not number.is_type(*exp.DataType.INTEGER_TYPES):
+            literal = number.this if isinstance(number, exp.Neg) else number
+            if not literal.is_number or (Decimal(literal.name) * 86400) % 1:
+                self.unsupported("Sub-second Oracle DATE arithmetic is not supported")
+        seconds = exp.Mul(this=number, expression=exp.Literal.number(86400))
+        kind = exp.DateSub if subtract else exp.DateAdd
+        return kind(this=date, expression=seconds, unit=exp.var("SECOND"))

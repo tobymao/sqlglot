@@ -6,7 +6,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import OPTIONS_TYPE, build_coalesce
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -335,3 +335,10 @@ class OracleParser(parser.Parser):
             return self._parse_schema(this=this)
 
         return this
+
+    def expression(
+        self, instance: E, token: Token | None = None, comments: list[str] | None = None
+    ) -> E:
+        if isinstance(instance, (exp.Add, exp.Sub)):
+            instance.set("date_arithmetic", True)
+        return super().expression(instance, token=token, comments=comments)

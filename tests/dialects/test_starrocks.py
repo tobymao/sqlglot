@@ -1,6 +1,8 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
 
 
 class TestStarrocks(Validator):
@@ -601,4 +603,28 @@ class TestStarrocks(Validator):
         )
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
+        )
+
+    def test_oracle_arithmetic(self):
+        for sql, expected in (
+            ("d + 1", "DATE_ADD(T.D, INTERVAL (1 * 86400) SECOND)"),
+            ("d - 30", "DATE_SUB(T.D, INTERVAL (30 * 86400) SECOND)"),
+            ("d + 0.5", "DATE_ADD(T.D, INTERVAL (0.5 * 86400) SECOND)"),
+            ("d - e", "DATE_DIFF('SECOND', T.D, T.E) / 86400.0"),
+        ):
+            schema = {"T": {"D": "DATE", "E": "DATE"}}
+            e = qualify(
+                parse_one(f"SELECT {sql} FROM t", read="oracle"),
+                dialect="oracle",
+                schema=schema,
+                identify=False,
+            )
+            e = annotate_types(e, schema=schema, dialect="oracle")
+            self.assertEqual(
+                e.sql("starrocks", unsupported_level=ErrorLevel.RAISE),
+                f"SELECT {expected} AS _COL_0 FROM T AS T",
+            )
+        self.validate_all(
+            "SELECT CAST(a AS DATETIME) - CAST(b AS DATETIME)",
+            read={"mysql": "SELECT CAST(a AS DATETIME) - CAST(b AS DATETIME)"},
         )

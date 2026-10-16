@@ -542,6 +542,10 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
 
             column.replace(replacement)
 
+    if outer_columns:
+        for scope in outer_scope.traverse():
+            scope.clear_cache()
+
 
 def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:
     """

@@ -1340,16 +1340,31 @@ class TestOptimizer(unittest.TestCase):
                 self.assertEqual(order.name, "v")
                 self.assertTrue(order.is_type(dtype))
 
-    def test_qualify_star_replace_subquery_types(self):
-        qualified = qualify(
-            parse_one(
-                "SELECT s.*, * REPLACE ((SELECT MAX(c) FROM u) AS a) FROM t", dialect="bigquery"
-            ),
-            schema={"t": {"s": "STRUCT<x INT64>", "a": "INT64"}, "u": {"c": "FLOAT64"}},
-            dialect="bigquery",
-        )
-        self.assertEqual(qualified.selects[-1].alias, "a")
-        self.assertEqual(qualified.selects[-1].type.sql("bigquery"), "FLOAT64")
+    def test_qualify_star_replace_types(self):
+        schema = {"t": {"s": "STRUCT<x INT64>", "a": "INT64"}, "u": {"c": "FLOAT64"}}
+
+        for sql, alias, expected in (
+            ("SELECT s.*, * REPLACE ((SELECT MAX(c) FROM u) AS a) FROM t", "a", "FLOAT64"),
+            ("SELECT s.* REPLACE (t AS x) FROM t", "x", "STRUCT<s STRUCT<x INT64>, a INT64>"),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                self.assertEqual(qualified.selects[-1].alias, alias)
+                self.assertEqual(qualified.selects[-1].type.sql("bigquery"), expected)
+
+    def test_qualify_struct_star_table_reference_types(self):
+        schema = {"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}
+
+        for sql in ("SELECT IF(TRUE, t, NULL).* FROM t", "SELECT STRUCT(t AS r).r.* FROM t"):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                struct_value = qualified.find(exp.If, exp.Struct)
+                assert struct_value is not None
+                self.assertTrue(struct_value.is_type(exp.DType.STRUCT))
 
     def test_annotate_types_discarded_node_id_reuse(self):
         annotator = TypeAnnotator(MappingSchema())

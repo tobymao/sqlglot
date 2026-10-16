@@ -388,9 +388,11 @@ class TypeAnnotator:
 
     def annotate_in_scope(self, expression: exp.Expr, scope: Scope) -> None:
         """Annotates `expression`, resolving its columns against the sources of `scope`."""
+        self._annotate_table_columns(scope)
         self._annotate_expression(expression, scope)
 
-    def annotate_scope(self, scope: Scope) -> None:
+    def _annotate_table_columns(self, scope: Scope) -> None:
+        # Table references used as values, e.g. `SELECT t FROM t`, are structs of their columns
         if isinstance(self.schema, MappingSchema):
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
@@ -419,6 +421,9 @@ class TypeAnnotator:
                     ).is_type(exp.DType.STRUCT)
                 ):
                     self._set_type(table_column, source.expression.meta["query_type"])
+
+    def annotate_scope(self, scope: Scope) -> None:
+        self._annotate_table_columns(scope)
 
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)

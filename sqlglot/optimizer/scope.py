@@ -8,7 +8,7 @@ from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot.errors import OptimizeError
-from sqlglot.helper import find_new_name, mypyc_attr, seq_get
+from sqlglot.helper import ensure_list, find_new_name, mypyc_attr, seq_get
 from builtins import type as Type
 
 logger = logging.getLogger("sqlglot")
@@ -196,16 +196,30 @@ class Scope:
         self._semi_anti_join_tables = set()
         self._column_index = set()
 
-        # The inner query of a Subquery-rooted scope is scoped as a derived table by
-        # `_traverse_tables`, so it must not also be collected as a subquery
-        inner_query = (
-            self.expression.unnest() if isinstance(self.expression, exp.Subquery) else None
-        )
+        expression = self.expression
 
-        for node in self.walk():
+        # The inner query of a Subquery-rooted scope and the source query of an INSERT are scoped
+        # as derived tables by the traversal, so they must not also be collected as subqueries
+        inner_query: exp.Expr | None = None
+        if isinstance(expression, exp.Subquery):
+            inner_query = expression.unnest()
+        elif isinstance(expression, exp.Insert) and expression.expression:
+            inner_query = expression.expression.unnest()
+
+        # Tables that merely name a relation, e.g. T-SQL `UPDATE t ... FROM x AS t` or
+        # MySQL `DELETE t FROM t JOIN u`, aren't sources
+        dml_references: set[int] = set()
+        if isinstance(expression, exp.DML):
+            target = dml_target(expression)
+            if target and all(source is not target for source in _dml_sources(expression)):
+                dml_references.add(id(target))
+            dml_references.update(id(table) for table in expression.args.get("tables") or [])
+
+        # ON CONFLICT / ON DUPLICATE KEY clauses reference the proposed row (e.g. EXCLUDED), not a source
+        for node in self.walk(prune=lambda node: isinstance(node, exp.OnConflict)):
             # Most nodes (identifiers, literals, operators etc.) aren't collectible, so a
             # single isinstance gate lets them skip the classification chain below.
-            if node is self.expression or not isinstance(node, COLLECTIBLE_TYPES):
+            if node is expression or not isinstance(node, COLLECTIBLE_TYPES):
                 continue
 
             if isinstance(node, exp.Dot) and node.is_star:
@@ -218,6 +232,9 @@ class Scope:
                 else:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
+                if id(node) in dml_references:
+                    continue
+
                 parent = node.parent
                 if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
                     self._semi_anti_join_tables.add(node.alias_or_name)
@@ -392,9 +409,14 @@ class Scope:
 
             expr = self.expression
             named_selects = set(expr.named_selects) if isinstance(expr, exp.Query) else set()
+            is_dml = isinstance(expr, exp.DML)
 
             self._columns = []
             for column in columns + external_columns:
+                # Assigned columns always belong to the DML's target, so they aren't resolved
+                if is_dml and not column.text("table") and _is_assigned_column(column):
+                    continue
+
                 ancestor = column.find_ancestor(
                     exp.Select,
                     exp.Qualify,
@@ -731,55 +753,31 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         yield from _traverse_tables(scope)
     elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
+    elif isinstance(expression, exp.DML):
+        # The statement's sources are its target and FROM / USING relations; value-position
+        # queries (SET, WHERE, ...) are subqueries that can be correlated to them
+        yield from _traverse_ctes(scope)
+        yield from _traverse_tables(scope)
+
+        query = expression.expression if isinstance(expression, exp.Insert) else None
+        if isinstance(query, exp.Query):
+            # An INSERT's source query can't reference the target, so it's a derived table
+            child_scope: Scope | None = None
+            for child_scope in _traverse_scope(
+                scope.branch(query, scope_type=ScopeType.DERIVED_TABLE)
+            ):
+                yield child_scope
+
+            if child_scope:
+                scope.derived_table_scopes.append(child_scope)
+                scope.table_scopes.append(child_scope)
+
+        yield from _traverse_subqueries(scope)
     elif isinstance(expression, exp.DDL):
         ddl_expression = expression.expression
         if isinstance(ddl_expression, exp.Query):
             yield from _traverse_ctes(scope)
             yield from _traverse_scope(Scope(ddl_expression, cte_sources=scope.cte_sources))
-        return
-    elif isinstance(expression, exp.DML):
-        yield from _traverse_ctes(scope)
-
-        # Bare tables in relation position (e.g. UPDATE ... FROM t, DELETE / MERGE ... USING t)
-        # aren't part of any query, so they're scoped as standalone tables; `_traverse_tables`
-        # also picks up any joins hanging off of them
-        relations: list[exp.Expr] = []
-        from_ = expression.args.get("from_")
-
-        if isinstance(from_, exp.From):
-            relations.append(from_.this)
-
-        using = expression.args.get("using")
-        if isinstance(using, list):
-            relations.extend(using)
-        elif isinstance(using, exp.Expr):
-            relations.append(using)
-
-        for relation in relations:
-            if isinstance(relation, exp.Table):
-                yield from _traverse_scope(Scope(relation, cte_sources=scope.cte_sources))
-
-        for query in find_all_in_scope(expression, exp.Query):
-            # This check ensures we don't yield the CTE/nested queries twice
-            if isinstance(query.parent, (exp.CTE, exp.Subquery)):
-                continue
-
-            if _is_from_or_join(query):
-                parent = query.parent
-                if isinstance(parent, exp.Join) and isinstance(
-                    parent.parent, (exp.Subquery, exp.Table)
-                ):
-                    # Scoped by the FROM-position relation (wrapper or table) it's joined to
-                    continue
-
-                # A query in FROM/JOIN position (e.g. UPDATE ... FROM (SELECT ...) AS s) acts
-                # like a derived table, so its scope stays rooted at the Subquery wrapper to
-                # pick up the wrapper's alias, column list and joins
-                yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
-            else:
-                # Queries in value position (SET, WHERE, USING, ...) are scoped as subqueries,
-                # e.g. so their columns can be correlated to the DML's target table
-                yield from _traverse_scope(scope.branch(query, scope_type=ScopeType.SUBQUERY))
         return
     else:
         logger.warning("Cannot traverse scope %s with type '%s'", expression, type(expression))
@@ -887,15 +885,78 @@ def _is_derived_table(expression: exp.Expr) -> bool:
 
 def _is_from_or_join(expression: exp.Expr) -> bool:
     """
-    Determine if `expression` is the FROM or JOIN clause of a SELECT statement.
+    Determine if `expression` is in relation position: the FROM or JOIN clause of a SELECT
+    statement, or the USING clause of a DML statement.
     """
     parent = expression.parent
 
     # Subqueries can be arbitrarily nested
     while type(parent) is exp.Subquery:
+        expression = parent
         parent = parent.parent
 
-    return type(parent) in (exp.From, exp.Join)
+    return type(parent) in (exp.From, exp.Join) or (
+        isinstance(parent, exp.DML) and expression.arg_key == "using"
+    )
+
+
+def dml_target(expression: exp.Expr) -> exp.Table | None:
+    """The table in a DML statement's target position, e.g. `t` in `INSERT INTO t (a) ...`"""
+    this = expression.this
+    if isinstance(this, exp.Schema):
+        this = this.this
+    return this if isinstance(this, exp.Table) else None
+
+
+def _dml_sources(expression: exp.Expr) -> list[exp.Expr]:
+    """A DML statement's target and FROM / USING relations"""
+    from_ = expression.args.get("from_")
+    sources: list[exp.Expr] = [from_.this] if isinstance(from_, exp.From) else []
+
+    # Excludes column lists such as Databricks' INSERT ... REPLACE USING (a, b)
+    for using in ensure_list(expression.args.get("using")):
+        if isinstance(using, (exp.Table, exp.DerivedTable)):
+            sources.append(using)
+
+    target = dml_target(expression)
+    if target and not _names_relation(target, sources):
+        sources.insert(0, target)
+
+    return sources
+
+
+def _names_relation(target: exp.Table, relations: list[exp.Expr]) -> bool:
+    """Whether a DML's target just names one of the relations, e.g. T-SQL `UPDATE t ... FROM x AS t`"""
+    name = target.alias_or_name
+    stack = list(relations)
+
+    while stack:
+        node = stack.pop()
+        if isinstance(node, exp.Subquery) and not _is_derived_table(node):
+            # A join construct like (a JOIN b)
+            stack.append(node.this)
+        elif (
+            node.alias_or_name if isinstance(node, exp.Table) else _get_source_alias(node)
+        ) == name:
+            return True
+
+        stack.extend(join.this for join in node.args.get("joins") or [])
+
+    return False
+
+
+def _is_assigned_column(column: exp.Column) -> bool:
+    """Whether the column is assigned to, e.g. `x` in `SET x = 1`, `SET (x, y) = ...` or `INSERT (x) ...`"""
+    node: exp.Expr = column
+    if isinstance(node.parent, exp.Tuple):
+        node = node.parent
+    if isinstance(node.parent, exp.EQ) and node.arg_key == "this":
+        node = node.parent
+
+    parent = node.parent
+    return (isinstance(parent, exp.Update) and node.arg_key == "expressions") or (
+        isinstance(parent, exp.Insert) and node.arg_key == "this"
+    )
 
 
 def _traverse_tables(scope: Scope) -> Iterator[Scope]:
@@ -903,9 +964,12 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
 
     # Traverse FROMs, JOINs, and LATERALs in the order they are defined
     expressions: list[exp.Expr] = []
-    from_ = scope.expression.args.get("from_")
-    if from_:
-        expressions.append(from_.this)
+    if isinstance(scope.expression, exp.DML):
+        expressions.extend(_dml_sources(scope.expression))
+    else:
+        from_ = scope.expression.args.get("from_")
+        if from_:
+            expressions.append(from_.this)
 
     for join in scope.expression.args.get("joins") or []:
         expressions.append(join.this)

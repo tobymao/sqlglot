@@ -6,7 +6,7 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.helper import name_sequence, seq_get, ensure_list
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, dml_target, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -179,18 +179,20 @@ def qualify_tables(
                         source.set("alias", None)
                         name = ""
 
-                _set_alias(
-                    source,
-                    canonical_aliases,
-                    target_alias=name or source.name or None,
-                    normalize=True,
-                    columns=function_columns,
-                )
+                # A DML's target keeps its name, since dialects like T-SQL can't alias it
+                if source is not dml_target(scope.expression):
+                    _set_alias(
+                        source,
+                        canonical_aliases,
+                        target_alias=name or source.name or None,
+                        normalize=True,
+                        columns=function_columns,
+                    )
 
-                source_fqn = ".".join(p.name for p in source.parts)
-                had_explicit_alias = table_alias and table_alias.name
-                if not had_explicit_alias or source_fqn not in table_aliases:
-                    table_aliases[source_fqn] = source.args["alias"].this.copy()
+                    source_fqn = ".".join(p.name for p in source.parts)
+                    had_explicit_alias = table_alias and table_alias.name
+                    if not had_explicit_alias or source_fqn not in table_aliases:
+                        table_aliases[source_fqn] = source.args["alias"].this.copy()
 
                 if pivot:
                     target_alias = source.alias if pivot.unpivot else None

@@ -40,3 +40,28 @@ WITH cte AS (SELECT y.b AS b FROM y AS y) INSERT INTO s SELECT cte.b AS b FROM c
 # schema: {"tbl": {"a": "INT"}}
 INSERT INTO foo SELECT a FROM tbl;
 INSERT INTO foo SELECT tbl.a AS a FROM tbl AS tbl;
+
+# title: Insert column list is validated against the target
+INSERT INTO x (a, b) SELECT b, c FROM y;
+INSERT INTO x (a, b) SELECT y.b AS b, y.c AS c FROM y AS y;
+
+# title: Update resolves columns against the target and FROM relations, assigned columns always belong to the target
+UPDATE x SET b = c FROM y WHERE a = y.b;
+UPDATE x SET b = y.c FROM y AS y WHERE x.a = y.b;
+
+# title: Update target named through a FROM alias
+# dialect: tsql
+UPDATE t SET a = c FROM x AS t JOIN y ON t.b = y.b;
+UPDATE t SET a = y.c FROM x AS t JOIN y AS y ON t.b = y.b;
+
+# title: Delete with USING and a correlated subquery
+DELETE FROM x USING y WHERE x.a = y.b AND c IN (SELECT b FROM z WHERE z.c = a);
+DELETE FROM x USING y AS y WHERE x.a = y.b AND y.c IN (SELECT z.b AS b FROM z AS z WHERE z.c = x.a);
+
+# title: Merge resolves columns against the target and USING relation
+MERGE INTO x AS t USING (SELECT b, c FROM y) AS s ON t.a = s.b WHEN MATCHED THEN UPDATE SET b = c WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.b, c);
+MERGE INTO x AS t USING (SELECT y.b AS b, y.c AS c FROM y AS y) AS s ON t.a = s.b WHEN MATCHED THEN UPDATE SET b = s.c WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.b, s.c);
+
+# title: Update target is outside its FROM relations' USING join chain
+UPDATE x SET a = z.c FROM y JOIN z USING (b) WHERE x.b = z.b;
+UPDATE x SET a = z.c FROM y AS y JOIN z AS z ON y.b = z.b WHERE x.b = z.b;

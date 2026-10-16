@@ -323,3 +323,9 @@ WITH RECURSIVE t(c, d) AS (SELECT x.a AS c, x.b AS d FROM x AS x UNION ALL SELEC
 # title: a source referenced with column lists of different lengths keeps the longest prefix
 WITH t AS (SELECT a, b FROM x) SELECT t1.r, t2.p FROM t AS t1(q, r) CROSS JOIN t AS t2(p);
 WITH t AS (SELECT x.a AS a, x.b AS b FROM x AS x) SELECT t1.r AS r, t2.p AS p FROM t AS t1(q, r) CROSS JOIN t AS t2(p);
+
+INSERT INTO z SELECT a FROM (SELECT a, b FROM x) AS t;
+INSERT INTO z SELECT t.a AS a FROM (SELECT x.a AS a FROM x AS x) AS t;
+
+UPDATE x SET a = t.c FROM (SELECT b, c FROM y) AS t WHERE x.b = 1;
+UPDATE x SET a = t.c FROM (SELECT y.c AS c FROM y AS y) AS t WHERE x.b = 1;

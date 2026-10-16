@@ -43,6 +43,12 @@ def eliminate_subqueries(expression: E) -> E:
     if not root:
         return expression
 
+    if isinstance(root.expression, exp.DML):
+        # The statement doesn't hold hoisted CTEs, so each of its query fragments is rewritten on its own
+        for scope in itertools.chain(root.table_scopes, root.subquery_scopes):
+            eliminate_subqueries(scope.expression)
+        return expression
+
     # Map of alias->Scope|Table
     # These are all aliases that are already used in the expression.
     # We don't want to create new CTEs that conflict with these names.
@@ -106,7 +112,7 @@ def eliminate_subqueries(expression: E) -> E:
     if new_ctes:
         query = expression.expression if isinstance(expression, exp.DDL) else expression
         if not isinstance(query, exp.Query):
-            # This can be reached for DMLs, which shouldn't hold the WITH clause; attach it to
+            # A parenthesized DDL source, e.g. CREATE TABLE x AS (SELECT ...); attach it to
             # the root query, which is also where any pre-existing CTEs in `new_ctes` came from
             query = root.expression.unnest()
 

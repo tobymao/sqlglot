@@ -13,6 +13,7 @@ from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import (
     Scope,
     build_scope,
+    dml_target,
     find_all_in_scope,
     find_in_scope,
     traverse_scope,
@@ -98,6 +99,9 @@ def qualify_columns(
             allow_partial_qualification=allow_partial_qualification,
         )
 
+        if isinstance(scope_expression, exp.DML) and not allow_partial_qualification:
+            _validate_assigned_columns(scope, resolver)
+
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
@@ -132,7 +136,7 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
     """Raise an `OptimizeError` if any columns aren't qualified"""
     all_unqualified_columns = []
     for scope in traverse_scope(expression):
-        if isinstance(scope.expression, exp.Select):
+        if isinstance(scope.expression, (exp.Select, exp.DML)):
             unqualified_columns = scope.unqualified_columns
 
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
@@ -223,6 +227,11 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
     names = {join.alias_or_name for join in joins}
     ordered = [key for key in scope.selected_sources if key not in names]
+
+    # A DML's target is outside the join chain, unless the joins hang off of it (MySQL DELETE t FROM t JOIN u)
+    target = dml_target(scope.expression) if isinstance(scope.expression, exp.DML) else None
+    if target and not target.args.get("joins"):
+        ordered = [key for key in ordered if scope.selected_sources[key][0] is not target]
 
     if names and not ordered:
         raise OptimizeError(f"Joins {names} missing source table {scope.expression}")
@@ -950,6 +959,35 @@ def _qualify_columns(
         if single_chain:
             available = pivot.output_columns(available)
             produced.update(available)
+
+
+def _validate_assigned_columns(scope: Scope, resolver: Resolver) -> None:
+    """Assigned and inserted columns belong to the DML's target, whatever other sources are in scope"""
+    target = dml_target(scope.expression)
+    if not target:
+        return
+
+    columns = resolver.get_source_columns(target.alias_or_name)
+    if not columns or "*" in columns:
+        return
+
+    for node in find_all_in_scope(scope.expression, exp.Update, exp.Insert):
+        assigned: Iterable[exp.Expr]
+        if isinstance(node, exp.Update):
+            assigned = (
+                column for eq in node.expressions for column in eq.this.find_all(exp.Column)
+            )
+        elif isinstance(node.this, (exp.Schema, exp.Tuple)):
+            assigned = node.this.expressions
+        else:
+            continue
+
+        for column in assigned:
+            # Qualified columns are resolved like any other
+            if isinstance(column, exp.Column) and column.table:
+                continue
+            if column.name not in columns:
+                raise OptimizeError(f"Unknown column: {column.name}")
 
 
 def _expand_struct_stars_no_parens(

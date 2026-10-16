@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.scope import traverse_scope
+from sqlglot.optimizer.scope import dml_target, traverse_scope
 from sqlglot.schema import ensure_schema
 
 if t.TYPE_CHECKING:
@@ -32,6 +32,7 @@ def isolate_table_selects(
                 or not schema.column_names(source)
                 or isinstance(source.parent, exp.Subquery)
                 or isinstance(source.parent.parent, exp.Table)
+                or source is dml_target(scope.expression)
             ):
                 continue
 

@@ -240,8 +240,9 @@ def projection_reachability(
             assert anchor is not None
             owner(anchor).dependencies.extend([scope_nodes[child], *output_nodes[child]])
 
-        # A wrapper such as (SELECT ...) LIMIT 1 exposes its inner query's outputs.
-        if isinstance(query, exp.Subquery):
+        # A wrapper such as (SELECT ...) LIMIT 1 exposes its inner query's outputs, and an
+        # INSERT consumes all of its source query's outputs.
+        if isinstance(query, (exp.Subquery, exp.Insert)):
             for child in scope.derived_table_scopes:
                 scope_node.dependencies.extend([scope_nodes[child], *output_nodes[child]])
 

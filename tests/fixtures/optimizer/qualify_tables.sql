@@ -222,11 +222,11 @@ WITH cte_tbl AS (SELECT 1 AS col2) UPDATE c.db.y SET col1 = (SELECT * FROM c.db.
 
 # title: avoid qualifying CTE with UPDATE
 WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE t SET name = cte.name FROM cte WHERE cte.c = 1;
-WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte WHERE cte.c = 1;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) UPDATE c.db.t SET name = cte.name FROM cte AS cte WHERE cte.c = 1;
 
 # title: avoid qualifying CTE with DELETE
 WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE t FROM t AS t INNER JOIN cte ON t.id = cte.c;
-WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte ON t.id = cte.c;
+WITH cte AS (SELECT 1 AS c, 'name' AS name) DELETE c.db.t FROM c.db.t AS t INNER JOIN cte AS cte ON t.id = cte.c;
 
 # title: canonicalize single table alias
 # canonicalize_table_aliases: true

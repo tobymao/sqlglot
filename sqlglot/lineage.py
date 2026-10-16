@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from sqlglot import Schema, exp, maybe_parse
 from sqlglot.errors import SqlglotError
+from sqlglot.helper import seq_get
 from sqlglot.optimizer import Scope, build_scope, find_all_in_scope, normalize_identifiers, qualify
 from sqlglot.optimizer.scope import ScopeType
 from sqlglot.schema import ensure_schema
@@ -148,6 +149,10 @@ def lineage(
             **{"validate_qualify_columns": False, "identify": False, **kwargs},  # type: ignore
         )
         scope = build_scope(expression)
+
+        # An INSERT's lineage is that of its source query, which is scoped as a derived table
+        if scope and isinstance(scope.expression, exp.Insert):
+            scope = seq_get(scope.derived_table_scopes, 0)
 
     if not scope:
         raise SqlglotError("Cannot build lineage, sql must be SELECT")

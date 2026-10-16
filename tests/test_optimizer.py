@@ -2293,13 +2293,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 self.assertEqual(scopes[2].expression.sql(), f"SELECT a FROM foo CROSS JOIN {udtf}")
                 self.assertEqual(set(scopes[2].sources), {"", "foo"})
 
-        # Check DML statement scopes
+        # A DML statement is a scope whose sources are its target and FROM / USING relations
         sql = (
             "UPDATE customers SET total_spent = (SELECT 1 FROM t1) WHERE EXISTS (SELECT 1 FROM t2)"
         )
         scopes = traverse_scope(parse_one(sql))
-        self.assertEqual(len(scopes), 2)
-        self.assertTrue(all(scope.is_subquery for scope in scopes))
+        self.assertEqual(len(scopes), 3)
+        self.assertTrue(all(scope.is_subquery for scope in scopes[:2]))
+        self.assertTrue(all(scope.parent is scopes[2] for scope in scopes[:2]))
+        self.assertEqual(set(scopes[2].sources), {"customers"})
 
         sql = "UPDATE t1 SET x = s.x FROM (SELECT x FROM t2) AS s"
         scopes = traverse_scope(parse_one(sql))
@@ -2307,36 +2309,37 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(scopes[0].expression.sql(), "SELECT x FROM t2")
         self.assertEqual(set(scopes[0].sources), {"t2"})
         self.assertTrue(scopes[0].is_derived_table)
-        self.assertEqual(set(scopes[1].sources), {"s"})
+        self.assertEqual(set(scopes[1].sources), {"t1", "s"})
 
         # Joins and column lists attached to the FROM-position subquery are not lost
         sql = "UPDATE t1 SET x = s.renamed FROM (SELECT y FROM t2) AS s(renamed) CROSS JOIN v WHERE v.id = t1.id"
         scopes = traverse_scope(parse_one(sql))
         self.assertEqual(len(scopes), 2)
         self.assertEqual(scopes[0].outer_columns, ["renamed"])
-        self.assertEqual(set(scopes[1].sources), {"s", "v"})
+        self.assertEqual(set(scopes[1].sources), {"t1", "s", "v"})
 
         sql = "UPDATE t1 SET x = 1 FROM (t2 JOIN v ON t2.id = v.id) WHERE t1.id = t2.id"
         scopes = traverse_scope(parse_one(sql))
         self.assertEqual(len(scopes), 1)
-        self.assertEqual(set(scopes[0].sources), {"t2", "v"})
+        self.assertEqual(set(scopes[0].sources), {"t1", "t2", "v"})
 
         sql = "UPDATE tbl1 SET col = 1 WHERE EXISTS (SELECT 1 FROM tbl2 WHERE tbl1.id = tbl2.id)"
-        self.assertEqual(len(traverse_scope(parse_one(sql))), 1)
+        self.assertEqual(len(traverse_scope(parse_one(sql))), 2)
 
         sql = "UPDATE tbl1 SET col = 0"
-        self.assertEqual(len(traverse_scope(parse_one(sql))), 0)
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"tbl1"})
 
-        # Bare tables in relation position get their own scopes, including any attached joins
         sql = "UPDATE t1 SET x = u.x FROM c.db.u AS u"
         scopes = traverse_scope(parse_one(sql))
         self.assertEqual(len(scopes), 1)
-        self.assertEqual(set(scopes[0].sources), {"u"})
+        self.assertEqual(set(scopes[0].sources), {"t1", "u"})
 
         sql = "MERGE INTO t1 USING c.db.u AS u ON t1.id = u.id WHEN MATCHED THEN UPDATE SET x = u.x"
         scopes = traverse_scope(parse_one(sql))
         self.assertEqual(len(scopes), 1)
-        self.assertEqual(set(scopes[0].sources), {"u"})
+        self.assertEqual(set(scopes[0].sources), {"t1", "u"})
 
         sql = (
             "WITH source AS (SELECT * FROM c.db.real) DELETE FROM t1 "
@@ -2345,7 +2348,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         scopes = traverse_scope(parse_one(sql, dialect="duckdb"))
         self.assertEqual(len(scopes), 2)
         self.assertEqual(set(scopes[0].sources), {"real"})
-        self.assertEqual(set(scopes[1].sources), {"source", "l"})
+        self.assertEqual(set(scopes[1].sources), {"t1", "source", "l"})
         self.assertIs(scopes[1].sources["source"], scopes[0])
 
         # The subquery joined to a FROM-position table is scoped by that table, not twice
@@ -2355,7 +2358,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         scopes = traverse_scope(parse_one(sql))
         self.assertEqual(len(scopes), 2)
         self.assertEqual(set(scopes[0].sources), {"v"})
-        self.assertEqual(set(scopes[1].sources), {"u", "q"})
+        self.assertEqual(set(scopes[1].sources), {"t1", "u", "q"})
+
+        # A target that just names a relation (T-SQL), or the tables of a multi-table DELETE
+        # (MySQL), resolves to that relation instead of being a source of its own
+        sql = "UPDATE t SET x = u.y FROM c.db.t AS t JOIN c.db.u AS u ON t.id = u.id"
+        expression = parse_one(sql, dialect="tsql")
+        scopes = traverse_scope(expression)
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t", "u"})
+        self.assertIs(scopes[0].sources["t"], expression.args["from_"].this)
+        self.assertEqual(len(scopes[0].selected_sources), 2)
+
+        sql = "DELETE t1, t2 FROM t1 JOIN t2 ON t1.id = t2.id"
+        scopes = traverse_scope(parse_one(sql, dialect="mysql"))
+        self.assertEqual(len(scopes), 1)
+        self.assertEqual(set(scopes[0].sources), {"t1", "t2"})
+        self.assertEqual(len(scopes[0].selected_sources), 2)
 
         # Value-position subqueries can be correlated to the DML's target table
         sql = "UPDATE t SET x = (SELECT MAX(u.a) FROM u WHERE u.id = t.id)"
@@ -2368,18 +2387,29 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
         # The query of an INSERT / CTAS is scoped as a derived table
-        for sql in ("INSERT INTO t (SELECT a FROM x)", "CREATE TABLE t AS (SELECT a FROM x)"):
-            scopes = traverse_scope(parse_one(sql))
-            self.assertEqual(len(scopes), 2)
-            self.assertEqual(scopes[0].expression.sql(), "SELECT a FROM x")
-            self.assertEqual(set(scopes[0].sources), {"x"})
-            self.assertEqual(set(scopes[1].sources), {""})
+        sql = "CREATE TABLE t AS (SELECT a FROM x)"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].expression.sql(), "SELECT a FROM x")
+        self.assertEqual(set(scopes[0].sources), {"x"})
+        self.assertEqual(set(scopes[1].sources), {""})
+
+        sql = "INSERT INTO t (SELECT a FROM x)"
+        scopes = traverse_scope(parse_one(sql))
+        self.assertEqual(len(scopes), 2)
+        self.assertEqual(scopes[0].expression.sql(), "SELECT a FROM x")
+        self.assertEqual(set(scopes[0].sources), {"x"})
+        self.assertTrue(scopes[0].is_derived_table)
+        self.assertFalse(scopes[0].can_be_correlated)
+        self.assertEqual(set(scopes[1].sources), {"t"})
+        self.assertEqual(scopes[1].derived_table_scopes, [scopes[0]])
 
         sql = "MERGE INTO t USING (SELECT id, a FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = s.a"
         scopes = traverse_scope(parse_one(sql))
-        self.assertEqual(len(scopes), 1)
+        self.assertEqual(len(scopes), 2)
         self.assertEqual(set(scopes[0].sources), {"u"})
-        self.assertTrue(scopes[0].is_subquery)
+        self.assertTrue(scopes[0].is_derived_table)
+        self.assertEqual(set(scopes[1].sources), {"t", "s"})
 
         sql = "MERGE INTO t USING (SELECT * FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = (SELECT MAX(w.a) FROM w WHERE w.id = t.id)"
         self.assertEqual(

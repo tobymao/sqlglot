@@ -602,3 +602,11 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+
+    def test_table_unnest_arguments(self):
+        unnest = self.validate_identity(
+            "SELECT * FROM TABLE(UNNEST([1, 2], [3, 4])) AS u(x, y)"
+        ).find(exp.Unnest)
+        assert unnest is not None
+        self.assertEqual(len(unnest.expressions), 2)
+        self.validate_identity("SELECT * FROM TABLE(UNNEST([1], [2], [3])) AS u(x, y, z)")

@@ -30,6 +30,8 @@ class StarRocks(MySQL):
             "REFRESH": TokenType.REFRESH,
         }
         KEYWORDS.pop("IGNORE")
+        KEYWORDS.pop("#>")
+        KEYWORDS.pop("#>>")
 
     Parser = StarRocksParser
 

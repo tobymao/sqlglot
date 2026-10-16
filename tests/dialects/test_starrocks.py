@@ -605,10 +605,17 @@ class TestStarrocks(Validator):
         )
 
     def test_comments(self):
-        # Unlike MySQL, "#" doesn't start a comment, so StarRocks rejects these
-        for sql in ("SELECT 1 AS a # hello world", "SELECT 1#2"):
+        # Reject bare hashes instead of emulating StarRocks' lexer error recovery.
+        for sql in (
+            "SELECT 1 AS a # hello world",
+            "SELECT 1#2",
+            "SELECT 1 AS a # , 2 AS b",
+            "SELECT 3 #> 2",
+            "SELECT 3 #>> 2",
+        ):
             with self.subTest(sql), self.assertRaises(ParseError):
                 self.parse_one(sql)
 
         self.validate_identity("SELECT 'a#b' AS c")
+        self.validate_identity("SELECT 1 AS `a#b`")
         self.validate_identity("SELECT 1 AS a -- , 2 AS b", "SELECT 1 AS a /* , 2 AS b */")

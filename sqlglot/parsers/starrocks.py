@@ -130,13 +130,12 @@ class StarRocksParser(MySQLParser):
 
             if not alias:
                 # Starrocks defaults to naming the table alias as "unnest"
-                alias = exp.TableAlias(
-                    this=exp.to_identifier("unnest"), columns=[exp.to_identifier("unnest")]
-                )
+                alias = exp.TableAlias(this=exp.to_identifier("unnest"))
                 unnest.set("alias", alias)
-            elif not alias.args.get("columns"):
-                # Starrocks defaults to naming the UNNEST column as "unnest"
-                # if it's not otherwise specified
+
+            # Starrocks defaults to naming the UNNEST column as "unnest" if it's not otherwise
+            # specified. With several arrays every column is named "unnest", so none is added.
+            if not alias.args.get("columns") and len(unnest.expressions) == 1:
                 alias.set("columns", [exp.to_identifier("unnest")])
 
         return unnest

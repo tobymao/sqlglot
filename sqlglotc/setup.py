@@ -90,6 +90,16 @@ def _source_paths():
 
 
 class build_ext(_build_ext):
+    def _remove_obsolete_extensions(self, directory, expected):
+        if self.dry_run:
+            return
+        expected = {os.path.abspath(path) for path in expected}
+        for root, _, files in os.walk(directory):
+            for filename in files:
+                path = os.path.join(root, filename)
+                if filename.endswith((".so", ".pyd")) and os.path.abspath(path) not in expected:
+                    self.execute(os.remove, (path,), f"removing obsolete extension {path}")
+
     def finalize_options(self):
         super().finalize_options()
         # Compile in parallel by default; builds driven by pip (wheel/sdist installs)
@@ -97,8 +107,13 @@ class build_ext(_build_ext):
         if self.parallel is None:
             self.parallel = os.cpu_count() or 1
 
+    def build_extensions(self):
+        self._remove_obsolete_extensions(self.build_lib, self.get_outputs())
+        super().build_extensions()
+
     def copy_extensions_to_source(self):
         """For editable installs, put sqlglot.* .so files in the sqlglot source dir."""
+        expected = []
         for ext in self.extensions:
             fullname = self.get_ext_fullname(ext.name)
             filename = self.get_ext_filename(fullname)
@@ -112,7 +127,9 @@ class build_ext(_build_ext):
                 # Place the mypyc runtime helper (e.g., HASH__mypyc) inside sqlglot/.
                 # sqlglot/__init__.py bootstraps it into sys.modules for editable installs.
                 dst = os.path.join(SQLGLOT_SRC, os.path.basename(filename))
+            expected.append(dst)
             self.copy_file(src, dst, level=self.verbose)
+        self._remove_obsolete_extensions(SQLGLOT_SRC, expected)
 
 
 class sdist(_sdist):

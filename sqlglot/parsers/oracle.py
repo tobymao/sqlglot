@@ -335,3 +335,21 @@ class OracleParser(parser.Parser):
             return self._parse_schema(this=this)
 
         return this
+
+    def _parse_types(
+        self,
+        check_func: bool = False,
+        schema: bool = False,
+        allow_identifiers: bool = True,
+        with_collation: bool = False,
+    ) -> exp.Expr | None:
+        result = super()._parse_types(
+            check_func=check_func,
+            schema=schema,
+            allow_identifiers=allow_identifiers,
+            with_collation=with_collation,
+        )
+        # Oracle DATE includes hours, minutes and seconds.
+        if isinstance(result, exp.DataType) and result.is_type(exp.DType.DATE):
+            result.set("this", exp.DType.DATETIME)
+        return result

@@ -510,10 +510,10 @@ class TestOracle(Validator):
         self.validate_all(
             "DATE '2022-01-01'",
             write={
-                "": "DATE_STR_TO_DATE('2022-01-01')",
-                "mysql": "CAST('2022-01-01' AS DATE)",
-                "oracle": "TO_DATE('2022-01-01', 'YYYY-MM-DD')",
-                "postgres": "CAST('2022-01-01' AS DATE)",
+                "": "CAST('2022-01-01' AS DATETIME)",
+                "mysql": "CAST('2022-01-01' AS DATETIME)",
+                "oracle": "CAST('2022-01-01' AS DATE)",
+                "postgres": "CAST('2022-01-01' AS TIMESTAMP)",
             },
         )
 
@@ -1137,12 +1137,12 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                     f"TRUNC(CAST(x AS DATE), '{unit}')",
                     write={
                         "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
-                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
-                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATETIME))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "bigquery": f"DATE_TRUNC(CAST(x AS DATETIME), {unit})",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATETIME))",
+                        "spark": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
                     },
                 )
 

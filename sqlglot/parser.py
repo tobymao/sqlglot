@@ -8362,6 +8362,8 @@ class Parser:
                     )
                 )
 
+                if isinstance(this, exp.StrToTime):
+                    this.set("target_type", to)
                 if isinstance(fmt, exp.AtTimeZone) and isinstance(this, exp.StrToTime):
                     this.set("zone", fmt.args["zone"])
                 return this

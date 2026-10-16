@@ -602,3 +602,10 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+
+    def test_oracle_date_includes_time(self):
+        self.validate_all(
+            "SELECT CAST(x AS DATETIME) FROM t",
+            read={"oracle": "SELECT CAST(x AS DATE) FROM t"},
+        )
+        self.validate_all("CREATE TABLE t (d DATETIME)", read={"oracle": "CREATE TABLE t (d DATE)"})

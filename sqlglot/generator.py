@@ -2178,6 +2178,7 @@ class Generator:
         property_name = exp.Properties.PROPERTY_TO_NAME.get(property_cls)
         if not property_name:
             self.unsupported(f"Unsupported property {expression.key}")
+            return ""
 
         return f"{property_name}={self.sql(expression, 'this')}"
 

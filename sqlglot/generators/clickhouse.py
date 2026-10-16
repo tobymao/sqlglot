@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int
+from sqlglot.time import format_time
 from collections import defaultdict
 
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
@@ -358,6 +359,12 @@ class ClickHouseGenerator(generator.Generator):
             e.args.get("zone"),
         ),
         exp.TimeStrToTime: _timestrtotime_sql,
+        exp.StrToTime: lambda self, e: self.func(
+            "parseDateTimeOrNull" if e.args.get("safe") else "parseDateTime",
+            e.this,
+            format_time(self.sql(e, "format"), {"%M": "%i", "%S": "%s", "%%": "%%"}),
+            e.args.get("zone"),
+        ),
         exp.TimestampAdd: _datetime_delta_sql("TIMESTAMP_ADD"),
         exp.TimestampSub: _datetime_delta_sql("TIMESTAMP_SUB"),
         exp.Typeof: rename_func("toTypeName"),

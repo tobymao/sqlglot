@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -602,3 +602,18 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+
+    def test_oracle_to_date_year_rules(self):
+        self.validate_all(
+            "SELECT CAST(STR_TO_DATE('23.02.2021', '%d.%m.%Y') AS DATETIME)",
+            read={"oracle": "SELECT TO_DATE('23.02.2021', 'DD.MM.YY')"},
+        )
+        self.validate_all(
+            "SELECT CAST(STR_TO_DATE(s, '%Y-%m-%d %T') AS DATETIME)",
+            read={"oracle": "SELECT TO_DATE(s, 'YYYY-MM-DD HH24:MI:SS')"},
+        )
+        for model in ("YY", "RR"):
+            with self.assertRaises(UnsupportedError):
+                parse_one(f"SELECT TO_DATE('23.02.21', 'DD.MM.{model}')", read="oracle").sql(
+                    "starrocks", unsupported_level=ErrorLevel.RAISE
+                )

@@ -89,7 +89,6 @@ class OracleGenerator(generator.Generator):
         exp.StrPosition: lambda self, e: strposition_sql(
             self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
         ),
-        exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
         exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
         exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
         exp.Substring: rename_func("SUBSTR"),
@@ -200,3 +199,8 @@ class OracleGenerator(generator.Generator):
             sep = f" {self.sql(param_constraint)} "
             param_constraint.pop()
         return super().columndef_sql(expression, sep)
+
+    def strtotime_sql(self, expression: exp.StrToTime) -> str:
+        target = expression.args.get("target_type")
+        name = "TO_DATE" if target and target.is_type(exp.DType.DATETIME) else "TO_TIMESTAMP"
+        return self.func(name, expression.this, self.format_time(expression))

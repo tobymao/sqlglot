@@ -424,7 +424,7 @@ class TestOracle(Validator):
             },
             write={
                 "oracle": "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'YYYY/MM/DD') AND TO_DATE(f.C_EDATE, 'YYYY/MM/DD')",
-                "postgres": "CURRENT_TIMESTAMP BETWEEN TO_DATE(f.C_SDATE, 'YYYY/MM/DD') AND TO_DATE(f.C_EDATE, 'YYYY/MM/DD')",
+                "postgres": "CURRENT_TIMESTAMP BETWEEN TO_TIMESTAMP(f.C_SDATE, 'YYYY/MM/DD') AND TO_TIMESTAMP(f.C_EDATE, 'YYYY/MM/DD')",
             },
         )
         self.validate_all(
@@ -552,7 +552,7 @@ class TestOracle(Validator):
             "SELECT TO_DATE('2024-12-12', 'YYYY-MM-DD')",
             write={
                 "oracle": "SELECT TO_DATE('2024-12-12', 'YYYY-MM-DD')",
-                "duckdb": "SELECT CAST(STRPTIME('2024-12-12', '%Y-%m-%d') AS DATE)",
+                "duckdb": "SELECT STRPTIME('2024-12-12', '%Y-%m-%d')",
             },
         )
         self.validate_identity(

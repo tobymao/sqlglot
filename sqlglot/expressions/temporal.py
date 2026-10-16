@@ -465,6 +465,7 @@ class StrToTime(Expression, Func):
         "safe": False,
         "target_type": False,
         "default_year": False,
+        "year_rule": False,
     }
 
 

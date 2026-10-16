@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+import datetime
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
@@ -18,6 +19,30 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 
     return build_formatted_time(exp.StrToTime)(args, dialect)
+
+
+def _build_to_date(args: list, dialect: Dialect) -> exp.StrToTime | exp.StrToDate:
+    if len(args) == 1:
+        return build_formatted_time(exp.StrToDate)(args, dialect)
+    result = build_formatted_time(exp.StrToTime)(args, dialect)
+    result.set("target_type", exp.DataType(this=exp.DType.DATETIME))
+    fmt = result.args.get("format")
+    # Oracle accepts a four-digit year for YY unless exact-format matching is requested.
+    if result.this.is_string and fmt and fmt.is_string and "%y" in fmt.name:
+        widened = fmt.name.replace("%y", "%Y")
+        try:
+            datetime.datetime.strptime(result.this.name, widened)
+        except ValueError:
+            pass
+        else:
+            result.set("format", exp.Literal.string(widened))
+    fmt = result.args.get("format")
+    if fmt and fmt.is_string:
+        if "%y" in fmt.name:
+            result.set("year_rule", "CURRENT_CENTURY")
+        elif "RR" in fmt.name.upper():
+            result.set("year_rule", "RR")
+    return result
 
 
 class OracleParser(parser.Parser):
@@ -40,7 +65,7 @@ class OracleParser(parser.Parser):
         "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_TIMESTAMP": _build_to_timestamp,
-        "TO_DATE": build_formatted_time(exp.StrToDate),
+        "TO_DATE": _build_to_date,
         "TRUNC": lambda args, dialect: build_trunc(
             args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
         ),

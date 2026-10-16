@@ -103,7 +103,7 @@ class StarRocksGenerator(MySQLGenerator):
         **{
             k: v
             for k, v in MySQLGenerator.TRANSFORMS.items()
-            if k not in (exp.DateDiff, exp.DateTrunc, exp.Trim)
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Trim, exp.StrToTime)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -413,3 +413,14 @@ class StarRocksGenerator(MySQLGenerator):
         kind = expression.text("kind").upper()
         boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
         return self.func("TIME_SLICE", expression.this, interval, boundary)
+
+    def strtotime_sql(self, expression: exp.StrToTime) -> str:
+        if expression.args.get("year_rule"):
+            self.unsupported("Oracle YY/RR year rules require explicit century handling")
+        # STR_TO_DATE may return DATE for a date-only format; StrToTime must retain time type.
+        return self.sql(
+            exp.cast(
+                exp.StrToDate(this=expression.this, format=expression.args.get("format")),
+                exp.DType.DATETIME,
+            )
+        )

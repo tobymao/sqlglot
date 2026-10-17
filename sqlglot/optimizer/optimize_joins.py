@@ -95,6 +95,9 @@ def normalize(expression: E) -> E:
     Remove INNER and OUTER from joins as they are optional.
     """
     for join in expression.find_all(exp.Join):
+        if join.kind == "PASTE":
+            continue
+
         if not any(join.args.get(k) for k in JOIN_ATTRS):
             join.set("kind", "CROSS")
 
@@ -120,6 +123,7 @@ def _is_reorderable(joins: Iterable[exp.Join]) -> bool:
 
     Joins with a side (LEFT, RIGHT, FULL) cannot be reordered easily,
     the order affects which rows are included in the result.
+    PASTE joins pair rows by position, so reordering changes their pairings.
 
     Example:
         >>> from sqlglot import parse_one, exp
@@ -131,4 +135,4 @@ def _is_reorderable(joins: Iterable[exp.Join]) -> bool:
         >>> _is_reorderable(ast.find(exp.Select).args.get("joins", []))
         False
     """
-    return not any(join.side for join in joins)
+    return not any(join.side or join.kind == "PASTE" for join in joins)

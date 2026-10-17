@@ -1727,6 +1727,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_optimize_paste_joins(self):
+        for sql in (
+            "SELECT * FROM x PASTE JOIN y",
+            "SELECT * FROM x PASTE JOIN y JOIN z ON x.a = z.a AND y.a = z.a",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql, dialect="clickhouse")
+                self.assertEqual(
+                    optimizer.optimize_joins.optimize_joins(expression.copy()), expression
+                )
+                self.assertEqual(
+                    optimizer.optimize_joins.reorder_joins(expression.copy()), expression
+                )
+
     def test_eliminate_joins(self):
         self.check_file(
             "eliminate_joins",

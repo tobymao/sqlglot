@@ -365,6 +365,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.AND,
         TokenType.FILE,
         TokenType.OR,
+        TokenType.PASTE,
         TokenType.SET,
         TokenType.VIEW,
     }
@@ -459,6 +460,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.ANY,
         TokenType.ASOF,
         TokenType.ARRAY,
+        TokenType.PASTE,
     }
 
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
@@ -468,6 +470,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.ASOF,
         TokenType.FINAL,
         TokenType.FORMAT,
+        TokenType.PASTE,
         TokenType.SETTINGS,
     }
 

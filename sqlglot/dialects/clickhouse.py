@@ -116,6 +116,7 @@ class ClickHouse(Dialect):
             "UINT8": TokenType.UTINYINT,
             "IPV4": TokenType.IPV4,
             "IPV6": TokenType.IPV6,
+            "PASTE": TokenType.PASTE,
             "POINT": TokenType.POINT,
             "PROJECTION": TokenType.PROJECTION,
             "RING": TokenType.RING,

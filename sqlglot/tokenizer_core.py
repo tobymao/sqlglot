@@ -375,6 +375,7 @@ class TokenType(IntEnum):
     PACKAGE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
+    PASTE = auto()
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()

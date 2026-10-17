@@ -1354,6 +1354,17 @@ SELECT x.b AS b, u.id AS id, u.north AS north, u.south AS south, u.month AS mont
 WITH c AS (SELECT id, jan, feb FROM unpivotable) SELECT piv.* FROM c UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
 WITH c AS (SELECT unpivotable.id AS id, unpivotable.jan AS jan, unpivotable.feb AS feb FROM unpivotable AS unpivotable) SELECT piv.id AS id, piv.month AS month, piv.revenue AS revenue FROM c AS c UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
 
+# title: qualified star over the pivot alias of an aliased pivoted CTE
+# dialect: duckdb
+WITH c AS (SELECT id, jan, feb FROM unpivotable) SELECT piv.* FROM c AS m UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+WITH c AS (SELECT unpivotable.id AS id, unpivotable.jan AS jan, unpivotable.feb AS feb FROM unpivotable AS unpivotable) SELECT piv.id AS id, piv.month AS month, piv.revenue AS revenue FROM c AS m UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;
+
+# title: UNPIVOT over an aliased CTE that also has an UNPIVOT alias
+# execute: false
+# dialect: snowflake
+WITH base AS (SELECT id, jan, feb FROM unpivotable) SELECT p.amount FROM base AS m UNPIVOT(amount FOR metric IN (jan, feb)) AS p;
+WITH BASE AS (SELECT UNPIVOTABLE.ID AS ID, UNPIVOTABLE.JAN AS JAN, UNPIVOTABLE.FEB AS FEB FROM UNPIVOTABLE AS UNPIVOTABLE) SELECT P.AMOUNT AS AMOUNT FROM BASE AS M UNPIVOT(AMOUNT FOR METRIC IN (JAN, FEB)) AS P;
+
 # title: qualified star over the pivot alias of a pivoted subquery
 # dialect: duckdb
 SELECT piv.* FROM (SELECT id, jan, feb FROM unpivotable) UNPIVOT(revenue FOR month IN (jan, feb)) AS piv;

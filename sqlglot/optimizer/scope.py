@@ -926,13 +926,12 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             source_name = expression.alias_or_name
 
             if table_name in scope.sources and not expression.db:
-                # This is a reference to a parent source (e.g. a CTE), not an actual table, unless
-                # it is pivoted, because then we get back a new table and hence a new source.
+                # This is a reference to a parent source (e.g. a CTE), not an actual table. If
+                # it is pivoted, we also register the pivot's alias as a new table source.
+                sources[source_name] = scope.sources[table_name]
                 pivots = expression.args.get("pivots")
                 if pivots:
                     sources[pivots[-1].alias] = expression
-                else:
-                    sources[source_name] = scope.sources[table_name]
             elif source_name in sources:
                 sources[find_new_name(sources, table_name)] = expression
             else:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
@@ -116,7 +117,16 @@ class TeradataGenerator(generator.Generator):
         expression: exp.TableSample,
         tablesample_keyword: str | None = None,
     ) -> str:
-        return f"{self.sql(expression, 'this')} SAMPLE {self.expressions(expression)}"
+        sample = expression.args.get("size")
+        percent = expression.args.get("percent")
+        if percent and percent.is_number:
+            fraction = Decimal(percent.to_py()).scaleb(-2)
+            # 100 percent keeps its decimal point, otherwise it'd be read back as a row count
+            sample = exp.Literal.number(
+                format(fraction.normalize() if fraction < 1 else fraction, "f")
+            )
+
+        return f" SAMPLE {self.sql(sample) or self.expressions(expression)}"
 
     def window_sql(self, expression: exp.Window) -> str:
         spec = expression.args.get("spec")

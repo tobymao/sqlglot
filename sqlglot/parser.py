@@ -811,6 +811,7 @@ class Parser:
         TokenType.OVERLAPS,
         TokenType.OVERWRITE,
         TokenType.PARTITION,
+        TokenType.PASTE,
         TokenType.PERCENT,
         TokenType.PIVOT,
         TokenType.PROJECTION,

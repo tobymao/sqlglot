@@ -4788,7 +4788,7 @@ FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS 
     AND uc.user_id <> ALL (
       SELECT DISTINCT
         _id
-      FROM users, LATERAL IFF(_u.pos = _u_2.pos_2, _u_2.entity, NULL) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      FROM users, LATERAL FLATTEN(INPUT => PARSE_JSON(flags)) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
       WHERE
         GET_PATH(datasource.value, 'name') = 'something'
     )
@@ -4804,27 +4804,19 @@ LEFT JOIN (
   GROUP BY
     1
 ) AS aua
-  ON uc.user_id = aua.user_id
-CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
-  GREATEST(ARRAY_SIZE(INPUT => PARSE_JSON(flags))) - 1
-) + 1))) AS _u(seq, key, path, index, pos, this)
-CROSS JOIN TABLE(FLATTEN(INPUT => PARSE_JSON(flags))) AS _u_2(seq, key, path, pos_2, entity, this)
-WHERE
-  _u.pos = _u_2.pos_2
-  OR (
-    _u.pos > (
-      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
-    )
-    AND _u_2.pos_2 = (
-      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
-    )
-  )""",
+  ON uc.user_id = aua.user_id""",
             },
             pretty=True,
         )
 
         self.validate_identity(
             "SELECT value FROM TABLE(FLATTEN(input => SELECT PARSE_JSON('[1, 2]')))"
+        )
+        self.validate_identity(
+            "SELECT (SELECT 1 WHERE 1 IN (SELECT value FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1]'))))) AS nested_value"
+        )
+        self.validate_identity(
+            "SELECT (SELECT MAX(value) FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1, 2]')))) AS max_value"
         )
 
         # All examples from https://docs.snowflake.com/en/sql-reference/functions/flatten.html#syntax

@@ -419,7 +419,7 @@ def explode_projection_to_unnest(
 
     def _explode_projection_to_unnest(expression: exp.Expr) -> exp.Expr:
         if isinstance(expression, exp.Select):
-            from sqlglot.optimizer.scope import Scope
+            from sqlglot.optimizer.scope import Scope, find_in_scope
 
             taken_select_names = set(expression.named_selects)
             taken_source_names = {name for name, _ in Scope(expression).references}
@@ -441,7 +441,7 @@ def explode_projection_to_unnest(
 
             # we use list here because expression.selects is mutated inside the loop
             for select in list(expression.selects):
-                explode = select.find(exp.Explode)
+                explode = find_in_scope(select, exp.Explode)
 
                 if explode:
                     if (
@@ -496,7 +496,7 @@ def explode_projection_to_unnest(
                         alias = select.replace(exp.alias_(select.this, "", copy=False))
                     else:
                         alias = select.replace(exp.alias_(select, ""))
-                        explode = alias.find(exp.Explode)
+                        explode = find_in_scope(alias, exp.Explode)
                         assert explode
 
                     is_posexplode = isinstance(explode, exp.Posexplode)

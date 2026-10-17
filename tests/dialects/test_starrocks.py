@@ -371,6 +371,8 @@ class TestStarrocks(Validator):
             },
         )
 
+        self.validate_identity("SELECT * FROM TABLE(UNNEST([1, 2], ['a', 'b'])) AS t(x, y)")
+
         # Use UNNEST to convert into multiple columns
         # see: https://docs.starrocks.io/docs/sql-reference/sql-functions/array-functions/unnest/
         self.validate_all(

@@ -234,6 +234,8 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(expr.expressions, list)
         self.assertEqual(expr.sql(), unnest_sql)
 
+        self.assertEqual(len(parse_one("UNNEST(foo, bar)").expressions), 2)
+
     def test_unnest_projection(self):
         expr = parse_one("SELECT foo IN UNNEST(bla) AS bar")
         self.assertIsInstance(expr.selects[0], exp.Alias)

@@ -484,7 +484,7 @@ class Parser:
             start=exp.Literal.number(1),
             length=exp.Literal.number(10),
         ),
-        "UNNEST": lambda args: exp.Unnest(expressions=ensure_list(seq_get(args, 0))),
+        "UNNEST": lambda args: exp.Unnest(expressions=args),
         "UPPER": build_upper,
         "UUID": lambda args, dialect: exp.Uuid(is_string=dialect.UUID_IS_STRING_TYPE or None),
         "UUID_STRING": lambda args, dialect: exp.Uuid(

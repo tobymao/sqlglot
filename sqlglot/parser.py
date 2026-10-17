@@ -1208,7 +1208,7 @@ class Parser:
 
     UNARY_PARSERS: t.ClassVar = {
         TokenType.PLUS: lambda self: self._parse_unary(),  # Unary + is handled as a no-op
-        TokenType.NOT: lambda self: self.expression(exp.Not(this=self._parse_equality())),
+        TokenType.NOT: lambda self: self.expression(exp.Not(this=self._parse_is_predicate())),
         TokenType.TILDE: lambda self: self.expression(exp.BitwiseNot(this=self._parse_unary())),
         TokenType.DASH: lambda self: self.expression(exp.Neg(this=self._parse_unary())),
         TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt(this=self._parse_unary())),
@@ -1286,7 +1286,6 @@ class Parser:
         TokenType.ILIKE: binary_range_parser(exp.ILike),
         TokenType.IN: lambda self, this: self._parse_in(this),
         TokenType.IRLIKE: binary_range_parser(exp.RegexpILike),
-        TokenType.IS: lambda self, this: self._parse_is(this),
         TokenType.LIKE: binary_range_parser(exp.Like),
         TokenType.LT_AT: binary_range_parser(exp.ArrayContainedBy),
         TokenType.OVERLAPS: binary_range_parser(exp.Overlaps),
@@ -6177,15 +6176,46 @@ class Parser:
         return this
 
     def _parse_conjunction(self) -> exp.Expr | None:
-        this = self._parse_equality()
+        this = self._parse_is_predicate()
         while self._match_set(self.CONJUNCTION):
             comments = self._prev_comments
             this = self.expression(
                 self.CONJUNCTION[self._prev.token_type](
-                    this=this, expression=self._parse_equality()
+                    this=this, expression=self._parse_is_predicate()
                 ),
                 comments=comments,
             )
+        return this
+
+    def _parse_is_predicate(self) -> exp.Expr | None:
+        this = self._parse_equality()
+        while True:
+            negate = self._match(TokenType.NOT)
+            if self._match(TokenType.IS):
+                expression = self._parse_is(this)
+                if not expression:
+                    if negate:
+                        self._retreat(self._index - 1)
+                    return this
+
+                this = expression
+                if negate:
+                    this = self.expression(exp.Not(this=this))
+            elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
+                this = self.expression(exp.Is(this=this, expression=exp.Null()))
+                this = self.expression(exp.Not(this=this)) if negate else this
+            elif self._match(TokenType.NOTNULL):
+                # Postgres supports ISNULL and NOTNULL for conditions.
+                # https://blog.andreiavram.ro/postgresql-null-composite-type/
+                if self.dialect.NORMALIZE_NOT_NULL:
+                    this = self.expression(exp.Is(this=this, expression=exp.Null()))
+                    this = self.expression(exp.Not(this=this))
+                else:
+                    this = self.expression(exp.Is(this=this, expression=exp.Null(), negate=True))
+            else:
+                if negate:
+                    self._retreat(self._index - 1)
+                break
         return this
 
     def _parse_equality(self) -> exp.Expr | None:
@@ -6221,16 +6251,6 @@ class Parser:
                     return this
 
                 this = expression
-            elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
-                this = self.expression(exp.Is(this=this, expression=exp.Null()))
-            elif self._match(TokenType.NOTNULL):
-                # Postgres supports ISNULL and NOTNULL for conditions.
-                # https://blog.andreiavram.ro/postgresql-null-composite-type/
-                if self.dialect.NORMALIZE_NOT_NULL:
-                    this = self.expression(exp.Is(this=this, expression=exp.Null()))
-                    this = self.expression(exp.Not(this=this))
-                else:
-                    this = self.expression(exp.Is(this=this, expression=exp.Null(), negate=True))
             else:
                 if negate:
                     self._retreat(self._index - 1)
@@ -6239,7 +6259,7 @@ class Parser:
             if negate:
                 this = self._negate_range(this)
                 if self._curr and (
-                    self._curr.token_type == TokenType.NOT
+                    self._curr.token_type in (TokenType.NOT, TokenType.IS)
                     or self._curr.token_type in self.RANGE_PARSERS
                 ):
                     this = self.expression(exp.Paren(this=this))

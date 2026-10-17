@@ -281,6 +281,21 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.this.expression.sql(), "3")
         self.assertEqual(expression.expression.sql(), "2")
 
+    def test_is_precedence(self):
+        expression = parse_one("SELECT 1 = 1 IS NULL").expressions[0]
+
+        self.assertIsInstance(expression, exp.Is)
+        self.assertIsInstance(expression.this, exp.EQ)
+        self.assertEqual(expression.this.this.sql(), "1")
+        self.assertEqual(expression.this.expression.sql(), "1")
+        self.assertIsInstance(expression.expression, exp.Null)
+
+        parenthesized = parse_one("SELECT 1 = (1 IS NULL)").expressions[0]
+        self.assertIsInstance(parenthesized, exp.EQ)
+        self.assertIsInstance(parenthesized.expression.this, exp.Is)
+
+        self.assertEqual(parse_one("SELECT 1 is").sql(), "SELECT 1 AS is")
+
     def test_limit_percent_parses_without_modulo(self):
         expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")
         limit = expression.args["limit"]

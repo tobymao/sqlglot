@@ -60,6 +60,15 @@ class TestTeradata(Validator):
             "LOCKING TABLE table1 FOR ACCESS SELECT * FROM table1 JOIN table2 ON table1.id = table2.id"
         )
 
+        self.validate_all(
+            "LOCKING ROW FOR ACCESS SELECT * FROM t",
+            write={
+                "teradata": "LOCKING ROW FOR ACCESS SELECT * FROM t",
+                "duckdb": "SELECT * FROM t",
+                "snowflake": "SELECT * FROM t",
+            },
+        )
+
         # Test that it still works in CREATE VIEW context (regression test)
         self.validate_identity(
             "CREATE VIEW view_b AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b"

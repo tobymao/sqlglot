@@ -2320,6 +2320,10 @@ class Generator:
         override = " OVERRIDE" if expression.args.get("override") else ""
         return f"LOCKING {kind}{this}{for_or_in} {lock_type}{override}"
 
+    def lockingstatement_sql(self, expression: exp.LockingStatement) -> str:
+        self.unsupported("LOCKING request modifier is not supported")
+        return self.sql(expression, "expression")
+
     def withdataproperty_sql(self, expression: exp.WithDataProperty) -> str:
         data_sql = f"WITH {'NO ' if expression.args.get('no') else ''}DATA"
         statistics = expression.args.get("statistics")

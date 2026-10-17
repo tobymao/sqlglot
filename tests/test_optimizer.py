@@ -1,4 +1,5 @@
 import json
+import sys
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
@@ -16,6 +17,7 @@ from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_
 from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -1298,45 +1300,181 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(qualified.selects[0].type.sql("bigquery"), "INT64")
 
-    def test_qualify_positional_references_uncache(self):
+    def test_qualify_unchanged_distinct_on(self):
+        schema = MappingSchema({"t": {"a": "INT", "b": "INT", "c": "INT"}}, dialect="postgres")
+
+        for group_by in ("", " GROUP BY t.a, t.b, t.c"):
+            with self.subTest(group_by=group_by):
+                tree = parse_one(
+                    f"SELECT DISTINCT ON (t.a, t.b, t.c) 1 AS v FROM t{group_by}",
+                    dialect="postgres",
+                )
+                scope = build_scope(tree)
+                assert scope is not None
+                distinct_on = tree.args["distinct"].args["on"]
+                original_hash = hash(distinct_on)
+
+                optimizer.qualify_columns._expand_order_by_and_distinct_on(
+                    scope, Resolver(scope, schema)
+                )
+
+                # Replacing a key with itself unnecessarily invalidates the whole tuple's hash.
+                self.assertEqual(distinct_on._hash, original_hash)
+
+    def test_qualify_positional_references_types(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>"}}, dialect="bigquery")
 
         for modifier in ("ORDER BY 1", "GROUP BY 1", "GROUP BY 1 ORDER BY 1"):
             with self.subTest(modifier=modifier):
-                tree = parse_one(
-                    f"WITH c AS (SELECT s.* FROM t {modifier}) SELECT _PARTITIONTIME FROM t, c",
+                qualified = qualify(
+                    parse_one(
+                        f"WITH c AS (SELECT s.* FROM t {modifier}) SELECT _PARTITIONTIME FROM t, c",
+                        dialect="bigquery",
+                    ),
+                    schema=schema,
                     dialect="bigquery",
                 )
-                # Keep discarded ordinals alive so the check cannot depend on address reuse.
-                ordinals = list(tree.find_all(exp.Literal))
-                annotator = TypeAnnotator(schema)
-                with patch(
-                    "sqlglot.optimizer.qualify_columns.TypeAnnotator", return_value=annotator
-                ):
-                    qualified = qualify(tree, schema=schema, dialect="bigquery")
 
-                for ordinal in ordinals:
-                    self.assertIsNotNone(ordinal.type)
-                    self.assertNotIn(id(ordinal), annotator._visited)
+                cte = qualified.find(exp.CTE)
+                assert cte is not None
+                for key in ("group", "order"):
+                    if modifier_node := cte.this.args.get(key):
+                        for node in modifier_node.expressions:
+                            node = node.this if isinstance(node, exp.Ordered) else node
+                            self.assertTrue(node.is_type(exp.DType.BIGINT))
 
                 pseudo = qualified.find(exp.Pseudocolumn)
                 assert pseudo is not None
                 self.assertTrue(pseudo.is_type(exp.DType.UNKNOWN))
 
-    def test_qualify_order_by_expression_uncache(self):
+    def test_qualify_order_by_expression_types(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
-        tree = parse_one(
-            "SELECT s.*, a + 1 AS v FROM t GROUP BY 1, 2 ORDER BY a + 1", dialect="bigquery"
-        )
-        discarded = list(tree.args["order"].expressions[0].this.walk())
-        annotator = TypeAnnotator(schema)
-        with patch("sqlglot.optimizer.qualify_columns.TypeAnnotator", return_value=annotator):
-            qualified = qualify(tree, schema=schema, dialect="bigquery")
 
-        for node in discarded:
-            self.assertIsNotNone(node.type)
-            self.assertNotIn(id(node), annotator._visited)
-        self.assertEqual(qualified.args["order"].expressions[0].this.name, "v")
+        for sql, dtype in (
+            ("SELECT s.*, a + 1 AS v FROM t GROUP BY 1, 2 ORDER BY a + 1", exp.DType.BIGINT),
+            ("SELECT s.*, FOO(a) AS v FROM t GROUP BY 1, 2 ORDER BY FOO(a)", exp.DType.UNKNOWN),
+            ("SELECT s.*, FOO(a) AS v FROM t ORDER BY 2", exp.DType.UNKNOWN),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                order = qualified.args["order"].expressions[0].this
+                self.assertEqual(order.name, "v")
+                self.assertTrue(order.is_type(dtype))
+
+    def test_qualify_order_by_case_sensitive_paths(self):
+        for dtype, projection, ordering, expected in (
+            (
+                "JSON",
+                "JSON_VALUE(j.Foo)",
+                "JSON_VALUE(j.foo)",
+                "ORDER BY ANY_VALUE(JSON_VALUE(`t`.`j`.`foo`, '$'))",
+            ),
+            ("JSON", "JSON_VALUE(j.Foo)", "JSON_VALUE(j.Foo)", "ORDER BY `v`"),
+            ("STRUCT<Foo STRING>", "j.Foo", "j.foo", "ORDER BY `v`"),
+            (
+                "STRING",
+                "JSON_VALUE(PARSE_JSON(j).Foo)",
+                "JSON_VALUE(PARSE_JSON(j).foo)",
+                "ORDER BY ANY_VALUE(JSON_VALUE(PARSE_JSON(`t`.`j`).`foo`, '$'))",
+            ),
+        ):
+            with self.subTest(dtype=dtype, ordering=ordering):
+                qualified = qualify(
+                    parse_one(
+                        f"SELECT s.*, ANY_VALUE({projection}) AS v FROM t "
+                        f"GROUP BY 1 ORDER BY ANY_VALUE({ordering})",
+                        dialect="bigquery",
+                    ),
+                    schema={"t": {"s": "STRUCT<x INT64>", "j": dtype}},
+                    dialect="bigquery",
+                )
+                self.assertEqual(qualified.args["order"].sql("bigquery"), expected)
+
+        schema = {"t": {"a": "INT", "j": "JSON"}}
+        qualified = qualify(
+            parse_one(
+                "WITH c AS (SELECT a, j FROM t) "
+                "SELECT a, ANY_VALUE(c.j.Foo) AS v FROM c GROUP BY a ORDER BY a",
+                dialect="duckdb",
+            ),
+            schema=schema,
+            dialect="duckdb",
+        )
+        annotated = annotate_types(qualified, schema=schema, dialect="duckdb")
+        self.assertEqual(annotated.selects[1].this.sql("duckdb"), 'ANY_VALUE("c"."j"."Foo")')
+
+    def test_qualify_star_replace_types(self):
+        schema = {"t": {"s": "STRUCT<x INT64>", "a": "INT64"}, "u": {"c": "FLOAT64"}}
+
+        for sql, alias, expected in (
+            ("SELECT s.*, * REPLACE ((SELECT MAX(c) FROM u) AS a) FROM t", "a", "FLOAT64"),
+            ("SELECT s.* REPLACE (t AS x) FROM t", "x", "STRUCT<s STRUCT<x INT64>, a INT64>"),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                self.assertEqual(qualified.selects[-1].alias, alias)
+                self.assertEqual(qualified.selects[-1].type.sql("bigquery"), expected)
+
+    def test_qualify_struct_star_table_reference_types(self):
+        schema = {"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}
+
+        for sql in ("SELECT IF(TRUE, t, NULL).* FROM t", "SELECT STRUCT(t AS r).r.* FROM t"):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                struct_value = qualified.find(exp.If, exp.Struct)
+                assert struct_value is not None
+                self.assertTrue(struct_value.is_type(exp.DType.STRUCT))
+
+    def test_qualify_struct_stars_annotate_table_references_once(self):
+        schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
+
+        for stars in (0, 1, 5):
+            with self.subTest(stars=stars):
+                sql = f"SELECT {', '.join(['s.*'] * stars + ['t AS whole'])} FROM t"
+                with patch.object(schema, "find", wraps=schema.find) as find:
+                    qualified = qualify(parse_one(sql, dialect="bigquery"), schema=schema)
+
+                self.assertEqual(
+                    sum(bool(call.kwargs.get("ensure_data_types")) for call in find.call_args_list),
+                    1,
+                )
+                self.assertEqual(
+                    qualified.selects[-1].type.sql("bigquery"), "STRUCT<s STRUCT<x INT64>, a INT64>"
+                )
+
+    def test_annotate_expression_table_references(self):
+        schema = MappingSchema({"t": {"a": "INT64"}}, dialect="bigquery")
+        tree = parse_one(
+            "SELECT IF(TRUE, t, NULL) AS r, t AS untouched FROM t", dialect="bigquery"
+        ).transform(
+            lambda node: exp.TableColumn(this=node.this) if isinstance(node, exp.Column) else node
+        )
+        scope = build_scope(tree)
+        assert scope is not None
+        annotator = TypeAnnotator(schema)
+
+        annotator.annotate_expression(tree.selects[0], scope)
+        self.assertEqual(tree.selects[0].type.sql("bigquery"), "STRUCT<a INT64>")
+        self.assertIsNone(tree.selects[1].this.type)
+
+        annotator.annotate_scope(scope)
+        self.assertEqual(tree.selects[1].type.sql("bigquery"), "STRUCT<a INT64>")
+
+    def test_annotate_types_keeps_cached_nodes_alive(self):
+        annotator = TypeAnnotator(MappingSchema())
+        node = exp.Literal.number(1)
+        references = sys.getrefcount(node)
+        annotator.annotate(node)
+        self.assertGreater(sys.getrefcount(node), references)
+
+        annotator.clear()
+        self.assertEqual(sys.getrefcount(node), references)
 
     def test_qualify_order_by_subquery_types(self):
         schema = {"t": {"x": "STRING", "s": "STRUCT<a INT64>"}, "u": {"x": "INT64"}}

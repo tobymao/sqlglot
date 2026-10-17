@@ -208,8 +208,9 @@ class TypeAnnotator:
         self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO
         self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
 
-        # Caches the ids of annotated sub-Exprs, to ensure we only visit them once
-        self._visited: set[int] = set()
+        # Caches annotated sub-Exprs by id, to ensure we only visit them once. The values keep the
+        # nodes alive, so a discarded node's id can't be reused by a new node while it's cached
+        self._visited: dict[int, exp.Expr] = {}
 
         # Caches NULL-annotated expressions to set them to UNKNOWN after type inference is completed
         self._null_expressions: dict[int, exp.Expr] = {}
@@ -217,10 +218,13 @@ class TypeAnnotator:
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
-        # Maps an exp.SetOperation's id (e.g. UNION) to its projection types. This is computed if the
-        # exp.SetOperation is the expression of a scope source, as selecting from it multiple times
-        # would reprocess the entire subtree to coerce the types of its operands' projections
-        self._setop_column_types: dict[int, dict[str, exp.DataType | exp.DType]] = {}
+        # Maps an exp.SetOperation's id (e.g. UNION) to itself and its projection types. This is
+        # computed if the exp.SetOperation is the expression of a scope source, as selecting from it
+        # multiple times would reprocess the entire subtree to coerce the types of its operands'
+        # projections
+        self._setop_column_types: dict[
+            int, tuple[exp.SetOperation, dict[str, exp.DataType | exp.DType]]
+        ] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
         self._overwrite_types = overwrite_types
@@ -236,20 +240,6 @@ class TypeAnnotator:
         self._setop_column_types.clear()
         self._scope_source_selects.clear()
 
-    def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
-        """
-        Evicts `expression` (or its subtree, if `deep`) from the annotation caches. This must
-        be called when an already-annotated tree is about to be mutated, both so that a
-        subsequent annotation pass doesn't skip it and so that the ids of any discarded nodes
-        can't be conflated with new nodes allocated at the same addresses.
-        """
-        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
-        for node in nodes:
-            node_id = id(node)
-            self._visited.discard(node_id)
-            self._null_expressions.pop(node_id, None)
-            self._setop_column_types.pop(node_id, None)
-
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
     def _set_type(
@@ -263,7 +253,7 @@ class TypeAnnotator:
         # Bypass by converting and assigning to _type directly.
         dtype = target_type or exp.DType.UNKNOWN
         expression._type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
-        self._visited.add(expression_id)
+        self._visited[expression_id] = expression
 
         if (
             not self._supports_null_type
@@ -283,7 +273,7 @@ class TypeAnnotator:
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        self._annotate_expression(expression)
+        self.annotate_expression(expression)
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -397,37 +387,8 @@ class TypeAnnotator:
         return {}
 
     def annotate_scope(self, scope: Scope) -> None:
-        if isinstance(self.schema, MappingSchema):
-            for table_column in scope.table_columns:
-                source = scope.sources.get(table_column.name)
-
-                if isinstance(source, exp.Table):
-                    schema = self.schema.find(
-                        source, raise_on_missing=False, ensure_data_types=True
-                    )
-                    if not isinstance(schema, dict):
-                        continue
-
-                    struct_type = exp.DataType(
-                        this=exp.DType.STRUCT,
-                        expressions=[
-                            exp.ColumnDef(this=exp.to_identifier(str(c)), kind=kind)
-                            for c, kind in schema.items()
-                        ],
-                        nested=True,
-                    )
-                    self._set_type(table_column, struct_type)
-                elif (
-                    isinstance(source, Scope)
-                    and isinstance(source.expression, exp.Query)
-                    and (
-                        source.expression.meta_get("query_type") or exp.DType.UNKNOWN.into_expr()
-                    ).is_type(exp.DType.STRUCT)
-                ):
-                    self._set_type(table_column, source.expression.meta["query_type"])
-
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expression(scope.expression, scope)
+        self.annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
@@ -451,7 +412,7 @@ class TypeAnnotator:
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _annotate_expression(
+    def annotate_expression(
         self,
         expression: exp.Expr,
         scope: Scope | None = None,
@@ -470,6 +431,10 @@ class TypeAnnotator:
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
                     stack.append((child_expr, False))
+                continue
+
+            if scope and isinstance(expr, exp.TableColumn):
+                self._annotate_table_column(expr, scope)
                 continue
 
             if scope and isinstance(expr, exp.Column) and expr.table and not expr.is_star:
@@ -535,6 +500,37 @@ class TypeAnnotator:
 
             self._restore_dot_parts(expr)
 
+    def _annotate_table_column(self, expression: exp.TableColumn, scope: Scope) -> None:
+        if isinstance(self.schema, MappingSchema):
+            source = scope.sources.get(expression.name)
+
+            if isinstance(source, exp.Table):
+                schema = self.schema.find(source, raise_on_missing=False, ensure_data_types=True)
+                if isinstance(schema, dict):
+                    self._set_type(
+                        expression,
+                        exp.DataType(
+                            this=exp.DType.STRUCT,
+                            expressions=[
+                                exp.ColumnDef(this=exp.to_identifier(str(c)), kind=kind)
+                                for c, kind in schema.items()
+                            ],
+                            nested=True,
+                        ),
+                    )
+                    return
+            elif (
+                isinstance(source, Scope)
+                and isinstance(source.expression, exp.Query)
+                and (
+                    source.expression.meta_get("query_type") or exp.DType.UNKNOWN.into_expr()
+                ).is_type(exp.DType.STRUCT)
+            ):
+                self._set_type(expression, source.expression.meta["query_type"])
+                return
+
+        self._set_type(expression, exp.DType.UNKNOWN)
+
     def _restore_dot_parts(self, expr: exp.Expr) -> None:
         # Dot access into semi-structured values is a case sensitive data lookup, i.e. the
         # engine doesn't resolve the keys as identifiers, so we undo their normalization.
@@ -594,8 +590,8 @@ class TypeAnnotator:
             if alias_cols:
                 for node in ordered.walk(prune=lambda n: isinstance(n, exp.Subquery)):
                     if not isinstance(node, (exp.Column, exp.Literal)):
-                        self._visited.discard(id(node))
-                self._annotate_expression(ordered, scope)
+                        self._visited.pop(id(node), None)
+                self.annotate_expression(ordered, scope)
 
     def _maybe_coerce(
         self,
@@ -649,8 +645,8 @@ class TypeAnnotator:
             Dictionary mapping column names to their coerced types
         """
         setop_id = id(setop)
-        if setop_id in self._setop_column_types:
-            return self._setop_column_types[setop_id]
+        if cached := self._setop_column_types.get(setop_id):
+            return cached[1]
 
         col_types: dict[str, exp.DataType | exp.DType] = {}
 
@@ -701,7 +697,7 @@ class TypeAnnotator:
                     col_type, col_types.get(col_name, exp.DType.NULL)
                 )
 
-        self._setop_column_types[setop_id] = col_types
+        self._setop_column_types[setop_id] = (setop, col_types)
         return col_types
 
     def _get_unpivot_column_types(

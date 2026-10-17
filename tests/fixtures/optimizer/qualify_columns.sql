@@ -662,6 +662,30 @@ SELECT structs.nested_0.nested_1.a_2 AS a_2, structs.nested_0.nested_1.nested_2 
 SELECT ((nested_0).nested_1).* FROM structs;
 SELECT ((structs.nested_0).nested_1).a_2 AS a_2, ((structs.nested_0).nested_1).nested_2 AS nested_2 FROM structs AS structs;
 
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand struct star over a projection of a scope that expands struct stars
+WITH c AS (SELECT (nested_0).*, nested_0 AS whole FROM structs) SELECT (whole).* FROM c;
+WITH c AS (SELECT (structs.nested_0).a_1 AS a_1, (structs.nested_0).nested_1 AS nested_1, structs.nested_0 AS whole FROM structs AS structs) SELECT (c.whole).a_1 AS a_1, (c.whole).nested_1 AS nested_1 FROM c AS c;
+
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand struct star over a CTE projection without column references
+WITH c AS (SELECT CAST(NULL AS STRUCT<a INT>) AS whole) SELECT (whole).* FROM c;
+WITH c AS (SELECT CAST(NULL AS STRUCT<a INT>) AS whole) SELECT (c.whole).a AS a FROM c AS c;
+
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand struct star over a CTE projection
+WITH c AS (SELECT nested_0 AS whole FROM structs) SELECT (whole).* FROM c;
+WITH c AS (SELECT structs.nested_0 AS whole FROM structs AS structs) SELECT (c.whole).a_1 AS a_1, (c.whole).nested_1 AS nested_1 FROM c AS c;
+
+# dialect: risingwave
+# execute: false
+# title: RisingWave - Expand struct star over a derived table projection
+SELECT (d.whole).* FROM (SELECT nested_0 AS whole FROM structs) AS d;
+SELECT (d.whole).a_1 AS a_1, (d.whole).nested_1 AS nested_1 FROM (SELECT structs.nested_0 AS whole FROM structs AS structs) AS d;
+
 # title: CSV files are not scanned by default
 # execute: false
 SELECT * FROM READ_CSV('file.csv');

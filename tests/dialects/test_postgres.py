@@ -1073,6 +1073,17 @@ FROM json_data, field_ids""",
                 "postgres": "SELECT TO_DATE('01/01/2000', 'MM/DD/YYYY')",
             },
         )
+        self.validate_all(
+            "SELECT TO_CHAR(x, 'IYYY-IW')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%G-%V')",
+                "postgres": "SELECT TO_CHAR(x, 'iyyy-iw')",
+            },
+            write={
+                "duckdb": "SELECT STRFTIME(x, '%G-%V')",
+                "postgres": "SELECT TO_CHAR(x, 'IYYY-IW')",
+            },
+        )
 
         self.validate_identity(
             'SELECT js, js IS JSON AS "json?", js IS JSON VALUE AS "scalar?", js IS JSON SCALAR AS "scalar?", js IS JSON OBJECT AS "object?", js IS JSON ARRAY AS "array?" FROM t'

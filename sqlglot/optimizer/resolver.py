@@ -31,11 +31,7 @@ class Resolver:
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
         self._outer_resolvers: list[Resolver] | None = None
-        self._select_aliases: set[str] = (
-            {s.alias for s in scope.expression.selects if isinstance(s, exp.Alias)}
-            if isinstance(scope.expression, exp.Select)
-            else set()
-        )
+        self._select_aliases: set[str] | None = None
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -72,7 +68,7 @@ class Resolver:
         if (
             not table_name
             and column_name not in self.all_columns
-            and column_name not in self._select_aliases
+            and column_name not in self.select_aliases
         ):
             source_columns = (
                 self._get_available_source_columns(join_context)
@@ -137,6 +133,17 @@ class Resolver:
                 column for columns in self._get_all_source_columns().values() for column in columns
             }
         return self._all_columns
+
+    @property
+    def select_aliases(self) -> set[str]:
+        if self._select_aliases is None:
+            expression = self.scope.expression
+            self._select_aliases = (
+                {s.alias for s in expression.selects if isinstance(s, exp.Alias)}
+                if isinstance(expression, exp.Select)
+                else set()
+            )
+        return self._select_aliases
 
     def get_source_columns_from_set_op(self, expression: exp.Expr) -> list[str]:
         if isinstance(expression, exp.Select):

@@ -364,6 +364,8 @@ def _mergeable(
         )
         or (inner_select.args.get("order") and outer_scope.is_set_operation)
         or isinstance(seq_get(inner_select.expressions, 0), exp.QueryTransform)
+        or any(c.name == inner_name for c in outer.find_all(exp.TableColumn))
+        or inner_select.find(exp.TableColumn)
     ):
         return False
 

@@ -2140,7 +2140,10 @@ def is_parse_json(expression: exp.Expr) -> bool:
 
 
 def isnull_to_is_null(args: BuilderArgs) -> exp.Expr:
-    return exp.Paren(this=exp.Is(this=seq_get(args, 0), expression=exp.null()))
+    this = seq_get(args, 0)
+    if isinstance(this, (exp.Predicate, exp.Connector, exp.Not)):
+        this = exp.Paren(this=this)
+    return exp.Paren(this=exp.Is(this=this, expression=exp.null()))
 
 
 def generatedasidentitycolumnconstraint_sql(

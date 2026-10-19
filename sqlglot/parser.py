@@ -6208,15 +6208,47 @@ class Parser:
             )
         return this
 
+    def _build_predicate(
+        self,
+        klass: Type[exp.Binary],
+        this: exp.Expr | None,
+        expression: exp.Expr | None,
+        comments: list[str] | None = None,
+        negate: bool = False,
+    ) -> exp.Expr:
+        is_predicates = (exp.Is, exp.NullSafeEQ, exp.NullSafeNEQ)
+        if klass in is_predicates:
+            if (
+                isinstance(this, (exp.Connector, exp.Not, exp.NullSafeNEQ))
+                or type(this) in self.EQUALITY.values()
+                or type(this) in self.COMPARISON.values()
+                or (klass is not exp.Is and isinstance(this, exp.Is))
+            ):
+                this = exp.Paren(this=this)
+            if isinstance(expression, (exp.Predicate, exp.Connector, exp.Not, exp.Escape)):
+                expression = exp.Paren(this=expression)
+        else:
+            if isinstance(this.this if isinstance(this, exp.Not) else this, is_predicates):
+                this = exp.Paren(this=this)
+            if isinstance(
+                expression.this if isinstance(expression, exp.Not) else expression, is_predicates
+            ):
+                expression = exp.Paren(this=expression)
+
+        predicate = klass(this=this, expression=expression)
+        if negate:
+            predicate.set("negate", True)
+        return self.expression(predicate, comments=comments)
+
     def _parse_equality(self, parse_is: bool = True) -> exp.Expr | None:
         this = self._parse_comparison()
         while True:
             if self._match_set(self.EQUALITY):
                 comments = self._prev_comments
-                this = self.expression(
-                    self.EQUALITY[self._prev.token_type](
-                        this=this, expression=self._parse_comparison()
-                    ),
+                this = self._build_predicate(
+                    self.EQUALITY[self._prev.token_type],
+                    this,
+                    self._parse_comparison(),
                     comments=comments,
                 )
             elif parse_is and self._is_predicate_ahead():
@@ -6233,8 +6265,10 @@ class Parser:
         this = this or self._parse_range()
         while self._match_set(self.COMPARISON):
             comments = self._prev_comments
-            this = self.expression(
-                self.COMPARISON[self._prev.token_type](this=this, expression=self._parse_range()),
+            this = self._build_predicate(
+                self.COMPARISON[self._prev.token_type],
+                this,
+                self._parse_range(),
                 comments=comments,
             )
         return this
@@ -6261,15 +6295,15 @@ class Parser:
 
                 this = expression
             elif self._match(TokenType.ISNULL) or (negate and self._match(TokenType.NULL)):
-                this = self.expression(exp.Is(this=this, expression=exp.Null()))
+                this = self._build_predicate(exp.Is, this, exp.Null())
             elif self._match(TokenType.NOTNULL):
                 # Postgres supports ISNULL and NOTNULL for conditions.
                 # https://blog.andreiavram.ro/postgresql-null-composite-type/
                 if self.dialect.NORMALIZE_NOT_NULL:
-                    this = self.expression(exp.Is(this=this, expression=exp.Null()))
+                    this = self._build_predicate(exp.Is, this, exp.Null())
                     this = self.expression(exp.Not(this=this))
                 else:
-                    this = self.expression(exp.Is(this=this, expression=exp.Null(), negate=True))
+                    this = self._build_predicate(exp.Is, this, exp.Null(), negate=True)
             else:
                 if negate:
                     self._retreat(self._index - 1)
@@ -6302,7 +6336,7 @@ class Parser:
 
         if self._match_text_seq("DISTINCT", "FROM"):
             klass = exp.NullSafeEQ if negate else exp.NullSafeNEQ
-            return self.expression(klass(this=this, expression=self._parse_is_rhs(distinct=True)))
+            return self._build_predicate(klass, this, self._parse_is_rhs(distinct=True))
 
         if self._match(TokenType.JSON):
             kind = self._match_texts(self.IS_JSON_PREDICATE_KIND) and self._prev.text.upper()
@@ -6326,9 +6360,9 @@ class Parser:
                 return None
 
         if negate and isinstance(expression, exp.Null) and not self.dialect.NORMALIZE_NOT_NULL:
-            this = self.expression(exp.Is(this=this, expression=expression, negate=True))
+            this = self._build_predicate(exp.Is, this, expression, negate=True)
         else:
-            this = self.expression(exp.Is(this=this, expression=expression))
+            this = self._build_predicate(exp.Is, this, expression)
             this = self.expression(exp.Not(this=this)) if negate else this
 
         return self._parse_column_ops(this)
@@ -6369,6 +6403,10 @@ class Parser:
         return this
 
     def _parse_between(self, this: exp.Expr | None) -> exp.Between:
+        # Preserve grouping when BETWEEN is rewritten into comparisons.
+        if isinstance(this, (exp.Is, exp.NullSafeEQ, exp.NullSafeNEQ)):
+            this = exp.Paren(this=this)
+
         symmetric = None
         if self._match_text_seq("SYMMETRIC"):
             symmetric = True

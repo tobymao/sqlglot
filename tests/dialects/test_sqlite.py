@@ -10,11 +10,15 @@ class TestSQLite(Validator):
     def test_is_precedence(self):
         self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
         for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):
-            expression = self.validate_identity(f"SELECT NULL IS NULL {suffix}")
-            self.assertIsInstance(expression.expressions[0].this, exp.Is)
-
-            expression = self.validate_identity(f"SELECT NULL IS NOT DISTINCT FROM NULL {suffix}")
-            self.assertIsInstance(expression.expressions[0].this, exp.NullSafeEQ)
+            for predicate, klass in (
+                ("NULL IS NULL", exp.Is),
+                ("NULL IS NOT DISTINCT FROM NULL", exp.NullSafeEQ),
+            ):
+                lhs = f"({predicate})" if suffix.startswith("BETWEEN") else predicate
+                expression = self.validate_identity(
+                    f"SELECT {predicate} {suffix}", f"SELECT {lhs} {suffix}"
+                )
+                self.assertIsInstance(expression.expressions[0].this.unnest(), klass)
 
         self.validate_identity(
             "SELECT NULL IS NULL < FALSE IN (0)", "SELECT NULL IS (NULL < FALSE) IN (0)"

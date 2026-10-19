@@ -2096,3 +2096,15 @@ FALSE IN (0, 1);
 # dialect: postgres
 NULL IS NOT DISTINCT FROM NULL BETWEEN 2 AND 3;
 NULL IS NOT DISTINCT FROM (2 <= NULL AND 3 >= NULL);
+
+# dialect: sqlite
+a IS b BETWEEN 0 AND 1;
+(a IS b) <= 1 AND (a IS b) >= 0;
+
+# dialect: sqlite
+a IS DISTINCT FROM b BETWEEN 0 AND 1;
+(a IS DISTINCT FROM b) <= 1 AND (a IS DISTINCT FROM b) >= 0;
+
+# dialect: sqlite
+a IS NOT DISTINCT FROM b NOT BETWEEN 0 AND 1;
+(a IS NOT DISTINCT FROM b) < 0 OR (a IS NOT DISTINCT FROM b) > 1;

@@ -308,13 +308,15 @@ class TestParser(unittest.TestCase):
                 with self.subTest(dialect=dialect, operator=operator):
                     expression = parse_one(f"a {operator} b IS NULL", read=dialect)
                     if dialect in ("snowflake", "redshift"):
-                        self.assertIsInstance(expression.expression, exp.Is)
+                        self.assertIsInstance(expression.expression, exp.Paren)
+                        self.assertIsInstance(expression.expression.this, exp.Is)
                         self.assertEqual(expression.this, exp.column("a"))
-                        self.assertEqual(expression.expression.this, exp.column("b"))
+                        self.assertEqual(expression.expression.this.this, exp.column("b"))
                     else:
                         self.assertIsInstance(expression, exp.Is)
-                        self.assertEqual(expression.this.this, exp.column("a"))
-                        self.assertEqual(expression.this.expression, exp.column("b"))
+                        self.assertIsInstance(expression.this, exp.Paren)
+                        self.assertEqual(expression.this.this.this, exp.column("a"))
+                        self.assertEqual(expression.this.this.expression, exp.column("b"))
 
         for predicate in (
             "IS NULL",
@@ -333,16 +335,19 @@ class TestParser(unittest.TestCase):
                 if isinstance(expression, exp.Not):
                     expression = expression.this
                 self.assertIsInstance(expression, exp.Is)
-                self.assertIsInstance(expression.this, exp.EQ)
+                self.assertIsInstance(expression.this, exp.Paren)
+                self.assertIsInstance(expression.this.this, exp.EQ)
 
         for dialect in ("postgres", "duckdb", "mysql", "sqlite", "clickhouse", "dremio", "drill"):
             for operator in ("=", "<"):
                 expression = parse_one(f"a IS NULL {operator} b", read=dialect)
                 if dialect == "sqlite" and operator == "<":
                     self.assertIsInstance(expression, exp.Is)
-                    self.assertIsInstance(expression.expression, exp.LT)
+                    self.assertIsInstance(expression.expression, exp.Paren)
+                    self.assertIsInstance(expression.expression.this, exp.LT)
                 else:
-                    self.assertIsInstance(expression.this, exp.Is)
+                    self.assertIsInstance(expression.this, exp.Paren)
+                    self.assertIsInstance(expression.this.this, exp.Is)
 
         for dialect in (
             "postgres",
@@ -359,10 +364,12 @@ class TestParser(unittest.TestCase):
                 if dialect in ("dremio", "drill") or (
                     dialect in ("sqlite", "hive") and operator == "="
                 ):
-                    self.assertIsInstance(expression.this, exp.NullSafeNEQ)
+                    self.assertIsInstance(expression.this, exp.Paren)
+                    self.assertIsInstance(expression.this.this, exp.NullSafeNEQ)
                 else:
                     self.assertIsInstance(expression, exp.NullSafeNEQ)
-                    self.assertIsInstance(expression.expression, exp.Predicate)
+                    self.assertIsInstance(expression.expression, exp.Paren)
+                    self.assertIsInstance(expression.expression.this, exp.Predicate)
 
         for dialect in ("postgres", "snowflake"):
             expression = parse_one("FALSE IS DISTINCT FROM NULL::BOOLEAN", read=dialect)
@@ -378,7 +385,8 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(expression.this, exp.And)
         self.assertIsInstance(expression.this.this, exp.Not)
         self.assertIsInstance(expression.this.this.this, exp.Is)
-        self.assertIsInstance(expression.this.this.this.this, exp.EQ)
+        self.assertIsInstance(expression.this.this.this.this, exp.Paren)
+        self.assertIsInstance(expression.this.this.this.this.this, exp.EQ)
 
     def test_limit_percent_parses_without_modulo(self):
         expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")

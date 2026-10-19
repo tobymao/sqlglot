@@ -2772,6 +2772,87 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for _ in range(100):
             self.assertTrue(annotator.annotate(parse_one("1")).is_type(exp.DType.INT))
 
+    def test_annotate_struct_subquery_values(self):
+        for sql, expected in (
+            ("SELECT (SELECT AS STRUCT 1 AS x) AS value", "STRUCT<x INT64>"),
+            ("SELECT (SELECT AS STRUCT 1 AS x, 'a' AS y) AS value", "STRUCT<x INT64, y STRING>"),
+            ("SELECT (SELECT 1 AS x) AS value", "INT64"),
+            ("SELECT ARRAY(SELECT AS STRUCT 1 AS x) AS value", "ARRAY<STRUCT<x INT64>>"),
+            ("SELECT ARRAY(SELECT 1 AS x) AS value", "ARRAY<INT64>"),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(parse_one(sql, dialect="bigquery"), dialect="bigquery")
+                self.assertEqual(qualified.selects[0].type.sql("bigquery"), expected)
+
+        qualified = qualify(
+            parse_one("SELECT r FROM (SELECT 1 AS x) AS r", dialect="duckdb"), dialect="duckdb"
+        )
+        annotate_types(qualified, dialect="duckdb")
+        self.assertEqual(qualified.selects[0].type, exp.DataType.build("STRUCT<x INT>"))
+
+    def test_reannotate_struct_subquery_values(self):
+        tree = annotate_types(
+            parse_one("SELECT (SELECT AS STRUCT 1 AS x) AS value", dialect="bigquery"),
+            dialect="bigquery",
+        )
+        for expression in (tree, tree.copy()):
+            with self.subTest(copied=expression is not tree):
+                expression.find(exp.Literal).replace(exp.column("unknown"))
+                annotate_types(expression, dialect="bigquery", overwrite_types=True)
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+    def test_annotate_row_duplicate_fields(self):
+        for dialect in ("bigquery", "duckdb"):
+            with self.subTest(dialect=dialect):
+                qualified = qualify(
+                    parse_one("SELECT r FROM (SELECT 1 AS x, 'a' AS x) AS r", dialect=dialect),
+                    dialect=dialect,
+                )
+                annotate_types(qualified, dialect=dialect)
+                self.assertEqual(
+                    qualified.selects[0].type,
+                    exp.DataType.build(
+                        "STRUCT<x INT, x VARCHAR>" if dialect == "bigquery" else "UNKNOWN"
+                    ),
+                )
+
+    def test_annotate_expression_copied_subqueries(self):
+        schema = MappingSchema(
+            {"t": {"s": "STRUCT<x INT64>"}, "u": {"s": "STRUCT<x STRING>"}}, dialect="bigquery"
+        )
+        for sql in (
+            "SELECT (SELECT s FROM u LIMIT 1) FROM t",
+            "SELECT (SELECT s FROM u AS t LIMIT 1) FROM t",
+            "WITH c AS (SELECT s FROM u) SELECT (SELECT s FROM c LIMIT 1) FROM t",
+            "SELECT (SELECT t.s FROM u LIMIT 1) FROM u AS t",
+        ):
+            with self.subTest(sql=sql):
+                tree = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                scope = build_scope(tree)
+                assert scope is not None
+                copied = tree.selects[0].copy()
+                annotator = TypeAnnotator(schema)
+                annotator.annotate_expression(copied, scope)
+                self.assertEqual(copied.type.sql("bigquery"), "STRUCT<x STRING>")
+
+    def test_annotate_expression_table_references(self):
+        schema = MappingSchema({"t": {"a": "INT64"}}, dialect="bigquery")
+        tree = parse_one(
+            "SELECT IF(TRUE, t, NULL) AS r, t AS untouched FROM t", dialect="bigquery"
+        ).transform(
+            lambda node: exp.TableColumn(this=node.this) if isinstance(node, exp.Column) else node
+        )
+        scope = build_scope(tree)
+        assert scope is not None
+        annotator = TypeAnnotator(schema)
+        annotator.annotate_expression(tree.selects[0], scope)
+        self.assertEqual(tree.selects[0].type.sql("bigquery"), "STRUCT<a INT64>")
+        self.assertIsNone(tree.selects[1].this.type)
+        annotator.annotate_scope(scope)
+        self.assertEqual(tree.selects[1].type.sql("bigquery"), "STRUCT<a INT64>")
+
     def test_annotate_untyped_binary_operands(self):
         # Operands that escaped annotation have type None; treat them as UNKNOWN instead
         # of crashing on `.type.this`

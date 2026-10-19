@@ -14,7 +14,7 @@ from sqlglot.helper import (
     seq_get,
 )
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, ScopeType, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
 if t.TYPE_CHECKING:
@@ -286,7 +286,7 @@ class TypeAnnotator:
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        self._annotate_expression(expression)
+        self.annotate_expression(expression)
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -417,44 +417,12 @@ class TypeAnnotator:
         return {}
 
     def annotate_scope(self, scope: Scope) -> None:
-        if isinstance(self.schema, MappingSchema):
-            for table_column in scope.table_columns:
-                source = scope.sources.get(table_column.name)
-
-                schema: dict[str, exp.DataType | exp.DType] | None
-                if any(pivot.alias == table_column.name for pivot in scope.pivots):
-                    schema = self._get_scope_source_selects(scope, table_column.name)
-                elif isinstance(source, exp.Table):
-                    schema = self.schema.find(
-                        source, raise_on_missing=False, ensure_data_types=True
-                    )
-                else:
-                    schema = None
-
-                if isinstance(schema, dict) and schema:
-                    struct_type = exp.DataType(
-                        this=exp.DType.STRUCT,
-                        expressions=[
-                            exp.ColumnDef(this=exp.to_identifier(str(c)), kind=kind)
-                            for c, kind in schema.items()
-                        ],
-                        nested=True,
-                    )
-                    self._set_type(table_column, struct_type)
-                elif (
-                    isinstance(source, Scope)
-                    and isinstance(source.expression, exp.Query)
-                    and (
-                        source.expression.meta_get("query_type") or exp.DType.UNKNOWN.into_expr()
-                    ).is_type(exp.DType.STRUCT)
-                ):
-                    self._set_type(table_column, source.expression.meta["query_type"])
-
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expression(scope.expression, scope)
+        self.annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
+            scope.expression.meta.pop("query_type", None)
             struct_type = exp.DataType(
                 this=exp.DType.STRUCT,
                 expressions=[
@@ -475,11 +443,12 @@ class TypeAnnotator:
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _annotate_expression(
+    def annotate_expression(
         self,
         expression: exp.Expr,
         scope: Scope | None = None,
     ) -> None:
+        """Annotate a subtree without annotating unrelated expressions in its scope."""
         stack = [(expression, False)]
 
         while stack:
@@ -491,9 +460,25 @@ class TypeAnnotator:
                 continue  # We've already inferred the expression's type
 
             if not children_annotated:
+                if (
+                    scope
+                    and isinstance(expr, exp.Query)
+                    and expr is not scope.expression
+                    and id(expr.unnest()) not in self._visited
+                ):
+                    child_scope = scope.branch(expr, scope_type=ScopeType.SUBQUERY)
+                    for nested_scope in traverse_scope(child_scope):
+                        if id(nested_scope.expression) not in self._visited:
+                            self.annotate_scope(nested_scope)
+                    if id(expr) in self._visited:
+                        continue
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
                     stack.append((child_expr, False))
+                continue
+
+            if scope and isinstance(expr, exp.TableColumn):
+                self._annotate_table_column(expr, scope)
                 continue
 
             if scope and isinstance(expr, exp.Column) and expr.table and not expr.is_star:
@@ -574,6 +559,46 @@ class TypeAnnotator:
 
             self._restore_dot_parts(expr)
 
+    def _annotate_table_column(self, expression: exp.TableColumn, scope: Scope) -> None:
+        source = scope.sources.get(expression.name)
+        column_types = None
+        if any(pivot.alias == expression.name for pivot in scope.pivots):
+            column_types = self._get_scope_source_selects(scope, expression.name)
+        elif isinstance(source, Scope):
+            column_types = self._get_scope_source_selects(scope, expression.name)
+            if query_type := source.expression.meta_get("query_type"):
+                self._set_type(expression, query_type)
+                return
+            names = (
+                source.expression.named_selects
+                if isinstance(source.expression, exp.Selectable)
+                else []
+            )
+            if len(names) != len(set(names)) or any(
+                exp.DataType.build(kind).is_type(exp.DType.UNKNOWN)
+                for kind in column_types.values()
+            ):
+                column_types = None
+        elif isinstance(source, exp.Table) and isinstance(self.schema, MappingSchema):
+            column_types = self.schema.find(source, raise_on_missing=False, ensure_data_types=True)
+
+        if isinstance(column_types, dict) and column_types:
+            self._set_type(
+                expression,
+                exp.DataType(
+                    this=exp.DType.STRUCT,
+                    expressions=[
+                        exp.ColumnDef(
+                            this=exp.to_identifier(str(name)), kind=exp.DataType.build(kind)
+                        )
+                        for name, kind in column_types.items()
+                    ],
+                    nested=True,
+                ),
+            )
+        else:
+            self._set_type(expression, exp.DType.UNKNOWN)
+
     def _restore_dot_parts(self, expr: exp.Expr) -> None:
         # Dot access into semi-structured values is a case sensitive data lookup, i.e. the
         # engine doesn't resolve the keys as identifiers, so we undo their normalization.
@@ -640,7 +665,7 @@ class TypeAnnotator:
                 for node in ordered.walk(prune=lambda n: isinstance(n, exp.Subquery)):
                     if not isinstance(node, (exp.Column, exp.Literal)):
                         self._visited.pop(id(node), None)
-                self._annotate_expression(ordered, scope)
+                self.annotate_expression(ordered, scope)
 
     def _maybe_coerce(
         self,
@@ -809,7 +834,7 @@ class TypeAnnotator:
                 self.uncache(agg)
                 for column in agg.find_all(exp.Column):
                     self._set_type(column, src_types.get(column.name))
-                self._annotate_expression(agg)
+                self.annotate_expression(agg)
 
         agg_types = [
             agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions
@@ -1058,6 +1083,9 @@ class TypeAnnotator:
         query = expression.unnest()
 
         if isinstance(query, exp.Query):
+            if query.args.get("kind") == "STRUCT":
+                self._set_type(expression, query.meta_get("query_type"))
+                return expression
             selects = query.selects
             if len(selects) == 1:
                 self._set_type(expression, selects[0].type)

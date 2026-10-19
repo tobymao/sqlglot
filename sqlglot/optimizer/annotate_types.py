@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import itertools
 import logging
 import typing as t
 
@@ -240,19 +241,6 @@ class TypeAnnotator:
         self._table_column_aliases.clear()
         self._scope_source_selects.clear()
 
-    def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
-        """
-        Evicts `expression` (or its subtree, if `deep`) from the annotation caches. Call this
-        before mutating an already-annotated tree so a subsequent pass recomputes its types.
-        """
-        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
-        for node in nodes:
-            node_id = id(node)
-            self._visited.pop(node_id, None)
-            self._null_expressions.pop(node_id, None)
-            self._setop_column_types.pop(node_id, None)
-            self._table_column_aliases.pop(node_id, None)
-
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
     def _set_type(
@@ -336,6 +324,8 @@ class TypeAnnotator:
 
         if selects is None:
             selects = {}
+            # Recursive sources can revisit this key while their types are being inferred.
+            self._scope_source_selects[key] = selects
             source = scope.sources.get(source_name)
 
             pivots: list[exp.Pivot] = next(
@@ -390,6 +380,32 @@ class TypeAnnotator:
 
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
+        if id(expression) not in self._visited:
+            # Referenced CTEs are siblings, so scope traversal alone misses their dependencies.
+            stack = [(source, False)]
+            scheduled: set[int] = set()
+            while stack:
+                current, ready = stack.pop()
+                key = id(current.expression)
+                if key in self._visited:
+                    continue
+                if ready:
+                    self.annotate_scope(current)
+                elif key not in scheduled:
+                    scheduled.add(key)
+                    stack.append((current, True))
+                    dependencies = itertools.chain(
+                        current.cte_scopes,
+                        current.set_operation_scopes,
+                        current.table_scopes,
+                        current.subquery_scopes,
+                        (
+                            dependency
+                            for name, _ in current.references
+                            if isinstance(dependency := current.sources.get(name), Scope)
+                        ),
+                    )
+                    stack.extend((dependency, False) for dependency in reversed(list(dependencies)))
 
         if isinstance(expression, exp.UDTF):
             values = []
@@ -861,16 +877,14 @@ class TypeAnnotator:
         output_to_src = pivot.output_columns(src_types)
 
         # Output types may be requested before the PIVOT itself has been annotated.
+        agg_types: list[exp.DataType | None] = []
         for agg in pivot.expressions:
             if not agg.type or agg.is_type(exp.DType.UNKNOWN):
-                self.uncache(agg)
+                agg = agg.copy()
                 for column in agg.find_all(exp.Column):
                     self._set_type(column, src_types.get(column.name))
                 self.annotate_expression(agg)
-
-        agg_types = [
-            agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions
-        ]
+            agg_types.append(agg.this.type if isinstance(agg, exp.Alias) else agg.type)
         agg_cols_offset = len(output_to_src) - len(pivot_constants) * len(agg_types)
         if agg_cols_offset < 0:
             raise OptimizeError(f"Negative pivot column offset: {agg_cols_offset}")

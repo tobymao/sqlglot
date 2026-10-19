@@ -65,6 +65,8 @@ class Resolver:
                 pass
 
         if not table_name:
+            table_name = self._get_unknown_tvf_table()
+        if not table_name:
             return None
 
         if table_name not in self.scope.selected_sources:
@@ -91,6 +93,24 @@ class Resolver:
                 scope = scope.parent
                 self._outer_resolvers.append(Resolver(scope, self.schema))
         return self._outer_resolvers
+
+    def _get_unknown_tvf_table(self) -> str | None:
+        """If there's exactly one unknown-schema TVF source, return its name for back-projection."""
+        if not self.has_unknown_sources or self.scope.can_be_correlated:
+            return None
+
+        unknown_tvf_names = []
+        for name, columns in self._get_all_source_columns().items():
+            if columns and "*" not in columns:
+                continue
+            source = self.scope.sources.get(name)
+            is_tvf = (isinstance(source, exp.Table) and isinstance(source.this, exp.Func)) or (
+                isinstance(source, Scope) and source.is_udtf
+            )
+            if is_tvf:
+                unknown_tvf_names.append(name)
+
+        return unknown_tvf_names[0] if len(unknown_tvf_names) == 1 else None
 
     @property
     def has_unknown_sources(self) -> bool:

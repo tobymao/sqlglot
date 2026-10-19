@@ -255,10 +255,10 @@ def _array_agg_fold_sql(
     agg.set("this", folded)
     if ignore_nulls:
         # All-NULL input yields [], but an empty input still yields NULL.
-        agg = exp.func(
-            "COALESCE",
-            exp.IgnoreNulls(this=agg),
-            exp.If(this=exp.Count(this=exp.Star()).eq(0), true=exp.null(), false=exp.array()),
+        agg = exp.If(
+            this=exp.Count(this=exp.Star()).eq(0),
+            true=exp.null(),
+            false=exp.func("COALESCE", exp.IgnoreNulls(this=agg), exp.array()),
         )
     return self.sql(agg)
 

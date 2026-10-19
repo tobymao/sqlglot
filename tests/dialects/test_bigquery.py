@@ -3552,15 +3552,22 @@ OPTIONS (
         ):
             with self.subTest(source=source):
                 self.validate_all(
-                    f"COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS{order}), IF(COUNT(*) = 0, NULL, []))",
+                    f"IF(COUNT(*) = 0, NULL, COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS{order}), []))",
                     read={"duckdb": source},
                 )
 
-        for values, where in (("1, NULL, 2, 1", ""), ("NULL", ""), ("1", " WHERE FALSE")):
+        for values, where in (
+            ("1, NULL, 2, 1", ""),
+            ("NULL", ""),
+            ("1", " WHERE FALSE"),
+            ("'a', NULL, 'b', 'a'", ""),
+            ("CAST(NULL AS STRING)", ""),
+            ("'a'", " WHERE FALSE"),
+        ):
             with self.subTest(values=values, where=where):
                 self.validate_all(
-                    "SELECT ARRAY_LENGTH(COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS), "
-                    "IF(COUNT(*) = 0, NULL, []))) "
+                    "SELECT ARRAY_LENGTH(IF(COUNT(*) = 0, NULL, "
+                    "COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS), []))) "
                     f"FROM UNNEST([{values}]) AS x{where}",
                     read={
                         "duckdb": "SELECT ARRAY_LENGTH(LIST_DISTINCT(LIST(x))) "

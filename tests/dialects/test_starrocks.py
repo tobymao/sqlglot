@@ -410,6 +410,15 @@ class TestStarrocks(Validator):
                     },
                 )
 
+        # Every column of a multi-array UNNEST is named "unnest", so no column alias is added
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 AS id) AS s, UNNEST([1, 2], ['a', 'b'])",
+            "SELECT * FROM (SELECT 1 AS id) AS s, UNNEST([1, 2], ['a', 'b']) AS unnest",
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 AS id) AS s, UNNEST([1, 2], ['a', 'b']) AS t"
+        )
+
     def test_ignore_respect_nulls(self):
         for func in ("FIRST_VALUE", "LAST_VALUE", "LAG", "LEAD"):
             with self.subTest(func=func):

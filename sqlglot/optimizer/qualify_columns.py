@@ -987,120 +987,39 @@ def _qualify_columns(
             produced.update(available)
 
 
-def _expand_struct_stars_no_parens(
-    expression: exp.Dot,
-) -> list[exp.Alias]:
-    """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
-
-    dot_column = expression.this
-    while isinstance(dot_column, exp.Dot):
-        dot_column = dot_column.this
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
+def _expand_struct_stars(expression: exp.Dot, dialect: Dialect) -> list[exp.Alias]:
+    operand = expression.this
+    requires_parens = dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS
+    if requires_parens and not isinstance(operand, exp.Paren):
         return []
 
-    # All nested struct values are ColumnDefs, so normalize the first exp.Column in one
-    dot_column = dot_column.copy()
-    starting_struct = exp.ColumnDef(this=dot_column.this, kind=dot_column.type)
-
-    # First part is the table name and last part is the star so they can be dropped
-    dot_parts = expression.parts[1:-1]
-
-    # If we're expanding a nested struct eg. t.c.f1.f2.* find the last struct (f2 in this case)
-    for part in dot_parts[1:]:
-        for field in t.cast(exp.DataType, starting_struct.kind).expressions:
-            # Unable to expand star unless all fields are named
-            if not isinstance(field.this, exp.Identifier):
+    root = operand
+    while isinstance(root, (exp.Dot, exp.Paren)):
+        if isinstance(root, exp.Paren):
+            if not requires_parens:
                 return []
-
-            if field.name == part.name and field.kind.is_type(exp.DType.STRUCT):
-                starting_struct = field
-                break
-        else:
-            # There is no matching field in the struct
+        elif not isinstance(root.expression, exp.Identifier):
             return []
+        root = root.this
+
+    if not isinstance(root, exp.Column) or not operand.is_type(exp.DType.STRUCT):
+        return []
 
     taken_names = set()
     new_selections = []
-
-    for field in t.cast(exp.DataType, starting_struct.kind).expressions:
-        name = field.name
-
-        # Ambiguous or anonymous fields can't be expanded
-        if name in taken_names or not isinstance(field.this, exp.Identifier):
+    for field in t.cast(exp.DataType, operand.type).expressions:
+        if not isinstance(field, exp.ColumnDef) or not isinstance(field.this, exp.Identifier):
             return []
-
-        taken_names.add(name)
-
-        this = field.this.copy()
-        root, *parts = [part.copy() for part in itertools.chain(dot_parts, [this])]
-        new_column = exp.column(
-            t.cast(exp.Identifier, root),
-            table=dot_column.args.get("table"),
-            fields=t.cast(list[exp.Identifier], parts),
+        if field.name in taken_names:
+            return []
+        taken_names.add(field.name)
+        new_selections.append(
+            alias(
+                exp.Dot(this=operand.copy(), expression=field.this.copy()),
+                field.this.copy(),
+                copy=False,
+            ).assert_is(exp.Alias)
         )
-        new_selections.append(alias(new_column, this, copy=False).assert_is(exp.Alias))
-
-    return new_selections
-
-
-def _expand_struct_stars_with_parens(expression: exp.Dot) -> list[exp.Alias]:
-    """[RisingWave] Expand/Flatten (<exp>.bar).*, where bar is a struct column"""
-
-    # it is not (<sub_exp>).* pattern, which means we can't expand
-    if not isinstance(expression.this, exp.Paren):
-        return []
-
-    # find column definition to get data-type
-    dot_column = expression.find(exp.Column)
-    if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
-        return []
-
-    parent = dot_column.parent
-    starting_struct = dot_column.type
-
-    # walk up AST and down into struct definition in sync
-    while parent is not None:
-        if isinstance(parent, exp.Paren):
-            parent = parent.parent
-            continue
-
-        # if parent is not a dot, then something is wrong
-        if not isinstance(parent, exp.Dot):
-            return []
-
-        # if the rhs of the dot is star we are done
-        rhs = parent.right
-        if isinstance(rhs, exp.Star):
-            break
-
-        # if it is not identifier, then something is wrong
-        if not isinstance(rhs, exp.Identifier):
-            return []
-
-        # Check if current rhs identifier is in struct
-        matched = False
-        for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
-            if struct_field_def.name == rhs.name:
-                matched = True
-                starting_struct = struct_field_def.kind  # update struct
-                break
-
-        if not matched:
-            return []
-
-        parent = parent.parent
-
-    # build new aliases to expand star
-    new_selections = []
-
-    # fetch the outermost parentheses for new aliaes
-    outer_paren = expression.this
-
-    for struct_field_def in t.cast(exp.DataType, starting_struct).expressions:
-        new_identifier = struct_field_def.this.copy()
-        new_dot = exp.Dot.build([outer_paren.copy(), new_identifier])
-        new_alias = alias(new_dot, new_identifier, copy=False).assert_is(exp.Alias)
-        new_selections.append(new_alias)
 
     return new_selections
 
@@ -1169,12 +1088,11 @@ def _expand_stars(
                 _add_rename_columns(expression.this, tables, rename_columns)
                 ilike_pattern = _add_ilike_columns(expression.this, dialect)
             elif isinstance(expression, exp.Dot):
-                if dialect.REQUIRES_PARENTHESIZED_STRUCT_ACCESS:
-                    struct_fields = _expand_struct_stars_with_parens(expression)
-                elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
-                    struct_fields = _expand_struct_stars_no_parens(expression)
-                else:
-                    struct_fields = []
+                struct_fields = (
+                    _expand_struct_stars(expression, dialect)
+                    if dialect.SUPPORTS_STRUCT_STAR_EXPANSION
+                    else []
+                )
 
                 if struct_fields:
                     if annotated_ahead:

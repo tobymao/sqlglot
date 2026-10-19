@@ -698,7 +698,10 @@ class BigQueryGenerator(generator.Generator):
         return self.sql(exp.cast(prefixed, exp.DType.BIGINT, copy=False))
 
     def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
-        if isinstance(expression.find_ancestor(exp.Window, exp.AggFunc, exp.Select), exp.Window):
+        node: exp.Expr = expression
+        while node.parent and not isinstance(node.parent, (exp.Window, exp.AggFunc, exp.Select)):
+            node = node.parent
+        if isinstance(node.parent, exp.Window) and node.arg_key == "this":
             self.unsupported("APPROX_QUANTILES does not support window functions")
             return self.function_fallback_sql(expression)
 

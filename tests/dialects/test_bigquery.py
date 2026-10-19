@@ -4220,6 +4220,23 @@ OPTIONS (
         self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
 
     def test_approx_quantile_window(self):
+        for source, target in (
+            ("ORDER BY APPROX_PERCENTILE(x, 0.5)", "ORDER BY APPROX_QUANTILES(x, 2)[1] NULLS LAST"),
+            (
+                "PARTITION BY APPROX_PERCENTILE(x, 0.5) ORDER BY y",
+                "PARTITION BY APPROX_QUANTILES(x, 2)[1] ORDER BY y NULLS LAST",
+            ),
+            (
+                "ORDER BY APPROX_PERCENTILE(x, 0.5) FILTER(WHERE x > 0)",
+                "ORDER BY APPROX_QUANTILES(IF(x > 0, x, NULL), 2)[1] NULLS LAST",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    f"SELECT ROW_NUMBER() OVER ({target}) FROM t GROUP BY y",
+                    read={"trino": f"SELECT ROW_NUMBER() OVER ({source}) FROM t GROUP BY y"},
+                )
+
         for sql in (
             "APPROX_PERCENTILE(x, 0.5) OVER ()",
             "APPROX_PERCENTILE(x, 0.5) OVER (PARTITION BY y)",

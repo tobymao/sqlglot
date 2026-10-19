@@ -8,6 +8,24 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_is_precedence(self):
+        self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
+        for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):
+            expression = self.validate_identity(f"SELECT NULL IS NULL {suffix}")
+            self.assertIsInstance(expression.expressions[0].this, exp.Is)
+
+            expression = self.validate_identity(f"SELECT NULL IS NOT DISTINCT FROM NULL {suffix}")
+            self.assertIsInstance(expression.expressions[0].this, exp.NullSafeEQ)
+
+        self.validate_identity(
+            "SELECT NULL IS NULL < FALSE IN (0)", "SELECT NULL IS (NULL < FALSE) IN (0)"
+        )
+        for predicate in ("NOT NULL", "NOTNULL", "IS NOT NULL"):
+            for suffix in ("IN (0, 1)", "BETWEEN 0 AND 1", "NOT IN (0, 1)"):
+                negated = suffix.startswith("NOT ")
+                self.validate_identity(
+                    f"SELECT NULL {predicate} {suffix}",
+                    f"SELECT {'NOT ' if negated else ''}(NOT NULL IS NULL) {suffix.removeprefix('NOT ')}",
+                )
         self.validate_all(
             "SELECT FALSE IS DISTINCT FROM TRUE IS DISTINCT FROM FALSE",
             write={

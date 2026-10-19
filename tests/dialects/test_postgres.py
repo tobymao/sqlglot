@@ -10,6 +10,23 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_is_precedence(self):
+        for predicate in (
+            "NULL IN (0)",
+            "NULL NOT IN (0)",
+            "NULL BETWEEN 2 AND 3",
+            "NULL NOT BETWEEN 2 AND 3",
+            "NULL LIKE 'x'",
+            "NULL NOT LIKE 'x'",
+        ):
+            for operator in ("IS DISTINCT FROM", "IS NOT DISTINCT FROM"):
+                rhs = self.parse_one(predicate).sql("postgres")
+                self.validate_all(
+                    f"SELECT NULL {operator} {predicate}",
+                    write={
+                        dialect: f"SELECT NULL {operator} ({rhs})"
+                        for dialect in ("postgres", "sqlite", "duckdb", "snowflake", "redshift")
+                    },
+                )
         self.validate_all(
             "SELECT a = b IS NULL FROM t",
             write={
@@ -52,6 +69,9 @@ class TestPostgres(Validator):
         )
         self.validate_identity("SELECT a = b NOTNULL FROM t", "SELECT (a = b) IS NOT NULL FROM t")
         self.validate_identity("SELECT a = (b IS NULL) FROM t")
+        self.validate_identity("SELECT a IS NOT NULL IS NULL FROM t")
+        self.validate_identity("SELECT a IS NULL IS NOT NULL FROM t")
+        self.validate_identity("SELECT NULL IS NOT NULL IS FALSE")
         self.validate_identity(
             "CREATE TABLE t (a INT, b BOOLEAN GENERATED ALWAYS AS (a IS NULL) STORED)"
         )

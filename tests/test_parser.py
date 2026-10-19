@@ -297,6 +297,7 @@ class TestParser(unittest.TestCase):
             "starrocks",
             "oracle",
             "dremio",
+            "doris",
             "drill",
             "materialize",
             "risingwave",

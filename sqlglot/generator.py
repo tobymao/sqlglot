@@ -4796,11 +4796,15 @@ class Generator:
         stack: list[None | str | exp.Expr] = [expression]
         binary_type = type(expression)
         is_predicate = isinstance(expression, _IS_PREDICATES)
+        is_comparison = isinstance(expression, _COMPARISON_PREDICATES)
+        negate = expression.args.get("negate")
 
         while stack:
             node = stack.pop()
 
-            if type(node) is binary_type:
+            if type(node) is binary_type and (
+                node is expression or node.args.get("negate") == negate
+            ):
                 wrapped = (
                     is_predicate
                     and node is not expression
@@ -4821,14 +4825,21 @@ class Generator:
                     stack.append("(")
             else:
                 sql = self.sql(node)
-                predicate = node.this if isinstance(node, exp.Not) else node
                 if (
-                    (is_predicate and isinstance(predicate, _COMPARISON_PREDICATES))
-                    or (
-                        isinstance(expression, _COMPARISON_PREDICATES)
-                        and isinstance(predicate, _IS_PREDICATES)
+                    is_predicate
+                    and (
+                        isinstance(node, (exp.Connector, exp.Not))
+                        or (
+                            isinstance(node, exp.Predicate)
+                            and (
+                                node.arg_key == "expression"
+                                or isinstance(node, _COMPARISON_PREDICATES)
+                            )
+                        )
                     )
-                    or (is_predicate and isinstance(node, exp.Not))
+                ) or (
+                    is_comparison
+                    and isinstance(node.this if isinstance(node, exp.Not) else node, _IS_PREDICATES)
                 ):
                     sql = self.wrap(sql)
                 sqls.append(sql)

@@ -328,7 +328,7 @@ class MySQLParser(parser.Parser):
 
         return super()._parse_column_constraint()
 
-    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+    def _parse_range(self, this: exp.Expr | None = None, parse_is: bool = False) -> exp.Expr | None:
         this = this or self._parse_bitwise()
 
         if self._match_text_seq("SOUNDS", "LIKE"):
@@ -342,7 +342,7 @@ class MySQLParser(parser.Parser):
             if self._match(TokenType.IS, advance=False):
                 this = self.expression(exp.Paren(this=this))
 
-        return super()._parse_range(this)
+        return super()._parse_range(this, parse_is=parse_is)
 
     def _parse_alter_table_rename(self):
         if self._match_texts(("INDEX", "KEY")):

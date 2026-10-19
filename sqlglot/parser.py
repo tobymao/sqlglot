@@ -6211,17 +6211,12 @@ class Parser:
                     ),
                     comments=comments,
                 )
-            elif (
-                parse_is
-                and self.IS_PREDICATE_PRECEDENCE != "high"
-                and self._curr.token_type in self.IS_PREDICATE_TOKENS
-            ):
+            elif parse_is and self._is_predicate_ahead():
                 index = self._index
-                this = self._parse_is_predicate(this)
+                # A postfix predicate can itself be an operand, e.g. x IS NULL = FALSE.
+                this = self._parse_comparison(self._parse_range(this, parse_is=True))
                 if self._index == index:
                     break
-                # A postfix predicate can itself be an operand, e.g. x IS NULL = FALSE.
-                this = self._parse_comparison(self._parse_range(this))
             else:
                 break
         return this
@@ -6236,31 +6231,19 @@ class Parser:
             )
         return this
 
-    def _parse_is_predicate(self, this: exp.Expr | None) -> exp.Expr | None:
-        if self._match(TokenType.IS):
-            return self._parse_is(this) or this
-        if self._match(TokenType.ISNULL):
-            return self.expression(exp.Is(this=this, expression=exp.Null()))
-        if self._match(TokenType.NOTNULL) or self._match_pair(TokenType.NOT, TokenType.NULL):
-            if self.dialect.NORMALIZE_NOT_NULL:
-                return self.expression(
-                    exp.Not(this=self.expression(exp.Is(this=this, expression=exp.Null())))
-                )
-            return self.expression(exp.Is(this=this, expression=exp.Null(), negate=True))
-        return this
+    def _is_predicate_ahead(self) -> bool:
+        if (
+            self.IS_PREDICATE_PRECEDENCE == "high"
+            or self._curr.token_type not in self.IS_PREDICATE_TOKENS
+        ):
+            return False
+        return self._curr.token_type != TokenType.NOT or self._next.token_type == TokenType.NULL
 
-    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+    def _parse_range(self, this: exp.Expr | None = None, parse_is: bool = False) -> exp.Expr | None:
         this = this or self._parse_bitwise()
 
         while True:
-            if (
-                self.IS_PREDICATE_PRECEDENCE != "high"
-                and self._curr.token_type in self.IS_PREDICATE_TOKENS
-                and (
-                    self._curr.token_type != TokenType.NOT
-                    or (self._next and self._next.token_type == TokenType.NULL)
-                )
-            ):
+            if not parse_is and self._is_predicate_ahead():
                 break
             negate = self._match(TokenType.NOT)
             if self._match_set(self.RANGE_PARSERS):
@@ -6286,11 +6269,11 @@ class Parser:
 
             if negate:
                 this = self._negate_range(this)
-                if self._curr and (
-                    self._curr.token_type == TokenType.NOT
-                    or self._curr.token_type in self.RANGE_PARSERS
-                ):
-                    this = self.expression(exp.Paren(this=this))
+            if (negate or (isinstance(this, exp.Not) and isinstance(this.this, exp.Is))) and (
+                self._curr.token_type == TokenType.NOT
+                or self._curr.token_type in self.RANGE_PARSERS
+            ):
+                this = self.expression(exp.Paren(this=this))
 
         return this
 

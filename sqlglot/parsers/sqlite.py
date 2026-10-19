@@ -105,8 +105,15 @@ class SQLiteParser(parser.Parser):
     }
 
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
-        # SQLite's IS is binary, including when the right operand starts with NULL or TRUE.
-        return self._parse_comparison()
+        # Ordering comparisons bind above IS, but range predicates bind below it.
+        this = self._parse_bitwise()
+        while self._match_set(self.COMPARISON):
+            comments = self._prev_comments
+            this = self.expression(
+                self.COMPARISON[self._prev.token_type](this=this, expression=self._parse_bitwise()),
+                comments=comments,
+            )
+        return this
 
     def _parse_factor_operand(self) -> exp.Expr | None:
         in_arithmetic_operand = self._prev.token_type in self.ARITHMETIC_TOKENS

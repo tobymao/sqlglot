@@ -2084,3 +2084,15 @@ NULL = TRUE;
 # dialect: redshift
 NULL = NULL IS NULL;
 NULL = TRUE;
+
+# dialect: sqlite
+NULL IS NULL BETWEEN 0 AND 0;
+0 <= TRUE AND 0 >= TRUE;
+
+# dialect: sqlite
+NULL NOT NULL IN (0, 1);
+FALSE IN (0, 1);
+
+# dialect: postgres
+NULL IS NOT DISTINCT FROM NULL BETWEEN 2 AND 3;
+NULL IS NOT DISTINCT FROM (2 <= NULL AND 3 >= NULL);

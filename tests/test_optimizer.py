@@ -1323,6 +1323,23 @@ class TestOptimizer(unittest.TestCase):
                 assert pseudo is not None
                 self.assertTrue(pseudo.is_type(exp.DType.UNKNOWN))
 
+    def test_qualify_order_by_alias_nodes(self):
+        qualified = qualify(
+            parse_one(
+                "SELECT a + 1 AS v FROM t GROUP BY 1 ORDER BY a + 1, a + 1 DESC",
+                dialect="duckdb",
+            ),
+            schema={"t": {"a": "INT"}},
+            dialect="duckdb",
+        )
+        first, second = qualified.args["order"].expressions
+        self.assertEqual(first.this, second.this)
+        self.assertIsNot(first.this, second.this)
+        self.assertIs(first.this.parent, first)
+        self.assertIs(second.this.parent, second)
+        first.this.set("this", exp.to_identifier("changed"))
+        self.assertEqual(second.this.name, "v")
+
     def test_qualify_order_by_expression_uncache(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
         tree = parse_one(

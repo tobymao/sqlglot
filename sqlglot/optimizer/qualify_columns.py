@@ -575,7 +575,7 @@ def _expand_order_by_and_distinct_on(
                     annotator.uncache(node)
                     if node.parent:
                         annotator.uncache(node.parent, deep=False)
-                    node.replace(replacement)
+                    node.replace(replacement.copy())
 
 
 def _expand_positional_references(

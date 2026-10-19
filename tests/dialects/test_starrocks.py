@@ -666,3 +666,30 @@ class TestStarrocks(Validator):
                 self.validate_identity(sql, check_command_warning=True)
 
         self.validate_identity("SELECT admin, cancel, export, stop FROM t")
+
+    def test_map_literal(self):
+        # https://docs.starrocks.io/docs/sql-reference/data-types/semi_structured/Map/
+        self.validate_identity("SELECT MAP{1:1, 2:2, 3:3} AS numbers").selects[0].this.assert_is(
+            exp.ToMap
+        )
+        self.validate_identity(
+            'SELECT map{1:"apple", 2:"orange", 3:"pear"} AS fruit',
+            "SELECT MAP{1:'apple', 2:'orange', 3:'pear'} AS fruit",
+        )
+        self.validate_identity(
+            'SELECT map{true:map{3.13:"abc"}, false:map{}} AS nest',
+            "SELECT MAP{TRUE:MAP{3.13:'abc'}, FALSE:MAP{}} AS nest",
+        )
+        self.validate_identity("SELECT MAP{1:NULL}")
+        self.validate_identity("SELECT MAP{1:2, 3:NULL}[1]")
+        self.validate_identity("SELECT MAP{1:MAP{2:1}, 3:NULL}[1][2]")
+        self.validate_identity("SELECT map, t.map, map[1] FROM t")
+
+        self.validate_all(
+            "SELECT MAP{'a':1, 'b':2}['a'] AS x",
+            write={"duckdb": "SELECT MAP {'a': 1, 'b': 2}['a'] AS x"},
+        )
+        self.validate_all(
+            "SELECT MAP{'a':1, 'b':2} AS m",
+            read={"duckdb": "SELECT MAP {'a': 1, 'b': 2} AS m"},
+        )

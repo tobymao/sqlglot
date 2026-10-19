@@ -1314,7 +1314,11 @@ class Simplifier:
                 return exp.Literal.number(num_a - num_b) if a.parent is b.parent else None
             if isinstance(expression, exp.Div):
                 # engines have differing int div behavior so intdiv is not safe
-                if (isinstance(num_a, int) and isinstance(num_b, int)) or a.parent is not b.parent:
+                if (
+                    (isinstance(num_a, int) and isinstance(num_b, int))
+                    or a.parent is not b.parent
+                    or num_b == 0
+                ):
                     return None
                 return exp.Literal.number(num_a / num_b)
 

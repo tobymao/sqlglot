@@ -555,6 +555,7 @@ def _expand_order_by_and_distinct_on(
                     if not col.table:
                         if table := resolver.get_table(col.name):
                             col.set("table", table)
+                            col.meta.pop("dot_parts", None)
 
             if original is not expanded:
                 annotator.uncache(original)
@@ -563,19 +564,34 @@ def _expand_order_by_and_distinct_on(
                 original.replace(expanded)
 
         if expr.args.get("group"):
-            selects = {
-                s.this: exp.column(s.alias_or_name)
-                for s in expression.selects
-                if s.alias_or_name in alias_names
-            }
+            selects = {s.this: s for s in expression.selects if s.alias_or_name in alias_names}
 
             for node in modifier_expressions:
                 # Remaining ordinals reference duplicate aliases and must stay positional.
                 if not node.is_int and (replacement := selects.get(node)) is not None:
+                    # Normalized expressions can match despite different case-sensitive keys.
+                    if not _same_dot_parts(node, replacement.this):
+                        continue
                     annotator.uncache(node)
                     if node.parent:
                         annotator.uncache(node.parent, deep=False)
-                    node.replace(replacement.copy())
+                    node.replace(exp.column(replacement.alias_or_name))
+
+
+def _same_dot_parts(left: exp.Expr, right: exp.Expr) -> bool:
+    """Compare original path spellings in structurally equal expressions."""
+    stack = [(left, right)]
+    while stack:
+        left, right = stack.pop()
+        if (left.meta_get("dot_parts") or None) != (right.meta_get("dot_parts") or None):
+            return False
+        for child in left.iter_expressions():
+            assert child.arg_key is not None
+            other = right.args[child.arg_key]
+            if child.index is not None:
+                other = other[child.index]
+            stack.append((child, other))
+    return True
 
 
 def _expand_positional_references(

@@ -1104,6 +1104,31 @@ WITH RECURSIVE t AS (SELECT 1 AS c UNION ALL SELECT t.c + 1 AS c FROM t AS t WHE
 SELECT DISTINCT ON (new_col, b + 1, 1) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 SELECT DISTINCT ON (new_col, t1.b + 1, new_col) t1.a AS new_col FROM x AS t1 ORDER BY new_col;
 
+# title: ORDER BY matches original JSON keys
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"k": "INT", "j": "JSON"}}
+SELECT k, ANY_VALUE(j.Foo) AS v FROM t GROUP BY k ORDER BY ANY_VALUE(j.Foo), ANY_VALUE(j.foo);
+SELECT t.k AS k, ANY_VALUE(t.j.foo) AS v FROM t AS t GROUP BY t.k ORDER BY v, ANY_VALUE(t.j.foo);
+
+# title: ORDER BY preserves BigQuery JSON key case
+# dialect: bigquery
+# execute: false
+# schema: {"t": {"k": "INT", "j": "JSON"}}
+SELECT k, ANY_VALUE(j.Foo) AS v FROM t GROUP BY k ORDER BY ANY_VALUE(j.Foo), ANY_VALUE(j.foo);
+SELECT t.k AS k, ANY_VALUE(t.j.`Foo`) AS v FROM t AS t GROUP BY k ORDER BY v, ANY_VALUE(t.j.`foo`);
+
+# title: DISTINCT ON distinguishes swapped JSON keys
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"k": "INT", "j": "JSON"}}
+SELECT DISTINCT ON (ANY_VALUE(j.Foo || j.foo), ANY_VALUE(j.foo || j.Foo)) k, ANY_VALUE(j.Foo || j.foo) AS v FROM t GROUP BY k;
+SELECT DISTINCT ON (v, ANY_VALUE(t.j.foo || t.j.foo)) t.k AS k, ANY_VALUE(t.j.foo || t.j.foo) AS v FROM t AS t GROUP BY t.k;
+
+# title: ORDER BY aggregate argument shares the projection alias
+SELECT a, SUM(b) AS b FROM x GROUP BY a ORDER BY SUM(b);
+SELECT x.a AS a, SUM(x.b) AS b FROM x AS x GROUP BY x.a ORDER BY b;
+
 # title: qualify columns for Aggregate Functions and DISTINCT
 SELECT COALESCE(COUNT(DISTINCT a)) AS a FROM x;
 SELECT COALESCE(COUNT(DISTINCT x.a)) AS a FROM x AS x;

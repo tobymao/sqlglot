@@ -630,3 +630,17 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT 'a#b' AS c")
         self.validate_identity("SELECT 1 AS `a#b`")
         self.validate_identity("SELECT 1 AS a -- , 2 AS b", "SELECT 1 AS a /* , 2 AS b */")
+
+    def test_pivot(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_PIVOT/
+        self.validate_identity(
+            "SELECT * FROM t1 PIVOT (SUM(c1) AS sum_c1, AVG(c2) AS avg_c2 FOR c3 IN (1, 2, 3, 4, 5))",
+            "SELECT * FROM t1 PIVOT(SUM(c1) AS sum_c1, AVG(c2) AS avg_c2 FOR c3 IN (1, 2, 3, 4, 5))",
+        )
+        self.validate_identity("SELECT * FROM t1 PIVOT(SUM(c1) FOR c3 IN (1 AS one, 2 AS two))")
+        self.validate_identity("SELECT * FROM t1 PIVOT(SUM(c1) FOR (c2, c3) IN ((1, 1), (2, 2)))")
+
+        self.validate_all(
+            "SELECT * FROM t1 UNPIVOT(c FOR k IN (c1, c2))",
+            write={"starrocks": UnsupportedError},
+        )

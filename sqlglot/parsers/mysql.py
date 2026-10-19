@@ -52,6 +52,8 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
 
 
 class MySQLParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "comparison"
+
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.LOCALTIME: exp.Localtime,

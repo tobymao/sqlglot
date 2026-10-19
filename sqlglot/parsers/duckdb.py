@@ -93,6 +93,8 @@ def _convert_text_type(dtype: exp.DataType) -> exp.DataType:
 
 
 class DuckDBParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "low"
+
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
     PIVOT_COLUMN_NAMING = "agg_name_if_aliased_or_multiple"
 

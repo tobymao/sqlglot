@@ -25,6 +25,8 @@ def _build_date_trunc(args: list[exp.Expr]) -> exp.Expr:
 
 
 class DorisParser(MySQLParser):
+    IS_PREDICATE_PRECEDENCE = "high"
+
     # Unlike MySQL, dropping a column requires the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN = True
 

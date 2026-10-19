@@ -21,6 +21,8 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
 
 
 class OracleParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "low"
+
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True

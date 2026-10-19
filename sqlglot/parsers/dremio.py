@@ -83,6 +83,8 @@ def datetype_handler(args: list[exp.Expr], dialect: DialectType) -> exp.Expr:
 
 
 class DremioParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "comparison"
+
     LOG_DEFAULTS_TO_LN = True
 
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {

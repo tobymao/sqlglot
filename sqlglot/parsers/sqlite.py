@@ -35,6 +35,8 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 
 
 class SQLiteParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "equality"
+
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True
@@ -101,6 +103,10 @@ class SQLiteParser(parser.Parser):
         # https://www.sqlite.org/lang_expr.html
         TokenType.MATCH: binary_range_parser(exp.Match),
     }
+
+    def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
+        # SQLite's IS is binary, including when the right operand starts with NULL or TRUE.
+        return self._parse_comparison()
 
     def _parse_factor_operand(self) -> exp.Expr | None:
         in_arithmetic_operand = self._prev.token_type in self.ARITHMETIC_TOKENS

@@ -27,6 +27,18 @@ logger = logging.getLogger("sqlglot")
 
 _HIGH_BYTE_RE = re.compile(r"[\x80-\xff]")
 
+_IS_PREDICATES = (exp.Is, exp.NullSafeEQ, exp.NullSafeNEQ)
+_COMPARISON_PREDICATES = (
+    exp.EQ,
+    exp.NEQ,
+    exp.LT,
+    exp.LTE,
+    exp.GT,
+    exp.GTE,
+    exp.NullSafeEQ,
+    exp.NullSafeNEQ,
+)
+
 ESCAPED_UNICODE_RE = re.compile(r"\\(\d+)")
 UNSUPPORTED_TEMPLATE = "Argument '{}' is not supported for expression '{}' when targeting {}."
 
@@ -4783,11 +4795,20 @@ class Generator:
         sqls: list[str] = []
         stack: list[None | str | exp.Expr] = [expression]
         binary_type = type(expression)
+        is_predicate = isinstance(expression, _IS_PREDICATES)
 
         while stack:
             node = stack.pop()
 
             if type(node) is binary_type:
+                wrapped = (
+                    is_predicate
+                    and node is not expression
+                    and (binary_type is not exp.Is or node.arg_key == "expression")
+                )
+                if wrapped:
+                    stack.append(")")
+
                 op_func = node.args.get("operator")
                 if op_func:
                     op = f"OPERATOR({self.sql(op_func)})"
@@ -4795,8 +4816,22 @@ class Generator:
                 stack.append(node.args.get("expression"))
                 stack.append(f" {self.maybe_comment(op, comments=node.comments)} ")
                 stack.append(node.args.get("this"))
+
+                if wrapped:
+                    stack.append("(")
             else:
-                sqls.append(self.sql(node))
+                sql = self.sql(node)
+                predicate = node.this if isinstance(node, exp.Not) else node
+                if (
+                    (is_predicate and isinstance(predicate, _COMPARISON_PREDICATES))
+                    or (
+                        isinstance(expression, _COMPARISON_PREDICATES)
+                        and isinstance(predicate, _IS_PREDICATES)
+                    )
+                    or (is_predicate and isinstance(node, exp.Not))
+                ):
+                    sql = self.wrap(sql)
+                sqls.append(sql)
 
         return "".join(sqls)
 

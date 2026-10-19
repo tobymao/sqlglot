@@ -84,6 +84,8 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 
 class PostgresParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "low"
+
     ALTER_DROP_REQUIRES_COLUMN = False
     ALTER_TABLE_MIXED_ACTIONS = True
     ALTER_COLUMN_TYPE_REQUIRES_KEYWORD = True

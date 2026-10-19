@@ -21,6 +21,8 @@ def cast_to_time6(expression: exp.Expr | None, time_type: exp.DType = exp.DType.
 
 
 class SingleStoreParser(MySQLParser):
+    IS_PREDICATE_PRECEDENCE = "high"
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate),

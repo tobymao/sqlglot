@@ -2064,3 +2064,23 @@ SELECT 100;
 # schema: {"o": {"id": "INT", "observed_date": "DATE"}, "e": {"id": "INT", "metric_date": "DATE"}}
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;
+
+# dialect: postgres
+NULL = NULL IS NULL;
+(NULL = NULL) IS NULL;
+
+# dialect: postgres
+FALSE = FALSE IS NULL;
+(FALSE = FALSE) IS NULL;
+
+# dialect: postgres
+NULL = (NULL IS NULL);
+NULL = TRUE;
+
+# dialect: snowflake
+NULL = NULL IS NULL;
+NULL = TRUE;
+
+# dialect: redshift
+NULL = NULL IS NULL;
+NULL = TRUE;

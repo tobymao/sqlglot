@@ -259,6 +259,8 @@ _AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
 
 
 class ClickHouseParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "low"
+
     # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
     # * select x from t1 union all select x from t2 limit 1;
     # * select x from t1 union all (select x from t2 limit 1);

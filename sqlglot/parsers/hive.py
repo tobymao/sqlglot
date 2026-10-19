@@ -51,6 +51,8 @@ def _build_date_add(args: list) -> exp.TsOrDsAdd:
 
 
 class HiveParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = "equality"
+
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = False
     VALUES_FOLLOWED_BY_PAREN = False

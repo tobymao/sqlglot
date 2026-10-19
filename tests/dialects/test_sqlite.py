@@ -7,6 +7,24 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_is_precedence(self):
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM TRUE IS DISTINCT FROM FALSE",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+            },
+        )
+        self.validate_identity("SELECT NULL IS NULL < FALSE", "SELECT NULL IS (NULL < FALSE)")
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL = NULL",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "duckdb": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+            },
+        )
+
     def test_sqlite(self):
         # Range operators (IN/LIKE) are left-associative and can be chained.
         self.validate_identity("SELECT 1 IN (0) IN (1)")

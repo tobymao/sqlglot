@@ -10,6 +10,11 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_is_precedence(self):
+        self.validate_identity(
+            "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
+        )
+
     def test_duckdb(self):
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(

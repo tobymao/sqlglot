@@ -283,6 +283,101 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.this.expression.sql(), "3")
         self.assertEqual(expression.expression.sql(), "2")
 
+    def test_is_precedence(self):
+        for dialect in (
+            "postgres",
+            "duckdb",
+            "sqlite",
+            "mysql",
+            "clickhouse",
+            "spark",
+            "spark2",
+            "databricks",
+            "hive",
+            "starrocks",
+            "oracle",
+            "dremio",
+            "drill",
+            "materialize",
+            "risingwave",
+            "snowflake",
+            "redshift",
+        ):
+            for operator in ("=", "<>", "!=", "<", ">", "<=", ">="):
+                with self.subTest(dialect=dialect, operator=operator):
+                    expression = parse_one(f"a {operator} b IS NULL", read=dialect)
+                    if dialect in ("snowflake", "redshift"):
+                        self.assertIsInstance(expression.expression, exp.Is)
+                        self.assertEqual(expression.this, exp.column("a"))
+                        self.assertEqual(expression.expression.this, exp.column("b"))
+                    else:
+                        self.assertIsInstance(expression, exp.Is)
+                        self.assertEqual(expression.this.this, exp.column("a"))
+                        self.assertEqual(expression.this.expression, exp.column("b"))
+
+        for predicate in (
+            "IS NULL",
+            "IS NOT NULL",
+            "ISNULL",
+            "NOTNULL",
+            "IS TRUE",
+            "IS FALSE",
+            "IS UNKNOWN",
+            "IS NOT TRUE",
+            "IS NOT FALSE",
+            "IS NOT UNKNOWN",
+        ):
+            with self.subTest(predicate=predicate):
+                expression = parse_one(f"a = b {predicate}", read="postgres")
+                if isinstance(expression, exp.Not):
+                    expression = expression.this
+                self.assertIsInstance(expression, exp.Is)
+                self.assertIsInstance(expression.this, exp.EQ)
+
+        for dialect in ("postgres", "duckdb", "mysql", "sqlite", "clickhouse", "dremio", "drill"):
+            for operator in ("=", "<"):
+                expression = parse_one(f"a IS NULL {operator} b", read=dialect)
+                if dialect == "sqlite" and operator == "<":
+                    self.assertIsInstance(expression, exp.Is)
+                    self.assertIsInstance(expression.expression, exp.LT)
+                else:
+                    self.assertIsInstance(expression.this, exp.Is)
+
+        for dialect in (
+            "postgres",
+            "duckdb",
+            "clickhouse",
+            "spark",
+            "hive",
+            "sqlite",
+            "dremio",
+            "drill",
+        ):
+            for operator in ("=", "<"):
+                expression = parse_one(f"a IS DISTINCT FROM b {operator} c", read=dialect)
+                if dialect in ("dremio", "drill") or (
+                    dialect in ("sqlite", "hive") and operator == "="
+                ):
+                    self.assertIsInstance(expression.this, exp.NullSafeNEQ)
+                else:
+                    self.assertIsInstance(expression, exp.NullSafeNEQ)
+                    self.assertIsInstance(expression.expression, exp.Predicate)
+
+        for dialect in ("postgres", "snowflake"):
+            expression = parse_one("FALSE IS DISTINCT FROM NULL::BOOLEAN", read=dialect)
+            self.assertIsInstance(expression, exp.NullSafeNEQ)
+            self.assertIsInstance(expression.expression, exp.Cast)
+
+        sql = "SELECT a" + " IS NULL" * 1000
+        self.assertEqual(parse_one(sql, read="postgres").sql("postgres"), sql)
+
+        expression = parse_one("NOT a = b IS NULL AND c IS NULL OR d IS NULL", read="postgres")
+        self.assertIsInstance(expression, exp.Or)
+        self.assertIsInstance(expression.this, exp.And)
+        self.assertIsInstance(expression.this.this, exp.Not)
+        self.assertIsInstance(expression.this.this.this, exp.Is)
+        self.assertIsInstance(expression.this.this.this.this, exp.EQ)
+
     def test_limit_percent_parses_without_modulo(self):
         expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")
         limit = expression.args["limit"]

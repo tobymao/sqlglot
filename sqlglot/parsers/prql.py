@@ -55,14 +55,8 @@ class PRQLParser(parser.Parser):
         "SUM": lambda args: exp.func("COALESCE", exp.Sum(this=seq_get(args, 0)), 0),
     }
 
-    def _parse_equality(self) -> exp.Expr | None:
-        eq = self._parse_comparison()
-        while self._match_set(self.EQUALITY):
-            comments = self._prev_comments
-            eq = self.expression(
-                self.EQUALITY[self._prev.token_type](this=eq, expression=self._parse_comparison()),
-                comments=comments,
-            )
+    def _parse_equality(self, parse_is: bool = True) -> exp.Expr | None:
+        eq = super()._parse_equality(parse_is=parse_is)
         if not isinstance(eq, (exp.EQ, exp.NEQ)):
             return eq
 

@@ -516,6 +516,18 @@ class TestOracle(Validator):
                 "postgres": "CAST('2022-01-01' AS DATE)",
             },
         )
+        self.validate_all(
+            "SELECT TO_CHAR(x, 'IYYY-IW')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%G-%V')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_CHAR(CAST(x AS DATE), 'IYYY-IW')",
+            read={
+                "bigquery": "SELECT FORMAT_DATE('%G-%V', x)",
+            },
+        )
 
         self.validate_all(
             "x::binary_double",

@@ -37,6 +37,7 @@ class Oracle(Dialect):
         "HH12": "%I",  # alias for HH
         "HH24": "%H",  # Hour of day (0-23)
         "IW": "%V",  # Calendar week of year (1-52 or 1-53), as defined by the ISO 8601 standard
+        "IYYY": "%G",  # 4-digit year of the ISO 8601 week-numbering calendar
         "MI": "%M",  # Minute (0-59)
         "MM": "%m",  # Month (01-12; January = 01)
         "MON": "%b",  # Abbreviated name of month

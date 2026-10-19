@@ -31,6 +31,11 @@ class Resolver:
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
         self._outer_resolvers: list[Resolver] | None = None
+        self._select_aliases: set[str] = (
+            {s.alias for s in scope.expression.selects if isinstance(s, exp.Alias)}
+            if isinstance(scope.expression, exp.Select)
+            else set()
+        )
 
     def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
         """
@@ -64,8 +69,17 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name:
-            table_name = self._get_unknown_tvf_table()
+        if (
+            not table_name
+            and column_name not in self.all_columns
+            and column_name not in self._select_aliases
+        ):
+            source_columns = (
+                self._get_available_source_columns(join_context)
+                if join_context is not None
+                else self._get_all_source_columns()
+            )
+            table_name = self._get_unknown_tvf_table(source_columns)
         if not table_name:
             return None
 
@@ -94,13 +108,12 @@ class Resolver:
                 self._outer_resolvers.append(Resolver(scope, self.schema))
         return self._outer_resolvers
 
-    def _get_unknown_tvf_table(self) -> str | None:
-        """If there's exactly one unknown-schema TVF source, return its name for back-projection."""
+    def _get_unknown_tvf_table(self, source_columns: dict[str, Sequence[str]]) -> str | None:
         if not self.has_unknown_sources or self.scope.can_be_correlated:
             return None
 
         unknown_tvf_names = []
-        for name, columns in self._get_all_source_columns().items():
+        for name, columns in source_columns.items():
             if columns and "*" not in columns:
                 continue
             source = self.scope.sources.get(name)

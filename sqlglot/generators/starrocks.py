@@ -6,6 +6,7 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
+    no_pivot_sql,
     rename_func,
     weekstart_unit_to_str,
     inline_array_sql,
@@ -103,7 +104,7 @@ class StarRocksGenerator(MySQLGenerator):
         **{
             k: v
             for k, v in MySQLGenerator.TRANSFORMS.items()
-            if k not in (exp.DateDiff, exp.DateTrunc, exp.Trim)
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Pivot, exp.Trim)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -407,6 +408,13 @@ class StarRocksGenerator(MySQLGenerator):
             expression.this,
             expression.expression,
         )
+
+    def pivot_sql(self, expression: exp.Pivot) -> str:
+        # Only PIVOT (...) is supported, not UNPIVOT or DuckDB's PIVOT statement
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_PIVOT/
+        if expression.unpivot or expression.this:
+            return no_pivot_sql(self, expression)
+        return super().pivot_sql(expression)
 
     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
         interval = exp.Interval(this=expression.expression, unit=expression.unit)

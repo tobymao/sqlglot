@@ -146,6 +146,21 @@ class TeradataParser(parser.Parser):
             )
         )
 
+    def _parse_table_sample(self, as_modifier: bool = False) -> exp.TableSample | None:
+        sample = super()._parse_table_sample(as_modifier=as_modifier)
+
+        # A single integer sample is a row count, while a fraction is a proportion of rows
+        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/SELECT-Statements/SAMPLE-Clause/SAMPLE-Clause-Syntax
+        if sample and len(sample.expressions) == 1 and sample.expressions[0].is_number:
+            num = sample.expressions[0].pop()
+            if num.is_int:
+                sample.set("size", num)
+            else:
+                percent = format(num.to_py().scaleb(2).normalize(), "f")
+                sample.set("percent", exp.Literal.number(percent))
+
+        return sample
+
     def _parse_rangen(self):
         this = self._parse_id_var()
         self._match(TokenType.BETWEEN)

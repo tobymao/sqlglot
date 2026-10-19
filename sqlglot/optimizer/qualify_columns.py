@@ -957,7 +957,9 @@ def _expand_struct_stars_no_parens(
 ) -> list[exp.Alias]:
     """[BigQuery] Expand/Flatten foo.bar.* where bar is a struct column"""
 
-    dot_column = expression.find(exp.Column)
+    dot_column = expression.this
+    while isinstance(dot_column, exp.Dot):
+        dot_column = dot_column.this
     if not isinstance(dot_column, exp.Column) or not dot_column.is_type(exp.DType.STRUCT):
         return []
 

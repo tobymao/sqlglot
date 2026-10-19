@@ -369,8 +369,9 @@ class TestParser(unittest.TestCase):
             self.assertIsInstance(expression, exp.NullSafeNEQ)
             self.assertIsInstance(expression.expression, exp.Cast)
 
-        sql = "SELECT a" + " IS NULL" * 1000
-        self.assertEqual(parse_one(sql, read="postgres").sql("postgres"), sql)
+        for predicate in (" IS NULL", " IS NULL IS NOT NULL", " IS NOT NULL IS NULL"):
+            sql = "SELECT a" + predicate * 1000
+            self.assertEqual(parse_one(sql, read="postgres").sql("postgres"), sql)
 
         expression = parse_one("NOT a = b IS NULL AND c IS NULL OR d IS NULL", read="postgres")
         self.assertIsInstance(expression, exp.Or)

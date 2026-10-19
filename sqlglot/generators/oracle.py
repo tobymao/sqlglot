@@ -145,6 +145,30 @@ class OracleGenerator(generator.Generator):
     def offset_sql(self, expression: exp.Offset) -> str:
         return f"{super().offset_sql(expression)} ROWS"
 
+    def with_sql(self, expression: exp.With) -> str:
+        if not expression.args.get("udfs"):
+            return super().with_sql(expression)
+
+        functions = self.expressions(expression, key="udfs", sep=" ", flat=True)
+        ctes = self.expressions(expression, flat=True)
+        search = self.sql(expression, "search")
+        search = f" {search}" if search else ""
+        cycle = self.sql(expression, "cycle")
+        cycle = f" {cycle}" if cycle else ""
+
+        return f"WITH {functions} {ctes}{search}{cycle}" if ctes else f"WITH {functions}"
+
+    def functionspecification_sql(self, expression: exp.FunctionSpecification) -> str:
+        characteristics = expression.args.get("characteristics")
+        returns = characteristics and characteristics.find(exp.ReturnsProperty)
+        returns_sql = f" RETURN {self.sql(returns, 'this')}" if returns else ""
+
+        body = expression.expression
+        if not isinstance(body, exp.Var):
+            self.unsupported("Inline function bodies must be PL/SQL blocks in Oracle")
+
+        return f"FUNCTION {self.sql(expression, 'this')}{returns_sql} IS {self.sql(body)};"
+
     def add_column_sql(self, expression: exp.Expr) -> str:
         return f"ADD {self.sql(expression)}"
 

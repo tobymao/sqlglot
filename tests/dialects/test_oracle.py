@@ -897,6 +897,93 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.assertEqual(with_.args["cycle"].args["to"], exp.Literal.string("Y"))
         self.assertEqual(with_.args["cycle"].args["default"], exp.Literal.string("N"))
 
+    def test_with_function(self):
+        select = self.validate_identity(
+            """WITH FUNCTION f_demo(v_in_ch IN CHAR) RETURN CHAR
+IS
+BEGIN
+    RETURN v_in_ch;
+END;
+
+SELECT
+    'C' || f_demo('d')
+FROM dual""",
+            "WITH FUNCTION f_demo(v_in_ch IN CHAR) RETURN CHAR IS BEGIN\n    RETURN v_in_ch;\nEND; SELECT 'C' || F_DEMO('d') FROM dual",
+        )
+        udf = select.args["with_"].args["udfs"][0]
+        self.assertIsInstance(udf, exp.FunctionSpecification)
+        self.assertEqual(udf.find(exp.ReturnsProperty).this.sql("oracle"), "CHAR")
+        self.assertEqual(udf.expression.name, "BEGIN\n    RETURN v_in_ch;\nEND")
+
+        self.validate_identity(
+            "WITH FUNCTION a(x NUMBER) RETURN NUMBER IS BEGIN RETURN x + 1; END; "
+            "FUNCTION b RETURN NUMBER IS BEGIN RETURN 2; END b; "
+            "t AS (SELECT 1 AS v FROM dual) SELECT A(v) + b FROM t"
+        )
+        self.validate_identity(
+            "WITH FUNCTION f RETURN NUMBER AS BEGIN RETURN 1; END; SELECT f FROM dual",
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual",
+        )
+        self.validate_identity(
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual WITH READ ONLY"
+        )
+
+        # The END that closes the function is found past nested blocks, END IF / END LOOP /
+        # END CASE, a CASE expression, and statement separators inside strings and comments
+        self.validate_identity(
+            "WITH FUNCTION f(n NUMBER) RETURN VARCHAR2 IS "
+            "s VARCHAR2(20) := 'END; BEGIN'; "
+            "BEGIN "
+            "IF n > 0 THEN s := 'pos'; ELSIF n < 0 THEN s := 'neg'; ELSE s := 'zero'; END IF; "
+            "<<outer>> FOR i IN 1..3 LOOP s := s || i; END LOOP outer; "
+            "CASE n WHEN 1 THEN s := s || 'one'; ELSE NULL; END CASE; "
+            "s := s || CASE WHEN n = 2 THEN 'two' ELSE '' END; "
+            "BEGIN NULL; EXCEPTION WHEN OTHERS THEN NULL; END; "
+            "RETURN s /* END; */; "
+            "END f; "
+            "SELECT F(1) FROM dual"
+        )
+
+        # A nested subprogram, both forward declared and defined, has a BEGIN ... END of its own
+        self.validate_identity(
+            "WITH FUNCTION outer_f(x NUMBER) RETURN NUMBER IS "
+            "FUNCTION helper(y NUMBER) RETURN NUMBER; "
+            "FUNCTION helper(y NUMBER) RETURN NUMBER IS BEGIN RETURN y * 2; END helper; "
+            "BEGIN RETURN helper(x); END outer_f; "
+            "SELECT OUTER_F(3) FROM dual"
+        )
+
+        expressions = parse(
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual; SELECT 2 FROM dual",
+            read="oracle",
+        )
+        self.assertEqual(
+            [e.sql("oracle") for e in expressions],
+            [
+                "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual",
+                "SELECT 2 FROM dual",
+            ],
+        )
+
+        self.validate_identity(
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; /* done */ END; SELECT f FROM dual"
+        )
+        self.validate_identity("WITH function AS (SELECT 1 AS x FROM dual) SELECT x FROM function")
+
+        for sql in (
+            "WITH FUNCTION f NUMBER IS BEGIN RETURN 1; END; SELECT f FROM dual",
+            "WITH FUNCTION f RETURN NUMBER BEGIN RETURN 1; END; SELECT f FROM dual",
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; SELECT f FROM dual",
+            "WITH FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END f g; SELECT f FROM dual",
+        ):
+            with self.subTest(sql), self.assertRaises(ParseError):
+                parse_one(sql, read="oracle")
+
+        with self.assertRaises(UnsupportedError):
+            parse_one("WITH FUNCTION f(x INT) RETURNS INT RETURN x SELECT f(1)", read="trino").sql(
+                "oracle", unsupported_level=ErrorLevel.RAISE
+            )
+
     def test_query_restrictions(self):
         for restriction in ("READ ONLY", "CHECK OPTION"):
             for constraint_name in (" CONSTRAINT name", ""):

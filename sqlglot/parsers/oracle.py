@@ -6,7 +6,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import OPTIONS_TYPE, build_coalesce
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -135,6 +135,137 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_with(self, skip_with_token: bool = False) -> exp.With | None:
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html
+        # PL/SQL function declarations precede the CTEs of the same WITH clause, and each one is
+        # terminated by its own `END;` rather than separated by a comma
+        if not skip_with_token and not self._match(TokenType.WITH):
+            return None
+
+        comments = self._prev_comments
+        udfs = []
+
+        while (
+            self._match(TokenType.FUNCTION, advance=False)
+            and self._next
+            and self._next.token_type in self.ID_VAR_TOKENS
+        ):
+            self._advance()
+            udfs.append(self._parse_plsql_function())
+
+        if not udfs:
+            return super()._parse_with(skip_with_token=True)
+
+        if self._match_set(self.ID_VAR_TOKENS, advance=False):
+            with_ = super()._parse_with(skip_with_token=True)
+        else:
+            with_ = self.expression(exp.With())
+
+        if with_:
+            with_.set("udfs", udfs)
+            with_.add_comments(comments)
+
+        return with_
+
+    def _parse_plsql_function(self) -> exp.FunctionSpecification:
+        this = self._parse_user_defined_function(kind=TokenType.FUNCTION)
+
+        if not self._match_text_seq("RETURN"):
+            self.raise_error("Expected RETURN")
+
+        returns = self.expression(exp.ReturnsProperty(this=self._parse_types()))
+
+        if not self._match_set((TokenType.IS, TokenType.ALIAS)):
+            self.raise_error("Expected IS or AS")
+
+        # The body is kept verbatim, since there is no PL/SQL statement grammar to parse it with
+        start = self._prev
+        end = self._advance_plsql_body()
+        body = self.sql[start.end + 1 : end.end + 1].strip() if end else ""
+
+        return self.expression(
+            exp.FunctionSpecification(
+                this=this,
+                characteristics=self.expression(exp.Properties(expressions=[returns])),
+                expression=exp.var(body),
+            )
+        )
+
+    def _advance_plsql_token(self) -> bool:
+        # The body's own `;` separators split it across statement chunks, so stepping through
+        # it has to carry on into the next chunk whenever the current one runs out
+        self._advance()
+
+        while not self._curr or self._curr.token_type == TokenType.SEMICOLON:
+            if self._curr:
+                self._advance()
+            elif self._chunk_index < len(self._chunks):
+                self._advance_chunk()
+            else:
+                return False
+
+        return True
+
+    def _advance_plsql_body(self) -> Token | None:
+        """
+        Advances past a subprogram body (its declarations, then BEGIN ... END [name];) and
+        returns the body's last token, leaving the parser on the token after the closing `;`.
+        """
+        while self._curr and self._curr.token_type != TokenType.BEGIN:
+            if self._curr.token_type in (TokenType.FUNCTION, TokenType.PROCEDURE):
+                # A nested subprogram is either a forward declaration, which ends at the next
+                # `;`, or a definition whose IS/AS is followed by a body of its own
+                chunk_index = self._chunk_index
+                while (
+                    self._advance_plsql_token()
+                    and self._chunk_index == chunk_index
+                    and not self._match_set((TokenType.IS, TokenType.ALIAS), advance=False)
+                ):
+                    pass
+
+                if self._curr and self._chunk_index == chunk_index:
+                    self._advance()
+                    self._advance_plsql_body()
+
+                continue
+
+            self._advance_plsql_token()
+
+        # END IF and END LOOP close blocks that are not counted here, whereas END CASE and a
+        # bare END close a BEGIN or a CASE
+        depth = 0
+        while self._curr:
+            token_type = self._curr.token_type
+
+            if token_type in (TokenType.BEGIN, TokenType.CASE):
+                depth += 1
+            elif token_type == TokenType.END:
+                closes = self._next.text.upper() if self._next else ""
+
+                if closes in ("IF", "LOOP"):
+                    self._advance()
+                else:
+                    if closes == "CASE":
+                        self._advance()
+
+                    depth -= 1
+
+                    if not depth:
+                        if self._next:
+                            self._advance()
+
+                        end = self._curr
+                        if self._next:
+                            self.raise_error("Expected ; after END")
+
+                        self._advance_plsql_token()
+                        return end
+
+            self._advance_plsql_token()
+
+        self.raise_error("Expected END to close the PL/SQL body")
+        return None
 
     def _parse_physical_property(self) -> exp.PhysicalProperty:
         name = self._prev.text.upper()

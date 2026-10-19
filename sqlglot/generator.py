@@ -1971,7 +1971,23 @@ class Generator:
                         self.set_operation(node), comments=node.comments, separated=True
                     )
                 )
-                stack.append(node.this)
+                left = node.this
+                if (
+                    not self.SET_OP_PARENTHESIZED_OPERANDS
+                    and not self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+                    and isinstance(left, exp.Subquery)
+                    and left.is_wrapper
+                    and isinstance(left.this, exp.SetOperation)
+                    and not left.this.args.get("with_")
+                    and not any(left.this.args.get(key) for key in exp.QUERY_MODIFIERS)
+                ):
+                    # Without SET_OP_PARENTHESIZED_OPERANDS, grouping requires a
+                    # `SELECT * FROM (...)` wrapper, but that renames duplicate columns and deepens
+                    # recursion on long chains. We can safely omit it here because left-to-right
+                    # evaluation already implies a grouped left operand.
+                    left.this.add_comments(left.pop_comments())
+                    left = left.this
+                stack.append(left)
             else:
                 if (
                     not self.SET_OP_LIMITS
@@ -1981,6 +1997,12 @@ class Generator:
                     node = node.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:
                         node = exp.select("*").from_(node, copy=False)
+                elif (
+                    not self.SET_OP_PARENTHESIZED_OPERANDS
+                    and isinstance(node, exp.Subquery)
+                    and isinstance(node.unnest(), exp.SetOperation)
+                ):
+                    node = exp.select("*").from_(node, copy=False)
                 sqls.append(self.sql(node))
 
         this = self.sep().join(sqls)

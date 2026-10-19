@@ -6,6 +6,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta_with_interval,
     build_like,
     build_timestamp_trunc,
+    pivot_column_names,
 )
 from sqlglot.helper import is_int, seq_get
 from sqlglot.parsers.mysql import MySQLParser
@@ -48,6 +49,11 @@ class StarRocksParser(MySQLParser):
     # StarRocks supports LEFT SEMI JOIN and LEFT ANTI JOIN natively
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
     TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}
+
+    # PIVOT output columns keep string quotes, e.g. 'a', and name a lone aggregation by value only
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_PIVOT/
+    IDENTIFY_PIVOT_STRINGS = True
+    PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
 
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
@@ -243,3 +249,8 @@ class StarRocksParser(MySQLParser):
                 mode=mode,
             )
         )
+
+    def _pivot_column_names(self, aggregations: list[exp.Expr]) -> list[str]:
+        if len(aggregations) == 1:
+            return []
+        return pivot_column_names(aggregations, dialect="starrocks")

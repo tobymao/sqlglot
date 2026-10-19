@@ -644,3 +644,18 @@ class TestStarrocks(Validator):
             "SELECT * FROM t1 UNPIVOT(c FOR k IN (c1, c2))",
             write={"starrocks": UnsupportedError},
         )
+
+        # The output column names StarRocks gives each pivoted value
+        for sql, columns in (
+            ("SELECT * FROM t1 PIVOT(SUM(c1) FOR c3 IN (1, 2))", ["1", "2"]),
+            ("SELECT * FROM t1 PIVOT(SUM(c1) AS s FOR c3 IN (1, 2))", ["1", "2"]),
+            (
+                "SELECT * FROM t1 PIVOT(SUM(c1) AS s, AVG(c2) AS a FOR c3 IN (1, 2))",
+                ["1_s", "1_a", "2_s", "2_a"],
+            ),
+            ("SELECT * FROM t2 PIVOT(SUM(c1) FOR k IN ('a', 'b'))", ["'a'", "'b'"]),
+            ("SELECT * FROM t1 PIVOT(SUM(c1) AS s FOR c3 IN (1 AS one, 2 AS two))", ["one", "two"]),
+        ):
+            with self.subTest(sql):
+                pivot = self.validate_identity(sql).find(exp.Pivot)
+                self.assertEqual([c.name for c in pivot.args["columns"]], columns)

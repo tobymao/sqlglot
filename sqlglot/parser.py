@@ -7,6 +7,7 @@ import typing as t
 from builtins import type as Type
 from collections import defaultdict
 from collections.abc import Sequence
+from enum import Enum, auto
 
 from sqlglot import exp
 from sqlglot._typing import F
@@ -350,6 +351,13 @@ def build_jsonb_contains_top_key(
 
 
 SENTINEL_NONE: Token = Token(TokenType.SENTINEL, "SENTINEL")
+
+
+class IsPredicatePrecedence(Enum):
+    HIGH = auto()
+    COMPARISON = auto()
+    EQUALITY = auto()
+    LOW = auto()
 
 
 class Parser:
@@ -1822,7 +1830,7 @@ class Parser:
     # IS binds above comparisons (high), alongside ordering comparisons (comparison),
     # alongside equality (equality), or below both (low). Preserve the historical
     # high precedence unless the dialect specifies otherwise.
-    IS_PREDICATE_PRECEDENCE: t.ClassVar[str] = "high"
+    IS_PREDICATE_PRECEDENCE: t.ClassVar[IsPredicatePrecedence] = IsPredicatePrecedence.HIGH
     IS_PREDICATE_TOKENS: t.ClassVar = {
         TokenType.IS,
         TokenType.ISNULL,
@@ -6233,7 +6241,7 @@ class Parser:
 
     def _is_predicate_ahead(self) -> bool:
         if (
-            self.IS_PREDICATE_PRECEDENCE == "high"
+            self.IS_PREDICATE_PRECEDENCE is IsPredicatePrecedence.HIGH
             or self._curr.token_type not in self.IS_PREDICATE_TOKENS
         ):
             return False
@@ -6327,11 +6335,11 @@ class Parser:
 
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
         if distinct:
-            if self.IS_PREDICATE_PRECEDENCE == "low":
+            if self.IS_PREDICATE_PRECEDENCE is IsPredicatePrecedence.LOW:
                 return self._parse_equality(parse_is=False)
-            if self.IS_PREDICATE_PRECEDENCE == "equality":
+            if self.IS_PREDICATE_PRECEDENCE is IsPredicatePrecedence.EQUALITY:
                 return self._parse_comparison()
-            if self.IS_PREDICATE_PRECEDENCE == "comparison":
+            if self.IS_PREDICATE_PRECEDENCE is IsPredicatePrecedence.COMPARISON:
                 return self._parse_range()
             return self._parse_bitwise()
         return self._parse_null() or self._parse_bitwise()

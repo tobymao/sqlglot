@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     isnull_to_is_null,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 
@@ -52,7 +53,7 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
 
 
 class MySQLParser(parser.Parser):
-    IS_PREDICATE_PRECEDENCE = "comparison"
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,

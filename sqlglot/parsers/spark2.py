@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import HiveParser
-from sqlglot.parser import build_array_sort_nulls_last, build_trim
+from sqlglot.parser import IsPredicatePrecedence, build_array_sort_nulls_last, build_trim
 from sqlglot.tokens import TokenType
 
 
@@ -32,7 +32,7 @@ def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
 
 
 class Spark2Parser(HiveParser):
-    IS_PREDICATE_PRECEDENCE = "low"
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
     NORMALIZE_DECIMAL_LITERALS = False
     DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = True

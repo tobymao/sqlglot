@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     build_like,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import Token, TokenType
 from builtins import type as Type
 
@@ -259,7 +260,7 @@ _AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
 
 
 class ClickHouseParser(parser.Parser):
-    IS_PREDICATE_PRECEDENCE = "low"
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
     # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
     # * select x from t1 union all select x from t2 limit 1;

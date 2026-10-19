@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.parser import binary_range_parser
+from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -35,7 +35,7 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 
 
 class SQLiteParser(parser.Parser):
-    IS_PREDICATE_PRECEDENCE = "equality"
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
 
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False

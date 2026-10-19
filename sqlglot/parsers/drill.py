@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 
@@ -13,7 +14,7 @@ def _build_ilike(args: list) -> exp.Expr:
 
 
 class DrillParser(parser.Parser):
-    IS_PREDICATE_PRECEDENCE = "comparison"
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
 
     STRICT_CAST = False
 

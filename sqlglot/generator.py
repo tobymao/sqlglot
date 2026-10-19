@@ -4830,7 +4830,7 @@ class Generator:
                     and (
                         isinstance(node, (exp.Connector, exp.Not))
                         or (
-                            isinstance(node, exp.Predicate)
+                            isinstance(node, (exp.Predicate, exp.Escape))
                             and (
                                 node.arg_key == "expression"
                                 or isinstance(node, _COMPARISON_PREDICATES)

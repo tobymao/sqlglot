@@ -17,6 +17,8 @@ class TestPostgres(Validator):
             "NULL NOT BETWEEN 2 AND 3",
             "NULL LIKE 'x'",
             "NULL NOT LIKE 'x'",
+            "NULL LIKE '0' ESCAPE '!'",
+            "NULL NOT LIKE '0' ESCAPE '!'",
         ):
             for operator in ("IS DISTINCT FROM", "IS NOT DISTINCT FROM"):
                 rhs = self.parse_one(predicate).sql("postgres")

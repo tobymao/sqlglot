@@ -44,6 +44,10 @@ class Postgres(Dialect):
         "FMSS": "%-S",  # Second
         "HH12": "%I",  # 09
         "HH24": "%H",  # 09
+        "iw": "%V",  # ISO 8601 week of year
+        "IW": "%V",  # ISO 8601 week of year
+        "iyyy": "%G",  # ISO 8601 week-numbering year
+        "IYYY": "%G",  # ISO 8601 week-numbering year
         "mi": "%M",  # zero padded minute
         "MI": "%M",  # zero padded minute
         "mm": "%m",  # 01

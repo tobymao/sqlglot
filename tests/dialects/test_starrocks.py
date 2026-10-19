@@ -644,3 +644,25 @@ class TestStarrocks(Validator):
             "SELECT * FROM t1 UNPIVOT(c FOR k IN (c1, c2))",
             write={"starrocks": UnsupportedError},
         )
+
+    def test_command_statements(self):
+        for sql in (
+            "ADMIN SET FRONTEND CONFIG ('disable_balance' = 'true')",
+            "ADMIN SHOW FRONTEND CONFIG LIKE 'disable_balance'",
+            "BACKUP SNAPSHOT example_db.snapshot1 TO example_repo ON (example_tbl)",
+            "RESTORE SNAPSHOT example_db.snapshot1 FROM example_repo ON (example_tbl) PROPERTIES ('backup_timestamp' = '2018-05-04-16-45-08')",
+            "RECOVER TABLE example_db.example_tbl",
+            "CANCEL LOAD FROM example_db WHERE LABEL = 'example_label'",
+            "EXPORT TABLE example_db.example_tbl TO 's3://bucket/export/'",
+            "SUBMIT TASK AS INSERT INTO t2 SELECT * FROM t1",
+            "PAUSE ROUTINE LOAD FOR example_db.example_job",
+            "RESUME ROUTINE LOAD FOR example_db.example_job",
+            "STOP ROUTINE LOAD FOR example_db.example_job",
+            "DEALLOCATE PREPARE stmt1",
+            "INSTALL PLUGIN FROM '/home/users/plugin.zip'",
+            "UNINSTALL PLUGIN auditdemo",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, check_command_warning=True)
+
+        self.validate_identity("SELECT admin, cancel, export, stop FROM t")

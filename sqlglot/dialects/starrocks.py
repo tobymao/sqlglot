@@ -25,9 +25,22 @@ class StarRocks(MySQL):
 
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
+            "ADMIN": TokenType.COMMAND,
+            "BACKUP": TokenType.COMMAND,
+            "CANCEL": TokenType.COMMAND,
+            "DEALLOCATE": TokenType.COMMAND,
+            "EXPORT": TokenType.COMMAND,
             "HLL": TokenType.HLLSKETCH,
+            "INSTALL": TokenType.COMMAND,
             "LARGEINT": TokenType.INT128,
+            "PAUSE": TokenType.COMMAND,
+            "RECOVER": TokenType.COMMAND,
             "REFRESH": TokenType.REFRESH,
+            "RESTORE": TokenType.COMMAND,
+            "RESUME": TokenType.COMMAND,
+            "STOP": TokenType.COMMAND,
+            "SUBMIT": TokenType.COMMAND,
+            "UNINSTALL": TokenType.COMMAND,
         }
         KEYWORDS.pop("IGNORE")
         KEYWORDS.pop("#>")

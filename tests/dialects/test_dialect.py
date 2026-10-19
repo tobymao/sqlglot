@@ -4065,6 +4065,79 @@ FROM subquery2""",
             },
         )
 
+    def test_set_operation_precedence(self):
+        # INTERSECT binds tighter than UNION / EXCEPT, so it groups with its neighbors first
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            read={
+                "postgres": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "spark": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 EXCEPT (SELECT 2 INTERSECT SELECT 3 INTERSECT SELECT 4) UNION SELECT 5",
+            read={
+                "postgres": "SELECT 1 EXCEPT SELECT 2 INTERSECT SELECT 3 INTERSECT SELECT 4 UNION SELECT 5"
+            },
+        )
+
+        # All set operations have equal precedence and associate left to right
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            read={
+                "oracle": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "sqlite": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "hive": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+
+        # A leading INTERSECT run groups the same way under either rule, so no wrapper is needed
+        self.validate_all(
+            "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+            read={
+                "oracle": "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+                "postgres": "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+            },
+        )
+
+        # Modifiers belong to the outermost set operation, not to the grouped INTERSECT
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1 NULLS LAST LIMIT 10 OFFSET 2",
+            read={
+                "postgres": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1 LIMIT 10 OFFSET 2"
+            },
+        )
+
+        # SQLite needs a SELECT wrapper for right grouping, but left grouping is implicit.
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            read={
+                "postgres": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "oracle": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            },
+            write={
+                "postgres": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "oracle": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "sqlite": "SELECT 1 UNION SELECT * FROM (SELECT 2 INTERSECT SELECT 3)",
+            },
+        )
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            read={
+                "postgres": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "oracle": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            },
+            write={
+                "postgres": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "oracle": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "sqlite": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) /* keep */ INTERSECT SELECT 3",
+            write={"sqlite": "SELECT 1 /* keep */ UNION SELECT 2 INTERSECT SELECT 3"},
+        )
+
     def test_normalize(self):
         for form in ("", ", nfkc"):
             with self.subTest(f"Testing NORMALIZE('str'{form}) roundtrip"):

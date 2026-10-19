@@ -804,6 +804,12 @@ class Dialect(metaclass=_Dialect):
     must be explicitly specified.
     """
 
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = True
+    """
+    Whether INTERSECT binds more tightly than UNION and EXCEPT when a set operation chain isn't
+    parenthesized. If False, all set operations have equal precedence and associate left to right.
+    """
+
     CREATABLE_KIND_MAPPING: dict[str, str] = {}
     """
     Helper for dialects that use a different name for the same creatable kind. For example, the Clickhouse

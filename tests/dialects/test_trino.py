@@ -40,6 +40,7 @@ class TestTrino(Validator):
             write={"bigquery": "CAST(REGEXP_REPLACE('-ff', '^([+-]?)', '\\\\10x') AS INT64)"},
         )
         for sql, expected in (
+            ("APPROX_PERCENTILE(col, 1, 0.5)", "APPROX_QUANTILES(col, 2)[1]"),
             ("APPROX_PERCENTILE(col, 1, 0.5, 0.001)", "APPROX_QUANTILES(col, 2)[1]"),
             # APPROX_QUANTILES takes at most 100,000 buckets
             ("APPROX_PERCENTILE(col, 0.00001)", "APPROX_QUANTILES(col, 100000)[1]"),
@@ -55,6 +56,21 @@ class TestTrino(Validator):
 
         for sql, expected, warning in (
             ("FROM_BASE(s, 2)", "FROM_BASE(s, 2)", "FROM_BASE is only supported for base 16"),
+            (
+                "APPROX_PERCENTILE(col, 2, 0.5)",
+                "APPROX_QUANTILE(col, 0.5, 2)",
+                "APPROX_QUANTILE needs a literal quantile and no weight",
+            ),
+            (
+                "APPROX_PERCENTILE(col, w, 0.5)",
+                "APPROX_QUANTILE(col, 0.5, w)",
+                "APPROX_QUANTILE needs a literal quantile and no weight",
+            ),
+            (
+                'APPROX_PERCENTILE(col, "1", 0.5)',
+                "APPROX_QUANTILE(col, 0.5, `1`)",
+                "APPROX_QUANTILE needs a literal quantile and no weight",
+            ),
             (
                 "APPROX_PERCENTILE(col, 2, 0.5, 0.01)",
                 "APPROX_QUANTILE(col, 0.5, 0.01, 2)",
@@ -80,6 +96,19 @@ class TestTrino(Validator):
             with self.subTest(sql), self.assertLogs(generator_logger, level="WARNING") as cm:
                 self.assertEqual(parse_one(sql, read="trino").sql("bigquery"), expected)
             self.assertIn(warning, cm.output[0])
+            with self.assertRaises(UnsupportedError):
+                parse_one(sql, read="trino").sql("bigquery", unsupported_level=ErrorLevel.RAISE)
+
+    def test_approx_percentile(self):
+        for weight in ("1", "w", "w + 1"):
+            for quantile in ("0.5", "ARRAY[0.25, 0.5]"):
+                with self.subTest(weight=weight, quantile=quantile):
+                    expression = self.validate_identity(
+                        f"APPROX_PERCENTILE(x, {weight}, {quantile})"
+                    )
+                    self.assertEqual(expression.args["weight"], self.parse_one(weight))
+                    self.assertEqual(expression.args["quantile"], self.parse_one(quantile))
+                    self.assertIsNone(expression.args.get("accuracy"))
 
     def test_decimal_beyond_numeric_range(self):
         # BigQuery's NUMERIC holds at most 29 integer digits and 9 fractional digits

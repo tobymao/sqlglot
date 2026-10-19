@@ -138,6 +138,10 @@ class DuckDBParser(parser.Parser):
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k not in ("DATE_SUB", "GLOB")},
+        **dict.fromkeys(
+            ("ARRAY_DISTINCT", "LIST_DISTINCT"),
+            lambda args: exp.ArrayDistinct(this=seq_get(args, 0), check_null=False),
+        ),
         "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
         "ARRAY_PREPEND": _build_array_prepend,
         "ARRAY_REVERSE_SORT": _build_list_sort("ARRAY_REVERSE_SORT", desc=True),
@@ -179,7 +183,6 @@ class DuckDBParser(parser.Parser):
         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
         "LIST": exp.ArrayAgg.from_arg_list,
-        "LIST_DISTINCT": exp.ArrayDistinct.from_arg_list,
         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
         "LIST_CONCAT": parser.build_array_concat,
         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,

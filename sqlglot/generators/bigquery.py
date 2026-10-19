@@ -206,11 +206,13 @@ def _array_agg_fold_sql(
     self: BigQueryGenerator, expression: exp.ArrayDistinct | exp.ArraySort
 ) -> str:
     distinct = False
+    ignore_nulls = False
     sort: exp.ArraySort | None = None
     agg: exp.Expr = expression
     while isinstance(agg, (exp.ArrayDistinct, exp.ArraySort)) and not agg.expression:
         if isinstance(agg, exp.ArrayDistinct):
             distinct = True
+            ignore_nulls |= agg.args.get("check_null") is False
         elif sort is None:
             sort = agg
         agg = agg.this
@@ -238,7 +240,7 @@ def _array_agg_fold_sql(
         keys = [exp.Ordered(this=value.copy(), desc=not asc or None, nulls_first=asc)]
 
         # Aggregate ORDER BY only puts NULLs first when ascending, so other placements need a key
-        if nulls_first is not None and nulls_first != asc:
+        if not ignore_nulls and nulls_first is not None and nulls_first != asc:
             if distinct:
                 self.unsupported("ARRAY_AGG(DISTINCT) only puts NULLs first when ascending")
             else:
@@ -251,6 +253,13 @@ def _array_agg_fold_sql(
                 )
         folded = exp.Order(this=folded, expressions=keys)
     agg.set("this", folded)
+    if ignore_nulls:
+        # All-NULL input yields [], but an empty input still yields NULL.
+        agg = exp.If(
+            this=exp.Count(this=exp.Star()).eq(0),
+            true=exp.null(),
+            false=exp.func("COALESCE", exp.IgnoreNulls(this=agg), exp.array()),
+        )
     return self.sql(agg)
 
 
@@ -689,6 +698,13 @@ class BigQueryGenerator(generator.Generator):
         return self.sql(exp.cast(prefixed, exp.DType.BIGINT, copy=False))
 
     def approxquantile_sql(self, expression: exp.ApproxQuantile) -> str:
+        node: exp.Expr = expression
+        while node.parent and not isinstance(node.parent, (exp.Window, exp.AggFunc, exp.Select)):
+            node = node.parent
+        if isinstance(node.parent, exp.Window) and node.arg_key == "this":
+            self.unsupported("APPROX_QUANTILES does not support window functions")
+            return self.function_fallback_sql(expression)
+
         # The k/n quantile is APPROX_QUANTILES(x, n)[k], e.g. 0.95 -> n = 20, k = 19. n is at most
         # 100,000, so the quantile has at most 5 decimal places, and Decimal comparisons are exact
         quantile = expression.args["quantile"]
@@ -698,7 +714,7 @@ class BigQueryGenerator(generator.Generator):
             value is None
             or not 0 <= value <= 1
             or round(value, 5) != value
-            or (weight and weight.name != "1")
+            or (weight and (not weight.is_number or weight.to_py() != 1))
         ):
             self.unsupported("APPROX_QUANTILE needs a literal quantile and no weight")
             return self.function_fallback_sql(expression)

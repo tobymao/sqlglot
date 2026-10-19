@@ -3543,6 +3543,38 @@ OPTIONS (
                 },
             )
 
+    def test_array_distinct_fold(self):
+        for source, order in (
+            ("LIST_DISTINCT(LIST(x))", ""),
+            ("ARRAY_DISTINCT(ARRAY_AGG(x))", ""),
+            ("LIST_SORT(LIST_DISTINCT(LIST(x)))", " ORDER BY x"),
+            ("LIST_DISTINCT(LIST_SORT(LIST(x), 'DESC', 'NULLS FIRST'))", " ORDER BY x DESC"),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    f"IF(COUNT(*) = 0, NULL, COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS{order}), []))",
+                    read={"duckdb": source},
+                )
+
+        for values, where in (
+            ("1, NULL, 2, 1", ""),
+            ("NULL", ""),
+            ("1", " WHERE FALSE"),
+            ("'a', NULL, 'b', 'a'", ""),
+            ("CAST(NULL AS STRING)", ""),
+            ("'a'", " WHERE FALSE"),
+        ):
+            with self.subTest(values=values, where=where):
+                self.validate_all(
+                    "SELECT ARRAY_LENGTH(IF(COUNT(*) = 0, NULL, "
+                    "COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS), []))) "
+                    f"FROM UNNEST([{values}]) AS x{where}",
+                    read={
+                        "duckdb": "SELECT ARRAY_LENGTH(LIST_DISTINCT(LIST(x))) "
+                        f"FROM UNNEST([{values}]) AS t(x){where}"
+                    },
+                )
+
     def test_array_concat(self):
         self.validate_all(
             "WITH x AS ( SELECT 1 AS id), test_cte AS ( SELECT ARRAY_CONCAT(( SELECT id FROM x WHERE FALSE)) AS result ) SELECT * FROM test_cte;",
@@ -4193,6 +4225,46 @@ OPTIONS (
         self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
         self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
+
+    def test_approx_quantile_window(self):
+        for source, target in (
+            ("ORDER BY APPROX_PERCENTILE(x, 0.5)", "ORDER BY APPROX_QUANTILES(x, 2)[1] NULLS LAST"),
+            (
+                "PARTITION BY APPROX_PERCENTILE(x, 0.5) ORDER BY y",
+                "PARTITION BY APPROX_QUANTILES(x, 2)[1] ORDER BY y NULLS LAST",
+            ),
+            (
+                "ORDER BY APPROX_PERCENTILE(x, 0.5) FILTER(WHERE x > 0)",
+                "ORDER BY APPROX_QUANTILES(IF(x > 0, x, NULL), 2)[1] NULLS LAST",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    f"SELECT ROW_NUMBER() OVER ({target}) FROM t GROUP BY y",
+                    read={"trino": f"SELECT ROW_NUMBER() OVER ({source}) FROM t GROUP BY y"},
+                )
+
+        for sql in (
+            "APPROX_PERCENTILE(x, 0.5) OVER ()",
+            "APPROX_PERCENTILE(x, 0.5) OVER (PARTITION BY y)",
+            "APPROX_PERCENTILE(x, 0.5) FILTER(WHERE x > 0) OVER ()",
+        ):
+            with (
+                self.subTest(sql=sql),
+                self.assertRaisesRegex(
+                    UnsupportedError, "APPROX_QUANTILES does not support window functions"
+                ),
+            ):
+                parse_one(sql, read="trino").sql("bigquery", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_all(
+            "SELECT SUM(APPROX_QUANTILES(x, 2)[1]) OVER () FROM t",
+            read={"trino": "SELECT SUM(APPROX_PERCENTILE(x, 0.5)) OVER () FROM t"},
+        )
+        self.validate_all(
+            "SELECT SUM((SELECT APPROX_QUANTILES(x, 2)[1] FROM t)) OVER () FROM u",
+            read={"trino": "SELECT SUM((SELECT APPROX_PERCENTILE(x, 0.5) FROM t)) OVER () FROM u"},
+        )
 
     def test_approx_quantiles_to_duckdb(self):
         self.validate_all(

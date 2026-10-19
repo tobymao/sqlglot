@@ -104,10 +104,7 @@ class Resolver:
             if columns and "*" not in columns:
                 continue
             source = self.scope.sources.get(name)
-            is_tvf = (isinstance(source, exp.Table) and isinstance(source.this, exp.Func)) or (
-                isinstance(source, Scope) and source.is_udtf
-            )
-            if is_tvf:
+            if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
                 unknown_tvf_names.append(name)
 
         return unknown_tvf_names[0] if len(unknown_tvf_names) == 1 else None

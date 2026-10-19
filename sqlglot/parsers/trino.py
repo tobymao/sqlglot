@@ -5,7 +5,7 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.helper import ensure_list
-from sqlglot.parsers.presto import PrestoParser
+from sqlglot.parsers.presto import PrestoParser, _build_approx_percentile
 from sqlglot.tokens import TokenType
 
 FRACTIONAL_SECONDS_RE = re.compile(r":\d+\.(\d+)")
@@ -31,6 +31,11 @@ class TrinoParser(PrestoParser):
 
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
+        "APPROX_PERCENTILE": lambda args: (
+            exp.ApproxQuantile(this=args[0], weight=args[1], quantile=args[2])
+            if len(args) == 3
+            else _build_approx_percentile(args)
+        ),
         "VERSION": exp.CurrentVersion.from_arg_list,
     }
 

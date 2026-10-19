@@ -7,6 +7,16 @@ from tests.dialects.test_dialect import Validator
 class TestPresto(Validator):
     dialect = "presto"
 
+    def test_approx_percentile(self):
+        expression = self.validate_identity("APPROX_PERCENTILE(x, 0.5, 0.01)")
+        self.assertEqual(expression.args["quantile"], exp.Literal.number("0.5"))
+        self.assertEqual(expression.args["accuracy"], exp.Literal.number("0.01"))
+        self.assertIsNone(expression.args.get("weight"))
+        self.validate_all(
+            "APPROX_PERCENTILE(x, 0.5, 0.01)",
+            write={"bigquery": "APPROX_QUANTILES(x, 2)[1]"},
+        )
+
     def test_temporal_precision(self):
         message = "Presto only supports millisecond precision for temporal types"
         for kind, value in (("TIMESTAMP", "2020-01-01 00:00:00"), ("TIME", "12:00:00")):

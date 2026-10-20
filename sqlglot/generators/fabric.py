@@ -121,6 +121,11 @@ class FabricGenerator(TSQLGenerator):
             # Generate the AT TIME ZONE expression (which will handle the inner cast conversion)
             at_time_zone_sql = super().attimezone_sql(expression)
 
+            # Don't wrap again if it's already cast to DATETIME2, e.g. when re-parsing our own output
+            parent = expression.parent
+            if isinstance(parent, exp.Cast) and parent.to.is_type(exp.DType.DATETIME2):
+                return at_time_zone_sql
+
             # Wrap it in an outer cast to DATETIME2
             return f"CAST({at_time_zone_sql} AS DATETIME2({precision}))"
 

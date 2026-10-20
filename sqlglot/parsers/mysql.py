@@ -72,7 +72,6 @@ class MySQLParser(parser.Parser):
     CONJUNCTION = {
         **parser.Parser.CONJUNCTION,
         TokenType.DAMP: exp.And,
-        TokenType.XOR: exp.Xor,
     }
 
     DISJUNCTION = {
@@ -317,6 +316,16 @@ class MySQLParser(parser.Parser):
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
+
+    def _parse_conjunction(self) -> exp.Expr | None:
+        this = super()._parse_conjunction()
+        while self._match(TokenType.XOR):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.Xor(this=this, expression=super()._parse_conjunction()),
+                comments=comments,
+            )
+        return this
 
     def _parse_column_constraint(self) -> exp.Expr | None:
         # SIGNED is the default for numeric types, so MySQL ignores it

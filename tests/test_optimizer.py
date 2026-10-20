@@ -1409,6 +1409,26 @@ class TestOptimizer(unittest.TestCase):
         first.this.set("this", exp.to_identifier("changed"))
         self.assertEqual(second.this.name, "v")
 
+    def test_qualify_preserves_unsupported_struct_star_operands(self):
+        for operand in ("IF(TRUE, s, NULL)", "STRUCT(s AS nested)", "(SELECT s FROM t LIMIT 1)"):
+            with self.subTest(operand=operand):
+                qualified = qualify(
+                    parse_one(f"SELECT {operand}.* FROM t", dialect="bigquery"),
+                    schema={"t": {"s": "STRUCT<x INT64>"}},
+                    dialect="bigquery",
+                )
+                self.assertTrue(qualified.selects[0].is_star)
+                self.assertEqual(
+                    qualified.selects[0].this.sql("bigquery"),
+                    qualify(
+                        parse_one(f"SELECT {operand} AS value FROM t", dialect="bigquery"),
+                        schema={"t": {"s": "STRUCT<x INT64>"}},
+                        dialect="bigquery",
+                    )
+                    .selects[0]
+                    .this.sql("bigquery"),
+                )
+
     def test_qualify_order_by_expression_uncache(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
         tree = parse_one(

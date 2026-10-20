@@ -106,27 +106,16 @@ class StarRocksParser(MySQLParser):
         for field in pivot.fields[0].expressions:
             if isinstance(field, exp.PivotAlias):
                 name = field.alias
-            else:
-                values = field.expressions if isinstance(field, exp.Tuple) else [field]
-                if any(
-                    not (
-                        isinstance(value, (exp.Boolean, exp.Null))
-                        or (
-                            value.is_string
-                            and value.name.isprintable()
-                            and "'" not in value.name
-                            and "\\" not in value.name
-                        )
-                        or (value.is_number and value.name == str(value.to_py()))
+            elif isinstance(field, exp.Tuple):
+                name = (
+                    "{"
+                    + ",".join(
+                        e.sql(dialect=self.dialect, comments=False) for e in field.expressions
                     )
-                    for value in values
-                ):
-                    # Engine-rendered names can differ from SQL for escaped or typed literals.
-                    pivot.set("columns", [])
-                    return pivot
-                name = ",".join(value.sql(dialect=self.dialect, comments=False) for value in values)
-                if isinstance(field, exp.Tuple):
-                    name = "{" + name + "}"
+                    + "}"
+                )
+            else:
+                name = field.sql(dialect=self.dialect, comments=False)
             columns.extend(exp.to_identifier(f"{name}_{agg}" if agg else name) for agg in names)
         pivot.set("columns", columns)
         return pivot

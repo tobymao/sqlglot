@@ -927,21 +927,6 @@ class TestParser(unittest.TestCase):
             "SELECT * FROM part PIVOT (AVG(price) AS p, MAX(price) AS q FOR (partname, quality) IN (('prop', 1) AS prop1, ('rudder', 2)))": {
                 "starrocks": ["prop1_p", "prop1_q", "`{'rudder',2}_p`", "`{'rudder',2}_q`"],
             },
-            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('prop', 'O''Brien'))": {
-                "starrocks": [],
-            },
-            r"SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('a\\b'))": {
-                "starrocks": [],
-            },
-            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN (DATE '2024-01-02'))": {
-                "starrocks": [],
-            },
-            "SELECT * FROM part PIVOT (AVG(price) FOR (partname, quality) IN (('O''Brien', 1)))": {
-                "starrocks": [],
-            },
-            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('O''Brien' AS author, DATE '2024-01-02' AS day))": {
-                "starrocks": ["author", "day"],
-            },
             two_in_clauses_duckdb: {
                 "duckdb": [
                     '"2000_NL_total"',

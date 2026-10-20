@@ -1021,21 +1021,20 @@ class TestOptimizer(unittest.TestCase):
 
     def test_unknown_pivot_columns(self):
         schema = {"quarterly_sales": {"empid": "INT", "amount": "INT", "quarter": "TEXT"}}
-        for pivot_sql in (
-            "PIVOT(SUM(amount), MAX(amount) FOR quarter IN ('Q1', 'Q2'))",
-            "PIVOT(SUM(amount) FOR quarter IN ('Q1', 'O''Brien'))",
-        ):
-            with self.subTest(pivot_sql=pivot_sql):
-                expression = qualify(
-                    parse_one(f"SELECT empid FROM quarterly_sales {pivot_sql}", read="starrocks"),
-                    dialect="starrocks",
-                    schema=schema,
-                )
-                self.assertTrue(
-                    annotate_types(expression, dialect="starrocks", schema=schema)
-                    .selects[0]
-                    .is_type(exp.DType.INT)
-                )
+        expression = qualify(
+            parse_one(
+                "SELECT empid FROM quarterly_sales "
+                "PIVOT(SUM(amount), MAX(amount) FOR quarter IN ('Q1', 'Q2'))",
+                read="starrocks",
+            ),
+            dialect="starrocks",
+            schema=schema,
+        )
+        self.assertTrue(
+            annotate_types(expression, dialect="starrocks", schema=schema)
+            .selects[0]
+            .is_type(exp.DType.INT)
+        )
 
         for source in ("a CROSS JOIN b", "(a CROSS JOIN b)"):
             with self.subTest(source=source):

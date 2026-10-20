@@ -3458,7 +3458,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
 
         # A parenthesized set operation is typed from all of its operands rather than just its
-        # first query; a column-count mismatch anywhere makes the result unknown
+        # first query, and a BY NAME operand only outputs the columns its LEFT, INNER or ON
+        # modifiers keep; a column-count mismatch anywhere makes the result unknown
         for sql, expected_types in (
             (
                 "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 2.5::DOUBLE AS c)) AS t",
@@ -3467,6 +3468,22 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             (
                 "SELECT t.a, t.d FROM (SELECT 1 AS a, 2 AS d UNION ALL (SELECT 3 AS d, 4 AS a UNION ALL BY NAME SELECT 5::BIGINT AS a, 6.5 AS d)) AS t",
                 ["DOUBLE", "BIGINT"],
+            ),
+            (
+                "SELECT t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL (SELECT 3 AS a UNION BY NAME SELECT 4.5 AS b)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a LEFT UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c INNER UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c FULL UNION ALL BY NAME ON (a) SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
             ),
             (
                 "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 3, 4)) AS t",

@@ -385,10 +385,7 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if isinstance(expression, exp.SetOperation) and (
-            expression.args.get("by_name")
-            or len(expression.this.selects) == len(expression.expression.selects)
-        ):
+        if isinstance(expression, exp.SetOperation):
             return self._get_setop_column_types(expression)
 
         if isinstance(expression, exp.Selectable):
@@ -646,8 +643,8 @@ class TypeAnnotator:
         Computes and returns the coerced column types for a SetOperation.
 
         Set operations are resolved pairwise and bottom-up: each one matches its operands'
-        columns by position (or by name for BY NAME) and takes its output names from its
-        left operand.
+        columns by position (or by name for BY NAME, honoring its LEFT, INNER and ON modifiers)
+        and takes its output names from its left operand.
 
         Args:
             setop: The SetOperation expression to analyze
@@ -677,7 +674,7 @@ class TypeAnnotator:
             operand_columns: list[list[tuple[str, exp.DataType | exp.DType]] | None] = []
             for operand in (node.this.unnest(), node.expression.unnest()):
                 if isinstance(operand, exp.SetOperation):
-                    operand_columns.append(resolved[id(operand)])
+                    operand_columns.append(resolved.pop(id(operand)))
                 else:
                     operand_columns.append(
                         [(s.alias_or_name, t.cast(exp.DataType, s.type)) for s in operand.selects]
@@ -688,23 +685,29 @@ class TypeAnnotator:
             columns: list[tuple[str, exp.DataType | exp.DType]] | None = None
             if left is not None and right is not None:
                 if node.args.get("by_name"):
+                    left_types = dict(left)
+                    right_types = dict(right)
+                    if on := node.args.get("on"):
+                        names = [column.name for column in on]
+                    elif node.kind == "INNER":
+                        names = [name for name in left_types if name in right_types]
+                    elif node.side == "LEFT":
+                        names = list(left_types)
+                    else:
+                        names = list({**left_types, **right_types})
+
                     # Columns missing from one side are filled with NULLs, so the other
                     # side's type is preserved (NULL is the identity for _maybe_coerce)
-                    right_types = dict(right)
                     columns = [
                         (
                             name,
                             self._maybe_coerce(
-                                left_type,
-                                right_types.pop(name, exp.DType.NULL) or exp.DType.UNKNOWN,
+                                left_types.get(name, exp.DType.NULL) or exp.DType.UNKNOWN,
+                                right_types.get(name, exp.DType.NULL) or exp.DType.UNKNOWN,
                             ),
                         )
-                        for name, left_type in left
+                        for name in names
                     ]
-                    columns.extend(
-                        (name, right_type or exp.DType.UNKNOWN)
-                        for name, right_type in right_types.items()
-                    )
                 elif len(left) == len(right):
                     columns = [
                         (name, self._maybe_coerce(left_type, right_type))
@@ -713,7 +716,7 @@ class TypeAnnotator:
 
             resolved[id(node)] = columns
 
-        col_types = dict(resolved[setop_id] or [])
+        col_types = dict(resolved.pop(setop_id) or [])
         self._setop_column_types[setop_id] = (setop, col_types)
         return col_types
 

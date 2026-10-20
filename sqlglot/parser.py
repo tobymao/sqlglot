@@ -3455,9 +3455,15 @@ class Parser:
         )
 
     def _parse_partition_by(self) -> list[exp.Expr]:
-        if self._match(TokenType.PARTITION_BY):
-            return self._parse_csv(self._parse_disjunction)
-        return []
+        if not self._match(TokenType.PARTITION_BY):
+            return []
+
+        if self._next.token_type in self.ID_VAR_TOKENS and self._match_text_seq("EXCLUDING"):
+            return [
+                self.expression(exp.Excluding(expressions=self._parse_csv(self._parse_disjunction)))
+            ]
+
+        return self._parse_csv(self._parse_disjunction)
 
     def _parse_partition_bound_spec(self) -> exp.PartitionBoundSpec:
         def _parse_partition_bound_expr() -> exp.Expr | None:

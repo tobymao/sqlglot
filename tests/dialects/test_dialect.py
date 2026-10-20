@@ -3671,6 +3671,16 @@ SELECT
             },
         )
 
+    def test_partition_by_excluding(self):
+        window = self.validate_identity(
+            "LAG(revenue) OVER (PARTITION BY EXCLUDING orders.order_date, orders.order_year ORDER BY orders.order_date)"
+        )
+        self.assertIsInstance(window.args["partition_by"][0], exp.Excluding)
+
+        for partition in ("excluding", "excluding, a", "excluding.a"):
+            window = self.validate_identity(f"SUM(a) OVER (PARTITION BY {partition} ORDER BY a)")
+            self.assertIsInstance(window.args["partition_by"][0], exp.Column)
+
     def test_nested_ctes(self):
         self.validate_all(
             "SELECT * FROM (WITH t AS (SELECT 1 AS c) SELECT c FROM t) AS subq",

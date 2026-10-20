@@ -734,6 +734,13 @@ class TestDuckDB(Validator):
             "SELECT a -> ('x' || 'y')",
             read={"duckdb": "SELECT JSON_EXTRACT(a, 'x' || 'y')"},
         )
+        self.validate_all(
+            "SELECT a ->> ('$.' || f)",
+            read={
+                "databricks": "SELECT GET_JSON_OBJECT(a, CONCAT('$.', f))",
+                "duckdb": "SELECT JSON_EXTRACT_STRING(a, '$.' || f)",
+            },
+        )
         self.validate_identity(
             "SELECT ($$hello)'world$$)",
             "SELECT ('hello)''world')",

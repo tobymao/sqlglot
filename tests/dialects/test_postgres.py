@@ -2110,6 +2110,24 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             "SELECT a #> (n IN (1, 2))",
             read={"postgres": "SELECT JSONB_EXTRACT(a, n IN (1, 2))"},
         )
+        self.validate_all(
+            "SELECT a ->> ('$.' || f)",
+            read={"spark": "SELECT GET_JSON_OBJECT(a, CONCAT('$.', f))"},
+            write={
+                "duckdb": "SELECT a ->> ('$.' || f)",
+                "postgres": "SELECT a ->> ('$.' || f)",
+                "sqlite": "SELECT a ->> ('$.' || f)",
+            },
+        )
+        self.validate_all(
+            "SELECT a -> ('$.' || f)",
+            read={"mysql": "SELECT JSON_EXTRACT(a, CONCAT('$.', f))"},
+            write={
+                "duckdb": "SELECT a -> ('$.' || f)",
+                "postgres": "SELECT a -> ('$.' || f)",
+                "sqlite": "SELECT a -> ('$.' || f)",
+            },
+        )
 
         for arrow_op, clickhouse_func in (("->", "JSONExtractRaw"), ("->>", "JSONExtractString")):
             with self.subTest(f"Ensure {arrow_op} operator roundtrips int values as subscripts"):

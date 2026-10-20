@@ -1357,7 +1357,10 @@ def arrow_json_extract_sql(
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, exp.DType.JSON))
 
-    if isinstance(expression.expression, (exp.Binary, exp.Predicate, exp.Not)):
+    # CONCAT may be generated as a chain of || operators, which would bind looser than the arrow
+    if isinstance(
+        expression.expression, (exp.Binary, exp.Predicate, exp.Not, exp.Concat, exp.ConcatWs)
+    ):
         expression.set("expression", exp.paren(expression.expression, copy=False))
 
     op = op or ("->" if isinstance(expression, exp.JSONExtract) else "->>")

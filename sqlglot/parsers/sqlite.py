@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.parser import binary_range_parser
+from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
 
 
@@ -35,6 +35,8 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 
 
 class SQLiteParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
+
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True
@@ -101,6 +103,17 @@ class SQLiteParser(parser.Parser):
         # https://www.sqlite.org/lang_expr.html
         TokenType.MATCH: binary_range_parser(exp.Match),
     }
+
+    def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
+        # Ordering comparisons bind above IS, but range predicates bind below it.
+        this = self._parse_bitwise()
+        while self._match_set(self.COMPARISON):
+            comments = self._prev_comments
+            this = self.expression(
+                self.COMPARISON[self._prev.token_type](this=this, expression=self._parse_bitwise()),
+                comments=comments,
+            )
+        return this
 
     def _parse_factor_operand(self) -> exp.Expr | None:
         in_arithmetic_operand = self._prev.token_type in self.ARITHMETIC_TOKENS

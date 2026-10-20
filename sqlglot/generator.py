@@ -4783,14 +4783,22 @@ class Generator:
         sqls: list[str] = []
         stack: list[None | str | exp.Expr] = [expression]
         binary_type = type(expression)
+        is_is = binary_type is exp.Is and op in ("IS", "IS NOT")
+        negate = expression.args.get("negate")
 
         while stack:
             node = stack.pop()
 
-            if type(node) is binary_type:
+            if type(node) is binary_type and (
+                node is expression
+                or (is_is and not isinstance(node.expression, exp.Boolean))
+                or node.args.get("negate") == negate
+            ):
                 op_func = node.args.get("operator")
                 if op_func:
                     op = f"OPERATOR({self.sql(op_func)})"
+                elif is_is:
+                    op = "IS NOT" if node.args.get("negate") else "IS"
 
                 stack.append(node.args.get("expression"))
                 stack.append(f" {self.maybe_comment(op, comments=node.comments)} ")

@@ -9,6 +9,79 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_is_precedence(self):
+        for predicate in (
+            "NULL IN (0)",
+            "NULL NOT IN (0)",
+            "NULL BETWEEN 2 AND 3",
+            "NULL NOT BETWEEN 2 AND 3",
+            "NULL LIKE 'x'",
+            "NULL NOT LIKE 'x'",
+            "NULL LIKE '0' ESCAPE '!'",
+            "NULL NOT LIKE '0' ESCAPE '!'",
+        ):
+            for operator in ("IS DISTINCT FROM", "IS NOT DISTINCT FROM"):
+                rhs = self.parse_one(predicate).sql("postgres")
+                self.validate_all(
+                    f"SELECT NULL {operator} {predicate}",
+                    write={
+                        dialect: f"SELECT NULL {operator} ({rhs})"
+                        for dialect in ("postgres", "sqlite", "duckdb", "snowflake", "redshift")
+                    },
+                )
+        self.validate_all(
+            "SELECT a = b IS NULL FROM t",
+            write={
+                dialect: "SELECT (a = b) IS NULL FROM t"
+                for dialect in (
+                    "postgres",
+                    "duckdb",
+                    "mysql",
+                    "sqlite",
+                    "clickhouse",
+                    "hive",
+                    "spark",
+                    "snowflake",
+                    "redshift",
+                    "bigquery",
+                    "presto",
+                    "trino",
+                    "athena",
+                )
+            },
+        )
+        self.validate_all(
+            "SELECT a = (b IS NULL) FROM t",
+            read={
+                "snowflake": "SELECT a = b IS NULL FROM t",
+                "redshift": "SELECT a = b IS NULL FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL = NULL",
+            write={
+                "postgres": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
+                "sqlite": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
+                "snowflake": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
+            },
+        )
+        self.validate_identity("SELECT NULL IS NULL = FALSE", "SELECT (NULL IS NULL) = FALSE")
+        self.validate_identity(
+            "SELECT a = b IS NOT NULL FROM t", "SELECT (a = b) IS NOT NULL FROM t"
+        )
+        self.validate_identity("SELECT a = b NOTNULL FROM t", "SELECT (a = b) IS NOT NULL FROM t")
+        self.validate_identity("SELECT a = (b IS NULL) FROM t")
+        self.validate_identity("SELECT a IS NOT NULL IS NULL FROM t")
+        self.validate_identity("SELECT a IS NULL IS NOT NULL FROM t")
+        self.validate_identity("SELECT NULL IS NOT NULL IS FALSE")
+        self.validate_identity(
+            "CREATE TABLE t (a INT, b BOOLEAN GENERATED ALWAYS AS (a IS NULL) STORED)"
+        )
+        self.validate_identity(
+            "CREATE TABLE t (a INT, b BOOLEAN GENERATED ALWAYS AS (a = 1 IS NULL) STORED)",
+            "CREATE TABLE t (a INT, b BOOLEAN GENERATED ALWAYS AS ((a = 1) IS NULL) STORED)",
+        )
+
     def test_json_value(self):
         self.validate_identity("SELECT JSON_VALUE(j, '$.a' RETURNING BIGINT) FROM t")
         self.validate_identity(

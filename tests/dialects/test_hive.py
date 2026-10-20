@@ -5,6 +5,23 @@ from sqlglot import UnsupportedError, exp
 class TestHive(Validator):
     dialect = "hive"
 
+    def test_is_precedence(self):
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL = NULL",
+            write={
+                "hive": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "spark": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+            },
+        )
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL < NULL",
+            write={
+                "hive": "SELECT FALSE IS DISTINCT FROM (NULL < NULL)",
+                "spark": "SELECT FALSE IS DISTINCT FROM (NULL < NULL)",
+            },
+        )
+
     def test_bits(self):
         self.validate_all(
             "x & 1",

@@ -5,7 +5,7 @@ import typing as t
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
 from sqlglot.helper import ensure_list, seq_get
-from sqlglot.parser import OPTIONS_TYPE, build_coalesce
+from sqlglot.parser import IsPredicatePrecedence, OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -21,6 +21,8 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
 
 
 class OracleParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True

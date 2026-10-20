@@ -1997,6 +1997,14 @@ COMMENT='客户账户表'"""
         self.validate_identity("SELECT JSON_OBJECT('id', 87, 'name', 'carrot')")
 
     def test_is_null(self):
+        for argument in ("NULL = NULL", "NOT TRUE"):
+            self.validate_all(
+                f"SELECT ISNULL({argument})",
+                write={
+                    dialect: f"SELECT (({argument}) IS NULL)"
+                    for dialect in ("mysql", "postgres", "sqlite", "snowflake", "redshift")
+                },
+            )
         self.validate_all(
             "SELECT ISNULL(x)", write={"": "SELECT (x IS NULL)", "mysql": "SELECT (x IS NULL)"}
         )

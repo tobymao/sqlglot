@@ -2072,3 +2072,47 @@ SELECT 100;
 # schema: {"o": {"id": "INT", "observed_date": "DATE"}, "e": {"id": "INT", "metric_date": "DATE"}}
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON o.id = e.id;
 SELECT * FROM o ASOF JOIN e MATCH_CONDITION (o.observed_date >= e.metric_date) ON e.id = o.id;
+
+# dialect: postgres
+NULL = NULL IS NULL;
+(NULL = NULL) IS NULL;
+
+# dialect: postgres
+FALSE = FALSE IS NULL;
+(FALSE = FALSE) IS NULL;
+
+# dialect: postgres
+NULL = (NULL IS NULL);
+NULL = TRUE;
+
+# dialect: snowflake
+NULL = NULL IS NULL;
+NULL = TRUE;
+
+# dialect: redshift
+NULL = NULL IS NULL;
+NULL = TRUE;
+
+# dialect: sqlite
+NULL IS NULL BETWEEN 0 AND 0;
+0 <= TRUE AND 0 >= TRUE;
+
+# dialect: sqlite
+NULL NOT NULL IN (0, 1);
+FALSE IN (0, 1);
+
+# dialect: postgres
+NULL IS NOT DISTINCT FROM NULL BETWEEN 2 AND 3;
+NULL IS NOT DISTINCT FROM (2 <= NULL AND 3 >= NULL);
+
+# dialect: sqlite
+a IS b BETWEEN 0 AND 1;
+(a IS b) <= 1 AND (a IS b) >= 0;
+
+# dialect: sqlite
+a IS DISTINCT FROM b BETWEEN 0 AND 1;
+(a IS DISTINCT FROM b) <= 1 AND (a IS DISTINCT FROM b) >= 0;
+
+# dialect: sqlite
+a IS NOT DISTINCT FROM b NOT BETWEEN 0 AND 1;
+(a IS NOT DISTINCT FROM b) < 0 OR (a IS NOT DISTINCT FROM b) > 1;

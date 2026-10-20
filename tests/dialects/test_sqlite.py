@@ -7,6 +7,46 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_is_precedence(self):
+        self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
+        for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):
+            for predicate, klass in (
+                ("NULL IS NULL", exp.Is),
+                ("NULL IS NOT DISTINCT FROM NULL", exp.NullSafeEQ),
+            ):
+                lhs = f"({predicate})" if suffix.startswith("BETWEEN") else predicate
+                expression = self.validate_identity(
+                    f"SELECT {predicate} {suffix}", f"SELECT {lhs} {suffix}"
+                )
+                self.assertIsInstance(expression.expressions[0].this.unnest(), klass)
+
+        self.validate_identity(
+            "SELECT NULL IS NULL < FALSE IN (0)", "SELECT NULL IS (NULL < FALSE) IN (0)"
+        )
+        for predicate in ("NOT NULL", "NOTNULL", "IS NOT NULL"):
+            for suffix in ("IN (0, 1)", "BETWEEN 0 AND 1", "NOT IN (0, 1)"):
+                negated = suffix.startswith("NOT ")
+                self.validate_identity(
+                    f"SELECT NULL {predicate} {suffix}",
+                    f"SELECT {'NOT ' if negated else ''}(NOT NULL IS NULL) {suffix.removeprefix('NOT ')}",
+                )
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM TRUE IS DISTINCT FROM FALSE",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+            },
+        )
+        self.validate_identity("SELECT NULL IS NULL < FALSE", "SELECT NULL IS (NULL < FALSE)")
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL = NULL",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "duckdb": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+            },
+        )
+
     def test_sqlite(self):
         # Range operators (IN/LIKE) are left-associative and can be chained.
         self.validate_identity("SELECT 1 IN (0) IN (1)")

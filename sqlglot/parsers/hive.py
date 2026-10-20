@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_regexp_extract
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -51,6 +52,8 @@ def _build_date_add(args: list) -> exp.TsOrDsAdd:
 
 
 class HiveParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
+
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = False
     VALUES_FOLLOWED_BY_PAREN = False

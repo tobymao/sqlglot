@@ -11,7 +11,7 @@ from sqlglot.dialects.dialect import (
     build_timestamp_trunc,
 )
 from sqlglot.helper import is_int, seq_get
-from sqlglot.parser import binary_range_parser
+from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -84,6 +84,8 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 
 class PostgresParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     ALTER_DROP_REQUIRES_COLUMN = False
     ALTER_TABLE_MIXED_ACTIONS = True
     ALTER_COLUMN_TYPE_REQUIRES_KEYWORD = True

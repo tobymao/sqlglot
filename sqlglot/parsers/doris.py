@@ -71,7 +71,7 @@ class DorisParser(MySQLParser):
         "REFRESH": lambda self: self._parse_refresh_property(),
     }
 
-    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+    def _parse_range(self, this: exp.Expr | None = None, parse_is: bool = False) -> exp.Expr | None:
         this = this or self._parse_bitwise()
         index = self._index
         negate = self._match(TokenType.NOT)
@@ -82,7 +82,7 @@ class DorisParser(MySQLParser):
             if not expression:
                 # Preserve implicit aliases named after MATCH operators.
                 self._retreat(index)
-                return super()._parse_range(this)
+                return super()._parse_range(this, parse_is=parse_is)
 
             analyzer = None
             if self._match_text_seq("USING", "ANALYZER"):
@@ -98,7 +98,7 @@ class DorisParser(MySQLParser):
         elif negate:
             self._retreat(index)
 
-        return super()._parse_range(this)
+        return super()._parse_range(this, parse_is=parse_is)
 
     def _parse_partition_property(
         self,

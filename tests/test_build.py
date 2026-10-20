@@ -56,6 +56,8 @@ class TestBuild(unittest.TestCase):
             (lambda: x.eq(1), "x = 1"),
             (lambda: x.neq(1), "x <> 1"),
             (lambda: x.is_(exp.Null()), "x IS NULL"),
+            (lambda: x.eq(1).is_(exp.null()), "(x = 1) IS NULL"),
+            (lambda: x.is_(exp.null()).eq(False), "(x IS NULL) = FALSE"),
             (lambda: x.as_("y"), "x AS y"),
             (lambda: x.isin(1, "2"), "x IN (1, '2')"),
             (lambda: x.isin(query="select 1"), "x IN (SELECT 1)"),

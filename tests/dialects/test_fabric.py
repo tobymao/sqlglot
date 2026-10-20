@@ -97,6 +97,13 @@ class TestFabric(Validator):
             "CAST(x AS TIMESTAMPTZ(9)) AT TIME ZONE 'Pacific Standard Time'",
             "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))",
         )
+        # Re-parsing the generated SQL must not wrap it in another DATETIME2 cast
+        self.validate_identity(
+            "CAST(CAST(x AS DATETIMEOFFSET(6)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(6))"
+        )
+        self.validate_identity(
+            "CAST(CAST(x AS DATETIMEOFFSET(3)) AT TIME ZONE 'Pacific Standard Time' AS DATETIME2(3))"
+        )
 
     def test_unix_to_time(self):
         """Test UnixToTime transformation to DATEADD with microseconds"""

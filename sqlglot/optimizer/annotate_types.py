@@ -645,68 +645,75 @@ class TypeAnnotator:
         """
         Computes and returns the coerced column types for a SetOperation.
 
-        This handles UNION, INTERSECT, EXCEPT, etc., coercing types across
-        left and right operands for all projections/columns.
+        Set operations are resolved pairwise and bottom-up: each one matches its operands'
+        columns by position (or by name for BY NAME) and takes its output names from its
+        left operand.
 
         Args:
             setop: The SetOperation expression to analyze
 
         Returns:
-            Dictionary mapping column names to their coerced types
+            Dictionary mapping column names to their coerced types, or an empty dictionary if the
+            operands' projections can't be matched.
         """
         setop_id = id(setop)
         if cached := self._setop_column_types.get(setop_id):
             return cached[1]
 
-        col_types: dict[str, exp.DataType | exp.DType] = {}
+        # Map of each set operation's id to its output columns, or None if they can't be matched
+        resolved: dict[int, list[tuple[str, exp.DataType | exp.DType]] | None] = {}
 
-        # Validate that left and right have same number of projections (BY NAME
-        # operations match columns by name, so their counts are allowed to differ)
-        if not (
-            isinstance(setop, exp.SetOperation)
-            and setop.this.selects
-            and setop.expression.selects
-            and (
-                setop.args.get("by_name")
-                or len(setop.this.selects) == len(setop.expression.selects)
+        # walk yields parents before children, so iterating in reverse resolves nested set
+        # operations before the ones containing them
+        set_ops = [
+            node
+            for node in setop.walk(
+                prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
             )
-        ):
-            return col_types
+            if isinstance(node, exp.SetOperation)
+        ]
 
-        # Process a chain / sub-tree of set operations
-        for set_op in setop.walk(
-            prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
-        ):
-            if not isinstance(set_op, exp.SetOperation):
-                continue
-
-            if set_op.args.get("by_name"):
-                # Columns missing from one side are filled with NULLs, so the other
-                # side's type is preserved (NULL is the identity for _maybe_coerce)
-                r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
-                setop_cols = {
-                    s.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, s.type),
-                        r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
+        for node in reversed(set_ops):
+            operand_columns: list[list[tuple[str, exp.DataType | exp.DType]] | None] = []
+            for operand in (node.this.unnest(), node.expression.unnest()):
+                if isinstance(operand, exp.SetOperation):
+                    operand_columns.append(resolved[id(operand)])
+                else:
+                    operand_columns.append(
+                        [(s.alias_or_name, t.cast(exp.DataType, s.type)) for s in operand.selects]
+                        or None
                     )
-                    for s in set_op.this.selects
-                }
-                for name, r_type in r_type_by_select.items():
-                    setop_cols[name] = r_type or exp.DType.UNKNOWN
-            else:
-                setop_cols = {
-                    ls.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+            left, right = operand_columns
+
+            columns: list[tuple[str, exp.DataType | exp.DType]] | None = None
+            if left is not None and right is not None:
+                if node.args.get("by_name"):
+                    # Columns missing from one side are filled with NULLs, so the other
+                    # side's type is preserved (NULL is the identity for _maybe_coerce)
+                    right_types = dict(right)
+                    columns = [
+                        (
+                            name,
+                            self._maybe_coerce(
+                                left_type,
+                                right_types.pop(name, exp.DType.NULL) or exp.DType.UNKNOWN,
+                            ),
+                        )
+                        for name, left_type in left
+                    ]
+                    columns.extend(
+                        (name, right_type or exp.DType.UNKNOWN)
+                        for name, right_type in right_types.items()
                     )
-                    for ls, rs in zip(set_op.this.selects, set_op.expression.selects)
-                }
+                elif len(left) == len(right):
+                    columns = [
+                        (name, self._maybe_coerce(left_type, right_type))
+                        for (name, left_type), (_, right_type) in zip(left, right)
+                    ]
 
-            # Coerce intermediate results with the previously registered types, if they exist
-            for col_name, col_type in setop_cols.items():
-                col_types[col_name] = self._maybe_coerce(
-                    col_type, col_types.get(col_name, exp.DType.NULL)
-                )
+            resolved[id(node)] = columns
 
+        col_types = dict(resolved[setop_id] or [])
         self._setop_column_types[setop_id] = (setop, col_types)
         return col_types
 

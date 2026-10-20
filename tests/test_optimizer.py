@@ -3457,6 +3457,26 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         """
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
 
+        # A parenthesized set operation is typed from all of its operands rather than just its
+        # first query; a column-count mismatch anywhere makes the result unknown
+        for sql, expected_types in (
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 2.5::DOUBLE AS c)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a, t.d FROM (SELECT 1 AS a, 2 AS d UNION ALL (SELECT 3 AS d, 4 AS a UNION ALL BY NAME SELECT 5::BIGINT AS a, 6.5 AS d)) AS t",
+                ["DOUBLE", "BIGINT"],
+            ),
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 3, 4)) AS t",
+                ["UNKNOWN"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertEqual([s.type.sql() for s in expression.selects], expected_types)
+
         # BigQuery: STRING coerces to temporal types in UNION
         for left, right, expected_type in (
             ("SELECT '2010-01-01' AS c", "SELECT DATE '2020-02-02' AS c", "DATE"),

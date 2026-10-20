@@ -688,7 +688,8 @@ class ClickHouseGenerator(generator.Generator):
             comment_prop = expression.find(exp.SchemaCommentProperty)
             if comment_prop:
                 comment_prop.pop()
-                query.replace(exp.paren(query))
+                if not isinstance(query, exp.Subquery):
+                    query.replace(exp.paren(query))
         else:
             comment_prop = None
 

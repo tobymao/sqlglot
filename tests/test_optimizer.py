@@ -1001,6 +1001,76 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
+    def test_starrocks_pivot_columns(self):
+        for aggregation, expected in (
+            ("SUM(price) AS total", ["'prop'", "'rudder'"]),
+            ("SUM(price), MAX(price)", ["*"]),
+            ("SUM(price) AS total, MAX(price)", ["*"]),
+            (
+                "SUM(price) AS total, MAX(price) AS maximum",
+                ["'prop'_total", "'prop'_maximum", "'rudder'_total", "'rudder'_maximum"],
+            ),
+        ):
+            with self.subTest(aggregation=aggregation):
+                expression = parse_one(
+                    "SELECT * FROM (SELECT 'prop' AS partname, 10 AS price) AS t "
+                    f"PIVOT ({aggregation} FOR partname IN ('prop', 'rudder'))",
+                    dialect="starrocks",
+                )
+                self.assertEqual(qualify(expression, dialect="starrocks").named_selects, expected)
+
+    def test_unknown_pivot_columns(self):
+        schema = {"quarterly_sales": {"empid": "INT", "amount": "INT", "quarter": "TEXT"}}
+        for pivot_sql in (
+            "PIVOT(SUM(amount), MAX(amount) FOR quarter IN ('Q1', 'Q2'))",
+            "PIVOT(SUM(amount) FOR quarter IN ('Q1', 'O''Brien'))",
+        ):
+            with self.subTest(pivot_sql=pivot_sql):
+                expression = qualify(
+                    parse_one(f"SELECT empid FROM quarterly_sales {pivot_sql}", read="starrocks"),
+                    dialect="starrocks",
+                    schema=schema,
+                )
+                self.assertTrue(
+                    annotate_types(expression, dialect="starrocks", schema=schema)
+                    .selects[0]
+                    .is_type(exp.DType.INT)
+                )
+
+        for source in ("a CROSS JOIN b", "(a CROSS JOIN b)"):
+            with self.subTest(source=source):
+                expression = parse_one(
+                    "WITH a AS (SELECT 'prop' AS partname, 10 AS price), "
+                    "b AS (SELECT 20 AS quality) "
+                    f"SELECT * FROM {source} "
+                    "PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop'))",
+                    dialect="starrocks",
+                )
+                self.assertEqual(qualify(expression, dialect="starrocks").named_selects, ["*"])
+
+        expression = parse_one(
+            "SELECT * FROM quarterly_sales PIVOT(SUM(amount) AS total FOR quarter IN (ANY))",
+            dialect="snowflake",
+        )
+        passthrough = expression.select("empid", append=False)
+        self.assertEqual(
+            qualify(
+                expression,
+                dialect="snowflake",
+                schema=schema,
+            ).named_selects,
+            ["*"],
+        )
+        self.assertTrue(
+            annotate_types(
+                qualify(passthrough, dialect="snowflake", schema=schema),
+                dialect="snowflake",
+                schema=schema,
+            )
+            .selects[0]
+            .is_type(exp.DType.INT)
+        )
+
     def test_multiple_pivots_annotate_types(self):
         # NOTE: the value column takes the type of the first IN-list entry, so the columns
         # folded by a single operator are kept uniformly typed here

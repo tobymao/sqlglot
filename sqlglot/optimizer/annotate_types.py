@@ -744,6 +744,14 @@ class TypeAnnotator:
         if not isinstance(first_field, exp.In):
             raise OptimizeError(f"Expected In expression for pivot field, got {type(first_field)}")
 
+        if pivot.args.get("columns") == []:
+            excluded = {column.name for column in pivot.find_all(exp.Column)}
+            passthrough = [name for name in src_types if name not in excluded]
+            aliases = pivot.alias_column_names
+            return {
+                seq_get(aliases, i) or name: src_types[name] for i, name in enumerate(passthrough)
+            }
+
         pivot_constants = first_field.expressions
 
         # The first agg_cols_offset entries are source columns that pass through the PIVOT unchanged;

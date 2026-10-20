@@ -782,37 +782,37 @@ class TestParser(unittest.TestCase):
         nothing_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop', 'rudder'))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop', 'rudder'))
         """
 
         everything_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) AS avg_price FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+            ) AS t PIVOT (AVG(price) AS avg_price FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
         """
 
         only_pivot_columns_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
         """
 
         columns_partially_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_aliased = """
             SELECT * FROM (
                 SELECT partname, price, quality FROM part
-            ) PIVOT (AVG(price) AS p, MAX(quality) AS q FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price) AS p, MAX(quality) AS q FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_not_aliased = """
             SELECT * FROM (
                 SELECT partname, price, quality FROM part
-            ) PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_not_aliased_with_quoted_identifier_spark = """
@@ -855,29 +855,34 @@ class TestParser(unittest.TestCase):
                 "redshift": ["prop", "rudder"],
                 "snowflake": ['''"'prop'"''', '''"'rudder'"'''],
                 "spark": ["prop", "rudder"],
+                "starrocks": ["`'prop'`", "`'rudder'`"],
             },
             everything_aliased: {
                 "bigquery": ["avg_price_prop1", "avg_price_rudder1"],
                 "duckdb": ["prop1_avg_price", "rudder1_avg_price"],
                 "redshift": ["prop1_avg_price", "rudder1_avg_price"],
                 "spark": ["prop1", "rudder1"],
+                "starrocks": ["prop1", "rudder1"],
             },
             only_pivot_columns_aliased: {
                 "bigquery": ["prop1", "rudder1"],
                 "duckdb": ["prop1", "rudder1"],
                 "redshift": ["prop1", "rudder1"],
                 "spark": ["prop1", "rudder1"],
+                "starrocks": ["prop1", "rudder1"],
             },
             columns_partially_aliased: {
                 "bigquery": ["prop1", "rudder"],
                 "duckdb": ["prop1", "rudder"],
                 "redshift": ["prop1", "rudder"],
                 "spark": ["prop1", "rudder"],
+                "starrocks": ["prop1", "`'rudder'`"],
             },
             multiple_aggregates_aliased: {
                 "bigquery": ["p_prop1", "q_prop1", "p_rudder", "q_rudder"],
                 "duckdb": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
                 "spark": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
+                "starrocks": ["prop1_p", "prop1_q", "`'rudder'_p`", "`'rudder'_q`"],
             },
             multiple_aggregates_not_aliased: {
                 "duckdb": [
@@ -892,6 +897,7 @@ class TestParser(unittest.TestCase):
                     "`rudder_avg(price)`",
                     "`rudder_max(quality)`",
                 ],
+                "starrocks": [],
             },
             multiple_aggregates_not_aliased_with_quoted_identifier_spark: {
                 "spark": [
@@ -908,6 +914,33 @@ class TestParser(unittest.TestCase):
                     '"rudder_avg(PrIcE)"',
                     '"rudder_max(quality)"',
                 ],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p FOR partname IN ('prop', 'rudder'))": {
+                "starrocks": ["`'prop'`", "`'rudder'`"],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p, MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))": {
+                "starrocks": [],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR (partname, quality) IN (('prop', 1), ('rudder', 2)))": {
+                "starrocks": ["`{'prop',1}`", "`{'rudder',2}`"],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p, MAX(price) AS q FOR (partname, quality) IN (('prop', 1) AS prop1, ('rudder', 2)))": {
+                "starrocks": ["prop1_p", "prop1_q", "`{'rudder',2}_p`", "`{'rudder',2}_q`"],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('prop', 'O''Brien'))": {
+                "starrocks": [],
+            },
+            r"SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('a\\b'))": {
+                "starrocks": [],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN (DATE '2024-01-02'))": {
+                "starrocks": [],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR (partname, quality) IN (('O''Brien', 1)))": {
+                "starrocks": [],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR partname IN ('O''Brien' AS author, DATE '2024-01-02' AS day))": {
+                "starrocks": ["author", "day"],
             },
             two_in_clauses_duckdb: {
                 "duckdb": [

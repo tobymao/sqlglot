@@ -42,6 +42,9 @@ def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
 
 
 class StarRocksParser(MySQLParser):
+    IDENTIFY_PIVOT_STRINGS = True
+    PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
+
     # Unlike MySQL, dropping a column requires the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN = True
 
@@ -87,6 +90,46 @@ class StarRocksParser(MySQLParser):
             AGGREGATE_COLUMN_CONSTRAINTS, lambda self: exp.var(self._prev.text.upper())
         ),
     }
+
+    def _parse_pivot(self) -> exp.Pivot | None:
+        pivot = super()._parse_pivot()
+        if pivot is None or pivot.unpivot:
+            return pivot
+
+        names = [agg.alias for agg in pivot.expressions] if len(pivot.expressions) > 1 else [""]
+        if len(names) > 1 and not all(names):
+            # Unaliased aggregate names depend on StarRocks' column resolution.
+            pivot.set("columns", [])
+            return pivot
+
+        columns: list[exp.Identifier] = []
+        for field in pivot.fields[0].expressions:
+            if isinstance(field, exp.PivotAlias):
+                name = field.alias
+            else:
+                values = field.expressions if isinstance(field, exp.Tuple) else [field]
+                if any(
+                    not (
+                        isinstance(value, (exp.Boolean, exp.Null))
+                        or (
+                            value.is_string
+                            and value.name.isprintable()
+                            and "'" not in value.name
+                            and "\\" not in value.name
+                        )
+                        or (value.is_number and value.name == str(value.to_py()))
+                    )
+                    for value in values
+                ):
+                    # Engine-rendered names can differ from SQL for escaped or typed literals.
+                    pivot.set("columns", [])
+                    return pivot
+                name = ",".join(value.sql(dialect=self.dialect, comments=False) for value in values)
+                if isinstance(field, exp.Tuple):
+                    name = "{" + name + "}"
+            columns.extend(exp.to_identifier(f"{name}_{agg}" if agg else name) for agg in names)
+        pivot.set("columns", columns)
+        return pivot
 
     def _parse_rollup_property(self) -> exp.RollupProperty:
         # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)

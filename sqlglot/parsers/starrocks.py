@@ -49,6 +49,9 @@ class StarRocksParser(MySQLParser):
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
     TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}
 
+    # The keys of a map{key: value, ...} literal are expressions, not struct field names
+    MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
@@ -121,6 +124,32 @@ class StarRocksParser(MySQLParser):
                     create.this.append("expressions", primary_key.pop())
 
         return create
+
+    def _parse_bracket(self, this: exp.Expr | None = None) -> exp.Expr | None:
+        # map{key: value, ...}
+        # https://docs.starrocks.io/docs/sql-reference/data-types/semi_structured/Map/
+        is_map_literal = (
+            isinstance(this, exp.Column)
+            and not this.table
+            and this.name.upper() == "MAP"
+            and self._match(TokenType.L_BRACE, advance=False)
+        )
+
+        bracket = super()._parse_bracket(this)
+        if not is_map_literal or not bracket:
+            return bracket
+
+        # Wrap the literal itself, not any subscripts that follow it, e.g. map{...}[1]
+        struct = bracket
+        while isinstance(struct, exp.Bracket):
+            struct = struct.this
+
+        to_map = self.expression(exp.ToMap(this=struct.copy()))
+        if struct is bracket:
+            return to_map
+
+        struct.replace(to_map)
+        return bracket
 
     def _parse_unnest(self, with_alias: bool = True) -> exp.Unnest | None:
         unnest = super()._parse_unnest(with_alias=with_alias)

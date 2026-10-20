@@ -104,7 +104,7 @@ class StarRocksGenerator(MySQLGenerator):
         **{
             k: v
             for k, v in MySQLGenerator.TRANSFORMS.items()
-            if k not in (exp.DateDiff, exp.DateTrunc, exp.Pivot, exp.Trim)
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Pivot, exp.ToMap, exp.Trim)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -415,6 +415,16 @@ class StarRocksGenerator(MySQLGenerator):
         if expression.unpivot or expression.this:
             return no_pivot_sql(self, expression)
         return super().pivot_sql(expression)
+
+    def tomap_sql(self, expression: exp.ToMap) -> str:
+        struct = expression.this
+        if not isinstance(struct, exp.Struct):
+            return f"MAP {self.sql(struct)}"
+
+        entries = ", ".join(
+            f"{self.sql(e, 'this')}:{self.sql(e, 'expression')}" for e in struct.expressions
+        )
+        return f"MAP{{{entries}}}"
 
     def timeslice_sql(self, expression: exp.TimeSlice) -> str:
         interval = exp.Interval(this=expression.expression, unit=expression.unit)

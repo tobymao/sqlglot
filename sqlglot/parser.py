@@ -7508,7 +7508,7 @@ class Parser:
                         )
                     )
 
-                if isinstance(e.this, exp.Column):
+                if not parse_map and isinstance(e.this, exp.Column):
                     e.this.replace(e.this.this)
             else:
                 e = self._to_prop_eq(e, index)

@@ -1938,6 +1938,10 @@ class WindowSpec(Expression):
     }
 
 
+class PartitionByExcluding(Expression):
+    arg_types = {"expressions": True}
+
+
 class PreWhere(Expression):
     pass
 

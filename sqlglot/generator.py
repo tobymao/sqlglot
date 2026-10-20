@@ -3647,6 +3647,9 @@ class Generator:
         partition = self.expressions(expression, key="partition_by", flat=True)
         return f"PARTITION BY {partition}" if partition else ""
 
+    def partitionbyexcluding_sql(self, expression: exp.PartitionByExcluding) -> str:
+        return f"EXCLUDING {self.expressions(expression, flat=True)}"
+
     def windowspec_sql(self, expression: exp.WindowSpec) -> str:
         kind = self.sql(expression, "kind")
         start = csv(self.sql(expression, "start"), self.sql(expression, "start_side"), sep=" ")

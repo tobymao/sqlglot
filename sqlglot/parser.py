@@ -3460,7 +3460,9 @@ class Parser:
 
         if self._next.token_type in self.ID_VAR_TOKENS and self._match_text_seq("EXCLUDING"):
             return [
-                self.expression(exp.Excluding(expressions=self._parse_csv(self._parse_disjunction)))
+                self.expression(
+                    exp.PartitionByExcluding(expressions=self._parse_csv(self._parse_disjunction))
+                )
             ]
 
         return self._parse_csv(self._parse_disjunction)

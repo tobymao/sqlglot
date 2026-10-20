@@ -1938,7 +1938,7 @@ class WindowSpec(Expression):
     }
 
 
-class Excluding(Expression):
+class PartitionByExcluding(Expression):
     arg_types = {"expressions": True}
 
 

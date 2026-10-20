@@ -3647,7 +3647,7 @@ class Generator:
         partition = self.expressions(expression, key="partition_by", flat=True)
         return f"PARTITION BY {partition}" if partition else ""
 
-    def excluding_sql(self, expression: exp.Excluding) -> str:
+    def partitionbyexcluding_sql(self, expression: exp.PartitionByExcluding) -> str:
         return f"EXCLUDING {self.expressions(expression, flat=True)}"
 
     def windowspec_sql(self, expression: exp.WindowSpec) -> str:

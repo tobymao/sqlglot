@@ -3675,7 +3675,7 @@ SELECT
         window = self.validate_identity(
             "LAG(revenue) OVER (PARTITION BY EXCLUDING orders.order_date, orders.order_year ORDER BY orders.order_date)"
         )
-        self.assertIsInstance(window.args["partition_by"][0], exp.Excluding)
+        self.assertIsInstance(window.args["partition_by"][0], exp.PartitionByExcluding)
 
         for partition in ("excluding", "excluding, a", "excluding.a"):
             window = self.validate_identity(f"SUM(a) OVER (PARTITION BY {partition} ORDER BY a)")

@@ -1,6 +1,86 @@
 Changelog
 =========
 
+## [v30.24.0] - 2026-10-20
+### :boom: BREAKING CHANGES
+- due to [`094509a`](https://github.com/tobymao/sqlglot/commit/094509aad83fff575f1b4d198e4d03c21c432e58) - merge SortArray into ArraySort with explicit NULL ordering *(PR [#8643](https://github.com/tobymao/sqlglot/pull/8643) by [@tobymao](https://github.com/tobymao))*:
+
+  merge SortArray into ArraySort with explicit NULL ordering (#8643)
+
+- due to [`7af2aa8`](https://github.com/tobymao/sqlglot/commit/7af2aa8db5e9b9df0afea07201574ceeb9e66098) - register CTE reference alias when pivoted *(PR [#8667](https://github.com/tobymao/sqlglot/pull/8667) by [@ansh-rohilla](https://github.com/ansh-rohilla))*:
+
+  register CTE reference alias when pivoted (#8667)
+
+- due to [`1e5c649`](https://github.com/tobymao/sqlglot/commit/1e5c649cc4157bf4451bba1361a3898d9504745b) - map ISO week format patterns IYYY and IW [CLAUDE] *(PR [#8672](https://github.com/tobymao/sqlglot/pull/8672) by [@vidigoat](https://github.com/vidigoat))*:
+
+  map ISO week format patterns IYYY and IW [CLAUDE] (#8672)
+
+- due to [`479c4ca`](https://github.com/tobymao/sqlglot/commit/479c4cae0e38d60d10f4aac833c4091d5c2304e2) - respect dialect precedence of IS predicates *(PR [#8676](https://github.com/tobymao/sqlglot/pull/8676) by [@georgesittas](https://github.com/georgesittas))*:
+
+  respect dialect precedence of IS predicates (#8676)
+
+
+### :sparkles: New Features
+- [`2444b6d`](https://github.com/tobymao/sqlglot/commit/2444b6db78f336b70c6f7aa980e43036367c7b0d) - **optimizer**: paste join support *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`ec24376`](https://github.com/tobymao/sqlglot/commit/ec24376a58200dff16820fddcd15db102b6ead2e) - **starrocks**: parse admin and job-control statements as commands [CLAUDE] *(PR [#8681](https://github.com/tobymao/sqlglot/pull/8681) by [@nytai](https://github.com/nytai))*
+
+### :bug: Bug Fixes
+- [`f814e4c`](https://github.com/tobymao/sqlglot/commit/f814e4cb2a8743bba63e8818bae25207bbd3966f) - **mysql**: preserve population and sample aggregate semantics [CODEX] *(PR [#8632](https://github.com/tobymao/sqlglot/pull/8632) by [@yousefissa](https://github.com/yousefissa))*
+  - :arrow_lower_right: *fixes issue [#8626](https://github.com/tobymao/sqlglot/issues/8626) opened by [@bhargaviHQ](https://github.com/bhargaviHQ)*
+- [`5527744`](https://github.com/tobymao/sqlglot/commit/552774469174ee686def95e6bcb2da46f61e047b) - **starrocks**: keep DATEDIFF's date-part semantics [CLAUDE] *(PR [#8636](https://github.com/tobymao/sqlglot/pull/8636) by [@nytai](https://github.com/nytai))*
+- [`03744a2`](https://github.com/tobymao/sqlglot/commit/03744a2a8376af5f5f70230b04d1c5fbfb71dc61) - **hive,spark**: parse ALTER TABLE REPLACE COLUMNS [CLAUDE] *(PR [#8633](https://github.com/tobymao/sqlglot/pull/8633) by [@tsamaras](https://github.com/tsamaras))*
+- [`021991f`](https://github.com/tobymao/sqlglot/commit/021991fb9a63060e2f71aeac48e134f67c77227f) - **optimizer**: evict dead refs from the type annotator cache *(PR [#8642](https://github.com/tobymao/sqlglot/pull/8642) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8637](https://github.com/tobymao/sqlglot/issues/8637) opened by [@naveen-baton](https://github.com/naveen-baton)*
+- [`00fce66`](https://github.com/tobymao/sqlglot/commit/00fce66dffd3dba4f90cda5534ec8df595bb1865) - **optimizer**: ensure generated decorrelation JOIN comes before reference in ON clause *(PR [#8638](https://github.com/tobymao/sqlglot/pull/8638) by [@treysp](https://github.com/treysp))*
+- [`97134ff`](https://github.com/tobymao/sqlglot/commit/97134ffd3cd161222a42405b001a8a30a0a2c6f5) - **optimizer**: preserve precedence when unwrapping parens inside Mul *(PR [#8620](https://github.com/tobymao/sqlglot/pull/8620) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`d747f5b`](https://github.com/tobymao/sqlglot/commit/d747f5b20dd71a379437dd3cf251ec130edd94b3) - don't materialize huge interval literals in simplify and the Postgres generator *(PR [#8641](https://github.com/tobymao/sqlglot/pull/8641) by [@tobymao](https://github.com/tobymao))*
+- [`f321207`](https://github.com/tobymao/sqlglot/commit/f321207c8dcc2973d149744fcaa4d1a13edb0026) - **starrocks**: preserve LIKE argument order [CODEX] *(PR [#8645](https://github.com/tobymao/sqlglot/pull/8645) by [@01zhas](https://github.com/01zhas))*
+- [`954cca1`](https://github.com/tobymao/sqlglot/commit/954cca1268ae38ae0384d5197e54fe50322ee9e3) - **starrocks**: preserve native TO_DAYS [CODEX] *(PR [#8648](https://github.com/tobymao/sqlglot/pull/8648) by [@01zhas](https://github.com/01zhas))*
+- [`ce7f6e3`](https://github.com/tobymao/sqlglot/commit/ce7f6e39dbbbaa61ff01a307226ff867a3a9efb6) - **starrocks**: don't treat # as a comment [CLAUDE] *(PR [#8644](https://github.com/tobymao/sqlglot/pull/8644) by [@nytai](https://github.com/nytai))*
+- [`c388227`](https://github.com/tobymao/sqlglot/commit/c388227a73fe4e6652e311db0a04b8d838c7c821) - remove obsolete sqlglotc extensions during builds *(PR [#8653](https://github.com/tobymao/sqlglot/pull/8653) by [@georgesittas](https://github.com/georgesittas))*
+- [`d17c768`](https://github.com/tobymao/sqlglot/commit/d17c7680b70bccb5fda677aaf63980b2663224dc) - **bigquery**: transpile Trino date parts, FROM_BASE, APPROX_PERCENTILE, ARRAY_SORT and ARRAY_DISTINCT *(PR [#8639](https://github.com/tobymao/sqlglot/pull/8639) by [@tobymao](https://github.com/tobymao))*
+- [`cb57d80`](https://github.com/tobymao/sqlglot/commit/cb57d80214bcd4a165194344b34bc930ef5318b8) - **optimizer**: clear child scope caches when projections are merged *(PR [#8646](https://github.com/tobymao/sqlglot/pull/8646) by [@treysp](https://github.com/treysp))*
+- [`b50e43e`](https://github.com/tobymao/sqlglot/commit/b50e43e4407e010d15da9b313ff99df1b1099343) - **clickhouse**: parse PASTE JOIN instead of aliasing the table *(PR [#8662](https://github.com/tobymao/sqlglot/pull/8662) by [@spicysharkco](https://github.com/spicysharkco))*
+- [`7af2aa8`](https://github.com/tobymao/sqlglot/commit/7af2aa8db5e9b9df0afea07201574ceeb9e66098) - **optimizer**: register CTE reference alias when pivoted *(PR [#8667](https://github.com/tobymao/sqlglot/pull/8667) by [@ansh-rohilla](https://github.com/ansh-rohilla))*
+  - :arrow_lower_right: *fixes issue [#8663](https://github.com/tobymao/sqlglot/issues/8663) opened by [@rob2244](https://github.com/rob2244)*
+- [`513beed`](https://github.com/tobymao/sqlglot/commit/513beedd3753a22c1ce234059bd5d831f64e48f0) - **teradata**: drop LOCKING request modifier for other dialects instead of crashing [CLAUDE] *(PR [#8666](https://github.com/tobymao/sqlglot/pull/8666) by [@bhuvan-uda](https://github.com/bhuvan-uda))*
+  - :arrow_lower_right: *fixes issue [#8665](https://github.com/tobymao/sqlglot/issues/8665) opened by [@bhuvan-uda](https://github.com/bhuvan-uda)*
+- [`9beb4ab`](https://github.com/tobymao/sqlglot/commit/9beb4ab2807839088f3439a2b937d222e598b617) - **transforms**: don't hoist explodes from nested queries in explode_projection_to_unnest [CLAUDE] *(PR [#8664](https://github.com/tobymao/sqlglot/pull/8664) by [@rob2244](https://github.com/rob2244))*
+  - :arrow_lower_right: *fixes issue [#8242](https://github.com/tobymao/sqlglot/issues/8242) opened by [@rob2244](https://github.com/rob2244)*
+- [`f8c314c`](https://github.com/tobymao/sqlglot/commit/f8c314c449080860604b9ddd716d6bc75c89155f) - **teradata**: transpile SAMPLE row counts and fractions [CLAUDE] *(PR [#8670](https://github.com/tobymao/sqlglot/pull/8670) by [@bhuvan-uda](https://github.com/bhuvan-uda))*
+  - :arrow_lower_right: *fixes issue [#8669](https://github.com/tobymao/sqlglot/issues/8669) opened by [@bhuvan-uda](https://github.com/bhuvan-uda)*
+- [`1e5c649`](https://github.com/tobymao/sqlglot/commit/1e5c649cc4157bf4451bba1361a3898d9504745b) - **postgres**: map ISO week format patterns IYYY and IW [CLAUDE] *(PR [#8672](https://github.com/tobymao/sqlglot/pull/8672) by [@vidigoat](https://github.com/vidigoat))*
+- [`b06ed8e`](https://github.com/tobymao/sqlglot/commit/b06ed8ea3fc5dbf3771f86ee2a44a2134df0ed00) - **starrocks**: don't default column names for multi-array UNNEST [CLAUDE] *(PR [#8671](https://github.com/tobymao/sqlglot/pull/8671) by [@nytai](https://github.com/nytai))*
+- [`9e57e44`](https://github.com/tobymao/sqlglot/commit/9e57e448de90bc273a926e63f77f4fdf788d0fac) - **oracle**: map ISO week-numbering year IYYY to %G [CLAUDE] *(PR [#8675](https://github.com/tobymao/sqlglot/pull/8675) by [@vidigoat](https://github.com/vidigoat))*
+- [`f536a82`](https://github.com/tobymao/sqlglot/commit/f536a8233b4f9aa1efac982dd9d6b098ed3982a4) - **bigquery**: correct percentile and distinct-array transpilation *(PR [#8674](https://github.com/tobymao/sqlglot/pull/8674) by [@georgesittas](https://github.com/georgesittas))*
+- [`e3d0dfb`](https://github.com/tobymao/sqlglot/commit/e3d0dfb2279d390dfed6e86cc353ed65cb2b97bb) - **optimizer**: give order aliases independent expression nodes *(PR [#8678](https://github.com/tobymao/sqlglot/pull/8678) by [@georgesittas](https://github.com/georgesittas))*
+- [`40dcaab`](https://github.com/tobymao/sqlglot/commit/40dcaabdd29a6c3cda7f4ce29dedcdcffa3e49a0) - **starrocks**: generate PIVOT instead of dropping it [CLAUDE] *(PR [#8679](https://github.com/tobymao/sqlglot/pull/8679) by [@nytai](https://github.com/nytai))*
+- [`fdd0e9a`](https://github.com/tobymao/sqlglot/commit/fdd0e9a464f0f9ec425c56ae83fc87a5e2052087) - **mysql**: relative xor/or/and precedence closes [#8684](https://github.com/tobymao/sqlglot/pull/8684) *(PR [#8686](https://github.com/tobymao/sqlglot/pull/8686) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8684](https://github.com/tobymao/sqlglot/issues/8684) opened by [@pbottine](https://github.com/pbottine)*
+- [`8955d75`](https://github.com/tobymao/sqlglot/commit/8955d752acc88ee23955dd6e07d567542a8cfaf8) - **mysql**: preserve exclamation mark operator precedence *(PR [#8687](https://github.com/tobymao/sqlglot/pull/8687) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8683](https://github.com/tobymao/sqlglot/issues/8683) opened by [@pbottine](https://github.com/pbottine)*
+- [`b1fd4e9`](https://github.com/tobymao/sqlglot/commit/b1fd4e9edf05ee6211656c235a62040e0f055bf0) - **mysql**: respect bitwise operator precedence *(PR [#8688](https://github.com/tobymao/sqlglot/pull/8688) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8685](https://github.com/tobymao/sqlglot/issues/8685) opened by [@pbottine](https://github.com/pbottine)*
+- [`fc1472a`](https://github.com/tobymao/sqlglot/commit/fc1472a0d54c4e8d0d6700b0a4dbe66f0f32707b) - **starrocks**: parse map{...} literals as maps [CLAUDE] *(PR [#8682](https://github.com/tobymao/sqlglot/pull/8682) by [@nytai](https://github.com/nytai))*
+- [`115ce02`](https://github.com/tobymao/sqlglot/commit/115ce02b002ed63ff23a4c99a24ad025ec1efbb4) - **starrocks**: infer static pivot output columns [CODEX] *(PR [#8689](https://github.com/tobymao/sqlglot/pull/8689) by [@georgesittas](https://github.com/georgesittas))*
+- [`479c4ca`](https://github.com/tobymao/sqlglot/commit/479c4cae0e38d60d10f4aac833c4091d5c2304e2) - **parser**: respect dialect precedence of IS predicates *(PR [#8676](https://github.com/tobymao/sqlglot/pull/8676) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8661](https://github.com/tobymao/sqlglot/issues/8661) opened by [@laravioli](https://github.com/laravioli)*
+- [`7e4d995`](https://github.com/tobymao/sqlglot/commit/7e4d995f75dac9fb6ed110109b80bf12f24cdea5) - **clickhouse**: stop re-wrapping parenthesized CTAS queries with COMMENT [CLAUDE] *(PR [#8698](https://github.com/tobymao/sqlglot/pull/8698) by [@vidigoat](https://github.com/vidigoat))*
+- [`d44db25`](https://github.com/tobymao/sqlglot/commit/d44db25a534d86ba593958dd0cc533f8310daef0) - **parser**: support PARTITION BY EXCLUDING *(PR [#8690](https://github.com/tobymao/sqlglot/pull/8690) by [@geooo109](https://github.com/geooo109))*
+- [`2d3d3ff`](https://github.com/tobymao/sqlglot/commit/2d3d3ff7b8b8b475a68d70ffe3529ac110c96f4b) - **fabric**: don't re-wrap AT TIME ZONE that is already cast to DATETIME2 [CLAUDE] *(PR [#8699](https://github.com/tobymao/sqlglot/pull/8699) by [@vidigoat](https://github.com/vidigoat))*
+- [`68cd4a2`](https://github.com/tobymao/sqlglot/commit/68cd4a2d8f766132e338721df8676e0b42d6b7ca) - **duckdb**: quote identifiers that are DuckDB reserved keywords [CLAUDE] *(PR [#8700](https://github.com/tobymao/sqlglot/pull/8700) by [@vidigoat](https://github.com/vidigoat))*
+- [`55bff61`](https://github.com/tobymao/sqlglot/commit/55bff6129f36820c78efccf920c877443dc7fb70) - **optimizer**: retain nodes in type annotation caches *(PR [#8691](https://github.com/tobymao/sqlglot/pull/8691) by [@georgesittas](https://github.com/georgesittas))*
+- [`5d588c0`](https://github.com/tobymao/sqlglot/commit/5d588c0f32d17a08191898638f67ff27bb0a13ff) - **optimizer**: preserve unsupported struct star operands *(PR [#8692](https://github.com/tobymao/sqlglot/pull/8692) by [@georgesittas](https://github.com/georgesittas))*
+
+### :recycle: Refactors
+- [`094509a`](https://github.com/tobymao/sqlglot/commit/094509aad83fff575f1b4d198e4d03c21c432e58) - merge SortArray into ArraySort with explicit NULL ordering *(PR [#8643](https://github.com/tobymao/sqlglot/pull/8643) by [@tobymao](https://github.com/tobymao))*
+
+### :wrench: Chores
+- [`cd41eee`](https://github.com/tobymao/sqlglot/commit/cd41eeef32e13db1a2517d0a0dc5432ec2b89eb5) - refactor starrocks tests for LIKE *(commit by [@geooo109](https://github.com/geooo109))*
+- [`af2b577`](https://github.com/tobymao/sqlglot/commit/af2b57734d67082ecc4db97cb5da1e8743918af0) - simplify starrocks tests *(commit by [@geooo109](https://github.com/geooo109))*
+- [`df5b53f`](https://github.com/tobymao/sqlglot/commit/df5b53f92e31247e82bc37a512fab0abd4b54031) - refactor starrocks TO_DAYS test *(commit by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v30.23.0] - 2026-10-14
 ### :boom: BREAKING CHANGES
 - due to [`cf39265`](https://github.com/tobymao/sqlglot/commit/cf39265a3e8efd8c32bab7f9c9b4f123fdfbf682) - hash flag for case-sensitive nodes [CLAUDE] *(PR [#8599](https://github.com/tobymao/sqlglot/pull/8599) by [@laravioli](https://github.com/laravioli))*:
@@ -16304,3 +16384,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.21.0]: https://github.com/tobymao/sqlglot/compare/v30.20.0...v30.21.0
 [v30.22.0]: https://github.com/tobymao/sqlglot/compare/v30.21.0...v30.22.0
 [v30.23.0]: https://github.com/tobymao/sqlglot/compare/v30.22.0...v30.23.0
+[v30.24.0]: https://github.com/tobymao/sqlglot/compare/v30.23.0...v30.24.0

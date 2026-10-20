@@ -65,6 +65,29 @@ class TestMySQL(Validator):
 
         self.validate_identity("SELECT NOT 2 + 1")
 
+    def test_bitwise_precedence(self):
+        for sql, snowflake in (
+            ("1 | 2 & 4", "BITOR(1, BITAND(2, 4))"),
+            ("1 & 2 | 4", "BITOR(BITAND(1, 2), 4)"),
+            ("1 | 2 << 1", "BITOR(1, BITSHIFTLEFT(2, 1))"),
+            ("1 & 2 << 1", "BITAND(1, BITSHIFTLEFT(2, 1))"),
+            ("8 >> 1 & 3", "BITAND(BITSHIFTRIGHT(8, 1), 3)"),
+            ("8 >> 1 << 1", "BITSHIFTLEFT(BITSHIFTRIGHT(8, 1), 1)"),
+            ("1 << 1 + 1", "BITSHIFTLEFT(1, 1 + 1)"),
+            ("1 + 1 << 1", "BITSHIFTLEFT(1 + 1, 1)"),
+            ("2 ^ 3 * 4", "BITXOR(2, 3) * 4"),
+            ("4 * 2 ^ 3", "4 * BITXOR(2, 3)"),
+            ("2 ^ 3 ^ 4", "BITXOR(BITXOR(2, 3), 4)"),
+            ("~2 ^ 3", "BITXOR(BITNOT(2), 3)"),
+            ("2 ^ ~3", "BITXOR(2, BITNOT(3))"),
+            ("(1 | 2) & 4", "BITAND((BITOR(1, 2)), 4)"),
+            ("2 ^ (3 * 4)", "BITXOR(2, (3 * 4))"),
+        ):
+            self.validate_all(
+                f"SELECT {sql}",
+                write={"mysql": f"SELECT {sql}", "snowflake": f"SELECT {snowflake}"},
+            )
+
     def test_statistical_aggregates(self):
         self.validate_all(
             "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t",

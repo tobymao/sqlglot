@@ -541,6 +541,12 @@ class TypeAnnotator:
         dot_parts = expr.meta_get("dot_parts")
         if not dot_parts or not expr.is_type(exp.DType.JSON, exp.DType.MAP, exp.DType.VARIANT):
             if dot_parts:
+                # A struct field can itself contain semi-structured data. Resolve each
+                # struct access before deciding whether the remaining keys are identifiers.
+                if expr.is_type(exp.DType.STRUCT) and isinstance(expr.parent, exp.Dot):
+                    expr.parent.meta["dot_parts"] = dot_parts[1:]
+                if expr.type is None or expr.is_type(exp.DType.UNKNOWN):
+                    return
                 expr.meta.pop("dot_parts", None)
             return
 

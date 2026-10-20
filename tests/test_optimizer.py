@@ -1429,6 +1429,18 @@ class TestOptimizer(unittest.TestCase):
                     .this.sql("bigquery"),
                 )
 
+    def test_qualify_json_path_argument_order(self):
+        expression = "ANY_VALUE(JSON_VALUE(j.Foo, '$') || JSON_VALUE(j.foo, '$'))"
+        tree = parse_one(
+            f"SELECT {expression} AS v FROM t GROUP BY k ORDER BY {expression}",
+            dialect="duckdb",
+        )
+        # Equal ASTs can have different argument insertion orders.
+        for node in tree.args["order"].walk():
+            node.args = dict(reversed(node.args.items()))
+        qualified = qualify(tree, schema={"t": {"k": "INT", "j": "JSON"}}, dialect="duckdb")
+        self.assertEqual(qualified.args["order"].sql("duckdb"), 'ORDER BY "v"')
+
     def test_qualify_order_by_expression_uncache(self):
         schema = MappingSchema({"t": {"s": "STRUCT<x INT64>", "a": "INT64"}}, dialect="bigquery")
         tree = parse_one(
@@ -2638,7 +2650,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Dot access into semi-structured values is a case sensitive data lookup, unlike
         # struct field access, which the engines resolve like any other identifier
         schema = {
-            "t": {"m": "MAP(VARCHAR, INT)", "v": "VARIANT", "j": "JSON", "s": "STRUCT(Foo INT)"}
+            "t": {
+                "m": "MAP(VARCHAR, INT)",
+                "v": "VARIANT",
+                "j": "JSON",
+                "s": "STRUCT(Foo INT)",
+                "nested": "STRUCT<child STRUCT<payload JSON>>",
+            }
         }
 
         for sql, expected in (
@@ -2646,6 +2664,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ("SELECT v.Foo FROM t", 'SELECT "t"."v"."Foo" AS "foo" FROM "t" AS "t"'),
             ("SELECT j.Foo.Bar FROM t", 'SELECT "t"."j"."Foo"."Bar" AS "bar" FROM "t" AS "t"'),
             ("SELECT s.Foo FROM t", 'SELECT "t"."s"."foo" AS "foo" FROM "t" AS "t"'),
+            (
+                "SELECT nested.child.payload.Foo FROM t",
+                'SELECT "t"."nested"."child"."payload"."Foo" AS "foo" FROM "t" AS "t"',
+            ),
             # Roots that are already qualified drop a different number of leading dot parts
             ("SELECT t.m.Foo FROM t", 'SELECT "t"."m"."Foo" AS "foo" FROM "t" AS "t"'),
             ("SELECT t.j.Foo.Bar FROM t", 'SELECT "t"."j"."Foo"."Bar" AS "bar" FROM "t" AS "t"'),
@@ -2655,6 +2677,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 qualified = qualify(
                     parse_one(sql, dialect="duckdb"), schema=schema, dialect="duckdb"
                 )
+                # An initial pass without schema must retain the original path spellings.
+                annotate_types(qualified, dialect="duckdb")
                 annotated = annotate_types(qualified, schema=schema, dialect="duckdb")
                 self.assertEqual(annotated.sql("duckdb"), expected)
 

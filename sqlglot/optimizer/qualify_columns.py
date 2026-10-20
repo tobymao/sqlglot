@@ -1099,6 +1099,12 @@ def _expand_stars(
     if not isinstance(scope_expression, exp.Selectable):
         return
 
+    if any(
+        not pivot.unpivot and pivot.args.get("columns") == [] and not pivot.alias_column_names
+        for pivot in scope.pivots
+    ):
+        return
+
     for expression in scope_expression.selects:
         tables: list[str] = []
         if isinstance(expression, exp.Star):

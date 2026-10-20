@@ -877,11 +877,13 @@ def _traverse_ctes(scope: Scope) -> Iterator[Scope]:
 def _is_derived_table(expression: exp.Expr) -> bool:
     """
     We represent (tbl1 JOIN tbl2) as a Subquery, but it's not really a "derived table",
-    as it doesn't introduce a new scope. If an alias is present, it shadows all names
-    under the Subquery, so that's one exception to this rule.
+    as it doesn't introduce a new scope. An alias shadows the names under the Subquery,
+    and a pivot changes its output columns, so both require a separate scope.
     """
     return isinstance(expression, exp.Subquery) and bool(
-        expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
+        expression.alias
+        or expression.args.get("pivots")
+        or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
     )
 
 

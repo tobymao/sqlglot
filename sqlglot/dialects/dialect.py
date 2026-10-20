@@ -59,6 +59,10 @@ DATETIME_DELTA = t.Union[
 ]
 DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.TimestampAdd)
 
+# JSON paths that need parentheses when used as the right operand of -> / ->>.
+# CONCAT may be generated as a chain of || operators, which would bind looser than the arrow
+WRAPPED_JSON_PATH_EXPRESSIONS = (exp.Binary, exp.Predicate, exp.Not, exp.Concat, exp.ConcatWs)
+
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F, GeneratorArgs, ParserArgs, BuilderArgs
     from typing_extensions import Unpack
@@ -1357,10 +1361,7 @@ def arrow_json_extract_sql(
     if self.JSON_TYPE_REQUIRED_FOR_EXTRACTION and isinstance(this, exp.Literal) and this.is_string:
         this.replace(exp.cast(this, exp.DType.JSON))
 
-    # CONCAT may be generated as a chain of || operators, which would bind looser than the arrow
-    if isinstance(
-        expression.expression, (exp.Binary, exp.Predicate, exp.Not, exp.Concat, exp.ConcatWs)
-    ):
+    if isinstance(expression.expression, WRAPPED_JSON_PATH_EXPRESSIONS):
         expression.set("expression", exp.paren(expression.expression, copy=False))
 
     op = op or ("->" if isinstance(expression, exp.JSONExtract) else "->>")

@@ -15,6 +15,32 @@ class TestDuckDB(Validator):
             "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
         )
 
+    def test_reserved_keyword_identifiers(self):
+        # DuckDB keywords whose sqlglot entries used to carry the Postgres grammar's _p suffix,
+        # plus DuckDB-specific reserved keywords (see duckdb_keywords())
+        for keyword in (
+            "asc",
+            "check",
+            "create",
+            "desc",
+            "describe",
+            "end",
+            "false",
+            "group",
+            "in",
+            "lambda",
+            "lateral",
+            "null",
+            "pivot",
+            "qualify",
+            "show",
+            "summarize",
+            "true",
+            "unpivot",
+        ):
+            with self.subTest(keyword=keyword):
+                self.assertEqual(exp.column(keyword).sql("duckdb"), f'"{keyword}"')
+
     def test_duckdb(self):
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(

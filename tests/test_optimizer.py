@@ -2575,6 +2575,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # left/right accessors in compiled builds
         annotate_types(exp.select("*").from_(exp.select("1").union("VALUES (2)").subquery("s")))
 
+    def test_annotate_types_reuse(self):
+        annotator = TypeAnnotator(MappingSchema())
+        # Discard each result while retaining the annotator to exercise address reuse.
+        for _ in range(100):
+            self.assertTrue(annotator.annotate(parse_one("1")).is_type(exp.DType.INT))
+
     def test_annotate_untyped_binary_operands(self):
         # Operands that escaped annotation have type None; treat them as UNKNOWN instead
         # of crashing on `.type.this`

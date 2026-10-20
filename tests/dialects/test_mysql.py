@@ -35,6 +35,36 @@ class TestMySQL(Validator):
             },
         )
 
+    def test_not_precedence(self):
+        self.validate_all(
+            "SELECT !2 + 1",
+            write={
+                "mysql": "SELECT (NOT 2) + 1",
+                "sqlite": "SELECT (NOT 2) + 1",
+            },
+        )
+        for sql, expected in (
+            ("SELECT 1 + !2", "SELECT 1 + (NOT 2)"),
+            ("SELECT !0 * 2", "SELECT (NOT 0) * 2"),
+            ("SELECT !2 ^ 1", "SELECT (NOT 2) ^ 1"),
+            ("SELECT !2 = 1", "SELECT (NOT 2) = 1"),
+            ("SELECT !2 != 1", "SELECT (NOT 2) <> 1"),
+            ("SELECT !NULL IS NULL", "SELECT (NOT NULL) IS NULL"),
+            ("SELECT !2 IN (0, 1)", "SELECT (NOT 2) IN (0, 1)"),
+            ("SELECT !2 BETWEEN 0 AND 1", "SELECT (NOT 2) BETWEEN 0 AND 1"),
+            ("SELECT -!0", "SELECT -(NOT 0)"),
+            ("SELECT !-2 + 1", "SELECT (NOT -2) + 1"),
+            ("SELECT ~!0", "SELECT ~(NOT 0)"),
+            ("SELECT ! !2 + 1", "SELECT (NOT (NOT 2)) + 1"),
+            ("SELECT !(2 + 1)", "SELECT (NOT (2 + 1))"),
+            ("SELECT NOT !2 + 1", "SELECT NOT (NOT 2) + 1"),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertEqual(expression, self.parse_one(expected))
+
+        self.validate_identity("SELECT NOT 2 + 1")
+
     def test_statistical_aggregates(self):
         self.validate_all(
             "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t",

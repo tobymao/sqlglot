@@ -79,6 +79,11 @@ class MySQLParser(parser.Parser):
         TokenType.DPIPE: exp.Or,
     }
 
+    UNARY_PARSERS = {
+        **parser.Parser.UNARY_PARSERS,
+        TokenType.NOT: lambda self: self._parse_not(),
+    }
+
     TABLE_ALIAS_TOKENS = (
         (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI})
         - parser.Parser.TABLE_INDEX_HINT_TOKENS
@@ -326,6 +331,14 @@ class MySQLParser(parser.Parser):
                 comments=comments,
             )
         return this
+
+    def _parse_not(self) -> exp.Expr:
+        if self._prev.text == "!":
+            # ! binds more tightly than NOT, so preserve its grouping when generating NOT.
+            return self.expression(
+                exp.Paren(this=self.expression(exp.Not(this=self._parse_unary())))
+            )
+        return self.expression(exp.Not(this=self._parse_equality()))
 
     def _parse_column_constraint(self) -> exp.Expr | None:
         # SIGNED is the default for numeric types, so MySQL ignores it

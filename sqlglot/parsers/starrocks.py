@@ -52,6 +52,9 @@ class StarRocksParser(MySQLParser):
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
     TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}
 
+    # https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/plan_profile/EXPLAIN/
+    DESCRIBE_STYLES = {*MySQLParser.DESCRIBE_STYLES, "COSTS", "LOGICAL", "SCHEDULER", "VERBOSE"}
+
     # The keys of a map{key: value, ...} literal are expressions, not struct field names
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 

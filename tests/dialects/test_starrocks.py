@@ -703,3 +703,13 @@ class TestStarrocks(Validator):
                 "duckdb": "SELECT MAP {k: v}['a'] FROM (SELECT 'a' AS k, 10 AS v) AS t",
             },
         )
+
+    def test_explain(self):
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/cluster-management/plan_profile/EXPLAIN/
+        for style in ("LOGICAL", "VERBOSE", "COSTS", "SCHEDULER"):
+            with self.subTest(style):
+                self.validate_identity(
+                    f"EXPLAIN {style} SELECT * FROM t1", f"DESCRIBE {style} SELECT * FROM t1"
+                ).assert_is(exp.Describe)
+
+        self.validate_identity("DESCRIBE verbose").this.assert_is(exp.Table)

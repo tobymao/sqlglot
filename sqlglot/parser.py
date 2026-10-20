@@ -3634,6 +3634,10 @@ class Parser:
         if self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)
+        elif style and not self._curr:
+            # The style is a table name, e.g. DESCRIBE analyze
+            style = None
+            self._retreat(self._index - 1)
 
         format = self._parse_property() if self._match(TokenType.FORMAT, advance=False) else None
 

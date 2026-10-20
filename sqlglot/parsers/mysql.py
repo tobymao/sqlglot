@@ -84,6 +84,10 @@ class MySQLParser(parser.Parser):
         TokenType.NOT: lambda self: self._parse_not(),
     }
 
+    EXPONENT = {
+        TokenType.CARET: exp.BitwiseXor,
+    }
+
     TABLE_ALIAS_TOKENS = (
         (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI})
         - parser.Parser.TABLE_INDEX_HINT_TOKENS
@@ -339,6 +343,42 @@ class MySQLParser(parser.Parser):
                 exp.Paren(this=self.expression(exp.Not(this=self._parse_unary())))
             )
         return self.expression(exp.Not(this=self._parse_equality()))
+
+    def _parse_bitwise(self) -> exp.Expr | None:
+        this = self._parse_bitwise_and()
+        while self._match(TokenType.PIPE):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.BitwiseOr(this=this, expression=self._parse_bitwise_and()),
+                comments=comments,
+            )
+        return this
+
+    def _parse_bitwise_and(self) -> exp.Expr | None:
+        this = self._parse_bitwise_shift()
+        while self._match(TokenType.AMP):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.BitwiseAnd(this=this, expression=self._parse_bitwise_shift()),
+                comments=comments,
+            )
+        return this
+
+    def _parse_bitwise_shift(self) -> exp.Expr | None:
+        this = self._parse_term()
+        while True:
+            if self._match_pair(TokenType.LT, TokenType.LT):
+                klass: type[exp.BitwiseLeftShift | exp.BitwiseRightShift] = exp.BitwiseLeftShift
+            elif self._match_pair(TokenType.GT, TokenType.GT):
+                klass = exp.BitwiseRightShift
+            else:
+                break
+
+            comments = self._prev_comments
+            this = self.expression(
+                klass(this=this, expression=self._parse_term()), comments=comments
+            )
+        return this
 
     def _parse_column_constraint(self) -> exp.Expr | None:
         # SIGNED is the default for numeric types, so MySQL ignores it

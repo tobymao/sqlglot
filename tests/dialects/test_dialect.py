@@ -4137,6 +4137,10 @@ FROM subquery2""",
             "(SELECT 1 UNION SELECT 2) /* keep */ INTERSECT SELECT 3",
             write={"sqlite": "SELECT 1 /* keep */ UNION SELECT 2 INTERSECT SELECT 3"},
         )
+        self.validate_all(
+            "((SELECT 1 AS x, 2 AS x UNION SELECT 3, 4)) INTERSECT SELECT 1, 2",
+            write={"sqlite": "SELECT 1 AS x, 2 AS x UNION SELECT 3, 4 INTERSECT SELECT 1, 2"},
+        )
 
     def test_normalize(self):
         for form in ("", ", nfkc"):

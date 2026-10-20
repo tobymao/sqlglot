@@ -9,6 +9,32 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_xor_precedence(self):
+        for sql, root, left, right in (
+            ("TRUE XOR FALSE AND FALSE", exp.Xor, exp.Boolean, exp.And),
+            ("TRUE AND FALSE XOR TRUE", exp.Xor, exp.And, exp.Boolean),
+            ("TRUE OR TRUE XOR TRUE", exp.Or, exp.Boolean, exp.Xor),
+            ("TRUE XOR TRUE OR TRUE", exp.Or, exp.Xor, exp.Boolean),
+            ("TRUE XOR FALSE XOR TRUE", exp.Xor, exp.Xor, exp.Boolean),
+            ("(TRUE XOR FALSE) AND FALSE", exp.And, exp.Paren, exp.Boolean),
+            ("TRUE XOR (TRUE OR FALSE)", exp.Xor, exp.Boolean, exp.Paren),
+            ("TRUE XOR FALSE && FALSE", exp.Xor, exp.Boolean, exp.And),
+            ("TRUE || TRUE XOR TRUE", exp.Or, exp.Boolean, exp.Xor),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.parse_one(f"SELECT {sql}").expressions[0]
+                self.assertIsInstance(expression, root)
+                self.assertIsInstance(expression.this, left)
+                self.assertIsInstance(expression.expression, right)
+
+        self.validate_all(
+            "SELECT TRUE XOR FALSE AND FALSE",
+            write={
+                "mysql": "SELECT TRUE XOR FALSE AND FALSE",
+                "snowflake": "SELECT BOOLXOR(TRUE, FALSE AND FALSE)",
+            },
+        )
+
     def test_statistical_aggregates(self):
         self.validate_all(
             "SELECT STDDEV_POP(x), STDDEV_POP(x), VAR_POP(x) FROM t",

@@ -1975,18 +1975,24 @@ class Generator:
                 if (
                     not self.SET_OP_PARENTHESIZED_OPERANDS
                     and not self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
-                    and isinstance(left, exp.Subquery)
-                    and left.is_wrapper
-                    and isinstance(left.this, exp.SetOperation)
-                    and not left.this.args.get("with_")
-                    and not any(left.this.args.get(key) for key in exp.QUERY_MODIFIERS)
                 ):
-                    # Without SET_OP_PARENTHESIZED_OPERANDS, grouping requires a
-                    # `SELECT * FROM (...)` wrapper, but that renames duplicate columns and deepens
-                    # recursion on long chains. We can safely omit it here because left-to-right
-                    # evaluation already implies a grouped left operand.
-                    left.this.add_comments(left.pop_comments())
-                    left = left.this
+                    # Left grouping is implicit, so skip the `SELECT * FROM (...)` wrapper:
+                    # it renames duplicate columns and deepens recursion. Inner CTEs and
+                    # modifiers still need the wrapper.
+                    wrappers: list[exp.Subquery] = []
+                    inner = left
+                    while isinstance(inner, exp.Subquery) and inner.is_wrapper:
+                        wrappers.append(inner)
+                        inner = inner.this
+
+                    if (
+                        isinstance(inner, exp.SetOperation)
+                        and not inner.args.get("with_")
+                        and not any(inner.args.get(key) for key in exp.QUERY_MODIFIERS)
+                    ):
+                        for wrapper in wrappers:
+                            inner.add_comments(wrapper.pop_comments())
+                        left = inner
                 stack.append(left)
             else:
                 if (

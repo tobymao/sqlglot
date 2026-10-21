@@ -211,7 +211,7 @@ class TypeAnnotator:
         # Keep annotated nodes alive so their ids cannot be reused while cached
         self._visited: dict[int, exp.Expr] = {}
 
-        # Caches NULL-annotated expressions to set them to UNKNOWN after type inference is completed
+        # Expressions whose types or query metadata contain NULL, finalized after coercion.
         self._null_expressions: dict[int, exp.Expr] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
@@ -258,22 +258,25 @@ class TypeAnnotator:
     def _set_type(
         self, expression: exp.Expr, target_type: exp.DataType | exp.DType | None
     ) -> exp.Expr:
-        prev_type = expression.type
         expression_id = id(expression)
 
         # TODO (mypyc): expression.type = ... should work but mypyc compiles the property
         # setter to enforce the getter's return type (Optional[DataType]), rejecting DType.
         # Bypass by converting and assigning to _type directly.
         dtype = target_type or exp.DType.UNKNOWN
-        expression._type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
+        data_type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
+        expression._type = data_type
         self._visited[expression_id] = expression
 
-        if (
-            not self._supports_null_type
-            and t.cast(exp.DataType, expression.type).this == exp.DType.NULL
+        if not self._supports_null_type and (
+            data_type.is_type(exp.DType.NULL)
+            or (
+                data_type.expressions
+                and any(kind.is_type(exp.DType.NULL) for kind in data_type.find_all(exp.DataType))
+            )
         ):
             self._null_expressions[expression_id] = expression
-        elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DType.NULL:
+        else:
             self._null_expressions.pop(expression_id, None)
 
         return expression
@@ -290,12 +293,31 @@ class TypeAnnotator:
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
-        # TODO (mypyc): uses list() + _set_type instead of direct expr.type = ... because
-        # mypyc's property setter bypass rejects DType, and _set_type modifies the dict.
         for expr in list(self._null_expressions.values()):
-            self._set_type(expr, self.dialect.DEFAULT_NULL_TYPE)
+            if expr.type:
+                self._set_type(expr, self._finalize_type(expr.type))
+            if query_type := expr.meta_get("query_type"):
+                expr.meta["query_type"] = self._finalize_type(query_type)
 
         return expression
+
+    def _finalize_type(self, data_type: exp.DataType) -> exp.DataType:
+        if data_type.is_type(exp.DType.NULL):
+            return self.dialect.DEFAULT_NULL_TYPE.into_expr()
+        if not data_type.expressions:
+            return data_type
+
+        data_type = data_type.copy()
+        for kind in reversed(list(data_type.find_all(exp.DataType))):
+            if kind.is_type(exp.DType.NULL):
+                kind.set("this", self.dialect.DEFAULT_NULL_TYPE)
+            elif kind.is_type(exp.DType.STRUCT) and any(
+                field.is_type(exp.DType.UNKNOWN) for field in kind.find_all(exp.DataType)
+            ):
+                kind.set("this", exp.DType.UNKNOWN)
+                kind.set("expressions", None)
+                kind.set("nested", None)
+        return data_type
 
     def _get_scope_source_selects(
         self, scope: Scope, source_name: str
@@ -425,19 +447,25 @@ class TypeAnnotator:
             )
 
             if not any(
-                cd.kind.is_type(exp.DType.UNKNOWN) for cd in struct_type.expressions if cd.kind
+                not cd.kind
+                or any(kind.is_type(exp.DType.UNKNOWN) for kind in cd.kind.find_all(exp.DataType))
+                for cd in struct_type.expressions
             ):
                 # We don't use `_set_type` on purpose here. If we annotated the query directly, then
                 # using it in other contexts (e.g., ARRAY(<query>)) could result in incorrect type
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
+                if not self._supports_null_type and any(
+                    kind.is_type(exp.DType.NULL) for kind in struct_type.find_all(exp.DataType)
+                ):
+                    self._null_expressions[id(scope.expression)] = scope.expression
 
     def annotate_expression(
         self,
         expression: exp.Expr,
         scope: Scope | None = None,
     ) -> None:
-        """Annotate a subtree without annotating unrelated expressions in its scope."""
+        """Annotate an expression and its descendants, using the scope to resolve references."""
         stack = [(expression, False)]
 
         while stack:
@@ -563,15 +591,23 @@ class TypeAnnotator:
                 if isinstance(source.expression, exp.Selectable)
                 else []
             )
-            if len(names) != len(set(names)) or any(
-                exp.DataType.build(kind).is_type(exp.DType.UNKNOWN)
-                for kind in column_types.values()
-            ):
+            if len(names) != len(set(names)) or set(names) != column_types.keys():
                 column_types = None
         elif isinstance(source, exp.Table) and isinstance(self.schema, MappingSchema):
             column_types = self.schema.find(source, raise_on_missing=False, ensure_data_types=True)
 
-        if isinstance(column_types, dict) and column_types:
+        if (
+            isinstance(column_types, dict)
+            and column_types
+            and all(
+                kind is not None
+                and not any(
+                    field.is_type(exp.DType.UNKNOWN)
+                    for field in exp.DataType.build(kind).find_all(exp.DataType)
+                )
+                for kind in column_types.values()
+            )
+        ):
             self._set_type(
                 expression,
                 exp.DataType(

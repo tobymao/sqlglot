@@ -2839,6 +2839,68 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         annotator.annotate_scope(scope)
         self.assertEqual(tree.selects[1].type.sql("bigquery"), "STRUCT<a INT64>")
 
+    def test_annotate_expression_incomplete_row(self):
+        for source_sql, typed_columns in (
+            ("SELECT 1 AS x UNION ALL SELECT 2 AS x", 0),
+            ("SELECT 1 AS x, 2 AS y", 1),
+            ("SELECT 1 AS x, unknown_function() AS y", 2),
+        ):
+            with self.subTest(source=source_sql):
+                source = parse_one(source_sql)
+                tree = exp.select(exp.TableColumn(this=exp.to_identifier("r"))).from_(
+                    source.subquery("r", copy=False)
+                )
+                scope = build_scope(tree)
+                assert scope is not None
+                for select in source.selects[:typed_columns]:
+                    annotate_types(select)
+                annotator = TypeAnnotator(MappingSchema())
+                annotator.annotate_expression(tree.selects[0], scope)
+                self.assertTrue(tree.selects[0].is_type(exp.DType.UNKNOWN))
+
+        for kind in ("UNKNOWN", "STRUCT<x UNKNOWN>"):
+            with self.subTest(kind=kind):
+                tree = qualify(
+                    parse_one("SELECT t FROM t", dialect="bigquery"),
+                    schema={"t": {"a": "INT", "b": kind}},
+                    dialect="bigquery",
+                )
+                self.assertTrue(tree.selects[0].is_type(exp.DType.UNKNOWN))
+
+    def test_annotate_nested_null_types(self):
+        for sql, expected in (
+            ("SELECT (SELECT AS STRUCT NULL AS x) AS value", "STRUCT<x INT64>"),
+            (
+                "SELECT (SELECT AS STRUCT (SELECT AS STRUCT NULL AS x) AS nested) AS value",
+                "STRUCT<nested STRUCT<x INT64>>",
+            ),
+            ("SELECT ARRAY(SELECT AS STRUCT NULL AS x) AS value", "ARRAY<STRUCT<x INT64>>"),
+            (
+                "SELECT (SELECT AS STRUCT x FROM "
+                "(SELECT NULL AS x UNION ALL SELECT 'a' AS x) LIMIT 1) AS value",
+                "STRUCT<x STRING>",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                tree = qualify(parse_one(sql, dialect="bigquery"), dialect="bigquery")
+                annotate_types(tree, dialect="bigquery")
+                self.assertEqual(tree.selects[0].type.sql("bigquery"), expected)
+
+        for dialect, expected in (
+            ("bigquery", "STRUCT<x BIGINT>"),
+            ("duckdb", "UNKNOWN"),
+            ("spark", "STRUCT<x NULL>"),
+        ):
+            with self.subTest(dialect=dialect):
+                tree = annotate_types(
+                    parse_one("SELECT STRUCT(NULL AS x) AS value", dialect=dialect),
+                    dialect=dialect,
+                )
+                self.assertEqual(tree.selects[0].type.sql(), expected)
+
+        tree = annotate_types(parse_one("SELECT NULL AS x", dialect="bigquery"), dialect="bigquery")
+        self.assertEqual(tree.meta["query_type"].sql("bigquery"), "STRUCT<x INT64>")
+
     def test_annotate_untyped_binary_operands(self):
         # Operands that escaped annotation have type None; treat them as UNKNOWN instead
         # of crashing on `.type.this`

@@ -60,7 +60,7 @@ from sqlglot.expressions.query import (
 from sqlglot.expressions.ddl import Alter, AlterRename, Create, RenameColumn
 from sqlglot.expressions.dml import Delete, Insert, Merge, Update, When, Whens
 from sqlglot.expressions.functions import Case, Cast
-from sqlglot.expressions.array import Array
+from sqlglot.expressions.array import Array, Struct
 
 
 if t.TYPE_CHECKING:
@@ -1157,7 +1157,7 @@ def apply_index_offset(
     offset: int,
     dialect: DialectType = None,
 ) -> list[E]:
-    if not offset or len(expressions) != 1:
+    if not offset or len(expressions) != 1 or isinstance(this, Struct):
         return expressions
 
     expression = expressions[0]

@@ -48,14 +48,24 @@ PY_GE_310 := $(shell python -c "import sys; print(int(sys.version_info >= (3, 10
 
 install-devc:
 	@if [ "$(PY_GE_310)" = "1" ]; then \
-		cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC); \
+		echo "Building sqlglotc (log: .sqlglotc-build.log)"; \
+		(cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC)) > .sqlglotc-build.log 2>&1 || { \
+			status=$$?; \
+			echo "sqlglotc build failed. See .sqlglotc-build.log for details." >&2; \
+			exit $$status; \
+		}; \
 	else \
 		echo "Skipping sqlglotc build: requires Python 3.10+"; \
 	fi
 
 install-devc-release: clean
 	@if [ "$(PY_GE_310)" = "1" ]; then \
-		cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC); \
+		echo "Building sqlglotc (log: .sqlglotc-build.log)"; \
+		(cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC)) > .sqlglotc-build.log 2>&1 || { \
+			status=$$?; \
+			echo "sqlglotc build failed. See .sqlglotc-build.log for details." >&2; \
+			exit $$status; \
+		}; \
 	else \
 		echo "Skipping sqlglotc build: requires Python 3.10+"; \
 	fi

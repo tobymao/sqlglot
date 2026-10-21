@@ -246,6 +246,7 @@ class HiveGenerator(generator.Generator):
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     PAD_FILL_PATTERN_IS_REQUIRED = True
     SUPPORTS_MEDIAN = False
+    SUPPORTS_TEMPORAL_PRECISION = False
     ARRAY_SIZE_NAME = "SIZE"
     ALTER_SET_TYPE = ""
 
@@ -506,7 +507,9 @@ class HiveGenerator(generator.Generator):
             expression.set("expressions", None)
         elif expression.is_type(exp.DType.TEXT) and expression.expressions:
             expression.set("this", exp.DType.VARCHAR)
-        elif expression.this in exp.DataType.TEMPORAL_TYPES:
+        elif (
+            not self.SUPPORTS_TEMPORAL_PRECISION and expression.this in exp.DataType.TEMPORAL_TYPES
+        ):
             expression.set("expressions", None)
         elif expression.is_type("float"):
             size_expression = expression.find(exp.DataTypeParam)

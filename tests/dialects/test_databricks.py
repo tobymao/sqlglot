@@ -6,6 +6,25 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_timestamp_precision(self):
+        for timestamp_type in ("TIMESTAMP", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ"):
+            for precision in range(6, 10):
+                with self.subTest(timestamp_type=timestamp_type, precision=precision):
+                    self.validate_identity(f"CREATE TABLE t (ts {timestamp_type}({precision}))")
+                    self.validate_identity(
+                        f"SELECT CAST('2026-08-18 14:30:45.123456789' AS {timestamp_type}({precision}))"
+                    )
+
+        self.validate_all(
+            "CREATE TABLE t (ts TIMESTAMP(9))",
+            write={
+                "databricks": "CREATE TABLE t (ts TIMESTAMP(9))",
+                "hive": "CREATE TABLE t (ts TIMESTAMP)",
+                "spark": "CREATE TABLE t (ts TIMESTAMP)",
+                "spark2": "CREATE TABLE t (ts TIMESTAMP)",
+            },
+        )
+
     def test_match_recognize(self):
         sql = (
             "SELECT symbol, start_tstamp, end_tstamp, run_length FROM stock_ticker "

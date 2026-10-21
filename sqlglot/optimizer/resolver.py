@@ -65,16 +65,19 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and column_name not in self.all_columns:
+        if (
+            not table_name
+            and column_name not in self.all_columns
+            and not (
+                self.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
+                and column_name in self.scope.selected_sources
+            )
+        ):
             # Skip back-projection for alias refs — _expand_alias_refs handles them.
-            if not (
+            if column_name not in self.select_aliases or (
                 isinstance(column, exp.Column)
-                and column_name in self.select_aliases
-                and not (
-                    (ancestor := column.find_ancestor(exp.Alias, exp.Select))
-                    and isinstance(ancestor, exp.Alias)
-                    and ancestor.alias == column_name
-                )
+                and isinstance(ancestor := column.find_ancestor(exp.Alias, exp.Select), exp.Alias)
+                and ancestor.alias == column_name
             ):
                 source_columns = (
                     self._get_available_source_columns(join_context)

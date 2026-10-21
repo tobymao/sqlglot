@@ -212,6 +212,22 @@ SELECT 1 AS Z, C.Z + 1 AS W FROM (SELECT T.Z AS Z FROM T T) C;
 SELECT t.x FROM READ_PARQUET('path.parquet', hive_partition=1) AS t;
 SELECT t.x AS x FROM READ_PARQUET('path.parquet', hive_partition = 1) AS t;
 
+# dialect: duckdb
+SELECT r FROM range(3) AS r;
+SELECT r AS r FROM RANGE(0, 3) AS r;
+
+# dialect: duckdb
+SELECT r.range AS x FROM range(3) AS r ORDER BY SUM(x) OVER ();
+SELECT r.range AS x FROM RANGE(0, 3) AS r ORDER BY SUM(x) OVER ();
+
+# dialect: duckdb
+SELECT range + 1 AS range FROM range(3) AS r;
+SELECT r.range + 1 AS range FROM RANGE(0, 3) AS r;
+
+# dialect: duckdb
+SELECT range + 1 AS x FROM range(3) AS r WHERE x > 1;
+SELECT r.range + 1 AS x FROM RANGE(0, 3) AS r WHERE (r.range + 1) > 1;
+
 # title: oracle WHERE column sharing a projection alias name is a source column
 # dialect: oracle
 # execute: false

@@ -180,6 +180,11 @@ class TestExprs(unittest.TestCase):
         self.assertIsNone(column.find_ancestor(exp.Join))
 
     def test_to_dot(self):
+        column = parse_one("a.$1", dialect="snowflake")
+        self.assertEqual(column.to_dot().sql("snowflake"), "a.$1")
+        column.set("table", None)
+        self.assertEqual(column.to_dot(), column.this)
+
         orig = parse_one('a.b.c."d".e.f')
         self.assertEqual(".".join(str(p) for p in orig.parts), 'a.b.c."d".e.f')
 
@@ -976,6 +981,22 @@ class TestExprs(unittest.TestCase):
 
         dot = exp.column("d", "c", "b", "a", fields=["e", "f"], quoted=True)
         self.assertEqual(dot.sql(), '"a"."b"."c"."d"."e"."f"')
+
+    def test_column_expression(self):
+        for sql in ("a.$1", "a.:name", "a.1", "a.*"):
+            with self.subTest(sql=sql):
+                expected = parse_one(sql, dialect="snowflake")
+                part = expected.this
+                column = exp.column(part, table="a")
+                self.assertEqual(column, expected)
+                self.assertIsNot(column.this, part)
+                self.assertIs(part.parent, expected)
+                self.assertIs(exp.column(part, table="a", copy=False).this, part)
+
+        parameter = parse_one("$1", dialect="snowflake")
+        dot = exp.column(parameter, table="a", fields=["b"])
+        self.assertIsInstance(dot, exp.Dot)
+        self.assertEqual(dot.sql("snowflake"), "a.$1.b")
 
     def test_text(self):
         column = parse_one("a.b.c.d.e")

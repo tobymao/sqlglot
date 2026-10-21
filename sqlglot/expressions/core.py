@@ -1734,13 +1734,13 @@ class Column(Expression, Condition):
         return self.name
 
     @property
-    def parts(self) -> list[Identifier | Star]:
+    def parts(self) -> list[Expr]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)
         ]
 
-    def to_dot(self, include_dots: bool = True) -> Dot | Identifier | Star:
+    def to_dot(self, include_dots: bool = True) -> Expr:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent
@@ -3071,7 +3071,7 @@ def alias_(
 
 @t.overload
 def column(
-    col: str | Identifier,
+    col: str | Expr,
     table: str | Identifier | None = None,
     db: str | Identifier | None = None,
     catalog: str | Identifier | None = None,
@@ -3085,7 +3085,7 @@ def column(
 
 @t.overload
 def column(
-    col: str | Identifier | Star,
+    col: str | Expr,
     table: str | Identifier | None = None,
     db: str | Identifier | None = None,
     catalog: str | Identifier | None = None,
@@ -3111,19 +3111,18 @@ def column(
     Build a Column.
 
     Args:
-        col: Column name.
+        col: Column name or expression.
         table: Table name.
         db: Database name.
         catalog: Catalog name.
         fields: Additional fields using dots.
         quoted: Whether to force quotes on the column's identifiers.
-        copy: Whether to copy identifiers if passed in.
+        copy: Whether to copy expressions if passed in.
 
     Returns:
         The new Column instance.
     """
-    if not isinstance(col, Star):
-        col = to_identifier(col, quoted=quoted, copy=copy)
+    col = maybe_copy(col, copy) if isinstance(col, Expr) else to_identifier(col, quoted=quoted)
 
     this: Column | Dot = Column(
         this=col,

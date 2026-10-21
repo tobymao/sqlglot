@@ -3812,7 +3812,10 @@ class Parser:
             # The column list after the alias belongs to the INSERT: INSERT INTO t AS s (a, b)
             alias = self._parse_id_var(any_token=True) or self._parse_string_as_identifier()
             if alias:
-                this.set("alias", self.expression(exp.TableAlias(this=alias)))
+                this.set(
+                    "alias",
+                    self.expression(exp.TableAlias(this=alias), comments=alias.pop_comments()),
+                )
             return self._parse_schema(this=this)
         return this
 

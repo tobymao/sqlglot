@@ -71,7 +71,9 @@ class Resolver:
                 isinstance(column, exp.Column)
                 and column_name in self.select_aliases
                 and not (
-                    isinstance(column.parent, exp.Alias) and column.parent.alias == column_name
+                    (ancestor := column.find_ancestor(exp.Alias, exp.Select))
+                    and isinstance(ancestor, exp.Alias)
+                    and ancestor.alias == column_name
                 )
             ):
                 source_columns = (
@@ -121,6 +123,8 @@ class Resolver:
             # Non-TVF tables are expected to have schemas supplied, so only functions can be unknown
             if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
                 unknown_tvf_names.append(name)
+            else:
+                return None
 
         return unknown_tvf_names[0] if len(unknown_tvf_names) == 1 else None
 

@@ -14,24 +14,7 @@ jobs:
 
     steps:
       - name: Print debugging info
-        run: |
-          cat <<'EOF'
-            Github event name: ${{ github.event_name }}
-
-            Github event ${{ toJSON(github.event) }}
-
-            Generic Number: ${{ github.event.number }}
-
-            PR number: ${{ github.event.pull_request.number }}
-
-            Issue number: ${{ github.event.issue.number }}
-
-            SHA: ${{ github.sha }}
-
-            Head Ref ${{ github.head_ref }}
-
-            Ref Name: ${{ github.ref_name }}
-          EOF
+        run: jq . "$GITHUB_EVENT_PATH"
 
       - name: Checkout Code
         uses: actions/checkout@v5
@@ -52,7 +35,7 @@ jobs:
           # Read the submodule commit SHA so the run-integration-tests job can
           # resolve the correct ref in the remote repo
           SUBMODULE_SHA=$(git ls-tree HEAD sqlglot-integration-tests | awk '{print $3}')
-          echo "integration_tests_sha=${SUBMODULE_SHA:-}" >> $GITHUB_OUTPUT
+          echo "integration_tests_sha=${SUBMODULE_SHA:-}" >> "$GITHUB_OUTPUT"
           echo "Integration tests submodule SHA: ${SUBMODULE_SHA:-not found}"
 
   run-integration-tests:
@@ -74,6 +57,11 @@ jobs:
         id: run-remote
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SUBMODULE_SHA: ${{ needs.should-run.outputs.integration_tests_sha }}
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          SQLGLOT_REF: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
+          DIALECTS: ${{ needs.should-run.outputs.dialects }}
         run: |
           set -e
 
@@ -85,8 +73,6 @@ jobs:
           # Resolve the integration tests ref: use a matching branch if its tip
           # matches the submodule SHA, otherwise fall back to main
           INTEGRATION_REF="main"
-          SUBMODULE_SHA="${{ needs.should-run.outputs.integration_tests_sha }}"
-          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
 
           if [ -n "$SUBMODULE_SHA" ] && [ -n "$BRANCH_NAME" ] && [ "$BRANCH_NAME" != "main" ]; then
             BRANCH_TIP=$(gh api "repos/$REMOTE_REPO/branches/$BRANCH_NAME" --jq '.commit.sha' 2>/dev/null || echo "")
@@ -102,13 +88,13 @@ jobs:
           echo "Using integration tests ref: $INTEGRATION_REF"
 
           gh workflow run run-tests.yml \
-            --repo $REMOTE_REPO \
+            --repo "$REMOTE_REPO" \
             --ref "$INTEGRATION_REF" \
-            -f sqlglot_ref=${{ github.sha }} \
-            -f sqlglot_pr_number=${{ github.event.number || github.event.issue.number }} \
-            -f sqlglot_branch_name=${{ github.head_ref || github.ref_name }} \
+            -f "sqlglot_ref=$SQLGLOT_REF" \
+            -f "sqlglot_pr_number=$PR_NUMBER" \
+            -f "sqlglot_branch_name=$BRANCH_NAME" \
             -f correlation_id="$CORRELATION_ID" \
-            -f dialects="${{ needs.should-run.outputs.dialects }}"
+            -f "dialects=$DIALECTS"
 
           echo "Triggered workflow using correlation id: $CORRELATION_ID"
 
@@ -126,7 +112,7 @@ jobs:
 
             echo "Checking for run"
             RUN_ID=$(gh run list \
-              --repo $REMOTE_REPO \
+              --repo "$REMOTE_REPO" \
               --event workflow_dispatch \
               --workflow run-tests.yml \
               --branch "$INTEGRATION_REF" \
@@ -137,10 +123,10 @@ jobs:
           done
 
           echo "Using Run ID: ${RUN_ID}"
-          echo "remote_run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "remote_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
           echo "Waiting for completion"
-          gh run watch $RUN_ID \
+          gh run watch "$RUN_ID" \
             --repo fivetran/sqlglot-integration-tests \
             --interval 10 \
             --compact \

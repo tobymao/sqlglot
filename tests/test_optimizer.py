@@ -3415,6 +3415,47 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertTrue(all(s.is_type(exp.DType.DOUBLE) for s in expression.selects))
 
+    def test_set_operation_star_annotation(self):
+        for projection in ("*", "b.*"):
+            with self.subTest(projection=projection):
+                expression = qualify(
+                    parse_one(
+                        "WITH b AS (SELECT 3 AS z, CAST(4.5 AS DOUBLE) AS z), "
+                        f"u AS (SELECT 1 AS x, 2 AS y UNION ALL SELECT {projection} FROM b) "
+                        "SELECT u.x, u.y FROM u"
+                    )
+                )
+                sql = expression.sql()
+                annotator = TypeAnnotator(MappingSchema())
+                for _ in range(2):
+                    annotator.annotate(expression)
+                    self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+                    self.assertEqual(expression.sql(), sql)
+                    annotator.clear()
+
+        # Resolved star outputs can themselves be shared sources or positional operands.
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "WITH a AS (SELECT 1 AS x, 2 AS y), "
+                    "b AS (SELECT 3 AS z, CAST(4.5 AS DOUBLE) AS z), "
+                    "c AS (SELECT * FROM b), "
+                    "u AS (SELECT * FROM a UNION ALL SELECT * FROM c UNION ALL "
+                    "SELECT * FROM c) SELECT u.x, u.y FROM u"
+                )
+            )
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+
+        # An unresolved star has unknown width, even if raw projection counts match.
+        for sql in (
+            "SELECT u.x FROM (SELECT 1 AS x UNION ALL SELECT * FROM missing) AS u",
+            "SELECT u.x FROM (SELECT 1 AS x, 2 AS y UNION ALL SELECT * FROM missing) AS u",
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
     def test_set_operation_shallow_reannotation(self):
         for sql in (
             "SELECT 1 AS a UNION ALL SELECT CAST(2.5 AS DOUBLE) AS a UNION ALL SELECT 3 AS a",
@@ -3428,13 +3469,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     expression = parse_one(sql)
                     annotator = TypeAnnotator(MappingSchema())
                     annotator.annotate(expression, annotate_scope=annotate_scope)
-                    expected = annotator._get_setop_column_types(expression)
+                    expected = annotator._get_query_column_types(expression)
                     self.assertTrue(expected)
 
                     for _ in range(2):
                         annotator.uncache(expression, deep=False)
                         annotator.annotate(expression, annotate_scope=annotate_scope)
-                        self.assertEqual(annotator._get_setop_column_types(expression), expected)
+                        self.assertEqual(annotator._get_query_column_types(expression), expected)
 
     def test_map_annotation(self):
         # ToMap annotation

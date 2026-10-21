@@ -308,7 +308,7 @@ class DuckDBParser(parser.Parser):
             return None
 
         this = self._replace_lambda(self._parse_assignment(), expressions)
-        return self.expression(exp.Lambda(this=this, expressions=expressions, colon=True))
+        return self.expression(exp.Lambda(this=this, expressions=expressions))
 
     def _parse_expression(self) -> exp.Expr | None:
         # DuckDB supports prefix aliases, e.g. foo: 1

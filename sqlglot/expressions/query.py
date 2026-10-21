@@ -663,7 +663,7 @@ class GroupingSets(Expression):
 
 
 class Lambda(Expression):
-    arg_types = {"this": True, "expressions": True, "colon": False}
+    arg_types = {"this": True, "expressions": True}
 
 
 class Limit(Expression):

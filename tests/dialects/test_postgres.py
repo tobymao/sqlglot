@@ -1417,7 +1417,8 @@ FROM json_data, field_ids""",
             "INSERT INTO book (isbn, title) VALUES ($1, $2) ON CONFLICT(isbn) WHERE deleted_at IS NULL DO UPDATE SET title = EXCLUDED.title RETURNING id, isbn"
         )
         self.validate_identity(
-            "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1"
+            "INSERT INTO newtable AS t(a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1",
+            "INSERT INTO newtable AS t (a, b, c) VALUES (1, 2, 3) ON CONFLICT(c) DO UPDATE SET a = t.a + 1 WHERE t.a < 1",
         )
         self.validate_identity(
             "INSERT INTO t (id, a) VALUES (1, FALSE) ON CONFLICT(id) DO UPDATE SET a = t.x OR t.y, b = t.x AND t.y WHERE t.id = 1 RETURNING a"

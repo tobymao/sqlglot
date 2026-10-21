@@ -668,6 +668,10 @@ class TestSQLite(Validator):
         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT INTO foo AS f (x, y) VALUES (1, 2)")
+        self.validate_identity(
+            "INSERT INTO foo AS f (x, y) VALUES (1, 2) ON CONFLICT(x) DO UPDATE SET y = f.y + 1"
+        )
         self.validate_identity(
             "INSERT INTO tbl (x, y) SELECT 1, 'a' WHERE TRUE ON CONFLICT(x, LOWER(y)) DO UPDATE SET y = excluded.y"
         )

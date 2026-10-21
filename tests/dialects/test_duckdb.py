@@ -10,6 +10,25 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_lambda(self):
+        for arrow, colon in (
+            ("x -> x + 1", "LAMBDA x : x + 1"),
+            ("(x, i) -> x + i", "LAMBDA x, i : x + i"),
+        ):
+            old_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {arrow})"
+            new_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {colon})"
+            with self.subTest(arrow=arrow):
+                self.validate_all(
+                    new_sql,
+                    read={"duckdb": old_sql},
+                    write={
+                        "duckdb": new_sql,
+                        "duckdb, version=1.2": old_sql,
+                        "duckdb, version=1.3": new_sql,
+                        "duckdb, version=2.0": new_sql,
+                    },
+                )
+
     def test_is_precedence(self):
         self.validate_identity(
             "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
@@ -174,13 +193,13 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CASE WHEN delim IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(arr, x -> COALESCE(CAST(x AS TEXT), '')), delim) END",
+            "SELECT CASE WHEN delim IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(arr, LAMBDA x : COALESCE(CAST(x AS TEXT), '')), delim) END",
             read={
                 "snowflake": "SELECT ARRAY_TO_STRING(arr, delim)",
             },
         )
         self.validate_all(
-            "SELECT ARRAY_TO_STRING(LIST_TRANSFORM([1, 2, 3, NULL, 5], x -> COALESCE(CAST(x AS TEXT), '*')), ',')",
+            "SELECT ARRAY_TO_STRING(LIST_TRANSFORM([1, 2, 3, NULL, 5], LAMBDA x : COALESCE(CAST(x AS TEXT), '*')), ',')",
             read={
                 "postgres": "SELECT ARRAY_TO_STRING(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
                 "presto": "SELECT ARRAY_JOIN(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
@@ -528,7 +547,8 @@ class TestDuckDB(Validator):
         self.validate_identity("DAYNAME(x)")
         self.validate_identity("MONTHNAME(x)")
         self.validate_identity(
-            "SELECT LIST_TRANSFORM([5, NULL, 6], (x, y) -> COALESCE(x, y, 0) + 1)"
+            "SELECT LIST_TRANSFORM([5, NULL, 6], (x, y) -> COALESCE(x, y, 0) + 1)",
+            "SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x, y : COALESCE(x, y, 0) + 1)",
         )
         self.validate_identity(
             "SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x, y : COALESCE(x, y, 0) + 1)"
@@ -841,72 +861,72 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+            "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), LAMBDA x : TRIM(x))",
             write={
-                "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+                "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), LAMBDA x : TRIM(x))",
                 "spark": "SELECT TRANSFORM(SPLIT('abc , dfg ', ','), x -> TRIM(x))",
             },
         )
         self.validate_all(
-            "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+            "SELECT LIST_FILTER([4, 5, 6], LAMBDA x : x > 4)",
             write={
-                "duckdb": "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+                "duckdb": "SELECT LIST_FILTER([4, 5, 6], LAMBDA x : x > 4)",
                 "spark": "SELECT FILTER(ARRAY(4, 5, 6), x -> x > 4)",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
             write={
-                "duckdb": "LIST_FILTER([1, NULL, 2, NULL, 3], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([1, NULL, 2, NULL, 3], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT(NULL)",
             write={
-                "duckdb": "LIST_FILTER(NULL, _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(NULL, LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT(NULL)",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([])",
             write={
-                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
             write={
-                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
             write={
-                "duckdb": "LIST_FILTER([[1, 2], NULL, [3, 4]], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([[1, 2], NULL, [3, 4]], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
             write={
-                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT()",
             write={
-                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT()",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
             write={
-                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
             },
         )
@@ -1463,7 +1483,7 @@ class TestDuckDB(Validator):
             "SELECT id, STRUCT_PACK(*COLUMNS('m\\d')) AS measurements FROM many_measurements",
             """SELECT id, {'_0': *COLUMNS('m\\d')} AS measurements FROM many_measurements""",
         )
-        self.validate_identity("SELECT COLUMNS(c -> c LIKE '%num%') FROM numbers")
+        self.validate_identity("SELECT COLUMNS(LAMBDA c : c LIKE '%num%') FROM numbers")
         self.validate_identity(
             "SELECT MIN(COLUMNS(* REPLACE (number + id AS number))), COUNT(COLUMNS(* EXCLUDE (number))) FROM numbers"
         )
@@ -1779,7 +1799,7 @@ class TestDuckDB(Validator):
             )
             self.validate_identity(
                 """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': LIST_VALUE(1, 2, 3)[i], 'f2': LIST_VALUE(1, 2, 3)[i]})""",
-                """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': [1, 2, 3][i], 'f2': [1, 2, 3][i]})""",
+                "SELECT LIST_APPLY(RANGE(1, 4), LAMBDA i : {'f1': [1, 2, 3][i], 'f2': [1, 2, 3][i]})",
             )
 
             self.assertEqual(
@@ -1921,7 +1941,7 @@ class TestDuckDB(Validator):
     def test_array_remove(self):
         # Test NULL propagation with column reference: Snowflake → DuckDB
         self.validate_all(
-            "CASE WHEN target IS NULL THEN NULL ELSE LIST_FILTER(the_array, _u -> _u <> target) END",
+            "CASE WHEN target IS NULL THEN NULL ELSE LIST_FILTER(the_array, LAMBDA _u : _u <> target) END",
             read={
                 "snowflake": "ARRAY_REMOVE(the_array, target)",
             },
@@ -1929,7 +1949,7 @@ class TestDuckDB(Validator):
 
         # Test literal values: Snowflake → DuckDB
         self.validate_all(
-            "LIST_FILTER([1, 2, 3], _u -> _u <> 2)",
+            "LIST_FILTER([1, 2, 3], LAMBDA _u : _u <> 2)",
             read={
                 "snowflake": "ARRAY_REMOVE([1, 2, 3], 2)",
             },
@@ -1937,7 +1957,7 @@ class TestDuckDB(Validator):
 
         # Test NULL literal: Snowflake → DuckDB
         self.validate_all(
-            "CASE WHEN NULL IS NULL THEN NULL ELSE LIST_FILTER([1, 2, 3], _u -> _u <> NULL) END",
+            "CASE WHEN NULL IS NULL THEN NULL ELSE LIST_FILTER([1, 2, 3], LAMBDA _u : _u <> NULL) END",
             read={
                 "snowflake": "ARRAY_REMOVE([1, 2, 3], NULL)",
             },
@@ -3050,21 +3070,21 @@ class TestDuckDB(Validator):
 
     def test_map_delete(self):
         self.validate_all(
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), LAMBDA x : NOT x.key IN ('a', 'b')))",
             read={
                 "snowflake": "SELECT MAP_DELETE({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b')",
             },
             write={
-                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), LAMBDA x : NOT x.key IN ('a', 'b')))",
             },
         )
         self.validate_all(
-            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
+            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), LAMBDA x : NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             read={
                 "snowflake": "SELECT id, MAP_DELETE(attrs, del_key1, del_key2) AS attrs_after_delete FROM demo_maps",
             },
             write={
-                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
+                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), LAMBDA x : NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             },
         )
 
@@ -3098,7 +3118,7 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : x.key IN (t.t_key))) FROM t",
         )
 
         annotated = annotate_types(
@@ -3108,7 +3128,7 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
         )
 
         sql = "SELECT MAP_PICK(t.t_map, t.t_key1, t.t_key2) FROM t"
@@ -3120,7 +3140,7 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key1, t.t_key2))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : x.key IN (t.t_key1, t.t_key2))) FROM t",
         )
 
     def test_to_array(self):

@@ -2016,7 +2016,7 @@ class TestDialect(Validator):
                 "trino": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "presto": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "athena": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
-                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_FILTER(LIST_DISTINCT([1, 2, 3]), e -> LENGTH(LIST_FILTER([2], x -> x IS NOT DISTINCT FROM e)) = 0) END",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_FILTER(LIST_DISTINCT([1, 2, 3]), LAMBDA e : LENGTH(LIST_FILTER([2], LAMBDA x : x IS NOT DISTINCT FROM e)) = 0) END",
             },
         )
 
@@ -2969,7 +2969,7 @@ class TestDialect(Validator):
             write={
                 "": "ARRAY_REMOVE(the_array, target)",
                 "clickhouse": "arrayFilter(_u -> _u <> target, the_array)",
-                "duckdb": "LIST_FILTER(the_array, _u -> _u <> target)",
+                "duckdb": "LIST_FILTER(the_array, LAMBDA _u : _u <> target)",
                 "bigquery": "ARRAY(SELECT _u FROM UNNEST(the_array) AS _u WHERE _u <> target)",
                 "hive": "ARRAY_REMOVE(the_array, target)",
                 "postgres": "ARRAY_REMOVE(the_array, target)",
@@ -3887,7 +3887,7 @@ FROM subquery2""",
                 "databricks": "(SIZE(arr) = 0 OR SIZE(FILTER(arr, x -> pred)) <> 0)",
                 "doris": UnsupportedError,
                 "drill": UnsupportedError,
-                "duckdb": "(ARRAY_LENGTH(arr) = 0 OR ARRAY_LENGTH(LIST_FILTER(arr, x -> pred)) <> 0)",
+                "duckdb": "(ARRAY_LENGTH(arr) = 0 OR ARRAY_LENGTH(LIST_FILTER(arr, LAMBDA x : pred)) <> 0)",
                 "hive": UnsupportedError,
                 "mysql": UnsupportedError,
                 "oracle": UnsupportedError,

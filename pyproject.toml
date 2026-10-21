@@ -31,6 +31,7 @@ include-package-data = false
 
 [tool.setuptools_scm]
 version_file = "sqlglot/_version.py"
+write_to_source = true
 fallback_version = "0.0.0"
 local_scheme = "no-local-version"
 

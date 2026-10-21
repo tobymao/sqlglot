@@ -3808,8 +3808,12 @@ class Parser:
 
     def _parse_insert_table(self) -> exp.Expr | None:
         this = self._parse_table(schema=True, parse_partition=True)
-        if isinstance(this, exp.Table) and self._match(TokenType.ALIAS, advance=False):
-            this.set("alias", self._parse_table_alias())
+        if isinstance(this, exp.Table) and self._match(TokenType.ALIAS):
+            # The column list after the alias belongs to the INSERT: INSERT INTO t AS s (a, b)
+            alias = self._parse_id_var(any_token=True) or self._parse_string_as_identifier()
+            if alias:
+                this.set("alias", self.expression(exp.TableAlias(this=alias)))
+            return self._parse_schema(this=this)
         return this
 
     def _parse_kill(self) -> exp.Kill:

@@ -144,7 +144,6 @@ class TSQLGenerator(generator.Generator):
     RETURNING_END = False
     NVL2_SUPPORTED = False
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
-    ALTER_TABLE_ADD_COLUMNS_KEYWORD = None
     LIMIT_FETCH = "FETCH"
     COMPUTED_COLUMN_WITH_TYPE = False
     CTE_RECURSIVE_KEYWORD_REQUIRED = False
@@ -277,6 +276,14 @@ class TSQLGenerator(generator.Generator):
 
     def scope_resolution(self, rhs: str, scope_name: str) -> str:
         return f"{scope_name}::{rhs}"
+
+    def add_column_sql(self, expression: exp.Expr) -> str:
+        if isinstance(expression, exp.Schema):
+            # T-SQL adds several columns as a bare comma-separated list of
+            # column definitions; ALTER TABLE ... ADD (col, ...) does not
+            # parse, unlike in Snowflake
+            return f"ADD {self.expressions(expression)}"
+        return super().add_column_sql(expression)
 
     def select_sql(self, expression: exp.Select) -> str:
         self._prepare_limit_offset(expression)

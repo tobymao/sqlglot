@@ -370,6 +370,9 @@ class Generator:
     # Whether directed joins are supported
     DIRECTED_JOINS = False
 
+    # Whether top-k distance/similarity joins are supported
+    SUPPORTS_NEAREST_JOIN = False
+
     # Whether table hints should be generated
     TABLE_HINTS = True
 
@@ -2942,6 +2945,8 @@ class Generator:
         )
         match_cond = self.sql(expression, "match_condition")
         match_cond = f" MATCH_CONDITION ({match_cond})" if match_cond else ""
+        nearest = self.sql(expression, "nearest")
+        nearest = f" {nearest}" if nearest else ""
         on_sql = self.sql(expression, "on")
         using = expression.args.get("using")
 
@@ -2962,7 +2967,7 @@ class Generator:
                 on_sql = f"{space}USING ({on_sql})"
             else:
                 on_sql = f"{space}ON {on_sql}"
-        elif not op_sql:
+        elif not op_sql and not nearest:
             if isinstance(this, exp.Lateral) and this.args.get("cross_apply") is not None:
                 return f" {this_sql}"
 
@@ -2972,7 +2977,15 @@ class Generator:
             op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
 
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
-        return f"{self.seg(op_sql)} {this_sql}{match_cond}{on_sql}{pivots}"
+        return f"{self.seg(op_sql)} {this_sql}{match_cond}{nearest}{on_sql}{pivots}"
+
+    def nearest_sql(self, expression: exp.Nearest) -> str:
+        if not self.SUPPORTS_NEAREST_JOIN:
+            self.unsupported("NEAREST joins are not supported")
+
+        approximate = "APPROX " if expression.args.get("approximate") else ""
+        metric = "SIMILARITY" if expression.args.get("similarity") else "DISTANCE"
+        return f"{approximate}NEAREST {self.sql(expression, 'count')} BY {metric} {self.sql(expression, 'this')}"
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True) -> str:
         args = self.expressions(expression, flat=True)

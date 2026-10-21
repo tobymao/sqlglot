@@ -10,6 +10,70 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_nearest_join(self):
+        for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
+            for approximate in ("", "APPROX "):
+                for metric, function in (
+                    ("DISTANCE", "ARRAY_DISTANCE"),
+                    ("SIMILARITY", "ARRAY_COSINE_SIMILARITY"),
+                ):
+                    sql = (
+                        f"SELECT q.id, t.id FROM queries AS q {join} items AS t "
+                        f"{approximate}NEAREST 2 BY {metric} {function}(q.embedding, t.embedding)"
+                    )
+                    with self.subTest(sql=sql):
+                        expression = self.validate_identity(sql)
+                        nearest = expression.find(exp.Nearest)
+                        self.assertIsNotNone(nearest)
+                        self.assertEqual(nearest.args["count"], exp.Literal.number(2))
+                        self.assertEqual(nearest.args["approximate"], bool(approximate))
+                        self.assertEqual(nearest.args["similarity"], metric == "SIMILARITY")
+
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b APPROX NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
+            "JOIN c ON b.id = c.id WHERE a.id > 0 ORDER BY a.id"
+        )
+        self.validate_identity(
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
+            "JOIN c NEAREST 2 BY DISTANCE ABS(b.id - c.id)"
+        )
+        self.validate_identity(
+            "SELECT * FROM a LEFT JOIN (SELECT * FROM b WHERE id > 0) AS b "
+            "NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT * FROM a nearest JOIN b approx ON nearest.id = approx.id",
+            "SELECT * FROM a AS nearest JOIN b AS approx ON nearest.id = approx.id",
+        )
+        self.validate_identity(
+            'SELECT * FROM a JOIN b AS "nearest" NEAREST 1 BY DISTANCE ABS(a.id - "nearest".id)'
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT\n  a.id,\n  b.id\nFROM a\nLEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            pretty=True,
+        )
+        self.validate_all(
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            write={
+                "duckdb": "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+                "postgres": UnsupportedError,
+            },
+        )
+        for sql in (
+            "SELECT * FROM a JOIN b NEAREST 1 DISTANCE ABS(a.id - b.id)",
+            "SELECT * FROM a JOIN b NEAREST 1 BY ABS(a.id - b.id)",
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
+
     def test_lambda(self):
         for arrow, colon in (
             ("x -> x + 1", "LAMBDA x : x + 1"),

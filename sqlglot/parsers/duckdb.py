@@ -361,6 +361,55 @@ class DuckDBParser(parser.Parser):
 
         return table
 
+    def _parse_table_alias(
+        self, alias_tokens: Collection[TokenType] | None = None
+    ) -> exp.TableAlias | None:
+        if (
+            self._match_text_seq("NEAREST", advance=False)
+            and self._next.token_type == TokenType.NUMBER
+        ) or self._match_text_seq("APPROX", "NEAREST", advance=False):
+            return None
+
+        return super()._parse_table_alias(alias_tokens=alias_tokens)
+
+    def _parse_join(
+        self,
+        skip_join_token: bool = False,
+        parse_bracket: bool = False,
+        alias_tokens: Collection[TokenType] | None = None,
+    ) -> exp.Join | None:
+        join = super()._parse_join(
+            skip_join_token=skip_join_token,
+            parse_bracket=parse_bracket,
+            alias_tokens=alias_tokens,
+        )
+        if not join:
+            return join
+
+        approximate = self._match_text_seq("APPROX", "NEAREST")
+        if approximate or self._match_text_seq("NEAREST"):
+            count = self._parse_number()
+
+            if not self._match_text_seq("BY"):
+                self.raise_error("Expected BY after NEAREST count")
+            if not self._match_texts(("DISTANCE", "SIMILARITY")):
+                self.raise_error("Expected DISTANCE or SIMILARITY after BY")
+
+            similarity = self._prev.text.upper() == "SIMILARITY"
+            join.set(
+                "nearest",
+                self.expression(
+                    exp.Nearest(
+                        this=self._parse_disjunction(),
+                        count=count,
+                        approximate=approximate,
+                        similarity=similarity,
+                    )
+                ),
+            )
+
+        return join
+
     def _parse_table_sample(self, as_modifier: bool = False) -> exp.TableSample | None:
         # https://duckdb.org/docs/sql/samples.html
         sample = super()._parse_table_sample(as_modifier=as_modifier)

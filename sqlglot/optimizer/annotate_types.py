@@ -218,7 +218,8 @@ class TypeAnnotator:
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
         # Keep ordered output columns until a parent set operation consumes them. Source
-        # queries retain their results for subsequent column lookups; nodes stay alive by id.
+        # queries retain their results for subsequent column lookups. Retain each expression
+        # alongside its output columns to prevent cached IDs from being reused.
         self._query_column_types: dict[
             int, tuple[exp.Query, list[tuple[str, exp.DataType | exp.DType]]]
         ] = {}

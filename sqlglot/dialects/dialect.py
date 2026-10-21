@@ -61,7 +61,7 @@ DATETIME_ADD = (exp.DateAdd, exp.TimeAdd, exp.DatetimeAdd, exp.TsOrDsAdd, exp.Ti
 
 # JSON paths that need parentheses when used as the right operand of -> / ->>.
 # CONCAT may be generated as a chain of || operators, which would bind looser than the arrow
-WRAPPED_JSON_PATH_EXPRESSIONS = (exp.Binary, exp.Predicate, exp.Not, exp.Concat, exp.ConcatWs)
+WRAPPED_JSON_PATH_EXPRESSIONS = (exp.Binary, exp.Predicate, exp.Not, exp.Concat)
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import B, E, F, GeneratorArgs, ParserArgs, BuilderArgs

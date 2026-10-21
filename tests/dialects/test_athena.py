@@ -1,8 +1,6 @@
-from sqlglot import exp
-from sqlglot.dialects.athena import Athena
+from sqlglot import exp, parse
 from sqlglot.errors import ParseError, TokenError
 from sqlglot.optimizer.qualify import qualify
-from sqlglot.tokens import TokenType
 from tests.dialects.test_dialect import Validator
 
 
@@ -57,21 +55,16 @@ class TestAthena(Validator):
         with self.assertRaises(ParseError):
             self.parse_one(r"SELECT '\' +")
 
-    def test_tokenizer_routing(self):
-        tokenizer = Athena().tokenizer()
-
-        for sql in (
-            "MSCK REPAIR TABLE foo",
-            "msck repair table foo",
-            "SHOW PARTITIONS foo",
-            "DESCRIBE `foo`.`bar`",
-        ):
-            with self.subTest(sql):
-                self.assertEqual(tokenizer.tokenize(sql)[0].token_type, TokenType.HIVE_TOKEN_STREAM)
+    def test_hive_routing(self):
+        self.validate_identity("MSCK REPAIR TABLE foo", check_command_warning=True)
+        self.validate_identity(
+            "msck repair table foo", "MSCK REPAIR table foo", check_command_warning=True
+        )
+        self.validate_identity("DESCRIBE `foo`.`bar`")
 
         for sql in ("", "-- comment"):
             with self.subTest(sql):
-                self.assertEqual(tokenizer.tokenize(sql), [])
+                self.assertEqual(parse(sql, read=self.dialect), [None])
 
     def test_func_builder(self):
         args = (exp.Literal.string("-"), exp.column("a"), exp.column("b"))

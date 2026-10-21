@@ -3810,7 +3810,7 @@ class Parser:
         this = self._parse_table(schema=True, parse_partition=True)
         if isinstance(this, exp.Table) and self._match(TokenType.ALIAS):
             # The column list after the alias belongs to the INSERT: INSERT INTO t AS s (a, b)
-            alias = self._parse_id_var(any_token=True) or self._parse_string_as_identifier()
+            alias = self._parse_id_var()
             if alias:
                 this.set(
                     "alias",

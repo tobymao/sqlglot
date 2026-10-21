@@ -255,7 +255,8 @@ class TypeAnnotator:
                 stack.extend(node.iter_expressions())
             elif isinstance(node, (exp.SetOperation, exp.Subquery)):
                 # Consumed outputs must be rebuilt, even when input expressions stay annotated.
-                for child in node.iter_expressions():
+                # Widen the receiver so mypyc permits children of other expression types.
+                for child in t.cast(exp.Expr, node).iter_expressions():
                     operand = child.unnest()
                     if (
                         isinstance(operand, exp.SetOperation)

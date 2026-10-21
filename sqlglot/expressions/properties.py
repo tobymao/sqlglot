@@ -302,6 +302,10 @@ class MaterializedProperty(Property):
     arg_types = {"this": False}
 
 
+class MapProperty(Property):
+    arg_types = {"this": True, "colocate": False}
+
+
 class MergeBlockRatioProperty(Property):
     arg_types = {"this": False, "no": False, "default": False, "percent": False}
 

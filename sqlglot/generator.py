@@ -764,6 +764,7 @@ class Generator:
         exp.LogProperty: exp.Properties.Location.POST_NAME,
         exp.MaskingProperty: exp.Properties.Location.POST_CREATE,
         exp.MaterializedProperty: exp.Properties.Location.POST_CREATE,
+        exp.MapProperty: exp.Properties.Location.POST_NAME,
         exp.MergeBlockRatioProperty: exp.Properties.Location.POST_NAME,
         exp.ModuleProperty: exp.Properties.Location.POST_SCHEMA,
         exp.NetworkProperty: exp.Properties.Location.POST_CREATE,
@@ -2229,6 +2230,11 @@ class Generator:
         else:
             property = "OFF"
         return f"CHECKSUM={property}"
+
+    def mapproperty_sql(self, expression: exp.MapProperty) -> str:
+        colocate = self.sql(expression, "colocate")
+        colocate = f" COLOCATE USING {colocate}" if colocate else ""
+        return f"MAP={self.sql(expression, 'this')}{colocate}"
 
     def mergeblockratioproperty_sql(self, expression: exp.MergeBlockRatioProperty) -> str:
         if expression.args.get("no"):

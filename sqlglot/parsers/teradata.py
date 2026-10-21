@@ -95,6 +95,11 @@ class TeradataParser(parser.Parser):
             exp.LockingStatement(this=locking_property, expression=wrapped_query)
         )
 
+    PROPERTY_PARSERS = {
+        **parser.Parser.PROPERTY_PARSERS,
+        "MAP": lambda self: self._parse_map_property(),
+    }
+
     SET_PARSERS = {
         **parser.Parser.SET_PARSERS,
         "QUERY_BAND": lambda self: self._parse_query_band(),
@@ -160,6 +165,13 @@ class TeradataParser(parser.Parser):
                 sample.set("percent", exp.Literal.number(percent))
 
         return sample
+
+    # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Definition-Language-Syntax-and-Examples/Table-Statements/CREATE-TABLE-and-CREATE-TABLE-AS/CREATE-TABLE-Syntax
+    def _parse_map_property(self) -> exp.MapProperty:
+        self._match(TokenType.EQ)
+        this = self._parse_id_var()
+        colocate = self._parse_id_var() if self._match_text_seq("COLOCATE", "USING") else None
+        return self.expression(exp.MapProperty(this=this, colocate=colocate))
 
     def _parse_rangen(self):
         this = self._parse_id_var()

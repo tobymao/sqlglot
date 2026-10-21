@@ -165,6 +165,17 @@ class TestTeradata(Validator):
             "CREATE TABLE a, DUAL BEFORE JOURNAL, LOCAL AFTER JOURNAL, MAXIMUM DATABLOCKSIZE, BLOCKCOMPRESSION=AUTOTEMP(c1 INT) (a INT)"
         )
         self.validate_identity(
+            "CREATE TABLE a, NO FALLBACK, MAP = TD_MAP1, CHECKSUM = DEFAULT (a INT)",
+            "CREATE TABLE a, NO FALLBACK, MAP=TD_MAP1, CHECKSUM=DEFAULT (a INT)",
+        )
+        self.validate_all(
+            "CREATE TABLE a, MAP=TenAMP_Map COLOCATE USING c1 (a INT)",
+            write={
+                "teradata": "CREATE TABLE a, MAP=TenAMP_Map COLOCATE USING c1 (a INT)",
+                "duckdb": "CREATE TABLE a (a INT)",
+            },
+        )
+        self.validate_identity(
             "CREATE VOLATILE MULTISET TABLE a, NOT LOCAL AFTER JOURNAL, FREESPACE=1 PERCENT, DATABLOCKSIZE=10 BYTES, WITH NO CONCURRENT ISOLATED LOADING FOR ALL (a INT)"
         )
         self.validate_identity(

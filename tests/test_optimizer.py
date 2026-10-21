@@ -2842,6 +2842,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_annotate_expression_incomplete_row(self):
         for source_sql, typed_columns in (
             ("SELECT 1 AS x UNION ALL SELECT 2 AS x", 0),
+            ("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x", 0),
             ("SELECT 1 AS x, 2 AS y", 1),
             ("SELECT 1 AS x, unknown_function() AS y", 2),
         ):

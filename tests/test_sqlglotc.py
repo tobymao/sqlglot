@@ -13,6 +13,10 @@ from setuptools.command.build_ext import build_ext
 class TestSQLGlotC(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        version = mock.patch.dict(os.environ, {"SETUPTOOLS_SCM_PRETEND_VERSION": "0.0.0"})
+        version.start()
+        cls.addClassCleanup(version.stop)
+
         with (
             mock.patch("setuptools.setup"),
             mock.patch.dict(sys.modules, {"mypyc.build": mock.Mock(mypycify=lambda *a, **k: [])}),

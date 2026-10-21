@@ -505,7 +505,14 @@ class PostgresGenerator(generator.Generator):
         return f"({sql})" if len(expressions) > 1 else sql
 
     def alterset_sql(self, expression: exp.AlterSet) -> str:
-        exprs = self.expressions(expression, flat=True)
+        # A Properties node renders as WITH (...) but ALTER TABLE ... SET wants
+        # the bare parameter list: SET (fillfactor = 5)
+        expressions = [
+            e2
+            for e in expression.expressions
+            for e2 in (e.expressions if isinstance(e, exp.Properties) else [e])
+        ]
+        exprs = ", ".join(self.sql(e) for e in expressions)
         exprs = f"({exprs})" if exprs else ""
 
         access_method = self.sql(expression, "access_method")

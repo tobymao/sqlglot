@@ -1413,6 +1413,10 @@ FROM json_data, field_ids""",
         self.validate_identity("ALTER TABLE t1 SET ACCESS METHOD method")
         self.validate_identity("ALTER TABLE t1 SET TABLESPACE tablespace")
         self.validate_identity("ALTER TABLE t1 SET (fillfactor = 5, autovacuum_enabled = TRUE)")
+        self.assertEqual(
+            self.parse_one("ALTER TABLE t1 SET fillfactor = 5").sql(dialect="postgres"),
+            "ALTER TABLE t1 SET (fillfactor=5)",
+        )
         self.validate_identity(
             "INSERT INTO book (isbn, title) VALUES ($1, $2) ON CONFLICT(isbn) WHERE deleted_at IS NULL DO UPDATE SET title = EXCLUDED.title RETURNING id, isbn"
         )

@@ -65,17 +65,22 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if (
-            not table_name
-            and column_name not in self.all_columns
-            and column_name not in self.select_aliases
-        ):
-            source_columns = (
-                self._get_available_source_columns(join_context)
-                if join_context is not None
-                else self._get_all_source_columns()
-            )
-            table_name = self._get_unknown_tvf_table(source_columns)
+        if not table_name and column_name not in self.all_columns:
+            # Skip back-projection for alias refs — _expand_alias_refs handles them.
+            if not (
+                isinstance(column, exp.Column)
+                and column_name in self.select_aliases
+                and not (
+                    isinstance(column.parent, exp.Alias) and column.parent.alias == column_name
+                )
+            ):
+                source_columns = (
+                    self._get_available_source_columns(join_context)
+                    if join_context is not None
+                    else self._get_all_source_columns()
+                )
+                table_name = self._get_unknown_tvf_table(source_columns)
+
         if not table_name:
             return None
 
@@ -113,6 +118,7 @@ class Resolver:
             if columns and "*" not in columns:
                 continue
             source = self.scope.sources.get(name)
+            # Non-TVF tables are expected to have schemas supplied, so only functions can be unknown
             if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
                 unknown_tvf_names.append(name)
 

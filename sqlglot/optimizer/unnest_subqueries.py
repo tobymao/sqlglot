@@ -159,8 +159,13 @@ def unnest(select, parent_select, next_alias_name):
                 .from_(select.subquery("_q", copy=False), copy=False)
                 .group_by(exp.column(value.alias, "_q"), copy=False)
             )
-    elif not find_in_scope(value.this, exp.AggFunc):
-        select = select.group_by(value.this, copy=False)
+    elif select.args.get("from_") and (
+        not isinstance(value.this, exp.Expression) or not find_in_scope(value.this, exp.AggFunc)
+    ):
+        group_key = value.this
+        if isinstance(group_key, exp.Expression) and group_key.is_int:
+            group_key = group_key + exp.Literal.number(0)
+        select = select.group_by(group_key, copy=False)
 
     parent_select.join(
         select,

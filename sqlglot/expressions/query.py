@@ -699,8 +699,9 @@ class Join(Expression):
         "method": False,
         "global_": False,
         "hint": False,
-        "match_condition": False,  # Snowflake
-        "directed": False,  # Snowflake
+        "match_condition": False,
+        "nearest": False,
+        "directed": False,
         "expressions": False,
         "pivots": False,
     }
@@ -815,6 +816,10 @@ class Join(Expression):
             join.set("kind", None)
 
         return join
+
+
+class Nearest(Expression):
+    arg_types = {"this": True, "count": True, "approximate": False, "similarity": False}
 
 
 class Lateral(Expression, UDTF):

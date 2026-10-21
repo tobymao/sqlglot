@@ -1567,6 +1567,7 @@ class DuckDBGenerator(generator.Generator):
     TABLE_HINTS = False
     QUERY_HINTS = False
     LIMIT_FETCH = "LIMIT"
+    SUPPORTS_NEAREST_JOIN = True
     STRUCT_DELIMITER = ("(", ")")
     RENAME_TABLE_WITH_DB = False
     NVL2_SUPPORTED = False
@@ -3164,6 +3165,7 @@ class DuckDBGenerator(generator.Generator):
         if (
             not expression.args.get("using")
             and not expression.args.get("on")
+            and not expression.args.get("nearest")
             and not expression.method
             and (expression.kind in ("", "INNER", "OUTER"))
         ):

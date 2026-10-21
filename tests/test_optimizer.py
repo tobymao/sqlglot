@@ -1859,6 +1859,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     optimizer.optimize_joins.reorder_joins(expression.copy()), expression
                 )
 
+    def test_nearest_joins(self):
+        for sql in (
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
+            "JOIN c ON a.id = c.id AND b.id = c.id WHERE b.id > 1",
+            "SELECT a.id, b.id FROM a JOIN (SELECT id FROM b WHERE id > 1) AS b "
+            "NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT a.id FROM a JOIN (SELECT 1 AS id) AS b NEAREST 1 BY DISTANCE ABS(a.id)",
+            "SELECT a.id, b.id FROM (SELECT id FROM a WHERE id > 1) AS a "
+            "JOIN b APPROX NEAREST 2 BY SIMILARITY a.id * b.id WHERE b.id > 1",
+        ):
+            for rule in (
+                optimizer.optimize_joins.optimize_joins,
+                optimizer.pushdown_predicates.pushdown_predicates,
+                optimizer.eliminate_joins.eliminate_joins,
+                optimizer.merge_subqueries.merge_subqueries,
+            ):
+                with self.subTest(sql=sql, rule=rule.__name__):
+                    expression = parse_one(sql, dialect="duckdb")
+                    self.assertEqual(rule(expression.copy()), expression)
+
     def test_eliminate_joins(self):
         self.check_file(
             "eliminate_joins",

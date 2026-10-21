@@ -47,6 +47,10 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
             select = scope.expression
             where: exp.Expr | None = select.args.get("where")
             joins: list[exp.Join] = select.args.get("joins") or []
+
+            if any(join.args.get("nearest") for join in joins):
+                continue
+
             if where:
                 selected_sources: Sources = scope.selected_sources
                 join_index = {join.alias_or_name: i for i, join in enumerate(joins)}

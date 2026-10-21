@@ -565,7 +565,6 @@ class SnowflakeGenerator(generator.Generator):
         exp.StarMap: rename_func("OBJECT_CONSTRUCT"),
         exp.StartsWith: rename_func("STARTSWITH"),
         exp.EndsWith: rename_func("ENDSWITH"),
-        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.StrPosition: lambda self, e: strposition_sql(
             self, e, func_name="CHARINDEX", supports_position=True
         ),
@@ -1116,6 +1115,16 @@ class SnowflakeGenerator(generator.Generator):
             expression.set("part_index", exp.Literal.number(1))
 
         return rename_func("SPLIT_PART")(self, expression)
+
+    def rand_sql(self, expression: exp.Rand) -> str:
+        if expression.args.get("is_integer"):
+            lower = expression.args.get("lower")
+            upper = expression.args.get("upper")
+            if not (lower and lower.is_int and upper and upper.is_int):
+                self.unsupported("Transpiling Teradata RANDOM requires integer literal bounds")
+            return self.func("UNIFORM", lower, upper, exp.Rand(this=expression.this))
+
+        return self.func("RANDOM", expression.this)
 
     def uniform_sql(self, expression: exp.Uniform) -> str:
         gen = expression.args.get("gen")

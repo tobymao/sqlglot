@@ -113,7 +113,9 @@ class TeradataParser(parser.Parser):
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
         "CARDINALITY": exp.ArraySize.from_arg_list,
-        "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+        "RANDOM": lambda args: exp.Rand(
+            lower=seq_get(args, 0), upper=seq_get(args, 1), is_integer=True
+        ),
     }
 
     EXPONENT = {

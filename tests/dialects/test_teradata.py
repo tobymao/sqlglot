@@ -5,6 +5,41 @@ from tests.dialects.test_dialect import Validator
 class TestTeradata(Validator):
     dialect = "teradata"
 
+    def test_random_snowflake(self):
+        for lower, upper in (
+            (1, 100),
+            (-100, -1),
+            (-10, 10),
+            (0, 0),
+            (7, 7),
+            (-2147483648, 2147483647),
+        ):
+            with self.subTest(lower=lower, upper=upper):
+                sql = f"SELECT RANDOM({lower}, {upper})"
+                self.validate_all(
+                    sql,
+                    write={
+                        "teradata": sql,
+                        "snowflake": f"SELECT UNIFORM({lower}, {upper}, RANDOM())",
+                    },
+                )
+                self.assertEqual(
+                    self.parse_one(sql).sql("snowflake", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT UNIFORM({lower}, {upper}, RANDOM())",
+                )
+
+        for sql in ("RANDOM(lo, hi)", "RANDOM(1, hi)", "RANDOM(1.5, 2.5)"):
+            with self.subTest(sql=sql):
+                with self.assertRaises(UnsupportedError):
+                    self.parse_one(sql).sql("snowflake", unsupported_level=ErrorLevel.RAISE)
+
+        with self.assertLogs("sqlglot", level="WARNING") as logs:
+            self.assertEqual(
+                self.parse_one("RANDOM(lo, hi)").sql("snowflake"),
+                "UNIFORM(lo, hi, RANDOM())",
+            )
+        self.assertIn("requires integer literal bounds", logs.output[0])
+
     def test_teradata(self):
         self.validate_all(
             "RANDOM(l, u)",

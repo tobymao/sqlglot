@@ -412,6 +412,9 @@ class TestSnowflake(Validator):
                 "duckdb": "SELECT CAST(-9.223372036854776E+18 + RANDOM() * (9.223372036854776e+18 - -9.223372036854776E+18) AS BIGINT)",
             },
         )
+        self.validate_identity("SELECT RANDOM(0)")
+        self.validate_identity("SELECT RANDOM(-42)")
+        self.validate_identity("SELECT UNIFORM(1, 100, RANDOM(42))")
         self.validate_identity("SELECT RANDSTR(123, 456)")
         self.validate_identity("SELECT RANDSTR(123, RANDOM())")
         self.validate_identity("SELECT NORMAL(0, 1, RANDOM())")

@@ -491,8 +491,10 @@ class Normal(Expression, Func):
 
 
 class Rand(Expression, Func):
+    """A random number, with inclusive integer bounds when is_integer is set."""
+
     _sql_names = ["RAND", "RANDOM"]
-    arg_types = {"this": False, "lower": False, "upper": False}
+    arg_types = {"this": False, "lower": False, "upper": False, "is_integer": False}
 
 
 class Randn(Expression, Func):

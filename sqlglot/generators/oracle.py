@@ -145,9 +145,6 @@ class OracleGenerator(generator.Generator):
     def offset_sql(self, expression: exp.Offset) -> str:
         return f"{super().offset_sql(expression)} ROWS"
 
-    def add_column_sql(self, expression: exp.Expr) -> str:
-        return f"ADD {self.sql(expression)}"
-
     def queryoption_sql(self, expression: exp.QueryOption) -> str:
         option = self.sql(expression, "this")
         value = self.sql(expression, "expression")

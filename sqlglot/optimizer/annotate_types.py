@@ -217,11 +217,10 @@ class TypeAnnotator:
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
-        # Maps a SetOperation's id to itself and its projection types, keeping the node alive.
-        # Selecting from the same source multiple times would otherwise reprocess its subtree
-        # to coerce the types of its operands' projections
+        # Keep ordered output columns until a parent set operation consumes them. Source
+        # queries retain their results for subsequent column lookups; nodes stay alive by id.
         self._setop_column_types: dict[
-            int, tuple[exp.SetOperation, dict[str, exp.DataType | exp.DType]]
+            int, tuple[exp.SetOperation, list[tuple[str, exp.DataType | exp.DType]]]
         ] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
@@ -385,10 +384,7 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if isinstance(expression, exp.SetOperation) and (
-            expression.args.get("by_name")
-            or len(expression.this.selects) == len(expression.expression.selects)
-        ):
+        if isinstance(expression, exp.SetOperation):
             return self._get_setop_column_types(expression)
 
         if isinstance(expression, exp.Selectable):
@@ -524,6 +520,9 @@ class TypeAnnotator:
                     expr.meta["nonnull"] = True
                 continue
 
+            if isinstance(expr, exp.SetOperation):
+                self._annotate_set_operation(expr)
+
             spec = self.expression_metadata.get(expr.__class__)
 
             if spec and (annotator := spec.get("annotator")):
@@ -642,73 +641,55 @@ class TypeAnnotator:
     def _get_setop_column_types(
         self, setop: exp.SetOperation
     ) -> dict[str, exp.DataType | exp.DType]:
-        """
-        Computes and returns the coerced column types for a SetOperation.
+        cached = self._setop_column_types.get(id(setop))
+        return dict(cached[1]) if cached else {}
 
-        This handles UNION, INTERSECT, EXCEPT, etc., coercing types across
-        left and right operands for all projections/columns.
-
-        Args:
-            setop: The SetOperation expression to analyze
-
-        Returns:
-            Dictionary mapping column names to their coerced types
-        """
-        setop_id = id(setop)
-        if cached := self._setop_column_types.get(setop_id):
-            return cached[1]
-
-        col_types: dict[str, exp.DataType | exp.DType] = {}
-
-        # Validate that left and right have same number of projections (BY NAME
-        # operations match columns by name, so their counts are allowed to differ)
-        if not (
-            isinstance(setop, exp.SetOperation)
-            and setop.this.selects
-            and setop.expression.selects
-            and (
-                setop.args.get("by_name")
-                or len(setop.this.selects) == len(setop.expression.selects)
-            )
-        ):
-            return col_types
-
-        # Process a chain / sub-tree of set operations
-        for set_op in setop.walk(
-            prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
-        ):
-            if not isinstance(set_op, exp.SetOperation):
-                continue
-
-            if set_op.args.get("by_name"):
-                # Columns missing from one side are filled with NULLs, so the other
-                # side's type is preserved (NULL is the identity for _maybe_coerce)
-                r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
-                setop_cols = {
-                    s.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, s.type),
-                        r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
-                    )
-                    for s in set_op.this.selects
-                }
-                for name, r_type in r_type_by_select.items():
-                    setop_cols[name] = r_type or exp.DType.UNKNOWN
+    def _annotate_set_operation(self, expression: exp.SetOperation) -> None:
+        # The expression annotation pass visits children first, including when a scope is
+        # annotated independently. Preserve duplicate names until positional matching is done.
+        operands: list[list[tuple[str, exp.DataType | exp.DType]]] = []
+        for operand in (expression.this.unnest(), expression.expression.unnest()):
+            if isinstance(operand, exp.SetOperation):
+                cached = self._setop_column_types.pop(id(operand), None)
+                operands.append(cached[1] if cached else [])
             else:
-                setop_cols = {
-                    ls.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
-                    )
-                    for ls, rs in zip(set_op.this.selects, set_op.expression.selects)
-                }
-
-            # Coerce intermediate results with the previously registered types, if they exist
-            for col_name, col_type in setop_cols.items():
-                col_types[col_name] = self._maybe_coerce(
-                    col_type, col_types.get(col_name, exp.DType.NULL)
+                operands.append(
+                    [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in operand.selects]
                 )
+        left, right = operands
 
-        self._setop_column_types[setop_id] = (setop, col_types)
-        return col_types
+        columns: list[tuple[str, exp.DataType | exp.DType]] = []
+        if left and right:
+            if expression.args.get("by_name"):
+                left_types = dict(left)
+                right_types = dict(right)
+                if on := expression.args.get("on"):
+                    names = [column.name for column in on]
+                elif expression.kind == "INNER":
+                    names = [name for name in left_types if name in right_types]
+                elif expression.side == "LEFT":
+                    names = list(left_types)
+                else:
+                    names = list({**left_types, **right_types})
+
+                # Missing columns are NULL-filled, preserving the other operand's type.
+                columns = [
+                    (
+                        name,
+                        self._maybe_coerce(
+                            left_types.get(name, exp.DType.NULL),
+                            right_types.get(name, exp.DType.NULL),
+                        ),
+                    )
+                    for name in names
+                ]
+            elif len(left) == len(right):
+                columns = [
+                    (name, self._maybe_coerce(left_type, right_type))
+                    for (name, left_type), (_, right_type) in zip(left, right)
+                ]
+
+        self._setop_column_types[id(expression)] = (expression, columns)
 
     def _get_unpivot_column_types(
         self, pivot: exp.Pivot, src_types: dict[str, exp.DataType | exp.DType]

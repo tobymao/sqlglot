@@ -3368,6 +3368,53 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         select_type = expression.selects[0].type
         self.assertTrue(select_type.is_type(exp.DataType.build("VARCHAR", dialect="bigquery")))
 
+    def test_set_operation_annotation(self):
+        for operator in ("UNION ALL", "INTERSECT", "EXCEPT"):
+            for annotate_scopes in (True, False):
+                with self.subTest(operator=operator, annotate_scopes=annotate_scopes):
+                    expression = parse_one(
+                        f"SELECT t.a FROM (SELECT 1 AS a {operator} "
+                        f"(SELECT 2 AS b {operator} SELECT CAST(2.5 AS DOUBLE) AS c)) AS t"
+                    )
+                    annotator = TypeAnnotator(MappingSchema())
+                    scopes = traverse_scope(expression)
+                    if annotate_scopes:
+                        for scope in scopes[:-1]:
+                            annotator.annotate_scope(scope)
+                    annotator.annotate_scope(scopes[-1])
+                    self.assertTrue(expression.selects[0].is_type(exp.DType.DOUBLE))
+
+        # Duplicate projection names must remain distinct until positional matching finishes.
+        expression = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL "
+                "(SELECT 3 AS c, 4 AS c UNION ALL SELECT 5, CAST(6.5 AS DOUBLE))) AS t"
+            )
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+
+        expression = parse_one(
+            "ARRAY(SELECT 1 AS a UNION ALL "
+            "(SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS FLOAT64) AS c))",
+            dialect="bigquery",
+        )
+        annotator = TypeAnnotator(MappingSchema(dialect="bigquery"))
+        for annotate_scope in (True, False):
+            with self.subTest(annotate_scope=annotate_scope):
+                annotator.clear()
+                annotator.annotate(expression, annotate_scope=annotate_scope)
+                self.assertTrue(expression.is_type("ARRAY<DOUBLE>"))
+
+        # A shared CTE's resolved output remains available to each source reference.
+        expression = annotate_types(
+            parse_one(
+                "WITH t AS (SELECT 1 AS a UNION ALL "
+                "(SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS DOUBLE) AS c)) "
+                "SELECT x.a, y.a FROM t AS x CROSS JOIN t AS y"
+            )
+        )
+        self.assertTrue(all(s.is_type(exp.DType.DOUBLE) for s in expression.selects))
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
@@ -3456,6 +3503,55 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             SELECT col FROM t;
         """
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # A parenthesized set operation is typed from all of its operands rather than just its
+        # first query, and a BY NAME operand only outputs the columns its LEFT, INNER or ON
+        # modifiers keep; a column-count mismatch anywhere makes the result unknown
+        for sql, expected_types in (
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 2.5::DOUBLE AS c)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a, t.d FROM (SELECT 1 AS a, 2 AS d UNION ALL (SELECT 3 AS d, 4 AS a UNION ALL BY NAME SELECT 5::BIGINT AS a, 6.5 AS d)) AS t",
+                ["DOUBLE", "BIGINT"],
+            ),
+            (
+                "SELECT t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL (SELECT 3 AS a UNION BY NAME SELECT 4.5 AS b)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a LEFT UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c INNER UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c FULL UNION ALL BY NAME ON (a) SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 3, 4)) AS t",
+                ["UNKNOWN"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertEqual([s.type.sql() for s in expression.selects], expected_types)
+
+        # ON controls output order as well as which names are retained.
+        expression = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 's' AS b UNION ALL "
+                "(SELECT 'x' AS b, 2.5 AS a UNION ALL BY NAME ON (a, b) "
+                "SELECT 3.5 AS a, 'y' AS b)) AS t",
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["DOUBLE", "VARCHAR"])
 
         # BigQuery: STRING coerces to temporal types in UNION
         for left, right, expected_type in (

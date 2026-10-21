@@ -1570,6 +1570,7 @@ WHERE
                 "tsql": "ALTER TABLE a ADD b INTEGER, c INTEGER",
             },
         )
+        self.validate_identity("ALTER TABLE a ADD (b INTEGER, c VARCHAR(5))")
         self.validate_all(
             "ALTER TABLE a ALTER COLUMN b INTEGER",
             read={

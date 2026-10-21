@@ -370,6 +370,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
+    ALTER_TABLE_ADD_COLUMNS_KEYWORD = None
     BYTE_STRING_FUNCTION = "HEX_DECODE_BINARY"
     SELECT_KINDS: tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"

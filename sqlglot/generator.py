@@ -417,6 +417,11 @@ class Generator:
     # Whether the word COLUMN is included when adding a column with ALTER TABLE
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = True
 
+    # The keyword emitted between ADD and a parenthesized column list in
+    # ALTER TABLE ... ADD (col, ...): COLUMNS for Hive-style dialects, empty
+    # where the parenthesized list follows ADD directly (Snowflake, T-SQL)
+    ALTER_TABLE_ADD_COLUMNS_KEYWORD: str | None = "COLUMNS"
+
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
 
@@ -4510,7 +4515,8 @@ class Generator:
     def add_column_sql(self, expression: exp.Expr) -> str:
         sql = self.sql(expression)
         if isinstance(expression, exp.Schema):
-            column_text = " COLUMNS"
+            keyword = self.ALTER_TABLE_ADD_COLUMNS_KEYWORD
+            column_text = f" {keyword}" if keyword else ""
         elif isinstance(expression, exp.ColumnDef) and self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
             column_text = " COLUMN"
         else:

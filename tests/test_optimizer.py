@@ -3701,6 +3701,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for func in exp.ALL_FUNCTIONS:
             self.assertIsInstance(optimizer.simplify.gen(func()), str)
 
+        self.assertEqual(
+            optimizer.simplify.gen(parse_one("SELECT a.$1 FROM t AS a", dialect="snowflake")),
+            "SELECT :expressions,a.PARAMETER :this,1,:from_,FROM t AS a",
+        )
+
     def test_gen_bracket(self):
         for sql, expected in (
             ("a[i]", "a[i]"),

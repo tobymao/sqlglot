@@ -4142,6 +4142,18 @@ FROM subquery2""",
             write={"sqlite": "SELECT 1 AS x, 2 AS x UNION SELECT 3, 4 INTERSECT SELECT 1, 2"},
         )
 
+        # Each left-to-right UNION -> INTERSECT step nests another grouping
+        expected = "SELECT 1"
+        for _ in range(200):
+            expected = f"({expected} UNION SELECT 1) INTERSECT SELECT 1"
+        expression = parse_one("SELECT 1" + " UNION SELECT 1 INTERSECT SELECT 1" * 200, read="hive")
+        self.assertEqual(expression.sql("postgres"), expected)
+
+        # A missing operand from tolerant parsing renders as empty, not as a closing paren
+        self.assertEqual(
+            parse_one("SELECT 1 UNION", error_level=ErrorLevel.IGNORE).sql(), "SELECT 1 UNION"
+        )
+
     def test_normalize(self):
         for form in ("", ", nfkc"):
             with self.subTest(f"Testing NORMALIZE('str'{form}) roundtrip"):

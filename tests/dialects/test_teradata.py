@@ -28,7 +28,14 @@ class TestTeradata(Validator):
                     f"SELECT UNIFORM({lower}, {upper}, RANDOM())",
                 )
 
-        for sql in ("RANDOM(lo, hi)", "RANDOM(1, hi)", "RANDOM(1.5, 2.5)"):
+        for sql in (
+            "RANDOM(lo, hi)",
+            "RANDOM(1, hi)",
+            "RANDOM(1.5, 2.5)",
+            "RANDOM(NULL, 10)",
+            "RANDOM(1)",
+            "RANDOM()",
+        ):
             with self.subTest(sql=sql):
                 with self.assertRaises(UnsupportedError):
                     self.parse_one(sql).sql("snowflake", unsupported_level=ErrorLevel.RAISE)

@@ -414,6 +414,8 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SELECT RANDOM(0)")
         self.validate_identity("SELECT RANDOM(-42)")
+        self.validate_identity("SELECT RANDOM(seed) FROM t")
+        self.validate_identity("SELECT RANDOM(:seed)")
         self.validate_identity("SELECT UNIFORM(1, 100, RANDOM(42))")
         self.validate_identity("SELECT RANDSTR(123, 456)")
         self.validate_identity("SELECT RANDSTR(123, RANDOM())")

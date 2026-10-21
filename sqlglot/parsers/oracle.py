@@ -28,6 +28,18 @@ class OracleParser(parser.Parser):
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
     SUPPORTS_PARTITION_SELECTION = True
 
+    ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS | {
+        TokenType.MATCH_RECOGNIZE,
+        TokenType.TABLE_SAMPLE,
+    }
+    ALIAS_TOKENS = ID_VAR_TOKENS
+
+    # These clauses can't follow GROUP BY, so e.g. `GROUP BY sample` refers to a column
+    QUERY_MODIFIER_TOKENS = parser.Parser.QUERY_MODIFIER_TOKENS - {
+        TokenType.MATCH_RECOGNIZE,
+        TokenType.TABLE_SAMPLE,
+    }
+
     VERSION_PHRASES = {
         **parser.Parser.VERSION_PHRASES,
         ("AS", "OF", "SCN"): "SCN",

@@ -18,6 +18,7 @@ class TestDuckDB(Validator):
             old_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {arrow})"
             new_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {colon})"
             with self.subTest(arrow=arrow):
+                self.assertEqual(self.parse_one(old_sql), self.parse_one(new_sql))
                 self.validate_all(
                     new_sql,
                     read={"duckdb": old_sql},

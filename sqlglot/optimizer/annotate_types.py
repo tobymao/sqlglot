@@ -241,13 +241,27 @@ class TypeAnnotator:
         """
         Evicts `expression` (or its subtree, if `deep`) from the annotation caches. Call this
         before mutating an already-annotated tree so a subsequent pass recomputes its types.
+        Shallow invalidation also rebuilds consumed set-operation outputs.
         """
-        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
-        for node in nodes:
+        stack = [expression]
+        while stack:
+            node = stack.pop()
             node_id = id(node)
             self._visited.pop(node_id, None)
             self._null_expressions.pop(node_id, None)
             self._setop_column_types.pop(node_id, None)
+
+            if deep:
+                stack.extend(node.iter_expressions())
+            elif isinstance(node, (exp.SetOperation, exp.Subquery)):
+                # Consumed outputs must be rebuilt, even when input expressions stay annotated.
+                for child in node.iter_expressions():
+                    operand = child.unnest()
+                    if (
+                        isinstance(operand, exp.SetOperation)
+                        and id(operand) not in self._setop_column_types
+                    ):
+                        stack.append(child)
 
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
@@ -349,6 +363,15 @@ class TypeAnnotator:
 
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
+
+        if source.is_cte:
+            # Recursive references can point to an unfinished UNION. Use its nearest resolved
+            # anchor prefix until the recursive branches have been annotated.
+            while (
+                isinstance(expression, exp.SetOperation)
+                and id(expression) not in self._setop_column_types
+            ):
+                expression = expression.this.unnest()
 
         if isinstance(expression, exp.UDTF):
             values = []

@@ -3415,6 +3415,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertTrue(all(s.is_type(exp.DType.DOUBLE) for s in expression.selects))
 
+    def test_set_operation_shallow_reannotation(self):
+        for sql in (
+            "SELECT 1 AS a UNION ALL SELECT CAST(2.5 AS DOUBLE) AS a UNION ALL SELECT 3 AS a",
+            "SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS DOUBLE) AS c)",
+            "((SELECT 1 AS a UNION ALL SELECT 2 AS b)) UNION ALL "
+            "((SELECT 3 AS c UNION ALL SELECT CAST(4.5 AS DOUBLE) AS d))",
+            "SELECT 1 AS a UNION ALL BY NAME SELECT 2 AS b UNION ALL BY NAME SELECT 3 AS c",
+        ):
+            for annotate_scope in (True, False):
+                with self.subTest(sql=sql, annotate_scope=annotate_scope):
+                    expression = parse_one(sql)
+                    annotator = TypeAnnotator(MappingSchema())
+                    annotator.annotate(expression, annotate_scope=annotate_scope)
+                    expected = annotator._get_setop_column_types(expression)
+                    self.assertTrue(expected)
+
+                    for _ in range(2):
+                        annotator.uncache(expression, deep=False)
+                        annotator.annotate(expression, annotate_scope=annotate_scope)
+                        self.assertEqual(annotator._get_setop_column_types(expression), expected)
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
@@ -3622,6 +3643,43 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         scope_t, scope_y = build_scope(query).cte_scopes
         self.assertEqual(set(scope_t.cte_sources), {"t"})
         self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
+
+    def test_recursive_cte_annotation(self):
+        for anchor, expected in (
+            ("SELECT 1 AS n", exp.DType.INT),
+            (
+                "SELECT 1 AS n UNION ALL SELECT CAST(2.5 AS DOUBLE) AS n",
+                exp.DType.DOUBLE,
+            ),
+            ("SELECT 1 AS n UNION ALL SELECT 2 AS n, 3 AS m", exp.DType.UNKNOWN),
+        ):
+            sql = (
+                f"WITH RECURSIVE t AS ({anchor} "
+                "UNION ALL SELECT t.n AS n FROM t WHERE FALSE "
+                "UNION ALL SELECT t.n AS n FROM t WHERE FALSE) SELECT t.n FROM t"
+            )
+            for qualified in (True, False):
+                with self.subTest(sql=sql, qualified=qualified):
+                    expression = parse_one(sql)
+                    if qualified:
+                        expression = qualify(expression)
+                    annotate_types(expression)
+                    # Both recursive branches must see the resolved anchor's output.
+                    for column in expression.find_all(exp.Column):
+                        self.assertTrue(column.is_type(expected), column.sql())
+
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "WITH RECURSIVE t(n) AS ("
+                    "SELECT 1 AS seed UNION ALL SELECT CAST(2.5 AS DOUBLE) AS widened "
+                    "UNION ALL SELECT t.n AS other FROM t WHERE FALSE "
+                    "UNION ALL SELECT t.n AS other FROM t WHERE FALSE) SELECT t.n FROM t"
+                )
+            )
+        )
+        for column in expression.find_all(exp.Column):
+            self.assertTrue(column.is_type(exp.DType.DOUBLE), column.sql())
 
     def test_pushdown_projections_keeps_positionally_aliased_columns(self):
         # A column list on a derived table, CTE or LATERAL names the source's columns by

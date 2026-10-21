@@ -2551,9 +2551,6 @@ class DuckDBGenerator(generator.Generator):
         initial_value = expression.args.get("initial")
         merge_lambda = expression.args.get("merge")
 
-        if merge_lambda:
-            merge_lambda.set("colon", True)
-
         return self.func("list_reduce", array_arg, merge_lambda, initial_value)
 
     def zipf_sql(self, expression: exp.Zipf) -> str:
@@ -2678,7 +2675,7 @@ class DuckDBGenerator(generator.Generator):
         return self._greatest_least_sql(expression)
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True) -> str:
-        if expression.args.get("colon"):
+        if self.dialect.version >= (1, 3):
             prefix = "LAMBDA "
             arrow_sep = ":"
             wrap = False

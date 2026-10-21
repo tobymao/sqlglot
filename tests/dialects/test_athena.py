@@ -1,6 +1,9 @@
-from sqlglot import exp
+from unittest.mock import patch
+
+from sqlglot import exp, parse
 from sqlglot.errors import ParseError, TokenError
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.tokens import Tokenizer
 from tests.dialects.test_dialect import Validator
 
 
@@ -41,6 +44,46 @@ class TestAthena(Validator):
             '/* leading comment */ SELECT * FROM "foo"',
             identify=True,
         )
+        self.validate_identity("MSCK REPAIR TABLE foo", check_command_warning=True)
+        self.validate_identity(
+            "msck repair table foo", "MSCK REPAIR table foo", check_command_warning=True
+        )
+
+        for sql in ("", "-- comment"):
+            with self.subTest(sql):
+                self.assertEqual(parse(sql, read=self.dialect), [None])
+
+    def test_tokenize_dml_once(self):
+        for sql in (
+            "SELECT 1",
+            "/* leading comment */ SELECT 1",
+            "WITH t AS (SELECT 1) SELECT * FROM t",
+            "INSERT INTO foo (id) VALUES (1)",
+            "UPDATE foo SET id = 3 WHERE id = 7",
+            "DELETE FROM foo WHERE id > 10",
+        ):
+            with (
+                self.subTest(sql),
+                patch.object(
+                    Tokenizer, "tokenize", autospec=True, side_effect=Tokenizer.tokenize
+                ) as tokenize,
+            ):
+                self.parse_one(sql)
+                tokenize.assert_called_once()
+
+    def test_tokenize_trino_fallback(self):
+        for sql in (
+            r"CREATE TABLE t AS SELECT '\' AS x",
+            r"CREATE VIEW v AS SELECT '\' AS x",
+        ):
+            with (
+                self.subTest(sql),
+                patch.object(
+                    Tokenizer, "tokenize", autospec=True, side_effect=Tokenizer.tokenize
+                ) as tokenize,
+            ):
+                self.validate_identity(sql)
+                self.assertEqual(tokenize.call_count, 2)
 
     def test_tokenizer_errors(self):
         for sql in (

@@ -75,31 +75,54 @@ class Athena(Trino):
             self._trino_tokenizer = _TrinoTokenizer(Trino())
 
         def tokenize(self, sql: str) -> list[Token]:
+            # DML only needs Trino's tokenizer; possible Hive statements need disambiguation.
+            try:
+                trino_tokens: list[Token] | None = self._trino_tokenizer.tokenize(sql)
+            except TokenError:
+                trino_tokens = None
+
+            if trino_tokens is not None and not _may_be_hive(trino_tokens):
+                return trino_tokens
+
             try:
                 tokens = super().tokenize(sql)
             except TokenError:
                 # Combined rules can reject literals valid in only one engine.
-                for tokenizer, hive in (
-                    (self._trino_tokenizer, False),
-                    (self._hive_tokenizer, True),
-                ):
-                    try:
-                        tokens = tokenizer.tokenize(sql)
-                    except TokenError:
-                        continue
+                if trino_tokens is not None and not _tokenize_as_hive(trino_tokens):
+                    return trino_tokens
 
-                    if _tokenize_as_hive(tokens) == hive:
-                        return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + tokens if hive else tokens
+                try:
+                    tokens = self._hive_tokenizer.tokenize(sql)
+                except TokenError:
+                    pass
+                else:
+                    if _tokenize_as_hive(tokens):
+                        return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + tokens
                 raise
 
             if _tokenize_as_hive(tokens):
                 return [Token(TokenType.HIVE_TOKEN_STREAM, "")] + self._hive_tokenizer.tokenize(sql)
 
-            return self._trino_tokenizer.tokenize(sql)
+            return trino_tokens if trino_tokens is not None else self._trino_tokenizer.tokenize(sql)
 
     Parser = AthenaParser
 
     Generator = AthenaGenerator
+
+
+_MAYBE_HIVE_TOKENS = {
+    TokenType.ALTER,
+    TokenType.CREATE,
+    TokenType.DESCRIBE,
+    TokenType.DROP,
+    TokenType.SHOW,
+}
+
+
+def _may_be_hive(tokens: list[Token]) -> bool:
+    return bool(tokens) and (
+        tokens[0].token_type in _MAYBE_HIVE_TOKENS or tokens[0].text.upper() == "MSCK"
+    )
 
 
 def _tokenize_as_hive(tokens: list[Token]) -> bool:

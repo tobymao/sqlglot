@@ -793,7 +793,7 @@ class TypeAnnotator:
                 r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
                 setop_cols = {
                     s.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, s.type),
+                        s.type or exp.DType.UNKNOWN,
                         r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
                     )
                     for s in set_op.this.selects
@@ -803,7 +803,7 @@ class TypeAnnotator:
             else:
                 setop_cols = {
                     ls.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                        ls.type or exp.DType.UNKNOWN, rs.type or exp.DType.UNKNOWN
                     )
                     for ls, rs in zip(set_op.this.selects, set_op.expression.selects)
                 }

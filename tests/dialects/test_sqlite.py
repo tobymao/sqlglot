@@ -453,6 +453,14 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT a -> b ->> c -> d FROM t")
         self.validate_identity("SELECT a || b ->> c", "SELECT (a || b) ->> c")
         self.validate_identity("SELECT a ->> b || c FROM t")
+        self.validate_all(
+            "SELECT a ->> ('$.' || f)",
+            read={"spark": "SELECT GET_JSON_OBJECT(a, CONCAT('$.', f))"},
+        )
+        self.validate_all(
+            "SELECT a -> ('$.' || f)",
+            read={"mysql": "SELECT JSON_EXTRACT(a, CONCAT('$.', f))"},
+        )
         self.validate_identity("SELECT 2 * 3 || 4", "SELECT 2 * (3 || 4)")
         self.validate_identity("SELECT 1 + 2 || 3", "SELECT 1 + (2 || 3)")
         self.validate_identity("SELECT a || b * c FROM t", "SELECT (a || b) * c FROM t")

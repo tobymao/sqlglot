@@ -481,8 +481,17 @@ class TypeAnnotator:
                         source_scope = source_scope.parent
 
                 if isinstance(source, exp.Table):
+                    column_name = expr.name
+                    alias_columns = source.alias_column_names
+                    if column_name in alias_columns:
+                        physical_columns = self.schema.column_names(source)
+                        column_name = (
+                            seq_get(physical_columns, alias_columns.index(column_name))
+                            or column_name
+                        )
+
                     table_col_type: exp.DataType | exp.DType | None = self.schema.get_column_type(
-                        source, expr
+                        source, column_name
                     )
                     if (
                         isinstance(table_col_type, exp.DataType)

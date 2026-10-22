@@ -217,11 +217,11 @@ class TypeAnnotator:
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
-        # Maps a SetOperation's id to itself and its projection types, keeping the node alive.
-        # Selecting from the same source multiple times would otherwise reprocess its subtree
-        # to coerce the types of its operands' projections
-        self._setop_column_types: dict[
-            int, tuple[exp.SetOperation, dict[str, exp.DataType | exp.DType]]
+        # Keep ordered output columns until a parent set operation consumes them. Source
+        # queries retain their results for subsequent column lookups. Retain each expression
+        # alongside its output columns to prevent cached IDs from being reused.
+        self._query_column_types: dict[
+            int, tuple[exp.Query, list[tuple[str, exp.DataType | exp.DType]]]
         ] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
@@ -235,20 +235,35 @@ class TypeAnnotator:
     def clear(self) -> None:
         self._visited.clear()
         self._null_expressions.clear()
-        self._setop_column_types.clear()
+        self._query_column_types.clear()
         self._scope_source_selects.clear()
 
     def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
         """
         Evicts `expression` (or its subtree, if `deep`) from the annotation caches. Call this
         before mutating an already-annotated tree so a subsequent pass recomputes its types.
+        Shallow invalidation also rebuilds consumed set-operation outputs.
         """
-        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
-        for node in nodes:
+        stack = [expression]
+        while stack:
+            node = stack.pop()
             node_id = id(node)
             self._visited.pop(node_id, None)
             self._null_expressions.pop(node_id, None)
-            self._setop_column_types.pop(node_id, None)
+            self._query_column_types.pop(node_id, None)
+
+            if deep:
+                stack.extend(node.iter_expressions())
+            elif isinstance(node, (exp.SetOperation, exp.Subquery)):
+                # Consumed outputs must be rebuilt, even when input expressions stay annotated.
+                # Widen the receiver so mypyc permits children of other expression types.
+                for child in t.cast(exp.Expr, node).iter_expressions():
+                    operand = child.unnest()
+                    if (
+                        isinstance(operand, exp.SetOperation)
+                        and id(operand) not in self._query_column_types
+                    ):
+                        stack.append(child)
 
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
@@ -351,6 +366,15 @@ class TypeAnnotator:
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
 
+        if source.is_cte:
+            # Recursive references can point to an unfinished UNION. Use its nearest resolved
+            # anchor prefix until the recursive branches have been annotated.
+            while (
+                isinstance(expression, exp.SetOperation)
+                and id(expression) not in self._query_column_types
+            ):
+                expression = expression.this.unnest()
+
         if isinstance(expression, exp.UDTF):
             values = []
 
@@ -385,13 +409,10 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if isinstance(expression, exp.SetOperation) and (
-            expression.args.get("by_name")
-            or len(expression.this.selects) == len(expression.expression.selects)
-        ):
-            return self._get_setop_column_types(expression)
+        if cached := self._query_column_types.get(id(expression)):
+            return dict(cached[1])
 
-        if isinstance(expression, exp.Selectable):
+        if isinstance(expression, exp.Selectable) and not isinstance(expression, exp.SetOperation):
             return {s.alias_or_name: s.type for s in expression.selects if s.type}
 
         return {}
@@ -429,6 +450,7 @@ class TypeAnnotator:
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self._annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
+        self._annotate_select_stars(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             struct_type = exp.DataType(
@@ -531,6 +553,9 @@ class TypeAnnotator:
                 if expr.type and expr.type.args.get("nullable") is False:
                     expr.meta["nonnull"] = True
                 continue
+
+            if isinstance(expr, exp.SetOperation):
+                self._annotate_set_operation(expr)
 
             spec = self.expression_metadata.get(expr.__class__)
 
@@ -647,76 +672,104 @@ class TypeAnnotator:
 
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
-    def _get_setop_column_types(
-        self, setop: exp.SetOperation
-    ) -> dict[str, exp.DataType | exp.DType]:
-        """
-        Computes and returns the coerced column types for a SetOperation.
-
-        This handles UNION, INTERSECT, EXCEPT, etc., coercing types across
-        left and right operands for all projections/columns.
-
-        Args:
-            setop: The SetOperation expression to analyze
-
-        Returns:
-            Dictionary mapping column names to their coerced types
-        """
-        setop_id = id(setop)
-        if cached := self._setop_column_types.get(setop_id):
+    def _get_query_column_types(
+        self, expression: exp.Expr
+    ) -> list[tuple[str, exp.DataType | exp.DType]]:
+        cached = self._query_column_types.get(id(expression))
+        if cached:
             return cached[1]
-
-        col_types: dict[str, exp.DataType | exp.DType] = {}
-
-        # Validate that left and right have same number of projections (BY NAME
-        # operations match columns by name, so their counts are allowed to differ)
-        if not (
-            isinstance(setop, exp.SetOperation)
-            and setop.this.selects
-            and setop.expression.selects
-            and (
-                setop.args.get("by_name")
-                or len(setop.this.selects) == len(setop.expression.selects)
-            )
+        if (
+            not isinstance(expression, exp.Selectable)
+            or isinstance(expression, exp.SetOperation)
+            or any(s.is_star for s in expression.selects)
         ):
-            return col_types
+            return []
+        return [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in expression.selects]
 
-        # Process a chain / sub-tree of set operations
-        for set_op in setop.walk(
-            prune=lambda n: not isinstance(n, (exp.SetOperation, exp.Subquery))
-        ):
-            if not isinstance(set_op, exp.SetOperation):
+    def _annotate_select_stars(self, scope: Scope) -> None:
+        expression = scope.expression
+        if not isinstance(expression, exp.Select) or not any(s.is_star for s in expression.selects):
+            return
+
+        # Qualification leaves stars over duplicate output names intact. Resolve their types
+        # positionally without generating ambiguous column references or changing the AST.
+        columns: list[tuple[str, exp.DataType | exp.DType]] = []
+        for select in expression.selects:
+            if not select.is_star:
+                columns.append((select.alias_or_name, select.type or exp.DType.UNKNOWN))
                 continue
 
-            if set_op.args.get("by_name"):
-                # Columns missing from one side are filled with NULLs, so the other
-                # side's type is preserved (NULL is the identity for _maybe_coerce)
-                r_type_by_select = {s.alias_or_name: s.type for s in set_op.expression.selects}
-                setop_cols = {
-                    s.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, s.type),
-                        r_type_by_select.pop(s.alias_or_name, exp.DType.NULL) or exp.DType.UNKNOWN,
-                    )
-                    for s in set_op.this.selects
-                }
-                for name, r_type in r_type_by_select.items():
-                    setop_cols[name] = r_type or exp.DType.UNKNOWN
+            star = select.this if isinstance(select, exp.Column) else select
+            if any(star.args.values()) or scope.pivots:
+                return
+            if isinstance(select, exp.Column):
+                sources = [scope.sources.get(select.table)]
+            elif isinstance(select, exp.Star):
+                if any(
+                    j.args.get("using") or j.method == "NATURAL"
+                    for j in expression.args.get("joins", [])
+                ):
+                    return
+                sources = [source for _, source in scope.selected_sources.values()]
             else:
-                setop_cols = {
-                    ls.alias_or_name: self._maybe_coerce(
-                        t.cast(exp.DataType, ls.type), t.cast(exp.DataType, rs.type)
+                return
+
+            if not sources:
+                return
+            for source in sources:
+                if not isinstance(source, Scope):
+                    return
+                source_columns = self._get_query_column_types(source.expression)
+                if not source_columns:
+                    return
+                columns.extend(source_columns)
+
+        self._query_column_types[id(expression)] = (expression, columns)
+
+    def _annotate_set_operation(self, expression: exp.SetOperation) -> None:
+        # The expression annotation pass visits children first, including when a scope is
+        # annotated independently. Preserve duplicate names until positional matching is done.
+        operands: list[list[tuple[str, exp.DataType | exp.DType]]] = []
+        for operand in (expression.this.unnest(), expression.expression.unnest()):
+            if isinstance(operand, exp.SetOperation):
+                cached = self._query_column_types.pop(id(operand), None)
+                operands.append(cached[1] if cached else [])
+            else:
+                operands.append(self._get_query_column_types(operand))
+        left, right = operands
+
+        columns: list[tuple[str, exp.DataType | exp.DType]] = []
+        if left and right:
+            if expression.args.get("by_name"):
+                left_types = dict(left)
+                right_types = dict(right)
+                if on := expression.args.get("on"):
+                    names = [column.name for column in on]
+                elif expression.kind == "INNER":
+                    names = [name for name in left_types if name in right_types]
+                elif expression.side == "LEFT":
+                    names = list(left_types)
+                else:
+                    names = list({**left_types, **right_types})
+
+                # Missing columns are NULL-filled, preserving the other operand's type.
+                columns = [
+                    (
+                        name,
+                        self._maybe_coerce(
+                            left_types.get(name, exp.DType.NULL),
+                            right_types.get(name, exp.DType.NULL),
+                        ),
                     )
-                    for ls, rs in zip(set_op.this.selects, set_op.expression.selects)
-                }
+                    for name in names
+                ]
+            elif len(left) == len(right):
+                columns = [
+                    (name, self._maybe_coerce(left_type, right_type))
+                    for (name, left_type), (_, right_type) in zip(left, right)
+                ]
 
-            # Coerce intermediate results with the previously registered types, if they exist
-            for col_name, col_type in setop_cols.items():
-                col_types[col_name] = self._maybe_coerce(
-                    col_type, col_types.get(col_name, exp.DType.NULL)
-                )
-
-        self._setop_column_types[setop_id] = (setop, col_types)
-        return col_types
+        self._query_column_types[id(expression)] = (expression, columns)
 
     def _get_unpivot_column_types(
         self, pivot: exp.Pivot, src_types: dict[str, exp.DataType | exp.DType]

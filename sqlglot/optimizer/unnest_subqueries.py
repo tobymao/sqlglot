@@ -62,6 +62,17 @@ def unnest(select, parent_select, next_alias_name):
     ):
         return
 
+    clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join, exp.Select)
+    if isinstance(clause, exp.Join) and (
+        clause.parent is not parent_select
+        or clause.side
+        or clause.kind not in ("", "INNER")
+        or clause.method
+        or clause.args.get("match_condition")
+        or not isinstance(predicate, (exp.In, exp.Any))
+    ):
+        return
+
     if isinstance(select, exp.SetOperation):
         inner_alias = next_alias_name()
         select = exp.select(
@@ -72,7 +83,6 @@ def unnest(select, parent_select, next_alias_name):
         ).from_(select.subquery(inner_alias))
 
     alias = next_alias_name()
-    clause = predicate.find_ancestor(exp.Having, exp.Where, exp.Join)
 
     # This subquery returns a scalar and can just be converted to a cross join
     if not isinstance(predicate, (exp.In, exp.Any)):
@@ -113,6 +123,19 @@ def unnest(select, parent_select, next_alias_name):
         predicate = predicate.find_ancestor(exp.EQ)
 
         if not predicate or parent_select is not predicate.parent_select:
+            return
+
+    if isinstance(clause, exp.Join):
+        # Moving a predicate from ON to WHERE is only safe for an inner-join conjunct.
+        ancestor = predicate.parent
+        while isinstance(ancestor, (exp.And, exp.Paren)):
+            ancestor = ancestor.parent
+        if ancestor is not clause:
+            return
+
+        # A later RIGHT/FULL join can preserve rows that the hoisted WHERE would discard.
+        joins = parent_select.args.get("joins") or []
+        if any(join.side in ("RIGHT", "FULL") for join in joins[joins.index(clause) + 1 :]):
             return
 
     column = _other_operand(predicate)
@@ -183,6 +206,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 break
             if not join.is_semi_or_anti_join:
                 available_source_aliases.add(join.alias_or_name)
+
+    if isinstance(on_clause_ancestor, exp.Join) and on_clause_join_index is None:
+        return
 
     if isinstance(parent_predicate, exp.Exists):
         if select.args.get("having") or select.args.get("qualify"):

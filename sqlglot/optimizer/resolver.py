@@ -33,20 +33,19 @@ class Resolver:
         self._outer_resolvers: list[Resolver] | None = None
         self._select_aliases: set[str] | None = None
 
-    def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+    def get_table(self, column: exp.Column | exp.Identifier) -> exp.Identifier | None:
         """
-        Get the table for a column name.
+        Get the table for a column or struct root identifier.
 
         Args:
-            column: The column expression (or column name) to find the table for.
+            column: A column or struct root identifier attached to the query AST, so its
+                enclosing scope, joins, and aliases are available during resolution.
         Returns:
             The table name if it can be found/inferred.
         """
-        column_name = column if isinstance(column, str) else column.name
+        column_name = column.name
 
-        join_context = (
-            self._get_column_join_context(column) if isinstance(column, exp.Column) else None
-        )
+        join_context = self._get_column_join_context(column)
         is_semi_or_anti_join = join_context is not None and join_context.is_semi_or_anti_join
 
         # A SEMI/ANTI join's own table is excluded from the global lookup below, so skip it here
@@ -65,16 +64,19 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and column_name not in self.all_columns:
+        if (
+            not table_name
+            and column_name not in self.all_columns
+            and column.find_ancestor(exp.Select) is self.scope.expression
+            and not (
+                self.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
+                and column_name in self.scope.selected_sources
+            )
+        ):
             # Skip back-projection for alias refs — _expand_alias_refs handles them.
-            if not (
-                isinstance(column, exp.Column)
-                and column_name in self.select_aliases
-                and not (
-                    (ancestor := column.find_ancestor(exp.Alias, exp.Select))
-                    and isinstance(ancestor, exp.Alias)
-                    and ancestor.alias == column_name
-                )
+            if column_name not in self.select_aliases or (
+                isinstance(ancestor := column.find_ancestor(exp.Alias, exp.Select), exp.Alias)
+                and ancestor.alias == column_name
             ):
                 source_columns = (
                     self._get_available_source_columns(join_context)
@@ -308,7 +310,7 @@ class Resolver:
 
         return unambiguous_columns.get(column_name)
 
-    def _get_column_join_context(self, column: exp.Column) -> exp.Join | None:
+    def _get_column_join_context(self, column: exp.Column | exp.Identifier) -> exp.Join | None:
         """
         Check if a column participating in a join can be qualified based on the source order.
         """

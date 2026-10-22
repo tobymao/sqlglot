@@ -59,6 +59,8 @@ def qualify_columns(
     Notes:
         - A source may carry a chain of (UN)PIVOT operators; each one is resolved against
           the output of the one before it, and the last one's alias names the result
+        - Alias expansion requires known source columns when an input column could shadow
+          the alias. An unresolved collision raises an OptimizeError.
     """
     schema = ensure_schema(schema, dialect=dialect)
     annotator = TypeAnnotator(schema)
@@ -388,7 +390,7 @@ def _expand_alias_refs(
                 continue
 
             skip_replace = False
-            table = resolver.get_table(column.name) if resolve_table and not column.table else None
+            table = resolver.get_table(column) if resolve_table and not column.table else None
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
@@ -418,6 +420,13 @@ def _expand_alias_refs(
             if table and (not alias_expr or skip_replace):
                 column.set("table", table)
             elif not column.table and alias_expr and not skip_replace:
+                # For queries like SELECT x + 1 AS y FROM read_parquet('f') WHERE y > 1, we can't
+                # determine whether y in y > 1 refers to the alias or a source column, so we bail
+                if resolver.has_unknown_sources:
+                    raise OptimizeError(
+                        f"Cannot resolve '{column.name}' due to missing source schemas"
+                    )
+
                 if (isinstance(alias_expr, exp.Literal) or alias_expr.is_number) and (
                     literal_index or resolve_table
                 ):
@@ -553,7 +562,7 @@ def _expand_order_by_and_distinct_on(
             for agg in original.find_all(exp.AggFunc):
                 for col in agg.find_all(exp.Column):
                     if not col.table:
-                        if table := resolver.get_table(col.name):
+                        if table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
 
@@ -746,6 +755,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                     # The star is over a table, so it's expanded as is
                     column_table = None
                     break
+
                 if isinstance(root, exp.Identifier) and root.name in selected_sources:
                     # The struct is already qualified, but we still need to change the AST
                     column_table = root
@@ -762,7 +772,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                     column_table = None
                     break
 
-                column_table = source_resolver.get_table(root.name)
+                column_table = source_resolver.get_table(root.assert_is(exp.Identifier))
                 if column_table:
                     break
 
@@ -932,10 +942,13 @@ def _qualify_columns(
 
             if table:
                 column.set("table", table)
+            elif scope.can_be_correlated and resolver.has_unknown_sources:
+                raise OptimizeError(f"Cannot resolve '{column_name}' due to missing source schemas")
             elif (
                 resolver.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
+                and not resolver.has_unknown_sources
             ):
                 # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
                 scope.replace(column, exp.TableColumn(this=column.this))
@@ -957,7 +970,7 @@ def _qualify_columns(
             if column.table:
                 continue
             if column.name in resolver.all_columns:
-                table = resolver.get_table(column.name)
+                table = resolver.get_table(column)
                 if table:
                     column.set("table", table)
             elif single_chain and column.name in produced:

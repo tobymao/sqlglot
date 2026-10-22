@@ -547,13 +547,24 @@ class TestSQLite(Validator):
         )
 
     def test_hexadecimal_literal(self):
+        # 0xCC is an integer literal, x'CC' is a BLOB literal
         self.validate_all(
             "SELECT 0XCC",
             write={
+                "sqlite": "SELECT 0xCC",
+                "duckdb": "SELECT 204",
+                "mysql": "SELECT 204",
+            },
+        )
+        self.validate_all(
+            "SELECT x'CC'",
+            write={
                 "sqlite": "SELECT x'CC'",
+                "duckdb": "SELECT UNHEX('CC')",
                 "mysql": "SELECT x'CC'",
             },
         )
+        self.validate_identity("SELECT 0xFFFFFFFFFFFFFFFF")
 
     def test_window_null_treatment(self):
         self.validate_all(

@@ -51,6 +51,18 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 class SQLiteParser(parser.Parser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
 
+    PRIMARY_PARSERS = {
+        **parser.Parser.PRIMARY_PARSERS,
+        # `0xCC` is an integer literal, while `x'CC'` is a BLOB literal
+        TokenType.HEX_STRING: lambda self, token: self.expression(
+            exp.HexString(
+                this=token.text,
+                is_integer=self.sql[token.start : token.start + 2].lower() == "0x" or None,
+            ),
+            token,
+        ),
+    }
+
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True

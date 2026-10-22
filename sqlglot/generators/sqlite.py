@@ -204,6 +204,14 @@ class SQLiteGenerator(generator.Generator):
 
     LIMIT_FETCH = "LIMIT"
 
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: str | None = None
+    ) -> str:
+        # Keep the hex form, since e.g. 0xFFFFFFFFFFFFFFFF is -1 but its decimal form is a REAL
+        if expression.args.get("is_integer"):
+            return f"0x{self.sql(expression, 'this')}"
+        return super().hexstring_sql(expression, binary_function_repr)
+
     def autoincrementcolumnconstraint_sql(
         self, expression: exp.AutoIncrementColumnConstraint
     ) -> str:

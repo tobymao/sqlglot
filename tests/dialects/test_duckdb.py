@@ -135,7 +135,9 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-1:-1]")
+        self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-:-1]")
+        self.validate_identity("SELECT ([1,2,3,4,5])[4:-:-2]", "SELECT ([1, 2, 3, 4, 5])[4:-:-2]")
+        self.validate_identity("SELECT ([1,2,3,4,5])[2:-:1]", "SELECT ([1, 2, 3, 4, 5])[2:-:1]")
         self.validate_identity(
             "SELECT INTERVAL '1 hour'::VARCHAR", "SELECT CAST(INTERVAL '1' HOUR AS TEXT)"
         )

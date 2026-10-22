@@ -143,6 +143,17 @@ class TestExecutor(unittest.TestCase):
         self.assertEqual(generate(parse_one("x like 'y'")), "LIKE(scope[None][x], 'y')")
         self.assertEqual(generate(parse_one("x not like 'y'")), "NOT(LIKE(scope[None][x], 'y'))")
 
+    def test_array_slice(self):
+        for sql, expected in (
+            ("SELECT ([1,2,3,4])[:-:2]", [1, 3]),
+            ("SELECT ([1,2,3,4])[:-:-1]", [4, 3, 2, 1]),
+            ("SELECT ([1,2,3,4])[:-:-2]", [4, 2]),
+            ("SELECT ([1,2,3,4])[:2]", [1, 2]),
+            ("SELECT ([1,2,3,4])[:]", [1, 2, 3, 4]),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(execute(sql, dialect="duckdb").rows, [(expected,)])
+
     def test_optimized_tpch(self):
         for i, (_, sql, optimized) in enumerate(self.tpch_sqls, start=1):
             with self.subTest(f"{i}, {sql}"):

@@ -38,6 +38,7 @@ class Snowflake(Dialect):
     # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {
         exp.SplitToTable: ("seq", "index", "value"),
+        exp.StrtokSplitToTable: ("seq", "index", "value"),
     }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()

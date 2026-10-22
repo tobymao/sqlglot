@@ -254,6 +254,10 @@ class SplitToTable(Expression, Func, UDTF):
     arg_types = {"this": True, "expression": True}
 
 
+class StrtokSplitToTable(Expression, Func, UDTF):
+    arg_types = {"this": True, "expression": False}
+
+
 class Stack(Expression, Func, UDTF):
     arg_types = {"this": True, "expressions": True}
     is_var_len_args = True

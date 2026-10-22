@@ -925,6 +925,16 @@ def _qualify_columns(
 
         if not column_table:
             if scope.pivots and not column.find_ancestor(exp.Pivot):
+                if resolver.dialect.TABLE_ALIASES_SHADOW_COLUMN_NAMES and any(
+                    not pivot.unpivot and pivot.alias == column_name for pivot in scope.pivots
+                ):
+                    if resolver.has_unknown_sources:
+                        raise OptimizeError(
+                            f"Cannot resolve '{column_name}' due to missing source schemas"
+                        )
+                    scope.replace(column, exp.TableColumn(this=column.this))
+                    continue
+
                 # If the column is under the Pivot expression, we need to qualify it
                 # using the name of the pivoted source instead of the pivot's alias
                 column.set("table", exp.to_identifier(scope.pivots[-1].alias))

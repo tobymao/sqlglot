@@ -307,45 +307,51 @@ class TypeAnnotator:
             selects = {}
             source = scope.sources.get(source_name)
 
-            if isinstance(source, Scope):
+            pivots: list[exp.Pivot] = next(
+                (
+                    pivot.parent.args["pivots"]
+                    for pivot in scope.pivots
+                    if pivot.parent
+                    and pivot.parent.args["pivots"][-1] is pivot
+                    and pivot.alias_or_name == source_name
+                ),
+                [],
+            )
+
+            if pivots:
+                parent = pivots[-1].parent
+                parent_source = scope.sources.get(parent.alias_or_name) if parent else None
+
+                if (
+                    not isinstance(parent_source, Scope)
+                    and isinstance(parent, exp.Table)
+                    and not parent.db
+                ):
+                    # A chain aliased like the CTE it reads from shadows it in
+                    # `scope.sources`, so reach for the CTE's scope directly
+                    parent_source = scope.cte_sources.get(parent.name)
+
+                if isinstance(parent_source, Scope):
+                    src_types = self._get_source_scope_selects(parent_source)
+                elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
+                    src_types = (
+                        self.schema.find(parent, raise_on_missing=False, ensure_data_types=True)
+                        or {}
+                    )
+                else:
+                    src_types = {}
+
+                for pivot in pivots:
+                    src_types = (
+                        self._get_unpivot_column_types(pivot, src_types)
+                        if pivot.unpivot
+                        else self._get_pivot_column_types(pivot, src_types)
+                    )
+
+                selects = src_types
+
+            elif isinstance(source, Scope):
                 selects = self._get_source_scope_selects(source)
-            else:
-                pivots = (
-                    source.args.get("pivots", []) if isinstance(source, exp.Table) else scope.pivots
-                )
-                # Only the last operator in a chain carries the alias that names the
-                # resulting source, so match on it and fold the whole chain in order
-                if pivots and pivots[-1].alias_or_name == source_name:
-                    parent = pivots[-1].parent
-                    parent_source = scope.sources.get(parent.alias_or_name) if parent else None
-
-                    if (
-                        not isinstance(parent_source, Scope)
-                        and isinstance(parent, exp.Table)
-                        and not parent.db
-                    ):
-                        # A chain aliased like the CTE it reads from shadows it in
-                        # `scope.sources`, so reach for the CTE's scope directly
-                        parent_source = scope.cte_sources.get(parent.name)
-
-                    if isinstance(parent_source, Scope):
-                        src_types = self._get_source_scope_selects(parent_source)
-                    elif isinstance(parent, exp.Table) and isinstance(self.schema, MappingSchema):
-                        src_types = (
-                            self.schema.find(parent, raise_on_missing=False, ensure_data_types=True)
-                            or {}
-                        )
-                    else:
-                        src_types = {}
-
-                    for pivot in pivots:
-                        src_types = (
-                            self._get_unpivot_column_types(pivot, src_types)
-                            if pivot.unpivot
-                            else self._get_pivot_column_types(pivot, src_types)
-                        )
-
-                    selects = src_types
 
             self._scope_source_selects[key] = selects
 
@@ -404,13 +410,17 @@ class TypeAnnotator:
             for table_column in scope.table_columns:
                 source = scope.sources.get(table_column.name)
 
-                if isinstance(source, exp.Table):
+                schema: dict[str, exp.DataType | exp.DType] | None
+                if any(pivot.alias == table_column.name for pivot in scope.pivots):
+                    schema = self._get_scope_source_selects(scope, table_column.name)
+                elif isinstance(source, exp.Table):
                     schema = self.schema.find(
                         source, raise_on_missing=False, ensure_data_types=True
                     )
-                    if not isinstance(schema, dict):
-                        continue
+                else:
+                    schema = None
 
+                if isinstance(schema, dict) and schema:
                     struct_type = exp.DataType(
                         this=exp.DType.STRUCT,
                         expressions=[
@@ -781,6 +791,14 @@ class TypeAnnotator:
         # The first agg_cols_offset entries are source columns that pass through the PIVOT unchanged;
         # the rest are the aggregated columns, one per combination of IN value and aggregate function.
         output_to_src = pivot.output_columns(src_types)
+
+        # Output types may be requested before the PIVOT itself has been annotated.
+        for agg in pivot.expressions:
+            if not agg.type or agg.is_type(exp.DType.UNKNOWN):
+                self.uncache(agg)
+                for column in agg.find_all(exp.Column):
+                    self._set_type(column, src_types.get(column.name))
+                self._annotate_expression(agg)
 
         agg_types = [
             agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions

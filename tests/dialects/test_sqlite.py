@@ -547,13 +547,36 @@ class TestSQLite(Validator):
         )
 
     def test_hexadecimal_literal(self):
+        for sql, expected in (
+            ("0XCC", "204"),
+            ("0xcc", "204"),
+            ("0x0", "0"),
+            ("0x1F + 1", "31 + 1"),
+            ("-0x10", "-16"),
+            ("0x7FFFFFFFFFFFFFFF", "9223372036854775807"),
+            ("0x8000000000000000", "-9223372036854775808"),
+            ("0xFFFFFFFFFFFFFFFF", "-1"),
+            ("-0xFFFFFFFFFFFFFFFF", "- -1"),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    f"SELECT {sql}",
+                    write={
+                        "sqlite": f"SELECT {expected}",
+                        "duckdb": f"SELECT {expected}",
+                        "mysql": f"SELECT {expected}",
+                    },
+                )
+
         self.validate_all(
-            "SELECT 0XCC",
+            "SELECT x'CC'",
             write={
                 "sqlite": "SELECT x'CC'",
+                "duckdb": "SELECT UNHEX('CC')",
                 "mysql": "SELECT x'CC'",
             },
         )
+        self.validate_identity("SELECT X'0a', 0x0a", "SELECT x'0a', 10")
 
     def test_window_null_treatment(self):
         self.validate_all(

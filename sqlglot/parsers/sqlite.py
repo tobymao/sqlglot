@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp, parser
 from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import Token, TokenType
 
 
 def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
@@ -50,6 +50,11 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 
 class SQLiteParser(parser.Parser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
+
+    PRIMARY_PARSERS = {
+        **parser.Parser.PRIMARY_PARSERS,
+        TokenType.HEX_STRING: lambda self, token: self._parse_hex_string(token),
+    }
 
     STRING_ALIASES = True
     ALTER_RENAME_REQUIRES_COLUMN = False
@@ -130,6 +135,16 @@ class SQLiteParser(parser.Parser):
                 comments=comments,
             )
         return this
+
+    def _parse_hex_string(self, token: Token) -> exp.Expr:
+        if self.sql.startswith(("0x", "0X"), token.start):
+            value = int(token.text, 16)
+            # SQLite interprets hex integers as signed 64-bit two's-complement values.
+            if value >= 1 << 63:
+                value -= 1 << 64
+            return self.expression(exp.Literal.number(value), token)
+
+        return self.expression(exp.HexString(this=token.text), token)
 
     def _parse_factor_operand(self) -> exp.Expr | None:
         in_arithmetic_operand = self._prev.token_type in self.ARITHMETIC_TOKENS

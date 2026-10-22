@@ -22,3 +22,35 @@ SELECT w.d FROM w JOIN y ON TRUE JOIN z ON b > 0;
 SELECT w.d FROM w JOIN y ON TRUE ANTI JOIN z ON b > 0;
 SELECT w.d FROM w JOIN y ON TRUE SEMI JOIN z ON b > 0;
 SELECT w.d FROM w JOIN (SELECT b FROM y) AS n ON TRUE ANTI JOIN z ON b > 0;
+
+-- Unknown source columns can shadow projection aliases.
+# dialect: duckdb
+SELECT range + 1 AS range, range AS x FROM range(3);
+# dialect: duckdb
+SELECT range + 1 AS range FROM range(3) WHERE range > 1;
+# dialect: duckdb
+SELECT r.range + 1 AS x FROM range(3) AS r WHERE x > 1;
+# dialect: duckdb
+SELECT r.range + 1 AS x FROM range(3) AS r GROUP BY x;
+# dialect: duckdb
+SELECT SUM(r.range) AS x FROM range(3) AS r HAVING x > 1;
+# dialect: duckdb
+SELECT r.range AS x, ROW_NUMBER() OVER () AS n FROM range(3) AS r QUALIFY x > 1;
+# dialect: duckdb
+SELECT r.x + 1 AS y FROM (SELECT * FROM READ_PARQUET('f')) AS r WHERE y > 1;
+
+-- A source name can also name one of its columns.
+# dialect: duckdb
+SELECT r FROM range(3) AS r;
+# dialect: duckdb
+SELECT range + 1 FROM range(3) AS range;
+# dialect: duckdb
+SELECT r FROM (SELECT * FROM READ_PARQUET('f')) AS r;
+
+-- Unknown local or outer schemas prevent resolving unqualified correlated references.
+# dialect: duckdb
+SELECT p.range FROM range(10) AS p WHERE EXISTS (SELECT 1 FROM range(1) AS q WHERE range > 5);
+# dialect: duckdb
+SELECT p.range FROM range(10) AS p WHERE EXISTS (SELECT 1 WHERE range > 5);
+# dialect: duckdb
+SELECT p.range FROM (VALUES (0), (6)) AS p(range) WHERE EXISTS (SELECT 1 FROM range(1) AS q WHERE range > 5);

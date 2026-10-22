@@ -1,5 +1,6 @@
 import json
 import sys
+import tempfile
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
@@ -17,6 +18,7 @@ from sqlglot.optimizer.canonicalize_internal_names import canonicalize_internal_
 from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
@@ -1008,6 +1010,99 @@ class TestOptimizer(unittest.TestCase):
             "IN ((`produce`.`q1`, `produce`.`q2`) AS 'h1', (`produce`.`q3`, `produce`.`q4`) AS 'h2')) AS `produce`",
         )
 
+    def test_resolver_column_context(self):
+        get_table = Resolver.get_table
+
+        def check_context(resolver, column):
+            self.assertIsInstance(column, (exp.Column, exp.Identifier))
+            self.assertIs(column.root(), expression)
+            node = column
+            while node.parent:
+                self.assertTrue(any(child is node for child in node.parent.iter_expressions()))
+                node = node.parent
+            return get_table(resolver, column)
+
+        for dialect, sql in (
+            ("duckdb", "SELECT payload.field AS payload FROM READ_PARQUET('f') AS r"),
+            ("duckdb", "SELECT a FROM x GROUP BY a HAVING SUM(b) > 0"),
+            ("duckdb", "SELECT SUM(a) AS a FROM x ORDER BY SUM(a)"),
+            (
+                "bigquery",
+                "WITH t AS (SELECT [STRUCT('a' AS email)] AS items) "
+                "SELECT (SELECT email FROM UNNEST(items)) FROM t",
+            ),
+            (
+                "clickhouse",
+                "WITH data AS (SELECT 1 AS id, 2 AS my_id, 'a' AS name, 'b' AS full_name) "
+                "SELECT id AS my_id, CONCAT(my_id, name) AS full_name FROM data "
+                "WHERE my_id = 1 GROUP BY my_id, full_name HAVING my_id = 1",
+            ),
+        ):
+            with self.subTest(dialect=dialect, sql=sql):
+                expression = parse_one(sql, dialect=dialect)
+                with patch.object(Resolver, "get_table", check_context):
+                    qualify(
+                        expression,
+                        dialect=dialect,
+                        schema={"x": {"a": "INT", "b": "INT", "c": "TEXT"}},
+                    )
+
+        expression = parse_one(
+            "SELECT * FROM (SELECT a, b, c FROM x) PIVOT(SUM(b) FOR c IN ('x', 'y'))"
+        )
+        with patch.object(Resolver, "get_table", check_context):
+            optimizer.qualify_columns.qualify_columns(
+                expression, schema={"x": {"a": "INT", "b": "INT", "c": "TEXT"}}
+            )
+
+    def test_qualify_unknown_tvf_table_reference(self):
+        for sql in (
+            "SELECT r FROM range(3) AS r",
+            "SELECT range + 1 FROM range(3) AS range",
+            "SELECT r FROM (SELECT * FROM READ_PARQUET('f')) AS r",
+        ):
+            with self.subTest(sql=sql):
+                expression = qualify(
+                    parse_one(sql, dialect="duckdb"),
+                    dialect="duckdb",
+                    validate_qualify_columns=False,
+                )
+                self.assertIsNone(expression.find(exp.TableColumn))
+
+    def test_qualify_parquet_alias_collision(self):
+        with tempfile.TemporaryDirectory() as directory, duckdb.connect() as conn:
+            for source, schema, expected in (
+                ("SELECT * FROM (VALUES (0), (1)) AS t(x)", {"x": "INT"}, [(2,)]),
+                (
+                    "SELECT * FROM (VALUES (0, 100), (1, -100)) AS t(x, y)",
+                    {"x": "INT", "y": "INT"},
+                    [(1,)],
+                ),
+            ):
+                with self.subTest(schema=schema):
+                    path = f"{directory}/{len(schema)}.parquet"
+                    conn.execute(f"COPY ({source}) TO ? (FORMAT PARQUET)", [path])
+                    expression = exp.replace_placeholders(
+                        parse_one(
+                            "SELECT x + 1 AS y FROM READ_PARQUET(:path) AS r WHERE y > 1",
+                            dialect="duckdb",
+                        ),
+                        path=exp.Literal.string(path),
+                    )
+                    self.assertEqual(conn.execute(expression.sql("duckdb")).fetchall(), expected)
+                    with self.assertRaisesRegex(OptimizeError, "due to missing source schemas"):
+                        qualify(expression.copy(), dialect="duckdb")
+
+                    conn.execute(
+                        "CREATE OR REPLACE TEMP TABLE t AS SELECT * FROM READ_PARQUET(?)", [path]
+                    )
+                    qualified = qualify(
+                        parse_one("SELECT x + 1 AS y FROM t WHERE y > 1", dialect="duckdb"),
+                        dialect="duckdb",
+                        schema={"t": schema},
+                    )
+                    self.assertEqual(conn.execute(qualified.sql("duckdb")).fetchall(), expected)
+
     def test_starrocks_pivot_columns(self):
         for aggregation, expected in (
             ("SUM(price) AS total", ["'prop'", "'rudder'"]),
@@ -1340,7 +1435,9 @@ class TestOptimizer(unittest.TestCase):
 
         # Resolving an unqualified lateral column whose table is missing from the schema must
         # raise instead of recursing infinitely
-        with self.assertRaisesRegex(OptimizeError, "Column 'ITEMS' could not be resolved"):
+        with self.assertRaisesRegex(
+            OptimizeError, "Cannot resolve 'ITEMS' due to missing source schemas"
+        ):
             optimizer.qualify.qualify(
                 parse_one(
                     "SELECT f.value AS v FROM my_db.raw.events, LATERAL FLATTEN(items) AS f",
@@ -1552,10 +1649,12 @@ class TestOptimizer(unittest.TestCase):
 
     def test_qualify_columns__invalid(self):
         for sql in load_sql_fixtures("optimizer/qualify_columns__invalid.sql"):
-            with self.subTest(sql):
+            sql, meta = _extract_meta(sql)
+            dialect = meta.get("dialect")
+            with self.subTest(sql=sql, dialect=dialect):
                 with self.assertRaises((OptimizeError, SchemaError)):
                     expression = optimizer.qualify_columns.qualify_columns(
-                        parse_one(sql), schema=self.schema
+                        parse_one(sql, dialect=dialect), schema=self.schema, dialect=dialect
                     )
                     optimizer.qualify_columns.validate_qualify_columns(expression)
 

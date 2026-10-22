@@ -3,7 +3,7 @@ import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
 from multiprocessing import get_context
-from unittest.mock import PropertyMock, patch
+from unittest.mock import patch
 
 import duckdb
 from pandas.testing import assert_frame_equal
@@ -2756,18 +2756,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     f"SELECT {', '.join(f't.{name}' for name in aliases * 2)} "
                     f"FROM x AS t({', '.join(aliases)})"
                 )
-                with (
-                    patch.object(schema, "column_names", wraps=schema.column_names) as column_names,
-                    patch.object(
-                        exp.Table,
-                        "alias_column_names",
-                        new_callable=PropertyMock,
-                        return_value=aliases,
-                    ) as alias_names,
-                ):
+                with patch.object(
+                    schema, "column_names", wraps=schema.column_names
+                ) as column_names:
                     annotate_types(query, schema=schema)
                     column_names.assert_called_once()
-                    alias_names.assert_called_once()
 
                 self.assertTrue(all(select.is_type(exp.DType.INT) for select in query.selects))
 

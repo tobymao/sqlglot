@@ -838,6 +838,26 @@ MATCH_RECOGNIZE (
             pretty=True,
         )
 
+    def test_nonreserved_keywords_as_identifiers(self):
+        for keyword in ("SAMPLE", "TABLESAMPLE", "MATCH_RECOGNIZE"):
+            with self.subTest(keyword):
+                self.validate_identity(
+                    f"SELECT 1 {keyword} FROM DUAL", f"SELECT 1 AS {keyword} FROM DUAL"
+                )
+                self.validate_identity(f"SELECT {keyword} FROM t WHERE {keyword} > 0")
+                self.validate_identity(
+                    f"SELECT {keyword}, COUNT(*) FROM t GROUP BY {keyword} ORDER BY {keyword}"
+                )
+                self.validate_identity(
+                    f"WITH {keyword} AS (SELECT 1 FROM DUAL) SELECT * FROM {keyword}"
+                )
+
+        self.validate_identity(
+            "SELECT SUBSTR(MIN(SQL_ID || SQL_TEXT), 14, 120) SAMPLE FROM V$SQLAREA",
+            "SELECT SUBSTR(MIN(SQL_ID || SQL_TEXT), 14, 120) AS SAMPLE FROM V$SQLAREA",
+        )
+        self.validate_identity("SELECT 1 FETCH FIRST 1 ROWS ONLY")
+
     def test_json_table(self):
         self.validate_identity(
             "SELECT * FROM JSON_TABLE(foo FORMAT JSON, 'bla' ERROR ON ERROR NULL ON EMPTY COLUMNS(foo PATH 'bar'))"

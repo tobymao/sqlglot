@@ -661,11 +661,25 @@ class TestStarrocks(Validator):
             "DEALLOCATE PREPARE stmt1",
             "INSTALL PLUGIN FROM '/home/users/plugin.zip'",
             "UNINSTALL PLUGIN auditdemo",
+            'ADD SQLBLACKLIST "select count(distinct .+) from .+"',
+            "DELETE SQLBLACKLIST 3, 4",
+            "ADD SQL DIGEST BLACKLIST abcdef0123456789abcdef0123456789",
+            "DELETE SQL DIGEST BLACKLIST abcdef0123456789abcdef0123456789, 0123456789abcdef0123456789abcdef",
+            "ADD BACKEND BLACKLIST 10001, 10002",
+            "DELETE BACKEND BLACKLIST 10001",
+            "ADD COMPUTE NODE BLACKLIST 10005",
+            "DELETE COMPUTE NODE BLACKLIST 10005",
+            "TRANSLATE TRINO SELECT id, name FROM products WHERE price > 500",
         ):
             with self.subTest(sql):
                 self.validate_identity(sql, check_command_warning=True)
 
         self.validate_identity("SELECT admin, cancel, export, stop FROM t")
+
+        # Statements that start like the commands above still parse as usual
+        self.validate_identity("DELETE FROM t WHERE a = 1").assert_is(exp.Delete)
+        self.validate_identity("ALTER TABLE t ADD COLUMN c INT").assert_is(exp.Alter)
+        self.validate_identity("SELECT TRANSLATE(c, 'a', 'b'), translate FROM t")
 
     def test_map_literal(self):
         # https://docs.starrocks.io/docs/sql-reference/data-types/semi_structured/Map/

@@ -25,10 +25,18 @@ class StarRocks(MySQL):
 
         KEYWORDS = {
             **MySQL.Tokenizer.KEYWORDS,
+            "ADD BACKEND BLACKLIST": TokenType.COMMAND,
+            "ADD COMPUTE NODE BLACKLIST": TokenType.COMMAND,
+            "ADD SQL DIGEST BLACKLIST": TokenType.COMMAND,
+            "ADD SQLBLACKLIST": TokenType.COMMAND,
             "ADMIN": TokenType.COMMAND,
             "BACKUP": TokenType.COMMAND,
             "CANCEL": TokenType.COMMAND,
             "DEALLOCATE": TokenType.COMMAND,
+            "DELETE BACKEND BLACKLIST": TokenType.COMMAND,
+            "DELETE COMPUTE NODE BLACKLIST": TokenType.COMMAND,
+            "DELETE SQL DIGEST BLACKLIST": TokenType.COMMAND,
+            "DELETE SQLBLACKLIST": TokenType.COMMAND,
             "EXPORT": TokenType.COMMAND,
             "HLL": TokenType.HLLSKETCH,
             "INSTALL": TokenType.COMMAND,
@@ -40,6 +48,7 @@ class StarRocks(MySQL):
             "RESUME": TokenType.COMMAND,
             "STOP": TokenType.COMMAND,
             "SUBMIT": TokenType.COMMAND,
+            "TRANSLATE TRINO": TokenType.COMMAND,
             "UNINSTALL": TokenType.COMMAND,
         }
         KEYWORDS.pop("IGNORE")

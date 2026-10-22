@@ -15,6 +15,20 @@ def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
+def _build_max(args: list) -> exp.Max | exp.Greatest:
+    # The multi-argument max() is a scalar that returns NULL if any argument is NULL
+    if len(args) > 1:
+        return exp.Greatest(this=args[0], expressions=args[1:], ignore_nulls=False)
+    return exp.Max.from_arg_list(args)
+
+
+def _build_min(args: list) -> exp.Min | exp.Least:
+    # The multi-argument min() is a scalar that returns NULL if any argument is NULL
+    if len(args) > 1:
+        return exp.Least(this=args[0], expressions=args[1:], ignore_nulls=False)
+    return exp.Min.from_arg_list(args)
+
+
 def _build_dpipe(
     self: parser.Parser, this: exp.Expr | None, expression: exp.Expr | None
 ) -> exp.DPipe:
@@ -75,6 +89,8 @@ class SQLiteParser(parser.Parser):
         "JSON_EXTRACT": _build_json_extract,
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
+        "MAX": _build_max,
+        "MIN": _build_min,
         "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),

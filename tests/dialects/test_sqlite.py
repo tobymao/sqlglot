@@ -223,11 +223,23 @@ class TestSQLite(Validator):
             read={
                 "sqlite": "SELECT MIN(a, b) FROM t",
             },
+            write={
+                "sqlite": "SELECT MIN(a, b) FROM t",
+                "duckdb": "SELECT CASE WHEN a IS NULL OR b IS NULL THEN NULL ELSE LEAST(a, b) END FROM t",
+                "trino": "SELECT LEAST(a, b) FROM t",
+                "oracle": "SELECT LEAST(a, b) FROM t",
+            },
         )
         self.validate_all(
             "SELECT MAX(a, b) FROM t",
             read={
                 "sqlite": "SELECT MAX(a, b) FROM t",
+            },
+            write={
+                "sqlite": "SELECT MAX(a, b) FROM t",
+                "duckdb": "SELECT CASE WHEN a IS NULL OR b IS NULL THEN NULL ELSE GREATEST(a, b) END FROM t",
+                "trino": "SELECT GREATEST(a, b) FROM t",
+                "oracle": "SELECT GREATEST(a, b) FROM t",
             },
         )
         # GREATEST/LEAST ignore NULL args in Postgres/DuckDB, but SQLite's

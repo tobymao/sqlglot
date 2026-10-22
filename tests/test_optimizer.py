@@ -2617,6 +2617,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             for x, y in zip(scopes_using_traverse, scopes_using_traverse_scope)
         )
 
+        # Left-to-right precedence nests one parenthesized left operand per INTERSECT
+        chain = parse_one("SELECT 1" + " UNION SELECT 1 INTERSECT SELECT 1" * 1000, read="hive")
+        self.assertEqual(len(list(build_scope(chain).traverse())), 4001)
+
+        root = build_scope(parse_one("SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)"))
+        self.assertEqual(
+            [scope.expression.sql() for scope in root.set_operation_scopes],
+            ["SELECT 1", "SELECT 2 INTERSECT SELECT 3"],
+        )
+
         sql = """
         WITH q AS (
           SELECT x.b FROM x

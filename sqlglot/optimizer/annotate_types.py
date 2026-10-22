@@ -223,6 +223,7 @@ class TypeAnnotator:
         self._setop_column_types: dict[
             int, tuple[exp.SetOperation, dict[str, exp.DataType | exp.DType]]
         ] = {}
+        self._table_column_aliases: dict[int, tuple[exp.Table, dict[str, str]]] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
         self._overwrite_types = overwrite_types
@@ -236,6 +237,7 @@ class TypeAnnotator:
         self._visited.clear()
         self._null_expressions.clear()
         self._setop_column_types.clear()
+        self._table_column_aliases.clear()
         self._scope_source_selects.clear()
 
     def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
@@ -249,6 +251,7 @@ class TypeAnnotator:
             self._visited.pop(node_id, None)
             self._null_expressions.pop(node_id, None)
             self._setop_column_types.pop(node_id, None)
+            self._table_column_aliases.pop(node_id, None)
 
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
@@ -481,13 +484,20 @@ class TypeAnnotator:
                         source_scope = source_scope.parent
 
                 if isinstance(source, exp.Table):
-                    column_expr = expr
-                    alias_columns = source.alias_column_names
-                    if expr.name in alias_columns:
-                        physical_columns = self.schema.column_names(source)
-                        physical_name = seq_get(physical_columns, alias_columns.index(expr.name))
-                        if physical_name is not None:
-                            column_expr = exp.column(physical_name, quoted=True)
+                    source_id = id(source)
+                    if source_id not in self._table_column_aliases:
+                        column_aliases: dict[str, str] = {}
+                        if alias_columns := source.alias_column_names:
+                            for alias, name in zip(alias_columns, self.schema.column_names(source)):
+                                column_aliases.setdefault(alias, name)
+                        self._table_column_aliases[source_id] = (source, column_aliases)
+
+                    physical_name = self._table_column_aliases[source_id][1].get(expr.name)
+                    column_expr = (
+                        exp.column(physical_name, quoted=True)
+                        if physical_name is not None
+                        else expr
+                    )
 
                     table_col_type: exp.DataType | exp.DType | None = self.schema.get_column_type(
                         source, column_expr

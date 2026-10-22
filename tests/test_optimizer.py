@@ -1774,6 +1774,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_optimize_subqueries_in_join_on(self):
+        for sql in (
+            "SELECT x.a, y.b FROM x LEFT JOIN y ON x.a = y.b "
+            "AND y.b IN (SELECT z.b FROM y AS z WHERE z.b = 2)",
+            "SELECT x.a, y.b FROM x JOIN y ON x.a = y.b "
+            "OR y.b IN (SELECT z.b FROM y AS z WHERE z.b > 100)",
+            "SELECT x.a, y.b FROM x LEFT JOIN y "
+            "ON y.b = (SELECT MAX(z.b) FROM y AS z WHERE z.b = x.a)",
+            "SELECT x.a, y.b FROM x LEFT JOIN y ON y.b = (SELECT MAX(z.b) FROM y AS z)",
+        ):
+            with self.subTest(sql=sql):
+                optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                self.assertCountEqual(
+                    self.conn.execute(sql).fetchall(),
+                    self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                )
+
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 

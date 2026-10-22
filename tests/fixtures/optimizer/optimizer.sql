@@ -1364,15 +1364,6 @@ LEFT JOIN CONTACTS AS C
     WHERE
       TYPE = 'education'
   );
-WITH "_u_0" AS (
-  SELECT
-    "D"."DOMAIN" AS "DOMAIN"
-  FROM "DOMAINS" AS "D"
-  WHERE
-    "D"."TYPE" = 'education'
-  GROUP BY
-    "D"."DOMAIN"
-)
 SELECT
   "A"."ACCOUNT_ID" AS "ACCOUNT_ID",
   "A"."NAME" AS "NAME",
@@ -1380,10 +1371,13 @@ SELECT
 FROM "ACCOUNTS" AS "A"
 LEFT JOIN "CONTACTS" AS "C"
   ON "A"."ACCOUNT_ID" = "C"."ACCOUNT_ID"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "C"."EMAIL_DOMAIN" = "_u_0"."DOMAIN"
-WHERE
-  NOT "_u_0"."DOMAIN" IS NULL;
+  AND "C"."EMAIL_DOMAIN" IN (
+    SELECT
+      "D"."DOMAIN" AS "DOMAIN"
+    FROM "DOMAINS" AS "D"
+    WHERE
+      "D"."TYPE" = 'education'
+  );
 
 # title: decorrelate subquery and transpile ArrayAny correctly when generating spark
 # execute: false

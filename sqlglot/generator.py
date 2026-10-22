@@ -5967,7 +5967,8 @@ class Generator:
 
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")
-        end = self.sql(expression.expression)
+        # An omitted end is written as `-` before a step, since `::` is the cast operator
+        end = self.sql(expression.expression) or ("-" if step else "")
         begin = self.sql(expression.this)
 
         sql = f"{end}:{step}" if step else end

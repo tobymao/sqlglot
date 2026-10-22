@@ -8300,9 +8300,10 @@ class Parser:
         if not self._match(TokenType.COLON):
             return this
 
+        # DuckDB's `-` in `[a:-:step]` is the default end, which depends on the sign of step
         if self._match_pair(TokenType.DASH, TokenType.COLON, advance=False):
             self._advance()
-            end: exp.Expr | None = -exp.Literal.number("1")
+            end: exp.Expr | None = None
         else:
             end = self._parse_assignment()
         step = self._parse_unary() if self._match(TokenType.COLON) else None

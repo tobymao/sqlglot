@@ -4107,6 +4107,11 @@ FROM subquery2""",
                 "postgres": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1 LIMIT 10 OFFSET 2"
             },
         )
+        self.validate_all(
+            "SELECT (SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1 NULLS LAST)",
+            read={"postgres": "SELECT (SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1)"},
+            write={"postgres": "SELECT (SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1)"},
+        )
 
         # SQLite needs a SELECT wrapper for right grouping, but left grouping is implicit.
         self.validate_all(

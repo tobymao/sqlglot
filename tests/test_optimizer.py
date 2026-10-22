@@ -3,7 +3,7 @@ import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
 from multiprocessing import get_context
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import duckdb
 from pandas.testing import assert_frame_equal
@@ -2746,6 +2746,54 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         pre = len(schema._find_cache)
         annotate_types(qualified, schema=schema)
         self.assertEqual(len(schema._find_cache) - pre, 1)
+
+    def test_annotate_types_caches_positional_aliases(self):
+        for width in (4, 64):
+            with self.subTest(width=width):
+                aliases = [f"a{i}" for i in range(width)]
+                schema = MappingSchema({"x": {f"c{i}": "INT" for i in range(width)}})
+                query = parse_one(
+                    f"SELECT {', '.join(f't.{name}' for name in aliases * 2)} "
+                    f"FROM x AS t({', '.join(aliases)})"
+                )
+                with (
+                    patch.object(schema, "column_names", wraps=schema.column_names) as column_names,
+                    patch.object(
+                        exp.Table,
+                        "alias_column_names",
+                        new_callable=PropertyMock,
+                        return_value=aliases,
+                    ) as alias_names,
+                ):
+                    annotate_types(query, schema=schema)
+                    column_names.assert_called_once()
+                    alias_names.assert_called_once()
+
+                self.assertTrue(all(select.is_type(exp.DType.INT) for select in query.selects))
+
+    def test_annotate_types_positional_alias_sources(self):
+        schema = {"x": {"a": "INT", "b": "TEXT"}}
+        query = parse_one(
+            "SELECT t.p, t.q, u.p, u.q, (SELECT t.p) FROM x AS t(p, q) CROSS JOIN x AS u(q, p)"
+        )
+        annotate_types(query, schema=schema)
+        self.assertEqual(
+            [select.type.sql() for select in query.selects], ["INT", "TEXT", "TEXT", "INT", "INT"]
+        )
+
+    def test_annotate_types_positional_alias_invalidation(self):
+        annotator = TypeAnnotator(MappingSchema({"x": {"a": "INT", "b": "TEXT"}}))
+        query = parse_one("SELECT t.p, t.q FROM x AS t(p, q)")
+        table = query.find(exp.Table)
+        for columns, expected, reset in (
+            (["p", "q"], ["INT", "TEXT"], lambda: None),
+            (["q", "p"], ["TEXT", "INT"], lambda: annotator.uncache(query)),
+            (["p", "q"], ["INT", "TEXT"], annotator.clear),
+        ):
+            reset()
+            table.args["alias"].set("columns", [exp.to_identifier(name) for name in columns])
+            annotator.annotate(query)
+            self.assertEqual([select.type.sql() for select in query.selects], expected)
 
     def test_annotate_funcs(self):
         test_schema = {

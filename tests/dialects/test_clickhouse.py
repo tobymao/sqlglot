@@ -1065,6 +1065,24 @@ class TestClickhouse(Validator):
                         annotate_types(expression, dialect="clickhouse", schema=target_schema)
                         self.assertEqual(expression.sql("clickhouse"), expected)
 
+    def test_natural_join(self):
+        for kind in (
+            "",
+            "INNER ",
+            "LEFT ",
+            "RIGHT ",
+            "FULL ",
+            "LEFT OUTER ",
+            "RIGHT OUTER ",
+            "FULL OUTER ",
+        ):
+            sql = f"SELECT * FROM (SELECT 1 AS id) AS a NATURAL {kind}JOIN (SELECT 1 AS id) AS b"
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql)
+                self.assertEqual(expression.args["joins"][0].method, "NATURAL")
+                self.assertNotIn("global_", expression.args["joins"][0].args)
+                self.validate_all(sql, read={"postgres": sql}, write={"postgres": sql})
+
     def test_global_join(self):
         for kind in ("", "LEFT ", "INNER ", "LEFT ANY ", "FULL OUTER "):
             for condition in (

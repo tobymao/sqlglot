@@ -717,13 +717,13 @@ class ClickHouseParser(parser.Parser):
     def _parse_join_parts(
         self,
     ) -> tuple[Token | None, Token | None, Token | None]:
-        is_global = self._prev if self._match(TokenType.GLOBAL) else None
+        method = self._prev if self._match_set((TokenType.GLOBAL, TokenType.NATURAL)) else None
 
         kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
         side = self._prev if self._match_set(self.JOIN_SIDES) else None
         kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
-        return is_global, side or kind, kind_pre or kind
+        return method, side or kind, kind_pre or kind
 
     def _parse_join(
         self,
@@ -735,9 +735,9 @@ class ClickHouseParser(parser.Parser):
             skip_join_token=skip_join_token, parse_bracket=True, alias_tokens=alias_tokens
         )
         if join:
-            method = join.args.get("method")
-            join.set("method", None)
-            join.set("global_", method)
+            if join.method == "GLOBAL":
+                join.set("method", None)
+                join.set("global_", "GLOBAL")
 
             # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
             # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join

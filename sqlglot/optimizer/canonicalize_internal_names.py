@@ -311,17 +311,18 @@ def canonicalize_internal_names(expression: E) -> E:
                 rename_stack: list[exp.Expr] = [right_scope.expression]
                 while rename_stack:
                     node = rename_stack.pop()
-                    if isinstance(node, exp.SetOperation):
-                        rename_stack.append(node.this)
-                        rename_stack.append(node.expression)
+                    if isinstance(node, exp.Select):
+                        for sel in node.selects:
+                            if isinstance(sel, exp.Alias):
+                                aid = sel.args.get("alias")
+                                if isinstance(aid, exp.Identifier) and aid.name in rename:
+                                    _canon(aid, rename[aid.name])
+                    elif isinstance(node, exp.SetOperation):
+                        rename_stack.append(node.this.unnest())
+                        rename_stack.append(node.expression.unnest())
+                    else:
                         continue
-                    if not isinstance(node, exp.Select):
-                        continue
-                    for sel in node.selects:
-                        if isinstance(sel, exp.Alias):
-                            aid = sel.args.get("alias")
-                            if isinstance(aid, exp.Identifier) and aid.name in rename:
-                                _canon(aid, rename[aid.name])
+
                     for col in find_all_in_scope(node, exp.Column):
                         if not col.table and col.name in rename:
                             _canon(col.this, rename[col.name])

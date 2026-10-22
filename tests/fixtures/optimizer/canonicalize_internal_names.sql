@@ -102,6 +102,36 @@ SELECT "_t0"."a" + 1 AS "shared" FROM "c"."db"."x" AS "_t0" UNION BY NAME (SELEC
 WITH t AS (SELECT a AS k FROM x UNION BY NAME SELECT b AS k FROM y) SELECT k FROM t;
 WITH "_t2" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0" UNION BY NAME SELECT "_t1"."b" AS "_c0" FROM "c"."db"."y" AS "_t1") SELECT "_t2"."_c0" AS "k" FROM "_t2" AS "_t2";
 
+# title: union by name, innermost INTERSECT operand aligns its left branch only, the positional right branch keeps its own name
+# dialect: duckdb
+WITH t AS (SELECT a AS k FROM x UNION BY NAME (SELECT b AS k FROM y UNION BY NAME (SELECT c AS k FROM z INTERSECT SELECT b AS k FROM y))) SELECT k FROM t;
+WITH "_t4" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0" UNION BY NAME (SELECT "_t1"."b" AS "_c0" FROM "c"."db"."y" AS "_t1" UNION BY NAME (SELECT "_t2"."c" AS "_c0" FROM "c"."db"."z" AS "_t2" INTERSECT SELECT "_t3"."b" AS "_c3" FROM "c"."db"."y" AS "_t3"))) SELECT "_t4"."_c0" AS "k" FROM "_t4" AS "_t4";
+
+# title: union by name, parenthesized operands on both children of a nested rhs are aligned
+# dialect: duckdb
+WITH t AS (SELECT a AS k FROM x UNION BY NAME ((SELECT b AS k FROM y UNION SELECT c AS k FROM z) UNION BY NAME (SELECT b AS k FROM x))) SELECT k FROM t;
+WITH "_t4" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0" UNION BY NAME ((SELECT "_t1"."b" AS "_c0" FROM "c"."db"."y" AS "_t1" UNION SELECT "_t2"."c" AS "_c2" FROM "c"."db"."z" AS "_t2") UNION BY NAME (SELECT "_t3"."b" AS "_c0" FROM "c"."db"."x" AS "_t3"))) SELECT "_t4"."_c0" AS "k" FROM "_t4" AS "_t4";
+
+# title: union by name, ORDER BY key of a nested rhs set operation follows the aligned canonical name
+# dialect: duckdb
+WITH t AS (SELECT a AS k FROM x UNION BY NAME (SELECT b AS k FROM y UNION BY NAME (SELECT c AS k FROM z UNION BY NAME SELECT b AS k FROM x ORDER BY k DESC LIMIT 1))) SELECT k FROM t;
+WITH "_t4" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0" UNION BY NAME (SELECT "_t1"."b" AS "_c0" FROM "c"."db"."y" AS "_t1" UNION BY NAME (SELECT "_t2"."c" AS "_c0" FROM "c"."db"."z" AS "_t2" UNION BY NAME SELECT "_t3"."b" AS "_c0" FROM "c"."db"."x" AS "_t3" ORDER BY "_c0" DESC LIMIT 1))) SELECT "_t4"."_c0" AS "k" FROM "_t4" AS "_t4";
+
+# title: union by name, ORDER BY key of a parenthesized nested rhs operand follows the aligned canonical name
+# dialect: duckdb
+WITH t AS (SELECT a AS k FROM x UNION BY NAME (SELECT b AS k FROM y UNION BY NAME ((SELECT c AS k FROM z UNION ALL SELECT b AS k FROM x) ORDER BY k DESC LIMIT 1))) SELECT k FROM t;
+WITH "_t4" AS (SELECT "_t0"."a" AS "_c0" FROM "c"."db"."x" AS "_t0" UNION BY NAME (SELECT "_t1"."b" AS "_c0" FROM "c"."db"."y" AS "_t1" UNION BY NAME ((SELECT "_t2"."c" AS "_c0" FROM "c"."db"."z" AS "_t2" UNION ALL SELECT "_t3"."b" AS "_c3" FROM "c"."db"."x" AS "_t3") ORDER BY "_c0" DESC LIMIT 1))) SELECT "_t4"."_c0" AS "k" FROM "_t4" AS "_t4";
+
+# title: bigquery union all by name, ON list of a nested rhs set operation follows the aligned canonical name
+# dialect: bigquery
+WITH t AS (SELECT a AS k FROM x UNION ALL BY NAME (SELECT b AS k FROM y UNION ALL BY NAME ON (k) (SELECT c AS k FROM z))) SELECT k FROM t;
+WITH `_t3` AS (SELECT `_t0`.`a` AS `_c0` FROM `c`.`db`.`x` AS `_t0` UNION ALL BY NAME (SELECT `_t1`.`b` AS `_c0` FROM `c`.`db`.`y` AS `_t1` UNION ALL BY NAME ON (`_c0`) (SELECT `_t2`.`c` AS `_c0` FROM `c`.`db`.`z` AS `_t2`))) SELECT `_t3`.`_c0` AS `k` FROM `_t3` AS `_t3`;
+
+# title: bigquery full union all by name, nested rhs operand aligns shared names and keeps right-only names distinct
+# dialect: bigquery
+WITH t AS (SELECT a AS k, b AS v FROM x FULL UNION ALL BY NAME (SELECT b AS k, c AS w FROM y FULL UNION ALL BY NAME (SELECT c AS k, b AS u FROM z))) SELECT k, v, w, u FROM t;
+WITH `_t3` AS (SELECT `_t0`.`a` AS `_c0`, `_t0`.`b` AS `_c1` FROM `c`.`db`.`x` AS `_t0` FULL UNION ALL BY NAME (SELECT `_t1`.`b` AS `_c0`, `_t1`.`c` AS `_c3` FROM `c`.`db`.`y` AS `_t1` FULL UNION ALL BY NAME (SELECT `_t2`.`c` AS `_c0`, `_t2`.`b` AS `_c5` FROM `c`.`db`.`z` AS `_t2`))) SELECT `_t3`.`_c0` AS `k`, `_t3`.`_c1` AS `v`, `_t3`.`_c3` AS `w`, `_t3`.`_c5` AS `u` FROM `_t3` AS `_t3`;
+
 # title: case when
 SELECT CASE WHEN a > 0 THEN b ELSE a END FROM x;
 SELECT CASE WHEN "_t0"."a" > 0 THEN "_t0"."b" ELSE "_t0"."a" END AS "_col_0" FROM "c"."db"."x" AS "_t0";

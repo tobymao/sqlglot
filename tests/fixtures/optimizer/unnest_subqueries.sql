@@ -315,11 +315,13 @@ SELECT x.a FROM x FULL JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS
 
 # title: preserve IN in SEMI JOIN ON
 # execute: true
+# execute_min_python: 3.10
 SELECT x.a FROM x SEMI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 SELECT x.a FROM x SEMI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 
 # title: preserve IN in ANTI JOIN ON
 # execute: true
+# execute_min_python: 3.10
 SELECT x.a FROM x ANTI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 SELECT x.a FROM x ANTI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 

@@ -70,6 +70,14 @@ class TestClickhouse(Validator):
         self.validate_identity("SELECT EXTRACT(YEAR FROM toDateTime('2023-02-01'))")
         self.validate_identity("extract(haystack, pattern)")
         self.validate_identity("SELECT * FROM x LIMIT 1 UNION ALL SELECT * FROM y")
+        self.validate_identity(
+            "SELECT 1 UNION ALL SELECT 2 INTERSECT SELECT 2 FORMAT JSON",
+            "SELECT 1 UNION ALL (SELECT 2 INTERSECT SELECT 2) FORMAT JSON",
+        )
+        self.validate_identity(
+            "SELECT 1 UNION ALL SELECT 1 INTERSECT SELECT 1 LIMIT 1 SETTINGS limit = 1",
+            "SELECT 1 UNION ALL (SELECT 1 INTERSECT SELECT 1 LIMIT 1) SETTINGS limit = 1",
+        )
         self.validate_identity("SELECT CAST(x AS Tuple(String, Array(Nullable(Float64))))")
         self.validate_identity("countIf(x, y)")
         self.validate_identity("x = y")

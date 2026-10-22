@@ -24,6 +24,7 @@ class Hive(Dialect):
     ARRAY_AGG_INCLUDES_NULLS = None
     REGEXP_EXTRACT_DEFAULT_GROUP = 1
     ALTER_TABLE_SUPPORTS_CASCADE = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     # https://spark.apache.org/docs/latest/sql-ref-identifier.html#description
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

@@ -417,8 +417,11 @@ class Generator:
     # SELECT * VALUES into SELECT UNION
     VALUES_AS_TABLE = True
 
-    # Whether the word COLUMN is included when adding a column with ALTER TABLE
+    # Whether COLUMN/COLUMNS keywords are included when adding columns with ALTER TABLE.
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = True
+
+    # Whether ALTER TABLE mutli-column additions are wrapped in parentheses.
+    ALTER_TABLE_ADD_COLUMNS_WRAPPED = True
 
     # UNNEST WITH ORDINALITY (presto) instead of UNNEST WITH OFFSET (bigquery)
     UNNEST_WITH_ORDINALITY = True
@@ -4521,13 +4524,17 @@ class Generator:
         return f"{keyword} {items_sql}"
 
     def add_column_sql(self, expression: exp.Expr) -> str:
-        sql = self.sql(expression)
-        if isinstance(expression, exp.Schema):
-            column_text = " COLUMNS"
-        elif isinstance(expression, exp.ColumnDef) and self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
-            column_text = " COLUMN"
+        column_text = ""
+        if self.ALTER_TABLE_INCLUDE_COLUMN_KEYWORD:
+            if isinstance(expression, exp.ColumnDef):
+                column_text = " COLUMN"
+            elif isinstance(expression, exp.Schema):
+                column_text = " COLUMNS"
+
+        if isinstance(expression, exp.Schema) and not self.ALTER_TABLE_ADD_COLUMNS_WRAPPED:
+            sql = self.expressions(expression, flat=True)
         else:
-            column_text = ""
+            sql = self.sql(expression)
 
         return f"ADD{column_text} {sql}"
 

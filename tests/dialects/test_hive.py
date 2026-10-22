@@ -5,6 +5,19 @@ from sqlglot import UnsupportedError, exp
 class TestHive(Validator):
     dialect = "hive"
 
+    def test_add_columns(self):
+        sql = "ALTER TABLE Payments ADD COLUMNS (Stock DECIMAL(38, 0), dropid VARCHAR(500))"
+        self.validate_all(
+            sql,
+            write={
+                "hive": sql,
+                "spark": sql,
+                "oracle": "ALTER TABLE Payments ADD (Stock NUMBER(38, 0), dropid VARCHAR2(500))",
+                "snowflake": "ALTER TABLE Payments ADD Stock DECIMAL(38, 0), dropid VARCHAR(500)",
+                "tsql": "ALTER TABLE Payments ADD Stock NUMERIC(38, 0), dropid VARCHAR(500)",
+            },
+        )
+
     def test_is_precedence(self):
         self.validate_all(
             "SELECT FALSE IS DISTINCT FROM NULL = NULL",

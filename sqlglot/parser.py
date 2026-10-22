@@ -6201,8 +6201,10 @@ class Parser:
                         expression.set(arg, None)
                         this.set(arg, expr)
 
-            # A trailing LIMIT/FETCH can coexist with TOP on the final operand.
-            if self._curr.token_type in (TokenType.LIMIT, TokenType.FETCH):
+            # Consume modifiers after a parenthesized final operand (e.g., SELECT 1 UNION (SELECT 2)
+            # ORDER BY 1), or a LIMIT/FETCH that a final operand with TOP leaves for the whole
+            # result (e.g., SELECT 1 UNION SELECT TOP 2 2 LIMIT 1).
+            if self._match_set(self.QUERY_MODIFIER_PARSERS, advance=False):
                 this = self._parse_query_modifiers(this)
 
         return this

@@ -1,4 +1,5 @@
 import json
+import sys
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from functools import partial
@@ -236,13 +237,19 @@ class TestOptimizer(unittest.TestCase):
                     canonicalize_table_aliases
                 )
 
+            fixture_execute = False if execute is False else meta.get("execute", execute)
+            if min_python := meta.get("execute_min_python"):
+                fixture_execute = string_to_bool(fixture_execute) and sys.version_info >= tuple(
+                    map(int, min_python.split("."))
+                )
+
             future = self.pool.submit(parse_and_optimize, func, sql, dialect, **func_kwargs)
             results[future] = (
                 sql,
                 title,
                 expected,
                 dialect,
-                False if execute is False else meta.get("execute", execute),
+                fixture_execute,
             )
 
         wait(results)

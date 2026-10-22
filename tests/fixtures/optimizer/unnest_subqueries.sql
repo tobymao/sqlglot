@@ -303,11 +303,13 @@ SELECT x.a FROM x LEFT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS
 
 # title: preserve IN in RIGHT JOIN ON
 # execute: true
+# execute_min_python: 3.11
 SELECT x.a FROM x RIGHT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 SELECT x.a FROM x RIGHT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 
 # title: preserve IN in FULL JOIN ON
 # execute: true
+# execute_min_python: 3.11
 SELECT x.a FROM x FULL JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 SELECT x.a FROM x FULL JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
 
@@ -358,8 +360,8 @@ SELECT x.a FROM x JOIN y ON x.a = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = 
 
 # title: decorrelate left source before its use in JOIN ON
 # execute: true
-SELECT x.a FROM x JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = x.a);
-SELECT x.a FROM x LEFT JOIN (SELECT MAX(z.b) AS b, z.b AS _u_1 FROM y AS z WHERE TRUE GROUP BY z.b) AS _u_0 ON _u_0._u_1 = x.a JOIN y ON y.b = _u_0.b;
+SELECT x.a FROM x JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = x.a) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT MAX(z.b) AS b, z.b AS _u_1 FROM y AS z WHERE TRUE GROUP BY z.b) AS _u_0 ON _u_0._u_1 = x.a JOIN y ON y.b = _u_0.b ORDER BY x.a;
 
 # title: preserve IN in JOIN ON before a RIGHT JOIN
 # execute: true

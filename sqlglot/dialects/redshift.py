@@ -5,7 +5,7 @@ from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generators.redshift import RedshiftGenerator
 from sqlglot.parsers.redshift import RedshiftParser
-from sqlglot.tokens import TokenType
+from sqlglot.tokens import TokenType, Token
 
 
 class Redshift(Postgres):
@@ -63,5 +63,17 @@ class Redshift(Postgres):
         # Redshift allows # to appear as a table identifier prefix
         SINGLE_TOKENS = Postgres.Tokenizer.SINGLE_TOKENS.copy()
         SINGLE_TOKENS.pop("#")
+
+        def tokenize(self, sql: str) -> list[Token]:
+            tokens = super().tokenize(sql)
+
+            # '#' is removed from SINGLE_TOKENS so that e.g. '#tmp' lexes as a
+            # single identifier. A lone '#' is therefore always the bitwise
+            # XOR operator, which Postgres maps to TokenType.HASH.
+            for token in tokens:
+                if token.token_type == TokenType.VAR and token.text == "#":
+                    token.token_type = TokenType.HASH
+
+            return tokens
 
     Generator = RedshiftGenerator

@@ -410,6 +410,14 @@ class TestRedshift(Validator):
         self.validate_identity("CREATE MATERIALIZED VIEW orders AUTO REFRESH YES AS SELECT 1")
         self.validate_identity("SELECT DATEADD(DAY, 1, 'today')")
         self.validate_identity("SELECT * FROM #x")
+        self.validate_identity("SELECT x # 1")
+        self.validate_identity("SELECT 1 # y")
+        self.assertEqual(
+            transpile("SELECT x ^ 1", read="mysql", write="redshift")[0], "SELECT x # 1"
+        )
+        self.assertIsInstance(
+            parse_one("SELECT x # 1", read="redshift").expressions[0], exp.BitwiseXor
+        )
         self.validate_identity("SELECT INTERVAL '5 DAY'")
         self.validate_identity("SELECT date_col - INTERVAL '30' FROM t")
         self.validate_identity("SELECT date_col - INTERVAL '1' AS one_second_later")

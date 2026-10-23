@@ -400,7 +400,9 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT RANGE(5, 1, -1)",
             write={
+                "bigquery": "SELECT GENERATE_ARRAY(5, 1 + 1, -1)",
                 "duckdb": "SELECT RANGE(5, 1, -1)",
+                "postgres": "SELECT GENERATE_SERIES(5, 1 + 1, -1)",
                 "spark": "SELECT SEQUENCE(5, 2, -1)",
                 "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },

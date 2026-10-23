@@ -119,16 +119,25 @@ def _unique_outputs(scope: Scope) -> set[str]:
 
 
 def _has_single_output_row(scope: Scope) -> bool:
-    return isinstance(scope.expression, exp.Select) and (
-        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.expression.selects)
-        or _is_limit_1(scope)
-        or not scope.expression.args.get("from_")
+    expression = scope.expression
+    return isinstance(expression, exp.Select) and (
+        _is_limit_1(scope)
+        or (
+            not any(
+                expression.args.get(key)
+                for key in ("group", "having", "qualify", "limit", "offset")
+            )
+            and (
+                all(isinstance(e.unalias(), exp.AggFunc) for e in expression.selects)
+                or not (expression.args.get("from_") or expression.args.get("where"))
+            )
+        )
     )
 
 
 def _is_limit_1(scope: Scope) -> bool:
-    limit: exp.Limit | None = scope.expression.args.get("limit")
-    return limit is not None and limit.expression.this == "1"
+    limit = scope.expression.args.get("limit")
+    return isinstance(limit, exp.Limit) and limit.expression.this == "1"
 
 
 def join_condition(join: exp.Join) -> tuple[list[exp.Expr], list[exp.Expr], exp.Expr]:

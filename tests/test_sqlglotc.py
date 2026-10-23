@@ -35,11 +35,12 @@ class TestSQLGlotC(unittest.TestCase):
         self.command = self.build_ext(
             Distribution(
                 {
+                    "version": "0.0.0",
                     "ext_modules": [
                         Extension("sqlglot.optimizer.scope", ["scope.c"]),
                         Extension("sqlglot.optimizer.scope__mypyc", ["native.c"]),
                         Extension("standalone__mypyc", ["runtime.c"]),
-                    ]
+                    ],
                 }
             )
         )

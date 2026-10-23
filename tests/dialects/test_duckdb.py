@@ -2174,6 +2174,21 @@ class TestDuckDB(Validator):
             "SELECT INTERVAL '1 quarter'",
             write={"duckdb": "SELECT INTERVAL '1' QUARTER"},
         )
+        self.validate_identity("SELECT INTERVAL '1.5 DAY'")
+        self.validate_identity("SELECT INTERVAL '1.5' DAY")
+        self.validate_identity("SELECT INTERVAL '1.5' MONTH")
+        self.validate_all(
+            "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '-10.75 MINUTE'",
+            read={"postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '-10.75 MINUTE'"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1.5 SECOND'",
+            write={"trino": "SELECT INTERVAL '1.5' SECOND"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1.0 QUARTER'",
+            write={"postgres": "SELECT INTERVAL '3 MONTH'"},
+        )
         self.validate_all(
             "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - ((ISODOW(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7) % 7) DAY) + INTERVAL (-5) WEEK)) AS t1",
             read={

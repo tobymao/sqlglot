@@ -577,7 +577,7 @@ class PostgresGenerator(generator.Generator):
         # Postgres has no flags argument for ~, only the case-insensitive ~* operator. Of the
         # case flags, the last one wins, e.g. 'ic' is case-sensitive and 'ci' is not
         flags = flag.name if flag.is_string else ""
-        if not flags or set(flags) - {"i", "c"}:
+        if flag.is_string or set(flags) - {"i", "c"}:
             self.unsupported("Only the case flags 'i' and 'c' are supported for ~ in Postgres")
 
         return self.binary(expression, "~*" if flags.rfind("i") > flags.rfind("c") else "~")

@@ -32,8 +32,13 @@ class TestSQLGlotC(unittest.TestCase):
         self.root = Path(temporary.name)
         self.source = self.root / "sqlglot"
         self.source.mkdir()
-        self.command = self.build_ext(
-            Distribution(
+
+        # setuptools_scm's finalize hook reads pyproject.toml from the cwd; the repo root's
+        # [tool.setuptools_scm] would make it warn that the version is already set.
+        cwd = os.getcwd()
+        os.chdir(self.root)
+        try:
+            distribution = Distribution(
                 {
                     "version": "0.0.0",
                     "ext_modules": [
@@ -43,7 +48,10 @@ class TestSQLGlotC(unittest.TestCase):
                     ],
                 }
             )
-        )
+        finally:
+            os.chdir(cwd)
+
+        self.command = self.build_ext(distribution)
         self.command.build_lib = str(self.root / "build" / "lib")
         self.command.ensure_finalized()
         for extension in self.command.extensions:

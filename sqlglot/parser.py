@@ -2513,7 +2513,7 @@ class Parser:
 
         cluster: exp.Expr | None = None
         if self._match(TokenType.ON):
-            if kind == "INDEX":
+            if kind in ("INDEX", "TRIGGER"):
                 cluster = self.expression(exp.OnProperty(this=self._parse_table_parts()))
             else:
                 cluster = self._parse_on_property()
@@ -2948,7 +2948,7 @@ class Parser:
 
         return self._prev.text.upper() if self._match_texts(("ROW", "STATEMENT")) else None
 
-    def _parse_trigger_execute(self) -> exp.TriggerExecute | None:
+    def _parse_trigger_execute(self) -> exp.Expr | None:
         if not self._match(TokenType.EXECUTE):
             return None
 

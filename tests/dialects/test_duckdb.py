@@ -115,6 +115,61 @@ class TestDuckDB(Validator):
             exp.replace_placeholders(expression, **{"my var": 42}).sql("duckdb"), "SELECT 42"
         )
 
+    def test_create_trigger(self):
+        for sql, body_type in (
+            (
+                "CREATE TRIGGER audit_t AFTER UPDATE ON t REFERENCING OLD TABLE AS o "
+                "NEW TABLE AS n FOR EACH STATEMENT INSERT INTO audit "
+                "SELECT n.id, n.val - o.val FROM o JOIN n ON o.id = n.id",
+                exp.Insert,
+            ),
+            (
+                "CREATE TRIGGER audit_t AFTER INSERT ON t FOR EACH ROW "
+                "INSERT INTO audit VALUES (NEW.id, NEW.val)",
+                exp.Insert,
+            ),
+            (
+                "CREATE OR REPLACE TRIGGER audit_t AFTER DELETE ON t FOR EACH ROW "
+                "DELETE FROM audit WHERE id = OLD.id",
+                exp.Delete,
+            ),
+            (
+                'CREATE TRIGGER IF NOT EXISTS "audit t" BEFORE UPDATE OF val ON main.t '
+                "FOR EACH STATEMENT UPDATE audit SET val = val + 1",
+                exp.Update,
+            ),
+            (
+                "CREATE TRIGGER audit_t AFTER INSERT ON t REFERENCING NEW TABLE AS n "
+                "FOR EACH STATEMENT MERGE INTO audit USING n ON audit.id = n.id "
+                "WHEN MATCHED THEN UPDATE SET val = n.val "
+                "WHEN NOT MATCHED THEN INSERT VALUES (n.id, n.val)",
+                exp.Merge,
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql).assert_is(exp.Create)
+                self.assertIsNone(expression.find(exp.Command))
+                self.assertIsInstance(
+                    expression.find(exp.TriggerProperties).args["execute"], body_type
+                )
+                self.assertEqual(self.parse_one(expression.sql("duckdb", pretty=True)), expression)
+
+        for sql in (
+            "DROP TRIGGER audit_t ON t",
+            "DROP TRIGGER IF EXISTS audit_t ON main.t",
+            'DROP TRIGGER "audit t" ON "main"."t"',
+        ):
+            self.validate_identity(sql).assert_is(exp.Drop)
+
+    def test_create_trigger_command_fallback(self):
+        for body in (
+            "INSERT INTO audit SELECT trim(1, 2, 3)",
+            "INSERT INTO audit SELECT abs(1, 2)",
+        ):
+            sql = f"CREATE TRIGGER tr AFTER INSERT ON t FOR EACH STATEMENT {body}"
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
+
     def test_nearest_join(self):
         for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
             for approximate in ("", "APPROX "):

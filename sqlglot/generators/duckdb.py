@@ -1995,6 +1995,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ReturnsProperty: exp.Properties.Location.POST_ALIAS,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.TriggerProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
     }
 

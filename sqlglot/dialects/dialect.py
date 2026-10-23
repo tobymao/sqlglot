@@ -1617,7 +1617,11 @@ def generate_series_sql(
         if expression.args.get("is_end_exclusive"):
             if exclusive_func_name:
                 return self.func(exclusive_func_name, start, end, step)
-            adjusted_end = exp.Sub(this=end, expression=exp.Literal.number(1))
+            # The last value is one before the end in the direction of the step
+            if step and step.is_int and t.cast(int, step.to_py()) < 0:
+                adjusted_end: exp.Expr = exp.Add(this=end, expression=exp.Literal.number(1))
+            else:
+                adjusted_end = exp.Sub(this=end, expression=exp.Literal.number(1))
             return self.func(func_name, start, adjusted_end, step)
 
         return self.func(func_name, start, end, step)

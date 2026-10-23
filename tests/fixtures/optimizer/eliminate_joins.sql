@@ -12,6 +12,56 @@ SELECT
   x.a
 FROM x;
 
+# title: Noop - DISTINCT ON does not make projected columns unique
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT DISTINCT ON (y.c)
+    y.b
+  FROM y
+) AS y
+  ON x.b = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT DISTINCT ON (y.c)
+    y.b
+  FROM y
+) AS y
+  ON x.b = y.b;
+
+# title: Remove left join on DISTINCT ON with grouped output
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT DISTINCT ON (y.b)
+    y.b
+  FROM y
+  GROUP BY y.b
+) AS y
+  ON x.b = y.b;
+SELECT
+  x.a
+FROM x;
+
+# title: Remove left join on DISTINCT ON with LIMIT 1
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT DISTINCT ON (y.b)
+    y.b
+  FROM y
+  LIMIT 1
+) AS y
+  ON x.b = y.b;
+SELECT
+  x.a
+FROM x;
+
 # title: Remove left join on grouped derived table
 SELECT
   x.a

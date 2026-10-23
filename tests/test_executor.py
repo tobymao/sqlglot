@@ -954,6 +954,54 @@ class TestExecutor(unittest.TestCase):
             ],
         )
 
+    def test_correlated_zero_row_aggregates_preserve_empty_input_semantics(self):
+        # COALESCE(SUM(x), 0) evaluates to 0 when the subquery matches zero rows, although the
+        # rewritten LEFT JOIN only yields NULL there, so it must be compensated with 0
+        tables = {"x": [{"a": 1}, {"a": 2}], "y": [{"k": 1, "v": 10}]}
+        schema = {"x": {"a": "int"}, "y": {"k": "int", "v": "int"}}
+        self.assertEqual(
+            execute(
+                "SELECT x.a, (SELECT COALESCE(SUM(y.v), 0) FROM y WHERE y.k = x.a) AS s FROM x",
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [
+                (1, 10),
+                (2, 0),
+            ],
+        )
+
+        # COUNT keeps evaluating to 0 for zero rows
+        self.assertEqual(
+            execute(
+                "SELECT x.a, (SELECT COUNT(y.v) FROM y WHERE y.k = x.a) AS s FROM x",
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [
+                (1, 1),
+                (2, 0),
+            ],
+        )
+
+    def test_correlated_case_with_null_producing_branch_keeps_a_matched_null(self):
+        # A matched group can legitimately evaluate to NULL (COUNT(*) >= 1 is true and
+        # SUM(v) is NULL here), so wrapping the joined value with COALESCE(value, 99) would
+        # rewrite that NULL into the zero-input default
+        tables = {"x": [{"a": 1}], "y": [{"k": 1, "v": None}]}
+        schema = {"x": {"a": "int"}, "y": {"k": "int", "v": "int"}}
+        self.assertEqual(
+            execute(
+                "SELECT x.a, (SELECT CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) ELSE 99 END "
+                "FROM y WHERE y.k = x.a) AS s FROM x",
+                tables=tables,
+                schema=schema,
+            ).rows,
+            [
+                (1, None),
+            ],
+        )
+
     def test_correlated_exists_over_scalar_aggregate(self):
         tables = {"x": [{"a": 1}, {"a": 2}, {"a": None}], "y": [{"b": 2}, {"b": 3}]}
         schema = {"x": {"a": "int"}, "y": {"b": "int"}}

@@ -374,3 +374,20 @@ SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS
 # execute: true
 SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) FULL JOIN w ON FALSE;
 SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) FULL JOIN w ON FALSE;
+
+
+# title: compensate aggregates that are empty-tuple-safe with a COALESCE default
+SELECT * FROM x WHERE x.a = (SELECT COALESCE(SUM(y.b), 0) AS a FROM y WHERE y.c = x.c);
+SELECT * FROM x LEFT JOIN (SELECT COALESCE(SUM(y.b), 0) AS a, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.c WHERE x.a = COALESCE(_u_0.a, 0);
+
+# title: preserve a matched group's NULL instead of coalescing with the empty-tuple default
+SELECT * FROM x WHERE x.a = (SELECT CASE WHEN COUNT(*) >= 1 THEN SUM(y.b) ELSE 99 END AS a FROM y WHERE y.c = x.c);
+SELECT * FROM x LEFT JOIN (SELECT CASE WHEN COUNT(*) >= 1 THEN SUM(y.b) ELSE 99 END AS a, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.c WHERE x.a = _u_0.a;
+
+# title: count-only CASE branches stay compensated
+SELECT * FROM x WHERE x.a = (SELECT CASE WHEN COUNT(*) >= 1 THEN COUNT(*) ELSE 9 END AS a FROM y WHERE y.c = x.c);
+SELECT * FROM x LEFT JOIN (SELECT CASE WHEN COUNT(*) >= 1 THEN COUNT(*) ELSE 9 END AS a, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.c WHERE x.a = COALESCE(_u_0.a, CASE WHEN 0 >= 1 THEN 0 ELSE 9 END);
+
+# title: non-aggregate projections are not compensated over zero-row inputs
+SELECT * FROM x WHERE x.a = (SELECT y.d AS a FROM y WHERE y.c = x.c);
+SELECT * FROM x LEFT JOIN (SELECT ARRAY_AGG(y.d) AS a, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.c WHERE x.a = _u_0.a;

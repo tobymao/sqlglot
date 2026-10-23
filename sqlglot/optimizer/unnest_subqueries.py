@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import decimal
+
 from sqlglot import exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
@@ -390,18 +393,34 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
-        # COUNT always returns 0 on empty datasets, so we need take that into consideration here
-        # by transforming all counts into 0 and using that as the coalesced value
-        if find_in_scope(value, exp.Count):
+        # The rewritten LEFT JOIN yields NULL on the joined side for outer rows whose group does
+        # not exist, whereas the original scalar subquery would have been evaluated over zero
+        # rows there, where COUNT is 0 and any other aggregate is NULL. To preserve this, the
+        # joined value gets coalesced with the projection's zero-row evaluation. A COALESCE must
+        # not silently replace a NULL that a *matched* group legitimately produced, so it is
+        # only applied when the projected expression can never be NULL (e.g. it's composed of
+        # COUNTs and constants) and its zero-row evaluation computes to a non-NULL constant.
+        # COALESCE(SUM(v), 0) qualifies, while CASE WHEN COUNT(*) >= 1 THEN SUM(v) ELSE 99 END
+        # does not, since a matched group can evaluate to NULL which must not become 99.
+        # Non-aggregate projections are never coalesced: a subquery that matches zero rows and
+        # doesn't aggregate simply returns NULL instead of evaluating its projection.
+        # The projection is aliased once qualify ran; rules that didn't qualify first may
+        # produce a raw expression here. Mirror what the projection expression actually is.
+        projection = value.this if isinstance(value, exp.Alias) else value
 
-            def remove_aggs(node):
-                if isinstance(node, exp.Count):
-                    return exp.Literal.number(0)
-                elif isinstance(node, exp.AggFunc):
-                    return exp.null()
-                return node
-
-            alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
+        if find_in_scope(projection, exp.AggFunc):
+            zero_row_projection = _replace_aggs_with_zero_row_values(projection)
+            zero_row_value = _eval_constant(zero_row_projection)
+            if _always_non_null(projection) and zero_row_value is not None:
+                # Constants composed of multiple parts, e.g. a nested COALESCE, aren't folded by
+                # the simplifiers, so the evaluated constant is emitted directly; anything else
+                # keeps its shape (e.g. CAST(0 AS BIGINT) for CAST(COUNT(x) AS BIGINT))
+                default = (
+                    exp.convert(zero_row_value)
+                    if isinstance(zero_row_projection, exp.Coalesce)
+                    else zero_row_projection
+                )
+                alias = exp.Coalesce(this=alias, expressions=[default])
 
         if is_subquery_projection and select.parent.alias:
             alias = exp.alias_(alias, select.parent.alias)
@@ -490,5 +509,249 @@ def _other_operand(expression: object) -> exp.Expr | None:
             if isinstance(expression.left, (exp.Subquery, exp.Any, exp.Exists, exp.All))
             else expression.left
         )
+
+    return None
+
+
+def _replace_aggs_with_zero_row_values(node: E) -> E:
+    """Replace aggregates on `node` with what they evaluate to over zero rows.
+
+    COUNT is 0 over an empty input, every other aggregate is NULL.
+
+    Example:
+        >>> from sqlglot import exp, parse_one
+        >>> agg = parse_one("SELECT COALESCE(SUM(a), 0) AS v FROM t")
+        >>> _replace_aggs_with_zero_row_values(agg.expressions[0].this).sql()
+        'COALESCE(NULL, 0)'
+        >>> _replace_aggs_with_zero_row_values(parse_one("COUNT(x) + 1")).sql()
+        '0 + 1'
+    """
+
+    def _zero_row_value(node):
+        if isinstance(node, exp.Count):
+            return exp.Literal.number(0)
+        if isinstance(node, exp.AggFunc):
+            return exp.null()
+        return node
+
+    return node.copy().transform(_zero_row_value)
+
+
+def _always_non_null(node: exp.Expr) -> bool:
+    """Whether `node` can never evaluate to NULL.
+
+    This is a conservative structural check that never folds conditions: a branch that is only
+    taken at runtime could still produce NULL, even if replacing the aggregates by their
+    zero-row values folds the expression to a constant. COUNT is never NULL, and expressions
+    composed of COUNTs and constants via NULL-free operand construction (arithmetic whose
+    operands are NULL-free, comparisons, AND/OR/NOT, parentheses, casts, or COALESCE with at
+    least one NULL-free argument) can never be NULL either. Everything else (other aggregates,
+    conditionals, plain columns, division / modulo) is treated as possibly NULL.
+    """
+    if isinstance(node, exp.Case):
+        # A CASE can't produce NULL when every condition never evaluates to NULL and every
+        # branch (as well as the default) is NULL-free; let _always_non_null decide each
+        # part recursively. A branch that carries a NULL-capable aggregate (e.g. a SUM) blocks
+        # the compensation, since rewriting must not change what a matched group produced.
+        parts = []
+        if node.args.get("this") is not None:
+            parts.append(node.args["this"])
+        for when in node.args.get("ifs") or []:
+            parts.append(when.this)
+            parts.append(when.args.get("true"))
+        parts.append(node.args.get("default"))
+        return all(p is not None and _always_non_null(p) for p in parts)
+
+    if isinstance(node, exp.If):
+        false_branch = node.args.get("false")
+        true_branch = node.args.get("true")
+        if false_branch is None or true_branch is None:
+            # IF(condition, value) -> NULL when the condition is not met
+            return False
+        return (
+            _always_non_null(node.this)
+            and _always_non_null(true_branch)
+            and _always_non_null(false_branch)
+        )
+    if isinstance(node, exp.Null):
+        return False
+    if isinstance(node, (exp.Boolean, exp.Literal, exp.Neg, exp.Count)):
+        return True
+    if isinstance(node, exp.AggFunc):
+        return False
+    if isinstance(node, exp.Column):
+        # A group key can be NULL, so a projected column can be NULL too
+        return False
+    if isinstance(node, (exp.Paren, exp.Cast)):
+        # A cast of a constant NULL (e.g. CAST(NULL AS BIGINT)) is NULL itself
+        inner = node.this
+        return inner is not None and _always_non_null(inner)
+    if isinstance(node, (exp.And, exp.Or)):
+        return _always_non_null(node.this) and _always_non_null(node.expression)
+    if isinstance(node, exp.Not):
+        return _always_non_null(node.this)
+    if isinstance(node, (exp.Div, exp.Mod)):
+        # Engines differ on what division / modulo by zero yields; skip doubt entirely
+        return False
+    if isinstance(node, exp.Binary):
+        # Arithmetic and comparisons over NULL-free operands can't produce NULL
+        return _always_non_null(node.this) and _always_non_null(node.expression)
+    if isinstance(node, exp.Coalesce):
+        # COALESCE only produces NULL when all of its arguments are NULL, so any NULL-free
+        # argument makes the whole expression NULL-free
+        operands = [node.this, *(node.args.get("expressions") or [])]
+        return any(o is not None and _always_non_null(o) for o in operands)
+
+    return False
+
+
+def _eval_constant(node: exp.Expr) -> int | float | bool | None:
+    """Evaluate `node` as a SQL constant.
+
+    `node` is expected to be a constant-only expression, e.g. aggregates already replaced by
+    `_replace_aggs_with_zero_row_values`. Returns its value (numbers, booleans) or None (the
+    SQL value NULL / unsupported constructs).
+
+    Comparison semantics follow SQL three-valued logic: a comparison involving NULL is NULL,
+    AND / OR / NOT are three-valued, and CASE only takes a branch whose condition evaluates to
+    TRUE (neither FALSE nor NULL takes a branch).
+    """
+    if isinstance(node, exp.Paren):
+        return _eval_constant(node.this)
+
+    if isinstance(node, exp.Cast):
+        to = node.args.get("to")
+        if to is None:
+            return None
+        value = _eval_constant(node.this)
+        return None if value is None else _cast_constant(value, to)
+
+    if isinstance(node, (exp.TryCast, exp.Null)):
+        # TRY_CAST yields NULL on conversion failures, so it can't be evaluated statically
+        return None
+
+    if isinstance(node, exp.Boolean):
+        return bool(node.this)
+
+    if isinstance(node, exp.Literal):
+        if not node.is_number:
+            return None
+        py_value = node.to_py()
+        if isinstance(py_value, decimal.Decimal):
+            # Keep the int / float domain homogeneous for the arithmetic below
+            return int(py_value) if py_value == py_value.to_integral_value() else float(py_value)
+        return py_value if isinstance(py_value, (int, float)) else None
+
+    if isinstance(node, exp.Neg):
+        value = _eval_constant(node.this)
+        if value is None or not isinstance(value, (int, float)):
+            return None
+        return -value
+
+    if isinstance(node, (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.Mod)):
+        left = _eval_constant(node.this)
+        right = _eval_constant(node.expression)
+        if (
+            left is None
+            or right is None
+            or not isinstance(left, (int, float))
+            or not isinstance(right, (int, float))
+        ):
+            return None
+        if isinstance(node, exp.Add):
+            return left + right
+        if isinstance(node, exp.Sub):
+            return left - right
+        if isinstance(node, exp.Mul):
+            return left * right
+        if not right:
+            # Engines differ on what division / modulo by zero yields
+            return None
+        if isinstance(node, exp.Div):
+            if isinstance(left, int) and isinstance(right, int) and left % right != 0:
+                # Integer division of inexact quotients is engine-dependent, e.g. 5 / 2 is 2 or 2.5
+                return None
+            return left / right
+        if left == 0:
+            # 0 % x == 0 in every engine
+            return 0
+        if left < 0 or right < 0:
+            # The remainder's sign is engine-dependent for negative operands, e.g. -5 % 3
+            return None
+        return left % right
+
+    if isinstance(node, exp.Not):
+        value = _eval_constant(node.this)
+        return None if value is None else not value
+
+    if isinstance(node, (exp.And, exp.Or)):
+        left = _eval_constant(node.this)
+        right = _eval_constant(node.expression)
+        if isinstance(node, exp.And):
+            if left is False or right is False:
+                return False
+            if left is None or right is None:
+                return None
+            return bool(left) and bool(right)
+
+        if left is True or right is True:
+            return True
+        if left is None or right is None:
+            return None
+        return bool(left) or bool(right)
+
+    if isinstance(node, (exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE)):
+        left = _eval_constant(node.this)
+        right = _eval_constant(node.expression)
+        if left is None or right is None:
+            return None
+
+        if isinstance(node, exp.EQ):
+            return left == right
+        if isinstance(node, exp.NEQ):
+            return left != right
+        if isinstance(node, exp.GT):
+            return left > right
+        if isinstance(node, exp.GTE):
+            return left >= right
+        if isinstance(node, exp.LT):
+            return left < right
+        return left <= right
+
+    if isinstance(node, exp.Case):
+        # CASE x WHEN ... needs its operand evaluated against every branch, block it entirely
+        if node.args.get("this") is not None:
+            return None
+
+        for when in node.args.get("ifs") or []:
+            if _eval_constant(when.this) is True:
+                return _eval_constant(when.args.get("true"))
+
+        default = node.args.get("default")
+        return _eval_constant(default) if default is not None else None
+
+    if isinstance(node, exp.Coalesce):
+        operands = [node.this, *(node.args.get("expressions") or [])]
+        for operand in operands:
+            if operand is None:
+                return None
+            value = _eval_constant(operand)
+            if value is not None:
+                return value
+        return None
+
+    return None
+
+
+def _cast_constant(value: int | float | bool, to: exp.DataType):
+    """Apply the subsets of casts that share their semantics across common engines.
+
+    Numbers convert between integer and real types like Python would; int() truncates towards
+    zero as most SQL engines do. Unsupported casts return None so callers fail closed.
+    """
+    if to.is_type(*exp.DataType.INTEGER_TYPES):
+        return int(value)
+    if to.is_type(*exp.DataType.REAL_TYPES):
+        return value if isinstance(value, float) else float(value)
 
     return None

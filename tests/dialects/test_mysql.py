@@ -1321,7 +1321,11 @@ class TestMySQL(Validator):
         )
         self.validate_all(
             "DAYOFWEEK(x)",
-            write={"mysql": "DAYOFWEEK(x)", "": "DAY_OF_WEEK(CAST(x AS DATE))"},
+            write={
+                "mysql": "DAYOFWEEK(x)",
+                "": "DAY_OF_WEEK(CAST(x AS DATE))",
+                "bigquery": "EXTRACT(DAYOFWEEK FROM CAST(x AS DATE))",
+            },
         )
         self.validate_all(
             "WEEKOFYEAR(x)",

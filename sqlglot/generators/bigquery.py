@@ -429,6 +429,7 @@ class BigQueryGenerator(generator.Generator):
         exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
         exp.Day: _extract_part("DAY"),
         exp.DayOfMonth: _extract_part("DAY"),
+        exp.DayOfWeek: _extract_part("DAYOFWEEK"),
         exp.DayOfWeekIso: _day_of_week_iso_sql,
         exp.DayOfYear: _extract_part("DAYOFYEAR"),
         exp.Filter: no_filter_sql,

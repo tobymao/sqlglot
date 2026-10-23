@@ -14,7 +14,7 @@ from sqlglot.helper import (
     seq_get,
 )
 from sqlglot.errors import OptimizeError
-from sqlglot.optimizer.scope import Scope, ScopeType, traverse_scope
+from sqlglot.optimizer.scope import Scope, traverse_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
 if t.TYPE_CHECKING:
@@ -211,7 +211,7 @@ class TypeAnnotator:
         # Keep annotated nodes alive so their ids cannot be reused while cached
         self._visited: dict[int, exp.Expr] = {}
 
-        # Expressions whose types or query metadata may contain NULL, finalized after coercion.
+        # Candidates for replacing NULL types with the dialect's default after inference.
         self._null_expressions: dict[int, exp.Expr] = {}
 
         # Databricks and Spark ≥v3 actually support NULL (i.e., VOID) as a type
@@ -258,21 +258,22 @@ class TypeAnnotator:
     def _set_type(
         self, expression: exp.Expr, target_type: exp.DataType | exp.DType | None
     ) -> exp.Expr:
+        prev_type = expression.type
         expression_id = id(expression)
 
         # TODO (mypyc): expression.type = ... should work but mypyc compiles the property
         # setter to enforce the getter's return type (Optional[DataType]), rejecting DType.
         # Bypass by converting and assigning to _type directly.
         dtype = target_type or exp.DType.UNKNOWN
-        data_type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
-        expression._type = data_type
+        expression._type = dtype if isinstance(dtype, exp.DataType) else dtype.into_expr()
         self._visited[expression_id] = expression
 
-        if not self._supports_null_type and (
-            data_type.is_type(exp.DType.NULL) or data_type.expressions
+        if (
+            not self._supports_null_type
+            and t.cast(exp.DataType, expression.type).this == exp.DType.NULL
         ):
             self._null_expressions[expression_id] = expression
-        else:
+        elif prev_type and t.cast(exp.DataType, prev_type).this == exp.DType.NULL:
             self._null_expressions.pop(expression_id, None)
 
         return expression
@@ -289,44 +290,12 @@ class TypeAnnotator:
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
-        # Retain original types while caching by identity, since aliases can share a type.
-        finalized_types: dict[int, tuple[exp.DataType, exp.DataType]] = {}
+        # TODO (mypyc): uses list() + _set_type instead of direct expr.type = ... because
+        # mypyc's property setter bypass rejects DType, and _set_type modifies the dict.
         for expr in list(self._null_expressions.values()):
-            if expr.type:
-                self._set_type(expr, self._finalize_type(expr.type, finalized_types))
-            if query_type := expr.meta_get("query_type"):
-                expr.meta["query_type"] = self._finalize_type(query_type, finalized_types)
-        self._null_expressions.clear()
+            self._set_type(expr, self.dialect.DEFAULT_NULL_TYPE)
 
         return expression
-
-    def _finalize_type(
-        self,
-        data_type: exp.DataType,
-        finalized_types: dict[int, tuple[exp.DataType, exp.DataType]],
-    ) -> exp.DataType:
-        key = id(data_type)
-        if cached := finalized_types.get(key):
-            return cached[1]
-
-        result = data_type
-        if data_type.is_type(exp.DType.NULL):
-            result = self.dialect.DEFAULT_NULL_TYPE.into_expr()
-        elif data_type.expressions and any(
-            kind.is_type(exp.DType.NULL) for kind in data_type.find_all(exp.DataType)
-        ):
-            result = data_type.copy()
-            for kind in reversed(list(result.find_all(exp.DataType))):
-                if kind.is_type(exp.DType.NULL):
-                    kind.set("this", self.dialect.DEFAULT_NULL_TYPE)
-                elif kind.is_type(exp.DType.STRUCT) and any(
-                    field.is_type(exp.DType.UNKNOWN) for field in kind.find_all(exp.DataType)
-                ):
-                    kind.set("this", exp.DType.UNKNOWN)
-                    kind.set("expressions", None)
-                    kind.set("nested", None)
-        finalized_types[key] = (data_type, result)
-        return result
 
     def _get_scope_source_selects(
         self, scope: Scope, source_name: str
@@ -464,8 +433,6 @@ class TypeAnnotator:
                 # using it in other contexts (e.g., ARRAY(<query>)) could result in incorrect type
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
-                if not self._supports_null_type:
-                    self._null_expressions[id(scope.expression)] = scope.expression
 
     def annotate_expression(
         self,
@@ -484,18 +451,6 @@ class TypeAnnotator:
                 continue  # We've already inferred the expression's type
 
             if not children_annotated:
-                if (
-                    scope
-                    and isinstance(expr, exp.Query)
-                    and expr is not scope.expression
-                    and id(expr.unnest()) not in self._visited
-                ):
-                    child_scope = scope.branch(expr, scope_type=ScopeType.SUBQUERY)
-                    for nested_scope in traverse_scope(child_scope):
-                        if id(nested_scope.expression) not in self._visited:
-                            self.annotate_scope(nested_scope)
-                    if id(expr) in self._visited:
-                        continue
                 stack.append((expr, True))
                 for child_expr in expr.iter_expressions():
                     stack.append((child_expr, False))

@@ -664,7 +664,7 @@ class Scope:
         return scope_ref_count
 
 
-def traverse_scope(expression: exp.Expr | Scope) -> list[Scope]:
+def traverse_scope(expression: exp.Expr) -> list[Scope]:
     """
     Traverse an expression by its "scopes".
 
@@ -690,13 +690,11 @@ def traverse_scope(expression: exp.Expr | Scope) -> list[Scope]:
         ('SELECT a FROM (SELECT a FROM x) AS y', ['y'])
 
     Args:
-        expression: Expr to traverse, or an unpopulated Scope to populate
+        expression: Expr to traverse
 
     Returns:
         A list of the created scope instances
     """
-    if isinstance(expression, Scope):
-        return list(_traverse_scope(expression))
     if isinstance(expression, TRAVERSABLES):
         return list(_traverse_scope(Scope(expression)))
     return []

@@ -371,7 +371,6 @@ class PostgresGenerator(generator.Generator):
         exp.PercentileDisc: transforms.preprocess([transforms.add_within_group_for_percentiles]),
         exp.Pivot: no_pivot_sql,
         exp.Rand: rename_func("RANDOM"),
-        exp.RegexpLike: lambda self, e: self.binary(e, "~"),
         exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
         exp.RegexpReplace: lambda self, e: self.func(
             "REGEXP_REPLACE",
@@ -569,6 +568,19 @@ class PostgresGenerator(generator.Generator):
         # https://www.postgresql.org/docs/current/functions-window.html
         self.unsupported("PostgreSQL does not support RESPECT NULLS.")
         return self.sql(expression.this)
+
+    def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+        flag = expression.args.get("flag")
+        if not flag:
+            return self.binary(expression, "~")
+
+        # Postgres has no flags argument for ~, only the case-insensitive ~* operator. Of the
+        # case flags, the last one wins, e.g. 'ic' is case-sensitive and 'ci' is not
+        flags = flag.name if flag.is_string else ""
+        if not flags or set(flags) - {"i", "c"}:
+            self.unsupported("Only the case flags 'i' and 'c' are supported for ~ in Postgres")
+
+        return self.binary(expression, "~*" if flags.rfind("i") > flags.rfind("c") else "~")
 
     @unsupported_args("this")
     def currentschema_sql(self, expression: exp.CurrentSchema) -> str:

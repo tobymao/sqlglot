@@ -1514,7 +1514,7 @@ class TestOptimizer(unittest.TestCase):
         self.assertEqual(second.this.name, "v")
 
     def test_qualify_preserves_unsupported_struct_star_operands(self):
-        for operand in ("IF(TRUE, s, NULL)", "STRUCT(s AS nested)", "(SELECT s FROM t LIMIT 1)"):
+        for operand in ("FOO(s)", "IF(RAND() < 0.5, s, NULL)", "CAST(FOO() AS STRUCT<x INT64>)"):
             with self.subTest(operand=operand):
                 qualified = qualify(
                     parse_one(f"SELECT {operand}.* FROM t", dialect="bigquery"),
@@ -1532,6 +1532,194 @@ class TestOptimizer(unittest.TestCase):
                     .selects[0]
                     .this.sql("bigquery"),
                 )
+
+    def test_qualify_struct_star_operands(self):
+        schema = {"t": {"s": "STRUCT<x INT64, y STRING>"}}
+        rows = [(1, "a"), (2, "b")]
+        structs = [({"x": x, "y": y},) for x, y in rows]
+        for dialect, sql, names, expected in (
+            ("bigquery", "SELECT IF(TRUE, s, NULL).* FROM t", ["x", "y"], rows),
+            ("bigquery", "SELECT IF(FALSE, s, NULL).* FROM t", ["x", "y"], [(None, None)] * 2),
+            ("bigquery", "SELECT STRUCT(s AS nested).* FROM t", ["nested"], structs),
+            ("bigquery", "SELECT IF(TRUE, t, NULL).* FROM t", ["s"], structs),
+            ("bigquery", "SELECT STRUCT(t AS r).r.* FROM t", ["s"], structs),
+            ("bigquery", "SELECT (SELECT AS STRUCT 1 AS x, 'a' AS y).*", ["x", "y"], [(1, "a")]),
+            (
+                "bigquery",
+                "SELECT (SELECT s FROM t ORDER BY s.x LIMIT 1).* FROM t",
+                ["x", "y"],
+                [(1, "a")] * 2,
+            ),
+            (
+                "bigquery",
+                "SELECT IF(TRUE, s, NULL).* EXCEPT (y) REPLACE (9 AS x) FROM t",
+                ["x"],
+                [(9,)] * 2,
+            ),
+            ("risingwave", "SELECT (s).* FROM t", ["x", "y"], rows),
+            ("risingwave", "SELECT (t).* FROM t", ["s"], structs),
+        ):
+            with self.subTest(dialect=dialect, sql=sql):
+                qualified = qualify(parse_one(sql, dialect=dialect), schema=schema, dialect=dialect)
+                self.assertEqual(qualified.named_selects, names)
+                with duckdb.connect() as connection:
+                    connection.execute(
+                        "CREATE TABLE t AS SELECT struct_pack(x := x, y := y) AS s "
+                        "FROM (VALUES (1, 'a'), (2, 'b')) AS d(x, y)"
+                    )
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), expected
+                    )
+
+    def test_qualify_struct_star_subquery_scopes(self):
+        schema = {
+            "t": {"s": "STRUCT<x INT64, y INT64>"},
+            "u": {"s": "STRUCT<x STRING, y STRING>"},
+        }
+        for sql in (
+            "SELECT (SELECT s FROM u LIMIT 1).* FROM t",
+            "SELECT (SELECT s FROM u AS t LIMIT 1).* FROM t",
+            "WITH c AS (SELECT s FROM u) SELECT (SELECT s FROM c LIMIT 1).* FROM t",
+            "SELECT (SELECT t.s FROM u LIMIT 1).* FROM u AS t",
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                self.assertEqual(
+                    [s.type.sql("bigquery") for s in qualified.selects], ["STRING"] * 2
+                )
+                with duckdb.connect() as connection:
+                    connection.execute("CREATE TABLE t AS SELECT STRUCT_PACK(x := 1, y := 2) AS s")
+                    connection.execute(
+                        "CREATE TABLE u AS SELECT STRUCT_PACK(x := 'a', y := 'b') AS s"
+                    )
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), [("a", "b")]
+                    )
+
+    def test_qualify_struct_star_set_operations(self):
+        schema = {"t": {"s": "STRUCT<x INT64, y INT64>"}}
+        for kind in ("", "AS STRUCT "):
+            for operation in ("UNION ALL", "UNION DISTINCT", "INTERSECT DISTINCT"):
+                with self.subTest(kind=kind, operation=operation):
+                    qualified = qualify(
+                        parse_one(
+                            f"SELECT (SELECT {kind}s FROM t {operation} "
+                            f"SELECT {kind}s FROM t LIMIT 1).*",
+                            dialect="bigquery",
+                        ),
+                        schema=schema,
+                        dialect="bigquery",
+                    )
+                    if kind:
+                        self.assertTrue(qualified.selects[0].is_star)
+                        scalar = exp.select(qualified.selects[0].this.copy())
+                        expected = [({"s": {"x": 1, "y": 2}},)]
+                    else:
+                        self.assertEqual(qualified.named_selects, ["x", "y"])
+                        scalar = qualified
+                        expected = [(1, 2)]
+                    with duckdb.connect() as connection:
+                        connection.execute(
+                            "CREATE TABLE t AS SELECT STRUCT_PACK(x := 1, y := 2) AS s"
+                        )
+                        self.assertEqual(
+                            connection.execute(scalar.sql("duckdb")).fetchall(), expected
+                        )
+
+    def test_qualify_struct_star_pending_correlations(self):
+        schema = {"t": {"a": "INT64"}}
+        for column in ("a", "t.a"):
+            with self.subTest(column=column):
+                sql = (
+                    "SELECT (SELECT AS STRUCT "
+                    f"(SELECT AS STRUCT 1 AS x, 2 AS y WHERE {column} = 1).*) FROM t"
+                )
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                self.assertTrue(
+                    all(c.table == "t" for c in qualified.find_all(exp.Column) if c.name == "a")
+                )
+                if column == "a":
+                    self.assertTrue(any(s.is_star for s in qualified.find_all(exp.Select)))
+                else:
+                    optimized = optimizer.optimize(
+                        parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                    )
+                    with duckdb.connect() as connection:
+                        connection.execute("CREATE TABLE t AS SELECT 1 AS a")
+                        for tree in (qualified, optimized):
+                            self.assertEqual(
+                                connection.execute(tree.sql("duckdb")).fetchall(),
+                                [({"x": 1, "y": 2},)],
+                            )
+
+    def test_optimize_struct_star_row_references(self):
+        schema = {"t": {"s": "INT"}}
+        for source in (
+            "(SELECT s FROM t) AS r",
+            "r",
+            "(SELECT s FROM t) AS r JOIN (SELECT s FROM t) AS q ON TRUE",
+        ):
+            for operand in ("(r)", "(CASE WHEN TRUE THEN r END)"):
+                with self.subTest(source=source, operand=operand):
+                    cte = "WITH r AS (SELECT s FROM t) " if source == "r" else ""
+                    sql = f"{cte}SELECT {operand}.* FROM {source}"
+                    qualified = qualify(
+                        parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                    )
+                    merged = optimizer.merge_subqueries.merge_subqueries(qualified.copy())
+                    optimized = optimizer.optimize(
+                        parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                    )
+                    with duckdb.connect() as connection:
+                        connection.execute("CREATE TABLE t AS SELECT 1 AS s")
+                        for tree in (qualified, merged, optimized):
+                            self.assertEqual(
+                                connection.execute(tree.sql("duckdb")).fetchall(), [(1,)]
+                            )
+
+    def test_optimize_struct_star_source_conflicts(self):
+        schema = {"t": {"s": "INT"}, "u": {"s": "INT"}}
+        for sql, expected in (
+            (
+                "SELECT q.s FROM (SELECT (r).* FROM t AS r) AS q CROSS JOIN u AS r",
+                [(1,)],
+            ),
+            (
+                "SELECT q.nested FROM (SELECT STRUCT(r AS nested).* FROM t AS r) AS q "
+                "CROSS JOIN u AS r",
+                [({"s": 1},)],
+            ),
+            (
+                "SELECT (r).* FROM t LEFT JOIN (SELECT DISTINCT s FROM u) AS r ON t.s = r.s",
+                [(None,)],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                optimized = optimizer.optimize(
+                    parse_one(sql, dialect="bigquery"), schema=schema, dialect="bigquery"
+                )
+                with duckdb.connect() as connection:
+                    connection.execute("CREATE TABLE t AS SELECT 1 AS s")
+                    connection.execute("CREATE TABLE u AS SELECT 2 AS s")
+                    for tree in (qualified, optimized):
+                        self.assertEqual(
+                            connection.execute(tree.sql("duckdb")).fetchall(), expected
+                        )
+
+    def test_qualify_nested_struct_star_size(self):
+        sql = "SELECT AS STRUCT 1 AS x, 2 AS y"
+        for _ in range(10):
+            sql = f"SELECT AS STRUCT ({sql}).*"
+        qualified = qualify(parse_one(sql, dialect="bigquery"), dialect="bigquery")
+        self.assertLess(sum(1 for _ in qualified.walk()), 2000)
+        self.assertTrue(any(s.is_star for s in qualified.find_all(exp.Select)))
 
     def test_qualify_json_path_argument_order(self):
         expression = "ANY_VALUE(JSON_VALUE(j.Foo, '$') || JSON_VALUE(j.foo, '$'))"

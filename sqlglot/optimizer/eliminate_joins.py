@@ -66,6 +66,9 @@ def _should_eliminate_join(scope: Scope, join: exp.Join, alias: str) -> bool:
 
 
 def _join_is_used(scope: Scope, join: exp.Join, alias: str) -> bool:
+    if any(column.name == alias for column in scope.expression.find_all(exp.TableColumn)):
+        return True
+
     # We need to find all columns that reference this join.
     # But columns in the ON clause shouldn't count.
     on: exp.Expr | None = join.args.get("on")

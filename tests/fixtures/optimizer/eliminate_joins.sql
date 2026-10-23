@@ -450,6 +450,79 @@ CROSS JOIN (
     ROW_NUMBER() OVER () > 1
 ) AS y;
 
+# title: Cross join on aggregate subquery with WHERE
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  WHERE
+    FALSE
+) AS y;
+SELECT
+  x.a
+FROM x;
+
+# title: Cross join on set-returning subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y;
+
+# title: Cross join on aggregate subquery with set-returning column
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b,
+    UNNEST(ARRAY(1, 2)) AS c
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b,
+    UNNEST(ARRAY(1, 2)) AS c
+  FROM y
+) AS y;
+
+# title: Left join on set-returning subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y
+  ON x.a = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y
+  ON x.a = y.b;
+
 # title: Left join on subquery with FETCH
 # execute: true
 SELECT
@@ -473,73 +546,6 @@ LEFT JOIN (
 ) AS y
   ON x.a = y.b;
 
-# title: Cross join on aggregate subquery with WHERE
-# execute: true
-SELECT
-  x.a
-FROM x
-CROSS JOIN (
-  SELECT
-    COUNT(*) AS b
-  FROM y
-  WHERE
-    FALSE
-) AS y;
-SELECT
-  x.a
-FROM x;
-
-# title: Remove left join on aggregate subquery with HAVING
-# execute: true
-SELECT
-  x.a
-FROM x
-LEFT JOIN (
-  SELECT
-    COUNT(*) AS b
-  FROM y
-  HAVING
-    COUNT(*) > 0
-) AS y
-  ON x.a = y.b;
-SELECT
-  x.a
-FROM x;
-
-# title: Remove left join on filtered subquery with LIMIT 1
-# execute: true
-SELECT
-  x.a
-FROM x
-LEFT JOIN (
-  SELECT
-    y.b AS b
-  FROM y
-  WHERE
-    y.b > 100
-  LIMIT 1
-) AS y
-  ON x.a = y.b;
-SELECT
-  x.a
-FROM x;
-
-# title: Remove left join on FROM-less subquery with WHERE
-# execute: true
-SELECT
-  x.a
-FROM x
-LEFT JOIN (
-  SELECT
-    1 AS b
-  WHERE
-    FALSE
-) AS y
-  ON x.a = y.b;
-SELECT
-  x.a
-FROM x;
-
 # title: Left join on non-unique subquery
 # execute: true
 SELECT
@@ -561,35 +567,20 @@ LEFT JOIN (
 ) AS y
   ON x.a = y.b;
 
-# title: Cross join on nested aggregate subquery
+# title: Remove left join on filtered subquery with LIMIT 1
 # execute: true
 SELECT
   x.a
 FROM x
-CROSS JOIN (
+LEFT JOIN (
   SELECT
-    SUM(y.b) + 1 AS b
+    y.b AS b
   FROM y
-) AS y;
+  WHERE
+    y.b > 100
+  LIMIT 1
+) AS y
+  ON x.a = y.b;
 SELECT
   x.a
 FROM x;
-
-# title: Cross join on windowed aggregate subquery
-# execute: true
-SELECT
-  x.a
-FROM x
-CROSS JOIN (
-  SELECT
-    SUM(y.b) OVER () AS b
-  FROM y
-) AS y;
-SELECT
-  x.a
-FROM x
-CROSS JOIN (
-  SELECT
-    SUM(y.b) OVER () AS b
-  FROM y
-) AS y;

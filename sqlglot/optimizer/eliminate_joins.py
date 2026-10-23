@@ -3,9 +3,8 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
-from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -113,17 +112,10 @@ def _unique_outputs(scope: Scope) -> set[str]:
         else:
             return set()
 
-    if _has_at_most_one_row(scope):
+    if _is_limit_1(scope) or _has_single_output_row(scope):
         return set(expr.named_selects)
 
     return set()
-
-
-def _has_at_most_one_row(scope: Scope) -> bool:
-    expression = scope.expression
-    if not isinstance(expression, exp.Select):
-        return False
-    return _is_limit_1(scope) or not expression.args.get("from_") or _has_aggregate(expression)
 
 
 def _has_single_output_row(scope: Scope) -> bool:
@@ -134,17 +126,16 @@ def _has_single_output_row(scope: Scope) -> bool:
     args = expression.args
     if any(args.get(key) for key in ("group", "having", "qualify", "limit", "offset")):
         return False
-
-    return (not args.get("from_") and not args.get("where")) or _has_aggregate(expression)
+    if args.get("from_") or args.get("where"):
+        return all(isinstance(select.unalias(), exp.AggFunc) for select in expression.selects)
+    return not any(
+        find_in_scope(select, *exp.SET_RETURNING_FUNCTIONS) for select in expression.selects
+    )
 
 
 def _is_limit_1(scope: Scope) -> bool:
     limit = scope.expression.args.get("limit")
     return isinstance(limit, exp.Limit) and limit.expression.this == "1"
-
-
-def _has_aggregate(expression: exp.Select) -> bool:
-    return any(projection_has_aggregate(select) for select in expression.selects)
 
 
 def join_condition(join: exp.Join) -> tuple[list[exp.Expr], list[exp.Expr], exp.Expr]:

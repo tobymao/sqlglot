@@ -144,6 +144,18 @@ class TestPostgres(Validator):
         )
         self.validate_identity("SELECT ST_DISTANCE(gg1, gg2, FALSE) AS sphere_dist")
         self.validate_identity("SHA384(x)")
+        self.validate_all(
+            "SELECT SHA256(x)",
+            write={"duckdb": "SELECT UNHEX(SHA256(x))", "snowflake": "SELECT SHA2_BINARY(x, 256)"},
+        )
+        self.validate_all(
+            "SELECT ENCODE(SHA256(x), 'hex')",
+            read={
+                "duckdb": "SELECT SHA256(x)",
+                "snowflake": "SELECT SHA2(x, 256)",
+                "spark": "SELECT SHA2(x, 256)",
+            },
+        )
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")

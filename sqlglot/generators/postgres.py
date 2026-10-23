@@ -253,6 +253,11 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
     return self.func("ROUND", this, decimals)
 
 
+def _sha2_sql(self: PostgresGenerator, expression: exp.SHA2) -> str:
+    # SHA2 is a hex string, while Postgres' SHA256 and friends return bytea
+    return self.func("ENCODE", sha256_sql(self, expression), exp.Literal.string("hex"))
+
+
 class PostgresGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -388,7 +393,7 @@ class PostgresGenerator(generator.Generator):
                 transforms.eliminate_qualify,
             ]
         ),
-        exp.SHA2: sha256_sql,
+        exp.SHA2: _sha2_sql,
         exp.SHA2Digest: sha2_digest_sql,
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
         exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),

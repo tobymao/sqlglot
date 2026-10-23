@@ -1521,3 +1521,15 @@ SELECT X.$2 AS _COL_0 FROM UNKNOWN AS X(ALIAS_NAME);
 # execute: false
 SELECT * FROM y JOIN z USING (c, b);
 SELECT COALESCE(y.b, z.b) AS b, COALESCE(y.c, z.c) AS c FROM y AS y JOIN z AS z ON y.c = z.c AND y.b = z.b;
+
+# title: BigQuery unpivot row alias takes precedence over a same-named input column
+# dialect: bigquery
+# execute: false
+SELECT unp FROM (SELECT 7 AS unp, 1 AS a, 2 AS b) UNPIVOT(v FOR k IN (a, b)) AS unp;
+SELECT unp AS unp FROM (SELECT 7 AS unp, 1 AS a, 2 AS b) AS _0 UNPIVOT(v FOR k IN (_0.a, _0.b)) AS unp;
+
+# title: BigQuery pivot row alias resolves without a source schema
+# dialect: bigquery
+# execute: false
+SELECT ARRAY_AGG(piv) AS arr FROM unknown_table AS u PIVOT(SUM(u.v) FOR u.k IN (82 AS a)) AS piv;
+SELECT ARRAY_AGG(piv) AS arr FROM unknown_table AS u PIVOT(SUM(u.v) FOR u.k IN (82 AS a)) AS piv;

@@ -146,8 +146,13 @@ class TestPostgres(Validator):
         self.validate_identity("SHA384(x)")
         self.validate_all(
             "SELECT SHA256(x)",
-            write={"duckdb": "SELECT UNHEX(SHA256(x))", "snowflake": "SELECT SHA2_BINARY(x, 256)"},
+            write={"duckdb": "SELECT UNHEX(SHA256(x))"},
         )
+        for length in (256, 384, 512):
+            self.validate_all(
+                f"SELECT SHA{length}(x)",
+                write={"snowflake": f"SELECT SHA2_BINARY(x, {length})"},
+            )
         self.validate_all(
             "SELECT ENCODE(SHA256(x), 'hex')",
             read={

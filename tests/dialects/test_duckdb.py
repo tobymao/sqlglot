@@ -1609,6 +1609,12 @@ class TestDuckDB(Validator):
                 "postgres": "SELECT x ~ 'a'",
             },
         )
+        self.validate_all(
+            "SELECT REGEXP_MATCHES(x, 'a', '')",
+            write={
+                "postgres": "SELECT x ~ 'a'",
+            },
+        )
         self.validate_identity(
             "SELECT DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",
             "SELECT CAST('2020-01-01' AS DATE) + INTERVAL '1' DAY",

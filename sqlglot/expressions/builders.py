@@ -921,7 +921,7 @@ def replace_placeholders(expression: Expr, *args: object, **kwargs: t.Any) -> Ex
     def _replace_placeholders(node: Expr, args: Iterator[object], **kwargs: object) -> Expr:
         if isinstance(node, Placeholder):
             if node.this:
-                new_name = kwargs.get(node.this)
+                new_name = kwargs.get(node.name)
                 if new_name is not None:
                     return _replace_placeholder(node, convert(new_name))
             else:

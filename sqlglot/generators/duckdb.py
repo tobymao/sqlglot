@@ -2740,6 +2740,11 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("SOUNDEX is not supported in DuckDB")
         return self.func("SOUNDEX", expression.this)
 
+    def placeholder_sql(self, expression: exp.Placeholder) -> str:
+        if isinstance(expression.this, exp.Identifier):
+            return f"${self.sql(expression, 'this')}"
+        return super().placeholder_sql(expression)
+
     def install_sql(self, expression: exp.Install) -> str:
         force = "FORCE " if expression.args.get("force") else ""
         this = self.sql(expression, "this")

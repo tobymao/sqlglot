@@ -1054,6 +1054,16 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                             f"SELECT * FROM t WHERE JSON_EXISTS(name{format_json}, '$[1].middle'{passing}{on_cond})"
                         )
 
+        self.validate_identity("SELECT JSON_VALUE(doc, '$.a') FROM t")
+        self.validate_identity("SELECT JSON_VALUE(doc, '$.a' RETURNING NUMBER) FROM t")
+        self.validate_identity("SELECT JSON_VALUE(doc, '$.a' RETURNING VARCHAR2(10)) FROM t")
+        self.validate_identity(
+            "SELECT JSON_VALUE(doc, '$.a' RETURNING NUMBER NULL ON ERROR) FROM t"
+        )
+        self.validate_identity(
+            "SELECT JSON_VALUE(doc, '$.a' RETURNING NUMBER DEFAULT 0 ON ERROR NULL ON EMPTY) FROM t"
+        )
+
     def test_grant(self):
         grant_cmds = [
             "GRANT purchases_reader_role TO george, maria",

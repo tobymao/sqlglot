@@ -3660,6 +3660,9 @@ class Generator:
             first = "FIRST" if first else "LAST"
 
         if not partition and not order and not spec and alias:
+            # WINDOW w2 AS w1 is unparseable in DuckDB/Postgres; parens are required.
+            if expression.arg_key == "windows":
+                return f"{this} ({alias})"
             return f"{this} {alias}"
 
         args = self.format_args(

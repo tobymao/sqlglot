@@ -79,6 +79,7 @@ class OracleParser(parser.Parser):
         "JSON_ARRAY": lambda self: self._parse_oracle_json_array(),
         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
         "JSON_EXISTS": lambda self: self._parse_json_exists(),
+        "JSON_VALUE": lambda self: self._parse_json_value(),
         "LISTAGG": lambda self: self._parse_string_agg(),
         "TO_NUMBER": lambda self: self._parse_to_number(),
     }

@@ -6447,6 +6447,7 @@ class Parser:
         # handle day-time format interval span with omitted units:
         #   INTERVAL '<number days> hh[:][mm[:ss[.ff]]]' <maybe `unit TO unit`>
         interval_span_units_omitted = None
+        fraction_in_string = False
         if (
             this
             and this.is_string
@@ -6496,6 +6497,7 @@ class Parser:
             if len(parts) == 1:
                 this = exp.Literal.string(parts[0][0])
                 unit = self.expression(exp.Var(this=parts[0][1].upper()))
+                fraction_in_string = "." in parts[0][0]
 
         if self.INTERVAL_SPANS and self._match_text_seq("TO"):
             unit = self.expression(
@@ -6506,7 +6508,9 @@ class Parser:
                 )
             )
 
-        return self.expression(exp.Interval(this=this, unit=unit))
+        return self.expression(
+            exp.Interval(this=this, unit=unit, fraction_in_string=fraction_in_string or None)
+        )
 
     def _parse_interval(
         self, require_interval: bool = True, parse_function_unit: bool = True

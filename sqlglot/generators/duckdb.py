@@ -3161,6 +3161,15 @@ class DuckDBGenerator(generator.Generator):
             )
         return super().in_sql(expression)
 
+    def interval_sql(self, expression: exp.Interval) -> str:
+        # DuckDB truncates INTERVAL '1.5' DAY to 1 day, but keeps the fraction in INTERVAL '1.5 DAY'
+        this = expression.this
+        unit = expression.unit
+        if expression.args.get("fraction_in_string") and this and isinstance(unit, exp.Var):
+            return f"INTERVAL '{this.name} {self.sql(unit)}'"
+
+        return super().interval_sql(expression)
+
     def join_sql(self, expression: exp.Join) -> str:
         if (
             not expression.args.get("using")

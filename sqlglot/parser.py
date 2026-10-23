@@ -1061,6 +1061,8 @@ class Parser:
 
     JOIN_HINTS: t.ClassVar[set[str]] = set()
 
+    SUPPORTS_DIRECTED_JOIN = True
+
     # Tokens that unambiguously end a table reference on the fast path
     TABLE_TERMINATORS: t.ClassVar[frozenset] = frozenset(
         {
@@ -4825,7 +4827,7 @@ class Parser:
 
         index = self._index
         method, side, kind = self._parse_join_parts()
-        directed = self._match_text_seq("DIRECTED")
+        directed = self.SUPPORTS_DIRECTED_JOIN and self._match_text_seq("DIRECTED")
         hint = self._prev.text if self._match_texts(self.JOIN_HINTS) else None
         join = self._match(TokenType.JOIN) or (kind and kind.token_type == TokenType.STRAIGHT_JOIN)
         join_comments = self._prev_comments

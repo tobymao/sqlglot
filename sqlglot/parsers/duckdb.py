@@ -98,6 +98,10 @@ class DuckDBParser(parser.Parser):
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
     PIVOT_COLUMN_NAMING = "agg_name_if_aliased_or_multiple"
 
+    SUPPORTS_DIRECTED_JOIN = False
+
+    JOIN_KINDS = parser.Parser.JOIN_KINDS - {TokenType.STRAIGHT_JOIN}
+
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.LOCALTIME: exp.Localtime,

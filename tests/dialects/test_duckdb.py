@@ -11,6 +11,12 @@ class TestDuckDB(Validator):
     dialect = "duckdb"
 
     def test_join_by_type(self):
+        for table in ("directed", "straight_join"):
+            self.validate_identity(
+                f"SELECT * FROM a JOIN BY (TYPE INNER) {table} AS b ON a.id = b.id",
+                f"SELECT * FROM a INNER JOIN {table} AS b ON a.id = b.id",
+            )
+
         for kind, side, normalized_kind in (
             ("inner", "", "INNER"),
             ("left", "LEFT", ""),

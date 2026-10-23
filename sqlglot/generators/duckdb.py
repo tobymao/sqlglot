@@ -2388,6 +2388,27 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(add_expr)
 
+    def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
+        # DuckDB has no Unicode escape strings and doesn't read \u in a string, so the escapes
+        # are decoded into the characters, e.g. U&'d\0061t\0061' and U&'d!+000061ta' UESCAPE '!'
+        # are both 'data'
+        escape = expression.args.get("escape")
+        escape_char = re.escape(escape.name if isinstance(escape, exp.Expr) else "\\")
+        pattern = re.compile(
+            rf"{escape_char}(?:\+([0-9a-fA-F]{{6}})|([0-9a-fA-F]{{4}})|({escape_char}))"
+        )
+
+        def decode(match: re.Match[str]) -> str:
+            if match.group(3):
+                return match.group(3)
+            return chr(int(match.group(1) or match.group(2), 16))
+
+        # A character outside the BMP can be written as a UTF-16 surrogate pair
+        text = (
+            pattern.sub(decode, expression.name).encode("utf-16", "surrogatepass").decode("utf-16")
+        )
+        return self.sql(exp.Literal.string(text))
+
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
             return super().bytestring_sql(expression)

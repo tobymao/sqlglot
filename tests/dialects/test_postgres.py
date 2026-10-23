@@ -1878,6 +1878,10 @@ FROM json_data, field_ids""",
         self.validate_identity("SELECT U&'can''t'")
         self.validate_identity("SELECT U&'a''b''c'")
         self.validate_identity("SELECT U&'can''t !0061' UESCAPE '!' AS label")
+        self.validate_all(
+            "SELECT U&'d\\0061t\\0061', U&'d!+000061ta' UESCAPE '!', U&'a\\\\b', U&'\\D83D\\DE00'",
+            write={"duckdb": "SELECT 'data', 'data', 'a\\b', '\U0001f600'"},
+        )
 
         self.validate_all(
             "SELECT U&'Hello winter \\2603 !'",

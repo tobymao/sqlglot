@@ -5484,15 +5484,27 @@ class Generator:
         return self.function_fallback_sql(expression)
 
     def struct_sql(self, expression: exp.Struct) -> str:
-        expression.set(
-            "expressions",
-            [
-                exp.alias_(e.expression, e.name if e.this.is_string else e.this)
-                if isinstance(e, exp.PropertyEQ)
-                else e
-                for e in expression.expressions
-            ],
-        )
+        expressions = []
+
+        for e in expression.expressions:
+            if not isinstance(e, exp.PropertyEQ):
+                expressions.append(e)
+                continue
+
+            key = e.this
+
+            if key.is_string:
+                alias: str | exp.Identifier = key.name
+            elif isinstance(key, exp.Identifier):
+                alias = key
+            else:
+                # OBJECT_CONSTRUCT keys can be arbitrary expressions (e.g. a column), which can't
+                # be used as aliases, so the key's SQL is used as the struct field's name instead
+                alias = exp.to_identifier(self.sql(key))
+
+            expressions.append(exp.alias_(e.expression, alias))
+
+        expression.set("expressions", expressions)
 
         return self.function_fallback_sql(expression)
 

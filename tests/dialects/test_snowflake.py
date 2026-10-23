@@ -1633,6 +1633,28 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("OBJECT_CONSTRUCT(a, b, c, d)")
+        self.validate_all(
+            "OBJECT_CONSTRUCT(1, 2)",
+            write={
+                "bigquery": "STRUCT(2 AS `1`)",
+                "duckdb": "{1: 2}",
+                "postgres": 'STRUCT(2 AS "1")',
+                "snowflake": "OBJECT_CONSTRUCT(1, 2)",
+                "spark": "STRUCT(2 AS `1`)",
+                "": 'STRUCT(2 AS "1")',
+            },
+        )
+        self.validate_all(
+            "OBJECT_CONSTRUCT(a, b, c, d)",
+            write={
+                "bigquery": "STRUCT(b AS a, d AS c)",
+                "duckdb": "{a: b, c: d}",
+                "postgres": "STRUCT(b AS a, d AS c)",
+                "snowflake": "OBJECT_CONSTRUCT(a, b, c, d)",
+                "spark": "STRUCT(b AS a, d AS c)",
+                "": "STRUCT(b AS a, d AS c)",
+            },
+        )
 
         self.validate_all(
             "SELECT i, p, o FROM qt QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1",

@@ -450,7 +450,7 @@ CROSS JOIN (
     ROW_NUMBER() OVER () > 1
 ) AS y;
 
-# title: Noop - left join on subquery with FETCH
+# title: Left join on subquery with FETCH
 # execute: true
 SELECT
   x.a
@@ -540,7 +540,7 @@ SELECT
   x.a
 FROM x;
 
-# title: Noop - left join on non-unique subquery
+# title: Left join on non-unique subquery
 # execute: true
 SELECT
   x.a
@@ -575,7 +575,7 @@ SELECT
   x.a
 FROM x;
 
-# title: Noop - cross join on windowed aggregate subquery
+# title: Cross join on windowed aggregate subquery
 # execute: true
 SELECT
   x.a

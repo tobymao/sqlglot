@@ -144,8 +144,7 @@ def _is_limit_1(scope: Scope) -> bool:
 
 
 def _has_aggregate(expression: exp.Select) -> bool:
-    windows = expression.args.get("windows")
-    return any(projection_has_aggregate(select, windows) for select in expression.selects)
+    return any(projection_has_aggregate(select) for select in expression.selects)
 
 
 def join_condition(join: exp.Join) -> tuple[list[exp.Expr], list[exp.Expr], exp.Expr]:

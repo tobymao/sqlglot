@@ -2335,8 +2335,12 @@ class DuckDBGenerator(generator.Generator):
     _TRYCAST_DATE_MON_FMT = "%d-%b-%Y"
 
     def datatype_sql(self, expression: exp.DataType) -> str:
+        # Untyped ARRAY and OBJECT are semi-structured (e.g. Snowflake), so they map to JSON
         if expression.is_type(exp.DType.ARRAY):
-            return f"{self.expressions(expression, flat=True)}[{self.expressions(expression, key='values', flat=True)}]"
+            return f"{self.expressions(expression, flat=True) or 'JSON'}[{self.expressions(expression, key='values', flat=True)}]"
+
+        if expression.is_type(exp.DType.OBJECT) and not expression.expressions:
+            return "JSON"
 
         # Modifiers are not supported for TIME, [TIME | TIMESTAMP] WITH TIME ZONE
         if expression.is_type(

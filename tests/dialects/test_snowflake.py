@@ -4327,6 +4327,20 @@ class TestSnowflake(Validator):
             "SELECT a::OBJECT",
             write={
                 "snowflake": "SELECT CAST(a AS OBJECT)",
+                "duckdb": "SELECT CAST(a AS JSON)",
+            },
+        )
+        self.validate_all(
+            "SELECT a::ARRAY",
+            write={
+                "snowflake": "SELECT CAST(a AS ARRAY)",
+                "duckdb": "SELECT CAST(a AS JSON[])",
+            },
+        )
+        self.validate_all(
+            "CREATE TABLE t (a ARRAY, o OBJECT)",
+            write={
+                "duckdb": "CREATE TABLE t (a JSON[], o JSON)",
             },
         )
 

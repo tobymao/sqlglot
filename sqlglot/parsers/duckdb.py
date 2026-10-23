@@ -378,6 +378,12 @@ class DuckDBParser(parser.Parser):
         parse_bracket: bool = False,
         alias_tokens: Collection[TokenType] | None = None,
     ) -> exp.Join | None:
+        join_type = None
+        if self._match_text_seq("JOIN", "BY", "(", "TYPE"):
+            join_type = self._parse_var(any_token=True)
+            self._match_r_paren()
+            skip_join_token = True
+
         join = super()._parse_join(
             skip_join_token=skip_join_token,
             parse_bracket=parse_bracket,
@@ -385,6 +391,12 @@ class DuckDBParser(parser.Parser):
         )
         if not join:
             return join
+
+        if join_type:
+            parts = join_type.name.upper().removesuffix("_JOIN").split("_")
+            if parts[0] in ("LEFT", "RIGHT", "FULL"):
+                join.set("side", parts.pop(0))
+            join.set("kind", " ".join(parts) or None)
 
         approximate = self._match_text_seq("APPROX", "NEAREST")
         if approximate or self._match_text_seq("NEAREST"):

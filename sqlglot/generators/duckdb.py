@@ -3191,7 +3191,13 @@ class DuckDBGenerator(generator.Generator):
 
         return super().interval_sql(expression)
 
-    def join_sql(self, expression: exp.Join) -> str:
+    def join_sql(self, expression: exp.Join, join_op: str | None = None) -> str:
+        if expression.kind in ("MARK", "SINGLE") or (
+            expression.side == "RIGHT" and expression.is_semi_or_anti_join
+        ):
+            kind = "_".join(part for part in (expression.side, expression.kind) if part)
+            return super().join_sql(expression, join_op=f"JOIN BY (TYPE {kind})")
+
         if (
             not expression.args.get("using")
             and not expression.args.get("on")
@@ -3207,7 +3213,7 @@ class DuckDBGenerator(generator.Generator):
             expression.set("side", None)
             expression.set("kind", None)
 
-        return super().join_sql(expression)
+        return super().join_sql(expression, join_op=join_op)
 
     def countif_sql(self, expression: exp.CountIf) -> str:
         if self.dialect.version >= (1, 2):

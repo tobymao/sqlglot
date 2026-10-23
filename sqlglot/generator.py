@@ -2928,7 +2928,7 @@ class Generator:
     def prior_sql(self, expression: exp.Prior) -> str:
         return f"PRIOR {self.sql(expression, 'this')}"
 
-    def join_sql(self, expression: exp.Join) -> str:
+    def join_sql(self, expression: exp.Join, join_op: str | None = None) -> str:
         if not self.SEMI_ANTI_JOIN_WITH_SIDE and expression.kind in ("SEMI", "ANTI"):
             side = None
         else:
@@ -2976,7 +2976,9 @@ class Generator:
 
             return f", {this_sql}"
 
-        if op_sql != "STRAIGHT_JOIN":
+        if join_op:
+            op_sql = join_op
+        elif op_sql != "STRAIGHT_JOIN":
             op_sql = f"{op_sql} JOIN" if op_sql else "JOIN"
 
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)

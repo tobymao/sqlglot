@@ -60,6 +60,41 @@ class TestDuckDB(Validator):
             "SELECT * FROM a INNER JOIN b ON a.id = b.id JOIN c ON b.id = c.id",
         )
 
+    def test_connect_disconnect(self):
+        for sql in (
+            "CONNECT qk",
+            'CONNECT "remote db"',
+            "CONNECT 'quack:localhost'",
+            "CONNECT 'postgres:dbname=mydb host=localhost'",
+            "CONNECT 'postgres:dbname=''my db'' host=localhost'",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql).assert_is(exp.ConnectTo)
+                self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+        self.validate_identity("DISCONNECT").assert_is(exp.Disconnect)
+        self.validate_identity(
+            "SELECT connect, disconnect FROM t", "SELECT connect, disconnect FROM t"
+        )
+        statements = self.parse_one("CONNECT qk")
+        self.assertIsInstance(statements.this, exp.Identifier)
+        self.assertIsInstance(self.parse_one("CONNECT 'quack:localhost'").this, exp.Literal)
+
+        for name in ("connect", "disconnect"):
+            self.validate_identity(f"SELECT {name} FROM {name}")
+            self.validate_identity(f"SELECT {name}.{name} AS {name} FROM t AS {name}")
+            self.assertEqual(
+                exp.maybe_parse(name, dialect="duckdb", into=exp.Column), exp.column(name)
+            )
+            self.assertEqual(
+                exp.maybe_parse(f"{name} + 1", dialect="duckdb", into=exp.Expr),
+                exp.column(name) + 1,
+            )
+            self.assertEqual(
+                exp.maybe_parse(f"{name}.id", dialect="duckdb", into=exp.Expr),
+                exp.column("id", name),
+            )
+
     def test_nearest_join(self):
         for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
             for approximate in ("", "APPROX "):

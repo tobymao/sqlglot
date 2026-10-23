@@ -2917,6 +2917,12 @@ class Generator:
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('HAVING')}{self.sep()}{this}"
 
+    def connectto_sql(self, expression: exp.ConnectTo) -> str:
+        return f"CONNECT {self.sql(expression, 'this')}"
+
+    def disconnect_sql(self, expression: exp.Disconnect) -> str:
+        return "DISCONNECT"
+
     def connect_sql(self, expression: exp.Connect) -> str:
         start = self.sql(expression, "start")
         start = self.seg(f"START WITH {start}") if start else ""

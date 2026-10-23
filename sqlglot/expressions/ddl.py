@@ -131,6 +131,14 @@ class Describe(Expression):
     }
 
 
+class ConnectTo(Expression):
+    pass
+
+
+class Disconnect(Expression):
+    arg_types = {}
+
+
 class Attach(Expression):
     arg_types = {"this": True, "exists": False, "expressions": False}
 

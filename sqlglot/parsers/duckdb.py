@@ -275,7 +275,11 @@ class DuckDBParser(parser.Parser):
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+        TokenType.CONNECT: lambda self: self.expression(
+            exp.ConnectTo(this=self._parse_string() or self._parse_id_var())
+        ),
         TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        TokenType.DISCONNECT: lambda self: self.expression(exp.Disconnect()),
         TokenType.FORCE: lambda self: self._parse_force(),
         TokenType.INSTALL: lambda self: self._parse_install(),
         TokenType.SHOW: lambda self: self._parse_show(),

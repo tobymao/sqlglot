@@ -1598,6 +1598,22 @@ class TestDuckDB(Validator):
             read={
                 "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
             },
+            write={
+                "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
+                "redshift": "SELECT 'ThOmAs' ~* 'thomas'",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_MATCHES(x, 'a', 'ic')",
+            write={
+                "postgres": "SELECT x ~ 'a'",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_MATCHES(x, 'a', '')",
+            write={
+                "postgres": "SELECT x ~ 'a'",
+            },
         )
         self.validate_identity(
             "SELECT DATE_ADD(CAST('2020-01-01' AS DATE), INTERVAL 1 DAY)",

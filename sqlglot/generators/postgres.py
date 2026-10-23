@@ -388,7 +388,9 @@ class PostgresGenerator(generator.Generator):
                 transforms.eliminate_qualify,
             ]
         ),
-        exp.SHA2: sha256_sql,
+        exp.SHA2: lambda self, e: self.func(
+            "ENCODE", sha256_sql(self, e), exp.Literal.string("hex")
+        ),
         exp.SHA2Digest: sha2_digest_sql,
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
         exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),

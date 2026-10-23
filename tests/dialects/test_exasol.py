@@ -754,7 +754,6 @@ class TestExasol(Validator):
             "HASH_SHA256(x)",
             read={
                 "clickhouse": "SHA256(x)",
-                "postgres": "SHA256(x)",
                 "duckdb": "SHA256(x)",
             },
             write={
@@ -762,7 +761,7 @@ class TestExasol(Validator):
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
                 "clickhouse": "SHA256(x)",
-                "postgres": "SHA256(x)",
+                "postgres": "ENCODE(SHA256(x), 'hex')",
                 "presto": "LOWER(TO_HEX(SHA256(x)))",
                 "redshift": "SHA2(x, 256)",
                 "trino": "LOWER(TO_HEX(SHA256(x)))",

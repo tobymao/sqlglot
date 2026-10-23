@@ -283,7 +283,13 @@ CROSS JOIN (
 ) AS y;
 SELECT
   x.a
-FROM x;
+FROM x
+CROSS JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  LIMIT 1
+) AS y;
 
 # title: Cross join on derived table with no FROM clause
 SELECT
@@ -334,3 +340,247 @@ LEFT ANTI JOIN (
     1 AS b
 ) AS sub
   ON x.b = sub.b;
+
+# title: Cross join on FROM-less subquery with WHERE
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    1 AS b
+  WHERE
+    FALSE
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    1 AS b
+  WHERE
+    FALSE
+) AS y;
+
+# title: Cross join on aggregate subquery with HAVING
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  HAVING
+    FALSE
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  HAVING
+    FALSE
+) AS y;
+
+# title: Cross join on grouped subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  GROUP BY
+    y.b
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  GROUP BY
+    y.b
+) AS y;
+
+# title: Cross join on subquery with OFFSET
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    1 AS b
+  OFFSET 1
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    1 AS b
+  OFFSET 1
+) AS y;
+
+# title: Cross join on subquery with QUALIFY
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  QUALIFY
+    ROW_NUMBER() OVER () > 1
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  QUALIFY
+    ROW_NUMBER() OVER () > 1
+) AS y;
+
+# title: Cross join on aggregate subquery with WHERE
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b
+  FROM y
+  WHERE
+    FALSE
+) AS y;
+SELECT
+  x.a
+FROM x;
+
+# title: Cross join on set-returning subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y;
+
+# title: Cross join on aggregate subquery with set-returning column
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b,
+    UNNEST(ARRAY(1, 2)) AS c
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    COUNT(*) AS b,
+    UNNEST(ARRAY(1, 2)) AS c
+  FROM y
+) AS y;
+
+# title: Left join on set-returning subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y
+  ON x.a = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    UNNEST(ARRAY(1, 1)) AS b
+) AS y
+  ON x.a = y.b;
+
+# title: Left join on subquery with FETCH
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  FETCH FIRST 1 ROWS ONLY
+) AS y
+  ON x.a = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  FETCH FIRST 1 ROWS ONLY
+) AS y
+  ON x.a = y.b;
+
+# title: Left join on non-unique subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+) AS y
+  ON x.a = y.b;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+) AS y
+  ON x.a = y.b;
+
+# title: Remove left join on filtered subquery with LIMIT 1
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  WHERE
+    y.b > 100
+  LIMIT 1
+) AS y
+  ON x.a = y.b;
+SELECT
+  x.a
+FROM x;

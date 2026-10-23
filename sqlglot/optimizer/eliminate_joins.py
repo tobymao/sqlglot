@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -112,7 +112,7 @@ def _unique_outputs(scope: Scope) -> set[str]:
         else:
             return set()
 
-    if _has_single_output_row(scope):
+    if _is_limit_1(scope) or _has_single_output_row(scope):
         return set(expr.named_selects)
 
     return set()
@@ -120,18 +120,16 @@ def _unique_outputs(scope: Scope) -> set[str]:
 
 def _has_single_output_row(scope: Scope) -> bool:
     expression = scope.expression
-    return isinstance(expression, exp.Select) and (
-        _is_limit_1(scope)
-        or (
-            not any(
-                expression.args.get(key)
-                for key in ("group", "having", "qualify", "limit", "offset")
-            )
-            and (
-                all(isinstance(e.unalias(), exp.AggFunc) for e in expression.selects)
-                or not (expression.args.get("from_") or expression.args.get("where"))
-            )
-        )
+    if not isinstance(expression, exp.Select):
+        return False
+
+    args = expression.args
+    if any(args.get(key) for key in ("group", "having", "qualify", "limit", "offset")):
+        return False
+    if args.get("from_") or args.get("where"):
+        return all(isinstance(select.unalias(), exp.AggFunc) for select in expression.selects)
+    return not any(
+        find_in_scope(select, *exp.SET_RETURNING_FUNCTIONS) for select in expression.selects
     )
 
 

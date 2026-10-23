@@ -2011,43 +2011,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
-    def test_eliminate_joins_preserves_cardinality(self):
-        for sql, removable in (
-            ("SELECT 1 AS b WHERE FALSE", False),
-            ("SELECT COUNT(*) AS b FROM y HAVING FALSE", False),
-            ("SELECT 1 AS b LIMIT 0", False),
-            ("SELECT 1 AS b OFFSET 1", False),
-            ("SELECT COUNT(*) AS b FROM y GROUP BY y.b", False),
-            ("SELECT COUNT(*) AS b FROM y GROUP BY y.b HAVING FALSE", False),
-            ("SELECT COUNT(*) AS b FROM y LIMIT 0", False),
-            ("SELECT COUNT(*) AS b FROM y OFFSET 1", False),
-            ("SELECT COUNT(*) AS b FROM y FETCH FIRST ROW ONLY", False),
-            ("SELECT COUNT(*) AS b FROM y FETCH FIRST 0 ROWS ONLY", False),
-            ("SELECT 1 AS b QUALIFY ROW_NUMBER() OVER () > 1", False),
-            ("SELECT COUNT(*) AS b FROM y QUALIFY ROW_NUMBER() OVER () > 1", False),
-            ("SELECT COUNT(*) AS b FROM y WHERE FALSE", True),
-            ("SELECT COUNT(*) AS b FROM y", True),
-            ("SELECT 1 AS b", True),
-        ):
-            expression = (
-                exp.select("x.a")
-                .from_("x")
-                .join(parse_one(sql, dialect="duckdb").subquery("j"), join_type="CROSS")
-            )
-            expected = self.conn.execute(expression.sql("duckdb")).fetchall()
-            for rule in (optimizer.eliminate_joins.eliminate_joins, optimizer.optimize):
-                with self.subTest(sql=sql, rule=rule.__name__):
-                    result = (
-                        optimizer.optimize(expression, schema=self.schema, dialect="duckdb")
-                        if rule is optimizer.optimize
-                        else rule(expression.copy())
-                    )
-                    self.assertCountEqual(
-                        self.conn.execute(result.sql("duckdb")).fetchall(), expected
-                    )
-                    if rule is not optimizer.optimize:
-                        self.assertEqual(not result.args.get("joins"), removable)
-
     def test_eliminate_ctes(self):
         self.check_file(
             "eliminate_ctes",

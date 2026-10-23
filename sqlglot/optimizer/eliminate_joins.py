@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import expressions as exp
+from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import Scope, traverse_scope
 
@@ -122,7 +123,7 @@ def _has_at_most_one_row(scope: Scope) -> bool:
     expression = scope.expression
     if not isinstance(expression, exp.Select):
         return False
-    return _is_limit_1(scope) or not expression.args.get("from_") or _only_aggregates(expression)
+    return _is_limit_1(scope) or not expression.args.get("from_") or _has_aggregate(expression)
 
 
 def _has_single_output_row(scope: Scope) -> bool:
@@ -134,7 +135,7 @@ def _has_single_output_row(scope: Scope) -> bool:
     if any(args.get(key) for key in ("group", "having", "qualify", "limit", "offset")):
         return False
 
-    return (not args.get("from_") and not args.get("where")) or _only_aggregates(expression)
+    return (not args.get("from_") and not args.get("where")) or _has_aggregate(expression)
 
 
 def _is_limit_1(scope: Scope) -> bool:
@@ -142,11 +143,9 @@ def _is_limit_1(scope: Scope) -> bool:
     return isinstance(limit, exp.Limit) and limit.expression.this == "1"
 
 
-def _only_aggregates(expression: exp.Select) -> bool:
-    for select in expression.selects:
-        if not isinstance(select.unalias(), exp.AggFunc):
-            return False
-    return True
+def _has_aggregate(expression: exp.Select) -> bool:
+    windows = expression.args.get("windows")
+    return any(projection_has_aggregate(select, windows) for select in expression.selects)
 
 
 def join_condition(join: exp.Join) -> tuple[list[exp.Expr], list[exp.Expr], exp.Expr]:

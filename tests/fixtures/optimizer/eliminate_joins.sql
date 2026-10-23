@@ -450,26 +450,28 @@ CROSS JOIN (
     ROW_NUMBER() OVER () > 1
 ) AS y;
 
-# title: Cross join on subquery with FETCH
+# title: Noop - left join on subquery with FETCH
 # execute: true
 SELECT
   x.a
 FROM x
-CROSS JOIN (
+LEFT JOIN (
   SELECT
-    y.b
+    y.b AS b
   FROM y
   FETCH FIRST 1 ROWS ONLY
-) AS y;
+) AS y
+  ON x.a = y.b;
 SELECT
   x.a
 FROM x
-CROSS JOIN (
+LEFT JOIN (
   SELECT
-    y.b
+    y.b AS b
   FROM y
   FETCH FIRST 1 ROWS ONLY
-) AS y;
+) AS y
+  ON x.a = y.b;
 
 # title: Cross join on aggregate subquery with WHERE
 # execute: true
@@ -558,3 +560,36 @@ LEFT JOIN (
   FROM y
 ) AS y
   ON x.a = y.b;
+
+# title: Cross join on nested aggregate subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    SUM(y.b) + 1 AS b
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x;
+
+# title: Noop - cross join on windowed aggregate subquery
+# execute: true
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    SUM(y.b) OVER () AS b
+  FROM y
+) AS y;
+SELECT
+  x.a
+FROM x
+CROSS JOIN (
+  SELECT
+    SUM(y.b) OVER () AS b
+  FROM y
+) AS y;

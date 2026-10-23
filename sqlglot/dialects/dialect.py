@@ -639,6 +639,11 @@ class Dialect(metaclass=_Dialect):
     with "custom_fields" in GROUP BY/HAVING.
     """
 
+    TABLE_ALIASES_SHADOW_COLUMN_NAMES = False
+    """
+    Whether a whole-row reference to a table alias takes precedence over a same-named column.
+    """
+
     TABLES_REFERENCEABLE_AS_COLUMNS = False
     """
     Whether table names can be referenced as columns (treated as structs).

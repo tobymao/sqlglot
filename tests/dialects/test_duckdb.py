@@ -10,6 +10,56 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_join_by_type(self):
+        for table in ("directed", "straight_join"):
+            self.validate_identity(
+                f"SELECT * FROM a JOIN BY (TYPE INNER) {table} AS b ON a.id = b.id",
+                f"SELECT * FROM a INNER JOIN {table} AS b ON a.id = b.id",
+            )
+
+        for kind, side, normalized_kind in (
+            ("inner", "", "INNER"),
+            ("left", "LEFT", ""),
+            ("right", "RIGHT", ""),
+            ("full", "FULL", ""),
+            ("semi", "", "SEMI"),
+            ("anti", "", "ANTI"),
+            ("right_semi", "RIGHT", "SEMI"),
+            ("right_anti", "RIGHT", "ANTI"),
+            ("mark", "", "MARK"),
+            ("single", "", "SINGLE"),
+        ):
+            for suffix in ("", "_JOIN"):
+                with self.subTest(kind=kind, suffix=suffix):
+                    sql = f"SELECT * FROM a JOIN BY (TYPE {kind}{suffix}) b ON a.id = b.id"
+                    op = (
+                        f"JOIN BY (TYPE {kind.upper()})"
+                        if kind in ("right_semi", "right_anti", "mark", "single")
+                        else f"{kind.upper()} JOIN"
+                    )
+                    expression = self.validate_identity(
+                        sql, f"SELECT * FROM a {op} b ON a.id = b.id"
+                    )
+                    join = expression.args["joins"][0]
+                    self.assertEqual(join.side, side)
+                    self.assertEqual(join.kind, normalized_kind)
+                    self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+        self.validate_all(
+            "SELECT * FROM a JOIN BY (TYPE left) b USING (id)",
+            write={
+                "duckdb": "SELECT * FROM a LEFT JOIN b USING (id)",
+                "postgres": "SELECT * FROM a LEFT JOIN b USING (id)",
+            },
+        )
+        self.validate_identity(
+            "SELECT a.id, __mark_join_marker FROM a JOIN BY (TYPE MARK) b ON a.id = b.id"
+        )
+        self.validate_identity(
+            "SELECT * FROM a JOIN BY (TYPE inner) b ON a.id = b.id JOIN c ON b.id = c.id",
+            "SELECT * FROM a INNER JOIN b ON a.id = b.id JOIN c ON b.id = c.id",
+        )
+
     def test_nearest_join(self):
         for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
             for approximate in ("", "APPROX "):

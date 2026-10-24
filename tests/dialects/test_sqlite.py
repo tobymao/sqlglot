@@ -152,8 +152,12 @@ class TestSQLite(Validator):
         self.validate_identity(
             "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"
         )
-        self.validate_identity(
+        self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
+            write={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
+                "duckdb": "SELECT TO_JSON(JSON_EXTRACT('[10, 20, [30, 40]]', ['$[2]', '$[0]', '$[1]']))",
+            },
         )
         # Single-path json_extract() returns an SQL value like ->>, except that
         # object/array results keep the JSON subtype (json_subtype variant);

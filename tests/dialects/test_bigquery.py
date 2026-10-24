@@ -599,6 +599,20 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
+            "SELECT EXTRACT(DAYOFWEEK FROM CAST(d AS DATE))",
+            read={
+                "mysql": "SELECT DAYOFWEEK(d)",
+                "spark": "SELECT DAYOFWEEK(d)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(DAYOFWEEK FROM d)",
+            read={
+                "duckdb": "SELECT DAYOFWEEK(d)",
+                "snowflake": "SELECT DAYOFWEEK(d)",
+            },
+        )
+        self.validate_all(
             "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 as a, 'abc' AS b), STRUCT(str_col AS abc)",
             write={
                 "bigquery": "SELECT STRUCT(1, 2, 3), STRUCT(), STRUCT('abc'), STRUCT(1, t.str_col), STRUCT(1 AS a, 'abc' AS b), STRUCT(str_col AS abc)",

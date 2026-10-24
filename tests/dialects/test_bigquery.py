@@ -3981,6 +3981,18 @@ OPTIONS (
             },
         )
 
+    def test_day_of_week(self):
+        # BigQuery has no DAY_OF_WEEK; MySQL/Spark DAYOFWEEK is Sunday=1..Saturday=7,
+        # exactly BigQuery's EXTRACT(DAYOFWEEK FROM ...).
+        self.validate_all(
+            "SELECT EXTRACT(DAYOFWEEK FROM CAST(d AS DATE))",
+            read={
+                "mysql": "SELECT DAYOFWEEK(d)",
+                "spark": "SELECT DAYOFWEEK(d)",
+            },
+        )
+        self.validate_identity("SELECT EXTRACT(DAYOFWEEK FROM d)")
+
     def test_approx_qunatiles(self):
         self.validate_identity("APPROX_QUANTILES(foo, 2)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT foo, 2 RESPECT NULLS)")

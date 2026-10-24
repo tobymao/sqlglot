@@ -730,6 +730,15 @@ class BigQueryGenerator(generator.Generator):
 
         return self.func("WEEK", expression.this)
 
+    def dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        # BigQuery has no DAY_OF_WEEK function; MySQL's DAYOFWEEK and BigQuery's
+        # EXTRACT(DAYOFWEEK FROM ...) both number Sunday=1..Saturday=7.
+        return self.sql(
+            exp.replace_placeholders(
+                exp.maybe_parse("EXTRACT(DAYOFWEEK FROM :this)"), this=expression.this
+            )
+        )
+
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit
         unit_sql = unit.name if unit.is_string else self.sql(unit)

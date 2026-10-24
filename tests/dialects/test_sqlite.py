@@ -108,6 +108,10 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE_ADD(d, '1'') ; SELECT 1; --')",
+            write={"sqlite": "SELECT DATE(d, '1'') ; SELECT 1; --')"},
+        )
+        self.validate_all(
             "SELECT DATE(d, '-1 DAY') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL (-1) DAY) FROM t",

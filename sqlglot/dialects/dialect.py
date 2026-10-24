@@ -2717,9 +2717,13 @@ def no_make_interval_sql(self: Generator, expression: exp.MakeInterval, sep: str
         if isinstance(value, exp.Kwarg):
             value = value.expression
 
-        args.append(f"{value} {unit}")
+        if value is None:
+            continue
 
-    return f"INTERVAL '{self.format_args(*args, sep=sep)}'"
+        value_sql = value.name if value.is_string else self.sql(value)
+        args.append(f"{value_sql} {unit}")
+
+    return f"INTERVAL {self.sql(exp.Literal.string(self.format_args(*args, sep=sep)))}"
 
 
 def length_or_char_length_sql(self: Generator, expression: exp.Length) -> str:

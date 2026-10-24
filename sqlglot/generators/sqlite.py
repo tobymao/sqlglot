@@ -269,8 +269,8 @@ class SQLiteGenerator(generator.Generator):
                 ),
             )
         modifier = modifier.name if modifier.is_string else self.sql(modifier)
-        modifier = f"'{modifier} {unit.name}'" if unit else f"'{modifier}'"
-        return self.func("DATE", expression.this, modifier)
+        modifier = f"{modifier} {unit.name}" if unit else modifier
+        return self.func("DATE", expression.this, exp.Literal.string(modifier))
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):

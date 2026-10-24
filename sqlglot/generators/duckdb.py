@@ -1795,7 +1795,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TsOrDsAdd: _date_delta_to_binary_interval_op(),
         exp.TsOrDsDiff: lambda self, e: self.func(
             "DATE_DIFF",
-            f"'{e.args.get('unit') or 'DAY'}'",
+            exp.Literal.string(e.unit or "DAY"),
             exp.cast(e.expression, exp.DType.TIMESTAMP),
             exp.cast(e.this, exp.DType.TIMESTAMP),
         ),

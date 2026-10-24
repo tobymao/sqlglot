@@ -511,6 +511,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
+        self.validate_identity("SELECT INTERVAL '1\\' SECOND; SELECT 1; --'")
         self.validate_identity("CREATE TABLE table1 CLUSTER BY (name1, name2, name3)")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name)")
         self.validate_identity("SELECT rename, replace")

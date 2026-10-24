@@ -196,6 +196,8 @@ class TestHive(Validator):
             },
         )
 
+        self.validate_identity("CREATE TABLE t (a INT) TBLPROPERTIES ('a\\') ; SELECT 1; --'='1')")
+
         self.validate_all(
             "CREATE TABLE test STORED AS INPUTFORMAT 'foo1' OUTPUTFORMAT 'foo2'",
             write={

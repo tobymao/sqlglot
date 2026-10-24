@@ -2174,7 +2174,7 @@ class Generator:
     def property_name(self, expression: exp.Property, string_key: bool = False) -> str:
         if isinstance(expression.this, exp.Dot):
             return self.sql(expression, "this")
-        return f"'{expression.name}'" if string_key else expression.name
+        return self.sql(exp.Literal.string(expression.name)) if string_key else expression.name
 
     def property_sql(self, expression: exp.Property) -> str:
         property_cls = expression.__class__
@@ -4112,8 +4112,8 @@ class Generator:
             if this:
                 interval_keyword = f"{interval_keyword} " if interval_keyword else ""
                 if unit_expression and isinstance(unit_expression, exp.IntervalSpan):
-                    return f"{interval_keyword}'{this}'{unit}"
-                return f"{interval_keyword}'{this}{unit}'"
+                    return f"{interval_keyword}{self.sql(exp.Literal.string(this))}{unit}"
+                return f"{interval_keyword}{self.sql(exp.Literal.string(f'{this}{unit}'))}"
             return f"{interval_keyword}{unit}"
 
         this = self.sql(expression, "this")

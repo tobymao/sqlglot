@@ -960,6 +960,7 @@ class TestPresto(Validator):
         self.validate_all("INTERVAL '1 day'", write={"trino": "INTERVAL '1' DAY"})
         self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEK"})
         self.validate_all("(5 * INTERVAL '7' DAY)", read={"": "INTERVAL '5' WEEKS"})
+        self.validate_identity("SELECT INTERVAL 'x) ; SELECT 1; --' WEEK")
         self.validate_all(
             "SELECT SUBSTR(a, 1, 3), SUBSTR(a, LENGTH(a) - (3 - 1))",
             read={

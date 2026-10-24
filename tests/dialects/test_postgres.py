@@ -236,6 +236,8 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT INTERVAL '2.5 MONTH'")
         self.validate_identity("SELECT INTERVAL '-10.75 MINUTE'")
         self.validate_identity("SELECT INTERVAL '0.123456789 SECOND'")
+        self.validate_identity("SELECT INTERVAL '1'' SECOND; SELECT 1; --'")
+        self.validate_identity("SELECT INTERVAL '1''; SELECT 1; --' DAY TO SECOND")
         self.validate_identity("SELECT date_col - INTERVAL '30' FROM t")
         self.validate_identity("SELECT date_col - INTERVAL '1' AS one_second_later")
         self.validate_identity(

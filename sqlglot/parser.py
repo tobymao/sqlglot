@@ -10144,8 +10144,8 @@ class Parser:
             if typ is not None:
                 dot_or_id = column.to_dot() if column.table else column.this
 
-                if typ:
-                    dot_or_id = self.expression(exp.Cast(this=dot_or_id, to=typ))
+                if isinstance(typ, exp.DataType):
+                    dot_or_id = self.expression(exp.Cast(this=dot_or_id, to=typ.copy()))
 
                 parent = column.parent
 

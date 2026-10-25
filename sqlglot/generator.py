@@ -1328,7 +1328,8 @@ class Generator:
             return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"PRIMARY KEY{options}"
+        include = self.sql(expression, "include")
+        return f"PRIMARY KEY{include}{options}"
 
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")
@@ -1340,7 +1341,8 @@ class Generator:
         nulls_sql = " NULLS NOT DISTINCT" if expression.args.get("nulls") else ""
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
-        return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}{options}"
+        include = self.sql(expression, "include")
+        return f"UNIQUE{nulls_sql}{this}{index_type}{on_conflict}{include}{options}"
 
     def inoutcolumnconstraint_sql(self, expression: exp.InOutColumnConstraint) -> str:
         input_ = expression.args.get("input_")
@@ -2030,7 +2032,9 @@ class Generator:
         with_storage = self.expressions(expression, key="with_storage", flat=True)
         with_storage = f" WITH ({with_storage})" if with_storage else ""
         tablespace = self.sql(expression, "tablespace")
-        tablespace = f" USING INDEX TABLESPACE {tablespace}" if tablespace else ""
+        if tablespace:
+            prefix = "" if isinstance(expression.parent, exp.Index) else " USING INDEX"
+            tablespace = f"{prefix} TABLESPACE {tablespace}"
         on = self.sql(expression, "on")
         on = f" ON {on}" if on else ""
 

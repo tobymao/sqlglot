@@ -422,14 +422,33 @@ class PostgresGenerator(generator.Generator):
         exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.OnCommitProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def properties_sql(self, expression: exp.Properties) -> str:
+        if not expression.find(exp.OnCommitProperty, exp.TableSpaceProperty):
+            return super().properties_sql(expression)
+
+        expression = expression.copy()
+        post_with = [
+            prop
+            for kind in (exp.OnCommitProperty, exp.TableSpaceProperty)
+            if (prop := expression.find(kind)) is not None
+        ]
+        for prop in post_with:
+            prop.pop()
+        return self.expressions(
+            sqls=[super().properties_sql(expression), *post_with], sep=" ", indent=False
+        )
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):

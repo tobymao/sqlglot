@@ -422,14 +422,40 @@ class PostgresGenerator(generator.Generator):
         exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
+        exp.FileFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.OnCommitProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def properties_sql(self, expression: exp.Properties) -> str:
+        properties: list[exp.Expr] = []
+        post_with: dict[type[exp.Expr], list[exp.Expr]] = {
+            exp.OnCommitProperty: [],
+            exp.TableSpaceProperty: [],
+        }
+        for prop in expression.expressions:
+            post_with.get(type(prop), properties).append(prop)
+
+        remaining = exp.Properties(expressions=properties)
+        remaining.parent = expression.parent
+        return self.expressions(
+            sqls=[
+                super().properties_sql(remaining),
+                *post_with[exp.OnCommitProperty],
+                *post_with[exp.TableSpaceProperty],
+            ],
+            sep=" ",
+            indent=False,
+        )
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):

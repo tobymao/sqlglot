@@ -4920,7 +4920,12 @@ class Parser:
         return this
 
     def _parse_index_params(self) -> exp.IndexParameters:
-        using = self._parse_var(any_token=True) if self._match(TokenType.USING) else None
+        using = (
+            self._parse_var(any_token=True)
+            if not self._match_text_seq("USING", "INDEX", "TABLESPACE", advance=False)
+            and self._match(TokenType.USING)
+            else None
+        )
 
         if self._match(TokenType.L_PAREN, advance=False):
             columns = self._parse_wrapped_csv(self._parse_with_operator)
@@ -4931,8 +4936,9 @@ class Parser:
         partition_by = self._parse_partition_by()
         with_storage = self._match(TokenType.WITH) and self._parse_wrapped_properties()
         tablespace = (
-            self._parse_var(any_token=True)
+            self._parse_id_var()
             if self._match_text_seq("USING", "INDEX", "TABLESPACE")
+            or self._match_text_seq("TABLESPACE")
             else None
         )
         where = self._parse_where()

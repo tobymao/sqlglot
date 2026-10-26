@@ -161,7 +161,7 @@ class OnUpdateColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class PrimaryKeyColumnConstraint(Expression, ColumnConstraintKind):
-    arg_types = {"desc": False, "options": False}
+    arg_types = {"desc": False, "options": False, "include": False}
 
 
 class TitleColumnConstraint(Expression, ColumnConstraintKind):
@@ -175,6 +175,7 @@ class UniqueColumnConstraint(Expression, ColumnConstraintKind):
         "on_conflict": False,
         "nulls": False,
         "options": False,
+        "include": False,
     }
 
 

@@ -822,6 +822,10 @@ WHERE
             "WITH RECURSIVE T(n) AS (SELECT * FROM (VALUES (1)) AS _values UNION ALL SELECT n + 1 FROM t WHERE n < 100) SELECT SUM(n) FROM t",
         )
         self.validate(
+            "WITH c AS (VALUES (2), (3) ORDER BY 1 DESC LIMIT 1) SELECT * FROM c",
+            "WITH c AS (SELECT * FROM (VALUES (2), (3)) AS _values ORDER BY 1 DESC LIMIT 1) SELECT * FROM c",
+        )
+        self.validate(
             "SELECT BOOL_OR(a > 10) FROM (VALUES 1, 2, 15) AS T(a)",
             "SELECT BOOL_OR(a > 10) FROM (VALUES (1), (2), (15)) AS T(a)",
             read="presto",

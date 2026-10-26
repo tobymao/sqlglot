@@ -1229,6 +1229,10 @@ TBLPROPERTIES (
                 "databricks": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
             },
         )
+        self.validate_identity(
+            "SELECT 1 AS a UNION ALL (VALUES (2), (3) AS v(a) ORDER BY 1 DESC LIMIT 1)",
+            "SELECT 1 AS a UNION ALL (SELECT * FROM VALUES (2), (3) AS v(a) ORDER BY 1 DESC LIMIT 1)",
+        )
 
     def test_named_struct(self):
         self.validate_all(

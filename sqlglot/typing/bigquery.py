@@ -147,7 +147,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
             if len(col_types) == 1:
-                projection_type = col_types[0][1]
+                projection_type = next(iter(col_types.values()))
 
         # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
         if projection_type and not (

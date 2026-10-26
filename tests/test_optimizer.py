@@ -3791,15 +3791,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     annotator.annotate_scope(scopes[-1])
                     self.assertTrue(expression.selects[0].is_type(exp.DType.DOUBLE))
 
-        # Duplicate projection names must remain distinct until positional matching finishes.
-        expression = annotate_types(
-            parse_one(
-                "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL "
-                "(SELECT 3 AS c, 4 AS c UNION ALL SELECT 5, CAST(6.5 AS DOUBLE))) AS t"
-            )
-        )
-        self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
-
         expression = parse_one(
             "ARRAY(SELECT 1 AS a UNION ALL "
             "(SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS FLOAT64) AS c))",

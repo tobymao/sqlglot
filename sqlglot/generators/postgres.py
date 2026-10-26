@@ -429,33 +429,26 @@ class PostgresGenerator(generator.Generator):
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
         exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.OnCommitProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.OnCommitProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.TableSpaceProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_WITH,
         exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
 
-    def properties_sql(self, expression: exp.Properties) -> str:
-        properties: list[exp.Expr] = []
-        post_with: dict[type[exp.Expr], list[exp.Expr]] = {
-            exp.OnCommitProperty: [],
-            exp.TableSpaceProperty: [],
-        }
-        for prop in expression.expressions:
-            post_with.get(type(prop), properties).append(prop)
+    def with_properties(self, properties: exp.Properties) -> str:
+        with_properties = []
+        post_with = []
+        for prop in properties.expressions:
+            if isinstance(prop, (exp.OnCommitProperty, exp.TableSpaceProperty)):
+                post_with.append(prop)
+            else:
+                with_properties.append(prop)
 
-        remaining = exp.Properties(expressions=properties)
-        remaining.parent = expression.parent
-        return self.expressions(
-            sqls=[
-                super().properties_sql(remaining),
-                *post_with[exp.OnCommitProperty],
-                *post_with[exp.TableSpaceProperty],
-            ],
-            sep=" ",
-            indent=False,
-        )
+        post_with.sort(key=lambda prop: isinstance(prop, exp.TableSpaceProperty))
+        sql = super().with_properties(exp.Properties(expressions=with_properties))
+        post_sql = self.expressions(sqls=post_with, sep=" ", indent=False)
+        return sql + self.seg(post_sql, sep=" " if sql else "") if post_sql else sql
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):

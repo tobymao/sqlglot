@@ -97,7 +97,14 @@ def unnest(select, parent_select, next_alias_name):
                 or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
             )
         ):
-            column = exp.Max(this=column)
+            ancestor = select.parent.find_ancestor(exp.AggFunc, exp.Select)
+            # A window aggregate can still need a grouped MAX in its argument.
+            while isinstance(
+                ancestor.parent, (exp.Paren, exp.Filter, exp.IgnoreNulls, exp.RespectNulls)
+            ):
+                ancestor = ancestor.parent
+            if isinstance(ancestor, exp.Select) or isinstance(ancestor.parent, exp.Window):
+                column = exp.Max(this=column)
         elif not isinstance(select.parent, exp.Subquery):
             return
 

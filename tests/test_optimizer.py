@@ -1880,6 +1880,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_optimize_subqueries_in_aggregates(self):
+        for projection in (
+            "SUM(CASE WHEN x.a = (SELECT LENGTH(w.d) FROM w WHERE w.e = 'b') THEN 1 ELSE 0 END)",
+            "SUM((SELECT LENGTH(w.d) FROM w WHERE w.e = 'b'))",
+        ):
+            for group_by in ("", " GROUP BY x.b"):
+                sql = f"SELECT {projection} FROM x{group_by}"
+                with self.subTest(sql=sql):
+                    optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                    self.assertCountEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                    )
+
     def test_optimize_subqueries_in_join_on(self):
         for sql in (
             "SELECT x.a, y.b FROM x LEFT JOIN y ON x.a = y.b "

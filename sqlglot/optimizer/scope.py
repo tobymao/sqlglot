@@ -218,8 +218,7 @@ class Scope:
                 else:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
-                parent = node.parent
-                if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
+                if _is_semi_or_anti_join_rhs(node):
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
@@ -229,11 +228,17 @@ class Scope:
             elif type(node) is exp.Lateral or (
                 isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
             ):
+                if _is_semi_or_anti_join_rhs(node):
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
                 self._udtfs.append(node)
                 self._ordered_sources.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
+                if _is_semi_or_anti_join_rhs(node):
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
                 self._derived_tables.append(t.cast(exp.Subquery, node))
                 self._ordered_sources.append(node)
             elif (
@@ -898,6 +903,15 @@ def _is_from_or_join(expression: exp.Expr) -> bool:
         parent = parent.parent
 
     return type(parent) in (exp.From, exp.Join)
+
+
+def _is_semi_or_anti_join_rhs(node: exp.Expr) -> bool:
+    """
+    Determine if `node` is the right-hand side source of a SEMI/ANTI join, whose columns
+    are only visible within the join's own ON clause, not the rest of the enclosing scope.
+    """
+    parent = node.parent
+    return isinstance(parent, exp.Join) and parent.is_semi_or_anti_join
 
 
 def _traverse_tables(scope: Scope) -> Iterator[Scope]:

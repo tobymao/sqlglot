@@ -590,6 +590,28 @@ class TestSQLite(Validator):
             },
         )
 
+    def test_floating_point_types(self):
+        # REAL, FLOAT and DOUBLE are all 8-byte floats in SQLite, so they transpile to
+        # DOUBLE rather than to the 4-byte REAL/FLOAT of other dialects
+        for dtype in ("REAL", "FLOAT", "DOUBLE"):
+            self.validate_all(
+                f"SELECT CAST(x AS {dtype}) FROM t",
+                write={
+                    "sqlite": "SELECT CAST(x AS REAL) FROM t",
+                    "duckdb": "SELECT CAST(x AS DOUBLE) FROM t",
+                    "postgres": "SELECT CAST(x AS DOUBLE PRECISION) FROM t",
+                },
+            )
+
+        self.validate_all(
+            "CREATE TABLE t (x REAL, y FLOAT)",
+            write={
+                "sqlite": "CREATE TABLE t (x REAL, y REAL)",
+                "duckdb": "CREATE TABLE t (x DOUBLE, y DOUBLE)",
+                "postgres": "CREATE TABLE t (x DOUBLE PRECISION, y DOUBLE PRECISION)",
+            },
+        )
+
     def test_longvarchar_dtype(self):
         self.validate_all(
             "CREATE TABLE foo (bar LONGVARCHAR)",

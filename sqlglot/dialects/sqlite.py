@@ -33,8 +33,12 @@ class SQLite(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "ATTACH": TokenType.ATTACH,
             "DETACH": TokenType.DETACH,
+            # REAL, FLOAT and DOUBLE are all 8-byte IEEE floats in SQLite (REAL affinity),
+            # so they must not become a 4-byte float in dialects where REAL/FLOAT means FLOAT4
+            "FLOAT": TokenType.DOUBLE,
             "INDEXED BY": TokenType.INDEXED_BY,
             "MATCH": TokenType.MATCH,
+            "REAL": TokenType.DOUBLE,
         }
 
         KEYWORDS.pop("/*+")

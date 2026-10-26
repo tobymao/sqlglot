@@ -889,6 +889,19 @@ WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In, exp.Not)
 
 
 def _arrow_json_extract_sql(self: DuckDBGenerator, expression: JSON_EXTRACT_TYPE) -> str:
+    paths = expression.expressions
+    if isinstance(expression, exp.JSONExtract) and paths:
+        # JSON_EXTRACT with several paths (SQLite, MySQL) returns a JSON array of the results,
+        # which DuckDB builds from a list of paths
+        return self.func(
+            "TO_JSON",
+            self.func(
+                "JSON_EXTRACT",
+                expression.this,
+                exp.Array(expressions=[expression.expression, *paths]),
+            ),
+        )
+
     arrow_sql = arrow_json_extract_sql(self, expression)
     if not expression.same_parent and isinstance(
         expression.parent, WRAPPED_JSON_EXTRACT_EXPRESSIONS

@@ -857,6 +857,27 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))",
             },
         )
+        # DuckDB's JSON_ARRAY / JSON_OBJECT keep NULLs and take no SQL/JSON clauses
+        self.validate_all(
+            "SELECT JSON_ARRAY(1, NULL, 2)",
+            read={"oracle": "SELECT JSON_ARRAY(1, NULL, 2 NULL ON NULL)"},
+        )
+        self.validate_all(
+            "SELECT JSON_OBJECT('a', 1, 'b', NULL)",
+            read={
+                "oracle": "SELECT JSON_OBJECT('a' VALUE 1, 'b' VALUE NULL NULL ON NULL)",
+                "postgres": "SELECT JSON_OBJECT('a': 1, 'b': NULL NULL ON NULL)",
+            },
+        )
+        for sql, read, unsupported in (
+            ("SELECT JSON_ARRAY(1, NULL ABSENT ON NULL)", "oracle", "ABSENT ON NULL"),
+            ("SELECT JSON_OBJECT('a': NULL ABSENT ON NULL)", "postgres", "ABSENT ON NULL"),
+            ("SELECT JSON_ARRAY(1 RETURNING CLOB STRICT)", "oracle", "'return_type'"),
+            ("SELECT JSON_OBJECT('a' VALUE 1 WITH UNIQUE KEYS)", "oracle", "'unique_keys'"),
+        ):
+            with self.subTest(sql=sql):
+                with self.assertRaisesRegex(UnsupportedError, unsupported):
+                    parse_one(sql, read=read).sql("duckdb", unsupported_level=ErrorLevel.RAISE)
         self.validate_all(
             "SELECT JSON_ARRAY(NULL, 'a', 1)",
             write={

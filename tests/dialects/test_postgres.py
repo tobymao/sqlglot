@@ -678,6 +678,27 @@ FROM json_data, field_ids""",
                 "postgres": "SELECT MAKE_INTERVAL(1, hours => 2, mins => 30)",
             },
         )
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(secs => 7.5, mins => 6, hours => 5, DAYS => 4, weeks => 3, months => 2, years => 1)",
+            write={
+                "duckdb": "SELECT INTERVAL '7.5 second 6 minute 5 hour 4 day 3 week 2 month 1 year'",
+                "postgres": "SELECT MAKE_INTERVAL(years => 1, months => 2, weeks => 3, DAYS => 4, hours => 5, mins => 6, secs => 7.5)",
+            },
+        )
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(1, 2, 3, 4, 5, 6, 7.5)",
+            write={
+                "duckdb": "SELECT INTERVAL '1 year 2 month 3 week 4 day 5 hour 6 minute 7.5 second'",
+                "postgres": "SELECT MAKE_INTERVAL(1, 2, 3, 4, 5, 6, 7.5)",
+            },
+        )
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(days => 3) /* sqlglot.anonymous */",
+            write={
+                "duckdb": "SELECT MAKE_INTERVAL(days => 3) /* sqlglot.anonymous */",
+                "postgres": "SELECT MAKE_INTERVAL(days => 3) /* sqlglot.anonymous */",
+            },
+        )
         interval = parse_one("INTERVAL '1' QUARTER")
         interval.set("this", exp.Literal.number("1e1000000000"))
         with self.assertLogs(generator_logger, level="WARNING") as cm:

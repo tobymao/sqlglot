@@ -29,6 +29,17 @@ MAKE_INTERVAL_KWARGS = {
 }
 
 
+def _build_make_interval(args: list) -> exp.MakeInterval:
+    return exp.MakeInterval(
+        **{
+            MAKE_INTERVAL_KWARGS.get(value.this.name.lower(), key)
+            if isinstance(value, exp.Kwarg)
+            else key: value
+            for key, value in zip(exp.MakeInterval.arg_types, args)
+        }
+    )
+
+
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
     # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
@@ -139,6 +150,7 @@ class PostgresParser(parser.Parser):
         "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
         "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
+        "MAKE_INTERVAL": _build_make_interval,
         "MAKE_TIME": exp.TimeFromParts.from_arg_list,
         "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
         "NOW": exp.CurrentTimestamp.from_arg_list,
@@ -188,7 +200,6 @@ class PostgresParser(parser.Parser):
             exp.JSONArrayAgg(this=self._parse_lambda(), order=self._parse_order())
         ),
         "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
-        "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
         "JSON_VALUE": lambda self: self._parse_json_value(json_path=False),
     }
 
@@ -346,24 +357,6 @@ class PostgresParser(parser.Parser):
         )
         self._match_text_seq("S")
         return self.expression(exp.Placeholder(this=this))
-
-    def _parse_make_interval(self) -> exp.MakeInterval:
-        expr = exp.MakeInterval()
-
-        # Positional arguments fill years, months, weeks, days, hours, mins, secs in order, and named
-        # ones go to their own unit, e.g. MAKE_INTERVAL(days => 3) is 3 days, not 3 years
-        for arg_key in exp.MakeInterval.arg_types:
-            value = self._parse_lambda()
-            if not value:
-                break
-
-            if isinstance(value, exp.Kwarg):
-                arg_key = MAKE_INTERVAL_KWARGS.get(value.this.name.lower(), arg_key)
-
-            expr.set(arg_key, value)
-            self._match(TokenType.COMMA)
-
-        return expr
 
     def _parse_date_part(self) -> exp.Expr:
         part = self._parse_type()

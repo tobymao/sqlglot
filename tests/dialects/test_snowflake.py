@@ -795,7 +795,13 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT QUARTER(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT WEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT WEEKISO(CURRENT_TIMESTAMP())")
-        self.validate_identity("WEEKOFYEAR(tstamp)", "WEEK(tstamp)")
+        self.validate_all(
+            "WEEKOFYEAR(tstamp)",
+            write={
+                "snowflake": "WEEK(tstamp)",
+                "bigquery": "EXTRACT(WEEK FROM tstamp)",
+            },
+        )
         self.validate_identity("SELECT YEAR(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEK(CURRENT_TIMESTAMP())")
         self.validate_identity("SELECT YEAROFWEEKISO(CURRENT_TIMESTAMP())")

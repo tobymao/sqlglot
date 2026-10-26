@@ -1337,7 +1337,11 @@ class TestMySQL(Validator):
         )
         self.validate_all(
             "WEEK(x)",
-            write={"mysql": "WEEK(x)", "": "WEEK(CAST(x AS DATE))"},
+            write={
+                "mysql": "WEEK(x)",
+                "": "WEEK(CAST(x AS DATE))",
+                "bigquery": "EXTRACT(WEEK FROM CAST(x AS DATE))",
+            },
         )
         self.validate_all(
             "YEAR(x)",

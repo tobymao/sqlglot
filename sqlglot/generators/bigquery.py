@@ -530,6 +530,7 @@ class BigQueryGenerator(generator.Generator):
         exp.Uuid: lambda *_: "GENERATE_UUID()",
         exp.Values: _derived_table_values_to_unnest,
         exp.VariancePop: rename_func("VAR_POP"),
+        exp.Week: _extract_part("WEEK"),
         exp.WeekOfYear: _extract_part("ISOWEEK"),
         exp.Year: _extract_part("YEAR"),
         exp.SafeDivide: rename_func("SAFE_DIVIDE"),

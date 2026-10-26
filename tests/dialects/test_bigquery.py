@@ -3793,6 +3793,18 @@ OPTIONS (
             },
         )
         self.validate_all(
+            "SELECT EXTRACT(WEEK FROM d)",
+            read={
+                "snowflake": "SELECT WEEK(d)",
+            },
+        )
+        self.validate_all(
+            "SELECT EXTRACT(WEEK FROM CAST(d AS DATE))",
+            read={
+                "mysql": "SELECT WEEK(d)",
+            },
+        )
+        self.validate_all(
             "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",
             write={
                 "bigquery": "SELECT EXTRACT(WEEK(THURSDAY) FROM d)",

@@ -2437,7 +2437,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertEqual(
             ast.sql("postgres"),
-            'SELECT "t"."a" || "t"."b" AS "_col_0" FROM "t" AS "t"',
+            'SELECT ("t"."a") || ("t"."b") AS "_col_0" FROM "t" AS "t"',
         )
 
         # DateDiff args without inferred types should not crash _coerce_datediff_args.

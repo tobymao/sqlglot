@@ -240,19 +240,6 @@ class TypeAnnotator:
         self._table_column_aliases.clear()
         self._scope_source_selects.clear()
 
-    def uncache(self, expression: exp.Expr, deep: bool = True) -> None:
-        """
-        Evicts `expression` (or its subtree, if `deep`) from the annotation caches. Call this
-        before mutating an already-annotated tree so a subsequent pass recomputes its types.
-        """
-        nodes: t.Iterable[exp.Expr] = expression.walk() if deep else (expression,)
-        for node in nodes:
-            node_id = id(node)
-            self._visited.pop(node_id, None)
-            self._null_expressions.pop(node_id, None)
-            self._setop_column_types.pop(node_id, None)
-            self._table_column_aliases.pop(node_id, None)
-
     # TODO (mypyc): should be expression: E -> E but mypyc resolves the TypeVar
     # to the isinstance-narrowed type, causing runtime type check failures.
     def _set_type(
@@ -286,7 +273,7 @@ class TypeAnnotator:
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
-        self._annotate_expression(expression)
+        self.annotate_expression(expression)
 
         # Replace NULL type with the default type of the targeted dialect, since the former is not an actual type;
         # it is mostly used to aid type coercion, e.g. in query set operations.
@@ -359,7 +346,6 @@ class TypeAnnotator:
 
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
-
         if isinstance(expression, exp.UDTF):
             values = []
 
@@ -418,7 +404,7 @@ class TypeAnnotator:
 
     def annotate_scope(self, scope: Scope) -> None:
         # Iterate through all the expressions of the current scope in post-order, and annotate
-        self._annotate_expression(scope.expression, scope)
+        self.annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
@@ -448,11 +434,12 @@ class TypeAnnotator:
                 # annotations, i.e., it shouldn't be interpreted as a STRUCT value.
                 scope.expression.meta["query_type"] = struct_type
 
-    def _annotate_expression(
+    def annotate_expression(
         self,
         expression: exp.Expr,
         scope: Scope | None = None,
     ) -> None:
+        """Annotate an expression and its descendants using the supplied scope."""
         stack = [(expression, False)]
 
         while stack:
@@ -656,7 +643,7 @@ class TypeAnnotator:
                 for node in ordered.walk(prune=lambda n: isinstance(n, exp.Subquery)):
                     if not isinstance(node, (exp.Column, exp.Literal)):
                         self._visited.pop(id(node), None)
-                self._annotate_expression(ordered, scope)
+                self.annotate_expression(ordered, scope)
 
     def _maybe_coerce(
         self,
@@ -820,16 +807,14 @@ class TypeAnnotator:
         output_to_src = pivot.output_columns(src_types)
 
         # Output types may be requested before the PIVOT itself has been annotated.
+        agg_types: list[exp.DataType | None] = []
         for agg in pivot.expressions:
             if not agg.type or agg.is_type(exp.DType.UNKNOWN):
-                self.uncache(agg)
+                agg = agg.copy()
                 for column in agg.find_all(exp.Column):
                     self._set_type(column, src_types.get(column.name))
-                self._annotate_expression(agg)
-
-        agg_types = [
-            agg.this.type if isinstance(agg, exp.Alias) else agg.type for agg in pivot.expressions
-        ]
+                self.annotate_expression(agg)
+            agg_types.append(agg.this.type if isinstance(agg, exp.Alias) else agg.type)
         agg_cols_offset = len(output_to_src) - len(pivot_constants) * len(agg_types)
         if agg_cols_offset < 0:
             raise OptimizeError(f"Negative pivot column offset: {agg_cols_offset}")

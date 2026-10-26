@@ -100,12 +100,9 @@ def _trunc_sql(
     node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
     expr_sql = self.sql(node)
     if isinstance(node, exp.Literal) and node.is_string:
-        expr_sql = (
-            f"{kind} '{node.this.replace('T', ' ')}'"
-            if kind == "TIMESTAMP"
-            else f"DATE '{node.this}'"
-        )
-    return f"DATE_TRUNC('{unit}', {expr_sql})"
+        text = node.this.replace("T", " ") if kind == "TIMESTAMP" else node.this
+        expr_sql = f"{kind} {self.sql(exp.Literal.string(text))}"
+    return f"DATE_TRUNC({self.sql(exp.Literal.string(unit))}, {expr_sql})"
 
 
 def _date_trunc_sql(self: ExasolGenerator, expression: exp.DateTrunc) -> str:

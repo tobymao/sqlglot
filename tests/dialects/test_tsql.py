@@ -1393,6 +1393,10 @@ FOR JSON
             exp.Alter
         ).args["actions"][0].assert_is(exp.Drop)
         self.validate_identity("ALTER TABLE tbl DROP COLUMN col1, col2").assert_is(exp.Alter)
+        self.validate_all(
+            "ALTER TABLE a RENAME TO [x'; SELECT 1; --]",
+            write={"tsql": "EXEC sp_rename 'a', 'x''; SELECT 1; --'"},
+        )
 
         for clustered_keyword in ("CLUSTERED", "NONCLUSTERED"):
             self.validate_identity(

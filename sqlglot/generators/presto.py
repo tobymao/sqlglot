@@ -30,6 +30,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.generator import unsupported_args
+from sqlglot.helper import is_float
 from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.transforms import unqualify_columns
 
@@ -636,8 +637,12 @@ class PrestoGenerator(generator.Generator):
         return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
 
     def interval_sql(self, expression: exp.Interval) -> str:
-        if expression.this and expression.text("unit").upper().startswith("WEEK"):
-            return f"({expression.this.name} * INTERVAL '7' DAY)"
+        this = expression.this
+        if this and expression.text("unit").upper().startswith("WEEK"):
+            if not this.is_string:
+                return f"({self.sql(this)} * INTERVAL '7' DAY)"
+            if is_float(this.name):
+                return f"({this.name} * INTERVAL '7' DAY)"
         return super().interval_sql(expression)
 
     def transaction_sql(self, expression: exp.Transaction) -> str:

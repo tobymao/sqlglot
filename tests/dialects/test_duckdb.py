@@ -672,6 +672,15 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE_DIFF('X'') ; SELECT 1; --', CAST('2020-01-01' AS TIMESTAMP), CAST('2025-10-12' AS TIMESTAMP))",
+            read={
+                "redshift": "SELECT DATEDIFF('x'') ; SELECT 1; --', '2020-01-01', '2025-10-12')",
+            },
+            write={
+                "duckdb": "SELECT DATE_DIFF('X'') ; SELECT 1; --', CAST('2020-01-01' AS TIMESTAMP), CAST('2025-10-12' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
             read={
                 "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",

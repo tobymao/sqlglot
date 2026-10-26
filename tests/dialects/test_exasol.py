@@ -546,6 +546,7 @@ class TestExasol(Validator):
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
         )
         units = ["MM", "QUARTER", "WEEK", "MINUTE", "YEAR"]
+        self.validate_identity("SELECT DATE_TRUNC('D'') ; SELECT 1; --', TIMESTAMP '2020-01-01')")
         for unit in units:
             with self.subTest(f"Testing DATE_TRUNC with format '{unit}'"):
                 self.validate_all(

@@ -1577,14 +1577,18 @@ class TestOptimizer(unittest.TestCase):
         self.assertTrue(qualified.selects[0].is_type(exp.DType.INT))
 
     def test_qualify_struct_star_long_cte_chain(self):
-        for join in ("", "JOIN", "SEMI JOIN"):
+        for join in ("", "JOIN", "SEMI JOIN", "CORRELATED"):
             with self.subTest(join=join):
                 ctes = ["c0 AS (SELECT s FROM t)"]
                 for i in range(1, 250):
                     source = "t AS l" if join == "SEMI JOIN" else f"c{i - 1} AS l"
-                    if join:
-                        source += f" {join} c{i - 1} AS r ON l.s = r.s"
-                    ctes.append(f"c{i} AS (SELECT l.s FROM {source})")
+                    if join == "CORRELATED":
+                        projection = "(SELECT l.s) AS s"
+                    else:
+                        projection = "l.s"
+                        if join:
+                            source += f" {join} c{i - 1} AS r ON l.s = r.s"
+                    ctes.append(f"c{i} AS (SELECT {projection} FROM {source})")
                 qualified = qualify(
                     parse_one(
                         f"WITH {', '.join(ctes)} SELECT (s).* FROM c249", dialect="risingwave"

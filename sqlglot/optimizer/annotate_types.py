@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import itertools
 import logging
 import typing as t
 
@@ -349,33 +348,6 @@ class TypeAnnotator:
 
     def _get_source_scope_selects(self, source: Scope) -> dict[str, exp.DataType | exp.DType]:
         expression = source.expression
-        if id(expression) not in self._visited:
-            # Referenced CTEs are siblings, so scope traversal alone misses their dependencies.
-            stack = [(source, False)]
-            scheduled: set[int] = set()
-            while stack:
-                current, ready = stack.pop()
-                key = id(current.expression)
-                if key in self._visited:
-                    continue
-                if ready:
-                    self.annotate_scope(current)
-                elif key not in scheduled:
-                    scheduled.add(key)
-                    stack.append((current, True))
-                    dependencies = itertools.chain(
-                        current.cte_scopes,
-                        current.set_operation_scopes,
-                        current.table_scopes,
-                        current.subquery_scopes,
-                        (
-                            dependency
-                            for name, _ in current.references
-                            if isinstance(dependency := current.sources.get(name), Scope)
-                        ),
-                    )
-                    stack.extend((dependency, False) for dependency in reversed(list(dependencies)))
-
         if isinstance(expression, exp.UDTF):
             values = []
 

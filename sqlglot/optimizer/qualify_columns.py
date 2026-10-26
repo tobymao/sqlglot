@@ -67,6 +67,9 @@ def qualify_columns(
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
 
+    # Qualified scopes that still lack types, in traversal order (sources precede dependents)
+    unannotated_scopes: list[Scope] = []
+
     for scope in traverse_scope(expression):
         if dialect.PREFER_CTE_ALIAS_COLUMN:
             pushdown_cte_alias_columns(scope)
@@ -115,6 +118,7 @@ def qualify_columns(
                     using_columns,
                     pseudocolumns,
                     annotator,
+                    unannotated_scopes,
                 )
             qualify_outputs(scope, dialect=dialect)
 
@@ -126,6 +130,8 @@ def qualify_columns(
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
+        elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
+            unannotated_scopes.append(scope)
 
     return expression
 
@@ -1016,6 +1022,7 @@ def _expand_stars(
     using_columns: list[str],
     pseudocolumns: set[str],
     annotator: TypeAnnotator,
+    unannotated_scopes: list[Scope],
 ) -> None:
     """Expand stars to lists of column selections"""
 
@@ -1031,6 +1038,10 @@ def _expand_stars(
     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
         for struct_star in scope.stars:
             if isinstance(struct_star, exp.Dot):
+                # The operand's type may come from sources that were qualified but not annotated
+                for unannotated_scope in unannotated_scopes:
+                    annotator.annotate_scope(unannotated_scope)
+                unannotated_scopes.clear()
                 annotator.annotate_expression(struct_star.this, scope)
 
     scope_expression = scope.expression

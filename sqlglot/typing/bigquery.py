@@ -143,7 +143,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):
-            col_types = self._get_query_column_types(unnested)
+            col_types = self._get_setop_column_types(unnested)
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
             if len(col_types) == 1:

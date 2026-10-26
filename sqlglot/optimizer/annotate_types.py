@@ -220,8 +220,8 @@ class TypeAnnotator:
         # Keep ordered output columns until a parent set operation consumes them. Source
         # queries retain their results for subsequent column lookups. Retain each expression
         # alongside its output columns to prevent cached IDs from being reused.
-        self._query_column_types: dict[
-            int, tuple[exp.Query, list[tuple[str, exp.DataType | exp.DType]]]
+        self._setop_column_types: dict[
+            int, tuple[exp.SetOperation, list[tuple[str, exp.DataType | exp.DType]]]
         ] = {}
         self._table_column_aliases: dict[int, tuple[exp.Table, dict[str, str]]] = {}
 
@@ -236,7 +236,7 @@ class TypeAnnotator:
     def clear(self) -> None:
         self._visited.clear()
         self._null_expressions.clear()
-        self._query_column_types.clear()
+        self._setop_column_types.clear()
         self._table_column_aliases.clear()
         self._scope_source_selects.clear()
 
@@ -352,7 +352,7 @@ class TypeAnnotator:
             # anchor prefix until the recursive branches have been annotated.
             while (
                 isinstance(expression, exp.SetOperation)
-                and id(expression) not in self._query_column_types
+                and id(expression) not in self._setop_column_types
             ):
                 expression = expression.this.unnest()
 
@@ -401,10 +401,10 @@ class TypeAnnotator:
 
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-        if cached := self._query_column_types.get(id(expression)):
-            return dict(cached[1])
+        if isinstance(expression, exp.SetOperation):
+            return dict(self._get_setop_column_types(expression))
 
-        if isinstance(expression, exp.Selectable) and not isinstance(expression, exp.SetOperation):
+        if isinstance(expression, exp.Selectable):
             return {s.alias_or_name: s.type for s in expression.selects if s.type}
 
         return {}
@@ -413,12 +413,11 @@ class TypeAnnotator:
         # Iterate through all the expressions of the current scope in post-order, and annotate
         self.annotate_expression(scope.expression, scope)
         self._fixup_order_by_aliases(scope)
-        self._annotate_select_stars(scope)
 
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             scope.expression.meta.pop("query_type", None)
             column_types = (
-                self._get_query_column_types(scope.expression)
+                self._get_setop_column_types(scope.expression)
                 if isinstance(scope.expression, exp.SetOperation)
                 else ((select.output_name, select.type) for select in scope.expression.selects)
             )
@@ -692,59 +691,11 @@ class TypeAnnotator:
 
         return type2_value if type2_value in self.coerces_to.get(type1_value, {}) else type1_value
 
-    def _get_query_column_types(
-        self, expression: exp.Expr
+    def _get_setop_column_types(
+        self, expression: exp.SetOperation
     ) -> list[tuple[str, exp.DataType | exp.DType]]:
-        cached = self._query_column_types.get(id(expression))
-        if cached:
-            return cached[1]
-        if (
-            not isinstance(expression, exp.Selectable)
-            or isinstance(expression, exp.SetOperation)
-            or any(s.is_star for s in expression.selects)
-        ):
-            return []
-        return [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in expression.selects]
-
-    def _annotate_select_stars(self, scope: Scope) -> None:
-        expression = scope.expression
-        if not isinstance(expression, exp.Select) or not any(s.is_star for s in expression.selects):
-            return
-
-        # Qualification leaves stars over duplicate output names intact. Resolve their types
-        # positionally without generating ambiguous column references or changing the AST.
-        columns: list[tuple[str, exp.DataType | exp.DType]] = []
-        for select in expression.selects:
-            if not select.is_star:
-                columns.append((select.alias_or_name, select.type or exp.DType.UNKNOWN))
-                continue
-
-            star = select.this if isinstance(select, exp.Column) else select
-            if any(star.args.values()) or scope.pivots:
-                return
-            if isinstance(select, exp.Column):
-                sources = [scope.sources.get(select.table)]
-            elif isinstance(select, exp.Star):
-                if any(
-                    j.args.get("using") or j.method == "NATURAL"
-                    for j in expression.args.get("joins", [])
-                ):
-                    return
-                sources = [source for _, source in scope.selected_sources.values()]
-            else:
-                return
-
-            if not sources:
-                return
-            for source in sources:
-                if not isinstance(source, Scope):
-                    return
-                source_columns = self._get_query_column_types(source.expression)
-                if not source_columns:
-                    return
-                columns.extend(source_columns)
-
-        self._query_column_types[id(expression)] = (expression, columns)
+        cached = self._setop_column_types.get(id(expression))
+        return cached[1] if cached else []
 
     def _annotate_set_operation(self, expression: exp.SetOperation) -> None:
         # The expression annotation pass visits children first, including when a scope is
@@ -752,10 +703,12 @@ class TypeAnnotator:
         operands: list[list[tuple[str, exp.DataType | exp.DType]]] = []
         for operand in (expression.this.unnest(), expression.expression.unnest()):
             if isinstance(operand, exp.SetOperation):
-                cached = self._query_column_types.pop(id(operand), None)
+                cached = self._setop_column_types.pop(id(operand), None)
                 operands.append(cached[1] if cached else [])
             else:
-                operands.append(self._get_query_column_types(operand))
+                operands.append(
+                    [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in operand.selects]
+                )
         left, right = operands
 
         columns: list[tuple[str, exp.DataType | exp.DType]] = []
@@ -789,7 +742,7 @@ class TypeAnnotator:
                     for (name, left_type), (_, right_type) in zip(left, right)
                 ]
 
-        self._query_column_types[id(expression)] = (expression, columns)
+        self._setop_column_types[id(expression)] = (expression, columns)
 
     def _get_unpivot_column_types(
         self, pivot: exp.Pivot, src_types: dict[str, exp.DataType | exp.DType]

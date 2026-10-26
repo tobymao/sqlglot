@@ -2821,7 +2821,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 self.assertEqual(tree.selects[0].type, exp.DataType.build(expected))
 
         for dialect in ("bigquery", "duckdb"):
-            for kind in ("INT", "UNKNOWN", "STRUCT<x UNKNOWN>"):
+            for kind in ("INT", "UNKNOWN"):
                 for sql in (
                     "SELECT IF(TRUE, t, NULL) FROM t",
                     "SELECT r FROM (SELECT a, b FROM t) AS r",

@@ -572,10 +572,7 @@ class TypeAnnotator:
             and column_types
             and all(
                 kind is not None
-                and not any(
-                    field.is_type(exp.DType.UNKNOWN)
-                    for field in exp.DataType.build(kind, copy=False).find_all(exp.DataType)
-                )
+                and not exp.DataType.build(kind, copy=False).is_type(exp.DType.UNKNOWN)
                 for kind in column_types.values()
             )
         ):

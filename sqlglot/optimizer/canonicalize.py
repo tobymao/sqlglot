@@ -133,7 +133,7 @@ def remove_redundant_casts(expression: exp.Expr) -> exp.Expr:
         and expression.this.type
         and expression.to == expression.this.type
     ):
-        return expression.this
+        return _unwrap_redundant_cast(expression)
 
     if (
         isinstance(expression, (exp.Date, exp.TsOrDsToDate))
@@ -141,9 +141,21 @@ def remove_redundant_casts(expression: exp.Expr) -> exp.Expr:
         and expression.this.type.this == exp.DType.DATE
         and not expression.this.type.expressions
     ):
-        return expression.this
+        return _unwrap_redundant_cast(expression)
 
     return expression
+
+
+def _unwrap_redundant_cast(expression: exp.Expr) -> exp.Expr:
+    this = expression.this
+
+    # The cast delimited its operand the way parentheses do, so an operator operand must
+    # keep that grouping when the cast itself was an operand: CAST(a - b AS DOUBLE) * c
+    # must become (a - b) * c, not a - b * c
+    if isinstance(this, exp.Binary) and isinstance(expression.parent, (exp.Binary, exp.Unary)):
+        return exp.paren(this, copy=False)
+
+    return this
 
 
 def ensure_bools(expression: exp.Expr, replace_func: t.Callable[[exp.Expr], None]) -> exp.Expr:

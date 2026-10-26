@@ -138,3 +138,15 @@ DATE_TRUNC('YEAR', CAST('2023-01-01' AS DATE));
 
 DATE(DATE_TRUNC('YEAR', CAST("x" AS DATE)));
 DATE_TRUNC('YEAR', CAST("x" AS DATE));
+
+--------------------------------------
+-- Removing a redundant cast keeps the grouping of an operator operand
+--------------------------------------
+SELECT CAST(x.a - x.b AS INT) * 2 AS c FROM x AS x;
+SELECT ("x"."a" - "x"."b") * 2 AS "c" FROM "x" AS "x";
+
+SELECT -CAST(x.a - x.b AS INT) AS c FROM x AS x;
+SELECT -("x"."a" - "x"."b") AS "c" FROM "x" AS "x";
+
+SELECT CAST(x.a * x.b AS INT) + 2 AS c FROM x AS x;
+SELECT ("x"."a" * "x"."b") + 2 AS "c" FROM "x" AS "x";

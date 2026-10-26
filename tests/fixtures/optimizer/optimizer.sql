@@ -1642,3 +1642,17 @@ SELECT
     SELECT
       1 AS "1"
   ) AS "result";
+
+# title: removing a redundant cast keeps the grouping of its operand
+SELECT CAST(x.a - x.b AS INT) * 2 AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" - "x"."b"
+  ) * 2 AS "c"
+FROM "x" AS "x";
+
+# title: parentheses added for a removed cast are dropped again where precedence allows
+SELECT CAST(x.a * x.b AS INT) + 2 AS c FROM x AS x;
+SELECT
+  "x"."a" * "x"."b" + 2 AS "c"
+FROM "x" AS "x";

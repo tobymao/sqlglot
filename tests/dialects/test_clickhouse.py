@@ -797,6 +797,10 @@ class TestClickhouse(Validator):
                 "snowflake": "SELECT CONTAINS(s, 'a') = CONTAINS(t, 'b') FROM x WHERE NOT CONTAINS(s, 'a') AND y"
             },
         )
+        self.validate_all(
+            "SELECT -(POSITION(s, 'a') > 0)",
+            read={"snowflake": "SELECT -CONTAINS(s, 'a')"},
+        )
 
         self.validate_identity("SELECT startsWith('a', 'b')")
         self.validate_all(

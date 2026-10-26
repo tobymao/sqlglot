@@ -435,7 +435,7 @@ class ClickHouseGenerator(generator.Generator):
     def contains_sql(self, expression: exp.Contains) -> str:
         # ClickHouse has no CONTAINS; the comparison needs parentheses inside another operator
         result = exp.StrPosition(this=expression.this, substr=expression.expression) > 0
-        if isinstance(expression.parent, exp.Binary) and not isinstance(
+        if isinstance(expression.parent, exp.Binary | exp.Neg) and not isinstance(
             expression.parent, exp.Connector
         ):
             return self.sql(exp.paren(result, copy=False))

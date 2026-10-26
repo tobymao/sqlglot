@@ -6935,6 +6935,28 @@ FROM SEMANTIC_VIEW(
         self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM')")
         self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM', aead)")
 
+    def test_merge_all_by_name(self):
+        self.validate_all(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT ALL BY NAME",
+            read={
+                "databricks": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+                "": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE * WHEN NOT MATCHED THEN INSERT *",
+            },
+            write={
+                "snowflake": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT ALL BY NAME",
+                "databricks": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+            },
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.value > 0 THEN UPDATE ALL BY NAME WHEN MATCHED THEN DELETE WHEN NOT MATCHED AND s.value > 0 THEN INSERT ALL BY NAME"
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT (id, value) VALUES (s.id, s.value)"
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET value = s.value WHEN NOT MATCHED THEN INSERT ALL BY NAME"
+        )
+
     def test_update_statement(self):
         self.validate_identity("UPDATE test SET t = 1 FROM t1")
         self.validate_identity("UPDATE test SET t = 1 FROM t2 JOIN t3 ON t2.id = t3.id")

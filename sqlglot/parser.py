@@ -9888,7 +9888,9 @@ class Parser:
             self._match(TokenType.THEN)
 
             if self._match(TokenType.INSERT):
-                this = self._parse_star()
+                this = (
+                    exp.Star() if self._match_text_seq("ALL", "BY", "NAME") else self._parse_star()
+                )
                 if this:
                     then: exp.Expr | None = self.expression(exp.Insert(this=this))
                 else:
@@ -9905,6 +9907,8 @@ class Parser:
                 expressions = self._parse_star()
                 if expressions:
                     then = self.expression(exp.Update(expressions=expressions))
+                elif self._match_text_seq("ALL", "BY", "NAME"):
+                    then = self.expression(exp.Update(expressions=[exp.Star()]))
                 else:
                     then = self.expression(
                         exp.Update(

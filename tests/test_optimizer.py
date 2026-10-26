@@ -1857,6 +1857,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_parenthesizes_operands(self):
+        # Trees built without Paren nodes (as optimizer rewrites may produce them) must
+        # generate with the grouping their structure implies
+        a, b, c = exp.column("a"), exp.column("b"), exp.column("c")
+
+        for expression, expected in (
+            (exp.Mul(this=exp.Sub(this=a, expression=b), expression=c), "(a - b) * c"),
+            (exp.Mul(this=c, expression=exp.Sub(this=a, expression=b)), "c * (a - b)"),
+            (exp.Sub(this=a, expression=exp.Sub(this=b, expression=c)), "a - (b - c)"),
+            (exp.Sub(this=exp.Sub(this=a, expression=b), expression=c), "a - b - c"),
+            (exp.Div(this=a, expression=exp.Mul(this=b, expression=c)), "a / (b * c)"),
+            (exp.Add(this=exp.Mul(this=a, expression=b), expression=c), "a * b + c"),
+            (exp.Add(this=a, expression=exp.Add(this=b, expression=c)), "a + b + c"),
+            (exp.Mul(this=a, expression=exp.Mul(this=b, expression=c)), "a * b * c"),
+            (exp.Neg(this=exp.Sub(this=a, expression=b)), "-(a - b)"),
+            (exp.Add(this=exp.EQ(this=a, expression=b), expression=c), "(a = b) + c"),
+            # sort_comparison moves the column to the left; the point is that no parentheses are added
+            (exp.EQ(this=exp.Add(this=a, expression=b), expression=c), "c = a + b"),
+        ):
+            with self.subTest(expected):
+                self.assertEqual(simplify(expression.copy()).sql(), expected)
+
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1

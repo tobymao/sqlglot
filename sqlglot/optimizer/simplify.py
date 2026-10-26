@@ -191,6 +191,57 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
     return expression
 
 
+# Binary operator tiers from tightest to loosest binding, as the parser builds them
+OPERATOR_TIERS = tuple(
+    tuple(tier.values())
+    for tier in (Parser.FACTOR, Parser.TERM, Parser.BITWISE, Parser.COMPARISON, Parser.EQUALITY)
+)
+
+
+def _operator_tier(expression: exp.Expr) -> int | None:
+    for tier, operators in enumerate(OPERATOR_TIERS):
+        if isinstance(expression, operators):
+            return tier
+    return None
+
+
+def parenthesize_operands(expression: exp.Expr) -> exp.Expr:
+    """
+    The generator relies on Paren nodes for grouping, and rewrites such as removing a
+    redundant cast can leave a binary expression as the bare operand of an operator that
+    binds tighter, e.g. Mul(Sub(a, b), c), which would be generated as a - b * c. Wrap the
+    operands whose binding would otherwise change; simplify_parens keeps exactly these.
+    """
+    if isinstance(expression, (exp.Neg, exp.BitwiseNot)):
+        operand = expression.this
+        if isinstance(operand, exp.Binary) and _operator_tier(operand) is not None:
+            expression.set("this", exp.paren(operand, copy=False))
+        return expression
+
+    parent_tier = _operator_tier(expression)
+    if parent_tier is None:
+        return expression
+
+    for key in ("this", "expression"):
+        operand = expression.args.get(key)
+        tier = _operator_tier(operand) if isinstance(operand, exp.Binary) else None
+        if tier is None:
+            continue
+
+        # a looser operator inside a tighter one always regroups; the right operand of an
+        # equally tight one regroups unless both are the same associative operator
+        if tier > parent_tier or (
+            tier == parent_tier
+            and key == "expression"
+            and not (
+                isinstance(expression, (exp.Add, exp.Mul)) and type(operand) is type(expression)
+            )
+        ):
+            expression.set(key, exp.paren(operand, copy=False))
+
+    return expression
+
+
 def propagate_constants(expression, root=True):
     """
     Propagate constants for conjunctions in DNF:
@@ -809,6 +860,7 @@ class Simplifier:
             node = self.simplify_literals(node, root)
             node = self.simplify_equality(node)
             node = simplify_parens(node, dialect=self.dialect)
+            node = parenthesize_operands(node)
             node = self.simplify_datetrunc(node)
             node = self.sort_comparison(node)
             node = self.simplify_startswith(node)

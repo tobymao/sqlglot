@@ -7,6 +7,20 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_cast(self):
+        for dtype, func in (
+            ("DATETIME", "DATETIME"),
+            ("TIMESTAMP", "DATETIME"),
+            ("TIMESTAMPNTZ", "DATETIME"),
+            ("TIME", "TIME"),
+        ):
+            for value in ("'2014-09-01 12:34:56'", "x", "NULL"):
+                with self.subTest(dtype=dtype, value=value):
+                    self.validate_all(
+                        f"SELECT {func}({value})",
+                        read={"": f"SELECT CAST({value} AS {dtype})"},
+                    )
+
     def test_is_precedence(self):
         self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
         for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):

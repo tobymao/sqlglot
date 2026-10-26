@@ -387,7 +387,7 @@ class TestDialect(Validator):
             "CAST(a AS DATETIME)",
             write={
                 "postgres": "CAST(a AS TIMESTAMP)",
-                "sqlite": "CAST(a AS DATETIME)",
+                "sqlite": "DATETIME(a)",
             },
         )
         self.validate_all(

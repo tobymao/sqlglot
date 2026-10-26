@@ -4,6 +4,11 @@ SELECT CONCAT("w"."d", "w"."e") AS "c" FROM "w" AS "w";
 SELECT CAST(w.d AS DATE) > w.e AS a FROM w AS w;
 SELECT CAST("w"."d" AS DATE) > CAST("w"."e" AS DATE) AS "a" FROM "w" AS "w";
 
+# dialect: sqlite
+# schema: {"users": {"last_access": "DATETIME"}}
+SELECT COUNT(*) FROM users WHERE last_access > '2014-09-01';
+SELECT COUNT(*) AS "_col_0" FROM "users" AS "users" WHERE "users"."last_access" > DATETIME('2014-09-01');
+
 SELECT CAST(1 AS VARCHAR) AS a FROM w AS w;
 SELECT CAST(1 AS VARCHAR) AS "a" FROM "w" AS "w";
 

@@ -441,9 +441,7 @@ class TypeAnnotator:
             )
 
             if not any(
-                not cd.kind
-                or any(kind.is_type(exp.DType.UNKNOWN) for kind in cd.kind.find_all(exp.DataType))
-                for cd in struct_type.expressions
+                not cd.kind or cd.kind.is_type(exp.DType.UNKNOWN) for cd in struct_type.expressions
             ):
                 # We don't use `_set_type` on purpose here. If we annotated the query directly, then
                 # using it in other contexts (e.g., ARRAY(<query>)) could result in incorrect type

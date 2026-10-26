@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int
+from sqlglot.optimizer.simplify import simplify_parens
 from collections import defaultdict
 
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
@@ -433,13 +434,12 @@ class ClickHouseGenerator(generator.Generator):
 
     @unsupported_args("json_scope")
     def contains_sql(self, expression: exp.Contains) -> str:
-        # ClickHouse has no CONTAINS; the comparison needs parentheses inside another operator
-        result = exp.StrPosition(this=expression.this, substr=expression.expression) > 0
-        if isinstance(expression.parent, exp.Binary) and not isinstance(
-            expression.parent, exp.Connector
-        ):
-            return self.sql(exp.paren(result, copy=False))
-        return self.sql(result)
+        # ClickHouse has no CONTAINS; keep the parentheses only where the parent needs them
+        result = exp.paren(
+            exp.StrPosition(this=expression.this, substr=expression.expression) > 0, copy=False
+        )
+        result.parent = expression.parent
+        return self.sql(simplify_parens(result, self.dialect))
 
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this

@@ -211,6 +211,7 @@ class BigQuery(Dialect):
             "TIMESTAMP": TokenType.TIMESTAMPTZ,
             "WHILE": TokenType.COMMAND,
         }
+        KEYWORDS.pop("ISNULL")
         KEYWORDS.pop("DIV")
         KEYWORDS.pop("VALUES")
         KEYWORDS.pop("/*+")

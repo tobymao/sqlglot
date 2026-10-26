@@ -23,6 +23,25 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_isnull_alias(self):
+        self.validate_identity("SELECT 0 isnull", "SELECT 0 AS isnull")
+        self.validate_identity(
+            "SELECT CASE WHEN TRUE THEN 0 ELSE 1 END isnull",
+            "SELECT CASE WHEN TRUE THEN 0 ELSE 1 END AS isnull",
+        )
+        expression = annotate_types(
+            qualify(
+                self.parse_one(
+                    "WITH a AS (SELECT 1 AS x, 0 isnull), "
+                    "u AS (SELECT * EXCEPT(isnull) FROM a UNION ALL SELECT 2 AS x) "
+                    "SELECT u.x FROM u"
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        self.assertTrue(expression.selects[0].is_type(exp.DType.INT))
+
     def test_byte_strings(self):
         for sql, hex_value in (
             ("b''", ""),

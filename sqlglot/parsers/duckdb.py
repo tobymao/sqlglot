@@ -299,6 +299,10 @@ class DuckDBParser(parser.Parser):
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
 
+    def _parse_trigger_execute(self) -> exp.Expr | None:
+        body = self._try_parse(self._parse_statement)
+        return body if not self._curr else None
+
     def _parse_function_properties(self) -> exp.Properties | None:
         if self._match(TokenType.TABLE):
             return exp.Properties(

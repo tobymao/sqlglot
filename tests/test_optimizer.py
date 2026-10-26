@@ -2772,6 +2772,73 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for _ in range(100):
             self.assertTrue(annotator.annotate(parse_one("1")).is_type(exp.DType.INT))
 
+    def test_annotate_struct_subquery_values(self):
+        for sql, expected in (
+            ("SELECT (SELECT AS STRUCT 1 AS x) AS value", "STRUCT<x INT64>"),
+            ("SELECT (SELECT AS STRUCT 1 AS x, 'a' AS y) AS value", "STRUCT<x INT64, y STRING>"),
+            ("SELECT (SELECT 1 AS x) AS value", "INT64"),
+            ("SELECT ARRAY(SELECT AS STRUCT 1 AS x) AS value", "ARRAY<STRUCT<x INT64>>"),
+            ("SELECT ARRAY(SELECT 1 AS x) AS value", "ARRAY<INT64>"),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(parse_one(sql, dialect="bigquery"), dialect="bigquery")
+                self.assertEqual(qualified.selects[0].type.sql("bigquery"), expected)
+
+        qualified = qualify(
+            parse_one("SELECT r FROM (SELECT 1 AS x) AS r", dialect="duckdb"), dialect="duckdb"
+        )
+        annotate_types(qualified, dialect="duckdb")
+        self.assertEqual(qualified.selects[0].type, exp.DataType.build("STRUCT<x INT>"))
+
+    def test_reannotate_struct_subquery_values(self):
+        tree = annotate_types(
+            parse_one("SELECT (SELECT AS STRUCT 1 AS x) AS value", dialect="bigquery"),
+            dialect="bigquery",
+        )
+        for expression in (tree, tree.copy()):
+            with self.subTest(copied=expression is not tree):
+                expression.find(exp.Literal).replace(exp.column("unknown"))
+                annotate_types(expression, dialect="bigquery", overwrite_types=True)
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+    def test_annotate_row_types(self):
+        for sql, expected in (
+            ("SELECT r FROM (SELECT 1 AS x, 'a' AS y) AS r", "STRUCT<x INT, y VARCHAR>"),
+            ("WITH r AS (SELECT 1 AS x) SELECT r FROM r", "STRUCT<x INT>"),
+            (
+                "SELECT r FROM (SELECT 1 AS x UNION ALL SELECT CAST(2 AS DOUBLE) AS x) AS r",
+                "STRUCT<x DOUBLE>",
+            ),
+            (
+                "SELECT r FROM (SELECT 1 AS x UNION ALL BY NAME SELECT 'a' AS y) AS r",
+                "STRUCT<x INT, y VARCHAR>",
+            ),
+            ("SELECT (SELECT 1 AS x)", "INT"),
+        ):
+            with self.subTest(sql=sql):
+                tree = qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb")
+                annotate_types(tree, dialect="duckdb")
+                self.assertEqual(tree.selects[0].type, exp.DataType.build(expected))
+
+        for dialect in ("bigquery", "duckdb"):
+            for kind in ("INT", "UNKNOWN"):
+                for sql in (
+                    "SELECT IF(TRUE, t, NULL) FROM t",
+                    "SELECT r FROM (SELECT a, b FROM t) AS r",
+                ):
+                    with self.subTest(dialect=dialect, kind=kind, sql=sql):
+                        schema = {"t": {"a": "INT", "b": kind}}
+                        tree = qualify(
+                            parse_one(sql, dialect=dialect), schema=schema, dialect=dialect
+                        )
+                        annotate_types(tree, schema=schema, dialect=dialect)
+                        self.assertEqual(
+                            tree.selects[0].type,
+                            exp.DataType.build(
+                                "STRUCT<a INT, b INT>" if kind == "INT" else "UNKNOWN"
+                            ),
+                        )
+
     def test_annotate_untyped_binary_operands(self):
         # Operands that escaped annotation have type None; treat them as UNKNOWN instead
         # of crashing on `.type.this`

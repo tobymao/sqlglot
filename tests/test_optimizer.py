@@ -3813,6 +3813,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertTrue(all(s.is_type(exp.DType.DOUBLE) for s in expression.selects))
 
+    def test_duplicate_set_operation_projections(self):
+        for sql in (
+            "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL "
+            "SELECT 3 AS x, CAST(4.5 AS DOUBLE) AS x) AS t",
+            "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL "
+            "(SELECT 3 AS c, 4 AS c UNION ALL SELECT 5, CAST(6.5 AS DOUBLE))) AS t",
+            "SELECT t.a, t.b FROM (SELECT 1 AS a, CAST(2.5 AS DOUBLE) AS b "
+            "UNION ALL SELECT 0, 0) AS t",
+        ):
+            for qualified in (False, True):
+                with self.subTest(sql=sql, qualified=qualified):
+                    expression = parse_one(sql)
+                    if qualified:
+                        expression = qualify(expression)
+                    annotate_types(expression)
+                    self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))

@@ -218,11 +218,8 @@ class TypeAnnotator:
         self._supports_null_type = dialect.SUPPORTS_NULL_TYPE
 
         # Keep ordered output columns until a parent set operation consumes them. Source
-        # queries retain their results for subsequent column lookups. Retain each expression
-        # alongside its output columns to prevent cached IDs from being reused.
-        self._setop_column_types: dict[
-            int, tuple[exp.SetOperation, dict[str, exp.DataType | exp.DType]]
-        ] = {}
+        # queries retain their results for subsequent column lookups.
+        self._setop_column_types: dict[int, list[tuple[str, exp.DataType | exp.DType]]] = {}
         self._table_column_aliases: dict[int, tuple[exp.Table, dict[str, str]]] = {}
 
         # When set to False, this enables partial annotation by skipping already-annotated nodes
@@ -402,7 +399,7 @@ class TypeAnnotator:
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
         if isinstance(expression, exp.SetOperation):
-            return self._get_setop_column_types(expression)
+            return dict(self._get_setop_column_types(expression))
 
         if isinstance(expression, exp.Selectable):
             return {s.alias_or_name: s.type for s in expression.selects if s.type}
@@ -417,7 +414,7 @@ class TypeAnnotator:
         if self.dialect.QUERY_RESULTS_ARE_STRUCTS and isinstance(scope.expression, exp.Query):
             scope.expression.meta.pop("query_type", None)
             column_types = (
-                self._get_setop_column_types(scope.expression).items()
+                self._get_setop_column_types(scope.expression)
                 if isinstance(scope.expression, exp.SetOperation)
                 else ((select.output_name, select.type) for select in scope.expression.selects)
             )
@@ -693,50 +690,54 @@ class TypeAnnotator:
 
     def _get_setop_column_types(
         self, expression: exp.SetOperation
-    ) -> dict[str, exp.DataType | exp.DType]:
-        cached = self._setop_column_types.get(id(expression))
-        return cached[1] if cached else {}
+    ) -> list[tuple[str, exp.DataType | exp.DType]]:
+        return self._setop_column_types.get(id(expression), [])
 
     def _annotate_set_operation(self, expression: exp.SetOperation) -> None:
         # The expression annotation pass visits children first, including when a scope is
-        # annotated independently.
-        operands: list[dict[str, exp.DataType | exp.DType]] = []
+        # annotated independently. Preserve duplicate names until positional matching is done.
+        operands: list[list[tuple[str, exp.DataType | exp.DType]]] = []
         for operand in (expression.this.unnest(), expression.expression.unnest()):
             if isinstance(operand, exp.SetOperation):
-                cached = self._setop_column_types.pop(id(operand), None)
-                operands.append(cached[1] if cached else {})
+                operands.append(self._setop_column_types.pop(id(operand), []))
             else:
                 operands.append(
-                    {s.alias_or_name: s.type or exp.DType.UNKNOWN for s in operand.selects}
+                    [(s.alias_or_name, s.type or exp.DType.UNKNOWN) for s in operand.selects]
                 )
         left, right = operands
 
-        columns: dict[str, exp.DataType | exp.DType] = {}
+        columns: list[tuple[str, exp.DataType | exp.DType]] = []
         if left and right:
             if expression.args.get("by_name"):
+                left_types = dict(left)
+                right_types = dict(right)
                 if on := expression.args.get("on"):
                     names = [column.name for column in on]
                 elif expression.kind == "INNER":
-                    names = [name for name in left if name in right]
+                    names = [name for name in left_types if name in right_types]
                 elif expression.side == "LEFT":
-                    names = list(left)
+                    names = list(left_types)
                 else:
-                    names = list({**left, **right})
+                    names = list({**left_types, **right_types})
 
                 # Missing columns are NULL-filled, preserving the other operand's type.
-                columns = {
-                    name: self._maybe_coerce(
-                        left.get(name, exp.DType.NULL), right.get(name, exp.DType.NULL)
+                columns = [
+                    (
+                        name,
+                        self._maybe_coerce(
+                            left_types.get(name, exp.DType.NULL),
+                            right_types.get(name, exp.DType.NULL),
+                        ),
                     )
                     for name in names
-                }
+                ]
             elif len(left) == len(right):
-                columns = {
-                    name: self._maybe_coerce(left_type, right_type)
-                    for (name, left_type), right_type in zip(left.items(), right.values())
-                }
+                columns = [
+                    (name, self._maybe_coerce(left_type, right_type))
+                    for (name, left_type), (_, right_type) in zip(left, right)
+                ]
 
-        self._setop_column_types[id(expression)] = (expression, columns)
+        self._setop_column_types[id(expression)] = columns
 
     def _get_unpivot_column_types(
         self, pivot: exp.Pivot, src_types: dict[str, exp.DataType | exp.DType]

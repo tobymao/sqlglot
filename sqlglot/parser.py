@@ -10252,6 +10252,9 @@ class Parser:
         options = []
         while self._curr and not self._match(TokenType.R_PAREN, advance=False):
             option = self._parse_var(any_token=True)
+            if option is None:
+                break
+
             prev = self._prev.text.upper()
 
             # Different dialects might separate options and values by white space, "=" and "AS"

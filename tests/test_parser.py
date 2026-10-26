@@ -430,6 +430,18 @@ class TestParser(unittest.TestCase):
 
         assert "'ADD JAR s3://a'" in cm.output[0]
 
+    def test_copy_command_fallback(self):
+        for dialect in (None, "postgres"):
+            for error_level in ErrorLevel:
+                for sql in ("COPY t FROM :'f'", "COPY t FROM -", "COPY t FROM STDIN CSV -"):
+                    with (
+                        self.subTest(dialect=dialect, error_level=error_level, sql=sql),
+                        self.assertLogs(parser_logger),
+                    ):
+                        expression = parse_one(sql, read=dialect, error_level=error_level)
+                        self.assertIsInstance(expression, exp.Command)
+                        self.assertEqual(expression.sql(dialect=dialect), sql)
+
     def test_grant_revoke_without_privileges(self):
         for sql in (
             "GRANT ON TABLE tbl TO bob",

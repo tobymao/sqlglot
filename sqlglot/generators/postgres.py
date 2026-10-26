@@ -119,8 +119,8 @@ def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrD
     # date_part_boundary count unit boundary crossings, so the operands are truncated down to the
     # unit to make the two coincide. WEEK is left out: its start day differs across dialects
     if expression.args.get("date_part_boundary") and unit in DATE_DIFF_BOUNDARY_UNITS:
-        end = f"DATE_TRUNC('{unit}', {end})"
-        start = f"DATE_TRUNC('{unit}', {start})"
+        end = self.func("DATE_TRUNC", exp.Literal.string(unit), end)
+        start = self.func("DATE_TRUNC", exp.Literal.string(unit), start)
 
     if factor is not None:
         return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"

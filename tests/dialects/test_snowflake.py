@@ -1015,6 +1015,17 @@ class TestSnowflake(Validator):
             "transform(x, a int -> a + a + 1)",
             "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
         )
+
+        ast = self.parse_one("TRANSFORM(x, a INT -> a + a)")
+        first_type, second_type = ast.find_all(exp.DataType)
+        self.assertIsNot(first_type, second_type)
+        ast.transform(
+            lambda node: exp.DataType.build("BIGINT") if isinstance(node, exp.DataType) else node,
+            copy=False,
+        )
+        self.assertEqual(
+            ast.sql("snowflake"), "TRANSFORM(x, a -> CAST(a AS BIGINT) + CAST(a AS BIGINT))"
+        )
         self.validate_identity(
             "SELECT * FROM s WHERE c NOT IN (1, 2, 3)",
             "SELECT * FROM s WHERE NOT c IN (1, 2, 3)",

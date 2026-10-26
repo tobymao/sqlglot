@@ -98,6 +98,9 @@ class PostgresParser(parser.Parser):
     PROPERTY_PARSERS = {
         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "INPUT"},
         "SET": lambda self: self.expression(exp.SetConfigProperty(this=self._parse_set())),
+        "TABLESPACE": lambda self: self.expression(
+            exp.TableSpaceProperty(this=self._parse_id_var())
+        ),
     }
 
     PLACEHOLDER_PARSERS = {
@@ -342,8 +345,27 @@ class PostgresParser(parser.Parser):
 
         return self.expression(exp.Extract(this=part, expression=value))
 
-    def _parse_unique_key(self) -> exp.Expr | None:
-        return None
+    def _parse_unique(self) -> exp.UniqueColumnConstraint:
+        return self.expression(
+            exp.UniqueColumnConstraint(
+                nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),
+                this=self._parse_schema(),
+                include=self._parse_index_params(),
+                options=self._parse_key_constraint_options(),
+            )
+        )
+
+    def _parse_primary_key(
+        self,
+        wrapped_optional: bool = False,
+        in_props: bool = False,
+        named_primary_key: bool = False,
+    ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
+        this = super()._parse_primary_key(wrapped_optional, in_props, named_primary_key)
+        if isinstance(this, exp.PrimaryKeyColumnConstraint):
+            this.set("include", self._parse_index_params())
+            this.set("options", this.args["options"] + self._parse_key_constraint_options())
+        return this
 
     def _parse_jsonb_exists(self) -> exp.JSONBExists:
         return self.expression(

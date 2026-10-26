@@ -9,6 +9,37 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_create_tablespace(self):
+        for sql in (
+            "CREATE TABLE t (a INT PRIMARY KEY) TABLESPACE pg_default",
+            "CREATE TABLE t (a INT) WITH (fillfactor=70) TABLESPACE pg_default",
+            "CREATE INDEX i ON t(a) TABLESPACE pg_default",
+            "CREATE MATERIALIZED VIEW mv TABLESPACE pg_default AS SELECT 1 AS a",
+            "CREATE TABLE t (a INT, CONSTRAINT pk PRIMARY KEY (a) USING INDEX TABLESPACE pg_default)",
+            "CREATE TABLE t (a INT, UNIQUE (a) USING INDEX TABLESPACE pg_default)",
+            "CREATE TABLE t (a INT PRIMARY KEY USING INDEX TABLESPACE pg_default)",
+            'CREATE TABLE t (a INT) TABLESPACE "pg_default"',
+            'CREATE INDEX i ON t(a) TABLESPACE "pg_default"',
+            'CREATE MATERIALIZED VIEW mv TABLESPACE "pg_default" AS SELECT 1 AS a',
+            'CREATE TABLE t (a INT PRIMARY KEY USING INDEX TABLESPACE "pg_default" DEFERRABLE INITIALLY DEFERRED)',
+            "CREATE TABLE t (a INT PRIMARY KEY WITH (fillfactor=70) USING INDEX TABLESPACE pg_default)",
+            'CREATE TABLE t (a INT UNIQUE USING INDEX TABLESPACE "pg_default" DEFERRABLE)',
+            "CREATE TABLE t (a INT UNIQUE NULLS NOT DISTINCT WITH (fillfactor=70) USING INDEX TABLESPACE pg_default)",
+            "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a) INCLUDE (b) WITH (fillfactor=70) USING INDEX TABLESPACE pg_default DEFERRABLE)",
+            "CREATE TABLE t (a INT, b INT, CONSTRAINT uq UNIQUE (a) INCLUDE (b) WITH (fillfactor=70) USING INDEX TABLESPACE pg_default DEFERRABLE)",
+            'CREATE INDEX i ON t USING btree(a) INCLUDE (b) WITH (fillfactor=70) TABLESPACE "pg_default" WHERE a > 0',
+            "CREATE TABLE t (a INT4RANGE, EXCLUDE USING gist(a WITH &&) USING INDEX TABLESPACE pg_default WHERE (NOT a IS NULL))",
+            "CREATE TABLE t (a INT) USING heap TABLESPACE pg_default",
+            "CREATE TABLE t USING heap WITH (fillfactor=70) TABLESPACE pg_default AS SELECT 1 AS a WITH NO DATA",
+            "CREATE MATERIALIZED VIEW mv USING heap WITH (fillfactor=70) TABLESPACE pg_default AS SELECT 1 AS a",
+            "CREATE TEMPORARY TABLE t (a INT) USING heap WITH (fillfactor=70) ON COMMIT DELETE ROWS TABLESPACE pg_default",
+            "CREATE TEMPORARY TABLE t USING heap WITH (fillfactor=70) ON COMMIT PRESERVE ROWS TABLESPACE pg_default AS SELECT 1 AS a",
+            "CREATE TEMPORARY TABLE t ON COMMIT DELETE ROWS AS SELECT 1 AS a",
+        ):
+            with self.subTest(sql=sql):
+                create = self.validate_identity(sql).assert_is(exp.Create)
+                self.validate_identity(create.sql("postgres", pretty=True), sql)
+
     def test_is_precedence(self):
         for predicate in (
             "NULL IN (0)",

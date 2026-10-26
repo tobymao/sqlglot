@@ -422,14 +422,33 @@ class PostgresGenerator(generator.Generator):
         exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
+        exp.FileFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.OnCommitProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_WITH,
         exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def with_properties(self, properties: exp.Properties) -> str:
+        with_properties = []
+        post_with = []
+        for prop in properties.expressions:
+            if isinstance(prop, (exp.OnCommitProperty, exp.TableSpaceProperty)):
+                post_with.append(prop)
+            else:
+                with_properties.append(prop)
+
+        post_with.sort(key=lambda prop: isinstance(prop, exp.TableSpaceProperty))
+        sql = super().with_properties(exp.Properties(expressions=with_properties))
+        post_sql = self.expressions(sqls=post_with, sep=" ", indent=False)
+        return sql + self.seg(post_sql, sep=" " if sql else "") if post_sql else sql
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):

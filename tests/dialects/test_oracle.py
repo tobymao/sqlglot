@@ -13,8 +13,10 @@ class TestOracle(Validator):
         self.assertIsInstance(create.this, exp.Schema)
         self.assertIsInstance(create.this.expressions[0], exp.ColumnDef)
         self.validate_identity('CREATE TABLE t (id NUMBER) TABLESPACE "Mixed Ts"')
-        with self.assertRaises(UnsupportedError):
-            create.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            create.sql("postgres", unsupported_level=ErrorLevel.RAISE),
+            "CREATE TABLE t (id DECIMAL) TABLESPACE ts",
+        )
 
     def test_create_table_physical_properties(self):
         for clause in (

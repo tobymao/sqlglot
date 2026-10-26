@@ -333,6 +333,9 @@ class Generator:
     # Whether MERGE ... WHEN MATCHED/NOT MATCHED THEN UPDATE/INSERT ... WHERE is supported
     SUPPORTS_MERGE_WHERE = False
 
+    # Whether MERGE uses ALL BY NAME instead of a star to update or insert all columns
+    MERGE_ALL_BY_NAME = False
+
     # Whether the INTERVAL expression works only with values like '1 day'
     SINGLE_STRING_INTERVAL = False
 
@@ -5015,13 +5018,27 @@ class Generator:
 
         then_expression = expression.args.get("then")
         if isinstance(then_expression, exp.Insert):
-            this = self.sql(then_expression, "this")
+            this = (
+                "ALL BY NAME"
+                if self.MERGE_ALL_BY_NAME and isinstance(then_expression.this, exp.Star)
+                else self.sql(then_expression, "this")
+            )
             this = f"INSERT {this}" if this else "INSERT"
             then = self.sql(then_expression, "expression")
             then = f"{this} VALUES {then}" if then else this
         elif isinstance(then_expression, exp.Update):
             if isinstance(then_expression.args.get("expressions"), exp.Star):
-                then = f"UPDATE {self.sql(then_expression, 'expressions')}"
+                then = (
+                    "UPDATE ALL BY NAME"
+                    if self.MERGE_ALL_BY_NAME
+                    else f"UPDATE {self.sql(then_expression, 'expressions')}"
+                )
+            elif (
+                self.MERGE_ALL_BY_NAME
+                and len(then_expression.expressions) == 1
+                and isinstance(then_expression.expressions[0], exp.Star)
+            ):
+                then = "UPDATE ALL BY NAME"
             else:
                 expressions_sql = self.expressions(then_expression)
                 then = f"UPDATE SET{self.sep()}{expressions_sql}" if expressions_sql else "UPDATE"

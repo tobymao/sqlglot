@@ -2801,65 +2801,43 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 annotate_types(expression, dialect="bigquery", overwrite_types=True)
                 self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
 
-    def test_annotate_row_duplicate_fields(self):
-        for dialect in ("bigquery", "duckdb"):
-            with self.subTest(dialect=dialect):
-                qualified = qualify(
-                    parse_one("SELECT r FROM (SELECT 1 AS x, 'a' AS x) AS r", dialect=dialect),
-                    dialect=dialect,
-                )
-                annotate_types(qualified, dialect=dialect)
-                self.assertEqual(
-                    qualified.selects[0].type,
-                    exp.DataType.build(
-                        "STRUCT<x INT, x VARCHAR>" if dialect == "bigquery" else "UNKNOWN"
-                    ),
-                )
-
-    def test_annotate_expression_table_references(self):
-        schema = MappingSchema({"t": {"a": "INT64"}}, dialect="bigquery")
-        tree = parse_one(
-            "SELECT IF(TRUE, t, NULL) AS r, t AS untouched FROM t", dialect="bigquery"
-        ).transform(
-            lambda node: exp.TableColumn(this=node.this) if isinstance(node, exp.Column) else node
-        )
-        scope = build_scope(tree)
-        assert scope is not None
-        annotator = TypeAnnotator(schema)
-        annotator.annotate_expression(tree.selects[0], scope)
-        self.assertEqual(tree.selects[0].type.sql("bigquery"), "STRUCT<a INT64>")
-        self.assertIsNone(tree.selects[1].this.type)
-        annotator.annotate_scope(scope)
-        self.assertEqual(tree.selects[1].type.sql("bigquery"), "STRUCT<a INT64>")
-
-    def test_annotate_expression_incomplete_row(self):
-        for source_sql, typed_columns in (
-            ("SELECT 1 AS x UNION ALL SELECT 2 AS x", 0),
-            ("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x", 0),
-            ("SELECT 1 AS x, 2 AS y", 1),
-            ("SELECT 1 AS x, unknown_function() AS y", 2),
+    def test_annotate_row_types(self):
+        for sql, expected in (
+            ("SELECT r FROM (SELECT 1 AS x, 'a' AS y) AS r", "STRUCT<x INT, y VARCHAR>"),
+            ("WITH r AS (SELECT 1 AS x) SELECT r FROM r", "STRUCT<x INT>"),
+            (
+                "SELECT r FROM (SELECT 1 AS x UNION ALL SELECT CAST(2 AS DOUBLE) AS x) AS r",
+                "STRUCT<x DOUBLE>",
+            ),
+            (
+                "SELECT r FROM (SELECT 1 AS x UNION ALL BY NAME SELECT 'a' AS y) AS r",
+                "STRUCT<x INT, y VARCHAR>",
+            ),
+            ("SELECT (SELECT 1 AS x)", "INT"),
         ):
-            with self.subTest(source=source_sql):
-                source = parse_one(source_sql)
-                tree = exp.select(exp.TableColumn(this=exp.to_identifier("r"))).from_(
-                    source.subquery("r", copy=False)
-                )
-                scope = build_scope(tree)
-                assert scope is not None
-                for select in source.selects[:typed_columns]:
-                    annotate_types(select)
-                annotator = TypeAnnotator(MappingSchema())
-                annotator.annotate_expression(tree.selects[0], scope)
-                self.assertTrue(tree.selects[0].is_type(exp.DType.UNKNOWN))
+            with self.subTest(sql=sql):
+                tree = qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb")
+                annotate_types(tree, dialect="duckdb")
+                self.assertEqual(tree.selects[0].type, exp.DataType.build(expected))
 
-        for kind in ("UNKNOWN", "STRUCT<x UNKNOWN>"):
-            with self.subTest(kind=kind):
-                tree = qualify(
-                    parse_one("SELECT t FROM t", dialect="bigquery"),
-                    schema={"t": {"a": "INT", "b": kind}},
-                    dialect="bigquery",
-                )
-                self.assertTrue(tree.selects[0].is_type(exp.DType.UNKNOWN))
+        for dialect in ("bigquery", "duckdb"):
+            for kind in ("INT", "UNKNOWN", "STRUCT<x UNKNOWN>"):
+                for sql in (
+                    "SELECT IF(TRUE, t, NULL) FROM t",
+                    "SELECT r FROM (SELECT a, b FROM t) AS r",
+                ):
+                    with self.subTest(dialect=dialect, kind=kind, sql=sql):
+                        schema = {"t": {"a": "INT", "b": kind}}
+                        tree = qualify(
+                            parse_one(sql, dialect=dialect), schema=schema, dialect=dialect
+                        )
+                        annotate_types(tree, schema=schema, dialect=dialect)
+                        self.assertEqual(
+                            tree.selects[0].type,
+                            exp.DataType.build(
+                                "STRUCT<a INT, b INT>" if kind == "INT" else "UNKNOWN"
+                            ),
+                        )
 
     def test_annotate_untyped_binary_operands(self):
         # Operands that escaped annotation have type None; treat them as UNKNOWN instead

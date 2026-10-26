@@ -662,6 +662,22 @@ FROM json_data, field_ids""",
                 "postgres": "SELECT CURRENT_TIMESTAMP - MAKE_INTERVAL(years => 1, months => 2, days => 3)",
             },
         )
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(days => 3)",
+            write={
+                "duckdb": "SELECT INTERVAL '3 day'",
+                "mysql": "SELECT INTERVAL 3 DAY",
+                "postgres": "SELECT MAKE_INTERVAL(days => 3)",
+                "snowflake": "SELECT INTERVAL '3 day'",
+            },
+        )
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(1, hours => 2, mins => 30)",
+            write={
+                "duckdb": "SELECT INTERVAL '1 year 2 hour 30 minute'",
+                "postgres": "SELECT MAKE_INTERVAL(1, hours => 2, mins => 30)",
+            },
+        )
         interval = parse_one("INTERVAL '1' QUARTER")
         interval.set("this", exp.Literal.number("1e1000000000"))
         with self.assertLogs(generator_logger, level="WARNING") as cm:

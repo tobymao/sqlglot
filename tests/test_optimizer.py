@@ -3677,6 +3677,38 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     == exp.DataType.build(expected_type, dialect="bigquery")
                 )
 
+    def test_values_annotation(self):
+        for first, second, expected_type in (
+            ("1::INT", "2::BIGINT", "BIGINT"),
+            ("1", "NULL", "INT"),
+            ("1", "2.5", "DOUBLE"),
+            ("FOO()", "1", "UNKNOWN"),
+        ):
+            with self.subTest(f"first: {first}, second: {second}, expected: {expected_type}"):
+                fs = annotate_types(
+                    parse_one(f"SELECT t.c FROM (VALUES ({first}), ({second})) t(c)")
+                )
+                sf = annotate_types(
+                    parse_one(f"SELECT t.c FROM (VALUES ({second}), ({first})) t(c)")
+                )
+                assert fs.selects[0].type == sf.selects[0].type == exp.DataType.build(expected_type)
+
+        values = annotate_types(
+            parse_one("SELECT t.a, t.b FROM (VALUES (NULL, 1), (7, 2.5), (8, NULL)) AS t(a, b)")
+        )
+        self.assertEqual(values.selects[0].type.this, exp.DataType.Type.INT)
+        self.assertEqual(values.selects[1].type.this, exp.DataType.Type.DOUBLE)
+
+        # Typed division must not truncate when a later row makes the column fractional
+        optimized = optimizer.optimize(
+            parse_one(
+                "WITH t(a, b) AS (VALUES (7, 2), (7.5, 2)) SELECT a / b AS q FROM t",
+                read="postgres",
+            ),
+            dialect="postgres",
+        )
+        self.assertNotIn("TRUNC", optimized.sql("duckdb"))
+
     def test_udtf_annotation(self):
         table_udtf = parse_one(
             "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 100000))",

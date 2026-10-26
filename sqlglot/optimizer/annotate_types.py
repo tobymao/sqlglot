@@ -392,6 +392,17 @@ class TypeAnnotator:
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
 
+            if isinstance(expression, exp.Values):
+                # Like a set operation's, each VALUES column's type is coerced across all rows
+                column_types: list[exp.DataType | exp.DType] = [exp.DType.NULL] * len(values)
+                for row in expression.expressions:
+                    for i, value in enumerate(row.expressions[: len(column_types)]):
+                        column_types[i] = self._maybe_coerce(
+                            value.type or exp.DType.UNKNOWN, column_types[i]
+                        )
+
+                return dict(zip(alias_column_names, column_types))
+
             return {alias: column.type for alias, column in zip(alias_column_names, values)}
 
         if isinstance(expression, exp.SetOperation) and (

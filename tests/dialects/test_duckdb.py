@@ -95,6 +95,26 @@ class TestDuckDB(Validator):
                 exp.column("id", name),
             )
 
+    def test_quoted_variables(self):
+        for name in ("my var", "1", 'my"var', "select", "MixedCase", "a.b"):
+            quoted = exp.to_identifier(name, quoted=True).sql("duckdb")
+            with self.subTest(name=name):
+                expression = self.validate_identity(f"SELECT ${quoted} + 1")
+                placeholder = expression.find(exp.Placeholder)
+                self.assertEqual(placeholder.name, name)
+                self.assertIsInstance(placeholder.this, exp.Identifier)
+                self.assertTrue(placeholder.this.quoted)
+                self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+                self.assertEqual(hash(expression.copy()), hash(expression))
+
+        self.validate_identity('SELECT $"my var", $my')
+        self.validate_identity("SELECT $1, ?")
+        self.validate_identity('SELECT $"my var"[1]')
+        expression = self.parse_one('SELECT $"my var"')
+        self.assertEqual(
+            exp.replace_placeholders(expression, **{"my var": 42}).sql("duckdb"), "SELECT 42"
+        )
+
     def test_nearest_join(self):
         for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
             for approximate in ("", "APPROX "):

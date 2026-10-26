@@ -259,7 +259,13 @@ class DuckDBParser(parser.Parser):
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
         TokenType.PARAMETER: lambda self: (
-            self.expression(exp.Placeholder(this=self._prev.text))
+            self.expression(
+                exp.Placeholder(
+                    this=self._identifier_expression(quoted=True)
+                    if self._prev.token_type == TokenType.IDENTIFIER
+                    else self._prev.text
+                )
+            )
             if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
             else None
         ),

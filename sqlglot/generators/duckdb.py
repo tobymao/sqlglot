@@ -39,10 +39,13 @@ from sqlglot.dialects.dialect import (
     weekstart_unit_to_str,
     WEEK_START_DAY_TO_DOW,
 )
-from sqlglot.generator import unsupported_args
+from sqlglot.generator import UNSUPPORTED_TEMPLATE, unsupported_args
 from sqlglot.helper import find_new_name, is_date_unit, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
+
+if t.TYPE_CHECKING:
+    from sqlglot._typing import E
 
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
@@ -1838,6 +1841,12 @@ class DuckDBGenerator(generator.Generator):
         ),
         exp.Xor: _xor_sql,
         exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
+        exp.JSONArray: lambda self, e: self.jsonarray_sql(
+            self._without_json_clauses(e, "return_type", "strict")
+        ),
+        exp.JSONObject: lambda self, e: self._jsonobject_sql(
+            self._without_json_clauses(e, "unique_keys", "return_type", "encoding")
+        ),
         exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
         exp.DateBin: rename_func("TIME_BUCKET"),
         exp.LastDay: _last_day_sql,
@@ -2400,6 +2409,27 @@ class DuckDBGenerator(generator.Generator):
             return self.sql(exp.cast(add_expr, exp.DType.DATE))
 
         return self.sql(add_expr)
+
+    def _without_json_clauses(self, expression: E, *clauses: str) -> E:
+        # DuckDB's JSON_ARRAY and JSON_OBJECT take no SQL/JSON clauses and always keep NULLs:
+        # NULL ON NULL is what they do anyway, ABSENT ON NULL and the other clauses can't be kept
+        null_handling = expression.args.get("null_handling")
+        if null_handling and null_handling != "NULL ON NULL":
+            self.unsupported(f"{null_handling} is not supported in DuckDB")
+
+        present = [arg for arg in clauses if expression.args.get(arg)]
+        for arg in present:
+            self.unsupported(
+                UNSUPPORTED_TEMPLATE.format(arg, expression.__class__.__name__, "DuckDB")
+            )
+
+        if not (null_handling or present):
+            return expression
+
+        expression = expression.copy()
+        for arg in ("null_handling", *present):
+            expression.set(arg, None)
+        return expression
 
     def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
         # DuckDB has no Unicode escape strings and doesn't read \u in a string, so the escapes

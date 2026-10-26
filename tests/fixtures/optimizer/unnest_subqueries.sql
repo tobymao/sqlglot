@@ -439,3 +439,18 @@ SELECT x.b, SUM(SUM(_u_0.b)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b)
 # execute: true
 SELECT x.b, ROW_NUMBER() OVER (ORDER BY SUM((SELECT MAX(y.b) AS b FROM y)), x.b) AS n FROM x GROUP BY x.b ORDER BY x.b;
 SELECT x.b, ROW_NUMBER() OVER (ORDER BY SUM(_u_0.b), x.b) AS n FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a WITHIN GROUP window aggregate
+# execute: true
+SELECT x.b, ARRAY_AGG((SELECT MAX(y.b) AS b FROM y)) WITHIN GROUP (ORDER BY x.b) OVER () AS a FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, ARRAY_AGG(MAX(_u_0.b)) WITHIN GROUP (ORDER BY x.b) OVER () AS a FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a window partitioning aggregate
+# execute: true
+SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM((SELECT MAX(y.b) AS b FROM y)) ORDER BY x.b) AS n FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM(_u_0.b) ORDER BY x.b) AS n FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Aggregate ancestor traversal stops at a CTE query
+# execute: true
+WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;
+WITH q AS (SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0) SELECT q.total FROM q;

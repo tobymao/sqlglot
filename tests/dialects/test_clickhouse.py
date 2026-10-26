@@ -798,8 +798,14 @@ class TestClickhouse(Validator):
             },
         )
         self.validate_all(
-            "SELECT -(POSITION(s, 'a') > 0), (POSITION(s, 'a') > 0) IN (0)",
-            read={"snowflake": "SELECT -CONTAINS(s, 'a'), CONTAINS(s, 'a') IN (0)"},
+            "SELECT (POSITION(s, 'a') > 0) IN (0)",
+            read={"snowflake": "SELECT CONTAINS(s, 'a') IN (0)"},
+        )
+        self.assertEqual(
+            exp.Neg(
+                this=exp.Contains(this=exp.column("s"), expression=exp.Literal.string("a"))
+            ).sql("clickhouse"),
+            "-(POSITION(s, 'a') > 0)",
         )
 
         self.validate_identity("SELECT startsWith('a', 'b')")

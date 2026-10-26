@@ -292,8 +292,6 @@ class TypeAnnotator:
 
         if selects is None:
             selects = {}
-            # Recursive sources can revisit this key while their types are being inferred.
-            self._scope_source_selects[key] = selects
             source = scope.sources.get(source_name)
 
             pivots: list[exp.Pivot] = next(

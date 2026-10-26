@@ -3932,6 +3932,26 @@ class TestSnowflake(Validator):
             },
         )
 
+        # Postgres counts complete units, so the operands are truncated to count boundary crossings
+        self.validate_all(
+            "DATEDIFF(MONTH, '2026-01-31', '2026-03-01')",
+            write={
+                "postgres": "CAST(EXTRACT(year FROM AGE(DATE_TRUNC('MONTH', CAST('2026-03-01' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2026-01-31' AS TIMESTAMP)))) * 12 + EXTRACT(month FROM AGE(DATE_TRUNC('MONTH', CAST('2026-03-01' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2026-01-31' AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(YEAR, '2025-12-31', '2026-01-01')",
+            write={
+                "postgres": "CAST(EXTRACT(year FROM AGE(DATE_TRUNC('YEAR', CAST('2026-01-01' AS TIMESTAMP)), DATE_TRUNC('YEAR', CAST('2025-12-31' AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(HOUR, '2026-01-01 10:59:00', '2026-01-01 11:01:00')",
+            write={
+                "postgres": "CAST(EXTRACT(epoch FROM DATE_TRUNC('HOUR', CAST('2026-01-01 11:01:00' AS TIMESTAMP)) - DATE_TRUNC('HOUR', CAST('2026-01-01 10:59:00' AS TIMESTAMP))) / 3600 AS BIGINT)",
+            },
+        )
+
         # Test DATEDIFF with NANOSECOND - DuckDB uses EPOCH_NS since DATE_DIFF doesn't support NANOSECOND
         self.validate_all(
             "DATEDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",

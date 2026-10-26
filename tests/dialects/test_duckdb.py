@@ -869,6 +869,17 @@ class TestDuckDB(Validator):
                 "postgres": "SELECT JSON_OBJECT('a': 1, 'b': NULL NULL ON NULL)",
             },
         )
+        self.validate_all(
+            "SELECT JSON_OBJECT('a', 1, 'a', 2)",
+            read={"postgres": "SELECT JSON_OBJECT('a': 1, 'a': 2 WITHOUT UNIQUE KEYS)"},
+        )
+        self.assertEqual(
+            parse_one(
+                "SELECT JSON_OBJECT('a': 1, 'b': NULL NULL ON NULL WITHOUT UNIQUE KEYS)",
+                read="postgres",
+            ).sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+            "SELECT JSON_OBJECT('a', 1, 'b', NULL)",
+        )
         for sql, read, unsupported in (
             ("SELECT JSON_ARRAY(1, NULL ABSENT ON NULL)", "oracle", "ABSENT ON NULL"),
             ("SELECT JSON_OBJECT('a': NULL ABSENT ON NULL)", "postgres", "ABSENT ON NULL"),

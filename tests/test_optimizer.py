@@ -2937,12 +2937,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "SELECT r FROM (SELECT 1 AS x UNION ALL BY NAME SELECT 'a' AS y) AS r",
                 "STRUCT<x INT, y VARCHAR>",
             ),
+            (
+                "SELECT r FROM (SELECT 1 AS x UNION ALL "
+                "(SELECT 2 AS x UNION ALL SELECT CAST(3 AS DOUBLE) AS x)) AS r",
+                "STRUCT<x DOUBLE>",
+            ),
             ("SELECT (SELECT 1 AS x)", "INT"),
         ):
             with self.subTest(sql=sql):
                 tree = qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb")
                 annotate_types(tree, dialect="duckdb")
                 self.assertEqual(tree.selects[0].type, exp.DataType.build(expected))
+
+        tree = qualify(
+            parse_one(
+                "SELECT r FROM (SELECT 1 AS x UNION ALL SELECT * FROM missing) AS r",
+                dialect="duckdb",
+            ),
+            dialect="duckdb",
+            validate_qualify_columns=False,
+        )
+        annotate_types(tree, dialect="duckdb")
+        self.assertTrue(tree.selects[0].is_type(exp.DType.UNKNOWN))
 
         for dialect in ("bigquery", "duckdb"):
             for kind in ("INT", "UNKNOWN"):
@@ -3759,6 +3775,94 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         select_type = expression.selects[0].type
         self.assertTrue(select_type.is_type(exp.DataType.build("VARCHAR", dialect="bigquery")))
 
+    def test_set_operation_annotation(self):
+        for operator in ("UNION ALL", "INTERSECT", "EXCEPT"):
+            for annotate_scopes in (True, False):
+                with self.subTest(operator=operator, annotate_scopes=annotate_scopes):
+                    expression = parse_one(
+                        f"SELECT t.a FROM (SELECT 1 AS a {operator} "
+                        f"(SELECT 2 AS b {operator} SELECT CAST(2.5 AS DOUBLE) AS c)) AS t"
+                    )
+                    annotator = TypeAnnotator(MappingSchema())
+                    scopes = traverse_scope(expression)
+                    if annotate_scopes:
+                        for scope in scopes[:-1]:
+                            annotator.annotate_scope(scope)
+                    annotator.annotate_scope(scopes[-1])
+                    self.assertTrue(expression.selects[0].is_type(exp.DType.DOUBLE))
+
+        # Duplicate projection names must remain distinct until positional matching finishes.
+        expression = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL "
+                "(SELECT 3 AS c, 4 AS c UNION ALL SELECT 5, CAST(6.5 AS DOUBLE))) AS t"
+            )
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+
+        expression = parse_one(
+            "ARRAY(SELECT 1 AS a UNION ALL "
+            "(SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS FLOAT64) AS c))",
+            dialect="bigquery",
+        )
+        annotator = TypeAnnotator(MappingSchema(dialect="bigquery"))
+        for annotate_scope in (True, False):
+            with self.subTest(annotate_scope=annotate_scope):
+                annotator.clear()
+                annotator.annotate(expression, annotate_scope=annotate_scope)
+                self.assertTrue(expression.is_type("ARRAY<DOUBLE>"))
+
+        # A shared CTE's resolved output remains available to each source reference.
+        expression = annotate_types(
+            parse_one(
+                "WITH t AS (SELECT 1 AS a UNION ALL "
+                "(SELECT 2 AS b UNION ALL SELECT CAST(2.5 AS DOUBLE) AS c)) "
+                "SELECT x.a, y.a FROM t AS x CROSS JOIN t AS y"
+            )
+        )
+        self.assertTrue(all(s.is_type(exp.DType.DOUBLE) for s in expression.selects))
+
+    def test_set_operation_star_annotation(self):
+        for projection in ("*", "b.*"):
+            with self.subTest(projection=projection):
+                expression = qualify(
+                    parse_one(
+                        "WITH b AS (SELECT 3 AS z, CAST(4.5 AS DOUBLE) AS z), "
+                        f"u AS (SELECT 1 AS x, 2 AS y UNION ALL SELECT {projection} FROM b) "
+                        "SELECT u.x, u.y FROM u"
+                    )
+                )
+                sql = expression.sql()
+                annotator = TypeAnnotator(MappingSchema())
+                for _ in range(2):
+                    annotator.annotate(expression)
+                    self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+                    self.assertEqual(expression.sql(), sql)
+                    annotator.clear()
+
+        # Resolved star outputs can themselves be shared sources or positional operands.
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "WITH a AS (SELECT 1 AS x, 2 AS y), "
+                    "b AS (SELECT 3 AS z, CAST(4.5 AS DOUBLE) AS z), "
+                    "c AS (SELECT * FROM b), "
+                    "u AS (SELECT * FROM a UNION ALL SELECT * FROM c UNION ALL "
+                    "SELECT * FROM c) SELECT u.x, u.y FROM u"
+                )
+            )
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["INT", "DOUBLE"])
+
+        # An unresolved star has unknown width, even if raw projection counts match.
+        for sql in (
+            "SELECT u.x FROM (SELECT 1 AS x UNION ALL SELECT * FROM missing) AS u",
+            "SELECT u.x FROM (SELECT 1 AS x, 2 AS y UNION ALL SELECT * FROM missing) AS u",
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
     def test_map_annotation(self):
         # ToMap annotation
         expression = annotate_types(parse_one("SELECT MAP {'x': 1}", read="duckdb"))
@@ -3847,6 +3951,55 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             SELECT col FROM t;
         """
         self.assertEqual(optimizer.optimize(sql).selects[0].type.this, exp.DataType.Type.VARCHAR)
+
+        # A parenthesized set operation is typed from all of its operands rather than just its
+        # first query, and a BY NAME operand only outputs the columns its LEFT, INNER or ON
+        # modifiers keep; a column-count mismatch anywhere makes the result unknown
+        for sql, expected_types in (
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 2.5::DOUBLE AS c)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a, t.d FROM (SELECT 1 AS a, 2 AS d UNION ALL (SELECT 3 AS d, 4 AS a UNION ALL BY NAME SELECT 5::BIGINT AS a, 6.5 AS d)) AS t",
+                ["DOUBLE", "BIGINT"],
+            ),
+            (
+                "SELECT t.b FROM (SELECT 1 AS a, 2 AS b UNION ALL (SELECT 3 AS a UNION BY NAME SELECT 4.5 AS b)) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a LEFT UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c INNER UNION ALL BY NAME SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM ((SELECT 1 AS a, 2 AS c FULL UNION ALL BY NAME ON (a) SELECT 2.5 AS a, 3 AS b) UNION ALL SELECT 4 AS a) AS t",
+                ["DOUBLE"],
+            ),
+            (
+                "SELECT t.a FROM (SELECT 1 AS a UNION ALL (SELECT 2 AS b UNION ALL SELECT 3, 4)) AS t",
+                ["UNKNOWN"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertEqual([s.type.sql() for s in expression.selects], expected_types)
+
+        # ON controls output order as well as which names are retained.
+        expression = annotate_types(
+            parse_one(
+                "SELECT t.a, t.b FROM (SELECT 1 AS a, 's' AS b UNION ALL "
+                "(SELECT 'x' AS b, 2.5 AS a UNION ALL BY NAME ON (a, b) "
+                "SELECT 3.5 AS a, 'y' AS b)) AS t",
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        self.assertEqual([s.type.sql() for s in expression.selects], ["DOUBLE", "VARCHAR"])
 
         # BigQuery: STRING coerces to temporal types in UNION
         for left, right, expected_type in (
@@ -3949,6 +4102,43 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         scope_t, scope_y = build_scope(query).cte_scopes
         self.assertEqual(set(scope_t.cte_sources), {"t"})
         self.assertEqual(set(scope_y.cte_sources), {"t", "y"})
+
+    def test_recursive_cte_annotation(self):
+        for anchor, expected in (
+            ("SELECT 1 AS n", exp.DType.INT),
+            (
+                "SELECT 1 AS n UNION ALL SELECT CAST(2.5 AS DOUBLE) AS n",
+                exp.DType.DOUBLE,
+            ),
+            ("SELECT 1 AS n UNION ALL SELECT 2 AS n, 3 AS m", exp.DType.UNKNOWN),
+        ):
+            sql = (
+                f"WITH RECURSIVE t AS ({anchor} "
+                "UNION ALL SELECT t.n AS n FROM t WHERE FALSE "
+                "UNION ALL SELECT t.n AS n FROM t WHERE FALSE) SELECT t.n FROM t"
+            )
+            for qualified in (True, False):
+                with self.subTest(sql=sql, qualified=qualified):
+                    expression = parse_one(sql)
+                    if qualified:
+                        expression = qualify(expression)
+                    annotate_types(expression)
+                    # Both recursive branches must see the resolved anchor's output.
+                    for column in expression.find_all(exp.Column):
+                        self.assertTrue(column.is_type(expected), column.sql())
+
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "WITH RECURSIVE t(n) AS ("
+                    "SELECT 1 AS seed UNION ALL SELECT CAST(2.5 AS DOUBLE) AS widened "
+                    "UNION ALL SELECT t.n AS other FROM t WHERE FALSE "
+                    "UNION ALL SELECT t.n AS other FROM t WHERE FALSE) SELECT t.n FROM t"
+                )
+            )
+        )
+        for column in expression.find_all(exp.Column):
+            self.assertTrue(column.is_type(exp.DType.DOUBLE), column.sql())
 
     def test_pushdown_projections_keeps_positionally_aliased_columns(self):
         # A column list on a derived table, CTE or LATERAL names the source's columns by

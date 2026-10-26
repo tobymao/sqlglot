@@ -143,13 +143,11 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):
-            # Get all column types for the SetOperation
-            col_types = self._get_setop_column_types(unnested)
+            col_types = self._get_query_column_types(unnested)
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
-            if col_types and unnested.left.selects:
-                first_col_name = unnested.left.selects[0].alias_or_name
-                projection_type = col_types.get(first_col_name)
+            if len(col_types) == 1:
+                projection_type = col_types[0][1]
 
         # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
         if projection_type and not (

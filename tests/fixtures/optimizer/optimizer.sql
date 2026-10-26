@@ -1642,3 +1642,53 @@ SELECT
     SELECT
       1 AS "1"
   ) AS "result";
+
+# title: redundant cast preserves arithmetic grouping
+SELECT CAST(x.a - x.b AS INT) * 2 AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" - "x"."b"
+  ) * 2 AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves unary operand grouping
+SELECT -CAST(x.a - x.b AS INT) AS c FROM x AS x;
+SELECT
+  -(
+    "x"."a" - "x"."b"
+  ) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast allows unnecessary parentheses to simplify
+SELECT CAST(x.a * x.b AS INT) + 2 AS c FROM x AS x;
+SELECT
+  "x"."a" * "x"."b" + 2 AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves IN operand grouping
+SELECT CAST(x.a > 0 OR x.b > 0 AS BOOLEAN) IN (FALSE) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" > 0 OR "x"."b" > 0
+  ) IN (FALSE) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves BETWEEN operand grouping
+SELECT CAST(x.a BETWEEN 1 AND 3 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" <= 3 AND "x"."a" >= 1
+  ) = (
+    "x"."b" > 0
+  ) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves NOT operand grouping
+SELECT CAST(NOT x.a > 0 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" <= 0
+  ) = (
+    "x"."b" > 0
+  ) AS "c"
+FROM "x" AS "x";

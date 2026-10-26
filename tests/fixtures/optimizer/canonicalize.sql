@@ -8,7 +8,7 @@ SELECT CAST(1 AS VARCHAR) AS a FROM w AS w;
 SELECT CAST(1 AS VARCHAR) AS "a" FROM "w" AS "w";
 
 SELECT CAST(1 + 3.2 AS DOUBLE) AS a FROM w AS w;
-SELECT 1 + 3.2 AS "a" FROM "w" AS "w";
+SELECT (1 + 3.2) AS "a" FROM "w" AS "w";
 
 SELECT '1' + 1 AS "col";
 SELECT '1' + 1 AS "col";
@@ -128,13 +128,37 @@ CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(8, 4)) AS "x";
 CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(8, 4)) AS "x";
 
 CAST(CAST("foo" AS DECIMAL(4, 2)) AS DECIMAL(4, 2)) AS "x";
-CAST("foo" AS DECIMAL(4, 2)) AS "x";
+(CAST("foo" AS DECIMAL(4, 2))) AS "x";
 
 CAST(CAST('2023-01-01' AS DATE) AS DATE);
-CAST('2023-01-01' AS DATE);
+(CAST('2023-01-01' AS DATE));
 
 CAST(DATE_TRUNC('YEAR', CAST('2023-01-01' AS DATE)) AS DATE);
-DATE_TRUNC('YEAR', CAST('2023-01-01' AS DATE));
+(DATE_TRUNC('YEAR', CAST('2023-01-01' AS DATE)));
 
 DATE(DATE_TRUNC('YEAR', CAST("x" AS DATE)));
-DATE_TRUNC('YEAR', CAST("x" AS DATE));
+(DATE_TRUNC('YEAR', CAST("x" AS DATE)));
+
+# title: redundant cast preserves arithmetic grouping
+SELECT CAST(x.a - x.b AS INT) * 2 AS c FROM x AS x;
+SELECT ("x"."a" - "x"."b") * 2 AS "c" FROM "x" AS "x";
+
+# title: redundant cast preserves unary operand grouping
+SELECT -CAST(x.a - x.b AS INT) AS c FROM x AS x;
+SELECT -("x"."a" - "x"."b") AS "c" FROM "x" AS "x";
+
+# title: redundant cast allows unnecessary parentheses to simplify
+SELECT CAST(x.a * x.b AS INT) + 2 AS c FROM x AS x;
+SELECT ("x"."a" * "x"."b") + 2 AS "c" FROM "x" AS "x";
+
+# title: redundant cast preserves IN operand grouping
+SELECT CAST(x.a > 0 OR x.b > 0 AS BOOLEAN) IN (FALSE) AS c FROM x AS x;
+SELECT ("x"."a" > 0 OR "x"."b" > 0) IN (FALSE) AS "c" FROM "x" AS "x";
+
+# title: redundant cast preserves BETWEEN operand grouping
+SELECT CAST(x.a BETWEEN 1 AND 3 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT ("x"."a" BETWEEN 1 AND 3) = ("x"."b" > 0) AS "c" FROM "x" AS "x";
+
+# title: redundant cast preserves NOT operand grouping
+SELECT CAST(NOT x.a > 0 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT (NOT "x"."a" > 0) = ("x"."b" > 0) AS "c" FROM "x" AS "x";

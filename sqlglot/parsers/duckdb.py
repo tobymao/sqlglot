@@ -48,7 +48,20 @@ def _build_array_prepend(args: list) -> exp.Expr:
 
 
 def _build_date_diff(args: list) -> exp.Expr:
-    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+    unit = seq_get(args, 0)
+
+    # DATE_DIFF counts the unit boundaries crossed, e.g. one month from 2026-01-31 to 2026-02-01,
+    # except for WEEK, which counts whole 7-day spans
+    date_part_boundary = (
+        isinstance(unit, (exp.Literal, exp.Var)) and unit.name.upper() not in ("WEEK", "WEEKS", "W")
+    ) or None
+
+    return exp.DateDiff(
+        this=seq_get(args, 2),
+        expression=seq_get(args, 1),
+        unit=unit,
+        date_part_boundary=date_part_boundary,
+    )
 
 
 def _build_generate_series(end_exclusive: bool = False) -> t.Callable[[list], exp.GenerateSeries]:

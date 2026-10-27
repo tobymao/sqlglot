@@ -1348,15 +1348,28 @@ class TestDuckDB(Validator):
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={
                 "duckdb": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
-                "trino": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
+                "trino": """SELECT DATE_DIFF('DAY', DATE_TRUNC('DAY', t1."A"), DATE_TRUNC('DAY', t1."B")) FROM "table" AS t1""",
             },
         )
         self.validate_all(
             "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
             write={
                 "duckdb": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
-                "trino": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
+                "trino": "SELECT DATE_DIFF('DAY', DATE_TRUNC('DAY', CAST('2020-01-01' AS DATE)), DATE_TRUNC('DAY', CAST('2020-01-05' AS DATE)))",
             },
+        )
+        # DATE_DIFF counts unit boundaries (one month from 2026-01-31 to 2026-03-01 is 2), except WEEK
+        self.validate_all(
+            "SELECT DATE_DIFF('MONTH', CAST('2026-01-31' AS DATE), CAST('2026-03-01' AS DATE))",
+            write={
+                "duckdb": "SELECT DATE_DIFF('MONTH', CAST('2026-01-31' AS DATE), CAST('2026-03-01' AS DATE))",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(DATE_TRUNC('MONTH', CAST(CAST('2026-03-01' AS DATE) AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST(CAST('2026-01-31' AS DATE) AS TIMESTAMP)))) * 12 + EXTRACT(month FROM AGE(DATE_TRUNC('MONTH', CAST(CAST('2026-03-01' AS DATE) AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST(CAST('2026-01-31' AS DATE) AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.assertIsNone(
+            parse_one("SELECT DATE_DIFF('WEEK', a, b)", read="duckdb")
+            .find(exp.DateDiff)
+            .args.get("date_part_boundary")
         )
         self.validate_all(
             "WITH 'x' AS (SELECT 1) SELECT * FROM x",

@@ -25,31 +25,14 @@ class TestMySQL(Validator):
                 "postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY'",
             },
         )
-        for count in ("1.5", "-1.5"):
-            self.validate_all(
-                f"SELECT TIMESTAMPADD(MONTH, {count}, '2024-01-31 12:00:00')",
-                write={
-                    "mysql": f"SELECT DATE_ADD('2024-01-31 12:00:00', INTERVAL (CAST({count} AS SIGNED)) MONTH)",
-                    "duckdb": f"SELECT CAST('2024-01-31 12:00:00' AS TIMESTAMP) + INTERVAL (CAST({count} AS BIGINT)) MONTH",
-                    "postgres": f"SELECT CAST('2024-01-31 12:00:00' AS TIMESTAMP) + (INTERVAL '1 MONTH' * CAST({count} AS BIGINT))",
-                },
+        for count in ("1.000001", "-1.000001", "0.000249"):
+            self.validate_identity(
+                f"SELECT TIMESTAMPADD(SECOND, '{count}', '2024-01-01')",
+                f"SELECT DATE_ADD('2024-01-01', INTERVAL '{count}' SECOND)",
             )
-
-        self.validate_all(
-            "WITH t AS (SELECT 1.5 AS n) SELECT TIMESTAMPADD(MONTH, n, '2024-01-31') FROM t",
-            write={
-                "mysql": "WITH t AS (SELECT 1.5 AS n) SELECT DATE_ADD('2024-01-31', INTERVAL (CAST(n AS SIGNED)) MONTH) FROM t",
-                "duckdb": "WITH t AS (SELECT 1.5 AS n) SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL (CAST(n AS BIGINT)) MONTH FROM t",
-                "postgres": "WITH t AS (SELECT 1.5 AS n) SELECT CAST('2024-01-31' AS TIMESTAMP) + (INTERVAL '1 MONTH' * CAST(n AS BIGINT)) FROM t",
-            },
-        )
-        self.validate_all(
-            "WITH t AS (SELECT 1.1234567 AS n) SELECT TIMESTAMPADD(SECOND, n, '2024-01-01 12:00:00') FROM t",
-            write={
-                "mysql": "WITH t AS (SELECT 1.1234567 AS n) SELECT DATE_ADD('2024-01-01 12:00:00', INTERVAL (CAST(TRUNCATE(n * 1000000, 0) AS SIGNED)) MICROSECOND) FROM t",
-                "duckdb": "WITH t AS (SELECT 1.1234567 AS n) SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL (CAST(TRUNC(n * 1000000) AS BIGINT)) MICROSECOND FROM t",
-                "postgres": "WITH t AS (SELECT 1.1234567 AS n) SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + (INTERVAL '1 MICROSECOND' * CAST(TRUNC(n * 1000000) AS BIGINT)) FROM t",
-            },
+        self.validate_identity(
+            "WITH t AS (SELECT '1.000001' AS n) SELECT TIMESTAMPADD(SECOND, n, '2024-01-01') FROM t",
+            "WITH t AS (SELECT '1.000001' AS n) SELECT DATE_ADD('2024-01-01', INTERVAL n SECOND) FROM t",
         )
         self.validate_all(
             "SELECT TIMESTAMPADD(DAY, 1, '2024-01-01') - TIMESTAMPADD(DAY, 1, '2024-01-01')",

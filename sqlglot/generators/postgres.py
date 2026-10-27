@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     array_concat_sql,
     bool_xor_sql,
     count_if_to_sum,
+    date_delta_to_binary_sql,
     datestrtodate_sql,
     filter_array_using_unnest,
     generate_series_sql,
@@ -86,15 +87,9 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
             one = exp.Literal.number(1)
             interval = exp.Interval(this=one, unit=unit) * e
 
-        result: exp.Expr = this + interval if kind == "+" else this - interval
-        parent = expression.parent
-        if isinstance(parent, (exp.Binary, exp.Unary, exp.AtTimeZone)) and not (
-            isinstance(parent, exp.Paren)
-            or isinstance(parent, (exp.Add, exp.Sub))
-            and parent.this is expression
-        ):
-            result = exp.paren(result, copy=False)
-        return self.sql(result)
+        return date_delta_to_binary_sql(
+            self, expression, this + interval if kind == "+" else this - interval
+        )
 
     return func
 

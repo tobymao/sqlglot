@@ -48,17 +48,7 @@ def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
 def _build_timestampadd(args: list) -> exp.TimestampAdd:
     expression = build_date_delta(exp.TimestampAdd)(args)
     unit = expression.unit
-    unit_name = (unit.name if unit else "DAY").upper().removeprefix("SQL_TSI_")
-    expression.set("unit", exp.var(unit_name))
-
-    count = expression.expression
-    if count is not None and not count.is_int:
-        if unit_name == "SECOND":
-            # MySQL preserves fractional seconds, truncating to microsecond precision.
-            count = exp.Trunc(this=count * 1000000)
-            expression.set("unit", exp.var("MICROSECOND"))
-        expression.set("expression", exp.cast(count, exp.DType.BIGINT))
-
+    expression.set("unit", exp.var((unit.name if unit else "DAY").upper().removeprefix("SQL_TSI_")))
     return expression
 
 

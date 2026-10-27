@@ -3374,9 +3374,21 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
-        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")
+        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
+        self.parse_one("SELECT LOCALTIMESTAMP").selects[0].assert_is(exp.CurrentTimestamp)
+        # Snowflake's LOCALTIMESTAMP is an alias of CURRENT_TIMESTAMP, but other dialects read it
+        # as a timezone-naive timestamp, so it must never pass through as the literal keyword.
+        self.validate_all(
+            "LOCALTIMESTAMP",
+            write={
+                "snowflake": "CURRENT_TIMESTAMP()",
+                "duckdb": "CURRENT_TIMESTAMP",
+                "postgres": "CURRENT_TIMESTAMP",
+                "spark": "CURRENT_TIMESTAMP()",
+            },
+        )
 
         self.validate_all(
             "SELECT CURRENT_TIME(4)",

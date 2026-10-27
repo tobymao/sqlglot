@@ -4715,6 +4715,30 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
         )
 
+    def test_unreserved_keywords_as_identifiers(self):
+        for name in ("returning", "glob", "using", "lateral", "exclude"):
+            with self.subTest(name=name):
+                expression = self.validate_identity(f"SELECT {name} FROM t")
+                self.assertIsInstance(expression.expressions[0], exp.Column)
+                self.assertEqual(expression.expressions[0].name, name)
+                self.validate_identity(f"SELECT 1 AS {name}")
+                self.validate_identity(f"CREATE TABLE t ({name} INT)")
+
+        for name in ("returning", "glob", "using", "lateral"):
+            with self.subTest(alias=name):
+                self.validate_identity(f"SELECT 1 {name}", f"SELECT 1 AS {name}")
+
+        for name in ("returning", "glob", "exclude", "concurrently"):
+            with self.subTest(table=name):
+                self.validate_identity(f"CREATE TABLE {name} (x INT)")
+                self.validate_identity(f"SELECT x FROM {name}")
+
+        for name in ("pivot", "unpivot"):
+            with self.subTest(describe=name):
+                expression = self.validate_identity(f"DESCRIBE TABLE {name}")
+                self.assertIsInstance(expression.this, exp.Table)
+                self.assertEqual(expression.this.name, name)
+
     def test_rollback_as_identifier(self):
         self.validate_identity("SELECT rollback FROM t")
         self.validate_identity(

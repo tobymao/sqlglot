@@ -189,6 +189,8 @@ class Snowflake(Dialect):
             "FLOAT": TokenType.DOUBLE,
         }
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("GLOB")
+        KEYWORDS.pop("RETURNING")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

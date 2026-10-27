@@ -819,11 +819,16 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
             scope_type=ScopeType.SET_OPERATION,
         )
 
-        if isinstance(expression, exp.SetOperation):
+        # Use the scope's unwrapped expression rather than the operand itself so parenthesized
+        # left operands are descended into iteratively. Only descend while prev_scope is None,
+        # i.e. until the chain's leftmost query has been scoped; later scopes are paired as
+        # right operands.
+        inner = new_scope.expression
+        if prev_scope is None and isinstance(inner, exp.SetOperation):
             yield from _traverse_ctes(new_scope)
 
             set_op_scope_stack.append(new_scope)
-            expression_stack.extend([expression.expression, expression.this])
+            expression_stack.extend([inner.expression, inner.this])
             continue
 
         branch_scope: Scope | None = None

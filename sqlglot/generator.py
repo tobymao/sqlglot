@@ -1964,19 +1964,63 @@ class Generator:
                 return self.sql(select)
 
         sqls: list[str] = []
-        stack: list[str | exp.Expr] = [expression]
+        stack: list[str | exp.Expr | int | None] = [expression]
+        depth = 0
+        open_parens = ""
 
         while stack:
             node = stack.pop()
 
-            if isinstance(node, exp.SetOperation):
+            if isinstance(node, int):
+                # Closes a plain grouping opened below, restoring its depth
+                depth = node
+                sqls[-1] += self.sep("") + self.indent(")", level=depth, pad=0)
+            elif isinstance(node, exp.SetOperation):
                 stack.append(node.expression)
                 stack.append(
                     self.maybe_comment(
                         self.set_operation(node), comments=node.comments, separated=True
                     )
                 )
-                stack.append(node.this)
+                left = node.this
+                if (
+                    not self.SET_OP_PARENTHESIZED_OPERANDS
+                    and not self.dialect.INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT
+                ):
+                    # Left grouping is implicit, so skip the `SELECT * FROM (...)` wrapper:
+                    # it renames duplicate columns and deepens recursion. Inner CTEs and
+                    # modifiers still need the wrapper.
+                    wrappers: list[exp.Subquery] = []
+                    inner = left
+                    while isinstance(inner, exp.Subquery) and inner.is_wrapper:
+                        wrappers.append(inner)
+                        inner = inner.this
+
+                    if (
+                        isinstance(inner, exp.SetOperation)
+                        and not inner.args.get("with_")
+                        and not any(inner.args.get(key) for key in exp.QUERY_MODIFIERS)
+                    ):
+                        for wrapper in wrappers:
+                            inner.add_comments(wrapper.pop_comments())
+                        left = inner
+                elif (
+                    self.SET_OP_PARENTHESIZED_OPERANDS
+                    and isinstance(left, exp.Subquery)
+                    and left.is_wrapper
+                    and not left.comments
+                    and isinstance(left.this, exp.SetOperation)
+                    and not left.this.args.get("with_")
+                    and not any(left.this.args.get(key) for key in exp.QUERY_MODIFIERS)
+                ):
+                    # Write a plain grouping's parentheses here rather than recursing through
+                    # subquery_sql: left-to-right chains nest one grouping per INTERSECT, and
+                    # long ones would exhaust the stack. The depth pushed here marks the close.
+                    open_parens += self.indent("(", level=depth, pad=0) + self.sep("")
+                    stack.append(depth)
+                    depth += 1
+                    left = left.this
+                stack.append(left)
             else:
                 if (
                     not self.SET_OP_LIMITS
@@ -1986,7 +2030,14 @@ class Generator:
                     node = node.subquery(copy=False)
                     if not self.SET_OP_PARENTHESIZED_OPERANDS:
                         node = exp.select("*").from_(node, copy=False)
-                sqls.append(self.sql(node))
+                elif (
+                    not self.SET_OP_PARENTHESIZED_OPERANDS
+                    and isinstance(node, exp.Subquery)
+                    and isinstance(node.unnest(), exp.SetOperation)
+                ):
+                    node = exp.select("*").from_(node, copy=False)
+                sqls.append(open_parens + self.indent(self.sql(node), level=depth, pad=0))
+                open_parens = ""
 
         this = self.sep().join(sqls)
         this = self.query_modifiers(expression, this)

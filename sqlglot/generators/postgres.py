@@ -71,10 +71,6 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
             expression = ts_or_ds_add_cast(expression)
 
         this = expression.this
-        if this.is_string and isinstance(
-            expression, (exp.DatetimeAdd, exp.DatetimeSub, exp.TimestampAdd, exp.TimestampSub)
-        ):
-            this = exp.cast(this, exp.DType.TIMESTAMP)
         unit = expression.args.get("unit")
 
         e = self._simplify_unless_literal(expression.expression)

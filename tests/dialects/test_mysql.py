@@ -22,7 +22,6 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-01', INTERVAL 1 DAY)",
                 "duckdb": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY",
-                "postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY'",
             },
         )
         for count in ("1.000001", "-1.000001", "0.000249"):
@@ -39,7 +38,6 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-01', INTERVAL 1 DAY) - DATE_ADD('2024-01-01', INTERVAL 1 DAY)",
                 "duckdb": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY)",
-                "postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY' - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY')",
             },
         )
 
@@ -1475,7 +1473,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-31', INTERVAL 1 MONTH)",
                 "duckdb": "SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH",
-                "postgres": "SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL '1 MONTH'",
+                "postgres": "SELECT '2024-01-31' + INTERVAL '1 MONTH'",
             },
         )
         self.validate_all(
@@ -1483,7 +1481,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-01 12:00:00', INTERVAL 30 SECOND)",
                 "duckdb": "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL 30 SECOND",
-                "postgres": "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND'",
+                "postgres": "SELECT '2024-01-01 12:00:00' + INTERVAL '30 SECOND'",
             },
         )
         self.validate_all(

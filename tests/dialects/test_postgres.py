@@ -10,19 +10,10 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_datetime_arithmetic(self):
-        for kind in ("DATETIME", "TIMESTAMP"):
-            for operation, symbol in (("ADD", "+"), ("SUB", "-")):
-                self.validate_all(
-                    f"SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) {symbol} INTERVAL '30 SECOND'",
-                    read={
-                        "bigquery": f"SELECT {kind}_{operation}('2024-01-01 12:00:00', INTERVAL 30 SECOND)",
-                    },
-                )
-
         self.validate_all(
-            "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND' - (CAST('2024-01-01 12:00:00' AS TIMESTAMP) - INTERVAL '30 SECOND')",
+            "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND' - (CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND')",
             read={
-                "bigquery": "SELECT TIMESTAMP_ADD('2024-01-01 12:00:00', INTERVAL 30 SECOND) - TIMESTAMP_SUB('2024-01-01 12:00:00', INTERVAL 30 SECOND)",
+                "duckdb": "SELECT DATE_ADD(TIMESTAMP '2024-01-01 12:00:00', INTERVAL 30 SECOND) - DATE_ADD(TIMESTAMP '2024-01-01 12:00:00', INTERVAL 30 SECOND)",
             },
         )
 

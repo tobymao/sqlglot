@@ -771,15 +771,17 @@ class SnowflakeParser(parser.Parser):
     }
 
     STATEMENT_PARSERS = {
-        **parser.Parser.STATEMENT_PARSERS,
+        **{
+            k: v
+            for k, v in parser.Parser.STATEMENT_PARSERS.items()
+            if k not in (TokenType.PIVOT, TokenType.UNPIVOT)
+        },
         TokenType.GET: lambda self: self._parse_get(),
         TokenType.LIST: lambda self: self._parse_list_stage(),
         TokenType.PUT: lambda self: self._parse_put(),
         TokenType.SHOW: lambda self: self._parse_show(),
         TokenType.UNDROP: lambda self: self._parse_undrop(),
     }
-    STATEMENT_PARSERS.pop(TokenType.PIVOT)
-    STATEMENT_PARSERS.pop(TokenType.UNPIVOT)
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,

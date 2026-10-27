@@ -3511,6 +3511,12 @@ class TestDuckDB(Validator):
         )
 
     def test_to_array(self):
+        for sql in (
+            "SELECT TO_ARRAY([]) AS result",
+            "SELECT TO_ARRAY(ARRAY_CONSTRUCT()) AS result",
+        ):
+            self.validate_all("SELECT [] AS result", read={"snowflake": sql})
+
         self.validate_all(
             "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
             read={

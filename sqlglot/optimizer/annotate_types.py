@@ -898,9 +898,18 @@ class TypeAnnotator:
                     return expression
 
                 if nested_type:
+                    # Only resolve ARRAY<NULL>; preserve existing coercion for other nested types.
+                    if (
+                        nested_type.is_type(exp.DType.ARRAY)
+                        and nested_type.expressions
+                        and nested_type.expressions[0].is_type(exp.DType.NULL)
+                        and expr_type.is_type(exp.DType.ARRAY)
+                        and expr_type.expressions
+                    ):
+                        nested_type = expr_type
                     continue
 
-                # Stop coercing at the first nested data type found
+                # Prefer the first nested data type, resolving ARRAY<NULL> from later arrays.
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
                 elif isinstance(expr, exp.Literal):
@@ -934,7 +943,9 @@ class TypeAnnotator:
             if result_type is None:
                 result_type = self._maybe_coerce(non_literal_type, literal_type)
         else:
-            result_type = literal_type or non_literal_type or exp.DType.UNKNOWN
+            result_type = (
+                literal_type or non_literal_type or (exp.DType.NULL if array else exp.DType.UNKNOWN)
+            )
 
         self._set_type(expression, result_type)
 
@@ -945,7 +956,7 @@ class TypeAnnotator:
             elif this_type in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DType.DOUBLE)
 
-        if array:
+        if array and not expression.is_type(exp.DType.UNKNOWN):
             self._set_type(
                 expression,
                 exp.DataType(this=exp.DType.ARRAY, expressions=[expression.type], nested=True),
@@ -1108,12 +1119,20 @@ class TypeAnnotator:
 
         map_type = exp.DataType(this=exp.DType.MAP)
         if isinstance(keys, exp.Array) and isinstance(values, exp.Array):
-            key_type = seq_get(keys.type.expressions, 0) or exp.DType.UNKNOWN
-            value_type = seq_get(values.type.expressions, 0) or exp.DType.UNKNOWN
+            key_type = seq_get(keys.type.expressions, 0)
+            value_type = seq_get(values.type.expressions, 0)
 
-            if key_type != exp.DType.UNKNOWN and value_type != exp.DType.UNKNOWN:
-                map_type.set("expressions", [key_type, value_type])
-                map_type.set("nested", True)
+            if (
+                not key_type
+                or key_type.is_type(exp.DType.UNKNOWN)
+                or not value_type
+                or value_type.is_type(exp.DType.UNKNOWN)
+            ):
+                self._set_type(expression, exp.DType.UNKNOWN)
+                return expression
+
+            map_type.set("expressions", [key_type, value_type])
+            map_type.set("nested", True)
 
         self._set_type(expression, map_type)
         return expression

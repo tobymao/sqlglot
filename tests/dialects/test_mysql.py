@@ -9,6 +9,57 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_timestampadd(self):
+        for unit in ("SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):
+            with self.subTest(unit=unit):
+                self.assertEqual(
+                    self.parse_one(f"TIMESTAMPADD(SQL_TSI_{unit}, 1, '2024-01-01')"),
+                    self.parse_one(f"TIMESTAMPADD({unit}, 1, '2024-01-01')"),
+                )
+
+        self.validate_all(
+            "SELECT TIMESTAMPADD(SQL_TSI_DAY, 1, '2024-01-01')",
+            write={
+                "mysql": "SELECT DATE_ADD('2024-01-01', INTERVAL 1 DAY)",
+                "duckdb": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY",
+                "postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY'",
+            },
+        )
+        for count in ("1.5", "-1.5"):
+            self.validate_all(
+                f"SELECT TIMESTAMPADD(MONTH, {count}, '2024-01-31 12:00:00')",
+                write={
+                    "mysql": f"SELECT DATE_ADD('2024-01-31 12:00:00', INTERVAL (CAST({count} AS SIGNED)) MONTH)",
+                    "duckdb": f"SELECT CAST('2024-01-31 12:00:00' AS TIMESTAMP) + INTERVAL (CAST({count} AS BIGINT)) MONTH",
+                    "postgres": f"SELECT CAST('2024-01-31 12:00:00' AS TIMESTAMP) + (INTERVAL '1 MONTH' * CAST({count} AS BIGINT))",
+                },
+            )
+
+        self.validate_all(
+            "WITH t AS (SELECT 1.5 AS n) SELECT TIMESTAMPADD(MONTH, n, '2024-01-31') FROM t",
+            write={
+                "mysql": "WITH t AS (SELECT 1.5 AS n) SELECT DATE_ADD('2024-01-31', INTERVAL (CAST(n AS SIGNED)) MONTH) FROM t",
+                "duckdb": "WITH t AS (SELECT 1.5 AS n) SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL (CAST(n AS BIGINT)) MONTH FROM t",
+                "postgres": "WITH t AS (SELECT 1.5 AS n) SELECT CAST('2024-01-31' AS TIMESTAMP) + (INTERVAL '1 MONTH' * CAST(n AS BIGINT)) FROM t",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1.1234567 AS n) SELECT TIMESTAMPADD(SECOND, n, '2024-01-01 12:00:00') FROM t",
+            write={
+                "mysql": "WITH t AS (SELECT 1.1234567 AS n) SELECT DATE_ADD('2024-01-01 12:00:00', INTERVAL (CAST(TRUNCATE(n * 1000000, 0) AS SIGNED)) MICROSECOND) FROM t",
+                "duckdb": "WITH t AS (SELECT 1.1234567 AS n) SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL (CAST(TRUNC(n * 1000000) AS BIGINT)) MICROSECOND FROM t",
+                "postgres": "WITH t AS (SELECT 1.1234567 AS n) SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + (INTERVAL '1 MICROSECOND' * CAST(TRUNC(n * 1000000) AS BIGINT)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPADD(DAY, 1, '2024-01-01') - TIMESTAMPADD(DAY, 1, '2024-01-01')",
+            write={
+                "mysql": "SELECT DATE_ADD('2024-01-01', INTERVAL 1 DAY) - DATE_ADD('2024-01-01', INTERVAL 1 DAY)",
+                "duckdb": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY)",
+                "postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY' - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1 DAY')",
+            },
+        )
+
     def test_xor_precedence(self):
         for sql, root, left, right in (
             ("TRUE XOR FALSE AND FALSE", exp.Xor, exp.Boolean, exp.And),
@@ -1433,7 +1484,7 @@ class TestMySQL(Validator):
             "WITH t AS (SELECT CAST('2020-01-10' AS DATE) AS col, 5 AS num_days) SELECT DATE_ADD(col, INTERVAL num_days DAY) FROM t",
             write={
                 "mysql": "WITH t AS (SELECT CAST('2020-01-10' AS DATE) AS col, 5 AS num_days) SELECT DATE_ADD(col, INTERVAL num_days DAY) FROM t",
-                "postgres": "WITH t AS (SELECT CAST('2020-01-10' AS DATE) AS col, 5 AS num_days) SELECT col + INTERVAL '1 DAY' * num_days FROM t",
+                "postgres": "WITH t AS (SELECT CAST('2020-01-10' AS DATE) AS col, 5 AS num_days) SELECT col + (INTERVAL '1 DAY' * num_days) FROM t",
             },
         )
         self.validate_all(
@@ -1441,7 +1492,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-31', INTERVAL 1 MONTH)",
                 "duckdb": "SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH",
-                "postgres": "SELECT '2024-01-31' + INTERVAL '1 MONTH'",
+                "postgres": "SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL '1 MONTH'",
             },
         )
         self.validate_all(
@@ -1449,7 +1500,7 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-01 12:00:00', INTERVAL 30 SECOND)",
                 "duckdb": "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL 30 SECOND",
-                "postgres": "SELECT '2024-01-01 12:00:00' + INTERVAL '30 SECOND'",
+                "postgres": "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND'",
             },
         )
         self.validate_all(

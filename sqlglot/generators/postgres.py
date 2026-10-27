@@ -69,22 +69,32 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
         if isinstance(expression, exp.TsOrDsAdd):
             expression = ts_or_ds_add_cast(expression)
 
-        this = self.sql(expression, "this")
+        this = expression.this
+        if this.is_string and isinstance(
+            expression, (exp.DatetimeAdd, exp.DatetimeSub, exp.TimestampAdd, exp.TimestampSub)
+        ):
+            this = exp.cast(this, exp.DType.TIMESTAMP)
         unit = expression.args.get("unit")
 
         e = self._simplify_unless_literal(expression.expression)
+        interval: exp.Expr
         if isinstance(e, exp.Interval):
-            return f"{this} {kind} {self.sql(e)}"
-        elif isinstance(e, exp.Literal):
-            e.set("is_string", True)
-        elif e.is_number:
-            e = exp.Literal.string(e.to_py())
+            interval = e
+        elif e.is_number or e.is_string:
+            interval = exp.Interval(this=exp.Literal.string(e.to_py()), unit=unit)
         else:
             one = exp.Literal.number(1)
-            interval_times_value = exp.Interval(this=one, unit=unit) * e
-            return f"{this} {kind} {self.sql(interval_times_value)}"
+            interval = exp.Interval(this=one, unit=unit) * e
 
-        return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
+        result: exp.Expr = this + interval if kind == "+" else this - interval
+        parent = expression.parent
+        if isinstance(parent, (exp.Binary, exp.Unary, exp.AtTimeZone)) and not (
+            isinstance(parent, exp.Paren)
+            or isinstance(parent, (exp.Add, exp.Sub))
+            and parent.this is expression
+        ):
+            result = exp.paren(result, copy=False)
+        return self.sql(result)
 
     return func
 

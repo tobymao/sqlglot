@@ -2240,7 +2240,6 @@ def date_delta_to_binary_interval_op(
     def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
         this = expression.this
         unit = unit_to_var(expression)
-        op = "+" if isinstance(expression, DATETIME_ADD) else "-"
 
         to_type: exp.DATA_TYPE | None = None
         if cast:
@@ -2267,7 +2266,17 @@ def date_delta_to_binary_interval_op(
         expr = expression.expression
         interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
 
-        return f"{self.sql(this)} {op} {self.sql(interval)}"
+        result: exp.Expr = (
+            this + interval if isinstance(expression, DATETIME_ADD) else this - interval
+        )
+        parent = expression.parent
+        if isinstance(parent, (exp.Binary, exp.Unary, exp.AtTimeZone)) and not (
+            isinstance(parent, exp.Paren)
+            or isinstance(parent, (exp.Add, exp.Sub))
+            and parent.this is expression
+        ):
+            result = exp.paren(result, copy=False)
+        return self.sql(result)
 
     return date_delta_to_binary_interval_op_sql
 

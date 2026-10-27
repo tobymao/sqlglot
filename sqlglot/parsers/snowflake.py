@@ -15,7 +15,7 @@ from sqlglot.dialects.dialect import (
     date_trunc_to_time,
     map_date_part,
 )
-from sqlglot.helper import is_date_unit, is_int, seq_get
+from sqlglot.helper import is_int, seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.trie import new_trie
 
@@ -219,12 +219,14 @@ def _build_regexp_like(args: list) -> exp.RegexpLike:
 
 def _date_trunc_to_time(args: list) -> exp.DateTrunc | exp.TimestampTrunc:
     trunc = date_trunc_to_time(args)
-    unit = map_date_part(trunc.args["unit"])
-    trunc.set("unit", unit)
-    is_time_input = trunc.this.is_type(exp.DType.TIME, exp.DType.TIMETZ)
-    if (isinstance(trunc, exp.TimestampTrunc) and is_date_unit(unit) or is_time_input) or (
-        isinstance(trunc, exp.DateTrunc) and not is_date_unit(unit)
-    ):
+    trunc.set("unit", map_date_part(trunc.args["unit"]))
+    trunc.set("input_type_preserved", True)
+    return trunc
+
+
+def _build_trunc(args: list, dialect: Dialect) -> exp.DateTrunc | exp.Trunc | exp.Anonymous:
+    trunc = build_trunc(args, dialect, date_trunc_requires_part=False, fractions_supported=True)
+    if isinstance(trunc, exp.DateTrunc):
         trunc.set("input_type_preserved", True)
     return trunc
 
@@ -639,12 +641,8 @@ class SnowflakeParser(parser.Parser):
         "TIMESTAMP_FROM_PARTS": _build_timestamp_from_parts,
         "TIMESTAMPNTZFROMPARTS": _build_timestamp_from_parts,
         "TIMESTAMP_NTZ_FROM_PARTS": _build_timestamp_from_parts,
-        "TRUNC": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_requires_part=False, fractions_supported=True
-        ),
-        "TRUNCATE": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_requires_part=False, fractions_supported=True
-        ),
+        "TRUNC": _build_trunc,
+        "TRUNCATE": _build_trunc,
         "TRY_DECRYPT": lambda args: exp.Decrypt(
             this=seq_get(args, 0),
             passphrase=seq_get(args, 1),

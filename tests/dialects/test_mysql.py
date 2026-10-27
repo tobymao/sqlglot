@@ -1437,6 +1437,22 @@ class TestMySQL(Validator):
             },
         )
         self.validate_all(
+            "SELECT TIMESTAMPADD(MONTH, 1, '2024-01-31')",
+            write={
+                "mysql": "SELECT DATE_ADD('2024-01-31', INTERVAL 1 MONTH)",
+                "duckdb": "SELECT CAST('2024-01-31' AS TIMESTAMP) + INTERVAL 1 MONTH",
+                "postgres": "SELECT '2024-01-31' + INTERVAL '1 MONTH'",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPADD(SECOND, 30, '2024-01-01 12:00:00')",
+            write={
+                "mysql": "SELECT DATE_ADD('2024-01-01 12:00:00', INTERVAL 30 SECOND)",
+                "duckdb": "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL 30 SECOND",
+                "postgres": "SELECT '2024-01-01 12:00:00' + INTERVAL '30 SECOND'",
+            },
+        )
+        self.validate_all(
             "CURDATE()",
             write={
                 "mysql": "CURRENT_DATE",

@@ -354,6 +354,8 @@ class PostgresGenerator(generator.Generator):
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
+        exp.DatetimeAdd: _date_add_sql("+"),
+        exp.DatetimeSub: _date_add_sql("-"),
         exp.Day: _day_month_year_sql,
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
@@ -418,6 +420,8 @@ class PostgresGenerator(generator.Generator):
         exp.TimeFromParts: rename_func("MAKE_TIME"),
         exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
         exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+        exp.TimestampAdd: _date_add_sql("+"),
+        exp.TimestampSub: _date_add_sql("-"),
         exp.TimeStrToTime: timestrtotime_sql,
         exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
         exp.ToChar: lambda self, e: (

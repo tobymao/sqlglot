@@ -144,6 +144,7 @@ class MySQLParser(parser.Parser):
         "STD": exp.StddevPop.from_arg_list,
         "STDDEV": exp.StddevPop.from_arg_list,
         "STR_TO_DATE": _str_to_date,
+        "TIMESTAMPADD": build_date_delta(exp.TimestampAdd),
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TO_DAYS": lambda args: exp.paren(
             exp.DateDiff(

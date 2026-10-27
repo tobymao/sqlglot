@@ -42,7 +42,15 @@ DATE_ADD_OR_DIFF = t.Union[
     exp.TsOrDsAdd,
     exp.TsOrDsDiff,
 ]
-DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TsOrDsAdd, exp.DateSub]
+DATE_ADD_OR_SUB = t.Union[
+    exp.DateAdd,
+    exp.DateSub,
+    exp.DatetimeAdd,
+    exp.DatetimeSub,
+    exp.TimestampAdd,
+    exp.TimestampSub,
+    exp.TsOrDsAdd,
+]
 JSON_EXTRACT_TYPE = t.Union[
     exp.JSONExtract, exp.JSONExtractScalar, exp.JSONBExtract, exp.JSONBExtractScalar
 ]
@@ -2242,7 +2250,15 @@ def date_delta_to_binary_interval_op(
                 # Cast string literals (i.e function parameters) to the appropriate type for +/- interval to work
                 to_type = (
                     exp.DType.DATETIME
-                    if isinstance(expression, (exp.DatetimeAdd, exp.DatetimeSub))
+                    if isinstance(
+                        expression,
+                        (
+                            exp.DatetimeAdd,
+                            exp.DatetimeSub,
+                            exp.TimestampAdd,
+                            exp.TimestampSub,
+                        ),
+                    )
                     else exp.DType.DATE
                 )
 

@@ -2900,6 +2900,52 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # left/right accessors in compiled builds
         annotate_types(exp.select("*").from_(exp.select("1").union("VALUES (2)").subquery("s")))
 
+    def test_annotate_nested_unknowns(self):
+        for sql in (
+            "ARRAY()",
+            "ARRAY(ARRAY())",
+            "STRUCT(ARRAY() AS a)",
+            "ARRAY(STRUCT(ARRAY() AS a))",
+            "MAP(ARRAY(), ARRAY())",
+            "MAP(ARRAY(1), ARRAY())",
+            "MAP(ARRAY(), ARRAY(1))",
+            "MAP(ARRAY(1), ARRAY(x))",
+            "STRUCT(MAP(ARRAY(1), ARRAY()) AS a)",
+            "ARRAY_AGG(ARRAY())",
+            "COALESCE(ARRAY(), ARRAY())",
+            "COALESCE(ARRAY(), NULL)",
+            "COALESCE(ARRAY(1), ARRAY(x))",
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertTrue(expression.is_type(exp.DType.UNKNOWN))
+                for node in expression.walk():
+                    if node.type and not node.is_type(exp.DType.UNKNOWN):
+                        self.assertFalse(
+                            any(
+                                t.is_type(exp.DType.UNKNOWN)
+                                for t in node.type.find_all(exp.DataType)
+                            )
+                        )
+
+        for sql in (
+            "SELECT APPROX_TOP_COUNT(x, 2) FROM t",
+            "SELECT APPROX_TOP_SUM(x, 1, 2) FROM t",
+            "SELECT ARRAY(SELECT AS STRUCT [] AS a)",
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql, dialect="bigquery"), dialect="bigquery")
+                self.assertTrue(expression.selects[0].is_type(exp.DType.UNKNOWN))
+
+        for sql in (
+            "COALESCE(ARRAY(1), ARRAY())",
+            "COALESCE(ARRAY(), ARRAY(1))",
+            "COALESCE(ARRAY(), ARRAY(), ARRAY(1))",
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(parse_one(sql))
+                self.assertEqual(expression.type, exp.DataType.build("ARRAY<INT>"))
+
     def test_annotate_types_reuse(self):
         annotator = TypeAnnotator(MappingSchema())
         # Discard each result while retaining the annotator to exercise address reuse.

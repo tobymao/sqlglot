@@ -82,6 +82,10 @@ def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: exp.Expr) -> 
 
 
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
+    if not expression.this.type or expression.this.is_type(exp.DType.UNKNOWN):
+        self._set_type(expression, exp.DType.UNKNOWN)
+        return expression
+
     struct_type = exp.DataType(
         this=exp.DType.STRUCT,
         expressions=[expression.this.type, exp.DataType(this=exp.DType.BIGINT)],

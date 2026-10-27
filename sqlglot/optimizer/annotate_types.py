@@ -894,6 +894,18 @@ class TypeAnnotator:
                 expr_type = expr.type
 
                 if expr_type is None or expr_type.is_type(exp.DType.UNKNOWN):
+                    # An empty array can take its element type from another COALESCE argument.
+                    if (
+                        isinstance(expression, exp.Coalesce)
+                        and isinstance(expr, exp.Array)
+                        and not expr.expressions
+                        and any(
+                            arg.is_type(exp.DType.ARRAY)
+                            for arg in (expression.this, *expression.expressions)
+                        )
+                    ):
+                        continue
+
                     self._set_type(expression, exp.DType.UNKNOWN)
                     return expression
 
@@ -945,7 +957,7 @@ class TypeAnnotator:
             elif this_type in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DType.DOUBLE)
 
-        if array:
+        if array and not expression.is_type(exp.DType.UNKNOWN):
             self._set_type(
                 expression,
                 exp.DataType(this=exp.DType.ARRAY, expressions=[expression.type], nested=True),
@@ -1108,12 +1120,20 @@ class TypeAnnotator:
 
         map_type = exp.DataType(this=exp.DType.MAP)
         if isinstance(keys, exp.Array) and isinstance(values, exp.Array):
-            key_type = seq_get(keys.type.expressions, 0) or exp.DType.UNKNOWN
-            value_type = seq_get(values.type.expressions, 0) or exp.DType.UNKNOWN
+            key_type = seq_get(keys.type.expressions, 0)
+            value_type = seq_get(values.type.expressions, 0)
 
-            if key_type != exp.DType.UNKNOWN and value_type != exp.DType.UNKNOWN:
-                map_type.set("expressions", [key_type, value_type])
-                map_type.set("nested", True)
+            if (
+                not key_type
+                or key_type.is_type(exp.DType.UNKNOWN)
+                or not value_type
+                or value_type.is_type(exp.DType.UNKNOWN)
+            ):
+                self._set_type(expression, exp.DType.UNKNOWN)
+                return expression
+
+            map_type.set("expressions", [key_type, value_type])
+            map_type.set("nested", True)
 
         self._set_type(expression, map_type)
         return expression

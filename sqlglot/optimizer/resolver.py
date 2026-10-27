@@ -361,7 +361,9 @@ class Resolver:
         available_sources = {from_name: self.get_source_columns(from_name)}
 
         for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
-            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+            # An earlier SEMI/ANTI join's table is only visible within its own ON clause
+            if join is join_ancestor or not join.is_semi_or_anti_join:
+                available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
 
         return available_sources
 

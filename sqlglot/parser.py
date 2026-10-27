@@ -4405,9 +4405,14 @@ class Parser:
         return cte
 
     def _values_to_select(self, values: exp.Values) -> exp.Select:
-        if values.alias:
-            return exp.select("*").from_(values)
-        return exp.select("*").from_(exp.alias_(values, "_values", table=True))
+        modifiers = {key: values.args[key] for key in exp.QUERY_MODIFIERS if values.args.get(key)}
+        for key in modifiers:
+            values.set(key, None)
+        source = values if values.alias else exp.alias_(values, "_values", table=True)
+        select = exp.select("*").from_(source)
+        for key, modifier in modifiers.items():
+            select.set(key, modifier)
+        return select
 
     def _parse_table_alias(
         self, alias_tokens: t.Collection[TokenType] | None = None
@@ -6141,6 +6146,12 @@ class Parser:
             this = self._values_to_select(this)
         if isinstance(expression, exp.Values):
             expression = self._values_to_select(expression)
+        for operand in (this, expression):
+            if isinstance(operand, exp.Subquery) and isinstance(
+                values := operand.unnest(), exp.Values
+            ):
+                wrapper = t.cast(exp.Subquery, values.parent)
+                wrapper.set("this", self._values_to_select(values))
 
         if isinstance(this, exp.Alias) and isinstance(this.this, exp.Subquery):
             subquery = this.this

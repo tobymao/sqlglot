@@ -1931,7 +1931,8 @@ class TestDuckDB(Validator):
         ):
             with self.subTest(f"Testing DuckDB VALUES with modifier option: {option}"):
                 self.validate_identity(
-                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))"
+                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))",
+                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((SELECT * FROM (VALUES (1), (c)) AS _values {option}) INTERSECT (SELECT 1))",
                 )
 
         self.validate_identity("FORMAT('foo')")

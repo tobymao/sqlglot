@@ -4034,6 +4034,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         self.assertNotIn("TRUNC", optimized.sql("duckdb"))
 
+        # Parenthesized VALUES set operation operands are typed from their rows
+        expression = optimizer.optimize(
+            "SELECT x.a FROM (SELECT 1 AS a UNION ALL (VALUES (2.5))) AS x", dialect="duckdb"
+        )
+        self.assertTrue(expression.selects[0].is_type(exp.DType.DOUBLE))
+
     def test_udtf_annotation(self):
         table_udtf = parse_one(
             "SELECT * FROM TABLE(GENERATOR(ROWCOUNT => 100000))",

@@ -2588,7 +2588,7 @@ class Parser:
 
         create_token_type = t.cast(Token, create_token).token_type
 
-        concurrently = self._match_text_seq("CONCURRENTLY")
+        concurrently = create_token_type == TokenType.INDEX and self._match_text_seq("CONCURRENTLY")
         exists = self._parse_exists(not_=True)
         this = None
         expression: exp.Expr | None = None

@@ -343,6 +343,7 @@ class SnowflakeParser(parser.Parser):
         *parser.Parser.ID_VAR_TOKENS,
         TokenType.EXCEPT,
         TokenType.INTEGRATION,
+        TokenType.LATERAL,
         TokenType.MATCH_CONDITION,
         TokenType.PACKAGE,
         TokenType.POLICY,
@@ -350,6 +351,7 @@ class SnowflakeParser(parser.Parser):
         TokenType.ROLE,
         TokenType.ROLLBACK,
         TokenType.RULE,
+        TokenType.USING,
         TokenType.VOLUME,
     }
 
@@ -357,12 +359,14 @@ class SnowflakeParser(parser.Parser):
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
         TokenType.INTEGRATION,
+        TokenType.LATERAL,
         TokenType.PACKAGE,
         TokenType.POLICY,
         TokenType.POOL,
         TokenType.ROLE,
         TokenType.ROLLBACK,
         TokenType.RULE,
+        TokenType.USING,
         TokenType.VOLUME,
     }
 
@@ -774,6 +778,8 @@ class SnowflakeParser(parser.Parser):
         TokenType.SHOW: lambda self: self._parse_show(),
         TokenType.UNDROP: lambda self: self._parse_undrop(),
     }
+    STATEMENT_PARSERS.pop(TokenType.PIVOT)
+    STATEMENT_PARSERS.pop(TokenType.UNPIVOT)
 
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
@@ -857,6 +863,8 @@ class SnowflakeParser(parser.Parser):
     }
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
+
+    SCHEMA_UNNAMED_CONSTRAINTS = parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS - {"EXCLUDE"}
 
     CONSTRAINT_PARSERS = {
         **parser.Parser.CONSTRAINT_PARSERS,

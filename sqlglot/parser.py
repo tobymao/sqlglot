@@ -4405,14 +4405,12 @@ class Parser:
         return cte
 
     def _values_to_select(self, values: exp.Values) -> exp.Select:
-        modifiers = {key: values.args[key] for key in exp.QUERY_MODIFIERS if values.args.get(key)}
-        for key in modifiers:
-            values.set(key, None)
-        source = values if values.alias else exp.alias_(values, "_values", table=True)
-        select = exp.select("*").from_(source)
-        for key, modifier in modifiers.items():
-            select.set(key, modifier)
-        return select
+        select = exp.select("*")
+        for key in exp.QUERY_MODIFIERS:
+            if modifier := values.args.get(key):
+                values.set(key, None)
+                select.set(key, modifier)
+        return select.from_(values if values.alias else exp.alias_(values, "_values", table=True))
 
     def _parse_table_alias(
         self, alias_tokens: t.Collection[TokenType] | None = None

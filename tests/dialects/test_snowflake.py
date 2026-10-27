@@ -4031,23 +4031,23 @@ class TestSnowflake(Validator):
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+        # DuckDB used to return DATE for date units, but now returns TIMESTAMP:
+        # https://github.com/duckdb/duckdb/pull/20120
+        # Cast to preserve Snowflake's input type with either behavior.
         self.validate_all(
             "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
             write={
                 "snowflake": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
-                "duckdb": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+                "duckdb": "CAST(DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE)) AS DATE)",
             },
         )
         self.validate_all(
             "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
             write={
                 "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
-                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+                "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP)) AS TIMESTAMP)",
             },
         )
-        # Snowflake's DATE_TRUNC return type matches type of the expresison
-        # DuckDB's DATE_TRUNC return type matches type of granularity part.
-        # In Snowflake --> DuckDB, DATE_TRUNC(date_part, timestamp) should be cast to timestamp to preserve Snowflake behavior.
         self.validate_all(
             "DATE_TRUNC(YEAR, TIMESTAMP '2026-01-01 00:00:00')",
             write={
@@ -4163,6 +4163,52 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
                 "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
+        )
+
+    def test_date_trunc_preserves_date(self):
+        for unit in ("MONTH", "HOUR"):
+            for value in ("'2024-05-09'", "NULL"):
+                date = f"CAST({value} AS DATE)"
+                for sql in (
+                    f"DATE_TRUNC('{unit}', {date})",
+                    f"TRUNC({date}, '{unit}')",
+                    f"TRUNCATE({date}, '{unit}')",
+                ):
+                    self.validate_all(
+                        sql,
+                        write={
+                            "duckdb": f"CAST(DATE_TRUNC('{unit}', {date}) AS DATE)",
+                        },
+                    )
+
+            for sql in (f"DATE_TRUNC('{unit}', t.d)", f"TRUNC(t.d, '{unit}')"):
+                expression = annotate_types(
+                    self.parse_one(f"SELECT {sql} FROM t"),
+                    schema={"t": {"d": "DATE"}},
+                    dialect="snowflake",
+                )
+                self.assertEqual(
+                    expression.sql("duckdb"),
+                    f"SELECT CAST(DATE_TRUNC('{unit}', t.d) AS DATE) FROM t",
+                )
+
+        for sql, expected in (
+            (
+                "DATE_TRUNC('WEEK', CURRENT_DATE)",
+                "CAST(DATE_TRUNC('WEEK', CURRENT_DATE) AS DATE)",
+            ),
+            (
+                "DATE_TRUNC('MONTH', DATE_TRUNC('HOUR', CAST('2024-05-09' AS DATE)))",
+                "CAST(DATE_TRUNC('MONTH', CAST(DATE_TRUNC('HOUR', CAST('2024-05-09' AS DATE)) AS DATE)) AS DATE)",
+            ),
+        ):
+            expression = self.parse_one(sql)
+            self.assertIsNone(expression.this.type)
+            annotate_types(expression, dialect="snowflake")
+            self.assertEqual(expression.sql("duckdb"), expected)
+        self.validate_all(
+            "DATE_TRUNC('MONTH', d)",
+            write={"duckdb": "DATE_TRUNC('MONTH', d)"},
         )
 
     def test_to_date(self):

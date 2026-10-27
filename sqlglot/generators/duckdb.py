@@ -4604,10 +4604,8 @@ class DuckDBGenerator(generator.Generator):
         else:
             result = self.func("DATE_TRUNC", unit, date)
 
-        if (
-            expression.args.get("input_type_preserved")
-            and date.is_type(*exp.DataType.TEMPORAL_TYPES)
-            and not (is_date_unit(unit) and date.is_type(exp.DType.DATE))
+        if expression.args.get("input_type_preserved") and date.is_type(
+            *exp.DataType.TEMPORAL_TYPES
         ):
             return self.sql(exp.Cast(this=result, to=date.type))
 
@@ -4664,9 +4662,7 @@ class DuckDBGenerator(generator.Generator):
                 result = self.func("DATE_TRUNC", unit, date_time)
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-            if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES) and not (
-                date_unit and timestamp.is_type(exp.DType.DATE)
-            ):
+            if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
         return result

@@ -10,6 +10,10 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_date_trunc(self):
+        for unit in ("MONTH", "HOUR"):
+            self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")
+
     def test_join_by_type(self):
         for table in ("directed", "straight_join"):
             self.validate_identity(

@@ -894,25 +894,22 @@ class TypeAnnotator:
                 expr_type = expr.type
 
                 if expr_type is None or expr_type.is_type(exp.DType.UNKNOWN):
-                    # An empty array can take its element type from another COALESCE argument.
-                    if (
-                        isinstance(expression, exp.Coalesce)
-                        and isinstance(expr, exp.Array)
-                        and not expr.expressions
-                        and any(
-                            arg.is_type(exp.DType.ARRAY)
-                            for arg in (expression.this, *expression.expressions)
-                        )
-                    ):
-                        continue
-
                     self._set_type(expression, exp.DType.UNKNOWN)
                     return expression
 
                 if nested_type:
+                    # Only resolve ARRAY<NULL>; preserve existing coercion for other nested types.
+                    if (
+                        nested_type.is_type(exp.DType.ARRAY)
+                        and nested_type.expressions
+                        and nested_type.expressions[0].is_type(exp.DType.NULL)
+                        and expr_type.is_type(exp.DType.ARRAY)
+                        and expr_type.expressions
+                    ):
+                        nested_type = expr_type
                     continue
 
-                # Stop coercing at the first nested data type found
+                # Prefer the first nested data type, resolving ARRAY<NULL> from later arrays.
                 if expr_type.args.get("nested"):
                     nested_type = expr_type
                 elif isinstance(expr, exp.Literal):
@@ -946,7 +943,9 @@ class TypeAnnotator:
             if result_type is None:
                 result_type = self._maybe_coerce(non_literal_type, literal_type)
         else:
-            result_type = literal_type or non_literal_type or exp.DType.UNKNOWN
+            result_type = (
+                literal_type or non_literal_type or (exp.DType.NULL if array else exp.DType.UNKNOWN)
+            )
 
         self._set_type(expression, result_type)
 

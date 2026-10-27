@@ -3801,7 +3801,9 @@ class Generator:
         )
         if self.EXTRACT_ALLOWS_QUOTES:
             this_sql = self.sql(this)
-        elif isinstance(this, exp.WeekStart):
+        elif isinstance(this, (exp.Week, exp.WeekStart)):
+            # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit. BigQuery
+            # parses it into a WeekStart, while dialects such as Hive parse it into a Week call
             this_sql = self.weekstart_name(this)
         else:
             this_sql = this.name
@@ -6529,7 +6531,7 @@ class Generator:
         this = expression.this
         return self.func("LOCALTIMESTAMP", this) if this else "LOCALTIMESTAMP"
 
-    def weekstart_name(self, expression: exp.WeekStart) -> str:
+    def weekstart_name(self, expression: exp.Week | exp.WeekStart) -> str:
         import sqlglot.dialects.dialect
 
         # WEEK(<day>) is BigQuery-only syntax, so it degrades to the plain WEEK unit

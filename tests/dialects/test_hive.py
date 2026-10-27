@@ -562,6 +562,18 @@ class TestHive(Validator):
                 },
             )
 
+    def test_extract_week_start_day(self):
+        # WEEK(<day>) is not a Hive date part, so it degrades to the plain WEEK unit (Hive
+        # weeks start on Monday), instead of being dropped and generating invalid SQL
+        self.validate_all(
+            "SELECT EXTRACT(WEEK(MONDAY) FROM ds)",
+            write={
+                "hive": "SELECT EXTRACT(WEEK FROM ds)",
+                "spark": "SELECT EXTRACT(WEEK FROM ds)",
+                "databricks": "SELECT EXTRACT(WEEK FROM ds)",
+            },
+        )
+
     def test_order_by(self):
         self.validate_all(
             "SELECT fname, lname, age FROM person ORDER BY age DESC NULLS FIRST, fname ASC NULLS LAST, lname",

@@ -9,6 +9,14 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_datetime_arithmetic(self):
+        self.validate_all(
+            "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND' - (CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND')",
+            read={
+                "duckdb": "SELECT DATE_ADD(TIMESTAMP '2024-01-01 12:00:00', INTERVAL 30 SECOND) - DATE_ADD(TIMESTAMP '2024-01-01 12:00:00', INTERVAL 30 SECOND)",
+            },
+        )
+
     def test_create_tablespace(self):
         for sql in (
             "CREATE TABLE t (a INT PRIMARY KEY) TABLESPACE pg_default",

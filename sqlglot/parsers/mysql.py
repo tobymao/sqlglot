@@ -45,6 +45,13 @@ def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
     return exp.StrToDate(this=this, format=date_format)
 
 
+def _build_timestampadd(args: list) -> exp.TimestampAdd:
+    expression = build_date_delta(exp.TimestampAdd)(args)
+    unit = expression.unit
+    expression.set("unit", exp.var((unit.name if unit else "DAY").upper().removeprefix("SQL_TSI_")))
+    return expression
+
+
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp.Show]:
     def _parse(self: MySQLParser) -> exp.Show:
         return self._parse_show_mysql(*args, **kwargs)
@@ -144,7 +151,7 @@ class MySQLParser(parser.Parser):
         "STD": exp.StddevPop.from_arg_list,
         "STDDEV": exp.StddevPop.from_arg_list,
         "STR_TO_DATE": _str_to_date,
-        "TIMESTAMPADD": build_date_delta(exp.TimestampAdd),
+        "TIMESTAMPADD": _build_timestampadd,
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TO_DAYS": lambda args: exp.paren(
             exp.DateDiff(

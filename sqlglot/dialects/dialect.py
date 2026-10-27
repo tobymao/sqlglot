@@ -2234,13 +2234,23 @@ def date_delta_sql(name: str, cast: bool = False) -> t.Callable[[Generator, DATE
     return _delta_sql
 
 
+def date_delta_to_binary_sql(self: Generator, expression: exp.Expr, binary: exp.Binary) -> str:
+    parent = expression.parent
+    if isinstance(parent, (exp.Binary, exp.Unary, exp.AtTimeZone)) and not (
+        isinstance(parent, exp.Paren)
+        or isinstance(parent, (exp.Add, exp.Sub))
+        and parent.this is expression
+    ):
+        return self.sql(exp.paren(binary, copy=False))
+    return self.sql(binary)
+
+
 def date_delta_to_binary_interval_op(
     cast: bool = True,
 ) -> t.Callable[[Generator, DATETIME_DELTA], str]:
     def date_delta_to_binary_interval_op_sql(self: Generator, expression: DATETIME_DELTA) -> str:
         this = expression.this
         unit = unit_to_var(expression)
-        op = "+" if isinstance(expression, DATETIME_ADD) else "-"
 
         to_type: exp.DATA_TYPE | None = None
         if cast:
@@ -2267,7 +2277,11 @@ def date_delta_to_binary_interval_op(
         expr = expression.expression
         interval = expr if isinstance(expr, exp.Interval) else exp.Interval(this=expr, unit=unit)
 
-        return f"{self.sql(this)} {op} {self.sql(interval)}"
+        return date_delta_to_binary_sql(
+            self,
+            expression,
+            this + interval if isinstance(expression, DATETIME_ADD) else this - interval,
+        )
 
     return date_delta_to_binary_interval_op_sql
 

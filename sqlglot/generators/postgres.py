@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     array_concat_sql,
     bool_xor_sql,
     count_if_to_sum,
+    date_delta_to_binary_sql,
     datestrtodate_sql,
     filter_array_using_unnest,
     generate_series_sql,
@@ -69,22 +70,22 @@ def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB],
         if isinstance(expression, exp.TsOrDsAdd):
             expression = ts_or_ds_add_cast(expression)
 
-        this = self.sql(expression, "this")
+        this = expression.this
         unit = expression.args.get("unit")
 
         e = self._simplify_unless_literal(expression.expression)
+        interval: exp.Expr
         if isinstance(e, exp.Interval):
-            return f"{this} {kind} {self.sql(e)}"
-        elif isinstance(e, exp.Literal):
-            e.set("is_string", True)
-        elif e.is_number:
-            e = exp.Literal.string(e.to_py())
+            interval = e
+        elif e.is_number or e.is_string:
+            interval = exp.Interval(this=exp.Literal.string(e.to_py()), unit=unit)
         else:
             one = exp.Literal.number(1)
-            interval_times_value = exp.Interval(this=one, unit=unit) * e
-            return f"{this} {kind} {self.sql(interval_times_value)}"
+            interval = exp.Interval(this=one, unit=unit) * e
 
-        return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
+        return date_delta_to_binary_sql(
+            self, expression, this + interval if kind == "+" else this - interval
+        )
 
     return func
 

@@ -388,7 +388,9 @@ class SnowflakeParser(parser.Parser):
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.LOCALTIME: exp.Localtime,
-        TokenType.LOCALTIMESTAMP: exp.Localtimestamp,
+        # LOCALTIMESTAMP is a Snowflake alias of CURRENT_TIMESTAMP, like the parenthesised form in
+        # FUNCTION_PARSERS. Only Snowflake treats it as such, so it must not map to Localtimestamp.
+        TokenType.LOCALTIMESTAMP: exp.CurrentTimestamp,
         TokenType.CURRENT_TIME: exp.Localtime,
     }
 

@@ -3336,7 +3336,7 @@ class Parser:
             exp.ClusteredByProperty(expressions=expressions, sorted_by=sorted_by, buckets=buckets)
         )
 
-    def _parse_copy_property(self) -> exp.CopyGrantsProperty | None:
+    def _parse_copy_property(self) -> exp.Property | None:
         if not self._match_text_seq("GRANTS"):
             self._retreat(self._index - 1)
             return None

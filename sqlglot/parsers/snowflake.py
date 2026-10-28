@@ -999,6 +999,11 @@ class SnowflakeParser(parser.Parser):
 
         return self.expression(exp.Not(this=this))
 
+    def _parse_copy_property(self) -> exp.Property | None:
+        if self._match_text_seq("TAGS"):
+            return self.expression(exp.CopyTagsProperty())
+        return super()._parse_copy_property()
+
     def _parse_tag(self) -> exp.Tags:
         return self.expression(exp.Tags(expressions=self._parse_wrapped_csv(self._parse_property)))
 

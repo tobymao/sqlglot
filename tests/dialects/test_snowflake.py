@@ -4573,6 +4573,8 @@ class TestSnowflake(Validator):
                 )
 
         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
+        self.validate_identity("CREATE OR REPLACE TABLE foo (a INT) COPY TAGS")
+        self.validate_identity("CREATE OR REPLACE TABLE foo (a INT) COPY GRANTS COPY TAGS")
         self.validate_identity("USE SECONDARY ROLES ALL")
         self.validate_identity("USE SECONDARY ROLES NONE")
         self.validate_identity("USE SECONDARY ROLES a, b, c")

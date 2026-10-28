@@ -107,6 +107,10 @@ class CopyGrantsProperty(Property):
     arg_types = {}
 
 
+class CopyTagsProperty(Property):
+    arg_types = {}
+
+
 class DataBlocksizeProperty(Property):
     arg_types = {
         "size": False,

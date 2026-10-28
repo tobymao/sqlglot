@@ -169,6 +169,7 @@ class Generator:
             "CONVERT", e.this, e.args["dest"], e.args.get("source")
         ),
         exp.CopyGrantsProperty: lambda *_: "COPY GRANTS",
+        exp.CopyTagsProperty: lambda *_: "COPY TAGS",
         exp.CredentialsProperty: lambda self, e: (
             f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})"
         ),
@@ -731,6 +732,7 @@ class Generator:
         exp.CollateProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ComputeProperty: exp.Properties.Location.POST_CREATE,
         exp.CopyGrantsProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.CopyTagsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.Cluster: exp.Properties.Location.POST_SCHEMA,
         exp.ClusteredByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ClusterProperty: exp.Properties.Location.POST_SCHEMA,

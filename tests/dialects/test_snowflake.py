@@ -6266,22 +6266,30 @@ SINGLE = TRUE""",
                 self.validate_all(
                     source,
                     write={
-                        "snowflake": f"SELECT LISTAGG({distinct}col, ''){order} FROM t",
                         "duckdb": f"SELECT LISTAGG({distinct}col, ''{duckdb_order}) FROM t",
                         "postgres": f"SELECT STRING_AGG({distinct}col, ''{duckdb_order}) FROM t",
                     },
                 )
+                expression = self.parse_one(source)
                 self.assertEqual(
-                    self.parse_one(source).find(exp.GroupConcat).args["separator"],
+                    expression.find(exp.GroupConcat).args["separator"],
                     exp.Literal.string(""),
                 )
+                self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
 
+        source = "SELECT LISTAGG(col) OVER (PARTITION BY k) FROM t"
         self.validate_all(
-            "SELECT LISTAGG(col) OVER (PARTITION BY k) FROM t",
+            source,
             write={
-                "snowflake": "SELECT LISTAGG(col, '') OVER (PARTITION BY k) FROM t",
                 "duckdb": "SELECT LISTAGG(col, '') OVER (PARTITION BY k) FROM t",
             },
+        )
+        expression = self.parse_one(source)
+        self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
+
+        self.assertEqual(
+            parse_one("SELECT LISTAGG(col ORDER BY col) FROM t", read="duckdb").sql("duckdb"),
+            "SELECT LISTAGG(col, ',' ORDER BY col) FROM t",
         )
 
         for distinct in ("", "DISTINCT "):

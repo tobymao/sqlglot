@@ -5,6 +5,8 @@ from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot._typing import E
 
+_PRE_AGGREGATION_ARGS = ("with_", "from_", "laterals", "joins", "where")
+
 
 def unnest_subqueries(expression: E) -> E:
     """
@@ -12,6 +14,11 @@ def unnest_subqueries(expression: E) -> E:
 
     Convert scalar subqueries into cross joins.
     Convert correlated or vectorized subqueries into a group by so it is not a many to many left join.
+
+    Preserve empty-input values for bare COUNT (columns or row-counting forms), SUM,
+    integer-anchored COALESCE(SUM), and searched COUNT(*)/SUM CASE projections without
+    replacing matched NULLs. Bare AVG/MIN/MAX use the existing nullable-result passthrough.
+    Keep uncertain aggregate defaults and scalar result types correlated rather than inferring casts.
 
     Example:
         >>> import sqlglot
@@ -31,6 +38,18 @@ def unnest_subqueries(expression: E) -> E:
         parent = select.parent_select
         if not parent:
             continue
+
+        if (
+            scope.parent
+            and scope.parent.expression is parent
+            and scope.parent.is_correlated_subquery
+            and _has_aggregate_projection(parent)
+        ):
+            # Clauses evaluated after aggregation see the single empty-input row, where
+            # replacing (SELECT 1) with MAX(joined_column) changes 1 to NULL.
+            if not _has_plain_explicit_group(parent) and _is_post_aggregation(select, parent):
+                continue
+
         if scope.external_columns:
             # a correlated set operation branch can't be hoisted out on its own
             if scope.scope_type != ScopeType.SET_OPERATION:
@@ -225,6 +244,17 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if isinstance(on_clause_ancestor, exp.Join) and on_clause_join_index is None:
         return
 
+    # Fallback when the LEFT JOIN finds no matching group.
+    empty_value = exp.null()
+    is_global_group = False
+    value = select.selects[0]
+    projection = value.unalias().unnest()
+    is_subquery_projection = any(
+        node is select.parent
+        for node in map(lambda s: s.unalias(), parent_select.selects)
+        if isinstance(node, exp.Subquery)
+    )
+
     if isinstance(parent_predicate, exp.Exists):
         if select.args.get("having") or select.args.get("qualify"):
             return
@@ -241,6 +271,40 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
         elif not _is_plain_group(group):
             return
+    elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
+        group = select.args.get("group")
+        is_global_group = _is_global_group(select)
+        if is_global_group:
+            group = None
+        elif group and not _has_plain_explicit_group(select):
+            return
+
+        if find_in_scope(value, exp.Window):
+            return
+
+        if find_in_scope(value, exp.AggFunc):
+            if (
+                not value.alias
+                or len(select.selects) != 1
+                or not _is_supported_scalar_aggregate(projection)
+                or select.args.get("having")
+                or select.args.get("qualify")
+                or select.args.get("windows")
+            ):
+                return
+
+            # Explicit grouping has no scalar aggregate row on empty input.
+            if not group and not isinstance(projection, (exp.Sum, exp.Avg, exp.Min, exp.Max)):
+                empty_value = projection.transform(_remove_aggs)
+
+    # The joined value would be neither grouped nor aggregated in the outer query
+    parent_group = parent_select.args.get("group")
+    if (
+        parent_group
+        and not parent_group.args.get("all")
+        and _is_post_aggregation(select, parent_select)
+    ):
+        return
 
     table_alias = next_alias_name()
     keys = []
@@ -283,13 +347,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if not eq_count or (len(keys) > eq_count and not isinstance(parent_predicate, exp.Exists)):
         return
 
-    is_subquery_projection = any(
-        node is select.parent
-        for node in map(lambda s: s.unalias(), parent_select.selects)
-        if isinstance(node, exp.Subquery)
-    )
-
-    value = select.selects[0]
     key_aliases = {}
     group_by = []
 
@@ -402,18 +459,18 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
-        # COUNT always returns 0 on empty datasets, so we need take that into consideration here
-        # by transforming all counts into 0 and using that as the coalesced value
-        if find_in_scope(value, exp.Count):
-
-            def remove_aggs(node):
-                if isinstance(node, exp.Count):
-                    return exp.Literal.number(0)
-                elif isinstance(node, exp.AggFunc):
-                    return exp.null()
-                return node
-
-            alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
+        if isinstance(projection, exp.Count) and not isinstance(empty_value, exp.Null):
+            # A matched COUNT is never NULL, so only a missing group needs the fallback
+            alias = exp.Coalesce(this=alias, expressions=[empty_value])
+        elif not isinstance(empty_value, exp.Null):
+            # A matched group may return NULL. Its equality-join key cannot be NULL,
+            # so use that key to detect a missing group.
+            key = exp.column(next(key_aliases[key] for key in group_by), table_alias)
+            alias = (
+                exp.case()
+                .when(key.is_(exp.null()), empty_value, copy=False)
+                .else_(alias, copy=False)
+            )
 
         if is_subquery_projection and select.parent.alias:
             alias = exp.alias_(alias, select.parent.alias)
@@ -445,6 +502,10 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         parent_predicate = _replace(
             parent_predicate, exp.paren(exp.and_(parent_predicate.copy(), right, copy=False))
         )
+
+    if is_global_group:
+        # The join keys replace the no-op grouping
+        select.set("group", None)
 
     parent_select.join(
         select.group_by(*group_by, copy=False),
@@ -481,6 +542,103 @@ def _is_plain_group(group: exp.Group) -> bool:
         or (isinstance(e, exp.Tuple) and not e.expressions)
         for e in group.expressions
     )
+
+
+def _has_plain_explicit_group(select: exp.Select) -> bool:
+    # Without one, an aggregate can return a row for empty input; GROUP BY ALL may be a no-op
+    group = select.args.get("group")
+    return isinstance(group, exp.Group) and not group.args.get("all") and _is_plain_group(group)
+
+
+def _is_global_group(select: exp.Select) -> bool:
+    # GROUP BY () and GROUP BY ALL over aggregate-only projections still aggregate the whole input
+    group = select.args.get("group")
+    if not isinstance(group, exp.Group) or not all(
+        find_in_scope(projection, exp.AggFunc) for projection in select.selects
+    ):
+        return False
+    if group.args.get("all"):
+        return not group.expressions
+    return (
+        bool(group.expressions)
+        and all(isinstance(e, exp.Tuple) and not e.expressions for e in group.expressions)
+        and not any(group.args.get(arg) for arg in ("grouping_sets", "cube", "rollup", "totals"))
+    )
+
+
+def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
+    node: exp.Expr | None = expression
+    while node is not None and node.parent is not select:
+        node = node.parent
+    return node is not None and node.arg_key not in _PRE_AGGREGATION_ARGS
+
+
+def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
+    expression = expression.unnest()
+    if isinstance(expression, exp.Count):
+        argument = expression.this
+        if isinstance(argument, exp.Paren):
+            argument = argument.unnest()
+        if isinstance(argument, exp.Neg):
+            while isinstance(argument, (exp.Neg, exp.Paren)):
+                argument = argument.this
+            return argument.is_number and not expression.expressions
+        return (
+            argument is None
+            or (isinstance(argument, exp.Star) and not any(argument.args.values()))
+            or (isinstance(argument, exp.Column) and not argument.is_star)
+            or isinstance(argument, exp.NONNULL_CONSTANTS)
+        ) and not expression.expressions
+    if isinstance(expression, (exp.Sum, exp.Avg, exp.Min, exp.Max)):
+        argument = expression.this.unnest()
+        return (
+            isinstance(argument, exp.Column) and not argument.is_star and not expression.expressions
+        )
+    if isinstance(expression, exp.Coalesce):
+        return (
+            not expression.args.get("is_nvl")
+            and not expression.args.get("is_null")
+            and len(expression.expressions) == 1
+            and _is_int_literal(expression.expressions[0])
+            and isinstance(expression.this.unnest(), exp.Sum)
+            and _is_supported_scalar_aggregate(expression.this)
+        )
+    if isinstance(expression, exp.Case) and not expression.this:
+        branches = expression.args.get("ifs") or []
+        if len(branches) == 1:
+            condition = branches[0].this.unnest()
+            return (
+                isinstance(condition, (exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE))
+                and isinstance(condition.this.unnest(), exp.Count)
+                and isinstance(condition.this.unnest().this, exp.Star)
+                and _is_supported_scalar_aggregate(condition.this)
+                and _is_int_literal(condition.expression)
+                and all(
+                    result is not None
+                    and (
+                        _is_int_literal(result)
+                        or (
+                            isinstance(result.unnest(), exp.Sum)
+                            and _is_supported_scalar_aggregate(result)
+                        )
+                    )
+                    for result in (branches[0].args.get("true"), expression.args.get("default"))
+                )
+            )
+    return False
+
+
+def _is_int_literal(expression: exp.Expr) -> bool:
+    expression = expression.unnest()
+    return isinstance(expression, exp.Literal) and expression.is_int
+
+
+def _remove_aggs(node: exp.Expr) -> exp.Expr:
+    if isinstance(node, exp.Count):
+        return exp.Literal.number(0)
+    if isinstance(node, exp.Sum):
+        return exp.null()
+    return node
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:

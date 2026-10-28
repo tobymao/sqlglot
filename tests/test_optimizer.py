@@ -2018,6 +2018,92 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
 
+    def test_unnest_subqueries_scalar_aggregates(self):
+        schema = {
+            "x": {"a": "INT"},
+            "y": {"k": "INT", "v": "INT", "d": "DATE", "i": "INTERVAL"},
+        }
+        sources = {
+            "CASE WHEN MAX(t.one) = 1 THEN SUM(y.v) ELSE 88 END": (
+                "y CROSS JOIN (SELECT 1 AS one) AS t"
+            ),
+        }
+        decorrelated = (
+            "COUNT(*)",
+            "COUNT()",
+            "COUNT(y.v)",
+            "COUNT(1)",
+            "COUNT(2)",
+            "COUNT(0)",
+            "COUNT(1.5)",
+            "COUNT(-(2))",
+            "COUNT('NULL')",
+            "COUNT(FALSE)",
+            "SUM(y.v)",
+            "AVG(y.v)",
+            "MIN(y.v)",
+            "MAX(y.v)",
+            "COALESCE(SUM(y.v), 7)",
+            "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) ELSE 99 END",
+            "CASE WHEN COUNT(*) = 0 THEN SUM(y.v) ELSE 99 END",
+            "CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(y.v) END",
+            "CASE WHEN COUNT(*) > 1 THEN 1 ELSE 0 END",
+        )
+        correlated = (
+            "COUNT(NULL)",
+            "MAX(y.v, 2)",
+            "COALESCE(MAX(y.v), 7)",
+            "COALESCE(MIN(y.v), 7)",
+            "MIN(y.v) FILTER(WHERE y.v > 10)",
+            "CASE WHEN COUNT(y.v) >= 1 THEN SUM(y.v) ELSE 99 END",
+            "CASE WHEN COUNT(1) >= 1 THEN SUM(y.v) ELSE 99 END",
+            "CASE WHEN COUNT(2) >= 1 THEN SUM(y.v) ELSE 99 END",
+            "COALESCE(SUM(y.v), SUM(y.k))",
+            "COALESCE(SUM(y.v), '7')",
+            "COALESCE(SUM(y.v), CAST(NULL AS BIGINT))",
+            "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) END",
+            "CASE MAX(y.v) WHEN 20 THEN 1 ELSE 2 END",
+            "IF(COUNT(*) >= 1, SUM(y.v), SUM(y.k))",
+            "NULLIF(COALESCE(APPROX_COUNT_DISTINCT(y.v), 7), 0)",
+            "CASE WHEN TYPEOF(SUM(y.v)) = 'HUGEINT' THEN NULL ELSE 1 END",
+            "NULLIF(TYPEOF(SUM(y.v)), 'HUGEINT')",
+            "CASE WHEN (SELECT 1) = 1 THEN SUM(y.v) ELSE 88 END",
+            "CASE WHEN (SELECT 1) = 1 THEN COALESCE(SUM(y.v), 7) ELSE 88 END",
+            "CASE WHEN MAX(t.one) = 1 THEN SUM(y.v) ELSE 88 END",
+            "DATE_TRUNC('day', MAX(y.d))",
+            "DATE_TRUNC('day', ((MAX(y.d))))",
+            "DATE_TRUNC('day', (MAX(y.d) FILTER (WHERE y.v > 2)))",
+            "MAX(y.i) * 2",
+            "MAX(y.i) / 2",
+            "MAX(y.i) + INTERVAL '1 day'",
+        )
+
+        for decorrelates, projections in ((True, decorrelated), (False, correlated)):
+            for projection in projections:
+                sql = (
+                    f"SELECT x.a, (SELECT {projection} FROM {sources.get(projection, 'y')} "
+                    "WHERE y.k = x.a) AS s FROM x ORDER BY x.a"
+                )
+                qualified = qualify(parse_one(sql, read="duckdb"), schema=schema, dialect="duckdb")
+                annotated = annotate_types(qualified.copy(), schema=schema, dialect="duckdb")
+                unnested = optimizer.unnest_subqueries.unnest_subqueries(qualified.copy())
+                expressions = {
+                    "unnest": unnested,
+                    "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+                    "optimize": optimizer.optimize(sql, schema=schema, dialect="duckdb"),
+                    "optimize_annotated": optimizer.optimize(
+                        annotated.copy(), schema=schema, dialect="duckdb"
+                    ),
+                }
+                for mode, expression in expressions.items():
+                    with self.subTest(projection=projection, mode=mode):
+                        self.assertEqual(
+                            decorrelates,
+                            not any(scope.external_columns for scope in traverse_scope(expression)),
+                        )
+                with self.subTest(projection=projection, mode="annotation-independent"):
+                    self.assertEqual(unnested.sql(), expressions["annotated"].sql())
+
     def test_optimize_subqueries_in_join_on(self):
         for sql in (
             "SELECT x.a, y.b FROM x LEFT JOIN y ON x.a = y.b "

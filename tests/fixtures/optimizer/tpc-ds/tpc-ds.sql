@@ -36,25 +36,22 @@ WITH "customer_total_return" AS (
   GROUP BY
     "store_returns"."sr_customer_sk",
     "store_returns"."sr_store_sk"
-), "_u_0" AS (
-  SELECT
-    AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0",
-    "ctr2"."ctr_store_sk" AS "_u_1"
-  FROM "customer_total_return" AS "ctr2"
-  GROUP BY
-    "ctr2"."ctr_store_sk"
 )
 SELECT
   "customer"."c_customer_id" AS "c_customer_id"
 FROM "customer_total_return" AS "ctr1"
-JOIN "store" AS "store"
-  ON "ctr1"."ctr_store_sk" = "store"."s_store_sk" AND "store"."s_state" = 'TN'
 JOIN "customer" AS "customer"
   ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_store_sk"
+JOIN "store" AS "store"
+  ON "ctr1"."ctr_store_sk" = "store"."s_store_sk" AND "store"."s_state" = 'TN'
 WHERE
-  "_u_0"."_col_0" < "ctr1"."ctr_total_return"
+  "ctr1"."ctr_total_return" > (
+    SELECT
+      AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0"
+    FROM "customer_total_return" AS "ctr2"
+    WHERE
+      "ctr1"."ctr_store_sk" = "ctr2"."ctr_store_sk"
+  )
 ORDER BY
   "c_customer_id"
 LIMIT 100;
@@ -4114,13 +4111,6 @@ WITH "customer_total_return" AS (
   GROUP BY
     "web_returns"."wr_returning_customer_sk",
     "customer_address"."ca_state"
-), "_u_0" AS (
-  SELECT
-    AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0",
-    "ctr2"."ctr_state" AS "_u_1"
-  FROM "customer_total_return" AS "ctr2"
-  GROUP BY
-    "ctr2"."ctr_state"
 )
 SELECT
   "customer"."c_customer_id" AS "c_customer_id",
@@ -4137,15 +4127,19 @@ SELECT
   "customer"."c_last_review_date" AS "c_last_review_date",
   "ctr1"."ctr_total_return" AS "ctr_total_return"
 FROM "customer_total_return" AS "ctr1"
-JOIN "customer_address" AS "customer_address"
-  ON "customer_address"."ca_state" = 'IN'
 JOIN "customer" AS "customer"
   ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
-  AND "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
+JOIN "customer_address" AS "customer_address"
+  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
+  AND "customer_address"."ca_state" = 'IN'
 WHERE
-  "_u_0"."_col_0" < "ctr1"."ctr_total_return"
+  "ctr1"."ctr_total_return" > (
+    SELECT
+      AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0"
+    FROM "customer_total_return" AS "ctr2"
+    WHERE
+      "ctr1"."ctr_state" = "ctr2"."ctr_state"
+  )
 ORDER BY
   "c_customer_id",
   "c_salutation",
@@ -4368,15 +4362,6 @@ WITH "catalog_sales_2" AS (
   WHERE
     "date_dim"."d_date" >= '2001-03-04'
     AND CAST("date_dim"."d_date" AS DATE) <= CAST('2001-06-02' AS DATE)
-), "_u_0" AS (
-  SELECT
-    1.3 * AVG("catalog_sales"."cs_ext_discount_amt") AS "_col_0",
-    "catalog_sales"."cs_item_sk" AS "_u_1"
-  FROM "catalog_sales_2" AS "catalog_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-  GROUP BY
-    "catalog_sales"."cs_item_sk"
 )
 SELECT
   SUM("catalog_sales"."cs_ext_discount_amt") AS "excess discount amount"
@@ -4385,11 +4370,16 @@ JOIN "item" AS "item"
   ON "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
   AND "item"."i_manufact_id" = 610
 JOIN "date_dim_2" AS "date_dim"
-  ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "item"."i_item_sk"
-WHERE
-  "_u_0"."_col_0" < "catalog_sales"."cs_ext_discount_amt"
+  ON "catalog_sales"."cs_ext_discount_amt" > (
+    SELECT
+      1.3 * AVG("catalog_sales"."cs_ext_discount_amt") AS "_col_0"
+    FROM "catalog_sales_2" AS "catalog_sales"
+    JOIN "date_dim_2" AS "date_dim"
+      ON "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
+    WHERE
+      "catalog_sales"."cs_item_sk" = "item"."i_item_sk"
+  )
+  AND "catalog_sales"."cs_sold_date_sk" = "date_dim"."d_date_sk"
 LIMIT 100;
 
 --------------------------------------
@@ -11515,13 +11505,6 @@ WITH "customer_total_return" AS (
   GROUP BY
     "catalog_returns"."cr_returning_customer_sk",
     "customer_address"."ca_state"
-), "_u_0" AS (
-  SELECT
-    AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0",
-    "ctr2"."ctr_state" AS "_u_1"
-  FROM "customer_total_return" AS "ctr2"
-  GROUP BY
-    "ctr2"."ctr_state"
 )
 SELECT
   "customer"."c_customer_id" AS "c_customer_id",
@@ -11541,15 +11524,19 @@ SELECT
   "customer_address"."ca_location_type" AS "ca_location_type",
   "ctr1"."ctr_total_return" AS "ctr_total_return"
 FROM "customer_total_return" AS "ctr1"
-JOIN "customer_address" AS "customer_address"
-  ON "customer_address"."ca_state" = 'TX'
 JOIN "customer" AS "customer"
   ON "ctr1"."ctr_customer_sk" = "customer"."c_customer_sk"
-  AND "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "ctr1"."ctr_state"
+JOIN "customer_address" AS "customer_address"
+  ON "customer"."c_current_addr_sk" = "customer_address"."ca_address_sk"
+  AND "customer_address"."ca_state" = 'TX'
 WHERE
-  "_u_0"."_col_0" < "ctr1"."ctr_total_return"
+  "ctr1"."ctr_total_return" > (
+    SELECT
+      AVG("ctr2"."ctr_total_return") * 1.2 AS "_col_0"
+    FROM "customer_total_return" AS "ctr2"
+    WHERE
+      "ctr1"."ctr_state" = "ctr2"."ctr_state"
+  )
 ORDER BY
   "c_customer_id",
   "c_salutation",
@@ -12683,15 +12670,6 @@ WITH "web_sales_2" AS (
   WHERE
     "date_dim"."d_date" >= '2002-03-29'
     AND CAST("date_dim"."d_date" AS DATE) <= CAST('2002-06-27' AS DATE)
-), "_u_0" AS (
-  SELECT
-    1.3 * AVG("web_sales"."ws_ext_discount_amt") AS "_col_0",
-    "web_sales"."ws_item_sk" AS "_u_1"
-  FROM "web_sales_2" AS "web_sales"
-  JOIN "date_dim_2" AS "date_dim"
-    ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
-  GROUP BY
-    "web_sales"."ws_item_sk"
 )
 SELECT
   SUM("web_sales"."ws_ext_discount_amt") AS "Excess Discount Amount"
@@ -12700,10 +12678,15 @@ JOIN "item" AS "item"
   ON "item"."i_item_sk" = "web_sales"."ws_item_sk" AND "item"."i_manufact_id" = 718
 JOIN "date_dim_2" AS "date_dim"
   ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "_u_0"."_u_1" = "item"."i_item_sk"
-WHERE
-  "_u_0"."_col_0" < "web_sales"."ws_ext_discount_amt"
+  AND "web_sales"."ws_ext_discount_amt" > (
+    SELECT
+      1.3 * AVG("web_sales"."ws_ext_discount_amt") AS "_col_0"
+    FROM "web_sales_2" AS "web_sales"
+    JOIN "date_dim_2" AS "date_dim"
+      ON "date_dim"."d_date_sk" = "web_sales"."ws_sold_date_sk"
+    WHERE
+      "item"."i_item_sk" = "web_sales"."ws_item_sk"
+  )
 ORDER BY
   SUM("web_sales"."ws_ext_discount_amt")
 LIMIT 100;

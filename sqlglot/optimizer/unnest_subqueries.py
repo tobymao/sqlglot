@@ -19,11 +19,17 @@ def unnest_subqueries(expression: E) -> E:
     forms), SUM, integer-anchored COALESCE(SUM), and searched COUNT(*)/SUM CASE projections without
     replacing matched NULLs. Bare AVG/MIN/MAX, numeric-literal multiplication of bare SUM/AVG,
     and CASE projections with only SUM results use the existing nullable-result passthrough.
+    A non-null marker distinguishes missing groups from matched composite keys with NULL fields.
     Grouping may evaluate arithmetic for inner groups unused by the outer query.
     Keep uncertain aggregate defaults and scalar result types correlated rather than inferring casts.
     Leave correlated subqueries without projections unchanged.
-    Subqueries in query-aggregate arguments can decorrelate before grouping, while window
-    arguments remain subject to post-group placement restrictions.
+    Global scalar HAVING stays correlated even when aggregates occur only in HAVING.
+    Subqueries in query-aggregate arguments and FILTER predicates can decorrelate before grouping.
+    Window aggregate arguments and FILTER predicates remain subject to post-group restrictions.
+    Only bare GROUP BY ALL infers grouping from new projections; ALL with explicit grouping
+    still restricts post-aggregation subqueries.
+    Do not decorrelate IN/ANY/ALL subqueries whose scope has aggregates, GROUP BY or HAVING,
+    including window aggregates but not aggregates confined to nested queries.
 
     Example:
         >>> import sqlglot
@@ -216,6 +222,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
         return
 
+    if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)) and (
+        select.args.get("group") or select.args.get("having") or find_in_scope(select, exp.AggFunc)
+    ):
+        return
+
     # determine location of join that owns the ON clause whose subquery we will decorrelate
     on_clause_join_index = None
     on_clause_ancestor = (
@@ -278,6 +289,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         elif group and not _has_plain_explicit_group(select):
             return
 
+        if not group and select.args.get("having"):
+            return
+
         if find_in_scope(value, exp.Window):
             return
 
@@ -313,7 +327,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     parent_group = parent_select.args.get("group")
     if (
         parent_group
-        and not parent_group.args.get("all")
+        and (
+            not parent_group.args.get("all")
+            or parent_group.expressions
+            or not _is_plain_group(parent_group)
+        )
         and _is_post_aggregation(select, parent_select)
     ):
         return
@@ -475,12 +493,14 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             # A matched COUNT is never NULL, so only a missing group needs the fallback
             alias = exp.Coalesce(this=alias, expressions=[empty_value])
         elif not isinstance(empty_value, exp.Null):
-            # A matched group may return NULL. Its equality-join key cannot be NULL,
-            # so use that key to detect a missing group.
-            key = exp.column(next(key_aliases[key] for key in group_by), table_alias)
+            # A composite key can match while still satisfying IS NULL.
+            match_alias = next_alias_name()
+            if match_alias == value.alias:
+                match_alias = next_alias_name()
+            select.select(exp.alias_(exp.Literal.number(1), match_alias), copy=False)
             alias = (
                 exp.case()
-                .when(key.is_(exp.null()), empty_value, copy=False)
+                .when(exp.column(match_alias, table_alias).is_(exp.null()), empty_value, copy=False)
                 .else_(alias, copy=False)
             )
 
@@ -579,7 +599,9 @@ def _is_global_group(select: exp.Select) -> bool:
 
 
 def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
-    ancestor = expression.find_ancestor(exp.AggFunc, exp.Select)
+    ancestor = expression.find_ancestor(exp.AggFunc, exp.Filter, exp.Select)
+    if isinstance(ancestor, exp.Filter):
+        ancestor = ancestor.this.unnest()
     if isinstance(ancestor, exp.AggFunc):
         # FILTER, IGNORE NULLS and parentheses can wrap a window aggregate.
         while (

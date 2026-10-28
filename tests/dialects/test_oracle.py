@@ -1102,6 +1102,16 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_identity("REVOKE EXECUTE ON PROCEDURE p FROM george")
         self.validate_identity("REVOKE USAGE ON SEQUENCE order_id FROM sales_role")
 
+    def test_add_months(self):
+        self.validate_all(
+            "SELECT ADD_MONTHS(DATE '2024-02-29', 1)",
+            write={
+                "duckdb": "SELECT CAST(CASE WHEN LAST_DAY(CAST('2024-02-29' AS DATE)) = CAST('2024-02-29' AS DATE) THEN LAST_DAY(CAST('2024-02-29' AS DATE) + INTERVAL 1 MONTH) ELSE CAST('2024-02-29' AS DATE) + INTERVAL 1 MONTH END AS DATE)",
+                "oracle": "SELECT ADD_MONTHS(TO_DATE('2024-02-29', 'YYYY-MM-DD'), 1)",
+                "snowflake": "SELECT ADD_MONTHS(CAST('2024-02-29' AS DATE), 1)",
+            },
+        )
+
     def test_datetrunc(self):
         self.validate_all(
             "TRUNC(SYSDATE, 'YEAR')",

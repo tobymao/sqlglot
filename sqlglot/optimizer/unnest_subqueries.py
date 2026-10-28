@@ -15,21 +15,6 @@ def unnest_subqueries(expression: E) -> E:
     Convert scalar subqueries into cross joins.
     Convert correlated or vectorized subqueries into a group by so it is not a many to many left join.
 
-    Preserve empty-input values for bare COUNT (columns, single-column DISTINCT or row-counting
-    forms), SUM, integer-anchored COALESCE(SUM), and searched COUNT(*)/SUM CASE projections without
-    replacing matched NULLs. Bare AVG/MIN/MAX, numeric-literal multiplication of bare SUM/AVG,
-    and CASE projections with only SUM results use the existing nullable-result passthrough.
-    A non-null marker distinguishes missing groups from matched composite keys with NULL fields.
-    Grouping may evaluate arithmetic for inner groups unused by the outer query.
-    Keep uncertain aggregate defaults and scalar result types correlated rather than inferring casts.
-    Leave correlated subqueries without projections unchanged.
-    Global scalar HAVING stays correlated even when aggregates occur only in HAVING.
-    Subqueries in query-aggregate arguments and FILTER predicates can decorrelate before grouping.
-    Window aggregate arguments and FILTER predicates remain subject to post-group restrictions.
-    Only bare GROUP BY ALL infers grouping from new projections; ALL with explicit grouping
-    still restricts post-aggregation subqueries.
-    Do not decorrelate IN/ANY/ALL subqueries whose scope has aggregates, GROUP BY or HAVING,
-    including window aggregates but not aggregates confined to nested queries.
 
     Example:
         >>> import sqlglot
@@ -54,7 +39,10 @@ def unnest_subqueries(expression: E) -> E:
             scope.parent
             and scope.parent.expression is parent
             and scope.parent.is_correlated_subquery
-            and _has_aggregate_projection(parent)
+            and (
+                _has_aggregate_projection(parent)
+                or ((having := parent.args.get("having")) and find_in_scope(having, exp.AggFunc))
+            )
         ):
             # Clauses evaluated after aggregation see the single empty-input row, where
             # replacing (SELECT 1) with MAX(joined_column) changes 1 to NULL.
@@ -495,7 +483,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         elif not isinstance(empty_value, exp.Null):
             # A composite key can match while still satisfying IS NULL.
             match_alias = next_alias_name()
-            if match_alias == value.alias:
+            if match_alias == value.alias.lower():
                 match_alias = next_alias_name()
             select.select(exp.alias_(exp.Literal.number(1), match_alias), copy=False)
             alias = (
@@ -590,7 +578,7 @@ def _is_global_group(select: exp.Select) -> bool:
     ):
         return False
     if group.args.get("all"):
-        return not group.expressions
+        return not group.expressions and _is_plain_group(group)
     return (
         bool(group.expressions)
         and all(isinstance(e, exp.Tuple) and not e.expressions for e in group.expressions)

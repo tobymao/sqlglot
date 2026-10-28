@@ -2130,6 +2130,36 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         any(scope.external_columns for scope in traverse_scope(expression)),
                     )
 
+    def test_unnest_subqueries_group_by_all_metadata(self):
+        grouping_sets = exp.GroupingSets(expressions=[exp.Paren(this=exp.column("c", "y"))])
+        for dialect, group, correlated in (
+            ("postgres", exp.Group(all=True, grouping_sets=[grouping_sets.copy()]), True),
+            ("postgres", exp.Group(all=True, expressions=[grouping_sets.copy()]), True),
+            ("duckdb", exp.Group(all=True), False),
+        ):
+            query = parse_one(
+                "SELECT x.a, (SELECT COALESCE(SUM(y.c), 0) AS s "
+                "FROM y WHERE y.b = x.a) AS s FROM x",
+                read=dialect,
+            )
+            query.find(exp.Subquery).this.set("group", group)
+            qualified = qualify(query.copy(), schema=self.schema, dialect=dialect)
+            annotated = annotate_types(qualified.copy(), schema=self.schema, dialect=dialect)
+            expressions = {
+                "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
+                "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+                "optimize": optimizer.optimize(query, schema=self.schema, dialect=dialect),
+                "optimize_annotated": optimizer.optimize(
+                    annotated, schema=self.schema, dialect=dialect
+                ),
+            }
+            for mode, expression in expressions.items():
+                with self.subTest(group=repr(group), mode=mode):
+                    self.assertEqual(
+                        correlated,
+                        any(scope.external_columns for scope in traverse_scope(expression)),
+                    )
+
     def test_unnest_subqueries_scalar_aggregates(self):
         schema = {
             "x": {"a": "INT"},
@@ -2246,7 +2276,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_unnest_subqueries_having_only_aggregates(self):
         for group in ("", "GROUP BY ()", "GROUP BY ALL", "GROUP BY y.b"):
-            for having in ("COUNT(*) = 0", "COUNT(y.c) = 0", "COUNT(*) > 0"):
+            for having in (
+                "COUNT(*) = 0",
+                "COUNT(y.c) = 0",
+                "COUNT(*) > 0",
+                "COUNT(*) = 0 AND (SELECT 1) = 1",
+                "COUNT(y.c) = 0 AND (SELECT 1) = 1",
+            ):
                 sql = (
                     f"SELECT x.a, (SELECT 1 AS v FROM y WHERE y.b = x.a {group} "
                     f"HAVING {having}) AS s FROM x"
@@ -2269,6 +2305,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                             group != "GROUP BY y.b",
                             any(scope.external_columns for scope in traverse_scope(expression)),
                         )
+                        if "(SELECT 1)" in having:
+                            self.assertEqual(
+                                group != "GROUP BY y.b",
+                                any(
+                                    clause.find(exp.Subquery)
+                                    for clause in expression.find_all(exp.Having)
+                                ),
+                            )
 
     def test_unnest_subqueries_quantified_aggregates(self):
         for correlated, subqueries in (
@@ -2338,6 +2382,31 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for mode, expression in expressions.items():
             with self.subTest(mode=mode):
                 self.assertTrue(any(scope.external_columns for scope in traverse_scope(expression)))
+
+    def test_unnest_subqueries_scalar_aggregate_marker_alias(self):
+        for alias in ("_U_2", "_u_2", "s"):
+            raw = parse_one(
+                "SELECT x.a, (SELECT CASE WHEN COUNT(*) >= 1 THEN SUM(y.c) ELSE 99 END "
+                f'AS "{alias}" FROM y WHERE y.b = x.a) AS s FROM x',
+                read="duckdb",
+            )
+            qualified = optimizer.qualify_columns.qualify_columns(
+                optimizer.qualify_tables.qualify_tables(raw.copy()),
+                schema=self.schema,
+                dialect="duckdb",
+            )
+            for mode, expression in (("raw", raw), ("qualified", qualified)):
+                with self.subTest(alias=alias, mode=mode):
+                    expression = optimizer.unnest_subqueries.unnest_subqueries(expression)
+                    self.assertFalse(
+                        any(scope.external_columns for scope in traverse_scope(expression))
+                    )
+                    grouped = expression.find(exp.Group).parent
+                    names = [projection.alias.lower() for projection in grouped.selects]
+                    self.assertEqual(len(names), len(set(names)))
+                    self.assertEqual(
+                        grouped.selects[0].args["alias"], exp.to_identifier(alias, quoted=True)
+                    )
 
     def test_unnest_subqueries_scalar_aggregate_null_case(self):
         sql = (

@@ -2004,6 +2004,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_subqueries_empty_projection(self):
+        for op in (">", "="):
+            sql = f"SELECT x.a FROM x WHERE EXISTS (SELECT FROM y WHERE y.b {op} x.a)"
+            qualified = qualify(
+                parse_one(sql, read="postgres"), schema=self.schema, dialect="postgres"
+            )
+            annotated = annotate_types(qualified.copy(), schema=self.schema, dialect="postgres")
+            expressions = {
+                "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
+                "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+                "optimize": optimizer.optimize(sql, schema=self.schema, dialect="postgres"),
+                "optimize_annotated": optimizer.optimize(
+                    annotated, schema=self.schema, dialect="postgres"
+                ),
+            }
+            for mode, expression in expressions.items():
+                with self.subTest(op=op, mode=mode):
+                    self.assertTrue(
+                        any(scope.external_columns for scope in traverse_scope(expression))
+                    )
+
     def test_optimize_subqueries_in_aggregates(self):
         for projection in (
             "SUM(CASE WHEN x.a = (SELECT LENGTH(w.d) FROM w WHERE w.e = 'b') THEN 1 ELSE 0 END)",
@@ -2017,6 +2038,47 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(sql).fetchall(),
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
+
+    def test_unnest_subqueries_aggregate_arguments(self):
+        subquery = "(SELECT MAX(y.c) FROM y WHERE y.b = x.a)"
+        argument = f"CASE WHEN {subquery} > 0 THEN 1 ELSE 0 END"
+        decorrelated = (
+            f"SELECT x.b, SUM({argument}) FROM x GROUP BY x.b",
+            f"SELECT x.b, COALESCE(SUM({argument}), 0) FROM x GROUP BY x.b",
+            f"SELECT x.b, SUM({argument}) FILTER(WHERE x.a > 0) FROM x GROUP BY x.b",
+            f"SELECT x.b, SUM(SUM({argument})) OVER () FROM x GROUP BY x.b",
+            f"SELECT x.b FROM x GROUP BY x.b HAVING SUM({argument}) > 0",
+            f"SELECT x.b FROM x GROUP BY x.b ORDER BY SUM({argument})",
+        )
+        correlated = (
+            f"SELECT x.a, SUM({argument}) OVER () FROM x GROUP BY x.a",
+            f"SELECT x.a, SUM({argument}) FILTER(WHERE x.a > 0) OVER () FROM x GROUP BY x.a",
+            f"SELECT x.a, SUM({argument}) OVER w FROM x GROUP BY x.a WINDOW w AS ()",
+            f"SELECT x.a, SUM(x.b) + {subquery} FROM x GROUP BY x.a",
+            f"SELECT x.a, {subquery} FROM x GROUP BY x.a",
+            f"SELECT x.a FROM x GROUP BY x.a HAVING {subquery} > 0",
+            f"SELECT x.a FROM x GROUP BY x.a ORDER BY {subquery}",
+        )
+        for decorrelates, queries in ((True, decorrelated), (False, correlated)):
+            for sql in queries:
+                qualified = qualify(
+                    parse_one(sql, read="duckdb"), schema=self.schema, dialect="duckdb"
+                )
+                annotated = annotate_types(qualified.copy(), schema=self.schema, dialect="duckdb")
+                expressions = {
+                    "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
+                    "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+                    "optimize": optimizer.optimize(sql, schema=self.schema, dialect="duckdb"),
+                    "optimize_annotated": optimizer.optimize(
+                        annotated, schema=self.schema, dialect="duckdb"
+                    ),
+                }
+                for mode, expression in expressions.items():
+                    with self.subTest(sql=sql, mode=mode):
+                        self.assertEqual(
+                            decorrelates,
+                            not any(scope.external_columns for scope in traverse_scope(expression)),
+                        )
 
     def test_unnest_subqueries_scalar_aggregates(self):
         schema = {
@@ -2032,6 +2094,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "COUNT(*)",
             "COUNT()",
             "COUNT(y.v)",
+            "COUNT(DISTINCT y.v)",
+            "COUNT(DISTINCT ((y.v)))",
             "COUNT(1)",
             "COUNT(2)",
             "COUNT(0)",
@@ -2043,6 +2107,11 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "AVG(y.v)",
             "MIN(y.v)",
             "MAX(y.v)",
+            "0.2 * AVG(y.v)",
+            "SUM(y.v) * 0.5",
+            "((2)) * ((SUM(y.v)))",
+            "AVG(y.v) * 2",
+            "0 * SUM(y.v)",
             "COALESCE(SUM(y.v), 7)",
             "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) ELSE 99 END",
             "CASE WHEN COUNT(*) = 0 THEN SUM(y.v) ELSE 99 END",
@@ -2051,6 +2120,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         correlated = (
             "COUNT(NULL)",
+            "COUNT(DISTINCT y.v + 1)",
+            "COUNT(DISTINCT 1)",
+            "COUNT(DISTINCT y.v) FILTER(WHERE y.v > 10)",
+            "COUNT(DISTINCT y.v) + 1",
+            "COALESCE(COUNT(DISTINCT y.v), 7)",
+            "CASE WHEN COUNT(DISTINCT y.v) >= 1 THEN SUM(y.v) ELSE 99 END",
+            "2 * COUNT(y.v)",
+            "2 * MIN(y.v)",
+            "2 * MAX(y.v)",
+            "2 * SUM(DISTINCT y.v)",
+            "2 * AVG(y.v + 1)",
+            "2 * (SUM(y.v) FILTER(WHERE y.v > 10))",
+            "SUM(y.v) / 2",
+            "SUM(y.v) + 2",
+            "SUM(y.v) * SUM(y.k)",
+            "2 * (3 * SUM(y.v))",
+            "(1 + 2) * SUM(y.v)",
+            "CAST(2 AS INT) * SUM(y.v)",
+            "'2' * SUM(y.v)",
+            "COALESCE(2 * SUM(y.v), 7)",
+            "CASE WHEN COUNT(*) >= 1 THEN 2 * SUM(y.v) ELSE 99 END",
             "MAX(y.v, 2)",
             "COALESCE(MAX(y.v), 7)",
             "COALESCE(MIN(y.v), 7)",
@@ -2103,6 +2193,56 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         )
                 with self.subTest(projection=projection, mode="annotation-independent"):
                     self.assertEqual(unnested.sql(), expressions["annotated"].sql())
+
+    def test_unnest_subqueries_multi_column_distinct_count(self):
+        sql = "SELECT x.a, (SELECT COUNT(DISTINCT y.b, y.c) FROM y WHERE y.b = x.a) AS n FROM x"
+        qualified = qualify(parse_one(sql, read="mysql"), schema=self.schema, dialect="mysql")
+        annotated = annotate_types(qualified.copy(), schema=self.schema, dialect="mysql")
+        expressions = {
+            "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
+            "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+            "optimize": optimizer.optimize(sql, schema=self.schema, dialect="mysql"),
+            "optimize_annotated": optimizer.optimize(
+                annotated, schema=self.schema, dialect="mysql"
+            ),
+        }
+        for mode, expression in expressions.items():
+            with self.subTest(mode=mode):
+                self.assertTrue(any(scope.external_columns for scope in traverse_scope(expression)))
+
+    def test_unnest_subqueries_scalar_aggregate_null_case(self):
+        sql = (
+            "SELECT x.a, (SELECT CASE WHEN COUNT(*) >= 2 THEN SUM(y.c) ELSE SUM(y.b) END "
+            "FROM y WHERE y.b = x.a) AS s FROM x"
+        )
+        for dialect in ("postgres", "tsql"):
+            qualified = qualify(parse_one(sql, read=dialect), schema=self.schema, dialect=dialect)
+            annotated = annotate_types(qualified.copy(), schema=self.schema, dialect=dialect)
+            expressions = {
+                "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
+                "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
+                "optimize": optimizer.optimize(sql, schema=self.schema, dialect=dialect),
+                "optimize_annotated": optimizer.optimize(
+                    annotated, schema=self.schema, dialect=dialect
+                ),
+            }
+            for mode, expression in expressions.items():
+                with self.subTest(dialect=dialect, mode=mode):
+                    self.assertFalse(
+                        any(scope.external_columns for scope in traverse_scope(expression))
+                    )
+                    for case in expression.find_all(exp.Case):
+                        # SQL Server rejects CASE with only NULL constant results.
+                        self.assertTrue(
+                            any(
+                                not isinstance(result.unnest(), exp.Null)
+                                for result in (
+                                    *(branch.args["true"] for branch in case.args["ifs"]),
+                                    case.args.get("default"),
+                                )
+                                if result is not None
+                            )
+                        )
 
     def test_optimize_subqueries_in_join_on(self):
         for sql in (

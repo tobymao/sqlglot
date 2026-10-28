@@ -15,10 +15,15 @@ def unnest_subqueries(expression: E) -> E:
     Convert scalar subqueries into cross joins.
     Convert correlated or vectorized subqueries into a group by so it is not a many to many left join.
 
-    Preserve empty-input values for bare COUNT (columns or row-counting forms), SUM,
-    integer-anchored COALESCE(SUM), and searched COUNT(*)/SUM CASE projections without
-    replacing matched NULLs. Bare AVG/MIN/MAX use the existing nullable-result passthrough.
+    Preserve empty-input values for bare COUNT (columns, single-column DISTINCT or row-counting
+    forms), SUM, integer-anchored COALESCE(SUM), and searched COUNT(*)/SUM CASE projections without
+    replacing matched NULLs. Bare AVG/MIN/MAX, numeric-literal multiplication of bare SUM/AVG,
+    and CASE projections with only SUM results use the existing nullable-result passthrough.
+    Grouping may evaluate arithmetic for inner groups unused by the outer query.
     Keep uncertain aggregate defaults and scalar result types correlated rather than inferring casts.
+    Leave correlated subqueries without projections unchanged.
+    Subqueries in query-aggregate arguments can decorrelate before grouping, while window
+    arguments remain subject to post-group placement restrictions.
 
     Example:
         >>> import sqlglot
@@ -116,18 +121,7 @@ def unnest(select, parent_select, next_alias_name):
                 or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
             )
         ):
-            ancestor = select.parent.find_ancestor(exp.AggFunc, exp.Select)
-            # A window aggregate can still need a grouped MAX in its argument.
-            while (
-                not isinstance(ancestor, exp.Query)
-                and ancestor.parent
-                and ancestor.arg_key == "this"
-                and not isinstance(ancestor.parent, (exp.Func, exp.Window))
-            ):
-                ancestor = ancestor.parent
-            if isinstance(ancestor, exp.Select) or (
-                ancestor.arg_key == "this" and isinstance(ancestor.parent, exp.Window)
-            ):
+            if _is_post_aggregation(select, parent_select):
                 column = exp.Max(this=column)
         elif not isinstance(select.parent, exp.Subquery):
             return
@@ -208,7 +202,12 @@ def unnest(select, parent_select, next_alias_name):
 def decorrelate(select, parent_select, external_columns, next_alias_name):
     where = select.args.get("where")
 
-    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset, exp.Fetch):
+    if (
+        not select.selects
+        or not where
+        or where.find(exp.Or)
+        or select.find(exp.Limit, exp.Offset, exp.Fetch)
+    ):
         return
 
     parent_predicate = select.find_ancestor(exp.Predicate)
@@ -294,7 +293,20 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
 
             # Explicit grouping has no scalar aggregate row on empty input.
-            if not group and not isinstance(projection, (exp.Sum, exp.Avg, exp.Min, exp.Max)):
+            if (
+                not group
+                and not isinstance(projection, (exp.Sum, exp.Avg, exp.Min, exp.Max, exp.Mul))
+                and not (
+                    isinstance(projection, exp.Case)
+                    and all(
+                        isinstance(result.unnest(), exp.Sum)
+                        for result in (
+                            projection.args["ifs"][0].args["true"],
+                            projection.args["default"],
+                        )
+                    )
+                )
+            ):
                 empty_value = projection.transform(_remove_aggs)
 
     # The joined value would be neither grouped nor aggregated in the outer query
@@ -567,6 +579,19 @@ def _is_global_group(select: exp.Select) -> bool:
 
 
 def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
+    ancestor = expression.find_ancestor(exp.AggFunc, exp.Select)
+    if isinstance(ancestor, exp.AggFunc):
+        # FILTER, IGNORE NULLS and parentheses can wrap a window aggregate.
+        while (
+            ancestor.parent is not select
+            and ancestor.parent
+            and ancestor.arg_key == "this"
+            and not isinstance(ancestor.parent, (exp.Func, exp.Window))
+        ):
+            ancestor = ancestor.parent
+        if not (ancestor.arg_key == "this" and isinstance(ancestor.parent, exp.Window)):
+            return False
+
     node: exp.Expr | None = expression
     while node is not None and node.parent is not select:
         node = node.parent
@@ -579,6 +604,12 @@ def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
         argument = expression.this
         if isinstance(argument, exp.Paren):
             argument = argument.unnest()
+        if isinstance(argument, exp.Distinct):
+            if len(argument.expressions) != 1:
+                return False
+            argument = argument.expressions[0].unnest()
+            if not isinstance(argument, exp.Column):
+                return False
         if isinstance(argument, exp.Neg):
             while isinstance(argument, (exp.Neg, exp.Paren)):
                 argument = argument.this
@@ -593,6 +624,16 @@ def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
         argument = expression.this.unnest()
         return (
             isinstance(argument, exp.Column) and not argument.is_star and not expression.expressions
+        )
+    if isinstance(expression, exp.Mul):
+        return any(
+            constant.unnest().is_number
+            and isinstance(aggregate.unnest(), (exp.Sum, exp.Avg))
+            and _is_supported_scalar_aggregate(aggregate)
+            for constant, aggregate in (
+                (expression.this, expression.expression),
+                (expression.expression, expression.this),
+            )
         )
     if isinstance(expression, exp.Coalesce):
         return (

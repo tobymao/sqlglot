@@ -6260,6 +6260,39 @@ SINGLE = TRUE""",
         self.validate_identity("LISTAGG(data['some_field'], ',')")
 
         for distinct in ("", "DISTINCT "):
+            for order in ("", " WITHIN GROUP (ORDER BY col)"):
+                source = f"SELECT LISTAGG({distinct}col){order} FROM t"
+                duckdb_order = " ORDER BY col" if order else ""
+                self.validate_all(
+                    source,
+                    write={
+                        "duckdb": f"SELECT LISTAGG({distinct}col, ''{duckdb_order}) FROM t",
+                        "postgres": f"SELECT STRING_AGG({distinct}col, ''{duckdb_order}) FROM t",
+                    },
+                )
+                expression = self.parse_one(source)
+                self.assertEqual(
+                    expression.find(exp.GroupConcat).args["separator"],
+                    exp.Literal.string(""),
+                )
+                self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
+
+        source = "SELECT LISTAGG(col) OVER (PARTITION BY k) FROM t"
+        self.validate_all(
+            source,
+            write={
+                "duckdb": "SELECT LISTAGG(col, '') OVER (PARTITION BY k) FROM t",
+            },
+        )
+        expression = self.parse_one(source)
+        self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
+
+        self.assertEqual(
+            parse_one("SELECT LISTAGG(col ORDER BY col) FROM t", read="duckdb").sql("duckdb"),
+            "SELECT LISTAGG(col, ',' ORDER BY col) FROM t",
+        )
+
+        for distinct in ("", "DISTINCT "):
             self.validate_all(
                 f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
                 read={

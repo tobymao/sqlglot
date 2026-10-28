@@ -747,7 +747,7 @@ class SnowflakeParser(parser.Parser):
         "DATE_PART": lambda self: self._parse_date_part(),
         "DIRECTORY": lambda self: self._parse_directory(),
         "OBJECT_CONSTRUCT_KEEP_NULL": lambda self: self._parse_object_construct_keep_null(),
-        "LISTAGG": lambda self: self._parse_string_agg(),
+        "LISTAGG": lambda self: self._parse_listagg(),
         "SEMANTIC_VIEW": lambda self: self._parse_semantic_view(),
         "SUBSTR": lambda self: self._parse_substring(),
     }
@@ -1071,6 +1071,12 @@ class SnowflakeParser(parser.Parser):
             # Replace the Table node with the enclosed Identifier
             expression.this.replace(expression.this.this)
 
+        return expression
+
+    def _parse_listagg(self) -> exp.GroupConcat:
+        expression = self._parse_string_agg()
+        if expression.args.get("separator") is None:
+            expression.set("separator", exp.Literal.string(""))
         return expression
 
     def _parse_object_construct_keep_null(self) -> exp.JSONObject:

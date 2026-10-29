@@ -39,6 +39,10 @@ def unnest_subqueries(expression: E) -> E:
             and (
                 _has_aggregate_projection(parent)
                 or ((having := parent.args.get("having")) and find_in_scope(having, exp.AggFunc))
+                or (
+                    (qualify := parent.args.get("qualify"))
+                    and projection_has_aggregate(qualify, parent.args.get("windows"))
+                )
             )
             and not _has_plain_explicit_group(parent)
             and _is_post_aggregation(select, parent)
@@ -263,7 +267,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if group and not _has_plain_explicit_group(select):
             return
 
-        if not group and select.args.get("having"):
+        if not group and (select.args.get("having") or select.args.get("qualify")):
             return
 
         if find_in_scope(value, exp.Window):

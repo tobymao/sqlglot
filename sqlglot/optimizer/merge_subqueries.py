@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
+from sqlglot.optimizer.helpers import is_implicit_group_by_all
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -246,17 +247,7 @@ def _mergeable(
         if outer_args.get("where") or outer_args.get("joins"):
             return True
 
-        group = outer_args.get("group")
-        if (
-            group
-            and group.args.get("all") is True
-            and not (
-                group.expressions
-                or group.args.get("cube")
-                or group.args.get("rollup")
-                or group.args.get("grouping_sets")
-            )
-        ):
+        if is_implicit_group_by_all(t.cast(exp.Select, outer)):
             return True
 
         return any(

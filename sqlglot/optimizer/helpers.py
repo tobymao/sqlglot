@@ -6,6 +6,21 @@ from sqlglot.optimizer.scope import find_in_scope, walk_in_scope
 WINDOW_HAS_AGGREGATE = "window_has_aggregate"
 
 
+def is_implicit_group_by_all(select: exp.Select) -> bool:
+    """Bare GROUP BY ALL infers its keys from the SELECT list, unlike ALL as a
+    grouping-sets modifier (e.g. GROUP BY ALL CUBE (...) or GROUP BY ALL a, b)."""
+    group = select.args.get("group")
+    if not group or not group.args.get("all"):
+        return False
+
+    return not (
+        group.expressions
+        or group.args.get("cube")
+        or group.args.get("rollup")
+        or group.args.get("grouping_sets")
+    )
+
+
 def projection_has_aggregate(
     projection: exp.Expr,
     windows: list[exp.Window] | None = None,

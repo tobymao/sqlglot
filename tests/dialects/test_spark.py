@@ -1162,6 +1162,20 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "LISTAGG(DISTINCT x, '-')",
+            write={
+                "spark": "LISTAGG(DISTINCT x, '-')",
+                "databricks": "LISTAGG(DISTINCT x, '-')",
+            },
+        )
+        self.validate_all(
+            "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            write={
+                "spark": "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
+                "databricks": "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            },
+        )
+        self.validate_all(
             "LIKE(foo, 'pattern')",
             write={
                 "spark": "foo LIKE 'pattern'",

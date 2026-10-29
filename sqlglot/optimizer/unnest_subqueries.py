@@ -198,6 +198,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
         return
 
+    if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)) and (
+        select.args.get("group") or select.args.get("having") or find_in_scope(select, exp.AggFunc)
+    ):
+        return
+
     # determine location of join that owns the ON clause whose subquery we will decorrelate
     on_clause_join_index = None
     on_clause_ancestor = (

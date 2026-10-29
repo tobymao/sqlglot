@@ -201,11 +201,22 @@ class ChangeDistiller:
 
     def _generate_edit_script(self, matchings: dict[int, int], delta_only: bool) -> list[Edit]:
         edit_script: list[Edit] = []
-        for removed_node_id in self._unmatched_source_nodes:
-            edit_script.append(Remove(self._source_index[removed_node_id]))
-        for inserted_node_id in self._unmatched_target_nodes:
-            edit_script.append(Insert(self._target_index[inserted_node_id]))
-        for kept_source_node_id, kept_target_node_id in matchings.items():
+
+        # The unmatched node sets and the matching set are keyed by id(), so iterating them
+        # directly orders the edits by object address, which varies between processes. The
+        # node indexes are built from bfs(), so iterating those instead keeps the edit script
+        # in a stable, tree-order sequence.
+        for removed_node_id in self._source_index:
+            if removed_node_id in self._unmatched_source_nodes:
+                edit_script.append(Remove(self._source_index[removed_node_id]))
+        for inserted_node_id in self._target_index:
+            if inserted_node_id in self._unmatched_target_nodes:
+                edit_script.append(Insert(self._target_index[inserted_node_id]))
+        for kept_source_node_id in self._source_index:
+            kept_target_node_id = matchings.get(kept_source_node_id)
+            if kept_target_node_id is None:
+                continue
+
             source_node = self._source_index[kept_source_node_id]
             target_node = self._target_index[kept_target_node_id]
 

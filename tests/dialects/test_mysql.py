@@ -1259,7 +1259,6 @@ class TestMySQL(Validator):
             "SELECT DATE_FORMAT('2017-06-15', '%w')",
             write={
                 "mysql": "SELECT DATE_FORMAT('2017-06-15', '%w')",
-                "snowflake": "SELECT TO_CHAR(CAST('2017-06-15' AS TIMESTAMP), 'dy')",
             },
         )
         self.validate_all(

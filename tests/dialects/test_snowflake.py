@@ -13,6 +13,54 @@ class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
 
+    def test_time_format_case(self):
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2024-5-9', 'yyyy-mm-DD')",
+            read={
+                "duckdb": "SELECT STRPTIME('2024-5-9', '%Y-%m-%-d')",
+            },
+        )
+        for fmt, duckdb_fmt, snowflake_fmt in (
+            ("Mon", "%b", "mon"),
+            ("mOn", "%b", "mon"),
+            ("Dy", "%a", "DY"),
+            ("dY", "%a", "DY"),
+            ("dy", "%a", "DY"),
+            ("Dd", "%d", "DD"),
+            ("dD", "%d", "DD"),
+            ("dd", "%d", "DD"),
+            ("Mmmm", "%B", "mmmm"),
+            ("mMmM", "%B", "mmmm"),
+            ("DD Mon YYYY", "%d %b %Y", "DD mon yyyy"),
+            ("dDyYyYmM", "%d%Y%m", "DDyyyymm"),
+            ("Yy", "%y", "yy"),
+            ("Mon xZz", "%b xZz", "mon xZz"),
+        ):
+            with self.subTest(fmt=fmt):
+                for func in ("TO_CHAR", "TO_VARCHAR"):
+                    self.validate_all(
+                        f"{func}(DATE '2024-05-09', '{fmt}')",
+                        write={
+                            "duckdb": f"STRFTIME(CAST('2024-05-09' AS DATE), '{duckdb_fmt}')",
+                            "snowflake": f"TO_CHAR(CAST('2024-05-09' AS DATE), '{snowflake_fmt}')",
+                        },
+                    )
+
+        self.validate_all(
+            """TO_CHAR(TIMESTAMP '2024-05-09 13:02:03.123', 'YyYy-Mm-dD"T"Hh24:mI:sS.fF3')""",
+            write={
+                "duckdb": "STRFTIME(CAST('2024-05-09 13:02:03.123' AS TIMESTAMP), '%Y-%m-%dT%H:%M:%S.%g')",
+                "snowflake": "TO_CHAR(CAST('2024-05-09 13:02:03.123' AS TIMESTAMP), 'yyyy-mm-DDThh24:mi:ss.ff3')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-05-09 01:02:03 PM', 'YyYy-Mm-dD Hh12:mI:sS pM')",
+            write={
+                "duckdb": "STRPTIME('2024-05-09 01:02:03 PM', '%Y-%m-%d %I:%M:%S %p')",
+                "snowflake": "TO_TIMESTAMP('2024-05-09 01:02:03 PM', 'yyyy-mm-DD hh12:mi:ss pm')",
+            },
+        )
+
     def test_set_operation_top(self):
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             with self.subTest(op=op):
@@ -4632,7 +4680,8 @@ class TestSnowflake(Validator):
             "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN)))"
         )
         self.validate_identity(
-            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
+            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))",
+            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss'))",
         )
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"

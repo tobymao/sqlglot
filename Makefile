@@ -28,8 +28,8 @@ install-dev:
 	@if [ -f sqlglot-integration-tests/Makefile ]; then \
 		$(MAKE) -C sqlglot-integration-tests install; \
 	fi
+	$(PIP) uninstall $(if $(UV),,-y) sqlglotc 2>/dev/null || true
 	$(PIP) install -e ".[dev]"
-	$(PIP) uninstall -y sqlglotc 2>/dev/null || true
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo ""; \
 		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \

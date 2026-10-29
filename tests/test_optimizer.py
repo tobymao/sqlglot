@@ -2193,12 +2193,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "AVG(y.v) * 2",
             "0 * SUM(y.v)",
             "COALESCE(SUM(y.v), 7)",
+        )
+        correlated = (
             "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) ELSE 99 END",
             "CASE WHEN COUNT(*) = 0 THEN SUM(y.v) ELSE 99 END",
             "CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(y.v) END",
             "CASE WHEN COUNT(*) > 1 THEN 1 ELSE 0 END",
-        )
-        correlated = (
+            "CASE WHEN COUNT(*) >= 2 THEN SUM(y.v) ELSE SUM(y.k) END",
             "COUNT(NULL)",
             "COUNT(DISTINCT y.v + 1)",
             "COUNT(DISTINCT 1)",
@@ -2382,65 +2383,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for mode, expression in expressions.items():
             with self.subTest(mode=mode):
                 self.assertTrue(any(scope.external_columns for scope in traverse_scope(expression)))
-
-    def test_unnest_subqueries_scalar_aggregate_marker_alias(self):
-        for alias in ("_U_2", "_u_2", "s"):
-            raw = parse_one(
-                "SELECT x.a, (SELECT CASE WHEN COUNT(*) >= 1 THEN SUM(y.c) ELSE 99 END "
-                f'AS "{alias}" FROM y WHERE y.b = x.a) AS s FROM x',
-                read="duckdb",
-            )
-            qualified = optimizer.qualify_columns.qualify_columns(
-                optimizer.qualify_tables.qualify_tables(raw.copy()),
-                schema=self.schema,
-                dialect="duckdb",
-            )
-            for mode, expression in (("raw", raw), ("qualified", qualified)):
-                with self.subTest(alias=alias, mode=mode):
-                    expression = optimizer.unnest_subqueries.unnest_subqueries(expression)
-                    self.assertFalse(
-                        any(scope.external_columns for scope in traverse_scope(expression))
-                    )
-                    grouped = expression.find(exp.Group).parent
-                    names = [projection.alias.lower() for projection in grouped.selects]
-                    self.assertEqual(len(names), len(set(names)))
-                    self.assertEqual(
-                        grouped.selects[0].args["alias"], exp.to_identifier(alias, quoted=True)
-                    )
-
-    def test_unnest_subqueries_scalar_aggregate_null_case(self):
-        sql = (
-            "SELECT x.a, (SELECT CASE WHEN COUNT(*) >= 2 THEN SUM(y.c) ELSE SUM(y.b) END "
-            "FROM y WHERE y.b = x.a) AS s FROM x"
-        )
-        for dialect in ("postgres", "tsql"):
-            qualified = qualify(parse_one(sql, read=dialect), schema=self.schema, dialect=dialect)
-            annotated = annotate_types(qualified.copy(), schema=self.schema, dialect=dialect)
-            expressions = {
-                "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
-                "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
-                "optimize": optimizer.optimize(sql, schema=self.schema, dialect=dialect),
-                "optimize_annotated": optimizer.optimize(
-                    annotated, schema=self.schema, dialect=dialect
-                ),
-            }
-            for mode, expression in expressions.items():
-                with self.subTest(dialect=dialect, mode=mode):
-                    self.assertFalse(
-                        any(scope.external_columns for scope in traverse_scope(expression))
-                    )
-                    for case in expression.find_all(exp.Case):
-                        # SQL Server rejects CASE with only NULL constant results.
-                        self.assertTrue(
-                            any(
-                                not isinstance(result.unnest(), exp.Null)
-                                for result in (
-                                    *(branch.args["true"] for branch in case.args["ifs"]),
-                                    case.args.get("default"),
-                                )
-                                if result is not None
-                            )
-                        )
 
     def test_optimize_subqueries_in_join_on(self):
         for sql in (

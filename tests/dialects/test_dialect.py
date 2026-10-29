@@ -3999,6 +3999,11 @@ FROM subquery2""",
             """SELECT partition.d FROM t PARTITION (d)""",
             """SELECT partition.d FROM t AS PARTITION(d)""",
         )
+        self.validate_identity("CREATE TABLE abc.s.in AS SELECT 1 AS n")
+        self.validate_identity(
+            "WITH in AS (SELECT 1 AS in) SELECT in FROM in WHERE in IN (1, 2) AND in NOT IN (3, 4)",
+            "WITH in AS (SELECT 1 AS in) SELECT in FROM in WHERE in IN (1, 2) AND NOT in IN (3, 4)",
+        )
 
     def test_string_functions(self):
         for pad_func in ("LPAD", "RPAD"):

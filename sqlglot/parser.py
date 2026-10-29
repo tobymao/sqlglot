@@ -799,6 +799,7 @@ class Parser:
         TokenType.FULL,
         TokenType.GET,
         TokenType.IDENTIFIER,
+        TokenType.IN,
         TokenType.INOUT,
         TokenType.IS,
         TokenType.ISNULL,

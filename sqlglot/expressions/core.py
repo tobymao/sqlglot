@@ -2108,6 +2108,10 @@ class Filter(Expression):
     arg_types = {"this": True, "expression": True}
 
 
+class Per(Expression):
+    arg_types = {"this": True, "expressions": True}
+
+
 class Check(Expression):
     pass
 

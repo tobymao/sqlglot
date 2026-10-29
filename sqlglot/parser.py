@@ -8967,6 +8967,14 @@ class Parser:
 
         return this
 
+    def _parse_per(self, this: exp.Expr | None) -> exp.Expr | None:
+        if self._next.token_type == TokenType.L_PAREN and self._match_text_seq("PER"):
+            return self.expression(
+                exp.Per(this=this, expressions=self._parse_wrapped_csv(self._parse_disjunction))
+            )
+
+        return this
+
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         func = this
         comments = func.comments if isinstance(func, exp.Expr) else None
@@ -9019,7 +9027,7 @@ class Parser:
             over = None
             self._match(TokenType.ALIAS)
         elif not self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS):
-            return this
+            return self._parse_per(this)
         else:
             over = self._prev.text.upper()
 
@@ -9027,8 +9035,11 @@ class Parser:
             func.pop_comments()
 
         if not self._match(TokenType.L_PAREN):
-            return self.expression(
-                exp.Window(this=this, alias=self._parse_id_var(False), over=over), comments=comments
+            return self._parse_per(
+                self.expression(
+                    exp.Window(this=this, alias=self._parse_id_var(False), over=over),
+                    comments=comments,
+                )
             )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
@@ -9085,7 +9096,7 @@ class Parser:
         if self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS, advance=False):
             return self._parse_window(window, alias=alias)
 
-        return window
+        return self._parse_per(window)
 
     def _parse_partition_and_order(
         self,

@@ -234,6 +234,11 @@ class TestTSQL(Validator):
         )
 
     def test_tsql(self):
+        # A CTE body is not necessarily a query in a lenient parse; the generator
+        # used to crash with AttributeError on its output-qualification transform
+        self.validate_identity("WITH c AS (SELEC1) SELECT * FROM c")
+        self.validate_identity("WITH c AS (SELEC - 1) SELECT * FROM c")
+
         self.validate_all(
             "WITH x AS (SELECT 1 AS [1]) SELECT TOP 0 * FROM (SELECT * FROM x UNION SELECT * FROM x) AS _l_0 ORDER BY 1",
             read={

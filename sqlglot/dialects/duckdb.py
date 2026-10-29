@@ -124,6 +124,7 @@ class DuckDB(Dialect):
             "VARCHAR": TokenType.TEXT,
         }
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("SORT BY")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

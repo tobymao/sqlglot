@@ -5,7 +5,7 @@ from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
 from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot._typing import E
 
-_PRE_AGGREGATION_ARGS = ("with_", "from_", "laterals", "joins", "where")
+PRE_AGGREGATION_ARGS = ("with_", "from_", "laterals", "joins", "where")
 
 
 def unnest_subqueries(expression: E) -> E:
@@ -14,9 +14,6 @@ def unnest_subqueries(expression: E) -> E:
 
     Convert scalar subqueries into cross joins.
     Convert correlated or vectorized subqueries into a group by so it is not a many to many left join.
-
-    Scalar aggregate CASE projections stay correlated. COUNT and supported COALESCE projections
-    recover empty-input defaults without changing matched results.
 
     Example:
         >>> import sqlglot
@@ -586,7 +583,7 @@ def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
     node: exp.Expr | None = expression
     while node is not None and node.parent is not select:
         node = node.parent
-    return node is not None and node.arg_key not in _PRE_AGGREGATION_ARGS
+    return node is not None and node.arg_key not in PRE_AGGREGATION_ARGS
 
 
 def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:

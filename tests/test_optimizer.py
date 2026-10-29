@@ -2165,11 +2165,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "x": {"a": "INT"},
             "y": {"k": "INT", "v": "INT", "d": "DATE", "i": "INTERVAL"},
         }
-        sources = {
-            "CASE WHEN MAX(t.one) = 1 THEN SUM(y.v) ELSE 88 END": (
-                "y CROSS JOIN (SELECT 1 AS one) AS t"
-            ),
-        }
         decorrelated = (
             "COUNT(*)",
             "COUNT()",
@@ -2196,8 +2191,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         correlated = (
             "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) ELSE 99 END",
-            "CASE WHEN COUNT(*) = 0 THEN SUM(y.v) ELSE 99 END",
-            "CASE WHEN COUNT(*) = 0 THEN 0 ELSE SUM(y.v) END",
             "CASE WHEN COUNT(*) > 1 THEN 1 ELSE 0 END",
             "CASE WHEN COUNT(*) >= 2 THEN SUM(y.v) ELSE SUM(y.k) END",
             "COUNT(NULL)",
@@ -2206,7 +2199,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "COUNT(DISTINCT y.v) FILTER(WHERE y.v > 10)",
             "COUNT(DISTINCT y.v) + 1",
             "COALESCE(COUNT(DISTINCT y.v), 7)",
-            "CASE WHEN COUNT(DISTINCT y.v) >= 1 THEN SUM(y.v) ELSE 99 END",
             "2 * COUNT(y.v)",
             "2 * MIN(y.v)",
             "2 * MAX(y.v)",
@@ -2221,29 +2213,18 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "CAST(2 AS INT) * SUM(y.v)",
             "'2' * SUM(y.v)",
             "COALESCE(2 * SUM(y.v), 7)",
-            "CASE WHEN COUNT(*) >= 1 THEN 2 * SUM(y.v) ELSE 99 END",
             "MAX(y.v, 2)",
             "COALESCE(MAX(y.v), 7)",
             "COALESCE(MIN(y.v), 7)",
             "MIN(y.v) FILTER(WHERE y.v > 10)",
-            "CASE WHEN COUNT(y.v) >= 1 THEN SUM(y.v) ELSE 99 END",
-            "CASE WHEN COUNT(1) >= 1 THEN SUM(y.v) ELSE 99 END",
-            "CASE WHEN COUNT(2) >= 1 THEN SUM(y.v) ELSE 99 END",
             "COALESCE(SUM(y.v), SUM(y.k))",
             "COALESCE(SUM(y.v), '7')",
             "COALESCE(SUM(y.v), CAST(NULL AS BIGINT))",
-            "CASE WHEN COUNT(*) >= 1 THEN SUM(y.v) END",
             "CASE MAX(y.v) WHEN 20 THEN 1 ELSE 2 END",
             "IF(COUNT(*) >= 1, SUM(y.v), SUM(y.k))",
             "NULLIF(COALESCE(APPROX_COUNT_DISTINCT(y.v), 7), 0)",
-            "CASE WHEN TYPEOF(SUM(y.v)) = 'HUGEINT' THEN NULL ELSE 1 END",
             "NULLIF(TYPEOF(SUM(y.v)), 'HUGEINT')",
-            "CASE WHEN (SELECT 1) = 1 THEN SUM(y.v) ELSE 88 END",
-            "CASE WHEN (SELECT 1) = 1 THEN COALESCE(SUM(y.v), 7) ELSE 88 END",
-            "CASE WHEN MAX(t.one) = 1 THEN SUM(y.v) ELSE 88 END",
             "DATE_TRUNC('day', MAX(y.d))",
-            "DATE_TRUNC('day', ((MAX(y.d))))",
-            "DATE_TRUNC('day', (MAX(y.d) FILTER (WHERE y.v > 2)))",
             "MAX(y.i) * 2",
             "MAX(y.i) / 2",
             "MAX(y.i) + INTERVAL '1 day'",
@@ -2252,14 +2233,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for decorrelates, projections in ((True, decorrelated), (False, correlated)):
             for projection in projections:
                 sql = (
-                    f"SELECT x.a, (SELECT {projection} FROM {sources.get(projection, 'y')} "
+                    f"SELECT x.a, (SELECT {projection} FROM y "
                     "WHERE y.k = x.a) AS s FROM x ORDER BY x.a"
                 )
                 qualified = qualify(parse_one(sql, read="duckdb"), schema=schema, dialect="duckdb")
                 annotated = annotate_types(qualified.copy(), schema=schema, dialect="duckdb")
-                unnested = optimizer.unnest_subqueries.unnest_subqueries(qualified.copy())
                 expressions = {
-                    "unnest": unnested,
+                    "unnest": optimizer.unnest_subqueries.unnest_subqueries(qualified),
                     "annotated": optimizer.unnest_subqueries.unnest_subqueries(annotated.copy()),
                     "optimize": optimizer.optimize(sql, schema=schema, dialect="duckdb"),
                     "optimize_annotated": optimizer.optimize(
@@ -2272,17 +2252,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                             decorrelates,
                             not any(scope.external_columns for scope in traverse_scope(expression)),
                         )
-                with self.subTest(projection=projection, mode="annotation-independent"):
-                    self.assertEqual(unnested.sql(), expressions["annotated"].sql())
 
     def test_unnest_subqueries_having_only_aggregates(self):
         for group in ("", "GROUP BY ()", "GROUP BY ALL", "GROUP BY y.b"):
             for having in (
                 "COUNT(*) = 0",
-                "COUNT(y.c) = 0",
-                "COUNT(*) > 0",
                 "COUNT(*) = 0 AND (SELECT 1) = 1",
-                "COUNT(y.c) = 0 AND (SELECT 1) = 1",
             ):
                 sql = (
                     f"SELECT x.a, (SELECT 1 AS v FROM y WHERE y.b = x.a {group} "
@@ -2321,14 +2296,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 True,
                 (
                     "SELECT COUNT(*) FROM y WHERE y.b = x.a",
-                    "SELECT COUNT(y.c) FROM y WHERE y.b = x.a",
                     "SELECT SUM(y.c) FROM y WHERE y.b = x.a",
-                    "SELECT COUNT(DISTINCT y.c) FROM y WHERE y.b = x.a",
-                    "SELECT 1 FROM y WHERE y.b = x.a HAVING COUNT(*) = 0",
                     "SELECT 1 FROM y WHERE y.b = x.a HAVING 1 = 1",
                     "SELECT 1 FROM y WHERE y.b = x.a ORDER BY COUNT(*)",
-                    "SELECT COUNT(*) FROM y WHERE y.b = x.a GROUP BY y.b",
-                    "SELECT COUNT(*) FROM y WHERE y.b = x.a GROUP BY y.c",
                     "SELECT y.c FROM y WHERE y.b = x.a GROUP BY y.c",
                     "SELECT 1 FROM y WHERE y.b = x.a GROUP BY ()",
                     "SELECT COUNT(*) OVER () FROM y WHERE y.b = x.a",

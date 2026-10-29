@@ -249,6 +249,26 @@ class TestParser(unittest.TestCase):
         tables = [t.sql() for t in parse_one("select * from a, b.c, .d").find_all(exp.Table)]
         self.assertEqual(set(tables), {"a", "b.c", "d"})
 
+    def test_in_as_qualified_table_name(self):
+        expression = parse_one("CREATE TABLE abc.s.in AS SELECT 1 AS n")
+        table = expression.this.assert_is(exp.Table)
+        self.assertEqual([part.name for part in table.parts], ["abc", "s", "in"])
+
+    def test_in_as_identifier_and_predicate(self):
+        expression = parse_one(
+            "WITH in AS (SELECT 1 AS in) SELECT in FROM in WHERE in IN (1, 2) AND in NOT IN (3, 4)"
+        )
+        self.assertEqual(expression.ctes[0].alias, "in")
+        self.assertEqual(expression.selects[0], exp.column("in"))
+        self.assertEqual(expression.args["from_"].this.assert_is(exp.Table).name, "in")
+        self.assertEqual(
+            expression.args["where"].this,
+            exp.and_(
+                exp.column("in").isin(1, 2),
+                exp.not_(exp.column("in").isin(3, 4)),
+            ),
+        )
+
     def test_union(self):
         self.assertIsInstance(parse_one("SELECT * FROM (SELECT 1) UNION SELECT 2"), exp.Union)
         self.assertIsInstance(

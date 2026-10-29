@@ -86,6 +86,11 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         # themselves, because the latter are going to be replaced by new nodes when the aliases
         # are added and hence we won't be able to reach these newly added Alias parents
         query = expression.this
+        if not isinstance(query, exp.Query):
+            # A CTE body is not necessarily a query in a lenient parse, e.g.
+            # "WITH c AS (SELEC1) SELECT * FROM c" parses with a non-query
+            # expression as the CTE's body, so there are no outputs to qualify
+            return expression
         unaliased_column_indexes = (
             i for i, c in enumerate(query.selects) if isinstance(c, exp.Column) and not c.alias
         )

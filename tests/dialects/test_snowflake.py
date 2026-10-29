@@ -14,6 +14,12 @@ class TestSnowflake(Validator):
     dialect = "snowflake"
 
     def test_time_format_case(self):
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2024-5-9', 'yyyy-mm-DD')",
+            read={
+                "duckdb": "SELECT STRPTIME('2024-5-9', '%Y-%m-%-d')",
+            },
+        )
         for fmt, duckdb_fmt, snowflake_fmt in (
             ("Mon", "%b", "mon"),
             ("mOn", "%b", "mon"),

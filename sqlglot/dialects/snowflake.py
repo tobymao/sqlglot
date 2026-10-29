@@ -50,6 +50,7 @@ class Snowflake(Dialect):
 
     INVERSE_TIME_MAPPING = {
         "%d": "DD",
+        "%-d": "DD",
         "%a": "DY",
         "T": "T",  # in TIME_MAPPING we map '"T"' with the double quotes to 'T', and we want to prevent 'T' from being mapped back to '"T"' so that 'AUTO' doesn't become 'AU"T"O'
     }

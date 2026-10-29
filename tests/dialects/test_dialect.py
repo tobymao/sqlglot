@@ -3681,6 +3681,45 @@ SELECT
             window = self.validate_identity(f"SUM(a) OVER (PARTITION BY {partition} ORDER BY a)")
             self.assertIsInstance(window.args["partition_by"][0], exp.Column)
 
+    def test_per(self):
+        for sql in (
+            "AVG(AGG(revenue) PER (customer))",
+            "AVG(SUM(x) PER (c, d))",
+            "AVG(LAG(AGG(revenue)) OVER (PARTITION BY customer ORDER BY year) PER (customer))",
+            "LAG(AVG(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
+            "SUM(SUM(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
+            "AVG(AVG(AGG(x) PER (c)) PER (d))",
+            "SUM(x) FILTER(WHERE y > 0) PER (c)",
+            "SUM(x) OVER w PER (c)",
+        ):
+            self.validate_identity(sql)
+
+        per = self.validate_identity(
+            "AVG(LAG(AGG(revenue)) OVER (PARTITION BY customer ORDER BY year) PER (customer))"
+        ).this
+        self.assertIsInstance(per, exp.Per)
+        self.assertIsInstance(per.this, exp.Window)
+
+        window = self.validate_identity(
+            "LAG(AVG(AGG(revenue) PER (customer))) OVER (ORDER BY year)"
+        )
+        self.assertIsInstance(window, exp.Window)
+        self.assertIsInstance(window.this.this.this, exp.Per)
+
+        nested = self.validate_identity("AVG(AVG(AGG(x) PER (c)) PER (d))").this
+        self.assertIsInstance(nested, exp.Per)
+        self.assertIsInstance(nested.this.this, exp.Per)
+
+        self.assertIsInstance(
+            self.validate_identity("SELECT per FROM t").expressions[0], exp.Column
+        )
+        self.assertIsInstance(
+            self.validate_identity(
+                "SELECT SUM(x) per FROM t", "SELECT SUM(x) AS per FROM t"
+            ).expressions[0],
+            exp.Alias,
+        )
+
     def test_nested_ctes(self):
         self.validate_all(
             "SELECT * FROM (WITH t AS (SELECT 1 AS c) SELECT c FROM t) AS subq",

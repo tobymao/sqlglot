@@ -2067,6 +2067,9 @@ class Generator:
         where = self.sql(expression, "expression").strip()
         return f"{this} FILTER({where})"
 
+    def per_sql(self, expression: exp.Per) -> str:
+        return f"{self.sql(expression, 'this')} PER ({self.expressions(expression, flat=True)})"
+
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:
             self.unsupported("Hints are not supported")

@@ -279,7 +279,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 not value.alias
                 or len(select.selects) != 1
                 or not _is_supported_scalar_aggregate(projection)
-                or select.args.get("having")
                 or select.args.get("qualify")
                 or select.args.get("windows")
             ):

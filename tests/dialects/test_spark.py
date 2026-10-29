@@ -1155,10 +1155,21 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "LISTAGG(x, ', ')",
+            read={
+                "spark": "LISTAGG(ALL x, ', ')",
+                "databricks": "LISTAGG(ALL x, ', ')",
+            },
             write={
                 "spark, version=3.0.0": "ARRAY_JOIN(COLLECT_LIST(x), ', ')",
                 "spark, version=4.0.0": "LISTAGG(x, ', ')",
                 "spark": "LISTAGG(x, ', ')",
+            },
+        )
+        self.validate_all(
+            "LISTAGG(x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            read={
+                "spark": "LISTAGG(ALL x, '-') WITHIN GROUP (ORDER BY x DESC)",
+                "databricks": "LISTAGG(ALL x, '-') WITHIN GROUP (ORDER BY x DESC)",
             },
         )
         self.validate_all(

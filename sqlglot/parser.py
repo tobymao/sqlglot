@@ -8542,6 +8542,7 @@ class Parser:
             if self._match(TokenType.COMMA):
                 args.extend(self._parse_csv(self._parse_disjunction))
         else:
+            self._match(TokenType.ALL)
             args = self._parse_csv(self._parse_disjunction)  # type: ignore
 
         if self._match_text_seq("ON", "OVERFLOW"):

@@ -236,17 +236,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         elif not _is_plain_group(group):
             return
 
-    # The joined value would be neither grouped nor aggregated in the outer query
+    # Joined columns may not be grouped, so keep post-group subqueries correlated.
     parent_group = parent_select.args.get("group")
-    if (
-        parent_group
-        and (
-            not parent_group.args.get("all")
-            or parent_group.expressions
-            or not _is_plain_group(parent_group)
-        )
-        and _is_post_aggregation(select, parent_select)
-    ):
+    if parent_group and _is_post_aggregation(select, parent_select):
         return
 
     table_alias = next_alias_name()

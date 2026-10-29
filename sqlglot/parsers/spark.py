@@ -95,7 +95,6 @@ class SparkParser(Spark2Parser):
         "DATEDIFF": _build_datediff,
         "DATE_DIFF": _build_datediff,
         "JSON_OBJECT_KEYS": exp.JSONKeys.from_arg_list,
-        "LISTAGG": exp.GroupConcat.from_arg_list,
         "TIMESTAMP_LTZ": build_as_cast("TIMESTAMP_LTZ"),
         "TIMESTAMP_NTZ": build_as_cast("TIMESTAMP_NTZ"),
         "TRY_ELEMENT_AT": lambda args: exp.Bracket(
@@ -120,6 +119,7 @@ class SparkParser(Spark2Parser):
 
     FUNCTION_PARSERS = {
         **Spark2Parser.FUNCTION_PARSERS,
+        "LISTAGG": lambda self: self._parse_string_agg(),
         "SUBSTR": lambda self: self._parse_substring(),
     }
 

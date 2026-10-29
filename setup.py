@@ -11,7 +11,7 @@ setup(
             # for py3.10+; on py3.9 just use upstream mypy for type checking.
             "mypy >= 2.4.0; python_version >= '3.10'",
             "mypy; python_version < '3.10'",
-            "setuptools_scm",
+            "setuptools_scm >= 10.2",
             "pandas",
             "pandas-stubs",
             "python-dateutil",

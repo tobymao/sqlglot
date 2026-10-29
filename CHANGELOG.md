@@ -1,6 +1,72 @@
 Changelog
 =========
 
+## [v30.26.0] - 2026-10-29
+### :boom: BREAKING CHANGES
+- due to [`e54ad9a`](https://github.com/tobymao/sqlglot/commit/e54ad9aaedeb5e9b2be615ebd5f1ff40cfb854a2) - resolve set operation types during annotation [CODEX] *(PR [#8720](https://github.com/tobymao/sqlglot/pull/8720) by [@georgesittas](https://github.com/georgesittas))*:
+
+  resolve set operation types during annotation [CODEX] (#8720)
+
+- due to [`86abcde`](https://github.com/tobymao/sqlglot/commit/86abcde38e32ddb04ab721ab0654473d51e0a783) - respect dialect `INTERSECT` precedence in set operations *(PR [#8704](https://github.com/tobymao/sqlglot/pull/8704) by [@treysp](https://github.com/treysp))*:
+
+  respect dialect `INTERSECT` precedence in set operations (#8704)
+
+- due to [`a20a4d9`](https://github.com/tobymao/sqlglot/commit/a20a4d9e5eb3e5cf33d69148d40c25737b32d437) - parse LOCALTIMESTAMP as CURRENT_TIMESTAMP [AGENT] *(PR [#8813](https://github.com/tobymao/sqlglot/pull/8813) by [@Tyagiquamar](https://github.com/Tyagiquamar))*:
+
+  parse LOCALTIMESTAMP as CURRENT_TIMESTAMP [AGENT] (#8813)
+
+- due to [`41287a2`](https://github.com/tobymao/sqlglot/commit/41287a2d7ff6ede9fab62fc645922957788e443b) - accept unquoted keyword identifiers *(PR [#8816](https://github.com/tobymao/sqlglot/pull/8816) by [@georgesittas](https://github.com/georgesittas))*:
+
+  accept unquoted keyword identifiers (#8816)
+
+- due to [`a32ef63`](https://github.com/tobymao/sqlglot/commit/a32ef6365267049425dd93f45eb7af361466b854) - propagate nested unknown types *(PR [#8818](https://github.com/tobymao/sqlglot/pull/8818) by [@georgesittas](https://github.com/georgesittas))*:
+
+  propagate nested unknown types (#8818)
+
+- due to [`70c2a84`](https://github.com/tobymao/sqlglot/commit/70c2a84001863cfb5ddf6c62ee71bc2086507e2d) - handle time format elements case-insensitively [CODEX] *(PR [#8832](https://github.com/tobymao/sqlglot/pull/8832) by [@georgesittas](https://github.com/georgesittas))*:
+
+  handle time format elements case-insensitively [CODEX] (#8832)
+
+
+### :sparkles: New Features
+- [`9943dc4`](https://github.com/tobymao/sqlglot/commit/9943dc465a01192412e595367f41f8bcecfa25a9) - **optimizer**: Fix the semi anti join qualify columns reference *(PR [#8814](https://github.com/tobymao/sqlglot/pull/8814) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`b0842a1`](https://github.com/tobymao/sqlglot/commit/b0842a1ee0be2cc9345d7312724dbf2ee32e325a) - **parser**: support PER (...) on aggregates *(PR [#8835](https://github.com/tobymao/sqlglot/pull/8835) by [@geooo109](https://github.com/geooo109))*
+
+### :bug: Bug Fixes
+- [`5739cd6`](https://github.com/tobymao/sqlglot/commit/5739cd6ca80c48fa166bcd239aba651487e9081c) - **postgres**: assign named MAKE_INTERVAL arguments to their units [CLAUDE] *(PR [#8800](https://github.com/tobymao/sqlglot/pull/8800) by [@vidigoat](https://github.com/vidigoat))*
+- [`53ccce9`](https://github.com/tobymao/sqlglot/commit/53ccce9f704a6172434eac84d399b0964fccf92c) - **postgres**: preserve anonymous MAKE_INTERVAL calls *(PR [#8801](https://github.com/tobymao/sqlglot/pull/8801) by [@georgesittas](https://github.com/georgesittas))*
+- [`8709510`](https://github.com/tobymao/sqlglot/commit/8709510f9a097d937e3058b82ededfe703625801) - **postgres**: count unit boundaries for DATEDIFF from boundary dialects [CLAUDE] *(PR [#8802](https://github.com/tobymao/sqlglot/pull/8802) by [@vidigoat](https://github.com/vidigoat))*
+- [`e54ad9a`](https://github.com/tobymao/sqlglot/commit/e54ad9aaedeb5e9b2be615ebd5f1ff40cfb854a2) - **optimizer**: resolve set operation types during annotation [CODEX] *(PR [#8720](https://github.com/tobymao/sqlglot/pull/8720) by [@georgesittas](https://github.com/georgesittas))*
+- [`a4e0898`](https://github.com/tobymao/sqlglot/commit/a4e08982b678a65a3b4140f2ee30493d827c85c8) - **parser**: wrap parenthesized `VALUES` setop operands *(PR [#8803](https://github.com/tobymao/sqlglot/pull/8803) by [@treysp](https://github.com/treysp))*
+- [`991d6ce`](https://github.com/tobymao/sqlglot/commit/991d6ce5ef300c32da83c2774fd88526d0ab667a) - **duckdb**: mark DATE_DIFF as counting unit boundaries [CLAUDE] *(PR [#8810](https://github.com/tobymao/sqlglot/pull/8810) by [@vidigoat](https://github.com/vidigoat))*
+- [`840347f`](https://github.com/tobymao/sqlglot/commit/840347fd4bf92926337c8d118c39ef4dbf1a2131) - **duckdb**: add missing words to RESERVED_KEYWORDS *(PR [#8811](https://github.com/tobymao/sqlglot/pull/8811) by [@mikobucz](https://github.com/mikobucz))*
+  - :arrow_lower_right: *fixes issue [#8804](https://github.com/tobymao/sqlglot/issues/8804) opened by [@THEtheChad](https://github.com/THEtheChad)*
+- [`86abcde`](https://github.com/tobymao/sqlglot/commit/86abcde38e32ddb04ab721ab0654473d51e0a783) - **parser**: respect dialect `INTERSECT` precedence in set operations *(PR [#8704](https://github.com/tobymao/sqlglot/pull/8704) by [@treysp](https://github.com/treysp))*
+  - :arrow_lower_right: *fixes issue [#8390](https://github.com/tobymao/sqlglot/issues/8390) opened by [@laravioli](https://github.com/laravioli)*
+- [`2d4b5a5`](https://github.com/tobymao/sqlglot/commit/2d4b5a5b0aea46e7f5a4fbe09c1d60fcafad76b3) - **mysql**: map TIMESTAMPADD and support transpilation *(PR [#8809](https://github.com/tobymao/sqlglot/pull/8809) by [@pranaysb](https://github.com/pranaysb))*
+  - :arrow_lower_right: *fixes issue [#8808](https://github.com/tobymao/sqlglot/issues/8808) opened by [@Shahzeb-DataEngineer](https://github.com/Shahzeb-DataEngineer)*
+- [`a20a4d9`](https://github.com/tobymao/sqlglot/commit/a20a4d9e5eb3e5cf33d69148d40c25737b32d437) - **snowflake**: parse LOCALTIMESTAMP as CURRENT_TIMESTAMP [AGENT] *(PR [#8813](https://github.com/tobymao/sqlglot/pull/8813) by [@Tyagiquamar](https://github.com/Tyagiquamar))*
+  - :arrow_lower_right: *fixes issue [#8807](https://github.com/tobymao/sqlglot/issues/8807) opened by [@THEtheChad](https://github.com/THEtheChad)*
+- [`41287a2`](https://github.com/tobymao/sqlglot/commit/41287a2d7ff6ede9fab62fc645922957788e443b) - **snowflake**: accept unquoted keyword identifiers *(PR [#8816](https://github.com/tobymao/sqlglot/pull/8816) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8805](https://github.com/tobymao/sqlglot/issues/8805) opened by [@THEtheChad](https://github.com/THEtheChad)*
+- [`3cca3ea`](https://github.com/tobymao/sqlglot/commit/3cca3ea47592c84b23636aff196ca0bbaf4f1905) - preserve timestamp arithmetic semantics *(PR [#8815](https://github.com/tobymao/sqlglot/pull/8815) by [@georgesittas](https://github.com/georgesittas))*
+- [`e88e67e`](https://github.com/tobymao/sqlglot/commit/e88e67e6c8f5fe8992419f6920dac66cca8f12a8) - **snowflake**: preserve date truncation types in DuckDB *(PR [#8817](https://github.com/tobymao/sqlglot/pull/8817) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8806](https://github.com/tobymao/sqlglot/issues/8806) opened by [@THEtheChad](https://github.com/THEtheChad)*
+- [`a32ef63`](https://github.com/tobymao/sqlglot/commit/a32ef6365267049425dd93f45eb7af361466b854) - **optimizer**: propagate nested unknown types *(PR [#8818](https://github.com/tobymao/sqlglot/pull/8818) by [@georgesittas](https://github.com/georgesittas))*
+- [`13a570c`](https://github.com/tobymao/sqlglot/commit/13a570c6f790a6140c9c9ae004914b081beb7ae6) - **oracle**: preserve end of month in ADD_MONTHS closes [#8824](https://github.com/tobymao/sqlglot/pull/8824) [CLAUDE] *(PR [#8825](https://github.com/tobymao/sqlglot/pull/8825) by [@pandasuwu](https://github.com/pandasuwu))*
+  - :arrow_lower_right: *fixes issue [#8824](https://github.com/tobymao/sqlglot/issues/8824) opened by [@pandasuwu](https://github.com/pandasuwu)*
+- [`a07698a`](https://github.com/tobymao/sqlglot/commit/a07698a741dde560a820211cb4a2539856edb349) - **snowflake**: preserve default LISTAGG separator [CODEX] *(PR [#8823](https://github.com/tobymao/sqlglot/pull/8823) by [@Ychris12138](https://github.com/Ychris12138))*
+  - :arrow_lower_right: *fixes issue [#8819](https://github.com/tobymao/sqlglot/issues/8819) opened by [@THEtheChad](https://github.com/THEtheChad)*
+- [`e2a8b65`](https://github.com/tobymao/sqlglot/commit/e2a8b6589504793decb69d00158f728b6d3772ec) - **snowflake**: support COPY TAGS in CREATE TABLE *(PR [#8822](https://github.com/tobymao/sqlglot/pull/8822) by [@ramitmittal](https://github.com/ramitmittal))*
+- [`ab04347`](https://github.com/tobymao/sqlglot/commit/ab043477f777af312efc29b419eb14f0c385fef7) - **spark**: parse LISTAGG through _parse_string_agg *(PR [#8829](https://github.com/tobymao/sqlglot/pull/8829) by [@Tyagiquamar](https://github.com/Tyagiquamar))*
+  - :arrow_lower_right: *fixes issue [#8828](https://github.com/tobymao/sqlglot/issues/8828) opened by [@rahul05ranjan](https://github.com/rahul05ranjan)*
+- [`7c9dbb9`](https://github.com/tobymao/sqlglot/commit/7c9dbb91e9e252e2d47840ea4cb63caf8f4d6a12) - **tsql**: don't crash in qualify_derived_table_outputs for a CTE with a non-query body *(PR [#8827](https://github.com/tobymao/sqlglot/pull/8827) by [@rahul05ranjan](https://github.com/rahul05ranjan))*
+  - :arrow_lower_right: *fixes issue [#8826](https://github.com/tobymao/sqlglot/issues/8826) opened by [@rahul05ranjan](https://github.com/rahul05ranjan)*
+- [`2748f82`](https://github.com/tobymao/sqlglot/commit/2748f82ec5bf895f2055e60c8e90e132079bc532) - **parser**: accept ALL in string aggregation *(PR [#8831](https://github.com/tobymao/sqlglot/pull/8831) by [@georgesittas](https://github.com/georgesittas))*
+- [`70c2a84`](https://github.com/tobymao/sqlglot/commit/70c2a84001863cfb5ddf6c62ee71bc2086507e2d) - **snowflake**: handle time format elements case-insensitively [CODEX] *(PR [#8832](https://github.com/tobymao/sqlglot/pull/8832) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8820](https://github.com/tobymao/sqlglot/issues/8820) opened by [@THEtheChad](https://github.com/THEtheChad)*
+
+
 ## [v30.25.0] - 2026-10-26
 ### :boom: BREAKING CHANGES
 - due to [`c90a322`](https://github.com/tobymao/sqlglot/commit/c90a322c329d2b1003bf73b848f0d9e17f1a3d67) - support non-identifier column parts in compiled code *(PR [#8710](https://github.com/tobymao/sqlglot/pull/8710) by [@georgesittas](https://github.com/georgesittas))*:
@@ -16493,3 +16559,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.23.0]: https://github.com/tobymao/sqlglot/compare/v30.22.0...v30.23.0
 [v30.24.0]: https://github.com/tobymao/sqlglot/compare/v30.23.0...v30.24.0
 [v30.25.0]: https://github.com/tobymao/sqlglot/compare/v30.24.0...v30.25.0
+[v30.26.0]: https://github.com/tobymao/sqlglot/compare/v30.25.0...v30.26.0

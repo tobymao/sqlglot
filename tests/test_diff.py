@@ -8,6 +8,14 @@ def diff_delta_only(source, target, matchings=None, **kwargs):
     return diff(source, target, matchings=matchings, delta_only=True, **kwargs)
 
 
+def _edit_sql(edit):
+    if isinstance(edit, Move):
+        return (edit.source.sql(), edit.target.sql())
+    if isinstance(edit, Update):
+        return (edit.source.sql(), edit.target.sql())
+    return edit.expression.sql()
+
+
 class TestDiff(unittest.TestCase):
     def test_simple(self):
         self._validate_delta_only(
@@ -355,6 +363,33 @@ class TestDiff(unittest.TestCase):
         self.assertEqual(set(expr_tgt.args), {"this", "table"})
 
         self._validate_delta_only(diff_delta_only(expr_src, expr_tgt), [])
+
+    def test_edit_script_is_deterministic(self):
+        # The unmatched node sets and the matching set are keyed by id(), so iterating them
+        # directly orders the edit script by object address. Diffing two freshly parsed copies
+        # of the same pair must therefore produce the same sequence of edits, not merely the
+        # same set of them.
+        sql_pairs = [
+            ("SELECT a, b, c FROM t WHERE x > 1", "SELECT a, c, d FROM t WHERE x < 2"),
+            (
+                "SELECT x + 1 AS p, y + 2 AS q FROM t1 JOIN t2 ON t1.id = t2.id",
+                "SELECT x * 3 AS p, y + 2 AS q FROM t1 JOIN t2 ON t1.id = t2.fid",
+            ),
+            (
+                "WITH c AS (SELECT a FROM t) SELECT a FROM c",
+                "WITH c AS (SELECT b FROM t) SELECT b FROM c",
+            ),
+        ]
+
+        for source_sql, target_sql in sql_pairs:
+            with self.subTest(source_sql=source_sql):
+                scripts = []
+                for _ in range(3):
+                    edits = diff_delta_only(parse_one(source_sql), parse_one(target_sql))
+                    scripts.append([(type(e).__name__, _edit_sql(e)) for e in edits])
+
+                self.assertEqual(scripts[0], scripts[1])
+                self.assertEqual(scripts[1], scripts[2])
 
     def test_comments_do_not_affect_diff(self):
         expr_src = parse_one("select a from tbl")

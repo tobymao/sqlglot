@@ -1149,8 +1149,20 @@ class TestDuckDB(Validator):
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
-        self.validate_identity("x ~ y", "REGEXP_FULL_MATCH(x, y)")
-        self.validate_identity("x !~ y", "NOT REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("x ~ y", "REGEXP_MATCHES(x, y)")
+        self.validate_identity("x !~ y", "NOT REGEXP_MATCHES(x, y)")
+        self.validate_all(
+            "SELECT x ~ y, x !~ y",
+            write={"postgres": "SELECT x ~ y, NOT x ~ y"},
+        )
+        # Before DuckDB 2.0, ~ and !~ matched the whole string
+        self.validate_all(
+            "SELECT REGEXP_FULL_MATCH(x, y), NOT REGEXP_FULL_MATCH(x, y)",
+            read={
+                "duckdb, version=1.0": "SELECT x ~ y, x !~ y",
+                "duckdb, version=1.5": "SELECT x ~ y, x !~ y",
+            },
+        )
         self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(

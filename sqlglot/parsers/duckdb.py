@@ -105,6 +105,10 @@ def _convert_text_type(dtype: exp.DataType) -> exp.DataType:
     return dtype
 
 
+_parse_regexp_like = binary_range_parser(exp.RegexpLike)
+_parse_regexp_full_match = binary_range_parser(exp.RegexpFullMatch)
+
+
 class DuckDBParser(parser.Parser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
@@ -139,7 +143,7 @@ class DuckDBParser(parser.Parser):
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
-        TokenType.TILDE: binary_range_parser(exp.RegexpFullMatch),
+        TokenType.TILDE: lambda self, this: self._parse_tilde(this),
     }
 
     EXPONENT = {
@@ -311,6 +315,13 @@ class DuckDBParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
+
+    def _parse_tilde(self, this: exp.Expr | None) -> exp.Expr | None:
+        # ~ and !~ match anywhere in the string since DuckDB 2.0, and the whole string before it
+        # https://duckdb.org/docs/2.0/sql/functions/pattern_matching
+        if self.dialect.version >= (2, 0):
+            return _parse_regexp_like(self, this)
+        return _parse_regexp_full_match(self, this)
 
     def _parse_trigger_execute(self) -> exp.Expr | None:
         body = self._try_parse(self._parse_statement)

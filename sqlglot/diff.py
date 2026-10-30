@@ -266,6 +266,10 @@ class ChangeDistiller:
         leaves_matching_set = self._compute_leaf_matching_set()
         matching_set = leaves_matching_set.copy()
 
+        matched_target_leaves: dict[int, list[int]] = defaultdict(list)
+        for source_leaf_id, target_leaf_id in leaves_matching_set:
+            matched_target_leaves[source_leaf_id].append(target_leaf_id)
+
         ordered_unmatched_source_nodes = {
             id(n): None for n in self._source.bfs() if id(n) in self._unmatched_source_nodes
         }
@@ -273,27 +277,40 @@ class ChangeDistiller:
             id(n): None for n in self._target.bfs() if id(n) in self._unmatched_target_nodes
         }
 
+        target_leaf_ids_cache: dict[int, set[int]] = {}
+
         for source_node_id in ordered_unmatched_source_nodes:
+            source_node = self._source_index[source_node_id]
+            source_leaf_ids = None
+
             for target_node_id in ordered_unmatched_target_nodes:
-                source_node = self._source_index[source_node_id]
                 target_node = self._target_index[target_node_id]
                 if _is_same_type(source_node, target_node):
-                    source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
-                    target_leaf_ids = {id(l) for l in _get_expression_leaves(target_node)}
+                    if source_leaf_ids is None:
+                        source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
+                        source_leaves_num = len(source_leaf_ids)
+                        candidate_target_leaf_ids = [
+                            target_leaf_id
+                            for source_leaf_id in source_leaf_ids
+                            for target_leaf_id in matched_target_leaves.get(source_leaf_id, ())
+                        ]
 
-                    max_leaves_num = max(len(source_leaf_ids), len(target_leaf_ids))
+                    target_leaf_ids = target_leaf_ids_cache.get(target_node_id)
+                    if target_leaf_ids is None:
+                        target_leaf_ids = {id(l) for l in _get_expression_leaves(target_node)}
+                        target_leaf_ids_cache[target_node_id] = target_leaf_ids
+
+                    target_leaves_num = len(target_leaf_ids)
+                    max_leaves_num = max(source_leaves_num, target_leaves_num)
                     if max_leaves_num:
                         common_leaves_num = sum(
-                            1 if s in source_leaf_ids and t in target_leaf_ids else 0
-                            for s, t in leaves_matching_set
+                            1 for t in candidate_target_leaf_ids if t in target_leaf_ids
                         )
                         leaf_similarity_score = common_leaves_num / max_leaves_num
                     else:
                         leaf_similarity_score = 0.0
 
-                    adjusted_t = (
-                        self.t if min(len(source_leaf_ids), len(target_leaf_ids)) > 4 else 0.4
-                    )
+                    adjusted_t = self.t if min(source_leaves_num, target_leaves_num) > 4 else 0.4
 
                     if leaf_similarity_score >= 0.8 or (
                         leaf_similarity_score >= adjusted_t
@@ -303,6 +320,7 @@ class ChangeDistiller:
                         self._unmatched_source_nodes.remove(source_node_id)
                         self._unmatched_target_nodes.remove(target_node_id)
                         ordered_unmatched_target_nodes.pop(target_node_id, None)
+                        target_leaf_ids_cache.pop(target_node_id, None)
                         break
 
         return matching_set

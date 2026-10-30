@@ -45,9 +45,55 @@ class TestSQLite(Validator):
                 "(SELECT 1) OFFSET 1",
                 "SELECT 1 LIMIT -1 OFFSET 1",
             ),
+            (
+                "(SELECT 1 UNION ALL SELECT 2) OFFSET 1",
+                "SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1",
+            ),
+            (
+                "SELECT 9 UNION ALL ((SELECT 1 UNION ALL SELECT 2) OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1)",
+            ),
+            (
+                "SELECT 1 UNION ALL SELECT 2 LIMIT ALL OFFSET 1",
+                "SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1",
+            ),
+            (
+                "SELECT 1 LIMIT ALL OFFSET 1",
+                "SELECT 1 LIMIT -1 OFFSET 1",
+            ),
         ):
             with self.subTest(source=source):
                 self.validate_all(expected, read={"postgres": source})
+
+    def test_subquery_modifier_conflicts(self):
+        for source, expected in (
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC LIMIT 1",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC LIMIT 1",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 LIMIT 1) LIMIT 2",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 LIMIT 1) LIMIT 2",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2 OFFSET 1) LIMIT 1 OFFSET 1",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2 OFFSET 1) LIMIT 1 OFFSET 1",
+            ),
+            (
+                "WITH a AS (SELECT 1 AS x) (WITH b AS (SELECT 2 AS x) SELECT * FROM b) LIMIT 1",
+                "WITH a AS (SELECT 1 AS x) SELECT * FROM (WITH b AS (SELECT 2 AS x) SELECT * FROM b) LIMIT 1",
+            ),
+            (
+                "WITH a AS (SELECT 1 AS x) (WITH a AS (SELECT 2 AS x) SELECT * FROM a) LIMIT 1",
+                "WITH a AS (SELECT 1 AS x) SELECT * FROM (WITH a AS (SELECT 2 AS x) SELECT * FROM a) LIMIT 1",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(expected, read={"mysql": source})
 
     def test_cast(self):
         for dtype, func in (

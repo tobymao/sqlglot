@@ -6,6 +6,10 @@ from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot._typing import E
 
 
+NULL_ON_ZERO_ROWS_AGGREGATES = (exp.Sum, exp.Avg, exp.Min, exp.Max)
+SUPPORTED_SCALAR_AGGREGATES = (exp.Count, *NULL_ON_ZERO_ROWS_AGGREGATES)
+
+
 def unnest_subqueries(expression: E) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
@@ -47,7 +51,6 @@ def unnest_subqueries(expression: E) -> E:
             and not _has_plain_explicit_group(parent)
             and _is_post_aggregation(select, parent)
         ):
-            # Hoisting a post-aggregate subquery can change the single empty-input row.
             continue
 
         if scope.external_columns:
@@ -528,8 +531,6 @@ def _has_plain_explicit_group(select: exp.Select) -> bool:
 
 
 def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
-    # The nearest ordinary aggregate consumes input rows, even inside a window.
-    # A window aggregate consumes post-group rows.
     ancestor = expression.find_ancestor(exp.AggFunc, exp.Filter, exp.Select)
     if isinstance(ancestor, exp.Filter):
         ancestor = ancestor.this.unnest()
@@ -553,40 +554,43 @@ def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
 
 def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
     expression = expression.unnest()
-    if isinstance(expression, exp.Count):
+    if isinstance(expression, SUPPORTED_SCALAR_AGGREGATES):
+        # Only decorrelate single-expression aggregates
+        if expression.expressions:
+            return False
         argument = expression.this
-        if isinstance(argument, exp.Paren):
-            argument = argument.unnest()
-        if isinstance(argument, exp.Distinct):
-            if len(argument.expressions) != 1:
-                return False
-            argument = argument.expressions[0].unnest()
-            if not isinstance(argument, exp.Column):
-                return False
-        if isinstance(argument, exp.Neg):
-            while isinstance(argument, (exp.Neg, exp.Paren)):
-                argument = argument.this
-            return argument.is_number and not expression.expressions
+        # Only COUNT supports omitted or star arguments
+        if argument is None:
+            return isinstance(expression, exp.Count)
+        argument = argument.unnest()
+        if isinstance(argument, exp.Star):
+            return isinstance(expression, exp.Count) and not any(argument.args.values())
+        return _is_supported_scalar_arithmetic(argument, inside_aggregate=True)
+    return _is_supported_scalar_arithmetic(expression, inside_aggregate=False)
+
+
+def _is_supported_scalar_arithmetic(expression: exp.Expr, *, inside_aggregate: bool) -> bool:
+    """Recognize argument arithmetic or NULL-on-0-rows aggregate arithmetic."""
+    expression = expression.unnest()
+    if isinstance(expression, exp.Column):
+        return inside_aggregate and not expression.is_star
+    if isinstance(expression, exp.CONSTANTS):
+        return inside_aggregate or expression.is_number
+    if isinstance(expression, exp.Distinct):
         return (
-            argument is None
-            or (isinstance(argument, exp.Star) and not any(argument.args.values()))
-            or (isinstance(argument, exp.Column) and not argument.is_star)
-            or isinstance(argument, exp.NONNULL_CONSTANTS)
-        ) and not expression.expressions
-    if isinstance(expression, (exp.Sum, exp.Avg, exp.Min, exp.Max)):
-        argument = expression.this.unnest()
-        return (
-            isinstance(argument, exp.Column) and not argument.is_star and not expression.expressions
+            inside_aggregate
+            and len(expression.expressions) == 1
+            and _is_supported_scalar_arithmetic(expression.expressions[0], inside_aggregate=True)
         )
-    if isinstance(expression, exp.Mul):
-        constant = expression.this.unnest()
-        aggregate = expression.expression.unnest()
-        if aggregate.is_number:
-            constant, aggregate = aggregate, constant
-        return (
-            constant.is_number
-            and isinstance(aggregate, (exp.Sum, exp.Avg))
-            and _is_supported_scalar_aggregate(aggregate)
+    if isinstance(expression, NULL_ON_ZERO_ROWS_AGGREGATES):
+        return not inside_aggregate and _is_supported_scalar_aggregate(expression)
+    if isinstance(expression, exp.Neg):
+        return _is_supported_scalar_arithmetic(expression.this, inside_aggregate=inside_aggregate)
+    if isinstance(expression, (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)):
+        return _is_supported_scalar_arithmetic(
+            expression.this, inside_aggregate=inside_aggregate
+        ) and _is_supported_scalar_arithmetic(
+            expression.expression, inside_aggregate=inside_aggregate
         )
     return False
 

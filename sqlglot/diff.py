@@ -284,8 +284,6 @@ class ChangeDistiller:
             source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
             source_leaves_num = len(source_leaf_ids)
 
-            # Only target leaves matched to a leaf under this source node can be counted as
-            # common, so the per-pair work is bounded by this list instead of the matching set.
             candidate_target_leaf_ids = [
                 target_leaf_id
                 for source_leaf_id in source_leaf_ids

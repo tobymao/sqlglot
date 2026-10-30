@@ -266,9 +266,6 @@ class ChangeDistiller:
         leaves_matching_set = self._compute_leaf_matching_set()
         matching_set = leaves_matching_set.copy()
 
-        # The matching set is indexed by source leaf so that the similarity score below can be
-        # computed from the leaves under the current source node, rather than by scanning every
-        # entry of the matching set once per candidate node pair.
         matched_target_leaves: dict[int, list[int]] = defaultdict(list)
         for source_leaf_id, target_leaf_id in leaves_matching_set:
             matched_target_leaves[source_leaf_id].append(target_leaf_id)

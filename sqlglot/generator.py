@@ -2037,7 +2037,40 @@ class Generator:
                     and isinstance(node, exp.Subquery)
                     and isinstance(node.unnest(), exp.SetOperation)
                 ):
-                    node = exp.select("*").from_(node, copy=False)
+                    # SQLite reads modifiers outside the parentheses of a derived table as
+                    # modifiers of the enclosing query, so `((SELECT 1 INTERSECT SELECT 2)
+                    # ORDER BY 1)` isn't a valid derived table. The parentheses of a wrapper
+                    # Subquery carry no meaning when modifiers follow them, so move the
+                    # modifiers onto the set operation they apply to, which renders them
+                    # inside the parentheses: `(SELECT 1 INTERSECT SELECT 2 ORDER BY 1)`.
+                    chain: list[exp.Subquery] = []
+                    deepest: exp.Expr = node
+                    while isinstance(deepest, exp.Subquery):
+                        chain.append(deepest)
+                        deepest = deepest.this
+
+                    modifiers = {
+                        key: value
+                        for wrapper in chain
+                        for key in exp.QUERY_MODIFIERS
+                        if (value := wrapper.args.get(key)) is not None
+                    }
+
+                    if (
+                        modifiers
+                        and not any(wrapper.comments for wrapper in chain)
+                        and isinstance(deepest, exp.SetOperation)
+                        and not deepest.args.get("with_")
+                        and not any(deepest.args.get(key) for key in exp.QUERY_MODIFIERS)
+                    ):
+                        for wrapper in chain:
+                            for key in exp.QUERY_MODIFIERS:
+                                wrapper.set(key, None)
+                        for key, value in modifiers.items():
+                            deepest.set(key, value)
+                        node = exp.select("*").from_(chain[-1], copy=False)
+                    else:
+                        node = exp.select("*").from_(node, copy=False)
                 sqls.append(open_parens + self.indent(self.sql(node), level=depth, pad=0))
                 open_parens = ""
 

@@ -4191,6 +4191,26 @@ FROM subquery2""",
             write={"sqlite": "SELECT 1 AS x, 2 AS x UNION SELECT 3, 4 INTERSECT SELECT 1, 2"},
         )
 
+        # SQLite reads modifiers outside a derived table's parentheses as modifiers of the
+        # enclosing query, so a grouping followed by modifiers would be invalid there. Fold
+        # them into the set operation they apply to instead.
+        self.validate_all(
+            "SELECT 3 UNION ALL ((SELECT 2 INTERSECT SELECT 2) ORDER BY 1 NULLS LAST)",
+            read={"postgres": "SELECT 3 UNION ALL ((SELECT 2 INTERSECT SELECT 2) ORDER BY 1)"},
+            write={
+                "sqlite": "SELECT 3 UNION ALL SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST)"
+            },
+        )
+        self.validate_all(
+            "SELECT 3 UNION ALL (((SELECT 2 INTERSECT SELECT 2)) ORDER BY 1 NULLS LAST LIMIT 2)",
+            read={
+                "postgres": "SELECT 3 UNION ALL (((SELECT 2 INTERSECT SELECT 2)) ORDER BY 1 LIMIT 2)"
+            },
+            write={
+                "sqlite": "SELECT 3 UNION ALL SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST LIMIT 2)"
+            },
+        )
+
         # Each left-to-right UNION -> INTERSECT step nests another grouping
         expected = "SELECT 1"
         for _ in range(200):

@@ -320,6 +320,7 @@ class ChangeDistiller:
                         self._unmatched_source_nodes.remove(source_node_id)
                         self._unmatched_target_nodes.remove(target_node_id)
                         ordered_unmatched_target_nodes.pop(target_node_id, None)
+                        target_leaf_ids_cache.pop(target_node_id, None)
                         break
 
         return matching_set

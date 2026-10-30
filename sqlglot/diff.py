@@ -277,8 +277,6 @@ class ChangeDistiller:
             id(n): None for n in self._target.bfs() if id(n) in self._unmatched_target_nodes
         }
 
-        # A node's leaves don't depend on the node it's compared against, so they're computed
-        # once per node instead of once per pair.
         target_leaf_ids_cache: dict[int, set[int]] = {}
 
         for source_node_id in ordered_unmatched_source_nodes:

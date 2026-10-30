@@ -281,14 +281,7 @@ class ChangeDistiller:
 
         for source_node_id in ordered_unmatched_source_nodes:
             source_node = self._source_index[source_node_id]
-            source_leaf_ids = {id(l) for l in _get_expression_leaves(source_node)}
-            source_leaves_num = len(source_leaf_ids)
-
-            candidate_target_leaf_ids = [
-                target_leaf_id
-                for source_leaf_id in source_leaf_ids
-                for target_leaf_id in matched_target_leaves.get(source_leaf_id, ())
-            ]
+            source_leaf_ids = None
 
             for target_node_id in ordered_unmatched_target_nodes:
                 target_node = self._target_index[target_node_id]

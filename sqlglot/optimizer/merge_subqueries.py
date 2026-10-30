@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
+from sqlglot.optimizer.helpers import is_implicit_group_by_all
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -233,7 +234,10 @@ def _mergeable(
     def _window_projection_blocks_merge(window_aliases: set[str]) -> bool:
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
-          - the outer query filters or joins (WHERE/JOIN), which changes that row set, or
+          - the outer query filters or joins (WHERE/JOIN), which changes that row set,
+          - the outer query is a bare GROUP BY ALL, which implicitly groups by every
+            projection (unlike ALL as a grouping-sets modifier, e.g. GROUP BY ALL
+            CUBE (...)), or
           - a window column is referenced in an operation that isn't pushed down
             (GROUP BY, ORDER BY, HAVING, aggregate).
         """
@@ -241,6 +245,9 @@ def _mergeable(
             return False
 
         if outer_args.get("where") or outer_args.get("joins"):
+            return True
+
+        if is_implicit_group_by_all(t.cast(exp.Select, outer)):
             return True
 
         return any(

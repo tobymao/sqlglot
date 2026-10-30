@@ -6,7 +6,7 @@ from collections import defaultdict, deque
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
-from sqlglot.optimizer.helpers import projection_has_aggregate
+from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
@@ -294,7 +294,7 @@ def projection_reachability(
 
         if isinstance(query, exp.Select):
             windows = query.args.get("windows")
-            group_all = _is_implicit_group_by_all(query)
+            group_all = is_implicit_group_by_all(query)
             group_by_ordinals[scope] = _group_by_ordinal_refs(query)
             ordinals = {id(s) for _, s in group_by_ordinals[scope]}
             first_aggregate: DependencyNode | None = None
@@ -556,21 +556,6 @@ def _is_self_referencing_cte(scope: Scope) -> bool:
 # Selection to use if selection list is empty
 def default_selection(is_agg: bool) -> exp.Alias:
     return alias(exp.Max(this=exp.Literal.number(1)) if is_agg else "1", "_").assert_is(exp.Alias)
-
-
-def _is_implicit_group_by_all(select: exp.Select) -> bool:
-    """Bare GROUP BY ALL infers its keys from the SELECT list, unlike ALL as a
-    grouping-sets modifier (e.g. GROUP BY ALL CUBE (...) or GROUP BY ALL a, b)."""
-    group = select.args.get("group")
-    if not group or not group.args.get("all"):
-        return False
-
-    return not (
-        group.expressions
-        or group.args.get("cube")
-        or group.args.get("rollup")
-        or group.args.get("grouping_sets")
-    )
 
 
 def _group_by_ordinal_refs(

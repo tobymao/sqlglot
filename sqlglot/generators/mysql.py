@@ -82,11 +82,12 @@ def date_add_sql(
     kind: str,
 ) -> t.Callable[[generator.Generator, exp.Expr], str]:
     def func(self: generator.Generator, expression: exp.Expr) -> str:
-        return self.func(
-            f"DATE_{kind}",
-            expression.this,
-            exp.Interval(this=expression.expression, unit=unit_to_var(expression)),
-        )
+        interval = expression.expression
+        if not isinstance(interval, exp.Interval):
+            interval = exp.Interval(this=interval, unit=unit_to_var(expression))
+        # Otherwise the argument is already an INTERVAL (e.g. DATE_ADD(x, INTERVAL 7 DAY) parsed by a
+        # dialect that keeps it as is); wrapping it again would produce INTERVAL (INTERVAL '7' DAY) DAY
+        return self.func(f"DATE_{kind}", expression.this, interval)
 
     return func
 

@@ -338,6 +338,16 @@ class TestStarrocks(Validator):
         self.validate_identity("SELECT ADDDATE(x, 7)", "SELECT DATE_ADD(x, INTERVAL 7 DAY)")
         self.validate_identity("SELECT SUBDATE(x, 7)", "SELECT DATE_SUB(x, INTERVAL 7 DAY)")
 
+        # An INTERVAL argument kept as is by the source dialect is not wrapped in a second INTERVAL
+        self.validate_all(
+            "SELECT DATE_ADD(x, INTERVAL '7' DAY)",
+            read={"": "SELECT DATE_ADD(x, INTERVAL 7 DAY)"},
+        )
+        self.validate_all(
+            "SELECT DATE_SUB(x, INTERVAL '1' MONTH)",
+            read={"": "SELECT DATE_SUB(x, INTERVAL 1 MONTH)"},
+        )
+
     def test_regex(self):
         self.validate_all(
             "SELECT REGEXP(abc, '%foo%')",

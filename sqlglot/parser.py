@@ -646,6 +646,7 @@ class Parser:
         TokenType.VOID,
         TokenType.OBJECT,
         TokenType.OBJECT_IDENTIFIER,
+        TokenType.REF,
         TokenType.INET,
         TokenType.IPADDRESS,
         TokenType.IPPREFIX,
@@ -6870,6 +6871,13 @@ class Parser:
                     return this
             elif type_token in self.ENUM_TYPE_TOKENS:
                 expressions = self._parse_csv(self._parse_equality)
+            elif type_token == TokenType.REF:
+                # REF(schema.customer) names a target; REF(1) can still be a function call.
+                target = self._try_parse(lambda: self._parse_table_parts(schema=True))
+                if target is None:
+                    self._retreat(index)
+                    return None
+                expressions = [target]
             elif type_token == TokenType.JSON:
                 # ClickHouse JSON type supports arguments: JSON(col Type, SKIP col, param=value)
                 # https://clickhouse.com/docs/sql-reference/data-types/newjson

@@ -219,6 +219,7 @@ class TokenType(IntEnum):
     IMAGE = auto()
     VARIANT = auto()
     OBJECT = auto()
+    REF = auto()
     INET = auto()
     IPADDRESS = auto()
     IPPREFIX = auto()

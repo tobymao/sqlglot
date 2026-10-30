@@ -352,6 +352,7 @@ class Tokenizer(_TokenizerBase):
         "NOTNULL": TokenType.NOTNULL,
         "NULL": TokenType.NULL,
         "OBJECT": TokenType.OBJECT,
+        "REF": TokenType.REF,
         "OFFSET": TokenType.OFFSET,
         "ON": TokenType.ON,
         "OR": TokenType.OR,

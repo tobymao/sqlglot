@@ -81,19 +81,6 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _offset_to_limit(expression: exp.Expr) -> exp.Expr:
-    if not isinstance(expression, exp.Select):
-        return expression
-
-    offset = expression.args.get("offset")
-    limit = expression.args.get("limit")
-
-    if offset and (not limit or (isinstance(limit, exp.Limit) and limit.is_limit_all)):
-        expression.limit(-1, copy=False)
-
-    return expression
-
-
 class SQLiteGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     TRY_SUPPORTED = False
@@ -173,7 +160,6 @@ class SQLiteGenerator(generator.Generator):
         exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [
-                _offset_to_limit,
                 transforms.eliminate_distinct_on,
                 transforms.eliminate_qualify,
                 transforms.eliminate_semi_and_anti_joins,
@@ -203,6 +189,29 @@ class SQLiteGenerator(generator.Generator):
     }
 
     LIMIT_FETCH = "LIMIT"
+
+    def offset_limit_modifiers(
+        self, expression: exp.Expr, fetch: bool, limit: exp.Fetch | exp.Limit | None
+    ) -> list[str]:
+        if expression.args.get("offset") and (
+            not limit or (isinstance(limit, exp.Limit) and limit.is_limit_all)
+        ):
+            limit = exp.Limit(expression=exp.Literal.number(-1))
+        return super().offset_limit_modifiers(expression, fetch, limit)
+
+    def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
+        if any(expression.args.get(key) for key in ("order", "limit", "offset")):
+            query = expression.this
+            keys = ("order", "limit", "offset", "with_")
+            # Merge grouping modifiers unless doing so would overwrite an inner clause.
+            if any(expression.args.get(key) and query.args.get(key) for key in keys):
+                query = exp.select("*").from_(query.subquery(copy=False), copy=False)
+            for key in keys:
+                if value := expression.args.get(key):
+                    query.set(key, value.pop())
+            return self.sql(query)
+
+        return super().subquery_sql(expression, sep=sep)
 
     def autoincrementcolumnconstraint_sql(
         self, expression: exp.AutoIncrementColumnConstraint

@@ -4,10 +4,35 @@ from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.scope import build_scope
 from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
 
 class TestSchema(unittest.TestCase):
+    def test_ref_type(self) -> None:
+        schema = MappingSchema({"orders": {"customer": "REF(public.customer)"}})
+        datatype = exp.DataType.build("REF(public.customer)")
+        self.assertEqual(schema.get_column_type(exp.to_table("orders"), "customer"), datatype)
+
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "SELECT customer, ARRAY(customer), COALESCE(customer, NULL), "
+                    "CAST(customer AS REF(public.customer)) FROM orders"
+                ),
+                schema=schema,
+            ),
+            schema=schema,
+        )
+        self.assertEqual(expression.selects[0].type, datatype)
+        self.assertEqual(
+            expression.selects[1].type, exp.DataType.build("ARRAY<REF(public.customer)>")
+        )
+        self.assertEqual(expression.selects[2].type, datatype)
+        self.assertEqual(expression.selects[3].type, exp.DataType.build('REF("public"."customer")'))
+        # The target inside REF is type metadata, not another source in the query.
+        self.assertEqual(set(build_scope(expression).sources), {"orders"})
+
     def assert_column_names(self, schema, *table_results):
         for table, result in table_results:
             with self.subTest(f"{table} -> {result}"):

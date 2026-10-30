@@ -9,6 +9,69 @@ from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
+    def test_ref_type(self) -> None:
+        for dialect, target_sql in (
+            ("", "customer"),
+            ("", "catalog.schema.customer"),
+            ("snowflake", '"Sales"."Customer Accounts"'),
+            ("snowflake", '"Sales"."Customer\'s ""Account"""'),
+            ("bigquery", "`my-project.sales.customer`"),
+            ("tsql", "[Sales].[Customer Accounts]"),
+            ("duckdb", '"Sales"."Customer Accounts"'),
+            ("trino", '"Sales"."Customer Accounts"'),
+        ):
+            with self.subTest(dialect=dialect, target=target_sql):
+                datatype = parse_one(f"ref ( {target_sql} )", dialect=dialect, into=exp.DataType)
+                target = parse_one(target_sql, dialect=dialect, into=exp.Table)
+                self.assertEqual(datatype.this, exp.DType.REF)
+                self.assertEqual(datatype.expressions, [target])
+                self.assertEqual(datatype.sql(dialect), f"REF({target.sql(dialect)})")
+                self.assertEqual(
+                    parse_one(datatype.sql(dialect), dialect=dialect, into=exp.DataType),
+                    datatype,
+                )
+
+        for sql in (
+            "ARRAY<REF(public.customer)>",
+            "STRUCT<manager REF(public.employee)>",
+            "MAP<INT, REF(public.customer)>",
+            "REF(public.customer)[]",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql, into=exp.DataType)
+                self.assertTrue(
+                    any(t.is_type(exp.DType.REF) for t in expression.find_all(exp.DataType))
+                )
+                self.assertEqual(parse_one(expression.sql(), into=exp.DataType), expression)
+
+        for sql in (
+            "CREATE TABLE orders (customer REF(public.customer))",
+            "CAST(customer AS REF(public.customer))",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql)
+                self.assertEqual(expression.find(exp.DataType).this, exp.DType.REF)
+                self.assertEqual(expression.sql(), sql)
+
+        for sql in ("REF()", "REF(1)", "REF(a, b)", "REF(a + b)", "REF(a", "REF(a.)"):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                parse_one(sql, into=exp.DataType)
+
+    def test_ref_identifiers_and_functions(self) -> None:
+        for sql in (
+            "SELECT ref FROM ref",
+            "SELECT ref.customer FROM orders AS ref",
+            "SELECT REF(t) FROM customers AS t",
+            "SELECT REF(1)",
+            "SELECT REF(a + 1)",
+            "SELECT REF(a, b)",
+            "SELECT REF()",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql)
+                self.assertEqual(expression.sql(), sql)
+                self.assertIsNone(expression.find(exp.DataType))
+
     def test_parse_empty(self):
         with self.assertRaises(ParseError):
             parse_one("")

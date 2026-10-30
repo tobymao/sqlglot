@@ -117,6 +117,7 @@ class DType(AutoName):
     NVARCHAR = auto()
     OBJECT = auto()
     RANGE = auto()
+    REF = auto()
     ROWVERSION = auto()
     SERIAL = auto()
     SET = auto()

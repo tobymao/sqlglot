@@ -1261,6 +1261,23 @@ FROM foo""",
         with self.assertRaises(ValueError):
             exp.values([(1, 2), (3, 4)], columns=["a"])
 
+    def test_ref_type_builder(self) -> None:
+        target = exp.Table(
+            this=exp.Identifier(this="Customer", quoted=True),
+            db=exp.Identifier(this="Sales", quoted=True),
+        )
+        datatype = exp.DType.REF.into_expr(expressions=[target])
+
+        self.assertEqual(datatype, exp.DataType.build('REF("Sales"."Customer")'))
+        self.assertEqual(datatype.sql("snowflake"), 'REF("Sales"."Customer")')
+        self.assertEqual(datatype.sql("bigquery"), "REF(`Sales`.`Customer`)")
+        self.assertEqual(datatype.sql("tsql"), "REF([Sales].[Customer])")
+        self.assertTrue(datatype.is_type(exp.DType.REF))
+        self.assertTrue(datatype.is_type('REF("Sales"."Customer")'))
+        self.assertFalse(datatype.is_type('REF("Sales"."Employee")'))
+        self.assertFalse(datatype.is_type(exp.DType.OBJECT, exp.DType.STRUCT))
+        self.assertEqual(exp.Expr.load(datatype.dump()), datatype)
+
     def test_data_type_builder(self):
         self.assertEqual(exp.DataType.build("TEXT").sql(), "TEXT")
         self.assertEqual(exp.DataType.build("DECIMAL(10, 2)").sql(), "DECIMAL(10, 2)")

@@ -1,6 +1,32 @@
 Changelog
 =========
 
+## [v30.27.0] - 2026-10-30
+### :boom: BREAKING CHANGES
+- due to [`5b7af1e`](https://github.com/tobymao/sqlglot/commit/5b7af1e765052d256aacb7d42624aee1a076fac4) - parse ~ as a partial regex match from DuckDB 2.0 [a mix of models in Hermes Agent] *(PR [#8840](https://github.com/tobymao/sqlglot/pull/8840) by [@ryanduguid](https://github.com/ryanduguid))*:
+
+  parse ~ as a partial regex match from DuckDB 2.0 [a mix of models in Hermes Agent] (#8840)
+
+
+### :sparkles: New Features
+- [`9878263`](https://github.com/tobymao/sqlglot/commit/98782638dd6dbdedebad0e6ff6edc6e69598b81e) - add REF data type for named references *(PR [#8847](https://github.com/tobymao/sqlglot/pull/8847) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`04f4a44`](https://github.com/tobymao/sqlglot/commit/04f4a4405b80dde33a05da0f4271a6ea2ac38938) - **parser**: allow IN as identifier *(PR [#8837](https://github.com/tobymao/sqlglot/pull/8837) by [@treysp](https://github.com/treysp))*
+- [`f31f109`](https://github.com/tobymao/sqlglot/commit/f31f109daef0ca99347d36295534a0d59956059c) - **duckdb**: prevent SORT BY tokenization *(commit by [@treysp](https://github.com/treysp))*
+- [`5b7af1e`](https://github.com/tobymao/sqlglot/commit/5b7af1e765052d256aacb7d42624aee1a076fac4) - **duckdb**: parse ~ as a partial regex match from DuckDB 2.0 [a mix of models in Hermes Agent] *(PR [#8840](https://github.com/tobymao/sqlglot/pull/8840) by [@ryanduguid](https://github.com/ryanduguid))*
+- [`20f01c7`](https://github.com/tobymao/sqlglot/commit/20f01c7fbc0d7b80d1ef6ead063e6510026de36d) - **optimizer**: Fix merging subqueries with group by all and window functions ([#8834](https://github.com/tobymao/sqlglot/pull/8834)) [CODEX] *(commit by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`52763cd`](https://github.com/tobymao/sqlglot/commit/52763cdd96d5d6d4e7d8f06213c586ebfec8c711) - **sqlite**: preserve modifiers on parenthesized queries [CODEX] *(PR [#8843](https://github.com/tobymao/sqlglot/pull/8843) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8841](https://github.com/tobymao/sqlglot/issues/8841) opened by [@dvzadara](https://github.com/dvzadara)*
+- [`da00199`](https://github.com/tobymao/sqlglot/commit/da00199fa2a33505bbb4b6c708d1ec10a0549850) - **optimizer**: skip decorrelation for subqueries evaluated after outer GROUP BY *(PR [#8836](https://github.com/tobymao/sqlglot/pull/8836) by [@treysp](https://github.com/treysp))*
+
+### :zap: Performance Improvements
+- [`2ef935d`](https://github.com/tobymao/sqlglot/commit/2ef935d6ce02dd46e579b2edda7fce6298c8ad11) - **diff**: index the leaf matching set when scoring node pairs [CLAUDE] *(PR [#8838](https://github.com/tobymao/sqlglot/pull/8838) by [@LD-RW](https://github.com/LD-RW))*
+
+### :recycle: Refactors
+- [`6f90b49`](https://github.com/tobymao/sqlglot/commit/6f90b498078d65515bf57cf71c94332daf282009) - **diff**: keep the edit script in a stable order *(PR [#8844](https://github.com/tobymao/sqlglot/pull/8844) by [@LD-RW](https://github.com/LD-RW))*
+
+
 ## [v30.26.0] - 2026-10-29
 ### :boom: BREAKING CHANGES
 - due to [`e54ad9a`](https://github.com/tobymao/sqlglot/commit/e54ad9aaedeb5e9b2be615ebd5f1ff40cfb854a2) - resolve set operation types during annotation [CODEX] *(PR [#8720](https://github.com/tobymao/sqlglot/pull/8720) by [@georgesittas](https://github.com/georgesittas))*:
@@ -16560,3 +16586,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.24.0]: https://github.com/tobymao/sqlglot/compare/v30.23.0...v30.24.0
 [v30.25.0]: https://github.com/tobymao/sqlglot/compare/v30.24.0...v30.25.0
 [v30.26.0]: https://github.com/tobymao/sqlglot/compare/v30.25.0...v30.26.0
+[v30.27.0]: https://github.com/tobymao/sqlglot/compare/v30.26.0...v30.27.0

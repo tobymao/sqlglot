@@ -42,7 +42,8 @@ def unnest_subqueries(expression: E) -> E:
             and scope.parent.is_correlated_subquery
             and (
                 _has_aggregate_projection(parent)
-                or ((having := parent.args.get("having")) and find_in_scope(having, exp.AggFunc))
+                # HAVING aggregates an ungrouped query even without aggregate functions
+                or parent.args.get("having")
                 or (
                     (qualify := parent.args.get("qualify"))
                     and projection_has_aggregate(qualify, parent.args.get("windows"))

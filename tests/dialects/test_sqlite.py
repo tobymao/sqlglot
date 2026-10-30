@@ -7,6 +7,48 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_subquery_modifiers(self):
+        for source, expected in (
+            (
+                "SELECT 3 UNION ALL ((SELECT 2 INTERSECT SELECT 2) ORDER BY 1)",
+                "SELECT 3 UNION ALL SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST)",
+            ),
+            (
+                "((SELECT 2 INTERSECT SELECT 2) ORDER BY 1) UNION ALL SELECT 3",
+                "SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST) UNION ALL SELECT 3",
+            ),
+            (
+                "SELECT 9 UNION ALL ((SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) ORDER BY 1 DESC LIMIT 1 OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 DESC NULLS FIRST LIMIT 1 OFFSET 1)",
+            ),
+            (
+                "SELECT 9 UNION ALL (((SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) ORDER BY 1 LIMIT 2) OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 NULLS LAST LIMIT 2 OFFSET 1)",
+            ),
+            (
+                "SELECT * FROM ((SELECT 1 UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1) AS t",
+                "SELECT * FROM (SELECT 1 UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1) AS t",
+            ),
+            (
+                "SELECT ((SELECT 1 UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1)",
+                "SELECT (SELECT 1 UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1)",
+            ),
+            (
+                "WITH t AS (SELECT 1 AS x) (SELECT x FROM t UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1",
+                "WITH t AS (SELECT 1 AS x) SELECT x FROM t UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1",
+            ),
+            (
+                "(SELECT 1) LIMIT 1",
+                "SELECT 1 LIMIT 1",
+            ),
+            (
+                "(SELECT 1) OFFSET 1",
+                "SELECT 1 LIMIT -1 OFFSET 1",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(expected, read={"postgres": source})
+
     def test_cast(self):
         for dtype, func in (
             ("DATETIME", "DATETIME"),

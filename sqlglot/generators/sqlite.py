@@ -204,6 +204,17 @@ class SQLiteGenerator(generator.Generator):
 
     LIMIT_FETCH = "LIMIT"
 
+    def subquery_sql(self, expression: exp.Subquery, sep: str = " AS ") -> str:
+        if any(expression.args.get(key) for key in ("order", "limit", "offset")):
+            # Modifiers across grouping parentheses apply to the same query.
+            query = expression.this
+            for key in ("order", "limit", "offset", "with_"):
+                if value := expression.args.get(key):
+                    query.set(key, value.pop())
+            return self.sql(query)
+
+        return super().subquery_sql(expression, sep=sep)
+
     def autoincrementcolumnconstraint_sql(
         self, expression: exp.AutoIncrementColumnConstraint
     ) -> str:

@@ -97,18 +97,7 @@ def unnest(select, parent_select, next_alias_name):
                 or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
             )
         ):
-            ancestor = select.parent.find_ancestor(exp.AggFunc, exp.Select)
-            # A window aggregate can still need a grouped MAX in its argument.
-            while (
-                not isinstance(ancestor, exp.Query)
-                and ancestor.parent
-                and ancestor.arg_key == "this"
-                and not isinstance(ancestor.parent, (exp.Func, exp.Window))
-            ):
-                ancestor = ancestor.parent
-            if isinstance(ancestor, exp.Select) or (
-                ancestor.arg_key == "this" and isinstance(ancestor.parent, exp.Window)
-            ):
+            if _is_post_aggregation(select, parent_select):
                 column = exp.Max(this=column)
         elif not isinstance(select.parent, exp.Subquery):
             return
@@ -246,6 +235,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
         elif not _is_plain_group(group):
             return
+
+    # Joined columns may not be grouped, so keep post-group subqueries correlated.
+    parent_group = parent_select.args.get("group")
+    if parent_group and _is_post_aggregation(select, parent_select):
+        return
 
     table_alias = next_alias_name()
     keys = []
@@ -486,6 +480,30 @@ def _is_plain_group(group: exp.Group) -> bool:
         or (isinstance(e, exp.Tuple) and not e.expressions)
         for e in group.expressions
     )
+
+
+def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
+    # The nearest ordinary aggregate consumes input rows, even inside a window.
+    # A window aggregate consumes post-group rows.
+    ancestor = expression.find_ancestor(exp.AggFunc, exp.Filter, exp.Select)
+    if isinstance(ancestor, exp.Filter):
+        ancestor = ancestor.this.unnest()
+    if isinstance(ancestor, exp.AggFunc):
+        # Look through FILTER, IGNORE NULLS and parentheses for an enclosing window.
+        while (
+            ancestor.parent is not select
+            and ancestor.parent
+            and ancestor.arg_key == "this"
+            and not isinstance(ancestor.parent, (exp.Func, exp.Window))
+        ):
+            ancestor = ancestor.parent
+        if not (ancestor.arg_key == "this" and isinstance(ancestor.parent, exp.Window)):
+            return False
+
+    node: exp.Expr | None = expression
+    while node is not None and node.parent is not select:
+        node = node.parent
+    return node is not None and node.arg_key not in ("with_", "from_", "laterals", "joins", "where")
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:

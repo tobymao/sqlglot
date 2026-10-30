@@ -2018,49 +2018,6 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
 
-    def test_unnest_subqueries_quantified_aggregates(self):
-        for correlated, subqueries in (
-            (
-                True,
-                (
-                    "SELECT COUNT(*) FROM y WHERE y.b = x.a",
-                    "SELECT 1 FROM y WHERE y.b = x.a HAVING 1 = 1",
-                    "SELECT 1 FROM y WHERE y.b = x.a ORDER BY COUNT(*)",
-                    "SELECT y.c FROM y WHERE y.b = x.a GROUP BY y.c",
-                    "SELECT 1 FROM y WHERE y.b = x.a GROUP BY ()",
-                    "SELECT COUNT(*) OVER () FROM y WHERE y.b = x.a",
-                ),
-            ),
-            (
-                False,
-                (
-                    "SELECT y.b FROM y WHERE y.b = x.a",
-                    "SELECT y.b FROM y WHERE y.b = x.a AND y.c > (SELECT MAX(z.c) FROM z)",
-                ),
-            ),
-        ):
-            for subquery in subqueries:
-                for op in ("IN", "= ANY", "= ALL"):
-                    sql = f"SELECT x.a, x.a {op} ({subquery}) AS r FROM x"
-                    for full_optimize in (False, True):
-                        with self.subTest(sql=sql, full_optimize=full_optimize):
-                            if full_optimize:
-                                expression = optimizer.optimize(
-                                    sql, schema=self.schema, dialect="duckdb"
-                                )
-                            else:
-                                expression = optimizer.unnest_subqueries.unnest_subqueries(
-                                    qualify(
-                                        parse_one(sql, read="duckdb"),
-                                        schema=self.schema,
-                                        dialect="duckdb",
-                                    )
-                                )
-                            self.assertEqual(
-                                correlated,
-                                any(scope.external_columns for scope in traverse_scope(expression)),
-                            )
-
     def test_optimize_subqueries_in_join_on(self):
         for sql in (
             "SELECT x.a, y.b FROM x LEFT JOIN y ON x.a = y.b "

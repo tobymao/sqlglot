@@ -15,6 +15,7 @@ ANONYMIZED_TYPES = {
     TokenType.HEX_STRING,
     TokenType.HEREDOC_STRING,
     TokenType.IDENTIFIER,
+    TokenType.NATIONAL_RAW_STRING,
     TokenType.NATIONAL_STRING,
     TokenType.NUMBER,
     TokenType.RAW_STRING,

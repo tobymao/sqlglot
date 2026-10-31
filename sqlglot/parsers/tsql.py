@@ -321,6 +321,24 @@ def _build_datetrunc(args: list) -> exp.TimestampTrunc:
 
 
 class TSQLParser(parser.Parser):
+    BARE_TABLE_HINTS = {
+        "NOLOCK",
+        "READUNCOMMITTED",
+        "UPDLOCK",
+        "REPEATABLEREAD",
+        "SERIALIZABLE",
+        "READCOMMITTED",
+        "TABLOCK",
+        "TABLOCKX",
+        "PAGLOCK",
+        "ROWLOCK",
+        "NOWAIT",
+        "READPAST",
+        "XLOCK",
+        "SNAPSHOT",
+        "NOEXPAND",
+    }
+
     SET_REQUIRES_ASSIGNMENT_DELIMITER = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
@@ -339,8 +357,8 @@ class TSQLParser(parser.Parser):
     }
 
     # T-SQL does not allow BEGIN to be used as an identifier
-    ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS - {TokenType.BEGIN}
-    ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS - {TokenType.BEGIN}
+    ID_VAR_TOKENS = (parser.Parser.ID_VAR_TOKENS | {TokenType.RETURNING}) - {TokenType.BEGIN}
+    ALIAS_TOKENS = (parser.Parser.ALIAS_TOKENS | {TokenType.RETURNING}) - {TokenType.BEGIN}
     TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS | {TokenType.ANTI, TokenType.SEMI}) - {
         TokenType.BEGIN
     }
@@ -722,6 +740,58 @@ class TSQLParser(parser.Parser):
                 this.set("temporary", True)
 
         return this
+
+    def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
+        # Schema mode already skips function parsing; otherwise, '(' may start a bare table hint.
+        if not schema and self._next.token_type == TokenType.L_PAREN:
+            index = self._index
+            self._advance(2)
+            is_hint = self._match_texts(self.BARE_TABLE_HINTS) and self._match(TokenType.R_PAREN)
+            self._retreat(index)
+
+            if is_hint and (this := self._parse_id_var(any_token=False)):
+                return this
+
+        return super()._parse_table_part(schema=schema)
+
+    def _parse_table(
+        self,
+        schema: bool = False,
+        joins: bool = False,
+        alias_tokens: Collection[TokenType] | None = None,
+        parse_bracket: bool = False,
+        is_db_reference: bool = False,
+        parse_partition: bool = False,
+        consume_pipe: bool = False,
+    ) -> exp.Expr | None:
+        table = super()._parse_table(
+            schema=schema,
+            joins=joins,
+            alias_tokens=alias_tokens,
+            parse_bracket=parse_bracket,
+            is_db_reference=is_db_reference,
+            parse_partition=parse_partition,
+            consume_pipe=consume_pipe,
+        )
+        if (
+            isinstance(table, exp.Table)
+            and not table.args.get("hints")
+            and (alias := table.args.get("alias"))
+            and len(alias.columns) == 1
+            and isinstance(hint := alias.columns[0], exp.Identifier)
+            and not hint.quoted
+            and hint.name.upper() in self.BARE_TABLE_HINTS
+            and all(isinstance(part, exp.Identifier) for part in table.parts)
+        ):
+            var = exp.var(hint.name)
+            var.add_comments(hint.pop_comments())
+            alias.set("columns", None)
+            if not alias.this:
+                table.add_comments(alias.pop_comments())
+                table.set("alias", self._parse_table_alias(alias_tokens=alias_tokens))
+            table.set("hints", [exp.WithTableHint(expressions=[var])])
+
+        return table
 
     def _parse_table_parts(
         self,

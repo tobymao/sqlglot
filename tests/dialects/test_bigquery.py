@@ -23,6 +23,25 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_isnull_alias(self):
+        self.validate_identity("SELECT 0 isnull", "SELECT 0 AS isnull")
+        self.validate_identity(
+            "SELECT CASE WHEN TRUE THEN 0 ELSE 1 END isnull",
+            "SELECT CASE WHEN TRUE THEN 0 ELSE 1 END AS isnull",
+        )
+        expression = annotate_types(
+            qualify(
+                self.parse_one(
+                    "WITH a AS (SELECT 1 AS x, 0 isnull), "
+                    "u AS (SELECT * EXCEPT(isnull) FROM a UNION ALL SELECT 2 AS x) "
+                    "SELECT u.x FROM u"
+                ),
+                dialect="bigquery",
+            ),
+            dialect="bigquery",
+        )
+        self.assertTrue(expression.selects[0].is_type(exp.DType.INT))
+
     def test_byte_strings(self):
         for sql, hex_value in (
             ("b''", ""),
@@ -330,6 +349,13 @@ class TestBigQuery(Validator):
             check_command_warning=True,
         )
         self.validate_identity("SELECT MAKE_INTERVAL(100, 11, 1, 12, 30, 10)")
+        self.validate_all(
+            "SELECT MAKE_INTERVAL(1, day => '2\\'; SELECT 1; --')",
+            write={
+                "duckdb": "SELECT INTERVAL '1 year 2''; SELECT 1; -- day'",
+                "snowflake": "SELECT INTERVAL '1 year, 2\\'; SELECT 1; -- day'",
+            },
+        )
         self.validate_identity(
             "WHILE i < ARRAY_LENGTH(batches) DO SET x = batches[OFFSET(i)]",
             check_command_warning=True,
@@ -1511,6 +1537,10 @@ LANGUAGE js AS
             "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)",
             write={"bigquery": "SELECT ARRAY(SELECT x FROM UNNEST([0, 1]) AS x)"},
         )
+        self.validate_identity("SELECT [(SELECT 1), 2]")
+        self.validate_identity("SELECT [1, (SELECT 2)]")
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a), STRUCT(2 AS a)]")
+        self.validate_identity("SELECT [COALESCE((SELECT 1), 0), 2]")
         self.validate_all(
             "SELECT ARRAY(SELECT DISTINCT x FROM UNNEST(some_numbers) AS x) AS unique_numbers",
             write={
@@ -1709,7 +1739,7 @@ LANGUAGE js AS
             write={
                 "bigquery": "DATE_DIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE), DAY)",
                 "mysql": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
-                "starrocks": "DATE_DIFF('DAY', CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
+                "starrocks": "DATEDIFF(CAST('2010-07-07' AS DATE), CAST('2008-12-25' AS DATE))",
             },
         )
         self.validate_all(
@@ -1946,7 +1976,7 @@ WHERE
             "SELECT ARRAY_TO_STRING(['cake', 'pie', NULL], '--', 'MISSING') AS text",
             write={
                 "bigquery": "SELECT ARRAY_TO_STRING(['cake', 'pie', NULL], '--', 'MISSING') AS text",
-                "duckdb": "SELECT ARRAY_TO_STRING(LIST_TRANSFORM(['cake', 'pie', NULL], x -> COALESCE(x, 'MISSING')), '--') AS text",
+                "duckdb": "SELECT ARRAY_TO_STRING(LIST_TRANSFORM(['cake', 'pie', NULL], LAMBDA x : COALESCE(CAST(x AS TEXT), 'MISSING')), '--') AS text",
             },
         )
         self.validate_all(
@@ -2127,6 +2157,7 @@ WHERE
             "SAFE_CONVERT_BYTES_TO_STRING(b'\xc2')", "SAFE_CONVERT_BYTES_TO_STRING(b'\\xc3\\x82')"
         )
         self.validate_identity("FROM_HEX('foo')")
+        self.validate_all("FROM_HEX('CAFE')", write={"clickhouse": "UNHEX('CAFE')"})
         self.validate_identity("TO_CODE_POINTS('foo')")
         self.validate_identity("CODE_POINTS_TO_BYTES([65, 98])")
         self.validate_identity("PARSE_BIGNUMERIC('1.2')")
@@ -3045,6 +3076,10 @@ OPTIONS (
 
     def test_json_extract(self):
         self.validate_all(
+            "SELECT JSON_EXTRACT_SCALAR(j, '$.a')",
+            read={"clickhouse": "SELECT JSONExtractString(j, 'a')"},
+        )
+        self.validate_all(
             """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
             write={
                 "bigquery": """SELECT JSON_QUERY('{"class": {"students": []}}', '$.class')""",
@@ -3504,6 +3539,17 @@ OPTIONS (
         finally:
             BigQuery.NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
+    def test_array(self):
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [STRUCT((SELECT 1) AS a)]")
+
     def test_array_agg(self):
         for distinct in ("", "DISTINCT "):
             self.validate_all(
@@ -3522,6 +3568,38 @@ OPTIONS (
                     "snowflake": "SELECT ARRAY_AGG(x) WITHIN GROUP (ORDER BY col1 ASC NULLS FIRST, col2 DESC NULLS LAST)",
                 },
             )
+
+    def test_array_distinct_fold(self):
+        for source, order in (
+            ("LIST_DISTINCT(LIST(x))", ""),
+            ("ARRAY_DISTINCT(ARRAY_AGG(x))", ""),
+            ("LIST_SORT(LIST_DISTINCT(LIST(x)))", " ORDER BY x"),
+            ("LIST_DISTINCT(LIST_SORT(LIST(x), 'DESC', 'NULLS FIRST'))", " ORDER BY x DESC"),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    f"IF(COUNT(*) = 0, NULL, COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS{order}), []))",
+                    read={"duckdb": source},
+                )
+
+        for values, where in (
+            ("1, NULL, 2, 1", ""),
+            ("NULL", ""),
+            ("1", " WHERE FALSE"),
+            ("'a', NULL, 'b', 'a'", ""),
+            ("CAST(NULL AS STRING)", ""),
+            ("'a'", " WHERE FALSE"),
+        ):
+            with self.subTest(values=values, where=where):
+                self.validate_all(
+                    "SELECT ARRAY_LENGTH(IF(COUNT(*) = 0, NULL, "
+                    "COALESCE(ARRAY_AGG(DISTINCT x IGNORE NULLS), []))) "
+                    f"FROM UNNEST([{values}]) AS x{where}",
+                    read={
+                        "duckdb": "SELECT ARRAY_LENGTH(LIST_DISTINCT(LIST(x))) "
+                        f"FROM UNNEST([{values}]) AS t(x){where}"
+                    },
+                )
 
     def test_array_concat(self):
         self.validate_all(
@@ -4173,6 +4251,46 @@ OPTIONS (
         self.validate_identity("APPROX_QUANTILES(x, 2 RESPECT NULLS)")
         self.validate_identity("APPROX_QUANTILES(x, 2 IGNORE NULLS)")
         self.validate_identity("APPROX_QUANTILES(DISTINCT x, 2 RESPECT NULLS)")
+
+    def test_approx_quantile_window(self):
+        for source, target in (
+            ("ORDER BY APPROX_PERCENTILE(x, 0.5)", "ORDER BY APPROX_QUANTILES(x, 2)[1] NULLS LAST"),
+            (
+                "PARTITION BY APPROX_PERCENTILE(x, 0.5) ORDER BY y",
+                "PARTITION BY APPROX_QUANTILES(x, 2)[1] ORDER BY y NULLS LAST",
+            ),
+            (
+                "ORDER BY APPROX_PERCENTILE(x, 0.5) FILTER(WHERE x > 0)",
+                "ORDER BY APPROX_QUANTILES(IF(x > 0, x, NULL), 2)[1] NULLS LAST",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    f"SELECT ROW_NUMBER() OVER ({target}) FROM t GROUP BY y",
+                    read={"trino": f"SELECT ROW_NUMBER() OVER ({source}) FROM t GROUP BY y"},
+                )
+
+        for sql in (
+            "APPROX_PERCENTILE(x, 0.5) OVER ()",
+            "APPROX_PERCENTILE(x, 0.5) OVER (PARTITION BY y)",
+            "APPROX_PERCENTILE(x, 0.5) FILTER(WHERE x > 0) OVER ()",
+        ):
+            with (
+                self.subTest(sql=sql),
+                self.assertRaisesRegex(
+                    UnsupportedError, "APPROX_QUANTILES does not support window functions"
+                ),
+            ):
+                parse_one(sql, read="trino").sql("bigquery", unsupported_level=ErrorLevel.RAISE)
+
+        self.validate_all(
+            "SELECT SUM(APPROX_QUANTILES(x, 2)[1]) OVER () FROM t",
+            read={"trino": "SELECT SUM(APPROX_PERCENTILE(x, 0.5)) OVER () FROM t"},
+        )
+        self.validate_all(
+            "SELECT SUM((SELECT APPROX_QUANTILES(x, 2)[1] FROM t)) OVER () FROM u",
+            read={"trino": "SELECT SUM((SELECT APPROX_PERCENTILE(x, 0.5) FROM t)) OVER () FROM u"},
+        )
 
     def test_approx_quantiles_to_duckdb(self):
         self.validate_all(

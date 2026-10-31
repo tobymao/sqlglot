@@ -5,7 +5,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.helper import seq_get
 from sqlglot.parsers.postgres import PostgresParser
-from sqlglot.parser import build_convert_timezone
+from sqlglot.parser import IsPredicatePrecedence, build_convert_timezone
 from sqlglot.tokens import TokenType
 from sqlglot.dialects.dialect import map_date_part
 from builtins import type as Type
@@ -31,6 +31,8 @@ def _build_date_delta(expr_type: Type[E]) -> t.Callable[[list], E]:
 
 
 class RedshiftParser(PostgresParser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.HIGH
+
     ID_VAR_TOKENS = {*PostgresParser.ID_VAR_TOKENS, TokenType.QUALIFY}
 
     FUNCTIONS = {

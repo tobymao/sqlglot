@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     array_concat_sql,
     bool_xor_sql,
     count_if_to_sum,
+    date_delta_to_binary_sql,
     datestrtodate_sql,
     filter_array_using_unnest,
     generate_series_sql,
@@ -40,7 +41,7 @@ from sqlglot.dialects.dialect import (
     ts_or_ds_add_cast,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import ensure_list, seq_get
+from sqlglot.helper import ensure_list, seq_get, to_int
 
 
 DATE_DIFF_FACTOR = {
@@ -52,28 +53,39 @@ DATE_DIFF_FACTOR = {
     "DAY": " / 86400",
 }
 
+DATE_DIFF_BOUNDARY_UNITS = {
+    "MICROSECOND",
+    "MILLISECOND",
+    "SECOND",
+    "MINUTE",
+    "HOUR",
+    "MONTH",
+    "QUARTER",
+    "YEAR",
+}
+
 
 def _date_add_sql(kind: str) -> t.Callable[[PostgresGenerator, DATE_ADD_OR_SUB], str]:
     def func(self: PostgresGenerator, expression: DATE_ADD_OR_SUB) -> str:
         if isinstance(expression, exp.TsOrDsAdd):
             expression = ts_or_ds_add_cast(expression)
 
-        this = self.sql(expression, "this")
+        this = expression.this
         unit = expression.args.get("unit")
 
         e = self._simplify_unless_literal(expression.expression)
+        interval: exp.Expr
         if isinstance(e, exp.Interval):
-            return f"{this} {kind} {self.sql(e)}"
-        elif isinstance(e, exp.Literal):
-            e.set("is_string", True)
-        elif e.is_number:
-            e = exp.Literal.string(e.to_py())
+            interval = e
+        elif e.is_number or e.is_string:
+            interval = exp.Interval(this=exp.Literal.string(e.to_py()), unit=unit)
         else:
             one = exp.Literal.number(1)
-            interval_times_value = exp.Interval(this=one, unit=unit) * e
-            return f"{this} {kind} {self.sql(interval_times_value)}"
+            interval = exp.Interval(this=one, unit=unit) * e
 
-        return f"{this} {kind} {self.sql(exp.Interval(this=e, unit=unit))}"
+        return date_delta_to_binary_sql(
+            self, expression, this + interval if kind == "+" else this - interval
+        )
 
     return func
 
@@ -103,6 +115,13 @@ def _date_diff_sql(self: PostgresGenerator, expression: exp.DateDiff | exp.TsOrD
 
     end = f"CAST({self.sql(expression, 'this')} AS TIMESTAMP)"
     start = f"CAST({self.sql(expression, 'expression')} AS TIMESTAMP)"
+
+    # The arithmetic below counts complete units between the operands, whereas dialects that set
+    # date_part_boundary count unit boundary crossings, so the operands are truncated down to the
+    # unit to make the two coincide. WEEK is left out: its start day differs across dialects
+    if expression.args.get("date_part_boundary") and unit in DATE_DIFF_BOUNDARY_UNITS:
+        end = self.func("DATE_TRUNC", exp.Literal.string(unit), end)
+        start = self.func("DATE_TRUNC", exp.Literal.string(unit), start)
 
     if factor is not None:
         return f"CAST(EXTRACT(epoch FROM {end} - {start}){factor} AS BIGINT)"
@@ -336,6 +355,8 @@ class PostgresGenerator(generator.Generator):
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
+        exp.DatetimeAdd: _date_add_sql("+"),
+        exp.DatetimeSub: _date_add_sql("-"),
         exp.Day: _day_month_year_sql,
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
@@ -371,7 +392,6 @@ class PostgresGenerator(generator.Generator):
         exp.PercentileDisc: transforms.preprocess([transforms.add_within_group_for_percentiles]),
         exp.Pivot: no_pivot_sql,
         exp.Rand: rename_func("RANDOM"),
-        exp.RegexpLike: lambda self, e: self.binary(e, "~"),
         exp.RegexpILike: lambda self, e: self.binary(e, "~*"),
         exp.RegexpReplace: lambda self, e: self.func(
             "REGEXP_REPLACE",
@@ -389,7 +409,9 @@ class PostgresGenerator(generator.Generator):
                 transforms.eliminate_qualify,
             ]
         ),
-        exp.SHA2: sha256_sql,
+        exp.SHA2: lambda self, e: self.func(
+            "ENCODE", sha256_sql(self, e), exp.Literal.string("hex")
+        ),
         exp.SHA2Digest: sha2_digest_sql,
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
         exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
@@ -399,6 +421,8 @@ class PostgresGenerator(generator.Generator):
         exp.TimeFromParts: rename_func("MAKE_TIME"),
         exp.TimestampFromParts: rename_func("MAKE_TIMESTAMP"),
         exp.TimestampTrunc: timestamptrunc_sql(zone=True),
+        exp.TimestampAdd: _date_add_sql("+"),
+        exp.TimestampSub: _date_add_sql("-"),
         exp.TimeStrToTime: timestrtotime_sql,
         exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
         exp.ToChar: lambda self, e: (
@@ -421,14 +445,33 @@ class PostgresGenerator(generator.Generator):
         exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
+        exp.FileFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
+        exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }
 
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
+        exp.FileFormatProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.OnCommitProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.TableSpaceProperty: exp.Properties.Location.POST_WITH,
         exp.TransientProperty: exp.Properties.Location.UNSUPPORTED,
         exp.VolatileProperty: exp.Properties.Location.UNSUPPORTED,
     }
+
+    def with_properties(self, properties: exp.Properties) -> str:
+        with_properties = []
+        post_with = []
+        for prop in properties.expressions:
+            if isinstance(prop, (exp.OnCommitProperty, exp.TableSpaceProperty)):
+                post_with.append(prop)
+            else:
+                with_properties.append(prop)
+
+        post_with.sort(key=lambda prop: isinstance(prop, exp.TableSpaceProperty))
+        sql = super().with_properties(exp.Properties(expressions=with_properties))
+        post_sql = self.expressions(sqls=post_with, sep=" ", indent=False)
+        return sql + self.seg(post_sql, sep=" " if sql else "") if post_sql else sql
 
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
@@ -536,7 +579,11 @@ class PostgresGenerator(generator.Generator):
         this = expression.this
 
         # Postgres casts DIV() to decimal for transpilation but when roundtripping it's superfluous
-        if isinstance(this, exp.IntDiv) and expression.to == exp.DType.DECIMAL.into_expr():
+        if (
+            isinstance(this, exp.IntDiv)
+            and exp.IntDiv in self.TRANSFORMS
+            and expression.to == exp.DType.DECIMAL.into_expr()
+        ):
             return self.sql(this)
 
         return super().cast_sql(expression, safe_prefix=safe_prefix)
@@ -566,6 +613,19 @@ class PostgresGenerator(generator.Generator):
         self.unsupported("PostgreSQL does not support RESPECT NULLS.")
         return self.sql(expression.this)
 
+    def regexplike_sql(self, expression: exp.RegexpLike) -> str:
+        flag = expression.args.get("flag")
+        if not flag:
+            return self.binary(expression, "~")
+
+        # Postgres has no flags argument for ~, only the case-insensitive ~* operator. Of the
+        # case flags, the last one wins, e.g. 'ic' is case-sensitive and 'ci' is not
+        flags = flag.name if flag.is_string else ""
+        if not flag.is_string or set(flags) - {"i", "c"}:
+            self.unsupported("Only the case flags 'i' and 'c' are supported for ~ in Postgres")
+
+        return self.binary(expression, "~*" if flags.rfind("i") > flags.rfind("c") else "~")
+
     @unsupported_args("this")
     def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
         return "CURRENT_SCHEMA"
@@ -575,8 +635,13 @@ class PostgresGenerator(generator.Generator):
 
         this = expression.this
         if unit.startswith("quarter") and isinstance(this, exp.Literal):
-            this.replace(exp.Literal.string(int(this.to_py()) * 3))
-            expression.args["unit"].replace(exp.var("MONTH"))
+            # Postgres has no QUARTER unit and no exponents in interval strings
+            quarters = to_int(this.to_py())
+            if quarters is None:
+                self.unsupported("Postgres intervals need a whole number of quarters")
+            else:
+                this.replace(exp.Literal.string(quarters * 3))
+                expression.args["unit"].replace(exp.var("MONTH"))
 
         return super().interval_sql(expression)
 

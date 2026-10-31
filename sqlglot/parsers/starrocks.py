@@ -2,19 +2,58 @@ from __future__ import annotations
 
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import build_date_delta_with_interval, build_timestamp_trunc
-from sqlglot.helper import seq_get
+from sqlglot.dialects.dialect import (
+    build_date_delta_with_interval,
+    build_like,
+    build_timestamp_trunc,
+)
+from sqlglot.helper import is_int, seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
 
+# https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/CREATE_TABLE/
+AGGREGATE_COLUMN_CONSTRAINTS = ("SUM", "MAX", "MIN", "REPLACE", "REPLACE_IF_NOT_NULL", "HLL_UNION")
+
+
+def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
+    # TIME_SLICE(dt, INTERVAL n unit [, FLOOR | CEIL])
+    # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/time_slice/
+    if len(args) < 2:
+        return None
+
+    if isinstance(seq_get(args, 1), exp.Interval):
+        time_slice = build_date_delta_with_interval(exp.TimeSlice)(args)
+        boundary = seq_get(args, 2)
+    else:
+        time_slice = exp.TimeSlice.from_arg_list(args)
+        boundary = seq_get(args, 3)
+    if not time_slice:
+        return None
+
+    amount = time_slice.expression
+    if amount.is_string and is_int(amount.name):
+        time_slice.set("expression", exp.Literal.number(amount.name))
+
+    if boundary:
+        time_slice.set(
+            "kind", exp.Literal.string("END" if boundary.name.upper() == "CEIL" else "START")
+        )
+    return time_slice
+
 
 class StarRocksParser(MySQLParser):
+    IDENTIFY_PIVOT_STRINGS = True
+    PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
+
     # Unlike MySQL, dropping a column requires the COLUMN keyword
     ALTER_DROP_REQUIRES_COLUMN = True
 
     # StarRocks supports LEFT SEMI JOIN and LEFT ANTI JOIN natively
     # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_JOIN/
     TABLE_ALIAS_TOKENS = MySQLParser.TABLE_ALIAS_TOKENS - {TokenType.ANTI, TokenType.SEMI}
+
+    # The keys of a map{key: value, ...} literal are expressions, not struct field names
+    MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
 
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
@@ -23,13 +62,12 @@ class StarRocksParser(MySQLParser):
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "SUBDATE": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": build_timestamp_trunc,
-        "DATEDIFF": lambda args: exp.DateDiff(
-            this=seq_get(args, 0), expression=seq_get(args, 1), unit=exp.Literal.string("DAY")
-        ),
         "DATE_DIFF": lambda args: exp.DateDiff(
             this=seq_get(args, 1), expression=seq_get(args, 2), unit=seq_get(args, 0)
         ),
         "ARRAY_FLATTEN": exp.Flatten.from_arg_list,
+        "LIKE": build_like(exp.Like),
+        "TO_DAYS": exp.ToDays.from_arg_list,
         "REGEXP": exp.RegexpLike.from_arg_list,
         # StarRocks' MAP() is a variadic constructor: MAP(k1, v1, k2, v2, ...)
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/map-functions/map/
@@ -37,15 +75,53 @@ class StarRocksParser(MySQLParser):
         # TABLE(<tvf>) wraps a table function invocation whose arguments are constants
         # https://docs.starrocks.io/docs/sql-reference/sql-functions/table-functions/generate_series/
         "TABLE": lambda args: exp.TableFromRows(this=seq_get(args, 0)),
+        "TIME_SLICE": _build_time_slice,
     }
 
     PROPERTY_PARSERS = {
         **MySQLParser.PROPERTY_PARSERS,
         "PROPERTIES": lambda self: self._parse_wrapped_properties(),
+        "AGGREGATE": lambda self: self._parse_composite_key_property(exp.AggregateKeyProperty),
         "UNIQUE": lambda self: self._parse_composite_key_property(exp.UniqueKeyProperty),
         "ROLLUP": lambda self: self._parse_rollup_property(),
         "REFRESH": lambda self: self._parse_refresh_property(),
     }
+
+    CONSTRAINT_PARSERS = {
+        **MySQLParser.CONSTRAINT_PARSERS,
+        **dict.fromkeys(
+            AGGREGATE_COLUMN_CONSTRAINTS, lambda self: exp.var(self._prev.text.upper())
+        ),
+    }
+
+    def _parse_pivot(self) -> exp.Pivot | None:
+        pivot = super()._parse_pivot()
+        if pivot is None or pivot.unpivot:
+            return pivot
+
+        names = [agg.alias for agg in pivot.expressions] if len(pivot.expressions) > 1 else [""]
+        if len(names) > 1 and not all(names):
+            # Unaliased aggregate names depend on StarRocks' column resolution.
+            pivot.set("columns", [])
+            return pivot
+
+        columns: list[exp.Identifier] = []
+        for field in pivot.fields[0].expressions:
+            if isinstance(field, exp.PivotAlias):
+                name = field.alias
+            elif isinstance(field, exp.Tuple):
+                name = (
+                    "{"
+                    + ",".join(
+                        e.sql(dialect=self.dialect, comments=False) for e in field.expressions
+                    )
+                    + "}"
+                )
+            else:
+                name = field.sql(dialect=self.dialect, comments=False)
+            columns.extend(exp.to_identifier(f"{name}_{agg}" if agg else name) for agg in names)
+        pivot.set("columns", columns)
+        return pivot
 
     def _parse_rollup_property(self) -> exp.RollupProperty:
         # ROLLUP (rollup_name (col1, col2) [FROM from_index] [PROPERTIES (...)], ...)
@@ -81,6 +157,32 @@ class StarRocksParser(MySQLParser):
 
         return create
 
+    def _parse_bracket(self, this: exp.Expr | None = None) -> exp.Expr | None:
+        # map{key: value, ...}
+        # https://docs.starrocks.io/docs/sql-reference/data-types/semi_structured/Map/
+        is_map_literal = (
+            isinstance(this, exp.Column)
+            and not this.table
+            and this.name.upper() == "MAP"
+            and self._match(TokenType.L_BRACE, advance=False)
+        )
+
+        bracket = super()._parse_bracket(this)
+        if not is_map_literal or not bracket:
+            return bracket
+
+        # Wrap the literal itself, not any subscripts that follow it, e.g. map{...}[1]
+        struct = bracket
+        while isinstance(struct, exp.Bracket):
+            struct = struct.this
+
+        to_map = self.expression(exp.ToMap(this=struct.copy()))
+        if struct is bracket:
+            return to_map
+
+        struct.replace(to_map)
+        return bracket
+
     def _parse_unnest(self, with_alias: bool = True) -> exp.Unnest | None:
         unnest = super()._parse_unnest(with_alias=with_alias)
 
@@ -89,13 +191,12 @@ class StarRocksParser(MySQLParser):
 
             if not alias:
                 # Starrocks defaults to naming the table alias as "unnest"
-                alias = exp.TableAlias(
-                    this=exp.to_identifier("unnest"), columns=[exp.to_identifier("unnest")]
-                )
+                alias = exp.TableAlias(this=exp.to_identifier("unnest"))
                 unnest.set("alias", alias)
-            elif not alias.args.get("columns"):
-                # Starrocks defaults to naming the UNNEST column as "unnest"
-                # if it's not otherwise specified
+
+            # Starrocks defaults to naming the UNNEST column as "unnest" if it's not otherwise
+            # specified. With several arrays every column is named "unnest", so none is added.
+            if not alias.args.get("columns") and len(unnest.expressions) == 1:
                 alias.set("columns", [exp.to_identifier("unnest")])
 
         return unnest
@@ -168,5 +269,38 @@ class StarRocksParser(MySQLParser):
         return self.expression(
             exp.RefreshTriggerProperty(
                 method=method, kind=kind, starts=start, every=every, unit=unit
+            )
+        )
+
+    def _parse_refresh(self) -> exp.Refresh | exp.Command:
+        if not self._match_text_seq("MATERIALIZED", "VIEW"):
+            return super()._parse_refresh()
+
+        # _parse_table would read PARTITION and FORCE as partition selection and an index hint
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/materialized_view/REFRESH_MATERIALIZED_VIEW/
+        this = self._parse_table_parts()
+
+        partition_start = None
+        partition_end = None
+        if self._match_text_seq("PARTITION", "START"):
+            partition_start = self._parse_wrapped(self._parse_string)
+            self._match_text_seq("END")
+            partition_end = self._parse_wrapped(self._parse_string)
+
+        force = self._match_text_seq("FORCE")
+        mode = None
+        if self._match_text_seq("WITH", "SYNC", "MODE"):
+            mode = "SYNC"
+        elif self._match_text_seq("WITH", "ASYNC", "MODE"):
+            mode = "ASYNC"
+
+        return self.expression(
+            exp.Refresh(
+                this=this,
+                kind="MATERIALIZED VIEW",
+                partition_start=partition_start,
+                partition_end=partition_end,
+                force=force,
+                mode=mode,
             )
         )

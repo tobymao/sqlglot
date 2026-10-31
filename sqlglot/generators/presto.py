@@ -4,6 +4,8 @@ import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_sort_order,
+    array_slice_to_slice_sql,
     bool_xor_sql,
     bracket_to_element_at_sql,
     datestrtodate_sql,
@@ -28,6 +30,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.dialects.hive import Hive
 from sqlglot.generator import unsupported_args
+from sqlglot.helper import is_float
 from sqlglot.optimizer.scope import find_all_in_scope
 from sqlglot.transforms import unqualify_columns
 
@@ -58,12 +61,18 @@ def _initcap_sql(self: PrestoGenerator, expression: exp.Initcap) -> str:
     return f"REGEXP_REPLACE({self.sql(expression, 'this')}, '{regex}', x -> UPPER(x[1]) || LOWER(x[2]))"
 
 
-def _no_sort_array(self: PrestoGenerator, expression: exp.SortArray) -> str:
-    if expression.args.get("asc") == exp.false():
-        comparator = "(a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END"
-    else:
-        comparator = None
-    return self.func("ARRAY_SORT", expression.this, comparator)
+def _array_sort_sql(self: PrestoGenerator, expression: exp.ArraySort) -> str:
+    if expression.expression:
+        return self.func("ARRAY_SORT", expression.this, expression.expression)
+
+    # ARRAY_SORT puts NULLs last, so reversing it sorts descending with NULLs first
+    asc, nulls_first = array_sort_order(expression) or (True, True)
+    if nulls_first == asc:
+        self.unsupported(
+            "ARRAY_SORT can't sort ascending with NULLs first or descending with NULLs last"
+        )
+    sort = self.func("ARRAY_SORT", expression.this)
+    return sort if asc else self.func("REVERSE", sort)
 
 
 def _schema_sql(self: PrestoGenerator, expression: exp.Schema) -> str:
@@ -256,11 +265,13 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 class PrestoGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_TEMPORAL_PRECISION = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
+    CAST_TO_INT_ROUNDS = True
     TABLE_HINTS = False
     QUERY_HINTS = False
     IS_BOOL_ALLOWED = False
@@ -320,9 +331,10 @@ class PrestoGenerator(generator.Generator):
         exp.ArrayAny: rename_func("ANY_MATCH"),
         exp.ArrayConcat: rename_func("CONCAT"),
         exp.ArrayContains: rename_func("CONTAINS"),
+        exp.ArraySort: _array_sort_sql,
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("SET_AGG"),
-        exp.ArraySlice: rename_func("SLICE"),
+        exp.ArraySlice: array_slice_to_slice_sql,
         exp.AtTimeZone: rename_func("AT_TIMEZONE"),
         exp.BitwiseAnd: lambda self, e: self.func("BITWISE_AND", e.this, e.expression),
         exp.BitwiseLeftShift: rename_func("BITWISE_LEFT_SHIFT"),
@@ -388,7 +400,6 @@ class PrestoGenerator(generator.Generator):
                 amend_exploded_column_table,
             ]
         ),
-        exp.SortArray: _no_sort_array,
         exp.SqlSecurityProperty: lambda self, e: f"SECURITY {self.sql(e.this)}",
         exp.StrPosition: lambda self, e: strposition_sql(self, e, supports_occurrence=True),
         exp.StrToDate: lambda self, e: f"CAST({_str_to_time_sql(self, e)} AS DATE)",
@@ -497,6 +508,13 @@ class PrestoGenerator(generator.Generator):
         "where",
         "with",
     }
+
+    def datatype_sql(self, expression: exp.DataType) -> str:
+        if not self.SUPPORTS_TEMPORAL_PRECISION and expression.this in exp.DataType.TEMPORAL_TYPES:
+            if expression.expressions and expression.expressions[0].name != "3":
+                self.unsupported("Presto only supports millisecond precision for temporal types")
+            expression.set("expressions", None)
+        return super().datatype_sql(expression)
 
     def extract_sql(self, expression: exp.Extract) -> str:
         date_part = expression.name
@@ -619,8 +637,12 @@ class PrestoGenerator(generator.Generator):
         return f"CAST(ROW({', '.join(values)}) AS ROW({', '.join(schema)}))"
 
     def interval_sql(self, expression: exp.Interval) -> str:
-        if expression.this and expression.text("unit").upper().startswith("WEEK"):
-            return f"({expression.this.name} * INTERVAL '7' DAY)"
+        this = expression.this
+        if this and expression.text("unit").upper().startswith("WEEK"):
+            if not this.is_string:
+                return f"({self.sql(this)} * INTERVAL '7' DAY)"
+            if is_float(this.name):
+                return f"({this.name} * INTERVAL '7' DAY)"
         return super().interval_sql(expression)
 
     def transaction_sql(self, expression: exp.Transaction) -> str:

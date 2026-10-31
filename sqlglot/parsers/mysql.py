@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     isnull_to_is_null,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 
@@ -44,6 +45,13 @@ def _str_to_date(args: list) -> exp.StrToDate | exp.StrToTime:
     return exp.StrToDate(this=this, format=date_format)
 
 
+def _build_timestampadd(args: list) -> exp.TimestampAdd:
+    expression = build_date_delta(exp.TimestampAdd)(args)
+    unit = expression.unit
+    expression.set("unit", exp.var((unit.name if unit else "DAY").upper().removeprefix("SQL_TSI_")))
+    return expression
+
+
 def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp.Show]:
     def _parse(self: MySQLParser) -> exp.Show:
         return self._parse_show_mysql(*args, **kwargs)
@@ -52,6 +60,8 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
 
 
 class MySQLParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
+
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.LOCALTIME: exp.Localtime,
@@ -72,12 +82,20 @@ class MySQLParser(parser.Parser):
     CONJUNCTION = {
         **parser.Parser.CONJUNCTION,
         TokenType.DAMP: exp.And,
-        TokenType.XOR: exp.Xor,
     }
 
     DISJUNCTION = {
         **parser.Parser.DISJUNCTION,
         TokenType.DPIPE: exp.Or,
+    }
+
+    UNARY_PARSERS = {
+        **parser.Parser.UNARY_PARSERS,
+        TokenType.NOT: lambda self: self._parse_not(),
+    }
+
+    EXPONENT = {
+        TokenType.CARET: exp.BitwiseXor,
     }
 
     TABLE_ALIAS_TOKENS = (
@@ -130,7 +148,10 @@ class MySQLParser(parser.Parser):
         ),
         "SCHEMA": exp.CurrentSchema.from_arg_list,
         "DATABASE": exp.CurrentSchema.from_arg_list,
+        "STD": exp.StddevPop.from_arg_list,
+        "STDDEV": exp.StddevPop.from_arg_list,
         "STR_TO_DATE": _str_to_date,
+        "TIMESTAMPADD": _build_timestampadd,
         "TIMESTAMPDIFF": build_date_delta(exp.TimestampDiff),
         "TO_DAYS": lambda args: exp.paren(
             exp.DateDiff(
@@ -140,6 +161,7 @@ class MySQLParser(parser.Parser):
             )
             + 1
         ),
+        "VARIANCE": exp.VariancePop.from_arg_list,
         "VERSION": exp.CurrentVersion.from_arg_list,
         "WEEK": lambda args: exp.Week(
             this=exp.TsOrDsToDate(this=seq_get(args, 0)), mode=seq_get(args, 1)
@@ -246,20 +268,30 @@ class MySQLParser(parser.Parser):
         "SPATIAL": lambda self: self._parse_index_constraint(kind="SPATIAL"),
         "ZEROFILL": lambda self: self.expression(exp.ZeroFillColumnConstraint()),
         "INVISIBLE": lambda self: self.expression(exp.InvisibleColumnConstraint()),
+        # MySQL defines ASCII as latin1, not the ascii character set, and UNICODE as ucs2
+        "ASCII": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("latin1"))
+        ),
+        "UNICODE": lambda self: self.expression(
+            exp.CharacterSetColumnConstraint(this=exp.var("ucs2"))
+        ),
     }
 
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
         "CHANGE": lambda self: self._parse_alter_table_modify(rename=True),
         "MODIFY": lambda self: self._parse_alter_table_modify(),
-        "AUTO_INCREMENT": lambda self: self._parse_property_assignment(exp.AutoIncrementProperty),
-        "COMMENT": lambda self: self._parse_property_assignment(exp.SchemaCommentProperty),
+        "FORCE": lambda self: self.expression(exp.ForceProperty()),
     }
 
     ALTER_ALTER_PARSERS = {
         **parser.Parser.ALTER_ALTER_PARSERS,
         "INDEX": lambda self: self._parse_alter_table_alter_index(),
     }
+
+    ADD_CONSTRAINT_KEYWORDS = {"FULLTEXT", "SPATIAL"}
+
+    RESERVED_CONSTRAINT_KINDS = {"CHECK", "FOREIGN KEY", "PRIMARY KEY", "UNIQUE"}
 
     SCHEMA_UNNAMED_CONSTRAINTS = {
         *parser.Parser.SCHEMA_UNNAMED_CONSTRAINTS,
@@ -298,18 +330,76 @@ class MySQLParser(parser.Parser):
     }
 
     ALTER_DROP_REQUIRES_COLUMN = False
+    ALTER_TABLE_MIXED_ACTIONS = True
+    ALTER_TABLE_REQUIRES_ACTION = False
     LOG_DEFAULTS_TO_LN = True
     STRING_ALIASES = True
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_PARTITION_SELECTION = True
 
+    def _parse_conjunction(self) -> exp.Expr | None:
+        this = super()._parse_conjunction()
+        while self._match(TokenType.XOR):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.Xor(this=this, expression=super()._parse_conjunction()),
+                comments=comments,
+            )
+        return this
+
+    def _parse_not(self) -> exp.Expr:
+        if self._prev.text == "!":
+            # ! binds more tightly than NOT, so preserve its grouping when generating NOT.
+            return self.expression(
+                exp.Paren(this=self.expression(exp.Not(this=self._parse_unary())))
+            )
+        return self.expression(exp.Not(this=self._parse_equality()))
+
+    def _parse_bitwise(self) -> exp.Expr | None:
+        this = self._parse_bitwise_and()
+        while self._match(TokenType.PIPE):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.BitwiseOr(this=this, expression=self._parse_bitwise_and()),
+                comments=comments,
+            )
+        return this
+
+    def _parse_bitwise_and(self) -> exp.Expr | None:
+        this = self._parse_bitwise_shift()
+        while self._match(TokenType.AMP):
+            comments = self._prev_comments
+            this = self.expression(
+                exp.BitwiseAnd(this=this, expression=self._parse_bitwise_shift()),
+                comments=comments,
+            )
+        return this
+
+    def _parse_bitwise_shift(self) -> exp.Expr | None:
+        this = self._parse_term()
+        while True:
+            if self._match_pair(TokenType.LT, TokenType.LT):
+                klass: type[exp.BitwiseLeftShift | exp.BitwiseRightShift] = exp.BitwiseLeftShift
+            elif self._match_pair(TokenType.GT, TokenType.GT):
+                klass = exp.BitwiseRightShift
+            else:
+                break
+
+            comments = self._prev_comments
+            this = self.expression(
+                klass(this=this, expression=self._parse_term()), comments=comments
+            )
+        return this
+
     def _parse_column_constraint(self) -> exp.Expr | None:
+        # SIGNED is the default for numeric types, so MySQL ignores it
+        self._match_text_seq("SIGNED")
         if self._match(TokenType.KEY):
             return self.expression(exp.ColumnConstraint(kind=self._parse_primary_key()))
 
         return super()._parse_column_constraint()
 
-    def _parse_range(self, this: exp.Expr | None = None) -> exp.Expr | None:
+    def _parse_range(self, this: exp.Expr | None = None, parse_is: bool = False) -> exp.Expr | None:
         this = this or self._parse_bitwise()
 
         if self._match_text_seq("SOUNDS", "LIKE"):
@@ -323,19 +413,23 @@ class MySQLParser(parser.Parser):
             if self._match(TokenType.IS, advance=False):
                 this = self.expression(exp.Paren(this=this))
 
-        return super()._parse_range(this)
+        return super()._parse_range(this, parse_is=parse_is)
 
     def _parse_alter_table_rename(self):
         if self._match_texts(("INDEX", "KEY")):
-            old = self._parse_field(any_token=True)
+            old = self._parse_id_var()
             self._match_text_seq("TO")
-            new = self._parse_field(any_token=True)
+            new = self._parse_id_var()
             return self.expression(exp.RenameIndex(this=old, to=new))
         return super()._parse_alter_table_rename()
 
     def _parse_alter_drop_action(self) -> exp.Expr | None:
         if self._match_pair(TokenType.DROP, TokenType.PRIMARY_KEY):
             return self.expression(exp.DropPrimaryKey())
+        if self._match_pair(TokenType.DROP, TokenType.KEY):
+            return self._parse_drop(kind="INDEX")
+        if self._match_text_seq("DROP", "CHECK"):
+            return self._parse_drop(kind="CHECK")
         return super()._parse_alter_drop_action()
 
     def _parse_alter_table_modify(self, rename: bool = False) -> exp.Expr | None:
@@ -694,12 +788,31 @@ class MySQLParser(parser.Parser):
         part_list = self.expression(exp.PartitionList(this=name, expressions=values))
         return self.expression(exp.Partition(expressions=[part_list]))
 
+    def _parse_foreign_key(self) -> exp.ForeignKey:
+        # MySQL only uses this name when CONSTRAINT has none and no existing index fits
+        this = (
+            self._parse_id_var()
+            if self._next and self._next.token_type == TokenType.L_PAREN
+            else None
+        )
+        foreign_key = super()._parse_foreign_key()
+        foreign_key.set("this", this)
+        return foreign_key
+
     def _parse_primary_key(
         self,
         wrapped_optional: bool = False,
         in_props: bool = False,
         named_primary_key: bool = False,
     ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
-        return super()._parse_primary_key(
+        this = super()._parse_primary_key(
             wrapped_optional=wrapped_optional, in_props=in_props, named_primary_key=True
         )
+        if isinstance(this, exp.PrimaryKey):
+            # KEY_BLOCK_SIZE, COMMENT etc. after the key parts belong to the key, not the table
+            this.set(
+                "options",
+                [*(this.args.get("options") or []), *self._parse_index_constraint_options()],
+            )
+
+        return this

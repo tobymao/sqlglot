@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     generatedasidentitycolumnconstraint_sql,
     max_or_greatest,
     min_or_least,
+    no_filter_sql,
     remove_ts_or_ds_to_date,
     rename_func,
     strposition_sql,
@@ -77,6 +78,7 @@ def qualify_derived_table_outputs(expression: exp.Expr) -> exp.Expr:
         isinstance(expression, (exp.CTE, exp.Subquery))
         and isinstance(alias, exp.TableAlias)
         and not alias.columns
+        and isinstance(expression.this, exp.Query)
     ):
         from sqlglot.dialects.tsql import TSQL
         from sqlglot.optimizer.qualify_columns import qualify_outputs
@@ -143,6 +145,7 @@ class TSQLGenerator(generator.Generator):
     RETURNING_END = False
     NVL2_SUPPORTED = False
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
+    ALTER_TABLE_ADD_COLUMNS_WRAPPED = False
     LIMIT_FETCH = "FETCH"
     COMPUTED_COLUMN_WITH_TYPE = False
     CTE_RECURSIVE_KEYWORD_REQUIRED = False
@@ -216,6 +219,7 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.Day: remove_ts_or_ds_to_date(),
+        exp.Filter: no_filter_sql,
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,
         exp.If: rename_func("IIF"),
@@ -350,7 +354,7 @@ class TSQLGenerator(generator.Generator):
                 # See: https://www.microsoftpressstore.com/articles/article.aspx?p=2314819
                 expression.order_by(exp.select(exp.null()).subquery(), copy=False)
 
-            if isinstance(limit, exp.Limit):
+            if isinstance(limit, exp.Limit) and not limit.is_limit_all:
                 # TOP and OFFSET can't be combined, we need use FETCH instead of TOP
                 # we replace here because otherwise TOP would be generated in select_sql
                 limit.replace(exp.Fetch(direction="FIRST", count=limit.expression))
@@ -558,6 +562,12 @@ class TSQLGenerator(generator.Generator):
         func_name = "COUNT_BIG" if expression.args.get("big_int") else "COUNT"
         return rename_func(func_name)(self, expression)
 
+    def countif_sql(self, expression: exp.CountIf) -> str:
+        # T-SQL has no COUNT_IF, so count the rows where the predicate holds instead
+        return self.func(
+            "COUNT", exp.If(this=expression.this, true=exp.Literal.number(1), false=exp.null())
+        )
+
     def datediff_sql(self, expression: exp.DateDiff) -> str:
         func_name = "DATEDIFF_BIG" if expression.args.get("big_int") else "DATEDIFF"
         return date_delta_sql(func_name)(self, expression)
@@ -656,9 +666,11 @@ class TSQLGenerator(generator.Generator):
         return f"WITH (PARTITIONS({self.expressions(expression, flat=True)}))"
 
     def alter_sql(self, expression: exp.Alter) -> str:
-        action = seq_get(expression.args.get("actions") or [], 0)
-        if isinstance(action, exp.AlterRename):
-            return f"EXEC sp_rename '{self.sql(expression.this)}', '{action.this.name}'"
+        actions = expression.args.get("actions") or []
+        if len(actions) == 1 and isinstance(actions[0], exp.AlterRename):
+            old_name = self.sql(exp.Literal.string(self.sql(expression.this)))
+            new_name = self.sql(exp.Literal.string(actions[0].this.name))
+            return f"EXEC sp_rename {old_name}, {new_name}"
         return super().alter_sql(expression)
 
     def drop_sql(self, expression: exp.Drop) -> str:

@@ -24,7 +24,6 @@ def qualify(
     schema: dict[str, object] | Schema | None = None,
     expand_alias_refs: bool = True,
     expand_stars: bool = True,
-    infer_schema: bool | None = None,
     isolate_tables: bool = False,
     qualify_columns: bool = True,
     allow_partial_qualification: bool = False,
@@ -56,7 +55,6 @@ def qualify(
         expand_stars: Whether to expand star queries. This is a necessary step
             for most of the optimizer's rules to work; do not set to False unless you
             know what you're doing!
-        infer_schema: Whether to infer the schema if missing.
         isolate_tables: Whether to isolate table selects.
         qualify_columns: Whether to qualify columns.
         allow_partial_qualification: Whether to allow partial qualification.
@@ -100,7 +98,6 @@ def qualify(
             schema,
             expand_alias_refs=expand_alias_refs,
             expand_stars=expand_stars,
-            infer_schema=infer_schema,
             allow_partial_qualification=allow_partial_qualification,
         )
 

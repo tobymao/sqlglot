@@ -47,6 +47,10 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
             select = scope.expression
             where: exp.Expr | None = select.args.get("where")
             joins: list[exp.Join] = select.args.get("joins") or []
+
+            if any(join.args.get("nearest") for join in joins):
+                continue
+
             if where:
                 selected_sources: Sources = scope.selected_sources
                 join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
@@ -182,35 +186,41 @@ def pushdown_dnf(
 
     # pushdown all predicates to their respective nodes
     for table in sorted(pushdown_tables):
+        table_node: exp.Expr | None = None
+        incomplete = False
+
         for predicate in predicates:
             nodes = nodes_for_predicate(predicate, sources, scope_ref_count)
 
             if table not in nodes:
-                continue
+                # An arm that can't be pushed would leave an incomplete OR, so skip this table
+                incomplete = True
+                break
 
+            table_node = nodes[table]
             conditions[table] = (
                 exp.or_(conditions[table], predicate) if table in conditions else predicate
             )
 
-        for name, node in nodes.items():
-            if name not in conditions:
-                continue
+        if incomplete:
+            conditions.pop(table, None)
+            continue
 
-            predicate = conditions[name]
+        predicate = conditions[table]
 
-            if isinstance(node, exp.Join):
-                if join_index:
-                    this_index = join_index[name]
-                    predicate_tables = exp.column_table_names(predicate, name)
-                    if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
-                        continue
-                node.on(predicate, copy=False)
-            elif isinstance(node, exp.Select):
-                inner_predicate = replace_aliases(node, predicate)
-                if find_in_scope(inner_predicate, exp.AggFunc):
-                    node.having(inner_predicate, copy=False)
-                else:
-                    node.where(inner_predicate, copy=False)
+        if isinstance(table_node, exp.Join):
+            if join_index:
+                this_index = join_index[table]
+                predicate_tables = exp.column_table_names(predicate, table)
+                if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
+                    continue
+            table_node.on(predicate, copy=False)
+        elif isinstance(table_node, exp.Select):
+            inner_predicate = replace_aliases(table_node, predicate)
+            if find_in_scope(inner_predicate, exp.AggFunc):
+                table_node.having(inner_predicate, copy=False)
+            else:
+                table_node.where(inner_predicate, copy=False)
 
 
 def nodes_for_predicate(

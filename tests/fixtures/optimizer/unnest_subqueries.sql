@@ -295,3 +295,162 @@ SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) 
 # title: exists with group by all and a non-aggregate projection drops it
 SELECT x.a FROM x WHERE EXISTS (SELECT y.c, COUNT(*) FROM y WHERE y.a = x.a GROUP BY ALL);
 SELECT x.a FROM x LEFT JOIN (SELECT y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON _u_0._u_1 = x.a WHERE NOT _u_0._u_1 IS NULL;
+
+# title: preserve IN in LEFT JOIN ON
+# execute: true
+SELECT x.a FROM x LEFT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x LEFT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+
+# title: preserve IN in RIGHT JOIN ON
+# execute: true
+# execute_min_python: 3.11
+SELECT x.a FROM x RIGHT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x RIGHT JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+
+# title: preserve IN in FULL JOIN ON
+# execute: true
+# execute_min_python: 3.11
+SELECT x.a FROM x FULL JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x FULL JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+
+# title: preserve IN in SEMI JOIN ON
+# execute: true
+# execute_min_python: 3.10
+SELECT x.a FROM x SEMI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x SEMI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+
+# title: preserve IN in ANTI JOIN ON
+# execute: true
+# execute_min_python: 3.10
+SELECT x.a FROM x ANTI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x ANTI JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+
+# title: preserve IN under OR in JOIN ON
+# execute: true
+SELECT x.a FROM x JOIN y ON x.a = y.b OR y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b > 100);
+SELECT x.a FROM x JOIN y ON x.a = y.b OR y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b > 100);
+
+# title: preserve ANY under NOT in JOIN ON
+# execute: true
+SELECT x.a FROM x JOIN y ON NOT (y.b = ANY (SELECT z.b AS b FROM y AS z WHERE z.b > 100));
+SELECT x.a FROM x JOIN y ON NOT (y.b = ANY (SELECT z.b AS b FROM y AS z WHERE z.b > 100));
+
+# title: unnest parenthesized IN conjunct in INNER JOIN ON
+# execute: true
+SELECT x.a FROM x INNER JOIN y ON x.a = y.b AND (y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2));
+SELECT x.a FROM x INNER JOIN y ON x.a = y.b AND (TRUE) LEFT JOIN (SELECT z.b AS b FROM y AS z WHERE z.b = 2 GROUP BY z.b) AS _u_0 ON y.b = _u_0.b WHERE NOT _u_0.b IS NULL;
+
+# title: unnest ANY conjunct in JOIN ON
+# execute: true
+SELECT x.a FROM x JOIN y ON x.a = y.b AND y.b = ANY (SELECT z.b AS b FROM y AS z WHERE z.b = 2);
+SELECT x.a FROM x JOIN y ON x.a = y.b AND TRUE LEFT JOIN (SELECT z.b AS b FROM y AS z WHERE z.b = 2 GROUP BY z.b) AS _u_0 ON y.b = _u_0.b WHERE NOT _u_0.b IS NULL;
+
+# title: preserve uncorrelated scalar subquery in LEFT JOIN ON
+# execute: true
+SELECT x.a FROM x LEFT JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z);
+SELECT x.a FROM x LEFT JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z);
+
+# title: preserve correlated scalar subquery in LEFT JOIN ON
+# execute: true
+SELECT x.a FROM x LEFT JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = x.a);
+SELECT x.a FROM x LEFT JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = x.a);
+
+# title: preserve correlation to the right source in JOIN ON
+# execute: true
+SELECT x.a FROM x JOIN y ON x.a = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = y.b);
+SELECT x.a FROM x JOIN y ON x.a = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = y.b);
+
+# title: decorrelate left source before its use in JOIN ON
+# execute: true
+SELECT x.a FROM x JOIN y ON y.b = (SELECT MAX(z.b) AS b FROM y AS z WHERE z.b = x.a) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT MAX(z.b) AS b, z.b AS _u_1 FROM y AS z WHERE TRUE GROUP BY z.b) AS _u_0 ON _u_0._u_1 = x.a JOIN y ON y.b = _u_0.b ORDER BY x.a;
+
+# title: preserve IN in JOIN ON before a RIGHT JOIN
+# execute: true
+SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) RIGHT JOIN w ON FALSE;
+SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) RIGHT JOIN w ON FALSE;
+
+# title: preserve IN in JOIN ON before a FULL JOIN
+# execute: true
+SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) FULL JOIN w ON FALSE;
+SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM y AS z WHERE z.b = 2) FULL JOIN w ON FALSE;
+
+# title: Scalar subquery inside an aggregate CASE
+# execute: true
+SELECT SUM(CASE WHEN x.a = (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) THEN 1 ELSE 0 END) AS total FROM x;
+SELECT SUM(CASE WHEN x.a = _u_0.b THEN 1 ELSE 0 END) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) AS _u_0;
+
+# title: Scalar subquery inside an aggregate with GROUP BY
+# execute: true
+SELECT x.b, SUM(CASE WHEN x.a = (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) THEN 1 ELSE 0 END) AS total FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, SUM(CASE WHEN x.a = _u_0.b THEN 1 ELSE 0 END) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery as a direct aggregate argument
+# execute: true
+SELECT SUM((SELECT MAX(y.b) AS b FROM y)) AS total FROM x;
+SELECT SUM(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0;
+
+# title: Scalar subquery inside a HAVING aggregate
+# execute: true
+SELECT x.b FROM x GROUP BY x.b HAVING SUM(CASE WHEN x.a = (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) THEN 1 ELSE 0 END) > 0;
+SELECT x.b FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) AS _u_0 GROUP BY x.b HAVING SUM(CASE WHEN x.a = _u_0.b THEN 1 ELSE 0 END) > 0;
+
+# title: EXISTS inside an aggregate
+# execute: true
+SELECT SUM(CASE WHEN EXISTS(SELECT 1 AS a WHERE FALSE) THEN 1 ELSE 0 END) AS total FROM x;
+SELECT SUM(CASE WHEN NOT _u_0.a IS NULL THEN 1 ELSE 0 END) AS total FROM x LEFT JOIN (SELECT 1 AS a WHERE FALSE) AS _u_0 ON TRUE;
+
+# title: Scalar subquery outside an aggregate
+# execute: true
+SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x;
+SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0;
+
+# title: Scalar subquery in WHERE before aggregation
+# execute: true
+SELECT SUM(x.a) AS total FROM x WHERE x.a = (SELECT MAX(y.b) AS b FROM y);
+SELECT SUM(x.a) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 WHERE x.a = _u_0.b;
+
+# title: Scalar subquery outside a HAVING aggregate
+# execute: true
+SELECT x.b FROM x GROUP BY x.b HAVING SUM(x.a) > (SELECT MAX(y.b) AS b FROM y) ORDER BY x.b;
+SELECT x.b FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b HAVING SUM(x.a) > MAX(_u_0.b) ORDER BY x.b;
+
+# title: Aggregate ancestor search stops at the current query
+# execute: true
+SELECT SUM((SELECT SUM(y.b) + (SELECT MAX(z.b) AS b FROM y AS z) AS b FROM y)) AS total FROM x;
+SELECT SUM(_u_1.b) AS total FROM x CROSS JOIN (SELECT SUM(y.b) + MAX(_u_0.b) AS b FROM y CROSS JOIN (SELECT MAX(z.b) AS b FROM y AS z) AS _u_0) AS _u_1;
+
+# title: Scalar subquery inside a window aggregate over grouped rows
+# execute: true
+SELECT x.b, SUM((SELECT MAX(y.b) AS b FROM y)) OVER () AS total FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, SUM(MAX(_u_0.b)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a filtered window aggregate over grouped rows
+# execute: true
+SELECT x.b, SUM((SELECT MAX(y.b) AS b FROM y)) FILTER(WHERE x.b > 1) OVER () AS total FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, SUM(MAX(_u_0.b)) FILTER(WHERE x.b > 1) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a grouped aggregate within a window aggregate
+# execute: true
+SELECT x.b, SUM(SUM((SELECT MAX(y.b) AS b FROM y))) OVER () AS total FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, SUM(SUM(_u_0.b)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a window ordering aggregate
+# execute: true
+SELECT x.b, ROW_NUMBER() OVER (ORDER BY SUM((SELECT MAX(y.b) AS b FROM y)), x.b) AS n FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, ROW_NUMBER() OVER (ORDER BY SUM(_u_0.b), x.b) AS n FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a WITHIN GROUP window aggregate
+# execute: true
+SELECT x.b, ARRAY_AGG((SELECT MAX(y.b) AS b FROM y)) WITHIN GROUP (ORDER BY x.b) OVER () AS a FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, ARRAY_AGG(MAX(_u_0.b)) WITHIN GROUP (ORDER BY x.b) OVER () AS a FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Scalar subquery inside a window partitioning aggregate
+# execute: true
+SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM((SELECT MAX(y.b) AS b FROM y)) ORDER BY x.b) AS n FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM(_u_0.b) ORDER BY x.b) AS n FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Aggregate ancestor traversal stops at a CTE query
+# execute: true
+WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;
+WITH q AS (SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0) SELECT q.total FROM q;

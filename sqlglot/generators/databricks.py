@@ -19,6 +19,7 @@ class DatabricksGenerator(SparkGenerator):
     SAFE_JSON_PATH_KEY_RE = exp.SAFE_IDENTIFIER_RE
     QUOTE_JSON_PATH = False
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
+    SUPPORTS_TEMPORAL_PRECISION = True
 
     TRANSFORMS = {
         k: v

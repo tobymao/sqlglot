@@ -138,3 +138,8 @@ class PythonGenerator(generator.Generator):
         exp.Ordered: _ordered_py,
         exp.Star: lambda *_: "1",
     }
+
+    def slice_sql(self, expression: exp.Slice) -> str:
+        step = self.sql(expression, "step")
+        sql = f"{self.sql(expression.this)}:{self.sql(expression.expression)}"
+        return f"{sql}:{step}" if step else sql

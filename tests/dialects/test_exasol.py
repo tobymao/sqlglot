@@ -546,6 +546,7 @@ class TestExasol(Validator):
             "SELECT CAST(CONVERT_TZ(CAST(CURRENT_TIMESTAMP() AS TIMESTAMP), 'UTC', 'CET') AS DATE) - 1",
         )
         units = ["MM", "QUARTER", "WEEK", "MINUTE", "YEAR"]
+        self.validate_identity("SELECT DATE_TRUNC('D'') ; SELECT 1; --', TIMESTAMP '2020-01-01')")
         for unit in units:
             with self.subTest(f"Testing DATE_TRUNC with format '{unit}'"):
                 self.validate_all(
@@ -754,7 +755,6 @@ class TestExasol(Validator):
             "HASH_SHA256(x)",
             read={
                 "clickhouse": "SHA256(x)",
-                "postgres": "SHA256(x)",
                 "duckdb": "SHA256(x)",
             },
             write={
@@ -762,7 +762,7 @@ class TestExasol(Validator):
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
                 "clickhouse": "SHA256(x)",
-                "postgres": "SHA256(x)",
+                "postgres": "ENCODE(SHA256(x), 'hex')",
                 "presto": "LOWER(TO_HEX(SHA256(x)))",
                 "redshift": "SHA2(x, 256)",
                 "trino": "LOWER(TO_HEX(SHA256(x)))",

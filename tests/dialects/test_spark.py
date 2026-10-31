@@ -157,6 +157,42 @@ TBLPROPERTIES (
                 "spark": "ALTER TABLE StudentInfo ADD COLUMNS (LastName STRING, DOB TIMESTAMP)",
             },
         )
+        self.validate_identity(
+            "ALTER TABLE t ADD COLUMNS (a.b INT COMMENT 'x' AFTER c, d.e.f STRING)"
+        )
+        for sql, expected in (
+            ("ALTER TABLE t DROP COLUMN a", None),
+            ("ALTER TABLE t DROP COLUMN IF EXISTS a.b", None),
+            ("ALTER TABLE t DROP COLUMNS (a, b.c)", None),
+            ("ALTER TABLE t DROP COLUMNS (from)", None),
+            ("ALTER TABLE t DROP COLUMNS IF EXISTS (a, b.c)", None),
+            ("ALTER TABLE t DROP COLUMNS a, b", "ALTER TABLE t DROP COLUMNS (a, b)"),
+        ):
+            with self.subTest(sql):
+                # A Command would round-trip too, so check that a real AST is built
+                ast = self.validate_identity(sql, expected)
+                self.assertIsInstance(ast, exp.Alter)
+                self.assertIsInstance(ast.args["actions"][0], exp.Drop)
+
+        for sql, expected in (
+            ("ALTER TABLE t REPLACE COLUMNS (a INT COMMENT 'c', b STRING)", None),
+            ("ALTER TABLE t REPLACE COLUMNS (from INT)", None),
+            (
+                "ALTER TABLE t REPLACE COLUMNS a INT, b STRING",
+                "ALTER TABLE t REPLACE COLUMNS (a INT, b STRING)",
+            ),
+        ):
+            with self.subTest(sql):
+                ast = self.validate_identity(sql, expected)
+                self.assertIsInstance(ast, exp.Alter)
+                self.assertIsInstance(ast.args["actions"][0], exp.ReplaceColumns)
+
+        # An empty column list is not valid, but it must not raise
+        for sql in ("ALTER TABLE t REPLACE COLUMNS", "ALTER TABLE t REPLACE COLUMNS ()"):
+            with self.subTest(sql):
+                self.assertIsInstance(
+                    self.validate_identity(sql, check_command_warning=True), exp.Command
+                )
         self.validate_all(
             "ALTER TABLE db.example ALTER COLUMN col_a TYPE BIGINT",
             write={
@@ -353,6 +389,7 @@ TBLPROPERTIES (
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), x -> x + 1)")
         self.validate_identity("SELECT TRANSFORM(ARRAY(1, 2, 3), (x, i) -> x + i)")
         self.validate_identity("REFRESH TABLE a.b.c")
+        self.validate_identity("REFRESH FUNCTION db.func1", check_command_warning=True)
         self.validate_identity("INTERVAL '-86' DAYS")
         self.validate_identity("TRIM('    SparkSQL   ')")
         self.validate_identity("TRIM(BOTH 'SL' FROM 'SSparkSQLS')")
@@ -941,9 +978,7 @@ TBLPROPERTIES (
         self.validate_all(
             "ARRAY_SORT(x, (left, right) -> -1)",
             write={
-                "duckdb": "ARRAY_SORT(x)",
                 "presto": 'ARRAY_SORT(x, ("left", "right") -> -1)',
-                "hive": "SORT_ARRAY(x)",
                 "spark": "ARRAY_SORT(x, (left, right) -> -1)",
             },
         )
@@ -1034,15 +1069,6 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
-            "SELECT ARRAY_SORT(x)",
-            write={
-                "duckdb": "SELECT ARRAY_SORT(x)",
-                "presto": "SELECT ARRAY_SORT(x)",
-                "hive": "SELECT SORT_ARRAY(x)",
-                "spark": "SELECT ARRAY_SORT(x)",
-            },
-        )
-        self.validate_all(
             "SELECT DATE_ADD(MONTH, 20, col)",
             read={
                 "spark": "SELECT TIMESTAMPADD(MONTH, 20, col)",
@@ -1129,10 +1155,35 @@ TBLPROPERTIES (
         )
         self.validate_all(
             "LISTAGG(x, ', ')",
+            read={
+                "spark": "LISTAGG(ALL x, ', ')",
+                "databricks": "LISTAGG(ALL x, ', ')",
+            },
             write={
                 "spark, version=3.0.0": "ARRAY_JOIN(COLLECT_LIST(x), ', ')",
                 "spark, version=4.0.0": "LISTAGG(x, ', ')",
                 "spark": "LISTAGG(x, ', ')",
+            },
+        )
+        self.validate_all(
+            "LISTAGG(x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            read={
+                "spark": "LISTAGG(ALL x, '-') WITHIN GROUP (ORDER BY x DESC)",
+                "databricks": "LISTAGG(ALL x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            },
+        )
+        self.validate_all(
+            "LISTAGG(DISTINCT x, '-')",
+            write={
+                "spark": "LISTAGG(DISTINCT x, '-')",
+                "databricks": "LISTAGG(DISTINCT x, '-')",
+            },
+        )
+        self.validate_all(
+            "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
+            write={
+                "spark": "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
+                "databricks": "LISTAGG(DISTINCT x, '-') WITHIN GROUP (ORDER BY x DESC)",
             },
         )
         self.validate_all(
@@ -1202,6 +1253,10 @@ TBLPROPERTIES (
             write={
                 "databricks": "WITH RECURSIVE t(n) AS (SELECT * FROM VALUES (1) AS _values) SELECT n FROM t",
             },
+        )
+        self.validate_identity(
+            "SELECT 1 AS a UNION ALL (VALUES (2), (3) AS v(a) ORDER BY 1 DESC LIMIT 1)",
+            "SELECT 1 AS a UNION ALL (SELECT * FROM VALUES (2), (3) AS v(a) ORDER BY 1 DESC LIMIT 1)",
         )
 
     def test_named_struct(self):
@@ -1286,6 +1341,15 @@ TBLPROPERTIES (
         )
         self.validate_identity(
             "SELECT TRANSFORM(zip_code, name, age) USING 'cat' FROM person WHERE zip_code > 94500"
+        )
+
+    def test_multitable_inserts(self):
+        self.validate_identity(
+            "FROM x INSERT OVERWRITE TABLE a PARTITION(ds = '1') SELECT k WHERE v > 0 INSERT INTO b SELECT k, v"
+        )
+        self.validate_identity(
+            "FROM (SELECT k, v FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) = 1) AS s INSERT INTO t SELECT s.v INSERT INTO u SELECT s.k",
+            "FROM (SELECT k, v FROM (SELECT k, v, ROW_NUMBER() OVER (PARTITION BY k ORDER BY v) AS _w FROM x) AS _t WHERE _w = 1) AS s INSERT INTO t SELECT s.v INSERT INTO u SELECT s.k",
         )
 
     def test_insert_cte(self):
@@ -1376,6 +1440,14 @@ TBLPROPERTIES (
             "SELECT col, pos, POSEXPLODE(ARRAY(2, 3)) FROM _u",
             write={
                 "presto": "SELECT col, pos, IF(_u_2.pos_2 = _u_3.pos_3, _u_3.col_2) AS col_2, IF(_u_2.pos_2 = _u_3.pos_3, _u_3.pos_3) AS pos_3 FROM _u CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(ARRAY[2, 3])))) AS _u_2(pos_2) CROSS JOIN UNNEST(ARRAY[2, 3]) WITH ORDINALITY AS _u_3(col_2, pos_3) WHERE _u_2.pos_2 = _u_3.pos_3 OR (_u_2.pos_2 > CARDINALITY(ARRAY[2, 3]) AND _u_3.pos_3 = CARDINALITY(ARRAY[2, 3]))",
+            },
+        )
+        self.validate_all(
+            "SELECT EXPLODE(x) AS a, (SELECT MAX(b) FROM (SELECT EXPLODE(ARRAY(1, 2)) AS b)) AS m FROM tbl",
+            write={
+                "bigquery": "SELECT IF(pos = pos_2, a, NULL) AS a, (SELECT MAX(b) FROM (SELECT IF(pos = pos_2, b, NULL) AS b FROM UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH([1, 2])) - 1)) AS pos CROSS JOIN UNNEST([1, 2]) AS b WITH OFFSET AS pos_2 WHERE pos = pos_2 OR (pos > (ARRAY_LENGTH([1, 2]) - 1) AND pos_2 = (ARRAY_LENGTH([1, 2]) - 1)))) AS m FROM tbl CROSS JOIN UNNEST(GENERATE_ARRAY(0, GREATEST(ARRAY_LENGTH(x)) - 1)) AS pos CROSS JOIN UNNEST(x) AS a WITH OFFSET AS pos_2 WHERE pos = pos_2 OR (pos > (ARRAY_LENGTH(x) - 1) AND pos_2 = (ARRAY_LENGTH(x) - 1))",
+                "presto": "SELECT IF(_u.pos = _u_2.pos_2, _u_2.a) AS a, (SELECT MAX(b) FROM (SELECT IF(_u.pos = _u_2.pos_2, _u_2.b) AS b FROM UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(ARRAY[1, 2])))) AS _u(pos) CROSS JOIN UNNEST(ARRAY[1, 2]) WITH ORDINALITY AS _u_2(b, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(ARRAY[1, 2]) AND _u_2.pos_2 = CARDINALITY(ARRAY[1, 2])))) AS m FROM tbl CROSS JOIN UNNEST(SEQUENCE(1, GREATEST(CARDINALITY(x)))) AS _u(pos) CROSS JOIN UNNEST(x) WITH ORDINALITY AS _u_2(a, pos_2) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > CARDINALITY(x) AND _u_2.pos_2 = CARDINALITY(x))",
+                "spark": "SELECT EXPLODE(x) AS a, (SELECT MAX(b) FROM (SELECT EXPLODE(ARRAY(1, 2)) AS b)) AS m FROM tbl",
             },
         )
 
@@ -1570,6 +1642,16 @@ TBLPROPERTIES (
             "SELECT ARRAY_INSERT(ARRAY('a', 'b', 'c'), 3, 'z')",
             read={
                 "snowflake": "SELECT ARRAY_INSERT(['a', 'b', 'c'], 2, 'z')",
+            },
+        )
+
+    def test_array_slice(self):
+        self.validate_all(
+            "SLICE(x, 2, 3)",
+            read={
+                "clickhouse": "arraySlice(x, 2, 3)",
+                "presto": "SLICE(x, 2, 3)",
+                "spark": "SLICE(x, 2, 3)",
             },
         )
 

@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_int
+from sqlglot.optimizer.simplify import simplify_parens
 from collections import defaultdict
 
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
@@ -295,6 +296,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.ArgMax: arg_max_or_min_no_count("argMax"),
         exp.ArgMin: arg_max_or_min_no_count("argMin"),
         exp.Array: inline_array_sql,
+        exp.BitwiseAndAgg: rename_func("groupBitAnd"),
+        exp.BitwiseOrAgg: rename_func("groupBitOr"),
+        exp.BitwiseXorAgg: rename_func("groupBitXor"),
         exp.CityHash64: rename_func("cityHash64"),
         exp.CastToStrType: rename_func("CAST"),
         exp.CurrentDatabase: rename_func("CURRENT_DATABASE"),
@@ -314,6 +318,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.DateStrToDate: rename_func("toDate"),
         exp.DateSub: _datetime_delta_sql("DATE_SUB"),
         exp.DayOfMonth: rename_func("toDayOfMonth"),
+        exp.DayOfWeekIso: rename_func("toDayOfWeek"),
         exp.DayOfYear: rename_func("toDayOfYear"),
         exp.Explode: rename_func("arrayJoin"),
         exp.FarmFingerprint: rename_func("farmFingerprint64"),
@@ -322,7 +327,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.IsNan: rename_func("isNaN"),
         exp.JarowinklerSimilarity: jarowinkler_similarity("jaroWinklerSimilarity"),
         exp.JSONCast: _json_cast_sql,
-        exp.JSONExtract: json_extract_segments("JSONExtractString", quoted_index=False),
+        exp.JSONExtract: json_extract_segments("JSONExtractRaw", quoted_index=False),
         exp.JSONExtractScalar: json_extract_segments("JSONExtractString", quoted_index=False),
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",
@@ -375,6 +380,8 @@ class ClickHouseGenerator(generator.Generator):
         exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
         exp.Variance: rename_func("varSamp"),
         exp.VariancePop: rename_func("varPop"),
+        exp.WeekOfYear: rename_func("toISOWeek"),
+        exp.YearOfWeekIso: rename_func("toISOYear"),
         exp.SchemaCommentProperty: lambda self, e: self.naked_property(e),
         exp.Stddev: rename_func("stddevSamp"),
         exp.Chr: rename_func("CHAR"),
@@ -424,6 +431,15 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.POLYGON,
         exp.DType.MULTIPOLYGON,
     }
+
+    @unsupported_args("json_scope")
+    def contains_sql(self, expression: exp.Contains) -> str:
+        # ClickHouse has no CONTAINS; keep the parentheses only where the parent needs them
+        result = exp.paren(
+            exp.StrPosition(this=expression.this, substr=expression.expression) > 0, copy=False
+        )
+        result.parent = expression.parent
+        return self.sql(simplify_parens(result, self.dialect))
 
     def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
         this = expression.this
@@ -487,6 +503,14 @@ class ClickHouseGenerator(generator.Generator):
         if isinstance(this, exp.StrToDate) and expression.to == exp.DType.DATETIME.into_expr():
             return self.sql(this)
 
+        this = this.unnest()
+        if (
+            isinstance(this, exp.JSONExtract)
+            and this.args.get("requires_json")
+            and expression.to.is_type(*exp.DataType.TEXT_TYPES)
+        ):
+            return self.func("JSONExtract", this, exp.Literal.string("Nullable(String)"))
+
         return super().cast_sql(expression, safe_prefix=safe_prefix)
 
     def trycast_sql(self, expression: exp.TryCast) -> str:
@@ -526,6 +550,30 @@ class ClickHouseGenerator(generator.Generator):
 
     def neq_sql(self, expression: exp.NEQ) -> str:
         return self._any_to_has(expression, super().neq_sql, "NOT ")
+
+    def regexpcount_sql(self, expression: exp.RegexpCount) -> str:
+        this = expression.this
+        pattern = expression.expression
+        position = expression.args.get("position")
+        parameters = expression.args.get("parameters")
+
+        if position:
+            # SUBSTRING counts bytes in ClickHouse, the position counts characters
+            this = self.func("substringUTF8", this, position)
+
+        if parameters:
+            flags = parameters.name if parameters.is_string else ""
+            if not parameters.is_string or set(flags) - set("cims"):
+                self.unsupported("Only literal 'c', 'i', 'm' and 's' regexp flags are supported")
+            # "c" (case-sensitive) is the default, and the last of "c" and "i" wins
+            if flags.rfind("c") > flags.rfind("i"):
+                flags = flags.replace("i", "")
+            flags = "".join(f for f in flags if f in "ims")
+            if flags:
+                # countMatches has no flags argument, so they are embedded in the pattern
+                pattern = self.func("CONCAT", exp.Literal.string(f"(?{flags})"), pattern)
+
+        return self.func("countMatches", this, pattern)
 
     def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
         # Manually add a flag to make the search case-insensitive
@@ -640,7 +688,8 @@ class ClickHouseGenerator(generator.Generator):
             comment_prop = expression.find(exp.SchemaCommentProperty)
             if comment_prop:
                 comment_prop.pop()
-                query.replace(exp.paren(query))
+                if not isinstance(query, exp.Subquery):
+                    query.replace(exp.paren(query))
         else:
             comment_prop = None
 

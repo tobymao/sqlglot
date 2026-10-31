@@ -117,6 +117,7 @@ class DType(AutoName):
     NVARCHAR = auto()
     OBJECT = auto()
     RANGE = auto()
+    REF = auto()
     ROWVERSION = auto()
     SERIAL = auto()
     SET = auto()
@@ -461,7 +462,9 @@ class IntervalSpan(DataType):
 
 
 class Interval(_TimeUnit):
-    arg_types = {"this": False, "unit": False}
+    # fraction_in_string: a fractional amount was written with its unit in one string, e.g.
+    # INTERVAL '1.5 DAY', which differs from INTERVAL '1.5' DAY in e.g. DuckDB and Postgres
+    arg_types = {"this": False, "unit": False, "fraction_in_string": False}
 
 
 DATA_TYPE = t.Union[str, Identifier, Dot, DataType, DType]

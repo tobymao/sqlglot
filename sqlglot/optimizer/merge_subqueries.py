@@ -6,7 +6,8 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.helpers import is_implicit_group_by_all
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -233,7 +234,10 @@ def _mergeable(
     def _window_projection_blocks_merge(window_aliases: set[str]) -> bool:
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
-          - the outer query filters or joins (WHERE/JOIN), which changes that row set, or
+          - the outer query filters or joins (WHERE/JOIN), which changes that row set,
+          - the outer query is a bare GROUP BY ALL, which implicitly groups by every
+            projection (unlike ALL as a grouping-sets modifier, e.g. GROUP BY ALL
+            CUBE (...)), or
           - a window column is referenced in an operation that isn't pushed down
             (GROUP BY, ORDER BY, HAVING, aggregate).
         """
@@ -241,6 +245,9 @@ def _mergeable(
             return False
 
         if outer_args.get("where") or outer_args.get("joins"):
+            return True
+
+        if is_implicit_group_by_all(t.cast(exp.Select, outer)):
             return True
 
         return any(
@@ -302,7 +309,7 @@ def _mergeable(
         on = from_or_join.args.get("on")
         if not on:
             return False
-        selections = [c.name for c in on.find_all(exp.Column) if c.table == inner_name]
+        selections = [c.name for c in find_all_in_scope(on, exp.Column) if c.table == inner_name]
         inner_from = inner_scope.expression.args.get("from_")
         if not inner_from:
             return False
@@ -348,6 +355,8 @@ def _mergeable(
         or any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS)
         or inner_select.args.get("from_") is None
         or outer_scope.pivots
+        or any(j.args.get("nearest") for j in outer_args.get("joins", []))
+        or any(j.args.get("nearest") for j in inner_select.args.get("joins", []))
         or (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         or (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
         or (
@@ -396,7 +405,7 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
     Renames any sources in the inner query that conflict with names in the outer query.
     """
     inner_taken = set(inner_scope.selected_sources)
-    outer_taken = set(outer_scope.selected_sources)
+    outer_taken = {name for name, _ in outer_scope.references}
     conflicts = outer_taken.intersection(inner_taken)
     conflicts -= {alias}
 
@@ -541,6 +550,10 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
                 replacement = exp.alias_(replacement, column.name, copy=False)
 
             column.replace(replacement)
+
+    if outer_columns:
+        for scope in outer_scope.traverse():
+            scope.clear_cache()
 
 
 def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:

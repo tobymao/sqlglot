@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import string
 import typing as t
 
 from sqlglot import exp, tokens
@@ -20,6 +21,7 @@ class Oracle(Dialect):
     ON_CONDITION_EMPTY_BEFORE_ERROR = False
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
     DISABLES_ALIAS_REF_EXPANSION = True
+    INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
 
     # See section 8: https://docs.oracle.com/cd/A97630_01/server.920/a96540/sql_elements9a.htm
     NORMALIZATION_STRATEGY = NormalizationStrategy.UPPERCASE
@@ -36,6 +38,7 @@ class Oracle(Dialect):
         "HH12": "%I",  # alias for HH
         "HH24": "%H",  # Hour of day (0-23)
         "IW": "%V",  # Calendar week of year (1-52 or 1-53), as defined by the ISO 8601 standard
+        "IYYY": "%G",  # 4-digit year of the ISO 8601 week-numbering calendar
         "MI": "%M",  # Minute (0-59)
         "MM": "%m",  # Month (01-12; January = 01)
         "MON": "%b",  # Abbreviated name of month
@@ -65,6 +68,31 @@ class Oracle(Dialect):
             for prefix in ("U", "u")
         ]
 
+        # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Literals.html
+        # Alternative quoting, e.g. q'[it's]': the delimiters are part of the quote, so the
+        # text in between is taken as is, without escapes
+        RAW_STRINGS = [
+            (f"{prefix}'{start}", f"{end}'")
+            for prefix in ("q", "Q")
+            for start, end in (
+                ("[", "]"),
+                ("{", "}"),
+                ("(", ")"),
+                ("<", ">"),
+                *(
+                    (c, c)
+                    for c in string.ascii_letters + string.digits + string.punctuation
+                    if c not in "[{(<"
+                ),
+            )
+        ]
+        NATIONAL_RAW_STRINGS = [
+            (prefix + start, end)
+            for start, end in t.cast(list[tuple[str, str]], RAW_STRINGS)
+            for prefix in ("n", "N")
+        ]
+        STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS = False
+
         NESTED_COMMENTS = False
 
         KEYWORDS = {
@@ -82,6 +110,7 @@ class Oracle(Dialect):
             "ORDER SIBLINGS BY": TokenType.ORDER_SIBLINGS_BY,
             "SAMPLE": TokenType.TABLE_SAMPLE,
             "START": TokenType.BEGIN,
+            "SUBPARTITION": TokenType.PARTITION,
             "TOP": TokenType.TOP,
             "VARCHAR2": TokenType.VARCHAR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,

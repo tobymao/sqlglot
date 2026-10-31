@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import ErrorLevel, UnsupportedError, exp
 from tests.dialects.test_dialect import Validator
 
 
@@ -20,6 +20,34 @@ class TestTeradata(Validator):
             "SELECT * FROM tbl SAMPLE 0.33, .25, .1",
             "SELECT * FROM tbl SAMPLE 0.33, 0.25, 0.1",
         )
+        self.validate_all(
+            "SELECT * FROM t SAMPLE 100",
+            write={
+                "teradata": "SELECT * FROM t SAMPLE 100",
+                "snowflake": "SELECT * FROM t TABLESAMPLE (100 ROWS)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t SAMPLE 0.25",
+            read={
+                "snowflake": "SELECT * FROM t TABLESAMPLE (25)",
+            },
+            write={
+                "teradata": "SELECT * FROM t SAMPLE 0.25",
+                "snowflake": "SELECT * FROM t TABLESAMPLE (25)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t SAMPLE 0.6, 0.25",
+            write={
+                "teradata": "SELECT * FROM t SAMPLE 0.6, 0.25",
+                "snowflake": "SELECT * FROM t",
+            },
+        )
+        with self.assertRaises(UnsupportedError):
+            self.parse_one("SELECT * FROM t SAMPLE 10, 20").sql(
+                "snowflake", unsupported_level=ErrorLevel.RAISE
+            )
 
         self.validate_all(
             "DATABASE tduser",
@@ -58,6 +86,15 @@ class TestTeradata(Validator):
         )
         self.validate_identity(
             "LOCKING TABLE table1 FOR ACCESS SELECT * FROM table1 JOIN table2 ON table1.id = table2.id"
+        )
+
+        self.validate_all(
+            "LOCKING ROW FOR ACCESS SELECT * FROM t",
+            write={
+                "teradata": "LOCKING ROW FOR ACCESS SELECT * FROM t",
+                "duckdb": "SELECT * FROM t",
+                "snowflake": "SELECT * FROM t",
+            },
         )
 
         # Test that it still works in CREATE VIEW context (regression test)
@@ -369,3 +406,41 @@ class TestTeradata(Validator):
             "SET QUERY_BAND = 'NONE' FOR SESSION"
         )  # quoted NONE should remain quoted
         self.validate_identity("SET QUERY_BAND = '' FOR SESSION")
+
+    def test_window_aggregate_default_frame(self):
+        self.validate_all(
+            "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d) FROM t",
+            write={
+                "teradata": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d) FROM t",
+                "snowflake": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+                "duckdb": "SELECT SUM(x) OVER (PARTITION BY p ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT COUNT(*) OVER (ORDER BY d) FROM t",
+            write={
+                "teradata": "SELECT COUNT(*) OVER (ORDER BY d) FROM t",
+                "snowflake": "SELECT COUNT(*) OVER (ORDER BY d NULLS FIRST ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+            write={
+                "teradata": "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+                "snowflake": "SELECT SUM(x) OVER (PARTITION BY p) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT RANK() OVER (ORDER BY d), ROW_NUMBER() OVER (ORDER BY d), LAG(x) OVER (ORDER BY d), FIRST_VALUE(x) OVER (ORDER BY d) FROM t",
+            write={
+                "snowflake": "SELECT RANK() OVER (ORDER BY d NULLS FIRST), ROW_NUMBER() OVER (ORDER BY d NULLS FIRST), LAG(x) OVER (ORDER BY d NULLS FIRST), FIRST_VALUE(x) OVER (ORDER BY d NULLS FIRST) FROM t",
+            },
+        )
+        self.validate_identity(
+            "SELECT SUM(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t",
+            "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t",
+        )
+        self.validate_identity(
+            "SELECT AVG(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            "SELECT AVG(x) OVER (ORDER BY d) FROM t",
+        )

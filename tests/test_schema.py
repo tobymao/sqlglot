@@ -2,10 +2,37 @@ import unittest
 
 from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
-from sqlglot.schema import MappingSchema, ensure_schema
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.qualify import qualify
+from sqlglot.optimizer.scope import build_scope
+from sqlglot.schema import MappingSchema, Schema, ensure_schema
 
 
 class TestSchema(unittest.TestCase):
+    def test_ref_type(self) -> None:
+        schema = MappingSchema({"orders": {"customer": "REF(public.customer)"}})
+        datatype = exp.DataType.build("REF(public.customer)")
+        self.assertEqual(schema.get_column_type(exp.to_table("orders"), "customer"), datatype)
+
+        expression = annotate_types(
+            qualify(
+                parse_one(
+                    "SELECT customer, ARRAY(customer), COALESCE(customer, NULL), "
+                    "CAST(customer AS REF(public.customer)) FROM orders"
+                ),
+                schema=schema,
+            ),
+            schema=schema,
+        )
+        self.assertEqual(expression.selects[0].type, datatype)
+        self.assertEqual(
+            expression.selects[1].type, exp.DataType.build("ARRAY<REF(public.customer)>")
+        )
+        self.assertEqual(expression.selects[2].type, datatype)
+        self.assertEqual(expression.selects[3].type, exp.DataType.build('REF("public"."customer")'))
+        # The target inside REF is type metadata, not another source in the query.
+        self.assertEqual(set(build_scope(expression).sources), {"orders"})
+
     def assert_column_names(self, schema, *table_results):
         for table, result in table_results:
             with self.subTest(f"{table} -> {result}"):
@@ -340,3 +367,31 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(found, {"c": "int"})
         found = schema.find(exp.to_table("x"), ensure_data_types=True)
         self.assertEqual(found, {"c": exp.DataType.build("int")})
+
+    def test_custom_schema(self):
+        class CustomSchema(Schema):
+            def add_table(
+                self, table, column_mapping=None, dialect=None, normalize=None, match_depth=True
+            ):
+                pass
+
+            def column_names(self, table, only_visible=False, dialect=None, normalize=None):
+                return ["a"]
+
+            def get_column_type(self, table, column, dialect=None, normalize=None):
+                return exp.DataType.build("int")
+
+            @property
+            def supported_table_args(self):
+                return ("this",)
+
+            @property
+            def empty(self):
+                return False
+
+        schema = CustomSchema()
+        expression = annotate_types(
+            qualify(parse_one("SELECT * FROM t"), schema=schema), schema=schema
+        )
+        self.assertEqual(expression.sql(), 'SELECT "t"."a" AS "a" FROM "t" AS "t"')
+        self.assertEqual(expression.selects[0].type.sql(), "INT")

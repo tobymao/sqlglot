@@ -6,6 +6,7 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     arrow_json_extract_sql,
+    no_pivot_sql,
     rename_func,
     weekstart_unit_to_str,
     inline_array_sql,
@@ -62,16 +63,24 @@ class StarRocksGenerator(MySQLGenerator):
     WITH_PROPERTIES_PREFIX = "PROPERTIES"
     UPDATE_STATEMENT_SUPPORTS_FROM = True
     INSERT_OVERWRITE = " OVERWRITE"
+    CAST_TO_INT_ROUNDS = False
 
     # StarRocks doesn't support "IS TRUE/FALSE" syntax.
     IS_BOOL_ALLOWED = False
     # StarRocks doesn't support renaming a table with a database.
     RENAME_TABLE_WITH_DB = False
 
+    ALTER_PARTITION_OPTIONS = (
+        *MySQLGenerator.ALTER_PARTITION_OPTIONS,
+        exp.DistributedByProperty,
+        exp.PartitionedByProperty,
+    )
+
     CAST_MAPPING: t.ClassVar[dict[exp.DType, str]] = {}
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
+        exp.DType.HLLSKETCH: "HLL",
         exp.DType.INT128: "LARGEINT",
         exp.DType.TEXT: "STRING",
         exp.DType.TIMESTAMP: "DATETIME",
@@ -86,13 +95,16 @@ class StarRocksGenerator(MySQLGenerator):
         exp.UniqueKeyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RollupProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.Property: exp.Properties.Location.POST_WITH,
     }
 
     TRANSFORMS = {
         # StarRocks uses the native TRIM(str, chars)/LTRIM/RTRIM function form, not
         # MySQL's TRIM(chars FROM str) syntax, so it falls back to the base generator.
         **{
-            k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k not in (exp.DateTrunc, exp.Trim)
+            k: v
+            for k, v in MySQLGenerator.TRANSFORMS.items()
+            if k not in (exp.DateDiff, exp.DateTrunc, exp.Pivot, exp.ToMap, exp.Trim)
         },
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
@@ -105,9 +117,6 @@ class StarRocksGenerator(MySQLGenerator):
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
-        exp.DateDiff: lambda self, e: self.func(
-            "DATE_DIFF", weekstart_unit_to_str(self, e), e.this, e.expression
-        ),
         exp.Delete: transforms.preprocess([_eliminate_between_in_delete]),
         exp.Flatten: rename_func("ARRAY_FLATTEN"),
         exp.JSONExtractScalar: arrow_json_extract_sql,
@@ -371,3 +380,54 @@ class StarRocksGenerator(MySQLGenerator):
         every = f" EVERY (INTERVAL {every} {unit})" if every and unit else ""
 
         return f"REFRESH{method}{kind}{starts}{every}"
+
+    def refresh_sql(self, expression: exp.Refresh) -> str:
+        this = self.sql(expression, "this")
+        kind = "" if isinstance(expression.this, exp.Literal) else f"{expression.text('kind')} "
+        partition_start = self.sql(expression, "partition_start")
+        partition_end = self.sql(expression, "partition_end")
+        partition = (
+            f" PARTITION START ({partition_start}) END ({partition_end})" if partition_start else ""
+        )
+        force = " FORCE" if expression.args.get("force") else ""
+        mode = self.sql(expression, "mode")
+        mode = f" WITH {mode} MODE" if mode else ""
+
+        return f"REFRESH {kind}{this}{partition}{force}{mode}"
+
+    def datediff_sql(self, expression: exp.DateDiff) -> str:
+        # DATEDIFF compares only the date parts, whereas DATE_DIFF counts elapsed units
+        # https://docs.starrocks.io/docs/sql-reference/sql-functions/date-time-functions/datediff/
+        unit = expression.args.get("unit")
+        if expression.args.get("date_part_boundary") and (not unit or unit.name.upper() == "DAY"):
+            return self.func("DATEDIFF", expression.this, expression.expression)
+
+        return self.func(
+            "DATE_DIFF",
+            weekstart_unit_to_str(self, expression),
+            expression.this,
+            expression.expression,
+        )
+
+    def pivot_sql(self, expression: exp.Pivot) -> str:
+        # Only PIVOT (...) is supported, not UNPIVOT or DuckDB's PIVOT statement
+        # https://docs.starrocks.io/docs/sql-reference/sql-statements/table_bucket_part_index/SELECT/SELECT_PIVOT/
+        if expression.unpivot or expression.this:
+            return no_pivot_sql(self, expression)
+        return super().pivot_sql(expression)
+
+    def tomap_sql(self, expression: exp.ToMap) -> str:
+        struct = expression.this
+        if not isinstance(struct, exp.Struct):
+            return f"MAP {self.sql(struct)}"
+
+        entries = ", ".join(
+            f"{self.sql(e, 'this')}:{self.sql(e, 'expression')}" for e in struct.expressions
+        )
+        return f"MAP{{{entries}}}"
+
+    def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+        interval = exp.Interval(this=expression.expression, unit=expression.unit)
+        kind = expression.text("kind").upper()
+        boundary = exp.var("CEIL" if kind == "END" else "FLOOR") if kind else None
+        return self.func("TIME_SLICE", expression.this, interval, boundary)

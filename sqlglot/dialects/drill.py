@@ -9,7 +9,7 @@ from sqlglot.parsers.drill import DrillParser
 
 class Drill(Dialect):
     NORMALIZE_FUNCTIONS: bool | str = False
-    PRESERVE_ORIGINAL_NAMES = True
+    ORIGINAL_NAME_META_KEY = "drill_name"
     NULL_ORDERING = "nulls_are_last"
     DATE_FORMAT = "'yyyy-MM-dd'"
     DATEINT_FORMAT = "'yyyyMMdd'"

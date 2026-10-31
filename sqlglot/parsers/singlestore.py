@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser, _show_parser
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 
@@ -21,6 +22,8 @@ def cast_to_time6(expression: exp.Expr | None, time_type: exp.DType = exp.DType.
 
 
 class SingleStoreParser(MySQLParser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.HIGH
+
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate),

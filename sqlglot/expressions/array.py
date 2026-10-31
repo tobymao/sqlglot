@@ -23,6 +23,7 @@ class Array(Expression, Func):
         "expressions": False,
         "bracket_notation": False,
         "struct_name_inheritance": False,
+        "value_constructor": False,
     }
     is_var_len_args = True
 
@@ -84,19 +85,24 @@ class ArrayReverse(Expression, Func):
 
 
 class ArraySlice(Expression, Func):
-    arg_types = {"this": True, "start": True, "end": False, "step": False, "zero_based": False}
+    """Slice by end index, or by length when is_length is set."""
+
+    arg_types = {
+        "this": True,
+        "start": True,
+        "end": False,
+        "step": False,
+        "zero_based": False,
+        "is_length": False,
+    }
 
 
 class ArraySort(Expression, Func):
-    arg_types = {"this": True, "expression": False}
+    arg_types = {"this": True, "expression": False, "asc": False, "nulls_first": False}
 
 
 class Shuffle(Expression, Func):
     pass
-
-
-class SortArray(Expression, Func):
-    arg_types = {"this": True, "asc": False, "nulls_first": False}
 
 
 # Array predicates / search
@@ -242,6 +248,14 @@ class Explode(Expression, Func, UDTF):
 
 class Inline(Expression, Func, UDTF):
     pass
+
+
+class SplitToTable(Expression, Func, UDTF):
+    arg_types = {"this": True, "expression": True}
+
+
+class StrtokSplitToTable(Expression, Func, UDTF):
+    arg_types = {"this": True, "expression": False}
 
 
 class Stack(Expression, Func, UDTF):

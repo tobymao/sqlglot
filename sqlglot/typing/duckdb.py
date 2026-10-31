@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA
+from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -44,6 +44,28 @@ def _annotate_date_trunc(
         return self._set_type(expression, exp.DType.TIMESTAMP)
 
     return self._set_type(expression, expression.this.type)
+
+
+def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
+    if expression.this.is_type(exp.DType.DECIMAL):
+        return self._set_type(expression, exp.DType.UNKNOWN)
+    return annotate_int_as_double(self, expression)
+
+
+def _annotate_add_sub(self: TypeAnnotator, expression: exp.Add | exp.Sub) -> exp.Expr:
+    self._annotate_binary(expression)
+    left, right = expression.left, expression.right
+
+    if isinstance(expression, exp.Add) and left.is_type(exp.DType.INTERVAL):
+        left, right = right, left
+
+    if right.is_type(exp.DType.INTERVAL):
+        if left.is_type(*DATETIME_WITHOUT_TZ):
+            self._set_type(expression, exp.DType.TIMESTAMP)
+        elif left.is_type(exp.DType.TIME, exp.DType.TIMETZ, exp.DType.TIMESTAMPTZ):
+            self._set_type(expression, left.type)
+
+    return expression
 
 
 EXPRESSION_METADATA = {
@@ -100,14 +122,24 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"annotator": _annotate_floor_ceil}
+        for expr_type in {
+            exp.Ceil,
+            exp.Floor,
+        }
+    },
+    **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
             exp.BitwiseAndAgg,
             exp.BitwiseOrAgg,
             exp.BitwiseXorAgg,
             exp.PercentileDisc,
+            exp.Mode,
         }
     },
+    exp.Add: {"annotator": _annotate_add_sub},
+    exp.Sub: {"annotator": _annotate_add_sub},
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},

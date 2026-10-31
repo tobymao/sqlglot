@@ -119,6 +119,20 @@ class Validator(unittest.TestCase):
 class TestDialect(Validator):
     maxDiff = None
 
+    def test_preserve_original_names(self):
+        expression = exp.select(
+            parse_one("abs(1)", read="clickhouse"),
+            parse_one("abs(2)", read="bigquery"),
+            parse_one("abs(3)", read="drill"),
+        )
+        for dialect, sql in (
+            ("clickhouse", "SELECT abs(1), ABS(2), ABS(3)"),
+            ("bigquery", "SELECT ABS(1), abs(2), ABS(3)"),
+            ("drill", "SELECT ABS(1), ABS(2), abs(3)"),
+        ):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(expression.sql(dialect), sql)
+
     def test_enum(self):
         dialect_by_key = Dialect.classes
         for dialect in Dialects:
@@ -373,7 +387,7 @@ class TestDialect(Validator):
             "CAST(a AS DATETIME)",
             write={
                 "postgres": "CAST(a AS TIMESTAMP)",
-                "sqlite": "CAST(a AS DATETIME)",
+                "sqlite": "DATETIME(a)",
             },
         )
         self.validate_all(
@@ -1393,7 +1407,6 @@ class TestDialect(Validator):
                 write={
                     dialect: f"{unit}(x)"
                     for dialect in (
-                        "bigquery",
                         "drill",
                         "duckdb",
                         "mysql",
@@ -1425,6 +1438,20 @@ class TestDialect(Validator):
                     )
                 },
             )
+
+    def _validate_array_sort(self, read: str, sql: str, write: dict) -> None:
+        expression = parse_one(sql, read=read)
+        for dialect, expected in write.items():
+            with self.subTest(f"{read}: {sql} -> {dialect}"):
+                if isinstance(expected, tuple):
+                    expected, warning = expected
+                    with self.assertLogs(generator_logger, level="WARNING") as cm:
+                        self.assertEqual(expression.sql(dialect), expected)
+                    self.assertIn(warning, cm.output[0])
+                else:
+                    self.assertEqual(
+                        expression.sql(dialect, unsupported_level=ErrorLevel.RAISE), expected
+                    )
 
     def test_array(self):
         self.validate_all(
@@ -1536,16 +1563,177 @@ class TestDialect(Validator):
             },
         )
 
-        self.validate_all(
-            "SORT_ARRAY(x)",
-            write={
-                "duckdb": "LIST_SORT(x)",
-                "hive": "SORT_ARRAY(x)",
-                "presto": "ARRAY_SORT(x)",
-                "snowflake": "ARRAY_SORT(x)",
-                "spark": "SORT_ARRAY(x)",
+        # Each source's NULL placement, e.g. Trino puts NULLs last and Spark's SORT_ARRAY first
+        hive = ("SORT_ARRAY(x)", "Hive's SORT_ARRAY only sorts ascending with NULLs first")
+        trino_order = (
+            "ARRAY_SORT can't sort ascending with NULLs first or descending with NULLs last"
+        )
+        risingwave = ("ARRAY_SORT(x)", "ARRAY_SORT only sorts ascending with NULLs last")
+        asc_nulls_last = {
+            "duckdb": "LIST_SORT(x)",
+            "hive": hive,
+            "risingwave": "ARRAY_SORT(x)",
+            "snowflake": "ARRAY_SORT(x)",
+            "spark": "ARRAY_SORT(x)",
+            "trino": "ARRAY_SORT(x)",
+        }
+        asc_nulls_first = {
+            "duckdb": "LIST_SORT(x, 'ASC', 'NULLS FIRST')",
+            "hive": "SORT_ARRAY(x)",
+            "risingwave": risingwave,
+            "snowflake": "ARRAY_SORT(x, TRUE, TRUE)",
+            "spark": "SORT_ARRAY(x)",
+            "trino": ("ARRAY_SORT(x)", trino_order),
+        }
+        desc_nulls_last = {
+            "duckdb": "ARRAY_REVERSE_SORT(x)",
+            "hive": hive,
+            "risingwave": risingwave,
+            "snowflake": "ARRAY_SORT(x, FALSE, FALSE)",
+            "spark": "SORT_ARRAY(x, FALSE)",
+            "trino": ("REVERSE(ARRAY_SORT(x))", trino_order),
+        }
+        desc_nulls_first = {
+            "duckdb": "LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+            "hive": hive,
+            "risingwave": risingwave,
+            "snowflake": "ARRAY_SORT(x, FALSE)",
+            "spark": "REVERSE(ARRAY_SORT(x))",
+            "trino": "REVERSE(ARRAY_SORT(x))",
+        }
+        for read, sql, write in (
+            ("trino", "ARRAY_SORT(x)", asc_nulls_last),
+            ("spark", "ARRAY_SORT(x)", asc_nulls_last),
+            ("snowflake", "ARRAY_SORT(x)", asc_nulls_last),
+            ("duckdb", "LIST_SORT(x)", asc_nulls_last),
+            ("spark", "SORT_ARRAY(x)", asc_nulls_first),
+            ("hive", "SORT_ARRAY(x)", asc_nulls_first),
+            ("duckdb", "LIST_SORT(x, 'ASC', 'NULLS FIRST')", asc_nulls_first),
+            ("spark", "SORT_ARRAY(x, FALSE)", desc_nulls_last),
+            ("duckdb", "LIST_SORT(x, 'DESC')", desc_nulls_last),
+            ("duckdb", "ARRAY_REVERSE_SORT(x)", desc_nulls_last),
+            ("snowflake", "ARRAY_SORT(x, FALSE)", desc_nulls_first),
+            ("duckdb", "LIST_SORT(x, 'DESC', 'NULLS FIRST')", desc_nulls_first),
+        ):
+            self._validate_array_sort(read, sql, write)
+
+        # A non-literal order is only kept where the target reads it the same way
+        unsupported = {
+            "duckdb": ("LIST_SORT(x)", "LIST_SORT only takes literal orders"),
+            "hive": hive,
+            "risingwave": risingwave,
+            "trino": ("ARRAY_SORT(x)", trino_order),
+        }
+        spark_nulls = "SORT_ARRAY puts NULLs first exactly when ascending"
+        self._validate_array_sort(
+            "spark",
+            "SORT_ARRAY(x, y)",
+            {**unsupported, "snowflake": "ARRAY_SORT(x, y, y)", "spark": "SORT_ARRAY(x, y)"},
+        )
+        self._validate_array_sort(
+            "snowflake",
+            "ARRAY_SORT(x, y)",
+            {
+                **unsupported,
+                "snowflake": "ARRAY_SORT(x, y)",
+                "spark": ("SORT_ARRAY(x, y)", spark_nulls),
             },
         )
+        self._validate_array_sort(
+            "snowflake",
+            "ARRAY_SORT(x, TRUE, y)",
+            {
+                **unsupported,
+                "snowflake": "ARRAY_SORT(x, TRUE, y)",
+                "spark": ("SORT_ARRAY(x, TRUE)", spark_nulls),
+            },
+        )
+        self._validate_array_sort(
+            "snowflake",
+            "ARRAY_SORT(x, y, FALSE)",
+            {
+                **unsupported,
+                "snowflake": "ARRAY_SORT(x, y, FALSE)",
+                "spark": ("SORT_ARRAY(x, y)", spark_nulls),
+            },
+        )
+        self._validate_array_sort(
+            "trino",
+            "ARRAY_SORT(x, (a, b) -> a - b)",
+            {
+                "duckdb": ("LIST_SORT(x)", "DuckDB's LIST_SORT does not support a comparator."),
+                "hive": ("SORT_ARRAY(x)", "Hive's SORT_ARRAY does not support a comparator."),
+                "snowflake": (
+                    "ARRAY_SORT(x)",
+                    "Snowflake's ARRAY_SORT does not support a comparator.",
+                ),
+                "spark": "ARRAY_SORT(x, (a, b) -> a - b)",
+                "trino": "ARRAY_SORT(x, (a, b) -> a - b)",
+            },
+        )
+
+        # BigQuery can't sort an aggregate's result, so the sort folds into the ARRAY_AGG
+        distinct_nulls = "ARRAY_AGG(DISTINCT) only puts NULLs first when ascending"
+        unfoldable = (
+            "is only supported on an ARRAY_AGG without ORDER BY or LIMIT and with a literal order"
+        )
+        for read, sql, expected in (
+            ("trino", "ARRAY_SORT(ARRAY_AGG(x))", "ARRAY_AGG(x ORDER BY x IS NULL, x)"),
+            ("duckdb", "LIST_SORT(LIST(x), 'ASC', 'NULLS FIRST')", "ARRAY_AGG(x ORDER BY x)"),
+            ("duckdb", "ARRAY_REVERSE_SORT(LIST(x))", "ARRAY_AGG(x ORDER BY x DESC)"),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(x), 'DESC', 'NULLS FIRST')",
+                "ARRAY_AGG(x ORDER BY x IS NULL DESC, x DESC)",
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(DISTINCT x), 'ASC', 'NULLS FIRST')",
+                "ARRAY_AGG(DISTINCT x ORDER BY x)",
+            ),
+            ("trino", "ARRAY_DISTINCT(ARRAY_AGG(x))", "ARRAY_AGG(DISTINCT x)"),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(DISTINCT x))",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x)", distinct_nulls),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x)))",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x)", distinct_nulls),
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
+                ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
+            ),
+            (
+                "spark",
+                "SORT_ARRAY(COLLECT_LIST(x), y)",
+                (
+                    "ARRAY_SORT(ARRAY_AGG(x) FILTER(WHERE x IS NOT NULL))",
+                    f"ARRAY_SORT {unfoldable}",
+                ),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(x ORDER BY y))",
+                ("ARRAY_SORT(ARRAY_AGG(x ORDER BY y))", f"ARRAY_SORT {unfoldable}"),
+            ),
+            (
+                "",
+                "ARRAY_SORT(ARRAY_AGG(x LIMIT 2))",
+                ("ARRAY_SORT(ARRAY_AGG(x LIMIT 2))", f"ARRAY_SORT {unfoldable}"),
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(x), (a, b) -> 0)",
+                ("ARRAY_SORT(ARRAY_AGG(x), (a, b) -> 0)", f"ARRAY_SORT {unfoldable}"),
+            ),
+            ("trino", "ARRAY_SORT(x)", ("ARRAY_SORT(x)", f"ARRAY_SORT {unfoldable}")),
+            ("trino", "ARRAY_DISTINCT(x)", ("ARRAY_DISTINCT(x)", f"ARRAY_DISTINCT {unfoldable}")),
+        ):
+            self._validate_array_sort(read, sql, {"bigquery": expected})
 
         # Test basic syntax transpilation for ARRAY_PREPEND
         self.validate_all(
@@ -1828,7 +2016,7 @@ class TestDialect(Validator):
                 "trino": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "presto": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
                 "athena": "SELECT ARRAY_EXCEPT(ARRAY[1, 2, 3], ARRAY[2])",
-                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_FILTER(LIST_DISTINCT([1, 2, 3]), e -> LENGTH(LIST_FILTER([2], x -> x IS NOT DISTINCT FROM e)) = 0) END",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_FILTER(LIST_DISTINCT([1, 2, 3]), LAMBDA e : LENGTH(LIST_FILTER([2], LAMBDA x : x IS NOT DISTINCT FROM e)) = 0) END",
             },
         )
 
@@ -1882,7 +2070,7 @@ class TestDialect(Validator):
             write={
                 "": """JSON_EXTRACT(x, '$["a b"]')""",
                 "bigquery": """JSON_EXTRACT(x, '$[\\'a b\\']')""",
-                "clickhouse": "JSONExtractString(x, 'a b')",
+                "clickhouse": "JSONExtractRaw(x, 'a b')",
                 "duckdb": """x -> '$."a b"'""",
                 "mysql": """JSON_EXTRACT(x, '$."a b"')""",
                 "postgres": "JSON_EXTRACT_PATH(x, 'a b')",
@@ -1899,6 +2087,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y')",
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "duckdb": "x -> 'y'",
                 "doris": "JSON_EXTRACT(x, '$.y')",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
@@ -1910,7 +2099,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
-                "clickhouse": "JSONExtractString(x, 'y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "doris": "JSON_EXTRACT(x, '$.y')",
                 "duckdb": "x -> '$.y'",
                 "mysql": "JSON_EXTRACT(x, '$.y')",
@@ -1954,6 +2143,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[0].z')",
             read={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
+                "clickhouse": "JSONExtractRaw(x, 'y', 1, 'z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -1964,7 +2154,7 @@ class TestDialect(Validator):
             },
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y[0].z')",
-                "clickhouse": "JSONExtractString(x, 'y', 1, 'z')",
+                "clickhouse": "JSONExtractRaw(x, 'y', 1, 'z')",
                 "doris": "JSON_EXTRACT(x, '$.y[0].z')",
                 "duckdb": "x -> '$.y[0].z'",
                 "mysql": "JSON_EXTRACT(x, '$.y[0].z')",
@@ -2023,7 +2213,7 @@ class TestDialect(Validator):
             "JSON_EXTRACT(x, '$.y[*]')",
             write={
                 "bigquery": "JSON_EXTRACT(x, '$.y')",
-                "clickhouse": "JSONExtractString(x, 'y')",
+                "clickhouse": "JSONExtractRaw(x, 'y')",
                 "postgres": "JSON_EXTRACT_PATH(x, 'y')",
                 "redshift": "JSON_EXTRACT_PATH_TEXT(x, 'y')",
                 "snowflake": "GET_PATH(PARSE_JSON(x), 'y')",
@@ -2779,7 +2969,7 @@ class TestDialect(Validator):
             write={
                 "": "ARRAY_REMOVE(the_array, target)",
                 "clickhouse": "arrayFilter(_u -> _u <> target, the_array)",
-                "duckdb": "LIST_FILTER(the_array, _u -> _u <> target)",
+                "duckdb": "LIST_FILTER(the_array, LAMBDA _u : _u <> target)",
                 "bigquery": "ARRAY(SELECT _u FROM UNNEST(the_array) AS _u WHERE _u <> target)",
                 "hive": "ARRAY_REMOVE(the_array, target)",
                 "postgres": "ARRAY_REMOVE(the_array, target)",
@@ -2886,16 +3076,6 @@ class TestDialect(Validator):
 
     def test_limit(self):
         self.validate_identity("WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all")
-        self.validate_all(
-            "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t",
-            read={
-                "databricks": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
-                "duckdb": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
-                "presto": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
-                "postgres": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
-                "spark": "WITH t AS (SELECT 1 AS all) SELECT 1 FROM t LIMIT all",
-            },
-        )
 
         self.validate_all(
             "SELECT * FROM data LIMIT 10, 20",
@@ -3397,7 +3577,7 @@ SELECT
                 "presto": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
                 "snowflake": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
                 "sqlite": "SELECT SUM(IIF(col % 2 = 0, 1, 0)) FROM foo",
-                "tsql": "SELECT COUNT_IF(col % 2 = 0) FROM foo",
+                "tsql": "SELECT COUNT(IIF(col % 2 = 0, 1, NULL)) FROM foo",
                 "postgres": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
                 "redshift": "SELECT SUM(CASE WHEN col % 2 = 0 THEN 1 ELSE 0 END) FROM foo",
             },
@@ -3414,7 +3594,7 @@ SELECT
                 "databricks": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
                 "presto": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
                 "sqlite": "SELECT SUM(IIF(col % 2 = 0, 1, 0)) FILTER(WHERE col < 1000) FROM foo",
-                "tsql": "SELECT COUNT_IF(col % 2 = 0) FILTER(WHERE col < 1000) FROM foo",
+                "tsql": "SELECT COUNT(IIF(col < 1000 AND col % 2 = 0, 1, NULL)) FROM foo",
             },
         )
 
@@ -3489,6 +3669,55 @@ SELECT
                 "sqlite": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
                 "oracle": "SELECT SUM(X) OVER (PARTITION BY x RANGE BETWEEN 1 PRECEDING AND CURRENT ROW)",
             },
+        )
+
+    def test_partition_by_excluding(self):
+        window = self.validate_identity(
+            "LAG(revenue) OVER (PARTITION BY EXCLUDING orders.order_date, orders.order_year ORDER BY orders.order_date)"
+        )
+        self.assertIsInstance(window.args["partition_by"][0], exp.PartitionByExcluding)
+
+        for partition in ("excluding", "excluding, a", "excluding.a"):
+            window = self.validate_identity(f"SUM(a) OVER (PARTITION BY {partition} ORDER BY a)")
+            self.assertIsInstance(window.args["partition_by"][0], exp.Column)
+
+    def test_per(self):
+        for sql in (
+            "AVG(AGG(revenue) PER (customer))",
+            "AVG(SUM(x) PER (c, d))",
+            "AVG(LAG(AGG(revenue)) OVER (PARTITION BY customer ORDER BY year) PER (customer))",
+            "LAG(AVG(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
+            "SUM(SUM(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
+            "AVG(AVG(AGG(x) PER (c)) PER (d))",
+            "SUM(x) FILTER(WHERE y > 0) PER (c)",
+            "SUM(x) OVER w PER (c)",
+        ):
+            self.validate_identity(sql)
+
+        per = self.validate_identity(
+            "AVG(LAG(AGG(revenue)) OVER (PARTITION BY customer ORDER BY year) PER (customer))"
+        ).this
+        self.assertIsInstance(per, exp.Per)
+        self.assertIsInstance(per.this, exp.Window)
+
+        window = self.validate_identity(
+            "LAG(AVG(AGG(revenue) PER (customer))) OVER (ORDER BY year)"
+        )
+        self.assertIsInstance(window, exp.Window)
+        self.assertIsInstance(window.this.this.this, exp.Per)
+
+        nested = self.validate_identity("AVG(AVG(AGG(x) PER (c)) PER (d))").this
+        self.assertIsInstance(nested, exp.Per)
+        self.assertIsInstance(nested.this.this, exp.Per)
+
+        self.assertIsInstance(
+            self.validate_identity("SELECT per FROM t").expressions[0], exp.Column
+        )
+        self.assertIsInstance(
+            self.validate_identity(
+                "SELECT SUM(x) per FROM t", "SELECT SUM(x) AS per FROM t"
+            ).expressions[0],
+            exp.Alias,
         )
 
     def test_nested_ctes(self):
@@ -3697,7 +3926,7 @@ FROM subquery2""",
                 "databricks": "(SIZE(arr) = 0 OR SIZE(FILTER(arr, x -> pred)) <> 0)",
                 "doris": UnsupportedError,
                 "drill": UnsupportedError,
-                "duckdb": "(ARRAY_LENGTH(arr) = 0 OR ARRAY_LENGTH(LIST_FILTER(arr, x -> pred)) <> 0)",
+                "duckdb": "(ARRAY_LENGTH(arr) = 0 OR ARRAY_LENGTH(LIST_FILTER(arr, LAMBDA x : pred)) <> 0)",
                 "hive": UnsupportedError,
                 "mysql": UnsupportedError,
                 "oracle": UnsupportedError,
@@ -3769,6 +3998,11 @@ FROM subquery2""",
         self.validate_identity(
             """SELECT partition.d FROM t PARTITION (d)""",
             """SELECT partition.d FROM t AS PARTITION(d)""",
+        )
+        self.validate_identity("CREATE TABLE abc.s.in AS SELECT 1 AS n")
+        self.validate_identity(
+            "WITH in AS (SELECT 1 AS in) SELECT in FROM in WHERE in IN (1, 2) AND in NOT IN (3, 4)",
+            "WITH in AS (SELECT 1 AS in) SELECT in FROM in WHERE in IN (1, 2) AND NOT in IN (3, 4)",
         )
 
     def test_string_functions(self):
@@ -3873,6 +4107,100 @@ FROM subquery2""",
                 "trino": "SELECT 1 EXCEPT ALL SELECT 1",
                 "tsql": UnsupportedError,
             },
+        )
+
+    def test_set_operation_precedence(self):
+        # INTERSECT binds tighter than UNION / EXCEPT, so it groups with its neighbors first
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            read={
+                "postgres": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "spark": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+        self.validate_all(
+            "SELECT 1 EXCEPT (SELECT 2 INTERSECT SELECT 3 INTERSECT SELECT 4) UNION SELECT 5",
+            read={
+                "postgres": "SELECT 1 EXCEPT SELECT 2 INTERSECT SELECT 3 INTERSECT SELECT 4 UNION SELECT 5"
+            },
+        )
+
+        # All set operations have equal precedence and associate left to right
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            read={
+                "oracle": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "sqlite": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+                "hive": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+
+        # A leading INTERSECT run groups the same way under either rule, so no wrapper is needed
+        self.validate_all(
+            "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+            read={
+                "oracle": "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+                "postgres": "SELECT 1 INTERSECT SELECT 2 INTERSECT SELECT 3 UNION SELECT 4",
+            },
+        )
+
+        # Modifiers belong to the outermost set operation, not to the grouped INTERSECT
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1 NULLS LAST LIMIT 10 OFFSET 2",
+            read={
+                "postgres": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1 LIMIT 10 OFFSET 2"
+            },
+        )
+        self.validate_all(
+            "SELECT (SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1 NULLS LAST)",
+            read={"postgres": "SELECT (SELECT 1 UNION SELECT 2 INTERSECT SELECT 3 ORDER BY 1)"},
+            write={"postgres": "SELECT (SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3) ORDER BY 1)"},
+        )
+
+        # SQLite needs a SELECT wrapper for right grouping, but left grouping is implicit.
+        self.validate_all(
+            "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            read={
+                "postgres": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "oracle": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+            },
+            write={
+                "postgres": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "oracle": "SELECT 1 UNION (SELECT 2 INTERSECT SELECT 3)",
+                "sqlite": "SELECT 1 UNION SELECT * FROM (SELECT 2 INTERSECT SELECT 3)",
+            },
+        )
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            read={
+                "postgres": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "oracle": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+            },
+            write={
+                "postgres": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "oracle": "(SELECT 1 UNION SELECT 2) INTERSECT SELECT 3",
+                "sqlite": "SELECT 1 UNION SELECT 2 INTERSECT SELECT 3",
+            },
+        )
+        self.validate_all(
+            "(SELECT 1 UNION SELECT 2) /* keep */ INTERSECT SELECT 3",
+            write={"sqlite": "SELECT 1 /* keep */ UNION SELECT 2 INTERSECT SELECT 3"},
+        )
+        self.validate_all(
+            "((SELECT 1 AS x, 2 AS x UNION SELECT 3, 4)) INTERSECT SELECT 1, 2",
+            write={"sqlite": "SELECT 1 AS x, 2 AS x UNION SELECT 3, 4 INTERSECT SELECT 1, 2"},
+        )
+
+        # Each left-to-right UNION -> INTERSECT step nests another grouping
+        expected = "SELECT 1"
+        for _ in range(200):
+            expected = f"({expected} UNION SELECT 1) INTERSECT SELECT 1"
+        expression = parse_one("SELECT 1" + " UNION SELECT 1 INTERSECT SELECT 1" * 200, read="hive")
+        self.assertEqual(expression.sql("postgres"), expected)
+
+        # A missing operand from tolerant parsing renders as empty, not as a closing paren
+        self.assertEqual(
+            parse_one("SELECT 1 UNION", error_level=ErrorLevel.IGNORE).sql(), "SELECT 1 UNION"
         )
 
     def test_normalize(self):
@@ -4186,6 +4514,23 @@ FROM subquery2""",
                     "postgres": f"PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x){suffix}",
                 },
             )
+
+    def test_filter(self):
+        self.validate_all(
+            "SELECT SUM(x) FILTER(WHERE c = 'US'), COUNT(*) FILTER(WHERE c > 1), COUNT(DISTINCT x) FILTER(WHERE c > 1) FROM t",
+            write={
+                "bigquery": "SELECT SUM(IF(c = 'US', x, NULL)), COUNTIF(c > 1), COUNT(DISTINCT IF(c > 1, x, NULL)) FROM t",
+                "snowflake": "SELECT SUM(IFF(c = 'US', x, NULL)), COUNT_IF(c > 1), COUNT(DISTINCT IFF(c > 1, x, NULL)) FROM t",
+                "tsql": "SELECT SUM(IIF(c = 'US', x, NULL)), COUNT(IIF(c > 1, 1, NULL)), COUNT_BIG(DISTINCT IIF(c > 1, x, NULL)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_AGG(x ORDER BY y NULLS FIRST) FILTER(WHERE c > 1) FROM t",
+            write={
+                "bigquery": "SELECT ARRAY_AGG(IF(c > 1, x, NULL) IGNORE NULLS ORDER BY y) FROM t",
+                "snowflake": "SELECT ARRAY_AGG(IFF(c > 1, x, NULL)) WITHIN GROUP (ORDER BY y NULLS FIRST) FROM t",
+            },
+        )
 
     def test_filter_within_group(self):
         self.validate_all(

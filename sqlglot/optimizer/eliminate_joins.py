@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import expressions as exp
 from sqlglot.optimizer.normalize import normalized
-from sqlglot.optimizer.scope import Scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -42,7 +42,7 @@ def eliminate_joins(expression: E) -> E:
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
-            if join.is_semi_or_anti_join:
+            if join.is_semi_or_anti_join or join.args.get("nearest"):
                 continue
 
             alias = join.alias_or_name
@@ -91,7 +91,9 @@ def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
 def _unique_outputs(scope: Scope) -> set[str]:
     """Determine output columns of `scope` that must have a unique combination per row"""
     expr = t.cast(exp.Query, scope.expression)
-    if expr.args.get("distinct") is not None:
+    if (distinct := expr.args.get("distinct")) is not None and not (
+        isinstance(distinct, exp.Distinct) and distinct.args.get("on")
+    ):
         return set(expr.named_selects)
 
     group: exp.Group | None = expr.args.get("group")
@@ -112,23 +114,30 @@ def _unique_outputs(scope: Scope) -> set[str]:
         else:
             return set()
 
-    if _has_single_output_row(scope):
+    if _is_limit_1(scope) or _has_single_output_row(scope):
         return set(expr.named_selects)
 
     return set()
 
 
 def _has_single_output_row(scope: Scope) -> bool:
-    return isinstance(scope.expression, exp.Select) and (
-        all(isinstance(e.unalias(), exp.AggFunc) for e in scope.expression.selects)
-        or _is_limit_1(scope)
-        or not scope.expression.args.get("from_")
+    expression = scope.expression
+    if not isinstance(expression, exp.Select):
+        return False
+
+    args = expression.args
+    if any(args.get(key) for key in ("group", "having", "qualify", "limit", "offset")):
+        return False
+    if args.get("from_") or args.get("where"):
+        return all(isinstance(select.unalias(), exp.AggFunc) for select in expression.selects)
+    return not any(
+        find_in_scope(select, *exp.SET_RETURNING_FUNCTIONS) for select in expression.selects
     )
 
 
 def _is_limit_1(scope: Scope) -> bool:
-    limit: exp.Limit | None = scope.expression.args.get("limit")
-    return limit is not None and limit.expression.this == "1"
+    limit = scope.expression.args.get("limit")
+    return isinstance(limit, exp.Limit) and limit.expression.this == "1"
 
 
 def join_condition(join: exp.Join) -> tuple[list[exp.Expr], list[exp.Expr], exp.Expr]:

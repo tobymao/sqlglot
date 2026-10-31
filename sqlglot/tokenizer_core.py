@@ -109,6 +109,7 @@ class TokenType(IntEnum):
     BIT_STRING = auto()
     HEX_STRING = auto()
     BYTE_STRING = auto()
+    NATIONAL_RAW_STRING = auto()
     NATIONAL_STRING = auto()
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
@@ -218,6 +219,7 @@ class TokenType(IntEnum):
     IMAGE = auto()
     VARIANT = auto()
     OBJECT = auto()
+    REF = auto()
     INET = auto()
     IPADDRESS = auto()
     IPPREFIX = auto()
@@ -260,6 +262,7 @@ class TokenType(IntEnum):
     COMMAND = auto()
     COMMENT = auto()
     COMMIT = auto()
+    CONNECT = auto()
     CONNECT_BY = auto()
     CONSTRAINT = auto()
     COPY = auto()
@@ -281,6 +284,7 @@ class TokenType(IntEnum):
     DESC = auto()
     DESCRIBE = auto()
     DETACH = auto()
+    DISCONNECT = auto()
     DICTIONARY = auto()
     DISTINCT = auto()
     DISTRIBUTE_BY = auto()
@@ -374,6 +378,7 @@ class TokenType(IntEnum):
     PACKAGE = auto()
     PARTITION = auto()
     PARTITION_BY = auto()
+    PASTE = auto()
     PERCENT = auto()
     PIVOT = auto()
     PLACEHOLDER = auto()
@@ -1115,7 +1120,8 @@ class TokenizerCore:
                 if token_type == TokenType.BYTE_STRING
                 else self.string_escapes
             ),
-            raw_string=token_type in (TokenType.RAW_STRING, TokenType.HEREDOC_STRING),
+            raw_string=token_type
+            in (TokenType.RAW_STRING, TokenType.NATIONAL_RAW_STRING, TokenType.HEREDOC_STRING),
             bytes_literal=token_type == TokenType.BYTE_STRING and self.byte_strings_are_bytes,
         )
 

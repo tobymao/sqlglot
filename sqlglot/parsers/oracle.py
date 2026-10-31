@@ -5,7 +5,7 @@ import typing as t
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
 from sqlglot.helper import ensure_list, seq_get
-from sqlglot.parser import OPTIONS_TYPE, build_coalesce
+from sqlglot.parser import IsPredicatePrecedence, OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -21,12 +21,38 @@ def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Ano
 
 
 class OracleParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     WINDOW_BEFORE_PAREN_TOKENS = {TokenType.OVER, TokenType.KEEP}
     VALUES_FOLLOWED_BY_PAREN = False
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
+    SUPPORTS_PARTITION_SELECTION = True
+
+    ID_VAR_TOKENS = parser.Parser.ID_VAR_TOKENS | {
+        TokenType.MATCH_RECOGNIZE,
+        TokenType.TABLE_SAMPLE,
+    }
+    ALIAS_TOKENS = ID_VAR_TOKENS
+
+    # These clauses can't follow GROUP BY, so e.g. `GROUP BY sample` refers to a column
+    QUERY_MODIFIER_TOKENS = parser.Parser.QUERY_MODIFIER_TOKENS - {
+        TokenType.MATCH_RECOGNIZE,
+        TokenType.TABLE_SAMPLE,
+    }
+
+    VERSION_PHRASES = {
+        **parser.Parser.VERSION_PHRASES,
+        ("AS", "OF", "SCN"): "SCN",
+        ("AS", "OF", "TIMESTAMP"): "TIMESTAMP",
+    }
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k != "TO_BOOLEAN"},
+        "ADD_MONTHS": lambda args: exp.AddMonths(
+            this=seq_get(args, 0),
+            expression=seq_get(args, 1),
+            preserve_end_of_month=True,
+        ),
         "CONVERT": exp.ConvertToCharset.from_arg_list,
         "L2_DISTANCE": exp.EuclideanDistance.from_arg_list,
         "NVL": lambda args: build_coalesce(args, is_nvl=True),
@@ -58,6 +84,7 @@ class OracleParser(parser.Parser):
         "JSON_ARRAY": lambda self: self._parse_oracle_json_array(),
         "JSON_ARRAYAGG": lambda self: self._parse_oracle_json_arrayagg(),
         "JSON_EXISTS": lambda self: self._parse_json_exists(),
+        "JSON_VALUE": lambda self: self._parse_json_value(),
         "LISTAGG": lambda self: self._parse_string_agg(),
         "TO_NUMBER": lambda self: self._parse_to_number(),
     }
@@ -73,6 +100,32 @@ class OracleParser(parser.Parser):
             and self.expression(exp.TemporaryProperty(this="PRIVATE"))
         ),
         "FORCE": lambda self: self.expression(exp.ForceProperty()),
+        "TABLESPACE": lambda self: self.expression(
+            exp.TableSpaceProperty(this=self._parse_id_var())
+        ),
+        **dict.fromkeys(
+            ("PCTFREE", "PCTUSED", "INITRANS", "MAXTRANS"),
+            lambda self: self._parse_physical_property(),
+        ),
+        **dict.fromkeys(
+            ("LOGGING", "NOLOGGING"),
+            lambda self: self.expression(exp.PhysicalProperty(this=self._prev.text.upper())),
+        ),
+        "STORAGE": lambda self: self._parse_storage(),
+    }
+
+    STORAGE_OPTIONS = {
+        "INITIAL",
+        "NEXT",
+        "MINEXTENTS",
+        "MAXEXTENTS",
+        "MAXSIZE",
+        "PCTINCREASE",
+        "FREELISTS",
+        "FREELIST",
+        "BUFFER_POOL",
+        "FLASH_CACHE",
+        "CELL_FLASH_CACHE",
     }
 
     QUERY_MODIFIER_PARSERS = {
@@ -102,6 +155,48 @@ class OracleParser(parser.Parser):
             ("CHECK", "OPTION"),
         ),
     }
+
+    def _parse_physical_property(self) -> exp.PhysicalProperty:
+        name = self._prev.text.upper()
+        value = self._parse_number()
+        if value is None:
+            self.raise_error(f"Expected value for {name}")
+        return self.expression(exp.PhysicalProperty(this=name, value=value))
+
+    def _parse_storage(self) -> exp.StorageProperty:
+        def parse_options() -> list[exp.Expr]:
+            options: list[exp.Expr] = []
+            while self._match_texts(self.STORAGE_OPTIONS):
+                name = self._prev.text.upper()
+                if name == "FREELIST":
+                    if not self._match_text_seq("GROUPS"):
+                        self.raise_error("Expected GROUPS after FREELIST")
+                    name = "FREELIST GROUPS"
+
+                if name in ("BUFFER_POOL", "FLASH_CACHE", "CELL_FLASH_CACHE"):
+                    value: exp.Expr | None = self._parse_var_from_options(
+                        {
+                            "KEEP": (),
+                            "DEFAULT": (),
+                            "RECYCLE" if name == "BUFFER_POOL" else "NONE": (),
+                        }
+                    )
+                elif name in ("MAXEXTENTS", "MAXSIZE") and self._match_text_seq("UNLIMITED"):
+                    value = exp.var("UNLIMITED")
+                else:
+                    value = self._parse_number()
+                    if (
+                        value is not None
+                        and name in ("INITIAL", "NEXT", "MAXSIZE")
+                        and self._match_texts(("K", "M", "G", "T", "P", "E"))
+                    ):
+                        value = exp.var(f"{value.name}{self._prev.text.upper()}")
+                if value is None:
+                    self.raise_error(f"Expected value for {name}")
+                options.append(self.expression(exp.PhysicalProperty(this=name, value=value)))
+            return options
+
+        return self.expression(exp.StorageProperty(expressions=self._parse_wrapped(parse_options)))
 
     def _parse_to_number(self) -> exp.ToNumber:
         # https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/TO_NUMBER.html
@@ -250,11 +345,11 @@ class OracleParser(parser.Parser):
         this = self._parse_table_parts(schema=True)
 
         if isinstance(this, exp.Table):
+            this.set("partition", self._parse_partition())
+
             alias_name = self._parse_id_var(any_token=False)
             if alias_name:
                 this.set("alias", exp.TableAlias(this=alias_name))
-
-            this.set("partition", self._parse_partition())
 
             # Now parse the schema (column list) if present
             return self._parse_schema(this=this)

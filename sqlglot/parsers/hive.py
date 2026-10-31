@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_formatted_time, build_regexp_extract
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -51,6 +52,8 @@ def _build_date_add(args: list) -> exp.TsOrDsAdd:
 
 
 class HiveParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
+
     LOG_DEFAULTS_TO_LN = True
     STRICT_CAST = False
     VALUES_FOLLOWED_BY_PAREN = False
@@ -151,6 +154,7 @@ class HiveParser(parser.Parser):
     ALTER_PARSERS = {
         **parser.Parser.ALTER_PARSERS,
         "CHANGE": lambda self: self._parse_alter_table_change(),
+        "REPLACE": lambda self: self._parse_alter_table_replace_columns(),
     }
 
     def build_cast(self, strict: bool, **kwargs) -> exp.Expr:
@@ -283,6 +287,15 @@ class HiveParser(parser.Parser):
         return self.expression(
             exp.AlterColumn(this=this, rename_to=column_new, dtype=dtype, comment=comment)
         )
+
+    def _parse_alter_table_replace_columns(self) -> exp.ReplaceColumns | None:
+        if not self._match_text_seq("COLUMNS"):
+            return None
+
+        expressions = self._try_parse(
+            lambda: self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        )
+        return self.expression(exp.ReplaceColumns(expressions=expressions)) if expressions else None
 
     def _parse_using_property(self) -> exp.Property:
         if self._match_texts(("JAR", "FILE", "ARCHIVE")):

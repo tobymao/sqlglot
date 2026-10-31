@@ -6,6 +6,48 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_timestamp_precision(self):
+        for timestamp_type in ("TIMESTAMP", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ"):
+            for precision in range(6, 10):
+                with self.subTest(timestamp_type=timestamp_type, precision=precision):
+                    self.validate_identity(f"CREATE TABLE t (ts {timestamp_type}({precision}))")
+                    self.validate_identity(
+                        f"SELECT CAST('2026-08-18 14:30:45.123456789' AS {timestamp_type}({precision}))"
+                    )
+
+        self.validate_all(
+            "CREATE TABLE t (ts TIMESTAMP(9))",
+            write={
+                "databricks": "CREATE TABLE t (ts TIMESTAMP(9))",
+                "hive": "CREATE TABLE t (ts TIMESTAMP)",
+                "spark": "CREATE TABLE t (ts TIMESTAMP)",
+                "spark2": "CREATE TABLE t (ts TIMESTAMP)",
+            },
+        )
+
+    def test_match_recognize(self):
+        sql = (
+            "SELECT symbol, start_tstamp, end_tstamp, run_length FROM stock_ticker "
+            "MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp "
+            "MEASURES FIRST(tstamp) AS start_tstamp, LAST(tstamp) AS end_tstamp, "
+            "COUNT(*) AS run_length ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW "
+            "PATTERN (strt up+) DEFINE up AS price > PREV(price))"
+        )
+        expression = self.validate_identity(f"{sql} AS T", f"{sql} T")
+        self.assertIsInstance(expression.args["match"], exp.MatchRecognize)
+        self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
+
+        for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):
+            with self.subTest(rows=rows):
+                self.validate_identity(
+                    "SELECT * FROM stock_ticker MATCH_RECOGNIZE ("
+                    "PARTITION BY symbol ORDER BY tstamp "
+                    "MEASURES MATCH_NUMBER() AS match_no, CLASSIFIER() AS class, "
+                    "LAST(down.tstamp) AS bottom_tstamp "
+                    f"{rows}PATTERN (strt down+ up+) "
+                    "DEFINE down AS price < PREV(price), up AS price > PREV(price))"
+                )
+
     def test_insert_replace_using(self):
         self.validate_identity(
             "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
@@ -265,6 +307,7 @@ class TestDatabricks(Validator):
             write={
                 "snowflake": "UNIFORM(1, 10, RANDOM(5))",
                 "databricks": "UNIFORM(1, 10, 5)",
+                "duckdb": "CAST(FLOOR(1 + (ABS(HASH(5)) % 1000000) / 1000000.0 * (10 - 1 + 1)) AS BIGINT)",
             },
         )
         self.validate_all(
@@ -272,6 +315,7 @@ class TestDatabricks(Validator):
             write={
                 "databricks": "UNIFORM(1, 10)",
                 "snowflake": "UNIFORM(1, 10, RANDOM())",
+                "duckdb": "CAST(FLOOR(1 + RANDOM() * (10 - 1 + 1)) AS BIGINT)",
             },
         )
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")

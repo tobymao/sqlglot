@@ -1,3 +1,9 @@
+# title: Preserve CASE branches before an always-true condition
+SELECT CASE WHEN x.a > 1 THEN x.b WHEN TRUE THEN 2 END AS result FROM x;
+SELECT
+  CASE WHEN "x"."a" > 1 THEN "x"."b" ELSE 2 END AS "result"
+FROM "x" AS "x";
+
 # title: lateral
 # execute: false
 SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;
@@ -999,12 +1005,12 @@ LEFT JOIN (
 # execute: false
 SELECT * FROM x LEFT JOIN (y INNER JOIN z ON y.c = z.c) ON x.b = y.b;
 SELECT
+  "x"."a" AS "a",
+  "x"."b" AS "b",
   "y"."b" AS "b",
   "y"."c" AS "c",
   "z"."a" AS "a",
-  "z"."c" AS "c",
-  "x"."a" AS "a",
-  "x"."b" AS "b"
+  "z"."c" AS "c"
 FROM "x" AS "x"
 LEFT JOIN (
   "y" AS "y"
@@ -1100,6 +1106,24 @@ JOIN "x" AS "x"
   ON "x"."b" = "y"."b"
 GROUP BY
   "x"."a";
+
+# title: unaliased correlated COUNT subquery keeps its alias outside of the COALESCE
+# execute: false
+SELECT x.a, (SELECT COUNT(*) FROM y WHERE y.b = x.a) FROM x;
+WITH "_u_0" AS (
+  SELECT
+    COUNT(*) AS "_col_0",
+    "y"."b" AS "_u_1"
+  FROM "y" AS "y"
+  GROUP BY
+    "y"."b"
+)
+SELECT
+  "x"."a" AS "a",
+  COALESCE("_u_0"."_col_0", 0) AS "_col_1"
+FROM "x" AS "x"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "x"."a";
 
 # title: select * from a cte, which had one of its two columns aliased
 WITH cte(x, y) AS (SELECT 1, 2) SELECT * FROM cte AS cte(a);
@@ -1340,15 +1364,6 @@ LEFT JOIN CONTACTS AS C
     WHERE
       TYPE = 'education'
   );
-WITH "_u_0" AS (
-  SELECT
-    "D"."DOMAIN" AS "DOMAIN"
-  FROM "DOMAINS" AS "D"
-  WHERE
-    "D"."TYPE" = 'education'
-  GROUP BY
-    "D"."DOMAIN"
-)
 SELECT
   "A"."ACCOUNT_ID" AS "ACCOUNT_ID",
   "A"."NAME" AS "NAME",
@@ -1356,10 +1371,13 @@ SELECT
 FROM "ACCOUNTS" AS "A"
 LEFT JOIN "CONTACTS" AS "C"
   ON "A"."ACCOUNT_ID" = "C"."ACCOUNT_ID"
-LEFT JOIN "_u_0" AS "_u_0"
-  ON "C"."EMAIL_DOMAIN" = "_u_0"."DOMAIN"
-WHERE
-  NOT "_u_0"."DOMAIN" IS NULL;
+  AND "C"."EMAIL_DOMAIN" IN (
+    SELECT
+      "D"."DOMAIN" AS "DOMAIN"
+    FROM "DOMAINS" AS "D"
+    WHERE
+      "D"."TYPE" = 'education'
+  );
 
 # title: decorrelate subquery and transpile ArrayAny correctly when generating spark
 # execute: false
@@ -1616,3 +1634,61 @@ SELECT
   ARRAY_AGG("T"."ID") WITHIN GROUP (ORDER BY
     "T"."ID") OVER (PARTITION BY "T"."GRP") AS "_COL_0"
 FROM "T" AS "T";
+
+# title: simplify CASE to scalar subquery
+SELECT CASE WHEN TRUE THEN (SELECT 1) ELSE (SELECT 2) END AS result;
+SELECT
+  (
+    SELECT
+      1 AS "1"
+  ) AS "result";
+
+# title: redundant cast preserves arithmetic grouping
+SELECT CAST(x.a - x.b AS INT) * 2 AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" - "x"."b"
+  ) * 2 AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves unary operand grouping
+SELECT -CAST(x.a - x.b AS INT) AS c FROM x AS x;
+SELECT
+  -(
+    "x"."a" - "x"."b"
+  ) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast allows unnecessary parentheses to simplify
+SELECT CAST(x.a * x.b AS INT) + 2 AS c FROM x AS x;
+SELECT
+  "x"."a" * "x"."b" + 2 AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves IN operand grouping
+SELECT CAST(x.a > 0 OR x.b > 0 AS BOOLEAN) IN (FALSE) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" > 0 OR "x"."b" > 0
+  ) IN (FALSE) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves BETWEEN operand grouping
+SELECT CAST(x.a BETWEEN 1 AND 3 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" <= 3 AND "x"."a" >= 1
+  ) = (
+    "x"."b" > 0
+  ) AS "c"
+FROM "x" AS "x";
+
+# title: redundant cast preserves NOT operand grouping
+SELECT CAST(NOT x.a > 0 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
+SELECT
+  (
+    "x"."a" <= 0
+  ) = (
+    "x"."b" > 0
+  ) AS "c"
+FROM "x" AS "x";

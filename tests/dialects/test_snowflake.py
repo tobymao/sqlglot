@@ -13,6 +13,86 @@ class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
 
+    def test_base64_alphabet(self):
+        self.validate_all(
+            "SELECT BASE64_ENCODE(TO_BINARY('FBFF', 'HEX'), 0, '/+=')",
+            write={"duckdb": "SELECT TRANSLATE(TO_BASE64(UNHEX('FBFF')), '+/', '/+')"},
+        )
+        self.validate_all(
+            "SELECT BASE64_DECODE_BINARY('-_8+', '-_+')",
+            write={"duckdb": "SELECT FROM_BASE64(TRANSLATE('-_8+', '-_+', '+/='))"},
+        )
+        self.validate_all(
+            "SELECT BASE64_DECODE_STRING('4KC/', '/+=')",
+            write={"duckdb": "SELECT DECODE(FROM_BASE64(TRANSLATE('4KC/', '/+', '+/')))"},
+        )
+        for alphabet, source, target, encoded in (
+            ("-", "+", "-", "-/8="),
+            ("-_", "+/", "-_", "-_8="),
+            ("+/%", "=", "%", "+/8%"),
+        ):
+            with self.subTest(alphabet=alphabet):
+                self.validate_all(
+                    f"SELECT BASE64_ENCODE(TO_BINARY('FBFF', 'HEX'), 0, '{alphabet}')",
+                    write={
+                        "duckdb": f"SELECT TRANSLATE(TO_BASE64(UNHEX('FBFF')), '{source}', '{target}')"
+                    },
+                )
+                self.validate_all(
+                    f"SELECT BASE64_DECODE_BINARY('{encoded}', '{alphabet}')",
+                    write={
+                        "duckdb": f"SELECT FROM_BASE64(TRANSLATE('{encoded}', '{target}', '{source}'))"
+                    },
+                )
+
+    def test_time_format_case(self):
+        self.validate_all(
+            "SELECT TO_TIMESTAMP('2024-5-9', 'yyyy-mm-DD')",
+            read={
+                "duckdb": "SELECT STRPTIME('2024-5-9', '%Y-%m-%-d')",
+            },
+        )
+        for fmt, duckdb_fmt, snowflake_fmt in (
+            ("Mon", "%b", "mon"),
+            ("mOn", "%b", "mon"),
+            ("Dy", "%a", "DY"),
+            ("dY", "%a", "DY"),
+            ("dy", "%a", "DY"),
+            ("Dd", "%d", "DD"),
+            ("dD", "%d", "DD"),
+            ("dd", "%d", "DD"),
+            ("Mmmm", "%B", "mmmm"),
+            ("mMmM", "%B", "mmmm"),
+            ("DD Mon YYYY", "%d %b %Y", "DD mon yyyy"),
+            ("dDyYyYmM", "%d%Y%m", "DDyyyymm"),
+            ("Yy", "%y", "yy"),
+            ("Mon xZz", "%b xZz", "mon xZz"),
+        ):
+            with self.subTest(fmt=fmt):
+                for func in ("TO_CHAR", "TO_VARCHAR"):
+                    self.validate_all(
+                        f"{func}(DATE '2024-05-09', '{fmt}')",
+                        write={
+                            "duckdb": f"STRFTIME(CAST('2024-05-09' AS DATE), '{duckdb_fmt}')",
+                            "snowflake": f"TO_CHAR(CAST('2024-05-09' AS DATE), '{snowflake_fmt}')",
+                        },
+                    )
+
+        self.validate_all(
+            """TO_CHAR(TIMESTAMP '2024-05-09 13:02:03.123', 'YyYy-Mm-dD"T"Hh24:mI:sS.fF3')""",
+            write={
+                "duckdb": "STRFTIME(CAST('2024-05-09 13:02:03.123' AS TIMESTAMP), '%Y-%m-%dT%H:%M:%S.%g')",
+                "snowflake": "TO_CHAR(CAST('2024-05-09 13:02:03.123' AS TIMESTAMP), 'yyyy-mm-DDThh24:mi:ss.ff3')",
+            },
+        )
+        self.validate_all(
+            "TO_TIMESTAMP('2024-05-09 01:02:03 PM', 'YyYy-Mm-dD Hh12:mI:sS pM')",
+            write={
+                "duckdb": "STRPTIME('2024-05-09 01:02:03 PM', '%Y-%m-%d %I:%M:%S %p')",
+                "snowflake": "TO_TIMESTAMP('2024-05-09 01:02:03 PM', 'yyyy-mm-DD hh12:mi:ss pm')",
+            },
+        )
+
     def test_set_operation_top(self):
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             with self.subTest(op=op):
@@ -157,7 +237,7 @@ class TestSnowflake(Validator):
             "SELECT BITMAP_CONSTRUCT_AGG(v) FROM t",
             write={
                 "snowflake": "SELECT BITMAP_CONSTRUCT_AGG(v) FROM t",
-                "duckdb": "SELECT (SELECT CASE WHEN l IS NULL OR LENGTH(l) = 0 THEN NULL WHEN LENGTH(l) <> LENGTH(LIST_FILTER(l, __v -> __v BETWEEN 0 AND 32767)) THEN NULL WHEN LENGTH(l) < 5 THEN UNHEX(PRINTF('%04X', LENGTH(l)) || h || REPEAT('00', GREATEST(0, 4 - LENGTH(l)) * 2)) ELSE UNHEX('08000000000000000000' || h) END FROM (SELECT l, COALESCE(LIST_REDUCE(LIST_TRANSFORM(l, __x -> PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255)), (__a, __b) -> __a || __b, ''), '') AS h FROM (SELECT LIST_SORT(LIST_DISTINCT(LIST(v) FILTER(WHERE NOT v IS NULL))) AS l))) FROM t",
+                "duckdb": "SELECT (SELECT CASE WHEN l IS NULL OR LENGTH(l) = 0 THEN NULL WHEN LENGTH(l) <> LENGTH(LIST_FILTER(l, LAMBDA __v : __v BETWEEN 0 AND 32767)) THEN NULL WHEN LENGTH(l) < 5 THEN UNHEX(PRINTF('%04X', LENGTH(l)) || h || REPEAT('00', GREATEST(0, 4 - LENGTH(l)) * 2)) ELSE UNHEX('08000000000000000000' || h) END FROM (SELECT l, COALESCE(LIST_REDUCE(LIST_TRANSFORM(l, LAMBDA __x : PRINTF('%02X%02X', CAST(__x AS INT) & 255, (CAST(__x AS INT) >> 8) & 255)), LAMBDA __a, __b : __a || __b, ''), '') AS h FROM (SELECT LIST_SORT(LIST_DISTINCT(LIST(v) FILTER(WHERE NOT v IS NULL))) AS l))) FROM t",
             },
         )
         self.validate_identity(
@@ -496,6 +576,10 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT a, b, COUNT(*) FROM x GROUP BY ALL LIMIT 100")
         self.validate_identity("STRTOK_TO_ARRAY('a b c')", "STRTOK_TO_ARRAY('a b c', ' ')")
         self.validate_identity("STRTOK_TO_ARRAY('a.b.c', '.')")
+        self.validate_identity("SELECT value FROM TABLE(SPLIT_TO_TABLE('a.b.c', '.'))").args[
+            "from_"
+        ].this.this.assert_is(exp.SplitToTable)
+        self.validate_identity("SELECT value FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.')")
         self.validate_identity("GET(a, b)")
         self.validate_identity("INSERT INTO test VALUES (x'48FAF43B0AFCEF9B63EE3A93EE2AC2')")
         self.validate_identity("SELECT STAR(tbl, exclude := [foo])")
@@ -507,6 +591,7 @@ class TestSnowflake(Validator):
         self.validate_identity("SELECT CONNECT_BY_ROOT test AS test_column_alias")
         self.validate_identity("SELECT number").selects[0].assert_is(exp.Column)
         self.validate_identity("INTERVAL '4 years, 5 months, 3 hours'")
+        self.validate_identity("SELECT INTERVAL '1\\' SECOND; SELECT 1; --'")
         self.validate_identity("CREATE TABLE table1 CLUSTER BY (name1, name2, name3)")
         self.validate_identity("ALTER TABLE table1 CLUSTER BY (name)")
         self.validate_identity("SELECT rename, replace")
@@ -518,14 +603,14 @@ class TestSnowflake(Validator):
         self.validate_all(
             "SELECT MAP_CAT(CAST(m1 AS MAP(VARCHAR, INT)), CAST(m2 AS MAP(VARCHAR, INT)))",
             write={
-                "duckdb": "SELECT CASE WHEN CAST(m1 AS MAP(TEXT, INT)) IS NULL OR CAST(m2 AS MAP(TEXT, INT)) IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(CAST(m1 AS MAP(TEXT, INT))), MAP_KEYS(CAST(m2 AS MAP(TEXT, INT))))), __k -> STRUCT_PACK(key := __k, value := COALESCE(CAST(m2 AS MAP(TEXT, INT))[__k], CAST(m1 AS MAP(TEXT, INT))[__k]))), __x -> NOT __x.value IS NULL)) END",
+                "duckdb": "SELECT CASE WHEN CAST(m1 AS MAP(TEXT, INT)) IS NULL OR CAST(m2 AS MAP(TEXT, INT)) IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(CAST(m1 AS MAP(TEXT, INT))), MAP_KEYS(CAST(m2 AS MAP(TEXT, INT))))), LAMBDA __k : STRUCT_PACK(key := __k, value := COALESCE(CAST(m2 AS MAP(TEXT, INT))[__k], CAST(m1 AS MAP(TEXT, INT))[__k]))), LAMBDA __x : NOT __x.value IS NULL)) END",
                 "snowflake": "SELECT MAP_CAT(CAST(m1 AS MAP(VARCHAR, INT)), CAST(m2 AS MAP(VARCHAR, INT)))",
             },
         )
         self.validate_all(
             "SELECT MAP_CAT(CAST(OBJECT_CONSTRUCT() AS MAP(VARCHAR, INT)), CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT)))",
             write={
-                "duckdb": "SELECT CASE WHEN CAST(MAP() AS MAP(TEXT, INT)) IS NULL OR CAST({'a': 1} AS MAP(TEXT, INT)) IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(CAST(MAP() AS MAP(TEXT, INT))), MAP_KEYS(CAST({'a': 1} AS MAP(TEXT, INT))))), __k -> STRUCT_PACK(key := __k, value := COALESCE(CAST({'a': 1} AS MAP(TEXT, INT))[__k], CAST(MAP() AS MAP(TEXT, INT))[__k]))), __x -> NOT __x.value IS NULL)) END",
+                "duckdb": "SELECT CASE WHEN CAST(MAP() AS MAP(TEXT, INT)) IS NULL OR CAST({'a': 1} AS MAP(TEXT, INT)) IS NULL THEN NULL ELSE MAP_FROM_ENTRIES(LIST_FILTER(LIST_TRANSFORM(LIST_DISTINCT(LIST_CONCAT(MAP_KEYS(CAST(MAP() AS MAP(TEXT, INT))), MAP_KEYS(CAST({'a': 1} AS MAP(TEXT, INT))))), LAMBDA __k : STRUCT_PACK(key := __k, value := COALESCE(CAST({'a': 1} AS MAP(TEXT, INT))[__k], CAST(MAP() AS MAP(TEXT, INT))[__k]))), LAMBDA __x : NOT __x.value IS NULL)) END",
                 "snowflake": "SELECT MAP_CAT(CAST(OBJECT_CONSTRUCT() AS MAP(VARCHAR, INT)), CAST(OBJECT_CONSTRUCT('a', 1) AS MAP(VARCHAR, INT)))",
             },
         )
@@ -753,7 +838,7 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_DISTINCT(col)",
             write={
                 "snowflake": "SELECT ARRAY_DISTINCT(col)",
-                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(col) <> LIST_COUNT(col) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(col, _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(col) END",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(col) <> LIST_COUNT(col) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(col, LAMBDA _u : NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(col) END",
             },
         )
         self.validate_identity("SELECT ARRAY_APPEND([1, 2, 3], 4)")
@@ -908,7 +993,6 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_SORT(x, foo, TRUE)",
             read={"snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)"},
             write={
-                "duckdb": "SELECT LIST_SORT(x, foo, 'NULLS FIRST')",
                 "snowflake": "SELECT ARRAY_SORT(x, foo, TRUE)",
             },
         )
@@ -924,7 +1008,7 @@ class TestSnowflake(Validator):
             "SELECT STRTOK('a$b/cg', '$/.')",
             write={
                 "snowflake": "SELECT STRTOK('a$b/cg', '$/.', 1)",
-                "duckdb": r"""SELECT CASE WHEN '$/.' = '' AND 'a$b/cg' = '' THEN NULL WHEN '$/.' = '' AND 1 = 1 THEN 'a$b/cg' WHEN '$/.' = '' THEN NULL WHEN 1 < 0 THEN NULL WHEN 'a$b/cg' IS NULL OR '$/.' IS NULL OR 1 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('a$b/cg', CASE WHEN '$/.' = '' THEN '' ELSE '[' || REGEXP_REPLACE('$/.', '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), x -> NOT x = '')[1] END""",
+                "duckdb": r"""SELECT CASE WHEN '$/.' = '' AND 'a$b/cg' = '' THEN NULL WHEN '$/.' = '' AND 1 = 1 THEN 'a$b/cg' WHEN '$/.' = '' THEN NULL WHEN 1 < 0 THEN NULL WHEN 'a$b/cg' IS NULL OR '$/.' IS NULL OR 1 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('a$b/cg', CASE WHEN '$/.' = '' THEN '' ELSE '[' || REGEXP_REPLACE('$/.', '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), LAMBDA x : NOT x = '')[1] END""",
             },
         )
 
@@ -932,7 +1016,7 @@ class TestSnowflake(Validator):
             "SELECT STRTOK('ab')",
             write={
                 "snowflake": "SELECT STRTOK('ab', ' ', 1)",
-                "duckdb": r"""SELECT CASE WHEN ' ' = '' AND 'ab' = '' THEN NULL WHEN ' ' = '' AND 1 = 1 THEN 'ab' WHEN ' ' = '' THEN NULL WHEN 1 < 0 THEN NULL WHEN 'ab' IS NULL OR ' ' IS NULL OR 1 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('ab', CASE WHEN ' ' = '' THEN '' ELSE '[' || REGEXP_REPLACE(' ', '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), x -> NOT x = '')[1] END""",
+                "duckdb": r"""SELECT CASE WHEN ' ' = '' AND 'ab' = '' THEN NULL WHEN ' ' = '' AND 1 = 1 THEN 'ab' WHEN ' ' = '' THEN NULL WHEN 1 < 0 THEN NULL WHEN 'ab' IS NULL OR ' ' IS NULL OR 1 IS NULL THEN NULL ELSE LIST_FILTER(REGEXP_SPLIT_TO_ARRAY('ab', CASE WHEN ' ' = '' THEN '' ELSE '[' || REGEXP_REPLACE(' ', '([\[\]^.\-*+?(){}|$\\])', '\\\1', 'g') || ']' END), LAMBDA x : NOT x = '')[1] END""",
             },
         )
 
@@ -1011,6 +1095,17 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "transform(x, a int -> a + a + 1)",
             "TRANSFORM(x, a -> CAST(a AS INT) + CAST(a AS INT) + 1)",
+        )
+
+        ast = self.parse_one("TRANSFORM(x, a INT -> a + a)")
+        first_type, second_type = ast.find_all(exp.DataType)
+        self.assertIsNot(first_type, second_type)
+        ast.transform(
+            lambda node: exp.DataType.build("BIGINT") if isinstance(node, exp.DataType) else node,
+            copy=False,
+        )
+        self.assertEqual(
+            ast.sql("snowflake"), "TRANSFORM(x, a -> CAST(a AS BIGINT) + CAST(a AS BIGINT))"
         )
         self.validate_identity(
             "SELECT * FROM s WHERE c NOT IN (1, 2, 3)",
@@ -1353,7 +1448,7 @@ class TestSnowflake(Validator):
             write={
                 "snowflake": "SELECT ARRAY_INTERSECTION([1, 2], [2, 3])",
                 "starrocks": "SELECT ARRAY_INTERSECT([1, 2], [2, 3])",
-                "duckdb": "SELECT CASE WHEN [1, 2] IS NULL OR [2, 3] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2], GENERATE_SERIES(1, LENGTH([1, 2]))), pair -> (LENGTH(LIST_FILTER([1, 2][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) <= LENGTH(LIST_FILTER([2, 3], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+                "duckdb": "SELECT CASE WHEN [1, 2] IS NULL OR [2, 3] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2], GENERATE_SERIES(1, LENGTH([1, 2]))), LAMBDA pair : (LENGTH(LIST_FILTER([1, 2][1:pair[2]], LAMBDA e : e IS NOT DISTINCT FROM pair[1])) <= LENGTH(LIST_FILTER([2, 3], LAMBDA e : e IS NOT DISTINCT FROM pair[1])))), LAMBDA pair : pair[1]) END",
             },
         )
         self.validate_all(
@@ -2124,21 +2219,21 @@ class TestSnowflake(Validator):
             write={
                 "spark": "SELECT ARRAY_JOIN(x, '')",
                 "snowflake": "SELECT ARRAY_TO_STRING(x, '')",
-                "duckdb": "SELECT CASE WHEN '' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), '') END",
+                "duckdb": "SELECT CASE WHEN '' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, LAMBDA x : COALESCE(CAST(x AS TEXT), '')), '') END",
             },
         )
         self.validate_all(
             "SELECT ARRAY_TO_STRING(x, NULL)",
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING(x, NULL)",
-                "duckdb": "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, x -> COALESCE(CAST(x AS TEXT), '')), NULL) END",
+                "duckdb": "SELECT CASE WHEN NULL IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(x, LAMBDA x : COALESCE(CAST(x AS TEXT), '')), NULL) END",
             },
         )
         self.validate_all(
             "SELECT ARRAY_TO_STRING([], ',')",
             write={
                 "snowflake": "SELECT ARRAY_TO_STRING([], ',')",
-                "duckdb": "SELECT CASE WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], x -> COALESCE(CAST(x AS TEXT), '')), ',') END",
+                "duckdb": "SELECT CASE WHEN ',' IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM([], LAMBDA x : COALESCE(CAST(x AS TEXT), '')), ',') END",
             },
         )
         self.validate_all(
@@ -2418,7 +2513,7 @@ class TestSnowflake(Validator):
         self.validate_all(
             "MINHASH(4, col1)",
             write={
-                "duckdb": "(SELECT JSON_OBJECT('state', LIST(min_h ORDER BY seed NULLS FIRST), 'type', 'minhash', 'version', 1) FROM (SELECT seed, LIST_MIN(LIST_TRANSFORM(vals, __v -> HASH(CAST(__v AS TEXT) || CAST(seed AS TEXT)))) AS min_h FROM (SELECT LIST(col1) AS vals), RANGE(0, 4) AS t(seed)))",
+                "duckdb": "(SELECT JSON_OBJECT('state', LIST(min_h ORDER BY seed NULLS FIRST), 'type', 'minhash', 'version', 1) FROM (SELECT seed, LIST_MIN(LIST_TRANSFORM(vals, LAMBDA __v : HASH(CAST(__v AS TEXT) || CAST(seed AS TEXT)))) AS min_h FROM (SELECT LIST(col1) AS vals), RANGE(0, 4) AS t(seed)))",
                 "snowflake": "MINHASH(4, col1)",
             },
         )
@@ -2934,6 +3029,7 @@ class TestSnowflake(Validator):
         self.validate_identity("ALTER TABLE foo ADD IF NOT EXISTS col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE foo ADD col1 INT, IF NOT EXISTS col2 INT")
         self.validate_identity("ALTER TABLE IF EXISTS foo ADD IF NOT EXISTS col1 INT")
+        self.validate_identity("ALTER TABLE foo DROP COLUMN col1, col2").assert_is(exp.Alter)
         # ADD_MONTHS - Basic integer months with type preservation
         self.validate_all(
             "SELECT ADD_MONTHS('2023-01-31', 1)",
@@ -3217,7 +3313,7 @@ class TestSnowflake(Validator):
             "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
             write={
                 "snowflake": "SELECT BASE64_DECODE_STRING('U25vd2ZsYWtl', '-_+')",
-                "duckdb": "SELECT DECODE(FROM_BASE64(REPLACE(REPLACE(REPLACE('U25vd2ZsYWtl', '-', '+'), '_', '/'), '+', '=')))",
+                "duckdb": "SELECT DECODE(FROM_BASE64(TRANSLATE('U25vd2ZsYWtl', '-_+', '+/=')))",
             },
         )
         self.validate_all(
@@ -3231,7 +3327,7 @@ class TestSnowflake(Validator):
             "SELECT BASE64_DECODE_BINARY(x, '-_+')",
             write={
                 "snowflake": "SELECT BASE64_DECODE_BINARY(x, '-_+')",
-                "duckdb": "SELECT FROM_BASE64(REPLACE(REPLACE(REPLACE(x, '-', '+'), '_', '/'), '+', '='))",
+                "duckdb": "SELECT FROM_BASE64(TRANSLATE(x, '-_+', '+/='))",
             },
         )
 
@@ -3269,7 +3365,7 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
             write={
                 "snowflake": "SELECT ARRAY_DISTINCT(['A', NULL, 'B', NULL])",
-                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(['A', NULL, 'B', NULL]) <> LIST_COUNT(['A', NULL, 'B', NULL]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(['A', NULL, 'B', NULL], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(['A', NULL, 'B', NULL]) END",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH(['A', NULL, 'B', NULL]) <> LIST_COUNT(['A', NULL, 'B', NULL]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER(['A', NULL, 'B', NULL], LAMBDA _u : NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT(['A', NULL, 'B', NULL]) END",
             },
         )
 
@@ -3277,7 +3373,7 @@ class TestSnowflake(Validator):
             "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
             write={
                 "snowflake": "SELECT ARRAY_DISTINCT([1, 2, 2, 3, 1])",
-                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH([1, 2, 2, 3, 1]) <> LIST_COUNT([1, 2, 2, 3, 1]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER([1, 2, 2, 3, 1], _u -> NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT([1, 2, 2, 3, 1]) END",
+                "duckdb": "SELECT CASE WHEN ARRAY_LENGTH([1, 2, 2, 3, 1]) <> LIST_COUNT([1, 2, 2, 3, 1]) THEN LIST_APPEND(LIST_DISTINCT(LIST_FILTER([1, 2, 2, 3, 1], LAMBDA _u : NOT _u IS NULL)), NULL) ELSE LIST_DISTINCT([1, 2, 2, 3, 1]) END",
             },
         )
 
@@ -3332,7 +3428,7 @@ class TestSnowflake(Validator):
             "NORMAL(0, 1, 42)",
             write={
                 "snowflake": "NORMAL(0, 1, 42)",
-                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(42 + 1)) % 1000000) / 1000000.0))",
+                "duckdb": "0 + (1 * SQRT(-2 * LN(GREATEST((ABS(HASH(42)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * ((ABS(HASH(42 + 1)) % 1000000) / 1000000.0)))",
             },
         )
         self.validate_all(
@@ -3346,7 +3442,7 @@ class TestSnowflake(Validator):
             "NORMAL(10.5, 2.5, RANDOM(5))",
             write={
                 "snowflake": "NORMAL(10.5, 2.5, RANDOM(5))",
-                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * (ABS(HASH(5 + 1)) % 1000000) / 1000000.0))",
+                "duckdb": "10.5 + (2.5 * SQRT(-2 * LN(GREATEST((ABS(HASH(5)) % 1000000) / 1000000.0, 1e-10))) * COS(2 * PI() * ((ABS(HASH(5 + 1)) % 1000000) / 1000000.0)))",
             },
         )
         self.validate_all(
@@ -3358,9 +3454,21 @@ class TestSnowflake(Validator):
         )
         self.validate_identity("SYSTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("GETDATE()", "CURRENT_TIMESTAMP()")
-        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP")
+        self.validate_identity("LOCALTIMESTAMP", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP()", "CURRENT_TIMESTAMP()")
         self.validate_identity("LOCALTIMESTAMP(3)", "CURRENT_TIMESTAMP(3)")
+        self.parse_one("SELECT LOCALTIMESTAMP").selects[0].assert_is(exp.CurrentTimestamp)
+        # Snowflake's LOCALTIMESTAMP is an alias of CURRENT_TIMESTAMP, but other dialects read it
+        # as a timezone-naive timestamp, so it must never pass through as the literal keyword.
+        self.validate_all(
+            "LOCALTIMESTAMP",
+            write={
+                "snowflake": "CURRENT_TIMESTAMP()",
+                "duckdb": "CURRENT_TIMESTAMP",
+                "postgres": "CURRENT_TIMESTAMP",
+                "spark": "CURRENT_TIMESTAMP()",
+            },
+        )
 
         self.validate_all(
             "SELECT CURRENT_TIME(4)",
@@ -3576,6 +3684,59 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT * FROM foo WHERE 'str' IN (SELECT value FROM TABLE(FLATTEN(INPUT => vals)) AS _u(seq, key, path, index, value, this))",
             },
         )
+
+    def test_list_stage(self):
+        for location in (
+            "@%table1",
+            "@schema1.%table1",
+            "@db1.schema1.%table1",
+            "@named_stage",
+            "@schema1.named_stage",
+            "@db1.schema1.named_stage",
+            "@~",
+            "@named_stage/path1",
+            "@%table1/path1",
+            "@~/path1",
+            '@"my_DB"."schEMA1"."MYstage"/CaseSensitivePath',
+            "'@\"my stage\"/my path'",
+            "@my_repo/branches/main/",
+        ):
+            with self.subTest(location=location):
+                expression = self.validate_identity(f"LIST {location}").assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+
+    def test_list_stage_pattern(self):
+        for location, pattern in (
+            ("@%table1", ".*data_0.*"),
+            ("@named_stage/analysis/", ".*data_0.*"),
+            ("'@\"my stage\"/my path'", ".*[.]csv"),
+            ("@~", ""),
+        ):
+            with self.subTest(location=location, pattern=pattern):
+                expression = self.validate_identity(
+                    f"LIST {location} pattern='{pattern}'",
+                    f"LIST {location} PATTERN = '{pattern}'",
+                ).assert_is(exp.ListStage)
+                self.assertEqual(expression.this, exp.var(location))
+                self.assertEqual(expression.args["pattern"], exp.Literal.string(pattern))
+
+    def test_list_stage_alias(self):
+        self.validate_identity("LS @~", "LIST @~").assert_is(exp.ListStage)
+        self.validate_identity("ls @named_stage", "LIST @named_stage").assert_is(exp.ListStage)
+
+    def test_list_stage_invalid_pattern(self):
+        for sql in (
+            "LIST @stage PATTERN",
+            "LIST @stage PATTERN '.*'",
+            "LIST @stage PATTERN =",
+            "LIST @stage PATTERN = 123",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
+
+    def test_list_stage_identifiers(self):
+        self.validate_identity("SELECT list, ls FROM list").assert_is(exp.Select)
+        self.validate_identity("SELECT x AS list, y AS ls FROM t").assert_is(exp.Select)
 
     def test_staged_files(self):
         # Ensure we don't treat staged file paths as identifiers (i.e. they're not normalized)
@@ -3863,6 +4024,26 @@ class TestSnowflake(Validator):
             },
         )
 
+        # Postgres counts complete units, so the operands are truncated to count boundary crossings
+        self.validate_all(
+            "DATEDIFF(MONTH, '2026-01-31', '2026-03-01')",
+            write={
+                "postgres": "CAST(EXTRACT(year FROM AGE(DATE_TRUNC('MONTH', CAST('2026-03-01' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2026-01-31' AS TIMESTAMP)))) * 12 + EXTRACT(month FROM AGE(DATE_TRUNC('MONTH', CAST('2026-03-01' AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST('2026-01-31' AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(YEAR, '2025-12-31', '2026-01-01')",
+            write={
+                "postgres": "CAST(EXTRACT(year FROM AGE(DATE_TRUNC('YEAR', CAST('2026-01-01' AS TIMESTAMP)), DATE_TRUNC('YEAR', CAST('2025-12-31' AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "DATEDIFF(HOUR, '2026-01-01 10:59:00', '2026-01-01 11:01:00')",
+            write={
+                "postgres": "CAST(EXTRACT(epoch FROM DATE_TRUNC('HOUR', CAST('2026-01-01 11:01:00' AS TIMESTAMP)) - DATE_TRUNC('HOUR', CAST('2026-01-01 10:59:00' AS TIMESTAMP))) / 3600 AS BIGINT)",
+            },
+        )
+
         # Test DATEDIFF with NANOSECOND - DuckDB uses EPOCH_NS since DATE_DIFF doesn't support NANOSECOND
         self.validate_all(
             "DATEDIFF(NANOSECOND, '2023-01-01 10:00:00.000000000', '2023-01-01 10:00:00.123456789')",
@@ -3930,23 +4111,23 @@ class TestSnowflake(Validator):
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
+        # DuckDB used to return DATE for date units, but now returns TIMESTAMP:
+        # https://github.com/duckdb/duckdb/pull/20120
+        # Cast to preserve Snowflake's input type with either behavior.
         self.validate_all(
             "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
             write={
                 "snowflake": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
-                "duckdb": "DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE))",
+                "duckdb": "CAST(DATE_TRUNC('YEAR', CAST('2024-06-15' AS DATE)) AS DATE)",
             },
         )
         self.validate_all(
             "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
             write={
                 "snowflake": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
-                "duckdb": "DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP))",
+                "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('2026-01-01 00:00:00' AS TIMESTAMP)) AS TIMESTAMP)",
             },
         )
-        # Snowflake's DATE_TRUNC return type matches type of the expresison
-        # DuckDB's DATE_TRUNC return type matches type of granularity part.
-        # In Snowflake --> DuckDB, DATE_TRUNC(date_part, timestamp) should be cast to timestamp to preserve Snowflake behavior.
         self.validate_all(
             "DATE_TRUNC(YEAR, TIMESTAMP '2026-01-01 00:00:00')",
             write={
@@ -4062,6 +4243,52 @@ class TestSnowflake(Validator):
                 "snowflake": "SELECT TRY_TO_TIME('11.15.00', 'hh24.mi.ss')",
                 "duckdb": "SELECT TRY_CAST(TRY_STRPTIME('11.15.00', '%H.%M.%S') AS TIME)",
             },
+        )
+
+    def test_date_trunc_preserves_date(self):
+        for unit in ("MONTH", "HOUR"):
+            for value in ("'2024-05-09'", "NULL"):
+                date = f"CAST({value} AS DATE)"
+                for sql in (
+                    f"DATE_TRUNC('{unit}', {date})",
+                    f"TRUNC({date}, '{unit}')",
+                    f"TRUNCATE({date}, '{unit}')",
+                ):
+                    self.validate_all(
+                        sql,
+                        write={
+                            "duckdb": f"CAST(DATE_TRUNC('{unit}', {date}) AS DATE)",
+                        },
+                    )
+
+            for sql in (f"DATE_TRUNC('{unit}', t.d)", f"TRUNC(t.d, '{unit}')"):
+                expression = annotate_types(
+                    self.parse_one(f"SELECT {sql} FROM t"),
+                    schema={"t": {"d": "DATE"}},
+                    dialect="snowflake",
+                )
+                self.assertEqual(
+                    expression.sql("duckdb"),
+                    f"SELECT CAST(DATE_TRUNC('{unit}', t.d) AS DATE) FROM t",
+                )
+
+        for sql, expected in (
+            (
+                "DATE_TRUNC('WEEK', CURRENT_DATE)",
+                "CAST(DATE_TRUNC('WEEK', CURRENT_DATE) AS DATE)",
+            ),
+            (
+                "DATE_TRUNC('MONTH', DATE_TRUNC('HOUR', CAST('2024-05-09' AS DATE)))",
+                "CAST(DATE_TRUNC('MONTH', CAST(DATE_TRUNC('HOUR', CAST('2024-05-09' AS DATE)) AS DATE)) AS DATE)",
+            ),
+        ):
+            expression = self.parse_one(sql)
+            self.assertIsNone(expression.this.type)
+            annotate_types(expression, dialect="snowflake")
+            self.assertEqual(expression.sql("duckdb"), expected)
+        self.validate_all(
+            "DATE_TRUNC('MONTH', d)",
+            write={"duckdb": "DATE_TRUNC('MONTH', d)"},
         )
 
     def test_to_date(self):
@@ -4198,7 +4425,7 @@ class TestSnowflake(Validator):
                 "snowflake": "TRUNC(3.14159)",
                 "oracle": "TRUNC(3.14159)",
                 "postgres": "TRUNC(3.14159)",
-                "mysql": "TRUNCATE(3.14159)",
+                "mysql": "TRUNCATE(3.14159, 0)",
                 "tsql": "ROUND(3.14159, 0, 1)",
             },
         )
@@ -4256,14 +4483,14 @@ class TestSnowflake(Validator):
             "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2], [3, 4], [4, 5])",
-                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL OR [4, 5] IS NULL THEN NULL WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 AND LENGTH([4, 5]) = 0 THEN [{'$1': NULL, '$2': NULL, '$3': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL OR LENGTH([4, 5]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4]), LENGTH([4, 5])) END), __i -> {'$1': COALESCE([1, 2], [])[__i + 1], '$2': COALESCE([3, 4], [])[__i + 1], '$3': COALESCE([4, 5], [])[__i + 1]}) END",
+                "duckdb": "CASE WHEN [1, 2] IS NULL OR [3, 4] IS NULL OR [4, 5] IS NULL THEN NULL WHEN LENGTH([1, 2]) = 0 AND LENGTH([3, 4]) = 0 AND LENGTH([4, 5]) = 0 THEN [{'$1': NULL, '$2': NULL, '$3': NULL}] ELSE LIST_TRANSFORM(RANGE(0, CASE WHEN LENGTH([1, 2]) IS NULL OR LENGTH([3, 4]) IS NULL OR LENGTH([4, 5]) IS NULL THEN NULL ELSE GREATEST(LENGTH([1, 2]), LENGTH([3, 4]), LENGTH([4, 5])) END), LAMBDA __i : {'$1': COALESCE([1, 2], [])[__i + 1], '$2': COALESCE([3, 4], [])[__i + 1], '$3': COALESCE([4, 5], [])[__i + 1]}) END",
             },
         )
         self.validate_all(
             "ARRAYS_ZIP([1, 2, 3])",
             write={
                 "snowflake": "ARRAYS_ZIP([1, 2, 3])",
-                "duckdb": "CASE WHEN [1, 2, 3] IS NULL THEN NULL WHEN LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, LENGTH([1, 2, 3])), __i -> {'$1': COALESCE([1, 2, 3], [])[__i + 1]}) END",
+                "duckdb": "CASE WHEN [1, 2, 3] IS NULL THEN NULL WHEN LENGTH([1, 2, 3]) = 0 THEN [{'$1': NULL}] ELSE LIST_TRANSFORM(RANGE(0, LENGTH([1, 2, 3])), LAMBDA __i : {'$1': COALESCE([1, 2, 3], [])[__i + 1]}) END",
             },
         )
         self.validate_all(
@@ -4426,6 +4653,8 @@ class TestSnowflake(Validator):
                 )
 
         self.validate_identity("CREATE OR REPLACE TABLE foo COPY GRANTS USING TEMPLATE (SELECT 1)")
+        self.validate_identity("CREATE OR REPLACE TABLE foo (a INT) COPY TAGS")
+        self.validate_identity("CREATE OR REPLACE TABLE foo (a INT) COPY GRANTS COPY TAGS")
         self.validate_identity("USE SECONDARY ROLES ALL")
         self.validate_identity("USE SECONDARY ROLES NONE")
         self.validate_identity("USE SECONDARY ROLES a, b, c")
@@ -4483,7 +4712,8 @@ class TestSnowflake(Validator):
             "DROP FUNCTION my_udf (OBJECT(city VARCHAR, zipcode DECIMAL(38, 0), val ARRAY(BOOLEAN)))"
         )
         self.validate_identity(
-            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))"
+            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'))",
+            "CREATE TABLE orders_clone_restore CLONE orders AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/DD/yyyy hh24:mi:ss'))",
         )
         self.validate_identity(
             "CREATE TABLE orders_clone_restore CLONE orders BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726')"
@@ -4614,6 +4844,30 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
         )
 
+    def test_unreserved_keywords_as_identifiers(self):
+        for name in ("returning", "glob", "using", "lateral", "exclude"):
+            with self.subTest(name=name):
+                expression = self.validate_identity(f"SELECT {name} FROM t")
+                self.assertIsInstance(expression.expressions[0], exp.Column)
+                self.assertEqual(expression.expressions[0].name, name)
+                self.validate_identity(f"SELECT 1 AS {name}")
+                self.validate_identity(f"CREATE TABLE t ({name} INT)")
+
+        for name in ("returning", "glob", "using", "lateral"):
+            with self.subTest(alias=name):
+                self.validate_identity(f"SELECT 1 {name}", f"SELECT 1 AS {name}")
+
+        for name in ("returning", "glob", "exclude", "concurrently"):
+            with self.subTest(table=name):
+                self.validate_identity(f"CREATE TABLE {name} (x INT)")
+                self.validate_identity(f"SELECT x FROM {name}")
+
+        for name in ("pivot", "unpivot"):
+            with self.subTest(describe=name):
+                expression = self.validate_identity(f"DESCRIBE TABLE {name}")
+                self.assertIsInstance(expression.this, exp.Table)
+                self.assertEqual(expression.this.name, name)
+
     def test_rollback_as_identifier(self):
         self.validate_identity("SELECT rollback FROM t")
         self.validate_identity(
@@ -4731,7 +4985,7 @@ FROM cs.telescope.dag_report, TABLE(FLATTEN(input => SPLIT(operators, ','))) AS 
     AND uc.user_id <> ALL (
       SELECT DISTINCT
         _id
-      FROM users, LATERAL IFF(_u.pos = _u_2.pos_2, _u_2.entity, NULL) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
+      FROM users, LATERAL FLATTEN(INPUT => PARSE_JSON(flags)) AS datasource(SEQ, KEY, PATH, INDEX, VALUE, THIS)
       WHERE
         GET_PATH(datasource.value, 'name') = 'something'
     )
@@ -4747,27 +5001,19 @@ LEFT JOIN (
   GROUP BY
     1
 ) AS aua
-  ON uc.user_id = aua.user_id
-CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (
-  GREATEST(ARRAY_SIZE(INPUT => PARSE_JSON(flags))) - 1
-) + 1))) AS _u(seq, key, path, index, pos, this)
-CROSS JOIN TABLE(FLATTEN(INPUT => PARSE_JSON(flags))) AS _u_2(seq, key, path, pos_2, entity, this)
-WHERE
-  _u.pos = _u_2.pos_2
-  OR (
-    _u.pos > (
-      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
-    )
-    AND _u_2.pos_2 = (
-      ARRAY_SIZE(INPUT => PARSE_JSON(flags)) - 1
-    )
-  )""",
+  ON uc.user_id = aua.user_id""",
             },
             pretty=True,
         )
 
         self.validate_identity(
             "SELECT value FROM TABLE(FLATTEN(input => SELECT PARSE_JSON('[1, 2]')))"
+        )
+        self.validate_identity(
+            "SELECT (SELECT 1 WHERE 1 IN (SELECT value FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1]'))))) AS nested_value"
+        )
+        self.validate_identity(
+            "SELECT (SELECT MAX(value) FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1, 2]')))) AS max_value"
         )
 
         # All examples from https://docs.snowflake.com/en/sql-reference/functions/flatten.html#syntax
@@ -4868,6 +5114,24 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             read={
                 "oracle": "SELECT 1 MINUS SELECT 1",
                 "snowflake": "SELECT 1 MINUS SELECT 1",
+            },
+        )
+
+    def test_join_marker(self):
+        self.validate_identity("SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)")
+        self.validate_identity("SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 (+) = t2.c2")
+        self.validate_identity(
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2(+)",
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+        )
+        self.validate_all(
+            "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+            read={
+                "oracle": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+            },
+            write={
+                "oracle": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
+                "redshift": "SELECT t1.c1, t2.c2 FROM t1, t2 WHERE t1.c1 = t2.c2 (+)",
             },
         )
 
@@ -5212,7 +5476,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT REGEXP_INSTR(subject, pattern)",
             write={
                 "snowflake": "SELECT REGEXP_INSTR(subject, pattern)",
-                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:1], LAMBDA x : LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:1 - 1], LAMBDA x : LENGTH(x))), 0) + 0 END",
             },
         )
 
@@ -5221,7 +5485,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT REGEXP_INSTR(subject, pattern, 5)",
             write={
                 "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 5)",
-                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 5 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(SUBSTRING(subject, 5), pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 5 - 1 END",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 5 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(SUBSTRING(subject, 5), pattern)[1:1], LAMBDA x : LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(SUBSTRING(subject, 5), pattern)[1:1 - 1], LAMBDA x : LENGTH(x))), 0) + 5 - 1 END",
             },
         )
 
@@ -5230,7 +5494,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
             write={
                 "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 2)",
-                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 2 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 2 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:2], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:2 - 1], x -> LENGTH(x))), 0) + 0 END",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 2 IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, pattern)) < 2 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, pattern)[1:2], LAMBDA x : LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern)[1:2 - 1], LAMBDA x : LENGTH(x))), 0) + 0 END",
             },
         )
 
@@ -5239,7 +5503,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
             write={
                 "snowflake": "SELECT REGEXP_INSTR(subject, pattern, 1, 1, 0, 'im')",
-                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 1 IS NULL OR 0 IS NULL OR 'im' IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, '(?im)' || pattern)[1:1], x -> LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)[1:1 - 1], x -> LENGTH(x))), 0) + 0 END",
+                "duckdb": "SELECT CASE WHEN subject IS NULL OR pattern IS NULL OR 1 IS NULL OR 1 IS NULL OR 0 IS NULL OR 'im' IS NULL THEN NULL WHEN pattern = '' THEN 0 WHEN LENGTH(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)) < 1 THEN 0 ELSE 1 + COALESCE(LIST_SUM(LIST_TRANSFORM(STRING_SPLIT_REGEX(subject, '(?im)' || pattern)[1:1], LAMBDA x : LENGTH(x))), 0) + COALESCE(LIST_SUM(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, '(?im)' || pattern)[1:1 - 1], LAMBDA x : LENGTH(x))), 0) + 0 END",
             },
         )
 
@@ -6079,6 +6343,39 @@ SINGLE = TRUE""",
         self.validate_identity("LISTAGG(data['some_field'], ',')")
 
         for distinct in ("", "DISTINCT "):
+            for order in ("", " WITHIN GROUP (ORDER BY col)"):
+                source = f"SELECT LISTAGG({distinct}col){order} FROM t"
+                duckdb_order = " ORDER BY col" if order else ""
+                self.validate_all(
+                    source,
+                    write={
+                        "duckdb": f"SELECT LISTAGG({distinct}col, ''{duckdb_order}) FROM t",
+                        "postgres": f"SELECT STRING_AGG({distinct}col, ''{duckdb_order}) FROM t",
+                    },
+                )
+                expression = self.parse_one(source)
+                self.assertEqual(
+                    expression.find(exp.GroupConcat).args["separator"],
+                    exp.Literal.string(""),
+                )
+                self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
+
+        source = "SELECT LISTAGG(col) OVER (PARTITION BY k) FROM t"
+        self.validate_all(
+            source,
+            write={
+                "duckdb": "SELECT LISTAGG(col, '') OVER (PARTITION BY k) FROM t",
+            },
+        )
+        expression = self.parse_one(source)
+        self.assertEqual(self.parse_one(expression.sql("snowflake")), expression)
+
+        self.assertEqual(
+            parse_one("SELECT LISTAGG(col ORDER BY col) FROM t", read="duckdb").sql("duckdb"),
+            "SELECT LISTAGG(col, ',' ORDER BY col) FROM t",
+        )
+
+        for distinct in ("", "DISTINCT "):
             self.validate_all(
                 f"SELECT LISTAGG({distinct}col, '|SEPARATOR|') WITHIN GROUP (ORDER BY col2) FROM t",
                 read={
@@ -6856,6 +7153,28 @@ FROM SEMANTIC_VIEW(
         self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM')")
         self.validate_identity("TRY_DECRYPT_RAW(encrypted, key, iv, aad, 'AES-GCM', aead)")
 
+    def test_merge_all_by_name(self):
+        self.validate_all(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT ALL BY NAME",
+            read={
+                "databricks": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+                "": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE * WHEN NOT MATCHED THEN INSERT *",
+            },
+            write={
+                "snowflake": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT ALL BY NAME",
+                "databricks": "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+            },
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.value > 0 THEN UPDATE ALL BY NAME WHEN MATCHED THEN DELETE WHEN NOT MATCHED AND s.value > 0 THEN INSERT ALL BY NAME"
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME WHEN NOT MATCHED THEN INSERT (id, value) VALUES (s.id, s.value)"
+        )
+        self.validate_identity(
+            "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET value = s.value WHEN NOT MATCHED THEN INSERT ALL BY NAME"
+        )
+
     def test_update_statement(self):
         self.validate_identity("UPDATE test SET t = 1 FROM t1")
         self.validate_identity("UPDATE test SET t = 1 FROM t2 JOIN t3 ON t2.id = t3.id")
@@ -6918,7 +7237,7 @@ FROM SEMANTIC_VIEW(
             "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
             write={
                 "snowflake": "SELECT ARRAY_EXCEPT([1, 2, 3], [2])",
-                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), pair -> (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], e -> e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], e -> e IS NOT DISTINCT FROM pair[1])))), pair -> pair[1]) END",
+                "duckdb": "SELECT CASE WHEN [1, 2, 3] IS NULL OR [2] IS NULL THEN NULL ELSE LIST_TRANSFORM(LIST_FILTER(LIST_ZIP([1, 2, 3], GENERATE_SERIES(1, LENGTH([1, 2, 3]))), LAMBDA pair : (LENGTH(LIST_FILTER([1, 2, 3][1:pair[2]], LAMBDA e : e IS NOT DISTINCT FROM pair[1])) > LENGTH(LIST_FILTER([2], LAMBDA e : e IS NOT DISTINCT FROM pair[1])))), LAMBDA pair : pair[1]) END",
             },
         )
 

@@ -14,9 +14,14 @@ from sqlglot.transforms import (
 class MaterializeGenerator(PostgresGenerator):
     SUPPORTS_CREATE_TABLE_LIKE = False
     SUPPORTS_BETWEEN_FLAGS = False
+    CAST_TO_INT_ROUNDS = True
 
     TRANSFORMS = {
-        **{k: v for k, v in PostgresGenerator.TRANSFORMS.items() if k != exp.ToMap},
+        **{
+            k: v
+            for k, v in PostgresGenerator.TRANSFORMS.items()
+            if k not in (exp.ToMap, exp.IntDiv)
+        },
         exp.AutoIncrementColumnConstraint: lambda self, e: "",
         exp.Create: preprocess(
             [

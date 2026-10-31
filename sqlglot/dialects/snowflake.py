@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from itertools import product
+
 from sqlglot import exp, jsonpath, tokens
 from sqlglot.dialects.dialect import (
     Dialect,
@@ -28,11 +30,18 @@ class Snowflake(Dialect):
     ARRAY_AGG_INCLUDES_NULLS = None
     ARRAY_FUNCS_PROPAGATES_NULLS = True
     ALTER_TABLE_ADD_REQUIRED_FOR_EACH_COLUMN = False
+    ALTER_TABLE_DROP_REQUIRED_FOR_EACH_COLUMN = False
     TRY_CAST_REQUIRES_STRING = True
     SUPPORTS_ALIAS_REFS_IN_JOIN_CONDITIONS = True
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = True
     STAR_ILIKE_BACKSLASH_ESCAPE = True
+
+    # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
+    DEFAULT_FUNCTIONS_COLUMN_NAMES = {
+        exp.SplitToTable: ("seq", "index", "value"),
+        exp.StrtokSplitToTable: ("seq", "index", "value"),
+    }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
@@ -40,68 +49,47 @@ class Snowflake(Dialect):
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v!?@"^#$&~_,.:;+\\-*%/|\\[\\](){}<>'
 
     INVERSE_TIME_MAPPING = {
+        "%d": "DD",
+        "%-d": "DD",
+        "%a": "DY",
         "T": "T",  # in TIME_MAPPING we map '"T"' with the double quotes to 'T', and we want to prevent 'T' from being mapped back to '"T"' so that 'AUTO' doesn't become 'AU"T"O'
     }
 
     TIME_MAPPING = {
-        "YYYY": "%Y",
-        "yyyy": "%Y",
-        "YY": "%y",
-        "yy": "%y",
-        "MMMM": "%B",
-        "mmmm": "%B",
-        "MON": "%b",
-        "mon": "%b",
-        "MM": "%m",
-        "mm": "%m",
-        "DD": "%d",
-        "dd": "%-d",
-        "DY": "%a",
-        "dy": "%w",
-        "HH24": "%H",
-        "hh24": "%H",
-        "HH12": "%I",
-        "hh12": "%I",
-        "MI": "%M",
-        "mi": "%M",
-        "SS": "%S",
-        "ss": "%S",
-        "FF": "%f_nine",  # %f_ internal representation with precision specified
-        "ff": "%f_nine",
-        "FF0": "%f_zero",
-        "ff0": "%f_zero",
-        "FF1": "%f_one",
-        "ff1": "%f_one",
-        "FF2": "%f_two",
-        "ff2": "%f_two",
-        "FF3": "%f_three",
-        "ff3": "%f_three",
-        "FF4": "%f_four",
-        "ff4": "%f_four",
-        "FF5": "%f_five",
-        "ff5": "%f_five",
-        "FF6": "%f",
-        "ff6": "%f",
-        "FF7": "%f_seven",
-        "ff7": "%f_seven",
-        "FF8": "%f_eight",
-        "ff8": "%f_eight",
-        "FF9": "%f_nine",
-        "ff9": "%f_nine",
-        "TZHTZM": "%z",
-        "tzhtzm": "%z",
-        "TZH:TZM": "%:z",  # internal representation for ±HH:MM
-        "tzh:tzm": "%:z",
-        "TZH": "%-z",  # internal representation ±HH
-        "tzh": "%-z",
-        '"T"': "T",  # remove the optional double quotes around the separator between the date and time
-        # Seems like Snowflake treats AM/PM in the format string as equivalent,
-        # only the time (stamp) value's AM/PM affects the output
-        "AM": "%p",
-        "am": "%p",
-        "PM": "%p",
-        "pm": "%p",
-    }
+        "".join(chars): value
+        for key, value in {
+            "YYYY": "%Y",
+            "YY": "%y",
+            "MMMM": "%B",
+            "MON": "%b",
+            "MM": "%m",
+            "DD": "%d",
+            "DY": "%a",
+            "HH24": "%H",
+            "HH12": "%I",
+            "MI": "%M",
+            "SS": "%S",
+            "FF": "%f_nine",  # %f_ internal representation with precision specified
+            "FF0": "%f_zero",
+            "FF1": "%f_one",
+            "FF2": "%f_two",
+            "FF3": "%f_three",
+            "FF4": "%f_four",
+            "FF5": "%f_five",
+            "FF6": "%f",
+            "FF7": "%f_seven",
+            "FF8": "%f_eight",
+            "FF9": "%f_nine",
+            "TZHTZM": "%z",
+            "TZH:TZM": "%:z",  # internal representation for ±HH:MM
+            "TZH": "%-z",  # internal representation ±HH
+            # Seems like Snowflake treats AM/PM in the format string as equivalent,
+            # only the time (stamp) value's AM/PM affects the output
+            "AM": "%p",
+            "PM": "%p",
+        }.items()
+        for chars in product(*zip(key.upper(), key.lower()))
+    } | {'"T"': "T"}
 
     DATE_PART_MAPPING = {
         **Dialect.DATE_PART_MAPPING,
@@ -145,11 +133,13 @@ class Snowflake(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            "(+)": TokenType.JOIN_MARKER,
             "BYTEINT": TokenType.INT,
             "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
             "INTEGRATION": TokenType.INTEGRATION,
+            "LS": TokenType.LIST,
             "MATCH_CONDITION": TokenType.MATCH_CONDITION,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
             "MINUS": TokenType.EXCEPT,
@@ -180,6 +170,8 @@ class Snowflake(Dialect):
             "FLOAT": TokenType.DOUBLE,
         }
         KEYWORDS.pop("/*+")
+        KEYWORDS.pop("GLOB")
+        KEYWORDS.pop("RETURNING")
 
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,

@@ -1,6 +1,9 @@
-from sqlglot import exp
-from sqlglot.errors import ParseError
+from unittest.mock import patch
+
+from sqlglot import exp, parse
+from sqlglot.errors import ParseError, TokenError
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.tokens import Tokenizer
 from tests.dialects.test_dialect import Validator
 
 
@@ -11,6 +14,8 @@ class TestAthena(Validator):
     def test_athena(self):
         self.validate_identity(r"SELECT '\d+'")
         self.validate_identity("SELECT 'foo''bar'")
+        self.validate_identity(r"SELECT '\'")
+        self.validate_identity(r"SELECT * FROM t WHERE name LIKE 'a\_%' ESCAPE '\'")
         self.validate_identity(
             "CREATE TABLE IF NOT EXISTS t (name STRING) LOCATION 's3://bucket/tmp/mytable/' TBLPROPERTIES ('table_type'='iceberg', 'FORMAT'='parquet')"
         )
@@ -39,6 +44,59 @@ class TestAthena(Validator):
             '/* leading comment */ SELECT * FROM "foo"',
             identify=True,
         )
+        self.validate_identity("MSCK REPAIR TABLE foo", check_command_warning=True)
+        self.validate_identity(
+            "msck repair table foo", "MSCK REPAIR table foo", check_command_warning=True
+        )
+
+        for sql in ("", "-- comment"):
+            with self.subTest(sql):
+                self.assertEqual(parse(sql, read=self.dialect), [None])
+
+    def test_tokenize_dml_once(self):
+        for sql in (
+            "SELECT 1",
+            "/* leading comment */ SELECT 1",
+            "WITH t AS (SELECT 1) SELECT * FROM t",
+            "INSERT INTO foo (id) VALUES (1)",
+            "UPDATE foo SET id = 3 WHERE id = 7",
+            "DELETE FROM foo WHERE id > 10",
+        ):
+            with (
+                self.subTest(sql),
+                patch.object(
+                    Tokenizer, "tokenize", autospec=True, side_effect=Tokenizer.tokenize
+                ) as tokenize,
+            ):
+                self.parse_one(sql)
+                tokenize.assert_called_once()
+
+    def test_tokenize_trino_fallback(self):
+        for sql in (
+            r"CREATE TABLE t AS SELECT '\' AS x",
+            r"CREATE VIEW v AS SELECT '\' AS x",
+        ):
+            with (
+                self.subTest(sql),
+                patch.object(
+                    Tokenizer, "tokenize", autospec=True, side_effect=Tokenizer.tokenize
+                ) as tokenize,
+            ):
+                self.validate_identity(sql)
+                self.assertEqual(tokenize.call_count, 2)
+
+    def test_tokenizer_errors(self):
+        for sql in (
+            "SELECT 'unterminated",
+            r"SELECT 'it\'s'",
+            r'''SELECT "a\"b"''',
+            r"CREATE EXTERNAL TABLE t (x INT COMMENT '\')",
+        ):
+            with self.subTest(sql), self.assertRaises(TokenError):
+                self.parse_one(sql)
+
+        with self.assertRaises(ParseError):
+            self.parse_one(r"SELECT '\' +")
 
     def test_func_builder(self):
         args = (exp.Literal.string("-"), exp.column("a"), exp.column("b"))
@@ -72,6 +130,10 @@ class TestAthena(Validator):
         )
 
     def test_ddl(self):
+        self.validate_identity(
+            r'''CREATE DATABASE foo COMMENT "a\"b"''',
+            "CREATE DATABASE foo COMMENT 'a\"b'",
+        )
         # Hive-like, https://docs.aws.amazon.com/athena/latest/ug/create-table.html
         self.validate_identity("CREATE EXTERNAL TABLE foo (id INT) COMMENT 'test comment'")
         self.validate_identity(
@@ -330,6 +392,22 @@ class TestAthena(Validator):
             ctas_iceberg.sql(dialect=self.dialect, identify=False),
             "CREATE TABLE foo.bar WITH (table_type='iceberg', location='s3://foo', partitioning=ARRAY['partition_col', 'BUCKET(a, 4)']) AS SELECT 1",
         )
+
+    def test_ctas_using_external_function(self):
+        # The USING EXTERNAL FUNCTION clause may directly follow CTAS ... AS
+        # ref: https://docs.aws.amazon.com/athena/latest/ug/querying-udf.html
+        create = self.validate_identity(
+            "CREATE TABLE t WITH (format='PARQUET') AS "
+            "USING EXTERNAL FUNCTION f(x VARCHAR) RETURNS VARCHAR LAMBDA 'l' "
+            "SELECT f('a') AS b",
+            check_command_warning=True,
+        )
+        self.assertIsInstance(create, exp.Create)
+        self.assertIsInstance(create.expression, exp.Command)
+        self.assertEqual(create.expression.text("this"), "USING")
+
+        # Without the USING clause being present, plain CTAS parsing is unaffected
+        self.validate_identity("CREATE TABLE t WITH (format='PARQUET') AS SELECT 1 AS a")
 
     def test_parse_partitioned_by_returns_iceberg_transforms(self):
         # check that parse_into works for PartitionedByProperty and also that correct AST nodes are emitted for Iceberg transforms

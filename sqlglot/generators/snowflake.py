@@ -15,6 +15,7 @@ from sqlglot.dialects.dialect import (
     map_date_part,
     max_or_greatest,
     min_or_least,
+    no_filter_sql,
     no_make_interval_sql,
     no_timestamp_sql,
     nth_value_from_sql,
@@ -179,6 +180,20 @@ def _transform_generate_date_array(expression: exp.Expr) -> exp.Expr:
                 _unnest_generate_date_array(parent)
 
     return expression
+
+
+@unsupported_args(("expression", "Snowflake's ARRAY_SORT does not support a comparator."))
+def _array_sort_sql(self: SnowflakeGenerator, expression: exp.ArraySort) -> str:
+    # NULLs default to last when ascending and first when descending
+    asc = expression.args.get("asc")
+    nulls_first = expression.args.get("nulls_first")
+    if asc is None and nulls_first == exp.false():
+        nulls_first = None
+    elif asc is None and nulls_first is not None:
+        asc = exp.true()
+    elif asc == exp.false() and nulls_first == exp.true():
+        nulls_first = None
+    return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
 
 
 def _regexpextract_sql(
@@ -359,7 +374,9 @@ class SnowflakeGenerator(generator.Generator):
     SELECT_KINDS: tuple[str, ...] = ()
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
+    MERGE_ALL_BY_NAME = True
     SINGLE_STRING_INTERVAL = True
+    CAST_TO_INT_ROUNDS = True
     JOIN_HINTS = False
     TABLE_HINTS = False
     QUERY_HINTS = False
@@ -379,6 +396,8 @@ class SnowflakeGenerator(generator.Generator):
     SUPPORTS_MEDIAN = True
     ARRAY_SIZE_NAME = "ARRAY_SIZE"
     SUPPORTS_DECODE_CASE = True
+    ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
+    ALTER_TABLE_ADD_COLUMNS_WRAPPED = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -410,6 +429,7 @@ class SnowflakeGenerator(generator.Generator):
         ),
         exp.ArrayIntersect: rename_func("ARRAY_INTERSECTION"),
         exp.ArrayOverlaps: rename_func("ARRAYS_OVERLAP"),
+        exp.ArraySort: _array_sort_sql,
         exp.AtTimeZone: lambda self, e: self.func("CONVERT_TIMEZONE", e.args.get("zone"), e.this),
         exp.BitwiseOr: rename_func("BITOR"),
         exp.BitwiseXor: rename_func("BITXOR"),
@@ -460,6 +480,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.Extract: lambda self, e: self.func(
             "DATE_PART", map_date_part(e.this, self.dialect), e.expression
         ),
+        exp.Filter: no_filter_sql,
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),
         exp.EuclideanDistance: rename_func("VECTOR_L2_DISTANCE"),
         exp.HandlerProperty: lambda self, e: f"HANDLER = {self.sql(e, 'this')}",
@@ -604,13 +625,6 @@ class SnowflakeGenerator(generator.Generator):
             # `IDENTIFIER(...)` invoked as a function, e.g. `IDENTIFIER('my_func')(1, 2)`
             return self.func(this, *expression.expressions, normalize=False)
         return this
-
-    def sortarray_sql(self, expression: exp.SortArray) -> str:
-        asc = expression.args.get("asc")
-        nulls_first = expression.args.get("nulls_first")
-        if asc == exp.false() and nulls_first == exp.true():
-            nulls_first = None
-        return self.func("ARRAY_SORT", expression.this, asc, nulls_first)
 
     SUPPORTED_JSON_PATH_PARTS = {
         exp.JSONPathKey,
@@ -988,7 +1002,7 @@ class SnowflakeGenerator(generator.Generator):
     def select_sql(self, expression: exp.Select) -> str:
         limit = expression.args.get("limit")
         offset = expression.args.get("offset")
-        if offset and not limit:
+        if offset and (not limit or (isinstance(limit, exp.Limit) and limit.is_limit_all)):
             expression.limit(exp.Null(), copy=False)
         return super().select_sql(expression)
 
@@ -1144,53 +1158,6 @@ class SnowflakeGenerator(generator.Generator):
             # omit the default window from window ranking functions
             expression.set("spec", None)
         return super().window_sql(expression)
-
-    def filter_sql(self, expression: exp.Filter) -> str:
-        # Snowflake doesn't support FILTER (WHERE cond), so we rewrite it into an
-        # equivalent conditional aggregation, i.e. wrap the input values in an IFF
-        agg = expression.this
-        agg_arg = seq_get(agg.expressions, 0) if isinstance(agg, exp.Anonymous) else agg.this
-        cond = expression.expression.this
-
-        if isinstance(agg, exp.WithinGroup):
-            # Ordered-set aggregates take their input from the ORDER BY key, so the
-            # condition has to wrap that instead of the aggregate's own argument
-            if isinstance(agg_arg, (exp.Mode, *exp.PERCENTILES)):
-                for ordered in agg.expression.expressions:
-                    key = ordered.this
-                    key.replace(exp.If(this=cond.copy(), true=key.copy()))
-
-                return self.sql(agg)
-
-            # Besides the percentile functions, these are the only functions Snowflake
-            # accepts WITHIN GROUP for, so anything else can't be rewritten correctly
-            if isinstance(agg_arg, (exp.ArrayAgg, exp.GroupConcat)):
-                agg_arg = agg_arg.this
-            else:
-                self.unsupported("Unable to rewrite FILTER into the aggregate's arguments")
-                return self.sql(agg)
-
-        # `COUNT(*/t.*) FILTER (WHERE cond)` counts qualifying rows, but a star can't be an IFF
-        # argument: `IFF(cond, *, NULL)` expands to multiple columns once the table has 2+ of
-        # them, which Snowflake rejects. Use its native COUNT_IF instead.
-        if isinstance(agg, exp.Count) and isinstance(agg_arg, exp.Expression) and agg_arg.is_star:
-            return self.func("COUNT_IF", cond)
-
-        # `DISTINCT` and `ORDER BY` are part of the aggregate's own argument list, so the
-        # condition has to wrap the values underneath them rather than the whole clause --
-        # `IFF(cond, DISTINCT x, NULL)` is not a call any dialect accepts.
-        if isinstance(agg_arg, exp.Order):
-            agg_arg = agg_arg.this
-
-        if isinstance(agg_arg, exp.Distinct):
-            targets = agg_arg.expressions
-        else:
-            targets = [agg_arg]
-
-        for target in targets:
-            target.replace(exp.If(this=cond.copy(), true=target.copy()))
-
-        return self.sql(agg)
 
     def withingroup_sql(self, expression: exp.WithinGroup) -> str:
         # Snowflake's MODE doesn't support the ordered-set syntax, i.e. it only

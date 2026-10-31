@@ -13,13 +13,34 @@ from sqlglot.dialects.dialect import (
     pivot_column_names,
 )
 from sqlglot.helper import seq_get
-from sqlglot.parser import binary_range_parser
+from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
 from collections.abc import Collection
 
 
-def _build_sort_array_desc(args: list) -> exp.Expr:
-    return exp.SortArray(this=seq_get(args, 0), asc=exp.false())
+def _build_list_sort(name: str, desc: bool = False) -> t.Callable[[list], exp.Expr]:
+    # Orders are case-insensitive strings, e.g. LIST_SORT(x, 'desc', 'nulls first'), and NULLs default to last
+    def _builder(args: list) -> exp.Expr:
+        orders = [exp.Literal.string("DESC"), *args[1:]] if desc else args[1:]
+        order_name = _list_sort_order_name(seq_get(orders, 0), "ASC")
+        null_order_name = _list_sort_order_name(seq_get(orders, 1), "NULLS LAST")
+        valid = order_name in ("ASC", "DESC") and null_order_name in ("NULLS FIRST", "NULLS LAST")
+        if not valid:
+            return exp.Anonymous(this=name, expressions=args)
+
+        return exp.ArraySort(
+            this=seq_get(args, 0),
+            asc=exp.false() if order_name == "DESC" else None,
+            nulls_first=exp.Boolean(this=null_order_name == "NULLS FIRST"),
+        )
+
+    return _builder
+
+
+def _list_sort_order_name(order: exp.Expr | None, default: str) -> str | None:
+    if order is None:
+        return default
+    return order.name.upper() if order.is_string else None
 
 
 def _build_array_prepend(args: list) -> exp.Expr:
@@ -27,7 +48,20 @@ def _build_array_prepend(args: list) -> exp.Expr:
 
 
 def _build_date_diff(args: list) -> exp.Expr:
-    return exp.DateDiff(this=seq_get(args, 2), expression=seq_get(args, 1), unit=seq_get(args, 0))
+    unit = seq_get(args, 0)
+
+    # DATE_DIFF counts the unit boundaries crossed, e.g. one month from 2026-01-31 to 2026-02-01,
+    # except for WEEK, which counts whole 7-day spans
+    date_part_boundary = (
+        isinstance(unit, (exp.Literal, exp.Var)) and unit.name.upper() not in ("WEEK", "WEEKS", "W")
+    ) or None
+
+    return exp.DateDiff(
+        this=seq_get(args, 2),
+        expression=seq_get(args, 1),
+        unit=unit,
+        date_part_boundary=date_part_boundary,
+    )
 
 
 def _build_generate_series(end_exclusive: bool = False) -> t.Callable[[list], exp.GenerateSeries]:
@@ -71,9 +105,19 @@ def _convert_text_type(dtype: exp.DataType) -> exp.DataType:
     return dtype
 
 
+_parse_regexp_like = binary_range_parser(exp.RegexpLike)
+_parse_regexp_full_match = binary_range_parser(exp.RegexpFullMatch)
+
+
 class DuckDBParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
     PIVOT_COLUMN_NAMING = "agg_name_if_aliased_or_multiple"
+
+    SUPPORTS_DIRECTED_JOIN = False
+
+    JOIN_KINDS = parser.Parser.JOIN_KINDS - {TokenType.STRAIGHT_JOIN}
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
@@ -99,8 +143,7 @@ class DuckDBParser(parser.Parser):
     RANGE_PARSERS = {
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
-        TokenType.CARET_AT: binary_range_parser(exp.StartsWith),
-        TokenType.TILDE: binary_range_parser(exp.RegexpFullMatch),
+        TokenType.TILDE: lambda self, this: self._parse_tilde(this),
     }
 
     EXPONENT = {
@@ -118,11 +161,22 @@ class DuckDBParser(parser.Parser):
 
     FUNCTIONS = {
         **{k: v for k, v in parser.Parser.FUNCTIONS.items() if k not in ("DATE_SUB", "GLOB")},
+        **dict.fromkeys(
+            ("ARRAY_DISTINCT", "LIST_DISTINCT"),
+            lambda args: exp.ArrayDistinct(this=seq_get(args, 0), check_null=False),
+        ),
         "ANY_VALUE": lambda args: exp.IgnoreNulls(this=exp.AnyValue.from_arg_list(args)),
         "ARRAY_PREPEND": _build_array_prepend,
-        "ARRAY_REVERSE_SORT": _build_sort_array_desc,
+        "ARRAY_REVERSE_SORT": _build_list_sort("ARRAY_REVERSE_SORT", desc=True),
         "ARRAY_INTERSECT": lambda args: exp.ArrayIntersect(expressions=args),
-        "ARRAY_SORT": exp.SortArray.from_arg_list,
+        "ARRAY_SORT": _build_list_sort("ARRAY_SORT"),
+        "ARRAY_SLICE": lambda args: exp.ArraySlice(
+            this=seq_get(args, 0),
+            start=seq_get(args, 1),
+            end=seq_get(args, 2),
+            step=seq_get(args, 3),
+            is_length=False,
+        ),
         "BIT_AND": exp.BitwiseAndAgg.from_arg_list,
         "BIT_OR": exp.BitwiseOrAgg.from_arg_list,
         "BIT_XOR": exp.BitwiseXorAgg.from_arg_list,
@@ -152,7 +206,6 @@ class DuckDBParser(parser.Parser):
         "JSON_EXTRACT_PATH": parser.build_extract_json_with_path(exp.JSONExtract),
         "JSON_EXTRACT_STRING": parser.build_extract_json_with_path(exp.JSONExtractScalar),
         "LIST": exp.ArrayAgg.from_arg_list,
-        "LIST_DISTINCT": exp.ArrayDistinct.from_arg_list,
         "LIST_APPEND": exp.ArrayAppend.from_arg_list,
         "LIST_CONCAT": parser.build_array_concat,
         "LIST_CONTAINS": exp.ArrayContains.from_arg_list,
@@ -164,10 +217,12 @@ class DuckDBParser(parser.Parser):
         "LIST_MAX": exp.ArrayMax.from_arg_list,
         "LIST_MIN": exp.ArrayMin.from_arg_list,
         "LIST_PREPEND": _build_array_prepend,
-        "LIST_REVERSE_SORT": _build_sort_array_desc,
-        "LIST_SORT": exp.SortArray.from_arg_list,
+        "LIST_REVERSE_SORT": _build_list_sort("LIST_REVERSE_SORT", desc=True),
+        "LIST_SORT": _build_list_sort("LIST_SORT"),
         "LIST_TRANSFORM": exp.Transform.from_arg_list,
-        "LIST_VALUE": lambda args: exp.Array(expressions=args),
+        "LIST_VALUE": lambda args: exp.Array(
+            expressions=args, value_constructor=len(args) == 1 and isinstance(args[0], exp.Query)
+        ),
         "MAKE_DATE": exp.DateFromParts.from_arg_list,
         "MAKE_TIME": exp.TimeFromParts.from_arg_list,
         "MAKE_TIMESTAMP": _build_make_timestamp,
@@ -221,7 +276,13 @@ class DuckDBParser(parser.Parser):
     PLACEHOLDER_PARSERS = {
         **parser.Parser.PLACEHOLDER_PARSERS,
         TokenType.PARAMETER: lambda self: (
-            self.expression(exp.Placeholder(this=self._prev.text))
+            self.expression(
+                exp.Placeholder(
+                    this=self._identifier_expression(quoted=True)
+                    if self._prev.token_type == TokenType.IDENTIFIER
+                    else self._prev.text
+                )
+            )
             if self._match(TokenType.NUMBER) or self._match_set(self.ID_VAR_TOKENS)
             else None
         ),
@@ -237,7 +298,11 @@ class DuckDBParser(parser.Parser):
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,
         TokenType.ATTACH: lambda self: self._parse_attach_detach(),
+        TokenType.CONNECT: lambda self: self.expression(
+            exp.ConnectTo(this=self._parse_string() or self._parse_id_var())
+        ),
         TokenType.DETACH: lambda self: self._parse_attach_detach(is_attach=False),
+        TokenType.DISCONNECT: lambda self: self.expression(exp.Disconnect()),
         TokenType.FORCE: lambda self: self._parse_force(),
         TokenType.INSTALL: lambda self: self._parse_install(),
         TokenType.SHOW: lambda self: self._parse_show(),
@@ -250,6 +315,17 @@ class DuckDBParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
+
+    def _parse_tilde(self, this: exp.Expr | None) -> exp.Expr | None:
+        # ~ and !~ match anywhere in the string since DuckDB 2.0, and the whole string before it
+        # https://duckdb.org/docs/2.0/sql/functions/pattern_matching
+        if self.dialect.version >= (2, 0):
+            return _parse_regexp_like(self, this)
+        return _parse_regexp_full_match(self, this)
+
+    def _parse_trigger_execute(self) -> exp.Expr | None:
+        body = self._try_parse(self._parse_statement)
+        return body if not self._curr else None
 
     def _parse_function_properties(self) -> exp.Properties | None:
         if self._match(TokenType.TABLE):
@@ -274,7 +350,7 @@ class DuckDBParser(parser.Parser):
             return None
 
         this = self._replace_lambda(self._parse_assignment(), expressions)
-        return self.expression(exp.Lambda(this=this, expressions=expressions, colon=True))
+        return self.expression(exp.Lambda(this=this, expressions=expressions))
 
     def _parse_expression(self) -> exp.Expr | None:
         # DuckDB supports prefix aliases, e.g. foo: 1
@@ -326,6 +402,67 @@ class DuckDBParser(parser.Parser):
             table.set("alias", alias)
 
         return table
+
+    def _parse_table_alias(
+        self, alias_tokens: Collection[TokenType] | None = None
+    ) -> exp.TableAlias | None:
+        if (
+            self._match_text_seq("NEAREST", advance=False)
+            and self._next.token_type == TokenType.NUMBER
+        ) or self._match_text_seq("APPROX", "NEAREST", advance=False):
+            return None
+
+        return super()._parse_table_alias(alias_tokens=alias_tokens)
+
+    def _parse_join(
+        self,
+        skip_join_token: bool = False,
+        parse_bracket: bool = False,
+        alias_tokens: Collection[TokenType] | None = None,
+    ) -> exp.Join | None:
+        join_type = None
+        if self._match_text_seq("JOIN", "BY", "(", "TYPE"):
+            join_type = self._parse_var(any_token=True)
+            self._match_r_paren()
+            skip_join_token = True
+
+        join = super()._parse_join(
+            skip_join_token=skip_join_token,
+            parse_bracket=parse_bracket,
+            alias_tokens=alias_tokens,
+        )
+        if not join:
+            return join
+
+        if join_type:
+            parts = join_type.name.upper().removesuffix("_JOIN").split("_")
+            if parts[0] in ("LEFT", "RIGHT", "FULL"):
+                join.set("side", parts.pop(0))
+            join.set("kind", " ".join(parts) or None)
+
+        approximate = self._match_text_seq("APPROX", "NEAREST")
+        if approximate or self._match_text_seq("NEAREST"):
+            count = self._parse_number()
+
+            if not self._match_text_seq("BY"):
+                self.raise_error("Expected BY after NEAREST count")
+            if not self._match_texts(("DISTANCE", "SIMILARITY")):
+                self.raise_error("Expected DISTANCE or SIMILARITY after BY")
+
+            similarity = self._prev.text.upper() == "SIMILARITY"
+            join.set(
+                "nearest",
+                self.expression(
+                    exp.Nearest(
+                        this=self._parse_disjunction(),
+                        count=count,
+                        approximate=approximate,
+                        similarity=similarity,
+                    )
+                ),
+            )
+
+        return join
 
     def _parse_table_sample(self, as_modifier: bool = False) -> exp.TableSample | None:
         # https://duckdb.org/docs/sql/samples.html

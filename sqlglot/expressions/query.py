@@ -19,6 +19,7 @@ from sqlglot.expressions.core import (
     Hint,
     Identifier,
     In,
+    Var,
     _apply_builder,
     _apply_child_list_builder,
     _apply_list_builder,
@@ -441,11 +442,24 @@ class QueryBand(Expression):
 
 
 class RecursiveWithSearch(Expression):
-    arg_types = {"kind": True, "this": True, "expression": True, "using": False}
+    arg_types = {
+        "kind": True,
+        "this": True,
+        "expression": True,
+        "to": False,
+        "default": False,
+        "using": False,
+    }
 
 
 class With(Expression):
-    arg_types = {"expressions": False, "recursive": False, "search": False, "udfs": False}
+    arg_types = {
+        "expressions": False,
+        "recursive": False,
+        "search": False,
+        "cycle": False,
+        "udfs": False,
+    }
 
     @property
     def recursive(self) -> bool:
@@ -486,14 +500,17 @@ class HexString(Expression, Condition):
 class ByteString(Expression, Condition):
     arg_types = {"this": True, "is_bytes": False}
     is_primitive = True
+    _hash_raw_args = True
 
 
 class RawString(Expression, Condition):
     is_primitive = True
+    _hash_raw_args = True
 
 
 class UnicodeString(Expression, Condition):
     arg_types = {"this": True, "escape": False}
+    _hash_raw_args = True
 
 
 class ColumnPosition(Expression):
@@ -572,7 +589,7 @@ class ConditionalInsert(Expression):
 
 
 class MultitableInserts(Expression):
-    arg_types = {"expressions": True, "kind": True, "source": True}
+    arg_types = {"with_": False, "expressions": True, "kind": False, "source": True}
 
 
 class OnCondition(Expression):
@@ -585,6 +602,7 @@ class Introducer(Expression):
 
 class National(Expression):
     is_primitive = True
+    _hash_raw_args = True
 
 
 class Partition(Expression):
@@ -645,7 +663,7 @@ class GroupingSets(Expression):
 
 
 class Lambda(Expression):
-    arg_types = {"this": True, "expressions": True, "colon": False}
+    arg_types = {"this": True, "expressions": True}
 
 
 class Limit(Expression):
@@ -656,6 +674,11 @@ class Limit(Expression):
         "limit_options": False,
         "expressions": False,
     }
+
+    @property
+    def is_limit_all(self) -> bool:
+        limit_expression = self.args.get("expression")
+        return isinstance(limit_expression, Var) and limit_expression.name.upper() == "ALL"
 
 
 class LimitOptions(Expression):
@@ -676,8 +699,9 @@ class Join(Expression):
         "method": False,
         "global_": False,
         "hint": False,
-        "match_condition": False,  # Snowflake
-        "directed": False,  # Snowflake
+        "match_condition": False,
+        "nearest": False,
+        "directed": False,
         "expressions": False,
         "pivots": False,
     }
@@ -792,6 +816,10 @@ class Join(Expression):
             join.set("kind", None)
 
         return join
+
+
+class Nearest(Expression):
+    arg_types = {"this": True, "count": True, "approximate": False, "similarity": False}
 
 
 class Lateral(Expression, UDTF):
@@ -952,6 +980,12 @@ class Put(Expression):
 
 class Get(Expression):
     arg_types = {"this": True, "target": True, "properties": False}
+
+
+class ListStage(Expression):
+    """Lists files in a Snowflake stage or Git repository clone."""
+
+    arg_types = {"this": True, "pattern": False}
 
 
 class Table(Expression, Selectable):
@@ -1909,6 +1943,10 @@ class WindowSpec(Expression):
     }
 
 
+class PartitionByExcluding(Expression):
+    arg_types = {"expressions": True}
+
+
 class PreWhere(Expression):
     pass
 
@@ -1991,6 +2029,10 @@ class DropPartition(Expression):
     arg_types = {"expressions": True, "exists": False}
 
 
+class ReplaceColumns(Expression):
+    arg_types = {"expressions": True}
+
+
 class ReplacePartition(Expression):
     arg_types = {"expression": True, "source": True}
 
@@ -2022,14 +2064,17 @@ class JSONPathPart(Expression):
 
 class JSONPathFilter(JSONPathPart):
     arg_types = {"this": True}
+    _hash_raw_args = True
 
 
 class JSONPathKey(JSONPathPart):
     arg_types = {"this": True, "quoted": False}
+    _hash_raw_args = True
 
 
 class JSONPathRecursive(JSONPathPart):
     arg_types = {"this": False}
+    _hash_raw_args = True
 
 
 class JSONPathRoot(JSONPathPart):
@@ -2038,6 +2083,7 @@ class JSONPathRoot(JSONPathPart):
 
 class JSONPathScript(JSONPathPart):
     arg_types = {"this": True}
+    _hash_raw_args = True
 
 
 class JSONPathSlice(JSONPathPart):
@@ -2054,6 +2100,7 @@ class JSONPathSubscript(JSONPathPart):
 
 class JSONPathUnion(JSONPathPart):
     arg_types = {"expressions": True}
+    _hash_raw_args = True
 
 
 class JSONPathWildcard(JSONPathPart):

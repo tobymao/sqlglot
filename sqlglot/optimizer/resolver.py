@@ -21,31 +21,31 @@ class Resolver:
     This is a class so we can lazily load some things and easily share them across functions.
     """
 
-    def __init__(self, scope: Scope, schema: Schema, infer_schema: bool = True) -> None:
+    def __init__(self, scope: Scope, schema: Schema) -> None:
         self.scope: Scope = scope
         self.schema: Schema = schema
         self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
-        self._infer_schema: bool = infer_schema
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
         self._column_type_from_scope_cache: dict[tuple[int, str], exp.DataType | None] = {}
+        self._outer_resolvers: list[Resolver] | None = None
+        self._select_aliases: set[str] | None = None
 
-    def get_table(self, column: str | exp.Column) -> exp.Identifier | None:
+    def get_table(self, column: exp.Column | exp.Identifier) -> exp.Identifier | None:
         """
-        Get the table for a column name.
+        Get the table for a column or struct root identifier.
 
         Args:
-            column: The column expression (or column name) to find the table for.
+            column: A column or struct root identifier attached to the query AST, so its
+                enclosing scope, joins, and aliases are available during resolution.
         Returns:
             The table name if it can be found/inferred.
         """
-        column_name = column if isinstance(column, str) else column.name
+        column_name = column.name
 
-        join_context = (
-            self._get_column_join_context(column) if isinstance(column, exp.Column) else None
-        )
+        join_context = self._get_column_join_context(column)
         is_semi_or_anti_join = join_context is not None and join_context.is_semi_or_anti_join
 
         # A SEMI/ANTI join's own table is excluded from the global lookup below, so skip it here
@@ -64,14 +64,29 @@ class Resolver:
             except OptimizeError:
                 pass
 
-        if not table_name and self._infer_schema:
-            sources_without_schema = tuple(
-                source
-                for source, columns in self._get_all_source_columns().items()
-                if not columns or "*" in columns
+        if (
+            not table_name
+            and column_name not in self.all_columns
+            and column.find_ancestor(exp.Select) is self.scope.expression
+            and not (
+                self.dialect.TABLES_REFERENCEABLE_AS_COLUMNS
+                and column_name in self.scope.selected_sources
             )
-            if len(sources_without_schema) == 1:
-                table_name = sources_without_schema[0]
+        ):
+            # Skip back-projection for alias refs — _expand_alias_refs handles them.
+            if column_name not in self.select_aliases or (
+                isinstance(ancestor := column.find_ancestor(exp.Alias, exp.Select), exp.Alias)
+                and ancestor.alias == column_name
+            ):
+                source_columns = (
+                    self._get_available_source_columns(join_context)
+                    if join_context is not None
+                    else self._get_all_source_columns()
+                )
+                table_name = self._get_unknown_tvf_table(source_columns)
+
+        if not table_name:
+            return None
 
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
@@ -88,12 +103,32 @@ class Resolver:
 
         return exp.to_identifier(table_name)
 
-    def outer_resolvers(self) -> t.Iterator[Resolver]:
+    def outer_resolvers(self) -> list[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""
-        scope = self.scope
-        while scope.can_be_correlated and scope.parent:
-            scope = scope.parent
-            yield Resolver(scope, self.schema, self._infer_schema)
+        if self._outer_resolvers is None:
+            self._outer_resolvers = []
+            scope = self.scope
+            while scope.can_be_correlated and scope.parent:
+                scope = scope.parent
+                self._outer_resolvers.append(Resolver(scope, self.schema))
+        return self._outer_resolvers
+
+    def _get_unknown_tvf_table(self, source_columns: dict[str, Sequence[str]]) -> str | None:
+        if not self.has_unknown_sources or self.scope.can_be_correlated:
+            return None
+
+        unknown_tvf_names = []
+        for name, columns in source_columns.items():
+            if columns and "*" not in columns:
+                continue
+            source = self.scope.sources.get(name)
+            # Non-TVF tables are expected to have schemas supplied, so only functions can be unknown
+            if isinstance(source, exp.Table) and isinstance(source.this, exp.Func):
+                unknown_tvf_names.append(name)
+            else:
+                return None
+
+        return unknown_tvf_names[0] if len(unknown_tvf_names) == 1 else None
 
     @property
     def has_unknown_sources(self) -> bool:
@@ -110,6 +145,17 @@ class Resolver:
                 column for columns in self._get_all_source_columns().values() for column in columns
             }
         return self._all_columns
+
+    @property
+    def select_aliases(self) -> set[str]:
+        if self._select_aliases is None:
+            expression = self.scope.expression
+            self._select_aliases = (
+                {s.alias for s in expression.selects if isinstance(s, exp.Alias)}
+                if isinstance(expression, exp.Select)
+                else set()
+            )
+        return self._select_aliases
 
     def get_source_columns_from_set_op(self, expression: exp.Expr) -> list[str]:
         if isinstance(expression, exp.Select):
@@ -264,7 +310,7 @@ class Resolver:
 
         return unambiguous_columns.get(column_name)
 
-    def _get_column_join_context(self, column: exp.Column) -> exp.Join | None:
+    def _get_column_join_context(self, column: exp.Column | exp.Identifier) -> exp.Join | None:
         """
         Check if a column participating in a join can be qualified based on the source order.
         """
@@ -315,7 +361,9 @@ class Resolver:
         available_sources = {from_name: self.get_source_columns(from_name)}
 
         for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
-            available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+            # An earlier SEMI/ANTI join's table is only visible within its own ON clause
+            if join is join_ancestor or not join.is_semi_or_anti_join:
+                available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
 
         return available_sources
 
@@ -388,7 +436,7 @@ class Resolver:
 
     def _get_unnest_column_type(self, column: exp.Column, scope: Scope) -> exp.DataType | None:
         """
-        Get the type of a column being unnested/exploded, tracing through CTEs/subqueries to find the base table.
+        Get the type of a column being unnested/exploded from its source scope or table.
 
         Args:
             column: The column expression being unnested/exploded.
@@ -402,7 +450,7 @@ class Resolver:
             table_name = column.table
         else:
             # use the parent scope's resolver to disambiguate the column
-            parent_resolver = Resolver(scope, self.schema, self._infer_schema)
+            parent_resolver = Resolver(scope, self.schema)
             table_identifier = parent_resolver.get_table(column)
             if not table_identifier:
                 return None
@@ -415,10 +463,10 @@ class Resolver:
         self, source: Scope | exp.Table, column: exp.Column
     ) -> exp.DataType | None:
         """
-        Get a column's type by tracing through scopes/tables to find the base table.
+        Get a column's type from annotated projections or underlying table schemas.
 
         Args:
-            source: The source to search - can be a Scope (to iterate its sources) or a Table.
+            source: The scope or table to search.
             column: The column to find the type for.
 
         Returns:
@@ -440,12 +488,19 @@ class Resolver:
             if col_type and not col_type.is_type(exp.DType.UNKNOWN):
                 result = col_type
         elif isinstance(source, Scope):
-            # iterate over all sources in the scope
-            for nested_source in source.sources.values():
-                nested_type = self._get_column_type_from_scope(nested_source, column)
-                if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
-                    result = nested_type
-                    break
+            if isinstance(source.expression, exp.Select):
+                for projection in source.expression.selects:
+                    if projection.alias_or_name == column.name:
+                        if projection.type and not projection.type.is_type(exp.DType.UNKNOWN):
+                            result = projection.type
+                        break
+
+            if result is None:
+                for nested_source in source.sources.values():
+                    nested_type = self._get_column_type_from_scope(nested_source, column)
+                    if nested_type and not nested_type.is_type(exp.DType.UNKNOWN):
+                        result = nested_type
+                        break
 
         self._column_type_from_scope_cache[cache_key] = result
         return result

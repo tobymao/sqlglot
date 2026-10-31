@@ -23,7 +23,7 @@ Repository = "https://github.com/tobymao/sqlglot"
 Issues = "https://github.com/tobymao/sqlglot/issues"
 
 [build-system]
-requires = ["setuptools >= 61.0", "setuptools_scm"]
+requires = ["setuptools >= 61.0", "setuptools_scm >= 10.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
@@ -31,6 +31,7 @@ include-package-data = false
 
 [tool.setuptools_scm]
 version_file = "sqlglot/_version.py"
+write_to_source = true
 fallback_version = "0.0.0"
 local_scheme = "no-local-version"
 

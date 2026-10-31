@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -9,6 +9,321 @@ from tests.dialects.test_dialect import Validator
 
 class TestDuckDB(Validator):
     dialect = "duckdb"
+
+    def test_date_trunc(self):
+        for unit in ("MONTH", "HOUR"):
+            self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")
+
+    def test_join_by_type(self):
+        for table in ("directed", "straight_join"):
+            self.validate_identity(
+                f"SELECT * FROM a JOIN BY (TYPE INNER) {table} AS b ON a.id = b.id",
+                f"SELECT * FROM a INNER JOIN {table} AS b ON a.id = b.id",
+            )
+
+        for kind, side, normalized_kind in (
+            ("inner", "", "INNER"),
+            ("left", "LEFT", ""),
+            ("right", "RIGHT", ""),
+            ("full", "FULL", ""),
+            ("semi", "", "SEMI"),
+            ("anti", "", "ANTI"),
+            ("right_semi", "RIGHT", "SEMI"),
+            ("right_anti", "RIGHT", "ANTI"),
+            ("mark", "", "MARK"),
+            ("single", "", "SINGLE"),
+        ):
+            for suffix in ("", "_JOIN"):
+                with self.subTest(kind=kind, suffix=suffix):
+                    sql = f"SELECT * FROM a JOIN BY (TYPE {kind}{suffix}) b ON a.id = b.id"
+                    op = (
+                        f"JOIN BY (TYPE {kind.upper()})"
+                        if kind in ("right_semi", "right_anti", "mark", "single")
+                        else f"{kind.upper()} JOIN"
+                    )
+                    expression = self.validate_identity(
+                        sql, f"SELECT * FROM a {op} b ON a.id = b.id"
+                    )
+                    join = expression.args["joins"][0]
+                    self.assertEqual(join.side, side)
+                    self.assertEqual(join.kind, normalized_kind)
+                    self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+        self.validate_all(
+            "SELECT * FROM a JOIN BY (TYPE left) b USING (id)",
+            write={
+                "duckdb": "SELECT * FROM a LEFT JOIN b USING (id)",
+                "postgres": "SELECT * FROM a LEFT JOIN b USING (id)",
+            },
+        )
+        self.validate_identity(
+            "SELECT a.id, __mark_join_marker FROM a JOIN BY (TYPE MARK) b ON a.id = b.id"
+        )
+        self.validate_identity(
+            "SELECT * FROM a JOIN BY (TYPE inner) b ON a.id = b.id JOIN c ON b.id = c.id",
+            "SELECT * FROM a INNER JOIN b ON a.id = b.id JOIN c ON b.id = c.id",
+        )
+
+    def test_connect_disconnect(self):
+        for sql in (
+            "CONNECT qk",
+            'CONNECT "remote db"',
+            "CONNECT 'quack:localhost'",
+            "CONNECT 'postgres:dbname=mydb host=localhost'",
+            "CONNECT 'postgres:dbname=''my db'' host=localhost'",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql).assert_is(exp.ConnectTo)
+                self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+        self.validate_identity("DISCONNECT").assert_is(exp.Disconnect)
+        self.validate_identity(
+            "SELECT connect, disconnect FROM t", "SELECT connect, disconnect FROM t"
+        )
+        statements = self.parse_one("CONNECT qk")
+        self.assertIsInstance(statements.this, exp.Identifier)
+        self.assertIsInstance(self.parse_one("CONNECT 'quack:localhost'").this, exp.Literal)
+
+        for name in ("connect", "disconnect"):
+            self.validate_identity(f"SELECT {name} FROM {name}")
+            self.validate_identity(f"SELECT {name}.{name} AS {name} FROM t AS {name}")
+            self.assertEqual(
+                exp.maybe_parse(name, dialect="duckdb", into=exp.Column), exp.column(name)
+            )
+            self.assertEqual(
+                exp.maybe_parse(f"{name} + 1", dialect="duckdb", into=exp.Expr),
+                exp.column(name) + 1,
+            )
+            self.assertEqual(
+                exp.maybe_parse(f"{name}.id", dialect="duckdb", into=exp.Expr),
+                exp.column("id", name),
+            )
+
+    def test_quoted_variables(self):
+        for name in ("my var", "1", 'my"var', "select", "MixedCase", "a.b"):
+            quoted = exp.to_identifier(name, quoted=True).sql("duckdb")
+            with self.subTest(name=name):
+                expression = self.validate_identity(f"SELECT ${quoted} + 1")
+                placeholder = expression.find(exp.Placeholder)
+                self.assertEqual(placeholder.name, name)
+                self.assertIsInstance(placeholder.this, exp.Identifier)
+                self.assertTrue(placeholder.this.quoted)
+                self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+                self.assertEqual(hash(expression.copy()), hash(expression))
+
+        self.validate_identity('SELECT $"my var", $my')
+        self.validate_identity("SELECT $1, ?")
+        self.validate_identity('SELECT $"my var"[1]')
+        expression = self.parse_one('SELECT $"my var"')
+        self.assertEqual(
+            exp.replace_placeholders(expression, **{"my var": 42}).sql("duckdb"), "SELECT 42"
+        )
+
+    def test_create_trigger(self):
+        for sql, body_type in (
+            (
+                "CREATE TRIGGER audit_t AFTER UPDATE ON t REFERENCING OLD TABLE AS o "
+                "NEW TABLE AS n FOR EACH STATEMENT INSERT INTO audit "
+                "SELECT n.id, n.val - o.val FROM o JOIN n ON o.id = n.id",
+                exp.Insert,
+            ),
+            (
+                "CREATE TRIGGER audit_t AFTER INSERT ON t FOR EACH ROW "
+                "INSERT INTO audit VALUES (NEW.id, NEW.val)",
+                exp.Insert,
+            ),
+            (
+                "CREATE OR REPLACE TRIGGER audit_t AFTER DELETE ON t FOR EACH ROW "
+                "DELETE FROM audit WHERE id = OLD.id",
+                exp.Delete,
+            ),
+            (
+                'CREATE TRIGGER IF NOT EXISTS "audit t" BEFORE UPDATE OF val ON main.t '
+                "FOR EACH STATEMENT UPDATE audit SET val = val + 1",
+                exp.Update,
+            ),
+            (
+                "CREATE TRIGGER audit_t AFTER INSERT ON t REFERENCING NEW TABLE AS n "
+                "FOR EACH STATEMENT MERGE INTO audit USING n ON audit.id = n.id "
+                "WHEN MATCHED THEN UPDATE SET val = n.val "
+                "WHEN NOT MATCHED THEN INSERT VALUES (n.id, n.val)",
+                exp.Merge,
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql).assert_is(exp.Create)
+                self.assertIsNone(expression.find(exp.Command))
+                self.assertIsInstance(
+                    expression.find(exp.TriggerProperties).args["execute"], body_type
+                )
+                self.assertEqual(self.parse_one(expression.sql("duckdb", pretty=True)), expression)
+
+        for sql in (
+            "DROP TRIGGER audit_t ON t",
+            "DROP TRIGGER IF EXISTS audit_t ON main.t",
+            'DROP TRIGGER "audit t" ON "main"."t"',
+        ):
+            self.validate_identity(sql).assert_is(exp.Drop)
+
+    def test_create_trigger_command_fallback(self):
+        for body in (
+            "INSERT INTO audit SELECT trim(1, 2, 3)",
+            "INSERT INTO audit SELECT abs(1, 2)",
+        ):
+            sql = f"CREATE TRIGGER tr AFTER INSERT ON t FOR EACH STATEMENT {body}"
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
+
+    def test_nearest_join(self):
+        for join in ("JOIN", "INNER JOIN", "LEFT JOIN", "LEFT OUTER JOIN"):
+            for approximate in ("", "APPROX "):
+                for metric, function in (
+                    ("DISTANCE", "ARRAY_DISTANCE"),
+                    ("SIMILARITY", "ARRAY_COSINE_SIMILARITY"),
+                ):
+                    sql = (
+                        f"SELECT q.id, t.id FROM queries AS q {join} items AS t "
+                        f"{approximate}NEAREST 2 BY {metric} {function}(q.embedding, t.embedding)"
+                    )
+                    with self.subTest(sql=sql):
+                        expression = self.validate_identity(sql)
+                        nearest = expression.find(exp.Nearest)
+                        self.assertIsNotNone(nearest)
+                        self.assertEqual(nearest.args["count"], exp.Literal.number(2))
+                        self.assertEqual(nearest.args["approximate"], bool(approximate))
+                        self.assertEqual(nearest.args["similarity"], metric == "SIMILARITY")
+
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b APPROX NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
+            "JOIN c ON b.id = c.id WHERE a.id > 0 ORDER BY a.id"
+        )
+        self.validate_identity(
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
+            "JOIN c NEAREST 2 BY DISTANCE ABS(b.id - c.id)"
+        )
+        self.validate_identity(
+            "SELECT * FROM a LEFT JOIN (SELECT * FROM b WHERE id > 0) AS b "
+            "NEAREST 1 BY DISTANCE ABS(a.id - b.id)"
+        )
+        self.validate_identity(
+            "SELECT * FROM a nearest JOIN b approx ON nearest.id = approx.id",
+            "SELECT * FROM a AS nearest JOIN b AS approx ON nearest.id = approx.id",
+        )
+        self.validate_identity(
+            'SELECT * FROM a JOIN b AS "nearest" NEAREST 1 BY DISTANCE ABS(a.id - "nearest".id)'
+        )
+        self.validate_identity(
+            "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT\n  a.id,\n  b.id\nFROM a\nLEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            pretty=True,
+        )
+        self.validate_all(
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            write={
+                "duckdb": "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+                "postgres": UnsupportedError,
+            },
+        )
+        for sql in (
+            "SELECT * FROM a JOIN b NEAREST 1 DISTANCE ABS(a.id - b.id)",
+            "SELECT * FROM a JOIN b NEAREST 1 BY ABS(a.id - b.id)",
+            "SELECT * FROM a JOIN b NEAREST 1 BY DISTANCE",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
+
+    def test_lambda(self):
+        for arrow, colon in (
+            ("x -> x + 1", "LAMBDA x : x + 1"),
+            ("(x, i) -> x + i", "LAMBDA x, i : x + i"),
+        ):
+            old_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {arrow})"
+            new_sql = f"SELECT LIST_TRANSFORM([1, 2, 3], {colon})"
+            with self.subTest(arrow=arrow):
+                self.assertEqual(self.parse_one(old_sql), self.parse_one(new_sql))
+                self.validate_all(
+                    new_sql,
+                    read={"duckdb": old_sql},
+                    write={
+                        "duckdb": new_sql,
+                        "duckdb, version=1.2": old_sql,
+                        "duckdb, version=1.3": new_sql,
+                        "duckdb, version=2.0": new_sql,
+                    },
+                )
+
+    def test_is_precedence(self):
+        self.validate_identity(
+            "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
+        )
+
+    def test_reserved_keyword_identifiers(self):
+        # DuckDB keywords whose sqlglot entries used to carry the Postgres grammar's _p suffix,
+        # plus DuckDB-specific reserved keywords (see duckdb_keywords())
+        for keyword in (
+            "anti",
+            "asc",
+            "asof",
+            "at",
+            "authorization",
+            "binary",
+            "by",
+            "check",
+            "collation",
+            "columns",
+            "concurrently",
+            "create",
+            "cross",
+            "desc",
+            "describe",
+            "end",
+            "false",
+            "freeze",
+            "full",
+            "generated",
+            "glob",
+            "group",
+            "ilike",
+            "in",
+            "inner",
+            "is",
+            "isnull",
+            "join",
+            "lambda",
+            "lateral",
+            "left",
+            "like",
+            "map",
+            "natural",
+            "notnull",
+            "null",
+            "outer",
+            "overlaps",
+            "pivot",
+            "positional",
+            "qualify",
+            "right",
+            "semi",
+            "show",
+            "similar",
+            "struct",
+            "summarize",
+            "tablesample",
+            "true",
+            "try_cast",
+            "tuple",
+            "unpack",
+            "unpivot",
+            "verbose",
+        ):
+            with self.subTest(keyword=keyword):
+                self.assertEqual(exp.column(keyword).sql("duckdb"), f'"{keyword}"')
 
     def test_duckdb(self):
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
@@ -20,7 +335,9 @@ class TestDuckDB(Validator):
             },
         )
 
-        self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-1:-1]")
+        self.validate_identity("SELECT ([1,2,3])[:-:-1]", "SELECT ([1, 2, 3])[:-:-1]")
+        self.validate_identity("SELECT ([1,2,3,4,5])[4:-:-2]", "SELECT ([1, 2, 3, 4, 5])[4:-:-2]")
+        self.validate_identity("SELECT ([1,2,3,4,5])[2:-:1]", "SELECT ([1, 2, 3, 4, 5])[2:-:1]")
         self.validate_identity(
             "SELECT INTERVAL '1 hour'::VARCHAR", "SELECT CAST(INTERVAL '1' HOUR AS TEXT)"
         )
@@ -143,9 +460,16 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT CASE WHEN delim IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(arr, x -> COALESCE(CAST(x AS TEXT), '')), delim) END",
+            "SELECT CASE WHEN delim IS NULL THEN NULL ELSE ARRAY_TO_STRING(LIST_TRANSFORM(arr, LAMBDA x : COALESCE(CAST(x AS TEXT), '')), delim) END",
             read={
                 "snowflake": "SELECT ARRAY_TO_STRING(arr, delim)",
+            },
+        )
+        self.validate_all(
+            "SELECT ARRAY_TO_STRING(LIST_TRANSFORM([1, 2, 3, NULL, 5], LAMBDA x : COALESCE(CAST(x AS TEXT), '*')), ',')",
+            read={
+                "postgres": "SELECT ARRAY_TO_STRING(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
+                "presto": "SELECT ARRAY_JOIN(ARRAY[1, 2, 3, NULL, 5], ',', '*')",
             },
         )
         self.validate_all(
@@ -276,7 +600,9 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT RANGE(5, 1, -1)",
             write={
+                "bigquery": "SELECT GENERATE_ARRAY(5, 1 + 1, -1)",
                 "duckdb": "SELECT RANGE(5, 1, -1)",
+                "postgres": "SELECT GENERATE_SERIES(5, 1 + 1, -1)",
                 "spark": "SELECT SEQUENCE(5, 2, -1)",
                 "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },
@@ -461,6 +787,15 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE_DIFF('X'') ; SELECT 1; --', CAST('2020-01-01' AS TIMESTAMP), CAST('2025-10-12' AS TIMESTAMP))",
+            read={
+                "redshift": "SELECT DATEDIFF('x'') ; SELECT 1; --', '2020-01-01', '2025-10-12')",
+            },
+            write={
+                "duckdb": "SELECT DATE_DIFF('X'') ; SELECT 1; --', CAST('2020-01-01' AS TIMESTAMP), CAST('2025-10-12' AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
             "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
             read={
                 "duckdb": "SELECT DATE_DIFF('SECOND', CAST('2020-01-01' AS DATE), CAST('2025-10-12 00:56:42.345' AS TIMESTAMP))",
@@ -490,7 +825,8 @@ class TestDuckDB(Validator):
         self.validate_identity("DAYNAME(x)")
         self.validate_identity("MONTHNAME(x)")
         self.validate_identity(
-            "SELECT LIST_TRANSFORM([5, NULL, 6], (x, y) -> COALESCE(x, y, 0) + 1)"
+            "SELECT LIST_TRANSFORM([5, NULL, 6], (x, y) -> COALESCE(x, y, 0) + 1)",
+            "SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x, y : COALESCE(x, y, 0) + 1)",
         )
         self.validate_identity(
             "SELECT LIST_TRANSFORM([5, NULL, 6], LAMBDA x, y : COALESCE(x, y, 0) + 1)"
@@ -530,6 +866,7 @@ class TestDuckDB(Validator):
         self.validate_identity("'red' IN tbl.flags")
         self.validate_identity("CREATE TABLE tbl1 (u UNION(num INT, str TEXT))")
         self.validate_identity("INSERT INTO x BY NAME SELECT 1 AS y")
+        self.validate_identity("INSERT INTO abc.s.sort BY NAME SELECT 1 AS n")
         self.validate_identity("SELECT 1 AS x UNION ALL BY NAME SELECT 2 AS x")
         self.validate_identity("SELECT SUM(x) FILTER (x = 1)", "SELECT SUM(x) FILTER(WHERE x = 1)")
         self.validate_identity("SELECT * FROM GLOB(x)")
@@ -636,6 +973,38 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT(ARRAY_CONSTRUCT('a', 'b', 'c'))",
             },
         )
+        # DuckDB's JSON_ARRAY / JSON_OBJECT keep NULLs and take no SQL/JSON clauses
+        self.validate_all(
+            "SELECT JSON_ARRAY(1, NULL, 2)",
+            read={"oracle": "SELECT JSON_ARRAY(1, NULL, 2 NULL ON NULL)"},
+        )
+        self.validate_all(
+            "SELECT JSON_OBJECT('a', 1, 'b', NULL)",
+            read={
+                "oracle": "SELECT JSON_OBJECT('a' VALUE 1, 'b' VALUE NULL NULL ON NULL)",
+                "postgres": "SELECT JSON_OBJECT('a': 1, 'b': NULL NULL ON NULL)",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON_OBJECT('a', 1, 'a', 2)",
+            read={"postgres": "SELECT JSON_OBJECT('a': 1, 'a': 2 WITHOUT UNIQUE KEYS)"},
+        )
+        self.assertEqual(
+            parse_one(
+                "SELECT JSON_OBJECT('a': 1, 'b': NULL NULL ON NULL WITHOUT UNIQUE KEYS)",
+                read="postgres",
+            ).sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+            "SELECT JSON_OBJECT('a', 1, 'b', NULL)",
+        )
+        for sql, read, unsupported in (
+            ("SELECT JSON_ARRAY(1, NULL ABSENT ON NULL)", "oracle", "ABSENT ON NULL"),
+            ("SELECT JSON_OBJECT('a': NULL ABSENT ON NULL)", "postgres", "ABSENT ON NULL"),
+            ("SELECT JSON_ARRAY(1 RETURNING CLOB STRICT)", "oracle", "'return_type'"),
+            ("SELECT JSON_OBJECT('a' VALUE 1 WITH UNIQUE KEYS)", "oracle", "'unique_keys'"),
+        ):
+            with self.subTest(sql=sql):
+                with self.assertRaisesRegex(UnsupportedError, unsupported):
+                    parse_one(sql, read=read).sql("duckdb", unsupported_level=ErrorLevel.RAISE)
         self.validate_all(
             "SELECT JSON_ARRAY(NULL, 'a', 1)",
             write={
@@ -695,6 +1064,13 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT a -> ('x' || 'y')",
             read={"duckdb": "SELECT JSON_EXTRACT(a, 'x' || 'y')"},
+        )
+        self.validate_all(
+            "SELECT a ->> ('$.' || f)",
+            read={
+                "databricks": "SELECT GET_JSON_OBJECT(a, CONCAT('$.', f))",
+                "duckdb": "SELECT JSON_EXTRACT_STRING(a, '$.' || f)",
+            },
         )
         self.validate_identity(
             "SELECT ($$hello)'world$$)",
@@ -773,8 +1149,20 @@ class TestDuckDB(Validator):
 
         self.validate_all("0b1010", write={"": "0 AS b1010"})
         self.validate_all("0x1010", write={"": "0 AS x1010"})
-        self.validate_identity("x ~ y", "REGEXP_FULL_MATCH(x, y)")
-        self.validate_identity("x !~ y", "NOT REGEXP_FULL_MATCH(x, y)")
+        self.validate_identity("x ~ y", "REGEXP_MATCHES(x, y)")
+        self.validate_identity("x !~ y", "NOT REGEXP_MATCHES(x, y)")
+        self.validate_all(
+            "SELECT x ~ y, x !~ y",
+            write={"postgres": "SELECT x ~ y, NOT x ~ y"},
+        )
+        # Before DuckDB 2.0, ~ and !~ matched the whole string
+        self.validate_all(
+            "SELECT REGEXP_FULL_MATCH(x, y), NOT REGEXP_FULL_MATCH(x, y)",
+            read={
+                "duckdb, version=1.0": "SELECT x ~ y, x !~ y",
+                "duckdb, version=1.5": "SELECT x ~ y, x !~ y",
+            },
+        )
         self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
@@ -796,72 +1184,72 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_all(
-            "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+            "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), LAMBDA x : TRIM(x))",
             write={
-                "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), x -> TRIM(x))",
+                "duckdb": "SELECT LIST_TRANSFORM(STR_SPLIT_REGEX('abc , dfg ', ','), LAMBDA x : TRIM(x))",
                 "spark": "SELECT TRANSFORM(SPLIT('abc , dfg ', ','), x -> TRIM(x))",
             },
         )
         self.validate_all(
-            "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+            "SELECT LIST_FILTER([4, 5, 6], LAMBDA x : x > 4)",
             write={
-                "duckdb": "SELECT LIST_FILTER([4, 5, 6], x -> x > 4)",
+                "duckdb": "SELECT LIST_FILTER([4, 5, 6], LAMBDA x : x > 4)",
                 "spark": "SELECT FILTER(ARRAY(4, 5, 6), x -> x > 4)",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
             write={
-                "duckdb": "LIST_FILTER([1, NULL, 2, NULL, 3], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([1, NULL, 2, NULL, 3], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([1, NULL, 2, NULL, 3])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT(NULL)",
             write={
-                "duckdb": "LIST_FILTER(NULL, _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(NULL, LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT(NULL)",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([])",
             write={
-                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
             write={
-                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT(['a', NULL, 'b', NULL, 'c'])",
             },
         )
         self.validate_all(
             "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
             write={
-                "duckdb": "LIST_FILTER([[1, 2], NULL, [3, 4]], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([[1, 2], NULL, [3, 4]], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_COMPACT([[1, 2], NULL, [3, 4]])",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
             write={
-                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([1, 2, 3, 4, 5], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT(1, 2, 3, 4, 5)",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT()",
             write={
-                "duckdb": "LIST_FILTER([], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER([], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT()",
             },
         )
         self.validate_all(
             "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
             write={
-                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], _u -> NOT _u IS NULL)",
+                "duckdb": "LIST_FILTER(['a', NULL, 'b', NULL, 'c'], LAMBDA _u : NOT _u IS NULL)",
                 "snowflake": "ARRAY_CONSTRUCT_COMPACT('a', NULL, 'b', NULL, 'c')",
             },
         )
@@ -967,6 +1355,10 @@ class TestDuckDB(Validator):
             write={
                 "": "VARIANCE_POP(x)",
                 "duckdb": "VAR_POP(x)",
+                "mysql": "VAR_POP(x)",
+                "starrocks": "VAR_POP(x)",
+                "doris": "VAR_POP(x)",
+                "singlestore": "VAR_POP(x)",
             },
         )
         self.validate_all(
@@ -1009,15 +1401,28 @@ class TestDuckDB(Validator):
             """SELECT DATEDIFF('day', t1."A", t1."B") FROM "table" AS t1""",
             write={
                 "duckdb": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
-                "trino": """SELECT DATE_DIFF('DAY', t1."A", t1."B") FROM "table" AS t1""",
+                "trino": """SELECT DATE_DIFF('DAY', DATE_TRUNC('DAY', t1."A"), DATE_TRUNC('DAY', t1."B")) FROM "table" AS t1""",
             },
         )
         self.validate_all(
             "SELECT DATE_DIFF('day', DATE '2020-01-01', DATE '2020-01-05')",
             write={
                 "duckdb": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
-                "trino": "SELECT DATE_DIFF('DAY', CAST('2020-01-01' AS DATE), CAST('2020-01-05' AS DATE))",
+                "trino": "SELECT DATE_DIFF('DAY', DATE_TRUNC('DAY', CAST('2020-01-01' AS DATE)), DATE_TRUNC('DAY', CAST('2020-01-05' AS DATE)))",
             },
+        )
+        # DATE_DIFF counts unit boundaries (one month from 2026-01-31 to 2026-03-01 is 2), except WEEK
+        self.validate_all(
+            "SELECT DATE_DIFF('MONTH', CAST('2026-01-31' AS DATE), CAST('2026-03-01' AS DATE))",
+            write={
+                "duckdb": "SELECT DATE_DIFF('MONTH', CAST('2026-01-31' AS DATE), CAST('2026-03-01' AS DATE))",
+                "postgres": "SELECT CAST(EXTRACT(year FROM AGE(DATE_TRUNC('MONTH', CAST(CAST('2026-03-01' AS DATE) AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST(CAST('2026-01-31' AS DATE) AS TIMESTAMP)))) * 12 + EXTRACT(month FROM AGE(DATE_TRUNC('MONTH', CAST(CAST('2026-03-01' AS DATE) AS TIMESTAMP)), DATE_TRUNC('MONTH', CAST(CAST('2026-01-31' AS DATE) AS TIMESTAMP)))) AS BIGINT)",
+            },
+        )
+        self.assertIsNone(
+            parse_one("SELECT DATE_DIFF('WEEK', a, b)", read="duckdb")
+            .find(exp.DateDiff)
+            .args.get("date_part_boundary")
         )
         self.validate_all(
             "WITH 'x' AS (SELECT 1) SELECT * FROM x",
@@ -1176,40 +1581,30 @@ class TestDuckDB(Validator):
                 "spark": "STRUCT('value1' AS key1, 42 AS key2)",
             },
         )
-        self.validate_all(
-            "ARRAY_REVERSE_SORT(x)",
-            write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
-                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
-                "hive": "SORT_ARRAY(x, FALSE)",
-                "spark": "SORT_ARRAY(x, FALSE)",
-            },
-        )
-        self.validate_all(
-            "LIST_REVERSE_SORT(x)",
-            write={
-                "duckdb": "ARRAY_REVERSE_SORT(x)",
-                "presto": "ARRAY_SORT(x, (a, b) -> CASE WHEN a < b THEN 1 WHEN a > b THEN -1 ELSE 0 END)",
-                "hive": "SORT_ARRAY(x, FALSE)",
-                "spark": "SORT_ARRAY(x, FALSE)",
-            },
-        )
-        self.validate_all(
-            "LIST_SORT(x)",
-            write={
-                "duckdb": "LIST_SORT(x)",
-                "presto": "ARRAY_SORT(x)",
-                "hive": "SORT_ARRAY(x)",
-                "spark": "SORT_ARRAY(x)",
-            },
-        )
-        self.validate_identity("SELECT LIST_SORT(x, 'ASC')")
-        self.validate_identity("SELECT LIST_SORT(x, 'DESC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC')", "SELECT LIST_SORT(x)")
+        self.validate_identity("SELECT LIST_SORT(x, 'DESC')", "SELECT ARRAY_REVERSE_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS FIRST')")
-        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')")
+        self.validate_identity("SELECT LIST_SORT(x, 'ASC', 'NULLS LAST')", "SELECT LIST_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')")
-        self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')")
+        self.validate_identity(
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS LAST')", "SELECT ARRAY_REVERSE_SORT(x)"
+        )
+        self.validate_identity(
+            "SELECT LIST_SORT(x, 'desc', 'nulls first')",
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+        )
+        self.validate_identity(
+            "SELECT ARRAY_REVERSE_SORT(x, 'NULLS FIRST')",
+            "SELECT LIST_SORT(x, 'DESC', 'NULLS FIRST')",
+        )
+        self.validate_identity("SELECT LIST_REVERSE_SORT(x)", "SELECT ARRAY_REVERSE_SORT(x)")
         self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC')")
+        self.validate_identity("SELECT LIST_SORT(x, 'foo')")
+        self.validate_identity('SELECT LIST_SORT(x, "asc")')
+        self.validate_identity("SELECT ARRAY_SORT(x, 'ASC', 'bad')")
+        self.validate_all(
+            "LIST_SORT(x, 'DE' || 'SC')", write={"snowflake": "LIST_SORT(x, 'DE' || 'SC')"}
+        )
         self.validate_identity("SELECT LIST_SORT(x, 'DESC', 'NULLS' || ' FIRST')")
         self.validate_identity("SELECT LIST_SORT(x, 'DE' || 'SC', 'NULLS' || ' FIRST')")
         self.validate_all(
@@ -1383,6 +1778,10 @@ class TestDuckDB(Validator):
             "VARIANCE(a)",
             write={
                 "duckdb": "VARIANCE(a)",
+                "mysql": "VAR_SAMP(a)",
+                "starrocks": "VAR_SAMP(a)",
+                "doris": "VAR_SAMP(a)",
+                "singlestore": "VAR_SAMP(a)",
                 "clickhouse": "varSamp(a)",
             },
         )
@@ -1390,6 +1789,10 @@ class TestDuckDB(Validator):
             "STDDEV(a)",
             write={
                 "duckdb": "STDDEV(a)",
+                "mysql": "STDDEV_SAMP(a)",
+                "starrocks": "STDDEV_SAMP(a)",
+                "doris": "STDDEV_SAMP(a)",
+                "singlestore": "STDDEV_SAMP(a)",
                 "clickhouse": "stddevSamp(a)",
             },
         )
@@ -1416,7 +1819,7 @@ class TestDuckDB(Validator):
             "SELECT id, STRUCT_PACK(*COLUMNS('m\\d')) AS measurements FROM many_measurements",
             """SELECT id, {'_0': *COLUMNS('m\\d')} AS measurements FROM many_measurements""",
         )
-        self.validate_identity("SELECT COLUMNS(c -> c LIKE '%num%') FROM numbers")
+        self.validate_identity("SELECT COLUMNS(LAMBDA c : c LIKE '%num%') FROM numbers")
         self.validate_identity(
             "SELECT MIN(COLUMNS(* REPLACE (number + id AS number))), COUNT(COLUMNS(* EXCLUDE (number))) FROM numbers"
         )
@@ -1463,6 +1866,22 @@ class TestDuckDB(Validator):
             "SELECT REGEXP_MATCHES('ThOmAs', 'thomas', 'i')",
             read={
                 "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
+            },
+            write={
+                "postgres": "SELECT 'ThOmAs' ~* 'thomas'",
+                "redshift": "SELECT 'ThOmAs' ~* 'thomas'",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_MATCHES(x, 'a', 'ic')",
+            write={
+                "postgres": "SELECT x ~ 'a'",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_MATCHES(x, 'a', '')",
+            write={
+                "postgres": "SELECT x ~ 'a'",
             },
         )
         self.validate_identity(
@@ -1578,7 +1997,8 @@ class TestDuckDB(Validator):
         ):
             with self.subTest(f"Testing DuckDB VALUES with modifier option: {option}"):
                 self.validate_identity(
-                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))"
+                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((VALUES (1), (c) {option}) INTERSECT (SELECT 1))",
+                    f"SELECT 1 FROM (SELECT 1) AS t(c) WHERE ((SELECT * FROM (VALUES (1), (c)) AS _values {option}) INTERSECT (SELECT 1))",
                 )
 
         self.validate_identity("FORMAT('foo')")
@@ -1732,7 +2152,7 @@ class TestDuckDB(Validator):
             )
             self.validate_identity(
                 """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': LIST_VALUE(1, 2, 3)[i], 'f2': LIST_VALUE(1, 2, 3)[i]})""",
-                """SELECT LIST_APPLY(RANGE(1, 4), i -> {'f1': [1, 2, 3][i], 'f2': [1, 2, 3][i]})""",
+                "SELECT LIST_APPLY(RANGE(1, 4), LAMBDA i : {'f1': [1, 2, 3][i], 'f2': [1, 2, 3][i]})",
             )
 
             self.assertEqual(
@@ -1744,6 +2164,82 @@ class TestDuckDB(Validator):
                     "INFO:sqlglot:Applying array index offset (1)",
                 ],
             )
+
+    def test_spark_array_slice(self):
+        source = "SELECT SLICE(SPLIT('abcdef', ''), 2, 4) AS chars"
+        target = "SELECT ARRAY_SLICE(STR_SPLIT_REGEX('abcdef', ''), 2, 5) AS chars"
+        self.validate_all(target, read={"spark": source})
+
+        for dialect in ("spark2", "spark", "databricks"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(source, read=dialect)
+                self.assertEqual(expression.sql(dialect), source)
+                self.assertEqual(expression.sql("duckdb"), target)
+
+    def test_spark_array_slice_bounds(self):
+        for source, target in (
+            ("SLICE(ARRAY(1, 2, 3), 1, 2)", "ARRAY_SLICE([1, 2, 3], 1, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 4)", "ARRAY_SLICE([1, 2, 3], 2, 5)"),
+            ("SLICE(ARRAY(1, 2, 3), 3, 0)", "ARRAY_SLICE([1, 2, 3], 3, 2)"),
+            ("SLICE(ARRAY(1, 2, 3), 2, 2147483647)", "ARRAY_SLICE([1, 2, 3], 2, 2147483648)"),
+            (
+                "SLICE(ARRAY(1, 2, 3), -2, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END, (CASE WHEN -2 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -2 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -2 + 1 ELSE -2 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(ARRAY(1, 2, 3), -4, 2)",
+                "ARRAY_SLICE([1, 2, 3], CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END, (CASE WHEN -4 < -ARRAY_LENGTH([1, 2, 3]) THEN ARRAY_LENGTH([1, 2, 3]) + 1 WHEN -4 < 0 THEN ARRAY_LENGTH([1, 2, 3]) + -4 + 1 ELSE -4 END + CAST(2 AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(NULL, 2, 1)",
+                "ARRAY_SLICE(NULL, 2, 2)",
+            ),
+            (
+                "SLICE(a, s, n)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, 2, n)",
+                "ARRAY_SLICE(a, 2, (2 + CAST(n AS BIGINT)) - 1)",
+            ),
+            (
+                "SLICE(a, s, 2)",
+                "ARRAY_SLICE(a, CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END, (CASE WHEN s < -ARRAY_LENGTH(a) THEN ARRAY_LENGTH(a) + 1 WHEN s < 0 THEN ARRAY_LENGTH(a) + s + 1 ELSE s END + CAST(2 AS BIGINT)) - 1)",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(
+                    target,
+                    read={"spark2": source, "spark": source, "databricks": source},
+                )
+
+    def test_array_slice_to_length(self):
+        self.validate_all(
+            "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+            write={
+                "duckdb": "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",
+                "spark2": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "spark": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "databricks": "SELECT SLICE(ARRAY(1, 2, 3, 4), 2, 2)",
+                "presto": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+                "trino": "SELECT SLICE(ARRAY[1, 2, 3, 4], 2, 2)",
+            },
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 0, 2)",
+            write={"spark": "SLICE(x, 1, 2)", "presto": "SLICE(x, 1, 2)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(x, 3, 2)",
+            write={"spark": "SLICE(x, 3, 0)", "presto": "SLICE(x, 3, 0)"},
+        )
+        self.validate_all(
+            "ARRAY_SLICE(CASE WHEN RANDOM() < 0.5 THEN [1] ELSE [1, 2] END, -1, 2)",
+            write={
+                "spark": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY(1) ELSE ARRAY(1, 2) END, -1, 2)",
+                "presto": "SLICE(CASE WHEN RAND() < 0.5 THEN ARRAY[1] ELSE ARRAY[1, 2] END, -1, 2)",
+            },
+        )
 
     def test_array_insert(self):
         # Test ARRAY_INSERT inserts at beginning
@@ -1786,10 +2282,19 @@ class TestDuckDB(Validator):
             },
         )
 
+        # Test 1-based -1 appends (Spark/Databricks), it isn't the 0-based "before last"
+        self.validate_all(
+            "CASE WHEN [1, 2, 3] IS NULL THEN NULL ELSE LIST_CONCAT([1, 2, 3], [99]) END",
+            read={
+                "spark": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
+                "databricks": "ARRAY_INSERT(ARRAY(1, 2, 3), -1, 99)",
+            },
+        )
+
     def test_array_remove(self):
         # Test NULL propagation with column reference: Snowflake → DuckDB
         self.validate_all(
-            "CASE WHEN target IS NULL THEN NULL ELSE LIST_FILTER(the_array, _u -> _u <> target) END",
+            "CASE WHEN target IS NULL THEN NULL ELSE LIST_FILTER(the_array, LAMBDA _u : _u <> target) END",
             read={
                 "snowflake": "ARRAY_REMOVE(the_array, target)",
             },
@@ -1797,7 +2302,7 @@ class TestDuckDB(Validator):
 
         # Test literal values: Snowflake → DuckDB
         self.validate_all(
-            "LIST_FILTER([1, 2, 3], _u -> _u <> 2)",
+            "LIST_FILTER([1, 2, 3], LAMBDA _u : _u <> 2)",
             read={
                 "snowflake": "ARRAY_REMOVE([1, 2, 3], 2)",
             },
@@ -1805,7 +2310,7 @@ class TestDuckDB(Validator):
 
         # Test NULL literal: Snowflake → DuckDB
         self.validate_all(
-            "CASE WHEN NULL IS NULL THEN NULL ELSE LIST_FILTER([1, 2, 3], _u -> _u <> NULL) END",
+            "CASE WHEN NULL IS NULL THEN NULL ELSE LIST_FILTER([1, 2, 3], LAMBDA _u : _u <> NULL) END",
             read={
                 "snowflake": "ARRAY_REMOVE([1, 2, 3], NULL)",
             },
@@ -1877,6 +2382,18 @@ class TestDuckDB(Validator):
         )
 
     def test_time(self):
+        self.validate_identity(
+            "SELECT DATE_ADD(TIMESTAMP '2024-01-01', INTERVAL 1 DAY) - DATE_ADD(TIMESTAMP '2024-01-01', INTERVAL 1 DAY)",
+            "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1' DAY - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1' DAY)",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL 1 DAY + DATE_ADD(TIMESTAMP '2024-01-30', INTERVAL 1 MONTH)",
+            "SELECT INTERVAL '1' DAY + (CAST('2024-01-30' AS TIMESTAMP) + INTERVAL '1' MONTH)",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD(TIMESTAMP '2024-01-01', INTERVAL 1 DAY) AT TIME ZONE 'UTC'",
+            "SELECT (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '1' DAY) AT TIME ZONE 'UTC'",
+        )
         self.validate_identity("SELECT CURRENT_DATE")
         self.validate_identity("SELECT CURRENT_TIMESTAMP")
 
@@ -1954,6 +2471,21 @@ class TestDuckDB(Validator):
         self.validate_all(
             "SELECT INTERVAL '1 quarter'",
             write={"duckdb": "SELECT INTERVAL '1' QUARTER"},
+        )
+        self.validate_identity("SELECT INTERVAL '1.5 DAY'")
+        self.validate_identity("SELECT INTERVAL '1.5' DAY")
+        self.validate_identity("SELECT INTERVAL '1.5' MONTH")
+        self.validate_all(
+            "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '-10.75 MINUTE'",
+            read={"postgres": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL '-10.75 MINUTE'"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1.5 SECOND'",
+            write={"trino": "SELECT INTERVAL '1.5' SECOND"},
+        )
+        self.validate_all(
+            "SELECT INTERVAL '1.0 QUARTER'",
+            write={"postgres": "SELECT INTERVAL '3 MONTH'"},
         )
         self.validate_all(
             "SELECT ((DATE_TRUNC('DAY', CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP) + INTERVAL (0 - ((ISODOW(CAST(CAST(DATE_TRUNC('DAY', CURRENT_TIMESTAMP) AS DATE) AS TIMESTAMP)) % 7) - 1 + 7) % 7) DAY) + INTERVAL (-5) WEEK)) AS t1",
@@ -2105,6 +2637,9 @@ class TestDuckDB(Validator):
             "SELECT * FROM tbl, tbl2 WHERE tbl.i=tbl2.i USING SAMPLE RESERVOIR(20%)",
             "SELECT * FROM tbl, tbl2 WHERE tbl.i = tbl2.i USING SAMPLE RESERVOIR (20 PERCENT)",
         )
+        self.validate_identity(
+            "SELECT a, COUNT(*) OVER w AS c FROM tbl WHERE a > 0 GROUP BY a HAVING COUNT(*) > 0 WINDOW w AS (ORDER BY a) QUALIFY c > 0 USING SAMPLE SYSTEM (50 PERCENT) ORDER BY a LIMIT 3 OFFSET 1"
+        )
 
         self.validate_all(
             "SELECT * FROM example TABLESAMPLE RESERVOIR (3 ROWS) REPEATABLE (82)",
@@ -2127,6 +2662,17 @@ class TestDuckDB(Validator):
     def test_array(self):
         self.validate_identity("ARRAY(SELECT id FROM t)")
         self.validate_identity("ARRAY((SELECT id FROM t))")
+        self.validate_identity("[(SELECT id FROM t), 2]")
+        for sql in (
+            "SELECT [(SELECT 1)]",
+            "SELECT [COALESCE((SELECT 1), 0)]",
+            "SELECT ARRAY_LENGTH([(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)])",
+            "SELECT ARRAY(SELECT 1 FROM (SELECT 1) AS t WHERE FALSE)",
+            "SELECT ARRAY((SELECT 1 FROM (SELECT 1) AS t WHERE FALSE))",
+        ):
+            self.validate_all(sql, write={"bigquery": sql, "duckdb": sql})
+        self.validate_identity("SELECT [{'a': (SELECT 1)}]")
+        self.validate_identity("SELECT LIST_VALUE((SELECT 1))", "SELECT [(SELECT 1)]")
 
     def test_cast(self):
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
@@ -2534,6 +3080,10 @@ class TestDuckDB(Validator):
             "SELECT * FROM (SELECT foo1, foo2 FROM t1)",
         )
         self.validate_identity(
+            "FROM (FROM t1 SELECT foo1 UNION ALL SELECT foo2 FROM t2)",
+            "SELECT * FROM (SELECT foo1 FROM t1 UNION ALL SELECT foo2 FROM t2)",
+        )
+        self.validate_identity(
             "WITH t1 AS (FROM (FROM t2 SELECT foo1, foo2)) FROM t1",
             "WITH t1 AS (SELECT * FROM (SELECT foo1, foo2 FROM t2)) SELECT * FROM t1",
         )
@@ -2712,6 +3262,7 @@ class TestDuckDB(Validator):
         self.validate_identity("RESET SESSION default_collation", check_command_warning=True)
 
     def test_map_struct(self):
+        self.validate_identity("SELECT MAP {t.k: t.v} FROM (SELECT 'a' AS k, 10 AS v) AS t")
         self.validate_identity("MAP {1: 'a', 2: 'b'}")
         self.validate_identity("MAP {'1': 'a', '2': 'b'}")
         self.validate_identity("MAP {[1, 2]: 'a', [3, 4]: 'b'}")
@@ -2899,21 +3450,21 @@ class TestDuckDB(Validator):
 
     def test_map_delete(self):
         self.validate_all(
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), LAMBDA x : NOT x.key IN ('a', 'b')))",
             read={
                 "snowflake": "SELECT MAP_DELETE({'a':1,'b':2,'c':3}::MAP(VARCHAR,NUMBER),'a','b')",
             },
             write={
-                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), x -> NOT x.key IN ('a', 'b')))",
+                "duckdb": "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(CAST({'a': 1, 'b': 2, 'c': 3} AS MAP(TEXT, DECIMAL(38, 0)))), LAMBDA x : NOT x.key IN ('a', 'b')))",
             },
         )
         self.validate_all(
-            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
+            "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), LAMBDA x : NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             read={
                 "snowflake": "SELECT id, MAP_DELETE(attrs, del_key1, del_key2) AS attrs_after_delete FROM demo_maps",
             },
             write={
-                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), x -> NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
+                "duckdb": "SELECT id, MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(attrs), LAMBDA x : NOT x.key IN (del_key1, del_key2))) AS attrs_after_delete FROM demo_maps",
             },
         )
 
@@ -2947,7 +3498,7 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : x.key IN (t.t_key))) FROM t",
         )
 
         annotated = annotate_types(
@@ -2957,7 +3508,7 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : ARRAY_CONTAINS(t.t_key, x.key))) FROM t",
         )
 
         sql = "SELECT MAP_PICK(t.t_map, t.t_key1, t.t_key2) FROM t"
@@ -2969,10 +3520,16 @@ class TestDuckDB(Validator):
         )
         self.assertEqual(
             annotated.sql(dialect="duckdb"),
-            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), x -> x.key IN (t.t_key1, t.t_key2))) FROM t",
+            "SELECT MAP_FROM_ENTRIES(LIST_FILTER(MAP_ENTRIES(t.t_map), LAMBDA x : x.key IN (t.t_key1, t.t_key2))) FROM t",
         )
 
     def test_to_array(self):
+        for sql in (
+            "SELECT TO_ARRAY([]) AS result",
+            "SELECT TO_ARRAY(ARRAY_CONSTRUCT()) AS result",
+        ):
+            self.validate_all("SELECT [] AS result", read={"snowflake": sql})
+
         self.validate_all(
             "SELECT CASE WHEN 'hello, snowman' IS NULL THEN NULL ELSE ['hello, snowman'] END AS result",
             read={
@@ -3058,3 +3615,121 @@ class TestDuckDB(Validator):
                 "snowflake": "SELECT TO_VARIANT('1')",
             },
         )
+
+    def test_concat_ws(self):
+        self.validate_identity("SELECT CONCAT_WS('-', 'a', 'b')")
+        self.validate_identity("SELECT CONCAT_WS('-', ['a', NULL, 'b'])")
+
+        for source, target in (
+            (
+                "CONCAT_WS('', ARRAY('a', 'b'))",
+                "CONCAT_WS('', ARRAY_TO_STRING(CAST(['a', 'b'] AS TEXT[]), ''))",
+            ),
+            (
+                "CONCAT_WS(',', ARRAY('b', 'c', 'd', 'e'))",
+                "CONCAT_WS(',', ARRAY_TO_STRING(CAST(['b', 'c', 'd', 'e'] AS TEXT[]), ','))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('a', NULL, '', 'b'))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST(['a', NULL, '', 'b'] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY())",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(NULL))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(CAST([NULL] AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS(NULL, ARRAY())",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(CAST([] AS TEXT[]), NULL))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY(1, 2), 'x')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST([1, 2] AS TEXT[]), [CAST('x' AS TEXT)]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), '-'))",
+            ),
+            (
+                "CONCAT_WS(NULL, CAST(NULL AS ARRAY<STRING>))",
+                "CONCAT_WS(NULL, ARRAY_TO_STRING(TRY_CAST(NULL AS TEXT[]), NULL))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), 'ghi')",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), [CAST('ghi' AS TEXT)]), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', ARRAY('abc', 'def'), ARRAY('bla', 'bob'))",
+                "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT(CAST(['abc', 'def'] AS TEXT[]), CAST(['bla', 'bob'] AS TEXT[])), '-'))",
+            ),
+            (
+                "CONCAT_WS('-', 'x', ARRAY(), ARRAY(NULL), CAST(NULL AS ARRAY<STRING>), NULL, 'y')",
+                (
+                    "CONCAT_WS('-', ARRAY_TO_STRING(LIST_CONCAT([CAST('x' AS TEXT)], CAST([] AS TEXT[]), "
+                    "CAST([NULL] AS TEXT[]), TRY_CAST(NULL AS TEXT[]), [CAST(NULL AS TEXT)], [CAST('y' AS TEXT)]), '-'))"
+                ),
+            ),
+            (
+                "CONCAT_WS('-', 1, NULL, 'a')",
+                "CONCAT_WS('-', 1, NULL, 'a')",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(f"SELECT {target}", read={"spark": f"SELECT {source}"})
+
+    def test_concat_ws_typed(self):
+        for a_type, b_type, expected in (
+            (
+                "ARRAY<STRING>",
+                "STRING",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
+                ),
+            ),
+            (
+                "ARRAY<STRING>",
+                "ARRAY<STRING>",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "CAST(t.b AS TEXT[])), t.sep))"
+                ),
+            ),
+            (
+                "ARRAY<INT>",
+                "INT",
+                (
+                    "CONCAT_WS(t.sep, ARRAY_TO_STRING(LIST_CONCAT(CAST(t.a AS TEXT[]), "
+                    "[CAST(t.b AS TEXT)]), t.sep))"
+                ),
+            ),
+        ):
+            with self.subTest(a_type=a_type, b_type=b_type):
+                expression = annotate_types(
+                    parse_one("SELECT CONCAT_WS(t.sep, t.a, t.b) FROM t", read="spark"),
+                    schema={"t": {"sep": "STRING", "a": a_type, "b": b_type}},
+                    dialect="spark",
+                )
+                self.assertEqual(
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT {expected} FROM t",
+                )
+
+    def test_concat_ws_unknown_types(self):
+        for annotated in (False, True):
+            with self.subTest(annotated=annotated):
+                expression = parse_one(
+                    "SELECT CONCAT_WS('-', ARRAY('a'), t.b) FROM t", read="spark"
+                )
+                if annotated:
+                    expression = annotate_types(expression, dialect="spark")
+
+                with self.assertLogs(generator_logger) as logs:
+                    expression.sql("duckdb")
+                self.assertIn("CONCAT_WS with unknown argument types", logs.output[0])
+
+                with self.assertRaisesRegex(UnsupportedError, "unknown argument types"):
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)

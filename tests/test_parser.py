@@ -9,6 +9,69 @@ from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
+    def test_ref_type(self) -> None:
+        for dialect, target_sql in (
+            ("", "customer"),
+            ("", "catalog.schema.customer"),
+            ("snowflake", '"Sales"."Customer Accounts"'),
+            ("snowflake", '"Sales"."Customer\'s ""Account"""'),
+            ("bigquery", "`my-project.sales.customer`"),
+            ("tsql", "[Sales].[Customer Accounts]"),
+            ("duckdb", '"Sales"."Customer Accounts"'),
+            ("trino", '"Sales"."Customer Accounts"'),
+        ):
+            with self.subTest(dialect=dialect, target=target_sql):
+                datatype = parse_one(f"ref ( {target_sql} )", dialect=dialect, into=exp.DataType)
+                target = parse_one(target_sql, dialect=dialect, into=exp.Table)
+                self.assertEqual(datatype.this, exp.DType.REF)
+                self.assertEqual(datatype.expressions, [target])
+                self.assertEqual(datatype.sql(dialect), f"REF({target.sql(dialect)})")
+                self.assertEqual(
+                    parse_one(datatype.sql(dialect), dialect=dialect, into=exp.DataType),
+                    datatype,
+                )
+
+        for sql in (
+            "ARRAY<REF(public.customer)>",
+            "STRUCT<manager REF(public.employee)>",
+            "MAP<INT, REF(public.customer)>",
+            "REF(public.customer)[]",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql, into=exp.DataType)
+                self.assertTrue(
+                    any(t.is_type(exp.DType.REF) for t in expression.find_all(exp.DataType))
+                )
+                self.assertEqual(parse_one(expression.sql(), into=exp.DataType), expression)
+
+        for sql in (
+            "CREATE TABLE orders (customer REF(public.customer))",
+            "CAST(customer AS REF(public.customer))",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql)
+                self.assertEqual(expression.find(exp.DataType).this, exp.DType.REF)
+                self.assertEqual(expression.sql(), sql)
+
+        for sql in ("REF()", "REF(1)", "REF(a, b)", "REF(a + b)", "REF(a", "REF(a.)"):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                parse_one(sql, into=exp.DataType)
+
+    def test_ref_identifiers_and_functions(self) -> None:
+        for sql in (
+            "SELECT ref FROM ref",
+            "SELECT ref.customer FROM orders AS ref",
+            "SELECT REF(t) FROM customers AS t",
+            "SELECT REF(1)",
+            "SELECT REF(a + 1)",
+            "SELECT REF(a, b)",
+            "SELECT REF()",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql)
+                self.assertEqual(expression.sql(), sql)
+                self.assertIsNone(expression.find(exp.DataType))
+
     def test_parse_empty(self):
         with self.assertRaises(ParseError):
             parse_one("")
@@ -117,6 +180,7 @@ class TestParser(unittest.TestCase):
         for dialect, sql, expected in [
             ("postgres", "SELECT TRIM($$leading$$)", "SELECT TRIM('leading')"),
             ("tsql", "SELECT TRIM(N'both')", "SELECT TRIM(N'both')"),
+            ("oracle", "SELECT TRIM(nq'[both]')", "SELECT TRIM(N'both')"),
             ("postgres", 'SELECT TRIM("leading" FROM x)', 'SELECT TRIM("leading" FROM x)'),
             ("mysql", "INSERT `local` (a) VALUES (1)", "INSERT INTO `local` (a) VALUES (1)"),
             (
@@ -233,6 +297,8 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(expr.expressions, list)
         self.assertEqual(expr.sql(), unnest_sql)
 
+        self.assertEqual(len(parse_one("UNNEST(foo, bar)").expressions), 2)
+
     def test_unnest_projection(self):
         expr = parse_one("SELECT foo IN UNNEST(bla) AS bar")
         self.assertIsInstance(expr.selects[0], exp.Alias)
@@ -280,6 +346,111 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.this.expression.sql(), "3")
         self.assertEqual(expression.expression.sql(), "2")
 
+    def test_is_precedence(self):
+        for dialect in (
+            "postgres",
+            "duckdb",
+            "sqlite",
+            "mysql",
+            "clickhouse",
+            "spark",
+            "spark2",
+            "databricks",
+            "hive",
+            "starrocks",
+            "oracle",
+            "dremio",
+            "doris",
+            "drill",
+            "materialize",
+            "risingwave",
+            "snowflake",
+            "redshift",
+        ):
+            for operator in ("=", "<>", "!=", "<", ">", "<=", ">="):
+                with self.subTest(dialect=dialect, operator=operator):
+                    expression = parse_one(f"a {operator} b IS NULL", read=dialect)
+                    if dialect in ("snowflake", "redshift"):
+                        self.assertIsInstance(expression.expression, exp.Paren)
+                        self.assertIsInstance(expression.expression.this, exp.Is)
+                        self.assertEqual(expression.this, exp.column("a"))
+                        self.assertEqual(expression.expression.this.this, exp.column("b"))
+                    else:
+                        self.assertIsInstance(expression, exp.Is)
+                        self.assertIsInstance(expression.this, exp.Paren)
+                        self.assertEqual(expression.this.this.this, exp.column("a"))
+                        self.assertEqual(expression.this.this.expression, exp.column("b"))
+
+        for predicate in (
+            "IS NULL",
+            "IS NOT NULL",
+            "ISNULL",
+            "NOTNULL",
+            "IS TRUE",
+            "IS FALSE",
+            "IS UNKNOWN",
+            "IS NOT TRUE",
+            "IS NOT FALSE",
+            "IS NOT UNKNOWN",
+        ):
+            with self.subTest(predicate=predicate):
+                expression = parse_one(f"a = b {predicate}", read="postgres")
+                if isinstance(expression, exp.Not):
+                    expression = expression.this
+                self.assertIsInstance(expression, exp.Is)
+                self.assertIsInstance(expression.this, exp.Paren)
+                self.assertIsInstance(expression.this.this, exp.EQ)
+
+        for dialect in ("postgres", "duckdb", "mysql", "sqlite", "clickhouse", "dremio", "drill"):
+            for operator in ("=", "<"):
+                expression = parse_one(f"a IS NULL {operator} b", read=dialect)
+                if dialect == "sqlite" and operator == "<":
+                    self.assertIsInstance(expression, exp.Is)
+                    self.assertIsInstance(expression.expression, exp.Paren)
+                    self.assertIsInstance(expression.expression.this, exp.LT)
+                else:
+                    self.assertIsInstance(expression.this, exp.Paren)
+                    self.assertIsInstance(expression.this.this, exp.Is)
+
+        for dialect in (
+            "postgres",
+            "duckdb",
+            "clickhouse",
+            "spark",
+            "hive",
+            "sqlite",
+            "dremio",
+            "drill",
+        ):
+            for operator in ("=", "<"):
+                expression = parse_one(f"a IS DISTINCT FROM b {operator} c", read=dialect)
+                if dialect in ("dremio", "drill") or (
+                    dialect in ("sqlite", "hive") and operator == "="
+                ):
+                    self.assertIsInstance(expression.this, exp.Paren)
+                    self.assertIsInstance(expression.this.this, exp.NullSafeNEQ)
+                else:
+                    self.assertIsInstance(expression, exp.NullSafeNEQ)
+                    self.assertIsInstance(expression.expression, exp.Paren)
+                    self.assertIsInstance(expression.expression.this, exp.Predicate)
+
+        for dialect in ("postgres", "snowflake"):
+            expression = parse_one("FALSE IS DISTINCT FROM NULL::BOOLEAN", read=dialect)
+            self.assertIsInstance(expression, exp.NullSafeNEQ)
+            self.assertIsInstance(expression.expression, exp.Cast)
+
+        for predicate in (" IS NULL", " IS NULL IS NOT NULL", " IS NOT NULL IS NULL"):
+            sql = "SELECT a" + predicate * 1000
+            self.assertEqual(parse_one(sql, read="postgres").sql("postgres"), sql)
+
+        expression = parse_one("NOT a = b IS NULL AND c IS NULL OR d IS NULL", read="postgres")
+        self.assertIsInstance(expression, exp.Or)
+        self.assertIsInstance(expression.this, exp.And)
+        self.assertIsInstance(expression.this.this, exp.Not)
+        self.assertIsInstance(expression.this.this.this, exp.Is)
+        self.assertIsInstance(expression.this.this.this.this, exp.Paren)
+        self.assertIsInstance(expression.this.this.this.this.this, exp.EQ)
+
     def test_limit_percent_parses_without_modulo(self):
         expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")
         limit = expression.args["limit"]
@@ -321,6 +492,18 @@ class TestParser(unittest.TestCase):
             self.assertEqual(expressions[2].sql(), "SELECT 1")
 
         assert "'ADD JAR s3://a'" in cm.output[0]
+
+    def test_copy_command_fallback(self):
+        for dialect in (None, "postgres"):
+            for error_level in ErrorLevel:
+                for sql in ("COPY t FROM :'f'", "COPY t FROM -", "COPY t FROM STDIN CSV -"):
+                    with (
+                        self.subTest(dialect=dialect, error_level=error_level, sql=sql),
+                        self.assertLogs(parser_logger),
+                    ):
+                        expression = parse_one(sql, read=dialect, error_level=error_level)
+                        self.assertIsInstance(expression, exp.Command)
+                        self.assertEqual(expression.sql(dialect=dialect), sql)
 
     def test_grant_revoke_without_privileges(self):
         for sql in (
@@ -779,37 +962,37 @@ class TestParser(unittest.TestCase):
         nothing_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop', 'rudder'))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop', 'rudder'))
         """
 
         everything_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) AS avg_price FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+            ) AS t PIVOT (AVG(price) AS avg_price FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
         """
 
         only_pivot_columns_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder' AS rudder1))
         """
 
         columns_partially_aliased = """
             SELECT * FROM (
                 SELECT partname, price FROM part
-            ) PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_aliased = """
             SELECT * FROM (
                 SELECT partname, price, quality FROM part
-            ) PIVOT (AVG(price) AS p, MAX(quality) AS q FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price) AS p, MAX(quality) AS q FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_not_aliased = """
             SELECT * FROM (
                 SELECT partname, price, quality FROM part
-            ) PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
+            ) AS t PIVOT (AVG(price), MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))
         """
 
         multiple_aggregates_not_aliased_with_quoted_identifier_spark = """
@@ -852,29 +1035,34 @@ class TestParser(unittest.TestCase):
                 "redshift": ["prop", "rudder"],
                 "snowflake": ['''"'prop'"''', '''"'rudder'"'''],
                 "spark": ["prop", "rudder"],
+                "starrocks": ["`'prop'`", "`'rudder'`"],
             },
             everything_aliased: {
                 "bigquery": ["avg_price_prop1", "avg_price_rudder1"],
                 "duckdb": ["prop1_avg_price", "rudder1_avg_price"],
                 "redshift": ["prop1_avg_price", "rudder1_avg_price"],
                 "spark": ["prop1", "rudder1"],
+                "starrocks": ["prop1", "rudder1"],
             },
             only_pivot_columns_aliased: {
                 "bigquery": ["prop1", "rudder1"],
                 "duckdb": ["prop1", "rudder1"],
                 "redshift": ["prop1", "rudder1"],
                 "spark": ["prop1", "rudder1"],
+                "starrocks": ["prop1", "rudder1"],
             },
             columns_partially_aliased: {
                 "bigquery": ["prop1", "rudder"],
                 "duckdb": ["prop1", "rudder"],
                 "redshift": ["prop1", "rudder"],
                 "spark": ["prop1", "rudder"],
+                "starrocks": ["prop1", "`'rudder'`"],
             },
             multiple_aggregates_aliased: {
                 "bigquery": ["p_prop1", "q_prop1", "p_rudder", "q_rudder"],
                 "duckdb": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
                 "spark": ["prop1_p", "prop1_q", "rudder_p", "rudder_q"],
+                "starrocks": ["prop1_p", "prop1_q", "`'rudder'_p`", "`'rudder'_q`"],
             },
             multiple_aggregates_not_aliased: {
                 "duckdb": [
@@ -889,6 +1077,7 @@ class TestParser(unittest.TestCase):
                     "`rudder_avg(price)`",
                     "`rudder_max(quality)`",
                 ],
+                "starrocks": [],
             },
             multiple_aggregates_not_aliased_with_quoted_identifier_spark: {
                 "spark": [
@@ -905,6 +1094,18 @@ class TestParser(unittest.TestCase):
                     '"rudder_avg(PrIcE)"',
                     '"rudder_max(quality)"',
                 ],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p FOR partname IN ('prop', 'rudder'))": {
+                "starrocks": ["`'prop'`", "`'rudder'`"],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p, MAX(quality) FOR partname IN ('prop' AS prop1, 'rudder'))": {
+                "starrocks": [],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) FOR (partname, quality) IN (('prop', 1), ('rudder', 2)))": {
+                "starrocks": ["`{'prop',1}`", "`{'rudder',2}`"],
+            },
+            "SELECT * FROM part PIVOT (AVG(price) AS p, MAX(price) AS q FOR (partname, quality) IN (('prop', 1) AS prop1, ('rudder', 2)))": {
+                "starrocks": ["prop1_p", "prop1_q", "`{'rudder',2}_p`", "`{'rudder',2}_q`"],
             },
             two_in_clauses_duckdb: {
                 "duckdb": [
@@ -1115,6 +1316,12 @@ class TestParser(unittest.TestCase):
             for sql in sqls:
                 with self.subTest(f"Testing query '{sql}' for dialect {dialect}"):
                     self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
+
+    def test_alter_mixed_actions(self):
+        with self.assertLogs(parser_logger):
+            alter = parse_one("ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b")
+
+        self.assertIsInstance(alter, exp.Command)
 
     def test_distinct_from(self):
         self.assertIsInstance(parse_one("a IS DISTINCT FROM b OR c IS DISTINCT FROM d"), exp.Or)

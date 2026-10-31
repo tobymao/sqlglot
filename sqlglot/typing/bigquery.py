@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA, TIMESTAMP_EXPRESSIONS
+from sqlglot.typing import EXPRESSION_METADATA, TIMESTAMP_EXPRESSIONS, annotate_int_as_double
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -47,24 +47,6 @@ def _annotate_date_func(self: TypeAnnotator, expression: _DateFunc) -> exp.Expr:
     return self._annotate_by_args(expression, "this")
 
 
-def _annotate_math_functions(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
-    """
-    Many BigQuery math functions such as CEIL, FLOOR etc follow this return type convention:
-    +---------+---------+---------+------------+---------+
-    |  INPUT  | INT64   | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    |  OUTPUT | FLOAT64 | NUMERIC | BIGNUMERIC | FLOAT64 |
-    +---------+---------+---------+------------+---------+
-    """
-    this: exp.Expr = expression.this
-
-    self._set_type(
-        expression,
-        exp.DType.DOUBLE if this.is_type(*exp.DataType.INTEGER_TYPES) else this.type,
-    )
-    return expression
-
-
 def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
     """
     +------------+------------+------------+-------------+---------+
@@ -100,6 +82,10 @@ def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: exp.Expr) -> 
 
 
 def _annotate_by_args_approx_top(self: TypeAnnotator, expression: exp.ApproxTopK) -> exp.ApproxTopK:
+    if not expression.this.type or expression.this.is_type(exp.DType.UNKNOWN):
+        self._set_type(expression, exp.DType.UNKNOWN)
+        return expression
+
     struct_type = exp.DataType(
         this=exp.DType.STRUCT,
         expressions=[expression.this.type, exp.DataType(this=exp.DType.BIGINT)],
@@ -161,13 +147,11 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):
-            # Get all column types for the SetOperation
             col_types = self._get_setop_column_types(unnested)
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
-            if col_types and unnested.left.selects:
-                first_col_name = unnested.left.selects[0].alias_or_name
-                projection_type = col_types.get(first_col_name)
+            if len(col_types) == 1:
+                projection_type = col_types[0][1]
 
         # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY
         if projection_type and not (
@@ -196,7 +180,7 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
-        expr_type: {"annotator": lambda self, e: _annotate_math_functions(self, e)}
+        expr_type: {"annotator": annotate_int_as_double}
         for expr_type in {
             exp.Avg,
             exp.Ceil,

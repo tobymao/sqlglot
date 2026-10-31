@@ -12,6 +12,7 @@ from sqlglot.dialects.dialect import (
     build_like,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import Token, TokenType
 from builtins import type as Type
 
@@ -53,6 +54,13 @@ def _build_str_to_date(args: list) -> exp.Cast | exp.Anonymous:
 def _build_timestamp_trunc(unit: str) -> t.Callable[[list], exp.TimestampTrunc]:
     return lambda args: exp.TimestampTrunc(
         this=seq_get(args, 0), unit=exp.var(unit), zone=seq_get(args, 1)
+    )
+
+
+def _build_without_extra_args(expr_type: type[exp.Func], name: str) -> t.Callable[[list], exp.Func]:
+    # The optional mode / timezone arguments have no counterpart in expr_type
+    return lambda args: (
+        expr_type(this=args[0]) if len(args) == 1 else exp.Anonymous(this=name, expressions=args)
     )
 
 
@@ -252,10 +260,9 @@ _AGG_FUNC_MAPPING: Mapping[str, tuple[str, str | None]] = {
 
 
 class ClickHouseParser(parser.Parser):
-    # Tested in ClickHouse's playground, it seems that the following two queries do the same thing
-    # * select x from t1 union all select x from t2 limit 1;
-    # * select x from t1 union all (select x from t2 limit 1);
-    MODIFIERS_ATTACHED_TO_SET_OP = False
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
+    SET_OP_MODIFIERS = {"settings", "format"}
     INTERVAL_SPANS = False
     OPTIONAL_ALIAS_TOKEN_CTE = False
     JOINS_HAVE_EQUAL_PRECEDENCE = True
@@ -290,6 +297,7 @@ class ClickHouseParser(parser.Parser):
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,
+        "COUNTMATCHES": exp.RegexpCount.from_arg_list,
         "CITYHASH64": exp.CityHash64.from_arg_list,
         "COSINEDISTANCE": exp.CosineDistance.from_arg_list,
         "VERSION": exp.CurrentVersion.from_arg_list,
@@ -302,11 +310,17 @@ class ClickHouseParser(parser.Parser):
         "DATESUB": build_date_delta(exp.DateSub, default_unit=None),
         "DATETRUNC": exp.DateTrunc.from_arg_list,
         "FORMATDATETIME": _build_datetime_format(exp.TimeToStr),
+        "GROUPBITAND": exp.BitwiseAndAgg.from_arg_list,
+        "GROUPBITOR": exp.BitwiseOrAgg.from_arg_list,
+        "GROUPBITXOR": exp.BitwiseXorAgg.from_arg_list,
         "HAS": exp.ArrayContains.from_arg_list,
         "ILIKE": build_like(exp.ILike),
         "ISINFINITE": exp.IsInf.from_arg_list,
+        "JSONEXTRACTRAW": build_json_extract_path(
+            exp.JSONExtract, zero_based_indexing=False, arrow_req_json_type=True
+        ),
         "JSONEXTRACTSTRING": build_json_extract_path(
-            exp.JSONExtractScalar, zero_based_indexing=False
+            exp.JSONExtractScalar, zero_based_indexing=False, arrow_req_json_type=True
         ),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "LIKE": build_like(exp.Like),
@@ -321,6 +335,9 @@ class ClickHouseParser(parser.Parser):
         "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
         "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
         "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
+        "TODAYOFWEEK": _build_without_extra_args(exp.DayOfWeekIso, "toDayOfWeek"),
+        "TOISOWEEK": _build_without_extra_args(exp.WeekOfYear, "toISOWeek"),
+        "TOISOYEAR": _build_without_extra_args(exp.YearOfWeekIso, "toISOYear"),
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
         "UNIQ": exp.ApproxDistinct.from_arg_list,
         "MD5": exp.MD5Digest.from_arg_list,
@@ -348,6 +365,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.AND,
         TokenType.FILE,
         TokenType.OR,
+        TokenType.PASTE,
         TokenType.SET,
         TokenType.VIEW,
     }
@@ -442,6 +460,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.ANY,
         TokenType.ASOF,
         TokenType.ARRAY,
+        TokenType.PASTE,
     }
 
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS - {
@@ -451,6 +470,7 @@ class ClickHouseParser(parser.Parser):
         TokenType.ASOF,
         TokenType.FINAL,
         TokenType.FORMAT,
+        TokenType.PASTE,
         TokenType.SETTINGS,
     }
 
@@ -694,13 +714,13 @@ class ClickHouseParser(parser.Parser):
     def _parse_join_parts(
         self,
     ) -> tuple[Token | None, Token | None, Token | None]:
-        is_global = self._prev if self._match(TokenType.GLOBAL) else None
+        method = self._prev if self._match_set((TokenType.GLOBAL, TokenType.NATURAL)) else None
 
         kind_pre = self._prev if self._match_set(self.JOIN_KINDS) else None
         side = self._prev if self._match_set(self.JOIN_SIDES) else None
         kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
-        return is_global, side or kind, kind_pre or kind
+        return method, side or kind, kind_pre or kind
 
     def _parse_join(
         self,
@@ -712,9 +732,9 @@ class ClickHouseParser(parser.Parser):
             skip_join_token=skip_join_token, parse_bracket=True, alias_tokens=alias_tokens
         )
         if join:
-            method = join.args.get("method")
-            join.set("method", None)
-            join.set("global_", method)
+            if join.method == "GLOBAL":
+                join.set("method", None)
+                join.set("global_", "GLOBAL")
 
             # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
             # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join

@@ -867,7 +867,7 @@ class Expression(Expr):
                     for k in sorted(node.args):
                         v = node.args[k]
                         if v:
-                            hash_ = hash((hash_, k, v))
+                            hash_ = hash((hash_, k, tuple(v) if type(v) is list else v))
                 else:
                     for k in sorted(node.args):
                         v = node.args[k]
@@ -1595,7 +1595,14 @@ class Uncache(Expression):
 
 
 class Refresh(Expression):
-    arg_types = {"this": True, "kind": True}
+    arg_types = {
+        "this": True,
+        "kind": True,
+        "partition_start": False,
+        "partition_end": False,
+        "force": False,
+        "mode": False,
+    }
 
 
 class LockingStatement(Expression):
@@ -1727,13 +1734,13 @@ class Column(Expression, Condition):
         return self.name
 
     @property
-    def parts(self) -> list[Identifier | Star]:
+    def parts(self) -> list[Expr]:
         """Return the parts of a column in order catalog, db, table, name."""
         return [
             self.args[part] for part in ("catalog", "db", "table", "this") if self.args.get(part)
         ]
 
-    def to_dot(self, include_dots: bool = True) -> Dot | Identifier | Star:
+    def to_dot(self, include_dots: bool = True) -> Expr:
         """Converts the column into a dot expression."""
         parts = self.parts
         parent = self.parent
@@ -1859,6 +1866,7 @@ class SessionParameter(Expression, Condition):
 
 class Placeholder(Expression, Condition):
     arg_types = {"this": False, "kind": False, "widget": False, "jdbc": False}
+    _hash_raw_args = True
 
     @property
     def name(self) -> str:
@@ -1994,6 +2002,7 @@ class Typeof(Expression, Func):
 
 class ParameterizedAgg(Expression, AggFunc):
     arg_types = {"this": True, "expressions": True, "params": True}
+    _hash_raw_args = True
 
 
 class Anonymous(Expression, Func):
@@ -2008,6 +2017,7 @@ class Anonymous(Expression, Func):
 class AnonymousAggFunc(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True
+    _hash_raw_args = True
 
 
 class CombinedAggFunc(AnonymousAggFunc):
@@ -2096,6 +2106,10 @@ class IntervalOp(TimeUnit):
 
 class Filter(Expression):
     arg_types = {"this": True, "expression": True}
+
+
+class Per(Expression):
+    arg_types = {"this": True, "expressions": True}
 
 
 class Check(Expression):
@@ -2211,7 +2225,7 @@ class Like(Expression, Binary, Predicate):
 
 
 class Match(Expression, Binary, Predicate):
-    pass
+    arg_types = {"this": True, "expression": True, "kind": False, "analyzer": False}
 
 
 class LT(Expression, Binary, Predicate):
@@ -3061,7 +3075,7 @@ def alias_(
 
 @t.overload
 def column(
-    col: str | Identifier,
+    col: str | Expr,
     table: str | Identifier | None = None,
     db: str | Identifier | None = None,
     catalog: str | Identifier | None = None,
@@ -3075,7 +3089,7 @@ def column(
 
 @t.overload
 def column(
-    col: str | Identifier | Star,
+    col: str | Expr,
     table: str | Identifier | None = None,
     db: str | Identifier | None = None,
     catalog: str | Identifier | None = None,
@@ -3101,19 +3115,18 @@ def column(
     Build a Column.
 
     Args:
-        col: Column name.
+        col: Column name or expression.
         table: Table name.
         db: Database name.
         catalog: Catalog name.
         fields: Additional fields using dots.
         quoted: Whether to force quotes on the column's identifiers.
-        copy: Whether to copy identifiers if passed in.
+        copy: Whether to copy expressions if passed in.
 
     Returns:
         The new Column instance.
     """
-    if not isinstance(col, Star):
-        col = to_identifier(col, quoted=quoted, copy=copy)
+    col = maybe_copy(col, copy) if isinstance(col, Expr) else to_identifier(col, quoted=quoted)
 
     this: Column | Dot = Column(
         this=col,

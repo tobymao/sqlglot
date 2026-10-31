@@ -7,6 +7,148 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_subquery_modifiers(self):
+        for source, expected in (
+            (
+                "SELECT 3 UNION ALL ((SELECT 2 INTERSECT SELECT 2) ORDER BY 1)",
+                "SELECT 3 UNION ALL SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST)",
+            ),
+            (
+                "((SELECT 2 INTERSECT SELECT 2) ORDER BY 1) UNION ALL SELECT 3",
+                "SELECT * FROM (SELECT 2 INTERSECT SELECT 2 ORDER BY 1 NULLS LAST) UNION ALL SELECT 3",
+            ),
+            (
+                "SELECT 9 UNION ALL ((SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) ORDER BY 1 DESC LIMIT 1 OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 DESC NULLS FIRST LIMIT 1 OFFSET 1)",
+            ),
+            (
+                "SELECT 9 UNION ALL (((SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3) ORDER BY 1 LIMIT 2) OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 NULLS LAST LIMIT 2 OFFSET 1)",
+            ),
+            (
+                "SELECT * FROM ((SELECT 1 UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1) AS t",
+                "SELECT * FROM (SELECT 1 UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1) AS t",
+            ),
+            (
+                "SELECT ((SELECT 1 UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1)",
+                "SELECT (SELECT 1 UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1)",
+            ),
+            (
+                "WITH t AS (SELECT 1 AS x) (SELECT x FROM t UNION ALL SELECT 2) ORDER BY 1 DESC LIMIT 1",
+                "WITH t AS (SELECT 1 AS x) SELECT x FROM t UNION ALL SELECT 2 ORDER BY 1 DESC NULLS FIRST LIMIT 1",
+            ),
+            (
+                "(SELECT 1) LIMIT 1",
+                "SELECT 1 LIMIT 1",
+            ),
+            (
+                "(SELECT 1) OFFSET 1",
+                "SELECT 1 LIMIT -1 OFFSET 1",
+            ),
+            (
+                "(SELECT 1 UNION ALL SELECT 2) OFFSET 1",
+                "SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1",
+            ),
+            (
+                "SELECT 9 UNION ALL ((SELECT 1 UNION ALL SELECT 2) OFFSET 1)",
+                "SELECT 9 UNION ALL SELECT * FROM (SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1)",
+            ),
+            (
+                "SELECT 1 UNION ALL SELECT 2 LIMIT ALL OFFSET 1",
+                "SELECT 1 UNION ALL SELECT 2 LIMIT -1 OFFSET 1",
+            ),
+            (
+                "SELECT 1 LIMIT ALL OFFSET 1",
+                "SELECT 1 LIMIT -1 OFFSET 1",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(expected, read={"postgres": source})
+
+    def test_subquery_modifier_conflicts(self):
+        for source, expected in (
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC LIMIT 1",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC LIMIT 1",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2) ORDER BY 1 DESC",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 LIMIT 1) LIMIT 2",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 LIMIT 1) LIMIT 2",
+            ),
+            (
+                "(SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2 OFFSET 1) LIMIT 1 OFFSET 1",
+                "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2 UNION ALL SELECT 3 ORDER BY 1 LIMIT 2 OFFSET 1) LIMIT 1 OFFSET 1",
+            ),
+            (
+                "WITH a AS (SELECT 1 AS x) (WITH b AS (SELECT 2 AS x) SELECT * FROM b) LIMIT 1",
+                "WITH a AS (SELECT 1 AS x) SELECT * FROM (WITH b AS (SELECT 2 AS x) SELECT * FROM b) LIMIT 1",
+            ),
+            (
+                "WITH a AS (SELECT 1 AS x) (WITH a AS (SELECT 2 AS x) SELECT * FROM a) LIMIT 1",
+                "WITH a AS (SELECT 1 AS x) SELECT * FROM (WITH a AS (SELECT 2 AS x) SELECT * FROM a) LIMIT 1",
+            ),
+        ):
+            with self.subTest(source=source):
+                self.validate_all(expected, read={"mysql": source})
+
+    def test_cast(self):
+        for dtype, func in (
+            ("DATETIME", "DATETIME"),
+            ("TIMESTAMP", "DATETIME"),
+            ("TIMESTAMPNTZ", "DATETIME"),
+            ("TIME", "TIME"),
+        ):
+            for value in ("'2014-09-01 12:34:56'", "x", "NULL"):
+                with self.subTest(dtype=dtype, value=value):
+                    self.validate_all(
+                        f"SELECT {func}({value})",
+                        read={"": f"SELECT CAST({value} AS {dtype})"},
+                    )
+
+    def test_is_precedence(self):
+        self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
+        for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):
+            for predicate, klass in (
+                ("NULL IS NULL", exp.Is),
+                ("NULL IS NOT DISTINCT FROM NULL", exp.NullSafeEQ),
+            ):
+                lhs = f"({predicate})" if suffix.startswith("BETWEEN") else predicate
+                expression = self.validate_identity(
+                    f"SELECT {predicate} {suffix}", f"SELECT {lhs} {suffix}"
+                )
+                self.assertIsInstance(expression.expressions[0].this.unnest(), klass)
+
+        self.validate_identity(
+            "SELECT NULL IS NULL < FALSE IN (0)", "SELECT NULL IS (NULL < FALSE) IN (0)"
+        )
+        for predicate in ("NOT NULL", "NOTNULL", "IS NOT NULL"):
+            for suffix in ("IN (0, 1)", "BETWEEN 0 AND 1", "NOT IN (0, 1)"):
+                negated = suffix.startswith("NOT ")
+                self.validate_identity(
+                    f"SELECT NULL {predicate} {suffix}",
+                    f"SELECT {'NOT ' if negated else ''}(NOT NULL IS NULL) {suffix.removeprefix('NOT ')}",
+                )
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM TRUE IS DISTINCT FROM FALSE",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+            },
+        )
+        self.validate_identity("SELECT NULL IS NULL < FALSE", "SELECT NULL IS (NULL < FALSE)")
+        self.validate_all(
+            "SELECT FALSE IS DISTINCT FROM NULL = NULL",
+            write={
+                "sqlite": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "postgres": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "duckdb": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+            },
+        )
+
     def test_sqlite(self):
         # Range operators (IN/LIKE) are left-associative and can be chained.
         self.validate_identity("SELECT 1 IN (0) IN (1)")
@@ -62,10 +204,30 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
         self.validate_all(
+            "SELECT DATE('2020-01-31', '+1 month')",
+            read={"sqlite": "SELECT DATE('2020-01-31', '+1 month')"},
+            write={
+                "sqlite": "SELECT DATE('2020-01-31', '+1 month')",
+                "duckdb": "SELECT DATE('2020-01-31', '+1 month')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+            read={"sqlite": "SELECT DATE('2020-03-15', 'start of month', '+1 day')"},
+            write={
+                "sqlite": "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+                "duckdb": "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+            },
+        )
+        self.validate_all(
             "SELECT DATE(d, '1 DAY') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",
             },
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(d, '1'') ; SELECT 1; --')",
+            write={"sqlite": "SELECT DATE(d, '1'') ; SELECT 1; --')"},
         )
         self.validate_all(
             "SELECT DATE(d, '-1 DAY') FROM t",
@@ -112,8 +274,12 @@ class TestSQLite(Validator):
         self.validate_identity(
             "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"
         )
-        self.validate_identity(
+        self.validate_all(
             "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
+            write={
+                "sqlite": "SELECT JSON_EXTRACT('[10, 20, [30, 40]]', '$[2]', '$[0]', '$[1]')",
+                "duckdb": "SELECT TO_JSON(JSON_EXTRACT('[10, 20, [30, 40]]', ['$[2]', '$[0]', '$[1]']))",
+            },
         )
         # Single-path json_extract() returns an SQL value like ->>, except that
         # object/array results keep the JSON subtype (json_subtype variant);
@@ -183,11 +349,23 @@ class TestSQLite(Validator):
             read={
                 "sqlite": "SELECT MIN(a, b) FROM t",
             },
+            write={
+                "sqlite": "SELECT MIN(a, b) FROM t",
+                "duckdb": "SELECT CASE WHEN a IS NULL OR b IS NULL THEN NULL ELSE LEAST(a, b) END FROM t",
+                "trino": "SELECT LEAST(a, b) FROM t",
+                "oracle": "SELECT LEAST(a, b) FROM t",
+            },
         )
         self.validate_all(
             "SELECT MAX(a, b) FROM t",
             read={
                 "sqlite": "SELECT MAX(a, b) FROM t",
+            },
+            write={
+                "sqlite": "SELECT MAX(a, b) FROM t",
+                "duckdb": "SELECT CASE WHEN a IS NULL OR b IS NULL THEN NULL ELSE GREATEST(a, b) END FROM t",
+                "trino": "SELECT GREATEST(a, b) FROM t",
+                "oracle": "SELECT GREATEST(a, b) FROM t",
             },
         )
         # GREATEST/LEAST ignore NULL args in Postgres/DuckDB, but SQLite's
@@ -408,6 +586,14 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT a -> b ->> c -> d FROM t")
         self.validate_identity("SELECT a || b ->> c", "SELECT (a || b) ->> c")
         self.validate_identity("SELECT a ->> b || c FROM t")
+        self.validate_all(
+            "SELECT a ->> ('$.' || f)",
+            read={"spark": "SELECT GET_JSON_OBJECT(a, CONCAT('$.', f))"},
+        )
+        self.validate_all(
+            "SELECT a -> ('$.' || f)",
+            read={"mysql": "SELECT JSON_EXTRACT(a, CONCAT('$.', f))"},
+        )
         self.validate_identity("SELECT 2 * 3 || 4", "SELECT 2 * (3 || 4)")
         self.validate_identity("SELECT 1 + 2 || 3", "SELECT 1 + (2 || 3)")
         self.validate_identity("SELECT a || b * c FROM t", "SELECT (a || b) * c FROM t")
@@ -482,19 +668,64 @@ class TestSQLite(Validator):
         )
 
     def test_hexadecimal_literal(self):
+        for sql, expected in (
+            ("0XCC", "204"),
+            ("0xcc", "204"),
+            ("0x0", "0"),
+            ("0x1F + 1", "31 + 1"),
+            ("-0x10", "-16"),
+            ("0x7FFFFFFFFFFFFFFF", "9223372036854775807"),
+            ("0x8000000000000000", "-9223372036854775808"),
+            ("0xFFFFFFFFFFFFFFFF", "-1"),
+            ("-0xFFFFFFFFFFFFFFFF", "- -1"),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    f"SELECT {sql}",
+                    write={
+                        "sqlite": f"SELECT {expected}",
+                        "duckdb": f"SELECT {expected}",
+                        "mysql": f"SELECT {expected}",
+                    },
+                )
+
         self.validate_all(
-            "SELECT 0XCC",
+            "SELECT x'CC'",
             write={
                 "sqlite": "SELECT x'CC'",
+                "duckdb": "SELECT UNHEX('CC')",
                 "mysql": "SELECT x'CC'",
             },
         )
+        self.validate_identity("SELECT X'0a', 0x0a", "SELECT x'0a', 10")
 
     def test_window_null_treatment(self):
         self.validate_all(
             "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",
             write={
                 "sqlite": "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks"
+            },
+        )
+
+    def test_floating_point_types(self):
+        # REAL, FLOAT and DOUBLE are all 8-byte floats in SQLite, so they transpile to
+        # DOUBLE rather than to the 4-byte REAL/FLOAT of other dialects
+        for dtype in ("REAL", "FLOAT", "DOUBLE"):
+            self.validate_all(
+                f"SELECT CAST(x AS {dtype}) FROM t",
+                write={
+                    "sqlite": "SELECT CAST(x AS REAL) FROM t",
+                    "duckdb": "SELECT CAST(x AS DOUBLE) FROM t",
+                    "postgres": "SELECT CAST(x AS DOUBLE PRECISION) FROM t",
+                },
+            )
+
+        self.validate_all(
+            "CREATE TABLE t (x REAL, y FLOAT)",
+            write={
+                "sqlite": "CREATE TABLE t (x REAL, y REAL)",
+                "duckdb": "CREATE TABLE t (x DOUBLE, y DOUBLE)",
+                "postgres": "CREATE TABLE t (x DOUBLE PRECISION, y DOUBLE PRECISION)",
             },
         )
 
@@ -615,6 +846,10 @@ class TestSQLite(Validator):
         self.validate_identity("INSERT OR IGNORE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR REPLACE INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR ROLLBACK INTO foo (x, y) VALUES (1, 2)")
+        self.validate_identity("INSERT INTO foo AS f (x, y) VALUES (1, 2)")
+        self.validate_identity(
+            "INSERT INTO foo AS f (x, y) VALUES (1, 2) ON CONFLICT(x) DO UPDATE SET y = f.y + 1"
+        )
         self.validate_identity(
             "INSERT INTO tbl (x, y) SELECT 1, 'a' WHERE TRUE ON CONFLICT(x, LOWER(y)) DO UPDATE SET y = excluded.y"
         )

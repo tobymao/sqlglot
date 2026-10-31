@@ -6,6 +6,7 @@ from functools import partial
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_sort_order,
     DATE_ADD_OR_SUB,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
@@ -162,6 +163,9 @@ def _date_diff_sql(self: HiveGenerator, expression: exp.DateDiff | exp.TsOrDsDif
 
 @generator.unsupported_args(("expression", "Hive's SORT_ARRAY does not support a comparator."))
 def _array_sort_sql(self: HiveGenerator, expression: exp.ArraySort) -> str:
+    asc, nulls_first = array_sort_order(expression) or (False, False)
+    if not asc or nulls_first is False:
+        self.unsupported("Hive's SORT_ARRAY only sorts ascending with NULLs first")
     return self.func("SORT_ARRAY", expression.this)
 
 
@@ -242,6 +246,7 @@ class HiveGenerator(generator.Generator):
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     PAD_FILL_PATTERN_IS_REQUIRED = True
     SUPPORTS_MEDIAN = False
+    SUPPORTS_TEMPORAL_PRECISION = False
     ARRAY_SIZE_NAME = "SIZE"
     ALTER_SET_TYPE = ""
 
@@ -502,7 +507,9 @@ class HiveGenerator(generator.Generator):
             expression.set("expressions", None)
         elif expression.is_type(exp.DType.TEXT) and expression.expressions:
             expression.set("this", exp.DType.VARCHAR)
-        elif expression.this in exp.DataType.TEMPORAL_TYPES:
+        elif (
+            not self.SUPPORTS_TEMPORAL_PRECISION and expression.this in exp.DataType.TEMPORAL_TYPES
+        ):
             expression.set("expressions", None)
         elif expression.is_type("float"):
             size_expression = expression.find(exp.DataTypeParam)

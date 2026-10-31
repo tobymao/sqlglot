@@ -19,7 +19,7 @@ class ClickHouse(Dialect):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST: bool | None = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True
-    PRESERVE_ORIGINAL_NAMES = True
+    ORIGINAL_NAME_META_KEY = "clickhouse_name"
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     HEX_STRING_IS_INTEGER_TYPE = True
@@ -116,6 +116,7 @@ class ClickHouse(Dialect):
             "UINT8": TokenType.UTINYINT,
             "IPV4": TokenType.IPV4,
             "IPV6": TokenType.IPV6,
+            "PASTE": TokenType.PASTE,
             "POINT": TokenType.POINT,
             "PROJECTION": TokenType.PROJECTION,
             "RING": TokenType.RING,

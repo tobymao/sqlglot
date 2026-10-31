@@ -7,6 +7,7 @@ import typing as t
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    array_sort_order,
     DATETIME_DELTA,
     JSON_EXTRACT_TYPE,
     approx_count_distinct_sql,
@@ -110,7 +111,7 @@ def _apply_base64_alphabet_replacements(
     reverse: bool = False,
 ) -> exp.Expr:
     """
-    Apply base64 alphabet character replacements.
+    Translate base64 alphabet characters without cascading replacements.
 
     Base64 alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=').
     zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/', etc.
@@ -122,14 +123,19 @@ def _apply_base64_alphabet_replacements(
                  If True, replace custom with default (decode)
     """
     if isinstance(alphabet, exp.Literal) and alphabet.is_string:
+        source, target = "", ""
         for default_char, new_char in zip("+/=", alphabet.this):
             if new_char != default_char:
-                find, replace = (new_char, default_char) if reverse else (default_char, new_char)
-                result = exp.Replace(
-                    this=result,
-                    expression=exp.Literal.string(find),
-                    replacement=exp.Literal.string(replace),
-                )
+                source += default_char
+                target += new_char
+        if source:
+            if reverse:
+                source, target = target, source
+            result = exp.Translate(
+                this=result,
+                from_=exp.Literal.string(source),
+                to=exp.Literal.string(target),
+            )
     return result
 
 
@@ -138,7 +144,7 @@ def _base64_decode_sql(self: DuckDBGenerator, expression: exp.Expr, to_string: b
     Transpile Snowflake BASE64_DECODE_STRING/BINARY to DuckDB.
 
     DuckDB uses FROM_BASE64() which returns BLOB. For string output, wrap with DECODE().
-    Custom alphabets require REPLACE() calls to convert to standard base64.
+    Custom alphabets require TRANSLATE() to convert to standard base64.
     """
     input_expr = expression.this
     alphabet = expression.args.get("alphabet")
@@ -388,6 +394,10 @@ def _array_insert_sql(self: DuckDBGenerator, expression: exp.ArrayInsert) -> str
 
     pos_value = position.to_py()
 
+    # 1-based -1 appends (Spark/Databricks); the 0-based normalization below
+    # would otherwise map it onto the prepend branch.
+    append = index_offset == 1 and pos_value == -1
+
     # Normalize one-based indexing to zero-based for slice calculations
     # Spark (1-based) -> Snowflake (0-based):
     #   Positive: pos=1 -> pos=0 (subtract 1)
@@ -399,7 +409,10 @@ def _array_insert_sql(self: DuckDBGenerator, expression: exp.ArrayInsert) -> str
         pos_value = pos_value + index_offset
 
     # Build the appropriate list_concat expression based on position
-    if pos_value == 0:
+    if append:
+        # append at end
+        concat_exprs = [this, element_array]
+    elif pos_value == 0:
         # insert at beginning
         concat_exprs = [element_array, this]
     elif pos_value > 0:
@@ -541,9 +554,22 @@ def _array_remove_at_sql(self: DuckDBGenerator, expression: exp.ArrayRemoveAt) -
     )
 
 
-@unsupported_args(("expression", "DuckDB's ARRAY_SORT does not support a comparator."))
+@unsupported_args(("expression", "DuckDB's LIST_SORT does not support a comparator."))
 def _array_sort_sql(self: DuckDBGenerator, expression: exp.ArraySort) -> str:
-    return self.func("ARRAY_SORT", expression.this)
+    order = array_sort_order(expression)
+    if order is None:
+        self.unsupported("LIST_SORT only takes literal orders")
+        return self.func("LIST_SORT", expression.this)
+
+    asc, nulls_first = order
+    if not nulls_first:
+        return self.func("LIST_SORT" if asc else "ARRAY_REVERSE_SORT", expression.this)
+    return self.func(
+        "LIST_SORT",
+        expression.this,
+        exp.Literal.string("ASC" if asc else "DESC"),
+        exp.Literal.string("NULLS FIRST"),
+    )
 
 
 def _array_contains_sql(self: DuckDBGenerator, expression: exp.ArrayContains) -> str:
@@ -649,6 +675,15 @@ def _struct_sql(self: DuckDBGenerator, expression: exp.Struct) -> str:
     csv_args = ", ".join(args)
 
     return f"ROW({csv_args})" if is_bq_inline_struct else f"{{{csv_args}}}"
+
+
+@unsupported_args("unique_keys", "return_type", "encoding", "strict")
+def _json_constructor_sql(self: DuckDBGenerator, expression: exp.JSONArray | exp.JSONObject) -> str:
+    if expression.args.get("null_handling") == "ABSENT ON NULL":
+        self.unsupported("ABSENT ON NULL is not supported in DuckDB")
+
+    name = "JSON_ARRAY" if isinstance(expression, exp.JSONArray) else "JSON_OBJECT"
+    return self.func(name, *expression.expressions)
 
 
 def _json_format_sql(self: DuckDBGenerator, expression: exp.JSONFormat) -> str:
@@ -868,6 +903,19 @@ WRAPPED_JSON_EXTRACT_EXPRESSIONS = (exp.Binary, exp.Bracket, exp.In, exp.Not)
 
 
 def _arrow_json_extract_sql(self: DuckDBGenerator, expression: JSON_EXTRACT_TYPE) -> str:
+    paths = expression.expressions
+    if isinstance(expression, exp.JSONExtract) and paths:
+        # JSON_EXTRACT with several paths (SQLite, MySQL) returns a JSON array of the results,
+        # which DuckDB builds from a list of paths
+        return self.func(
+            "TO_JSON",
+            self.func(
+                "JSON_EXTRACT",
+                expression.this,
+                exp.Array(expressions=[expression.expression, *paths]),
+            ),
+        )
+
     arrow_sql = arrow_json_extract_sql(self, expression)
     if not expression.same_parent and isinstance(
         expression.parent, WRAPPED_JSON_EXTRACT_EXPRESSIONS
@@ -1546,10 +1594,13 @@ class DuckDBGenerator(generator.Generator):
     TABLE_HINTS = False
     QUERY_HINTS = False
     LIMIT_FETCH = "LIMIT"
+    SUPPORTS_NEAREST_JOIN = True
     STRUCT_DELIMITER = ("(", ")")
     RENAME_TABLE_WITH_DB = False
     NVL2_SUPPORTED = False
     SEMI_ANTI_JOIN_WITH_SIDE = False
+    CAST_TO_INT_ROUNDS = True
+    SAFE_INT_DIVISION = True
     TABLESAMPLE_KEYWORDS = "USING SAMPLE"
     TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
     LAST_DAY_SUPPORTS_DATE_PART = False
@@ -1565,7 +1616,12 @@ class DuckDBGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = False
 
-    AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
+    # USING SAMPLE goes after QUALIFY and before ORDER BY / LIMIT
+    # https://duckdb.org/docs/preview/sql/query_syntax/sample
+    AFTER_HAVING_MODIFIER_TRANSFORMS = {
+        **generator.AFTER_HAVING_MODIFIER_TRANSFORMS,
+        "sample": lambda self, e: self.sql(e, "sample"),
+    }
     SUPPORTS_WINDOW_EXCLUDE = True
     COPY_HAS_INTO_KEYWORD = False
     STAR_EXCEPT = "EXCLUDE"
@@ -1766,7 +1822,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TsOrDsAdd: _date_delta_to_binary_interval_op(),
         exp.TsOrDsDiff: lambda self, e: self.func(
             "DATE_DIFF",
-            f"'{e.args.get('unit') or 'DAY'}'",
+            exp.Literal.string(e.unit or "DAY"),
             exp.cast(e.expression, exp.DType.TIMESTAMP),
             exp.cast(e.this, exp.DType.TIMESTAMP),
         ),
@@ -1796,6 +1852,8 @@ class DuckDBGenerator(generator.Generator):
         ),
         exp.Xor: _xor_sql,
         exp.JSONObjectAgg: rename_func("JSON_GROUP_OBJECT"),
+        exp.JSONArray: _json_constructor_sql,
+        exp.JSONObject: _json_constructor_sql,
         exp.JSONBObjectAgg: rename_func("JSON_GROUP_OBJECT"),
         exp.DateBin: rename_func("TIME_BUCKET"),
         exp.LastDay: _last_day_sql,
@@ -1844,16 +1902,16 @@ class DuckDBGenerator(generator.Generator):
         "union",
         "all",
         "when",
-        "in_p",
+        "in",
         "default",
-        "create_p",
+        "create",
         "window",
         "asymmetric",
         "to",
         "else",
         "localtime",
         "from",
-        "end_p",
+        "end",
         "select",
         "current_date",
         "foreign",
@@ -1865,7 +1923,7 @@ class DuckDBGenerator(generator.Generator):
         "references",
         "fetch",
         "limit",
-        "group_p",
+        "group",
         "leading",
         "into",
         "collate",
@@ -1873,13 +1931,13 @@ class DuckDBGenerator(generator.Generator):
         "do",
         "then",
         "localtimestamp",
-        "check_p",
-        "lateral_p",
+        "check",
+        "lateral",
         "current_role",
         "where",
-        "asc_p",
+        "asc",
         "placing",
-        "desc_p",
+        "desc",
         "user",
         "unique",
         "initially",
@@ -1890,9 +1948,9 @@ class DuckDBGenerator(generator.Generator):
         "any",
         "only",
         "deferrable",
-        "null_p",
+        "null",
         "current_time",
-        "true_p",
+        "true",
         "table",
         "case",
         "trailing",
@@ -1900,7 +1958,7 @@ class DuckDBGenerator(generator.Generator):
         "for",
         "on",
         "distinct",
-        "false_p",
+        "false",
         "not",
         "constraint",
         "current_timestamp",
@@ -1916,6 +1974,51 @@ class DuckDBGenerator(generator.Generator):
         "using",
         "order",
         "current_catalog",
+        "describe",
+        "lambda",
+        "pivot",
+        "pivot_longer",
+        "pivot_wider",
+        "qualify",
+        "show",
+        "summarize",
+        "unpivot",
+        "anti",
+        "asof",
+        "at",
+        "authorization",
+        "binary",
+        "by",
+        "collation",
+        "columns",
+        "concurrently",
+        "cross",
+        "freeze",
+        "full",
+        "generated",
+        "glob",
+        "ilike",
+        "inner",
+        "is",
+        "isnull",
+        "join",
+        "left",
+        "like",
+        "map",
+        "natural",
+        "notnull",
+        "outer",
+        "overlaps",
+        "positional",
+        "right",
+        "semi",
+        "similar",
+        "struct",
+        "tablesample",
+        "try_cast",
+        "tuple",
+        "unpack",
+        "verbose",
     }
 
     UNWRAPPED_INTERVAL_VALUES = (exp.Literal, exp.Paren)
@@ -1933,6 +2036,7 @@ class DuckDBGenerator(generator.Generator):
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.ReturnsProperty: exp.Properties.Location.POST_ALIAS,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
+        exp.TriggerProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
     }
 
@@ -2350,6 +2454,27 @@ class DuckDBGenerator(generator.Generator):
 
         return self.sql(add_expr)
 
+    def unicodestring_sql(self, expression: exp.UnicodeString) -> str:
+        # DuckDB has no Unicode escape strings and doesn't read \u in a string, so the escapes
+        # are decoded into the characters, e.g. U&'d\0061t\0061' and U&'d!+000061ta' UESCAPE '!'
+        # are both 'data'
+        escape = expression.args.get("escape")
+        escape_char = re.escape(escape.name if isinstance(escape, exp.Expr) else "\\")
+        pattern = re.compile(
+            rf"{escape_char}(?:\+([0-9a-fA-F]{{6}})|([0-9a-fA-F]{{4}})|({escape_char}))"
+        )
+
+        def decode(match: re.Match[str]) -> str:
+            if match.group(3):
+                return match.group(3)
+            return chr(int(match.group(1) or match.group(2), 16))
+
+        # A character outside the BMP can be written as a UTF-16 surrogate pair
+        text = (
+            pattern.sub(decode, expression.name).encode("utf-16", "surrogatepass").decode("utf-16")
+        )
+        return self.sql(exp.Literal.string(text))
+
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
             return super().bytestring_sql(expression)
@@ -2514,9 +2639,6 @@ class DuckDBGenerator(generator.Generator):
         initial_value = expression.args.get("initial")
         merge_lambda = expression.args.get("merge")
 
-        if merge_lambda:
-            merge_lambda.set("colon", True)
-
         return self.func("list_reduce", array_arg, merge_lambda, initial_value)
 
     def zipf_sql(self, expression: exp.Zipf) -> str:
@@ -2641,7 +2763,7 @@ class DuckDBGenerator(generator.Generator):
         return self._greatest_least_sql(expression)
 
     def lambda_sql(self, expression: exp.Lambda, arrow_sep: str = "->", wrap: bool = True) -> str:
-        if expression.args.get("colon"):
+        if self.dialect.version >= (1, 3):
             prefix = "LAMBDA "
             arrow_sep = ":"
             wrap = False
@@ -2660,32 +2782,10 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("SOUNDEX is not supported in DuckDB")
         return self.func("SOUNDEX", expression.this)
 
-    def sortarray_sql(self, expression: exp.SortArray) -> str:
-        arr = expression.this
-        asc = expression.args.get("asc")
-        nulls_first = expression.args.get("nulls_first")
-
-        if not isinstance(asc, exp.Boolean) and not isinstance(nulls_first, exp.Boolean):
-            return self.func("LIST_SORT", arr, asc, nulls_first)
-
-        nulls_are_first = nulls_first == exp.true()
-        nulls_first_sql = exp.Literal.string("NULLS FIRST") if nulls_are_first else None
-
-        if not isinstance(asc, exp.Boolean):
-            return self.func("LIST_SORT", arr, asc, nulls_first_sql)
-
-        descending = asc == exp.false()
-
-        if not descending and not nulls_are_first:
-            return self.func("LIST_SORT", arr)
-        if not nulls_are_first:
-            return self.func("ARRAY_REVERSE_SORT", arr)
-        return self.func(
-            "LIST_SORT",
-            arr,
-            exp.Literal.string("DESC" if descending else "ASC"),
-            exp.Literal.string("NULLS FIRST"),
-        )
+    def placeholder_sql(self, expression: exp.Placeholder) -> str:
+        if isinstance(expression.this, exp.Identifier):
+            return f"${self.sql(expression, 'this')}"
+        return super().placeholder_sql(expression)
 
     def install_sql(self, expression: exp.Install) -> str:
         force = "FORCE " if expression.args.get("force") else ""
@@ -2915,7 +3015,7 @@ class DuckDBGenerator(generator.Generator):
         """
         min_val = expression.this
         max_val = expression.expression
-        gen = expression.args.get("gen")
+        gen = expression.args.get("gen") or expression.args.get("seed") or exp.Rand()
 
         # Determine if result should be integer (both bounds are integers).
         # We do this to emulate Snowflake's behavior, INT -> INT, FLOAT -> FLOAT
@@ -3119,6 +3219,10 @@ class DuckDBGenerator(generator.Generator):
 
         return timestamp
 
+    def after_limit_modifiers(self, expression: exp.Expr) -> list[str]:
+        locks = self.expressions(expression, key="locks", sep=" ")
+        return [f" {locks}" if locks else ""]
+
     def tablesample_sql(
         self,
         expression: exp.TableSample,
@@ -3149,10 +3253,26 @@ class DuckDBGenerator(generator.Generator):
             )
         return super().in_sql(expression)
 
-    def join_sql(self, expression: exp.Join) -> str:
+    def interval_sql(self, expression: exp.Interval) -> str:
+        # DuckDB truncates INTERVAL '1.5' DAY to 1 day, but keeps the fraction in INTERVAL '1.5 DAY'
+        this = expression.this
+        unit = expression.unit
+        if expression.args.get("fraction_in_string") and this and isinstance(unit, exp.Var):
+            return f"INTERVAL '{this.name} {self.sql(unit)}'"
+
+        return super().interval_sql(expression)
+
+    def join_sql(self, expression: exp.Join, join_op: str | None = None) -> str:
+        if expression.kind in ("MARK", "SINGLE") or (
+            expression.side == "RIGHT" and expression.is_semi_or_anti_join
+        ):
+            kind = "_".join(part for part in (expression.side, expression.kind) if part)
+            return super().join_sql(expression, join_op=f"JOIN BY (TYPE {kind})")
+
         if (
             not expression.args.get("using")
             and not expression.args.get("on")
+            and not expression.args.get("nearest")
             and not expression.method
             and (expression.kind in ("", "INNER", "OUTER"))
         ):
@@ -3164,7 +3284,7 @@ class DuckDBGenerator(generator.Generator):
             expression.set("side", None)
             expression.set("kind", None)
 
-        return super().join_sql(expression)
+        return super().join_sql(expression, join_op=join_op)
 
     def countif_sql(self, expression: exp.CountIf) -> str:
         if self.dialect.version >= (1, 2):
@@ -3571,6 +3691,9 @@ class DuckDBGenerator(generator.Generator):
 
     def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
         """
+        Spark's SLICE uses a length, so normalize negative starts before computing
+        the inclusive end index. Starts before the array produce an empty slice.
+
         Transpiles Snowflake's ARRAY_SLICE (0-indexed, exclusive end) to DuckDB's
         ARRAY_SLICE (1-indexed, inclusive end) by wrapping start and end in CASE
         expressions that adjust the index at query time:
@@ -3589,7 +3712,7 @@ class DuckDBGenerator(generator.Generator):
                     )
                     .else_(start)
                 )
-            if end is not None:
+            if end is not None and not expression.args.get("is_length"):
                 end = (
                     exp.case()
                     .when(
@@ -3599,6 +3722,20 @@ class DuckDBGenerator(generator.Generator):
                     .else_(end)
                 )
 
+        if expression.args.get("is_length") and start is not None and end is not None:
+            if not start.is_int or start.to_py() < 0:
+                size = exp.ArraySize(this=expression.this.copy())
+                start = (
+                    exp.case()
+                    .when(start < -size, size + 1)
+                    .when(start < 0, size + start + 1)
+                    .else_(start)
+                )
+
+            if start.is_int and end.is_int:
+                end = exp.Literal.number(start.to_py() + end.to_py() - 1)
+            else:
+                end = start + exp.cast(end, "BIGINT") - 1
         return self.func("ARRAY_SLICE", expression.this, start, end, expression.args.get("step"))
 
     def arrayszip_sql(self, expression: exp.ArraysZip) -> str:
@@ -4136,7 +4273,7 @@ class DuckDBGenerator(generator.Generator):
                     this=exp.Transform(
                         this=expression.this,
                         expression=exp.Lambda(
-                            this=exp.Coalesce(this=x, expressions=[null]),
+                            this=exp.Coalesce(this=exp.cast(x, "TEXT"), expressions=[null]),
                             expressions=[x],
                         ),
                     ),
@@ -4158,6 +4295,31 @@ class DuckDBGenerator(generator.Generator):
                     this=exp.DPipe(this=result, expression=separator), expression=arg
                 )
             return self.sql(result)
+
+        if expression.args.get("flatten") and any(
+            isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY) for arg in args
+        ):
+            arrays = []
+            for arg in args:
+                if isinstance(arg, exp.Array) or arg.is_type(exp.DType.ARRAY):
+                    arg = exp.cast(arg, "TEXT[]")
+                else:
+                    if (not arg.type or arg.is_type(exp.DType.UNKNOWN)) and not isinstance(
+                        arg, exp.CONSTANTS
+                    ):
+                        self.unsupported(
+                            "Cannot transpile CONCAT_WS with unknown argument types to DuckDB."
+                        )
+                    arg = exp.array(exp.cast(arg, exp.DType.TEXT))
+
+                arrays.append(arg)
+
+            array = (
+                exp.ArrayConcat(this=arrays[0], expressions=arrays[1:])
+                if len(arrays) > 1
+                else arrays[0]
+            )
+            return self.func("CONCAT_WS", separator, self.func("ARRAY_TO_STRING", array, separator))
 
         return super().concatws_sql(expression)
 
@@ -4447,10 +4609,8 @@ class DuckDBGenerator(generator.Generator):
         else:
             result = self.func("DATE_TRUNC", unit, date)
 
-        if (
-            expression.args.get("input_type_preserved")
-            and date.is_type(*exp.DataType.TEMPORAL_TYPES)
-            and not (is_date_unit(unit) and date.is_type(exp.DType.DATE))
+        if expression.args.get("input_type_preserved") and date.is_type(
+            *exp.DataType.TEMPORAL_TYPES
         ):
             return self.sql(exp.Cast(this=result, to=date.type))
 
@@ -4507,9 +4667,7 @@ class DuckDBGenerator(generator.Generator):
                 result = self.func("DATE_TRUNC", unit, date_time)
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
-            if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES) and not (
-                date_unit and timestamp.is_type(exp.DType.DATE)
-            ):
+            if timestamp.is_type(*exp.DataType.TEMPORAL_TYPES):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
         return result

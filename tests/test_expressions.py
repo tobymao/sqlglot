@@ -4,6 +4,7 @@ import sys
 import unittest
 
 from sqlglot import ParseError, alias, exp, parse_one
+from sqlglot.parser import logger as parser_logger
 
 
 class TestExprs(unittest.TestCase):
@@ -78,6 +79,45 @@ class TestExprs(unittest.TestCase):
             exp.Identifier(this="a"),
         )
 
+    def test_eq_case_sensitive_text(self):
+        for read, sql in (
+            ("postgres", "E'{}'"),
+            ("postgres", "$${}$$"),
+            ("postgres", "CREATE FUNCTION f() AS $${}$$"),
+            ("postgres", "U&'{}'"),
+            (None, "N'{}'"),
+            (None, "x -> '{}'"),
+            (None, "JSON_EXTRACT(x, '$..{}')"),
+            (None, "JSON_EXTRACT(x, '$[?(@.{})]')"),
+            (None, "JSON_EXTRACT(x, '$[(@.{})]')"),
+            (None, """JSON_EXTRACT(x, '$["{}", "b"]')"""),
+            ("singlestore", "x::?{}"),
+            (None, ":{}"),
+            ("mysql", "CREATE DEFINER=`{}`@`%` VIEW v AS SELECT 1"),
+        ):
+            with self.subTest(sql):
+                self.assertNotEqual(
+                    parse_one(sql.format("a"), read=read), parse_one(sql.format("A"), read=read)
+                )
+
+        # ClickHouse only builds these for exact-case names, so construct them directly
+        for agg in (exp.AnonymousAggFunc, exp.CombinedAggFunc):
+            self.assertNotEqual(
+                agg(this="sumMap", expressions=[]), agg(this="summap", expressions=[])
+            )
+        for agg in (exp.ParameterizedAgg, exp.CombinedParameterizedAgg):
+            self.assertNotEqual(
+                agg(this="quantileGK", expressions=[], params=[]),
+                agg(this="quantilegk", expressions=[], params=[]),
+            )
+
+        self.assertEqual(parse_one("x'FF'", read="postgres"), parse_one("x'ff'", read="postgres"))
+
+        # Command fallback: payload keeps its case, the keyword doesn't
+        with self.assertLogs(parser_logger):
+            self.assertNotEqual(parse_one("GRANT a"), parse_one("GRANT A"))
+            self.assertEqual(parse_one("VACUUM a"), parse_one("vacuum a"))
+
     def test_eq_on_same_instance_short_circuits(self):
         expr = parse_one("1")
         expr == expr
@@ -140,6 +180,11 @@ class TestExprs(unittest.TestCase):
         self.assertIsNone(column.find_ancestor(exp.Join))
 
     def test_to_dot(self):
+        column = parse_one("a.$1", dialect="snowflake")
+        self.assertEqual(column.to_dot().sql("snowflake"), "a.$1")
+        column.set("table", None)
+        self.assertEqual(column.to_dot(), column.this)
+
         orig = parse_one('a.b.c."d".e.f')
         self.assertEqual(".".join(str(p) for p in orig.parts), 'a.b.c."d".e.f')
 
@@ -371,6 +416,77 @@ class TestExprs(unittest.TestCase):
                 parse_one("select * from foo WHERE x > :int1 AND y IS :bool1"), int1=0, bool1=False
             ).sql(),
             "SELECT * FROM foo WHERE x > 0 AND y IS FALSE",
+        )
+
+        for sql, replacement, expected in (
+            (":x * 2", "a + b", "(a + b) * 2"),
+            ("(:x) * 2", "a + b", "(a + b) * 2"),
+            ("NOT :x", "a = 1 OR b = 2", "NOT (a = 1 OR b = 2)"),
+            ("-:x", "a + b", "-(a + b)"),
+            ("~:x", "a + b", "~(a + b)"),
+            (":x AND c", "a OR b", "(a OR b) AND c"),
+            ("? - c", "a - b", "(a - b) - c"),
+            ("c - ?", "a - b", "c - (a - b)"),
+            (":x + 1", "a * b", "(a * b) + 1"),
+            (":x[1]", "a + b", "(a + b)[1]"),
+            (":x AT TIME ZONE 'UTC'", "a + b", "(a + b) AT TIME ZONE 'UTC'"),
+            (":x + 1", "SELECT 1", "(SELECT 1) + 1"),
+            ("ABS(:x)", "a - b", "ABS(a - b)"),
+            ("SELECT :x", "a + b", "SELECT a + b"),
+            ("SELECT :x AS y", "a OR b", "SELECT a OR b AS y"),
+            ("x IN (:x, 1)", "a + b", "x IN (a + b, 1)"),
+            ("COALESCE(:x, 1)", "a + b", "COALESCE(a + b, 1)"),
+            (":x[1]", "a", "a[1]"),
+            (":x * 2", "ABS(a)", "ABS(a) * 2"),
+            (":x * 2", "a.b.c.d.e", "a.b.c.d.e * 2"),
+            (
+                "SELECT * FROM t WHERE EXISTS(:x)",
+                "SELECT 1",
+                "SELECT * FROM t WHERE EXISTS(SELECT 1)",
+            ),
+            (":x", "a OR b", "a OR b"),
+            ("x IN :x", "(1, 2)", "x IN (1, 2)"),
+            ("x IN :x", "(SELECT 1)", "x IN (SELECT 1)"),
+            (":x BETWEEN 1 AND 2", "a OR b", "(a OR b) BETWEEN 1 AND 2"),
+            ("c = :x", "a IN (1, 2)", "c = (a IN (1, 2))"),
+            ("SELECT * FROM :x", exp.to_table("db.t"), "SELECT * FROM db.t"),
+            ("x IS :x", exp.null(), "x IS NULL"),
+            (
+                "SELECT * FROM :x",
+                exp.values([(1, 2)], alias="v", columns=["a", "b"]),
+                "SELECT * FROM (VALUES (1, 2)) AS v(a, b)",
+            ),
+            (
+                "SELECT * FROM t ORDER BY :x",
+                exp.column("x").desc(),
+                "SELECT * FROM t ORDER BY x DESC",
+            ),
+            ("x = ANY(:x)", "SELECT 1", "x = ANY(SELECT 1)"),
+            ("d + :x", "INTERVAL 1 DAY", "d + INTERVAL '1' DAY"),
+            (":x", "SELECT 1", "SELECT 1"),
+            ("x IN :x", "SELECT 1", "x IN (SELECT 1)"),
+            ("x IN (:x)", "SELECT 1", "x IN (SELECT 1)"),
+            (":x IN (1)", "SELECT 1", "(SELECT 1) IN (1)"),
+            ("x >= ALL(:x)", "SELECT 1", "x >= ALL(SELECT 1)"),
+            ("x IN (:x, 3)", "SELECT 1", "x IN ((SELECT 1), 3)"),
+            ("SELECT * FROM :x", "SELECT 1", "SELECT * FROM (SELECT 1)"),
+            ("SELECT * FROM (:x) AS s", "SELECT 1", "SELECT * FROM (SELECT 1) AS s"),
+            ("SELECT :x AS y", "SELECT 1", "SELECT (SELECT 1) AS y"),
+            ("COALESCE(:x, 1)", "SELECT 1", "COALESCE((SELECT 1), 1)"),
+            ("WITH a AS (:x) SELECT * FROM a", "SELECT 1", "WITH a AS (SELECT 1) SELECT * FROM a"),
+            (":x UNION SELECT 2", "SELECT 1", "SELECT 1 UNION SELECT 2"),
+            ("CREATE TABLE t AS :x", "SELECT 1", "CREATE TABLE t AS SELECT 1"),
+        ):
+            with self.subTest(sql=sql, replacement=replacement):
+                replacement = exp.maybe_parse(replacement)
+                self.assertEqual(
+                    exp.replace_placeholders(parse_one(sql), replacement, x=replacement).sql(),
+                    expected,
+                )
+
+        self.assertIsInstance(
+            exp.replace_placeholders(parse_one(":x + 1"), x=parse_one("SELECT 1")).this,
+            exp.Subquery,
         )
 
     def test_function_building(self):
@@ -866,6 +982,22 @@ class TestExprs(unittest.TestCase):
         dot = exp.column("d", "c", "b", "a", fields=["e", "f"], quoted=True)
         self.assertEqual(dot.sql(), '"a"."b"."c"."d"."e"."f"')
 
+    def test_column_expression(self):
+        for sql in ("a.$1", "a.:name", "a.1", "a.*"):
+            with self.subTest(sql=sql):
+                expected = parse_one(sql, dialect="snowflake")
+                part = expected.this
+                column = exp.column(part, table="a")
+                self.assertEqual(column, expected)
+                self.assertIsNot(column.this, part)
+                self.assertIs(part.parent, expected)
+                self.assertIs(exp.column(part, table="a", copy=False).this, part)
+
+        parameter = parse_one("$1", dialect="snowflake")
+        dot = exp.column(parameter, table="a", fields=["b"])
+        self.assertIsInstance(dot, exp.Dot)
+        self.assertEqual(dot.sql("snowflake"), "a.$1.b")
+
     def test_text(self):
         column = parse_one("a.b.c.d.e")
         self.assertEqual(column.text("expression"), "e")
@@ -1128,6 +1260,23 @@ FROM foo""",
         )
         with self.assertRaises(ValueError):
             exp.values([(1, 2), (3, 4)], columns=["a"])
+
+    def test_ref_type_builder(self) -> None:
+        target = exp.Table(
+            this=exp.Identifier(this="Customer", quoted=True),
+            db=exp.Identifier(this="Sales", quoted=True),
+        )
+        datatype = exp.DType.REF.into_expr(expressions=[target])
+
+        self.assertEqual(datatype, exp.DataType.build('REF("Sales"."Customer")'))
+        self.assertEqual(datatype.sql("snowflake"), 'REF("Sales"."Customer")')
+        self.assertEqual(datatype.sql("bigquery"), "REF(`Sales`.`Customer`)")
+        self.assertEqual(datatype.sql("tsql"), "REF([Sales].[Customer])")
+        self.assertTrue(datatype.is_type(exp.DType.REF))
+        self.assertTrue(datatype.is_type('REF("Sales"."Customer")'))
+        self.assertFalse(datatype.is_type('REF("Sales"."Employee")'))
+        self.assertFalse(datatype.is_type(exp.DType.OBJECT, exp.DType.STRUCT))
+        self.assertEqual(exp.Expr.load(datatype.dump()), datatype)
 
     def test_data_type_builder(self):
         self.assertEqual(exp.DataType.build("TEXT").sql(), "TEXT")

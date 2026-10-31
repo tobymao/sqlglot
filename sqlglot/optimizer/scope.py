@@ -33,6 +33,7 @@ COLLECTIBLE_TYPES = (
     exp.Star,
     exp.TableColumn,
     exp.JoinHint,
+    exp.Comprehension,
 )
 
 
@@ -86,9 +87,11 @@ class Scope:
     _derived_tables: list[exp.Subquery]
     _udtfs: list[exp.UDTF]
     _tables: list[exp.Table]
+    _ordered_sources: list[exp.Expr]
     _ctes: list[exp.CTE]
     _subqueries: list[exp.Select | exp.SetOperation]
     _join_hints: list[exp.JoinHint]
+    _comprehensions: list[exp.Comprehension]
     _semi_anti_join_tables: set[str]
     _column_index: set[int]
     _selected_sources: dict[str, tuple[exp.Selectable, exp.Table | Scope]] | None
@@ -142,9 +145,11 @@ class Scope:
         self._derived_tables = []
         self._udtfs = []
         self._tables = []
+        self._ordered_sources = []
         self._ctes = []
         self._subqueries = []
         self._join_hints = []
+        self._comprehensions = []
         self._semi_anti_join_tables = set()
         self._column_index = set()
         self._selected_sources = None
@@ -178,6 +183,7 @@ class Scope:
 
     def _collect(self) -> None:
         self._tables = []
+        self._ordered_sources = []
         self._ctes = []
         self._subqueries = []
         self._derived_tables = []
@@ -186,6 +192,7 @@ class Scope:
         self._table_columns = []
         self._stars = []
         self._join_hints = []
+        self._comprehensions = []
         self._semi_anti_join_tables = set()
         self._column_index = set()
 
@@ -211,21 +218,29 @@ class Scope:
                 else:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):
-                parent = node.parent
-                if isinstance(parent, exp.Join) and parent.is_semi_or_anti_join:
+                if _is_semi_or_anti_join_rhs(node):
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
+                self._ordered_sources.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
             elif type(node) is exp.Lateral or (
                 isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
             ):
+                if _is_semi_or_anti_join_rhs(node):
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
                 self._udtfs.append(node)
+                self._ordered_sources.append(node)
             elif isinstance(node, exp.CTE):
                 self._ctes.append(node)
             elif _is_derived_table(node) and _is_from_or_join(node):
+                if _is_semi_or_anti_join_rhs(node):
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
                 self._derived_tables.append(t.cast(exp.Subquery, node))
+                self._ordered_sources.append(node)
             elif (
                 isinstance(node, exp.UNWRAPPED_QUERIES)
                 and not _is_from_or_join(node)
@@ -234,6 +249,8 @@ class Scope:
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
+            elif isinstance(node, exp.Comprehension):
+                self._comprehensions.append(node)
             elif isinstance(node, exp.Star) and (
                 node.args.get("except_") or not isinstance(node.parent, ROW_LEVEL_AGG_FUNCS)
             ):
@@ -277,6 +294,12 @@ class Scope:
         """
         self._ensure_collected()
         return self._tables
+
+    @property
+    def comprehensions(self) -> list[exp.Comprehension]:
+        """List of comprehensions in this scope."""
+        self._ensure_collected()
+        return self._comprehensions
 
     @property
     def ctes(self) -> list[exp.CTE]:
@@ -443,21 +466,22 @@ class Scope:
     @property
     def references(self) -> list[tuple[str, exp.Selectable]]:
         if self._references is None:
+            self._ensure_collected()
             self._references = []
 
-            for table in self.tables:
-                self._references.append((table.alias_or_name, table))
-            for _expr in itertools.chain(self.derived_tables, self.udtfs):
-                # TODO (mypyc): rebind to exp.Expr to avoid DerivedTable trait vtable dispatch
-                expression: exp.Expr = _expr
-                self._references.append(
-                    (
-                        _get_source_alias(expression),
+            # Sources are kept in walk order, which star expansion relies on
+            for expression in self._ordered_sources:
+                if isinstance(expression, exp.Table):
+                    self._references.append((expression.alias_or_name, expression))
+                else:
+                    self._references.append(
                         (
-                            expression if expression.args.get("pivots") else expression.unnest()
-                        ).assert_is(exp.Selectable),
+                            _get_source_alias(expression),
+                            (
+                                expression if expression.args.get("pivots") else expression.unnest()
+                            ).assert_is(exp.Selectable),
+                        )
                     )
-                )
 
         return self._references
 
@@ -713,8 +737,7 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
     elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
     elif isinstance(expression, exp.DDL):
-        # TODO (mypyc): change to ddl_expression = expression.expression
-        ddl_expression = expression.args.get("expression")
+        ddl_expression = expression.expression
         if isinstance(ddl_expression, exp.Query):
             yield from _traverse_ctes(scope)
             yield from _traverse_scope(Scope(ddl_expression, cte_sources=scope.cte_sources))
@@ -796,11 +819,16 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
             scope_type=ScopeType.SET_OPERATION,
         )
 
-        if isinstance(expression, exp.SetOperation):
+        # Use the scope's unwrapped expression rather than the operand itself so parenthesized
+        # left operands are descended into iteratively. Only descend while prev_scope is None,
+        # i.e. until the chain's leftmost query has been scoped; later scopes are paired as
+        # right operands.
+        inner = new_scope.expression
+        if prev_scope is None and isinstance(inner, exp.SetOperation):
             yield from _traverse_ctes(new_scope)
 
             set_op_scope_stack.append(new_scope)
-            expression_stack.extend([expression.expression, expression.this])
+            expression_stack.extend([inner.expression, inner.this])
             continue
 
         branch_scope: Scope | None = None
@@ -859,11 +887,13 @@ def _traverse_ctes(scope: Scope) -> Iterator[Scope]:
 def _is_derived_table(expression: exp.Expr) -> bool:
     """
     We represent (tbl1 JOIN tbl2) as a Subquery, but it's not really a "derived table",
-    as it doesn't introduce a new scope. If an alias is present, it shadows all names
-    under the Subquery, so that's one exception to this rule.
+    as it doesn't introduce a new scope. An alias shadows the names under the Subquery,
+    and a pivot changes its output columns, so both require a separate scope.
     """
     return isinstance(expression, exp.Subquery) and bool(
-        expression.alias or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
+        expression.alias
+        or expression.args.get("pivots")
+        or isinstance(expression.this, exp.UNWRAPPED_QUERIES)
     )
 
 
@@ -878,6 +908,15 @@ def _is_from_or_join(expression: exp.Expr) -> bool:
         parent = parent.parent
 
     return type(parent) in (exp.From, exp.Join)
+
+
+def _is_semi_or_anti_join_rhs(node: exp.Expr) -> bool:
+    """
+    Determine if `node` is the right-hand side source of a SEMI/ANTI join, whose columns
+    are only visible within the join's own ON clause, not the rest of the enclosing scope.
+    """
+    parent = node.parent
+    return isinstance(parent, exp.Join) and parent.is_semi_or_anti_join
 
 
 def _traverse_tables(scope: Scope) -> Iterator[Scope]:
@@ -908,13 +947,12 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             source_name = expression.alias_or_name
 
             if table_name in scope.sources and not expression.db:
-                # This is a reference to a parent source (e.g. a CTE), not an actual table, unless
-                # it is pivoted, because then we get back a new table and hence a new source.
+                # This is a reference to a parent source (e.g. a CTE), not an actual table. If
+                # it is pivoted, we also register the pivot's alias as a new table source.
+                sources[source_name] = scope.sources[table_name]
                 pivots = expression.args.get("pivots")
                 if pivots:
                     sources[pivots[-1].alias] = expression
-                else:
-                    sources[source_name] = scope.sources[table_name]
             elif source_name in sources:
                 sources[find_new_name(sources, table_name)] = expression
             else:

@@ -10,7 +10,7 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parsers.hive import HiveParser
-from sqlglot.parser import build_trim
+from sqlglot.parser import IsPredicatePrecedence, build_array_sort_nulls_last, build_trim
 from sqlglot.tokens import TokenType
 
 
@@ -32,6 +32,8 @@ def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
 
 
 class Spark2Parser(HiveParser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     NORMALIZE_DECIMAL_LITERALS = False
     DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = True
     TRIM_PATTERN_FIRST = True
@@ -43,6 +45,7 @@ class Spark2Parser(HiveParser):
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,
+        "ARRAY_SORT": build_array_sort_nulls_last,
         "BOOLEAN": build_as_cast("boolean"),
         "DATE": build_as_cast("date"),
         "DATE_TRUNC": lambda args: exp.TimestampTrunc(
@@ -77,7 +80,12 @@ class Spark2Parser(HiveParser):
         "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),
         "SHIFTRIGHT": binary_from_function(exp.BitwiseRightShift),
         "STRING": build_as_cast("string"),
-        "SLICE": exp.ArraySlice.from_arg_list,
+        "SLICE": lambda args: exp.ArraySlice(
+            this=seq_get(args, 0),
+            start=seq_get(args, 1),
+            end=seq_get(args, 2),
+            is_length=True,
+        ),
         "TIMESTAMP": build_as_cast("timestamp"),
         "TO_TIMESTAMP": lambda args, dialect: (
             build_as_cast("timestamp")(args)
@@ -113,10 +121,13 @@ class Spark2Parser(HiveParser):
     }
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
-        return (
-            self.expression(exp.Drop(tables=[self._parse_schema()], kind="COLUMNS"))
-            if self._match_text_seq("DROP", "COLUMNS")
-            else None
+        if not self._match_text_seq("DROP", "COLUMNS"):
+            return super()._parse_drop_column()
+
+        exists = self._parse_exists()
+        columns = self._parse_wrapped_csv(self._parse_field_def, optional=True)
+        return self.expression(
+            exp.Drop(kind="COLUMNS", tables=[exp.Schema(expressions=columns)], exists=exists)
         )
 
     def _pivot_column_names(self, aggregations: list[exp.Expr]) -> list[str]:

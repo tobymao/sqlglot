@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     build_timetostr_or_tochar,
 )
 from sqlglot.helper import seq_get
+from sqlglot.parser import IsPredicatePrecedence
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
@@ -83,6 +84,8 @@ def datetype_handler(args: list[exp.Expr], dialect: DialectType) -> exp.Expr:
 
 
 class DremioParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
+
     LOG_DEFAULTS_TO_LN = True
 
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {

@@ -11,11 +11,33 @@ from sqlglot.dialects.dialect import (
     build_timestamp_trunc,
 )
 from sqlglot.helper import is_int, seq_get
-from sqlglot.parser import binary_range_parser
+from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
+
+
+MAKE_INTERVAL_KWARGS = {
+    "years": "year",
+    "months": "month",
+    "weeks": "week",
+    "days": "day",
+    "hours": "hour",
+    "mins": "minute",
+    "secs": "second",
+}
+
+
+def _build_make_interval(args: list) -> exp.MakeInterval:
+    return exp.MakeInterval(
+        **{
+            MAKE_INTERVAL_KWARGS.get(value.this.name.lower(), key)
+            if isinstance(value, exp.Kwarg)
+            else key: value
+            for key, value in zip(exp.MakeInterval.arg_types, args)
+        }
+    )
 
 
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
@@ -84,7 +106,11 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 
 class PostgresParser(parser.Parser):
+    IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
+
     ALTER_DROP_REQUIRES_COLUMN = False
+    ALTER_TABLE_MIXED_ACTIONS = True
+    ALTER_COLUMN_TYPE_REQUIRES_KEYWORD = True
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT = True
 
     # The one-byte "char" type is distinct from CHAR, and it can only be referenced by
@@ -94,6 +120,9 @@ class PostgresParser(parser.Parser):
     PROPERTY_PARSERS = {
         **{k: v for k, v in parser.Parser.PROPERTY_PARSERS.items() if k != "INPUT"},
         "SET": lambda self: self.expression(exp.SetConfigProperty(this=self._parse_set())),
+        "TABLESPACE": lambda self: self.expression(
+            exp.TableSpaceProperty(this=self._parse_id_var())
+        ),
     }
 
     PLACEHOLDER_PARSERS = {
@@ -121,6 +150,7 @@ class PostgresParser(parser.Parser):
         "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
         "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
+        "MAKE_INTERVAL": _build_make_interval,
         "MAKE_TIME": exp.TimeFromParts.from_arg_list,
         "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
         "NOW": exp.CurrentTimestamp.from_arg_list,
@@ -129,9 +159,15 @@ class PostgresParser(parser.Parser):
         "TO_DATE": build_formatted_time(exp.StrToDate),
         "TO_TIMESTAMP": _build_to_timestamp,
         "UNNEST": exp.Explode.from_arg_list,
-        "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-        "SHA384": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(384)),
-        "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+        "SHA256": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(256)
+        ),
+        "SHA384": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(384)
+        ),
+        "SHA512": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(512)
+        ),
         "LEVENSHTEIN_LESS_EQUAL": _build_levenshtein_less_equal,
         "JSON_OBJECT_AGG": lambda args: exp.JSONObjectAgg(expressions=args),
         "JSONB_OBJECT_AGG": exp.JSONBObjectAgg.from_arg_list,
@@ -164,6 +200,7 @@ class PostgresParser(parser.Parser):
             exp.JSONArrayAgg(this=self._parse_lambda(), order=self._parse_order())
         ),
         "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
+        "JSON_VALUE": lambda self: self._parse_json_value(json_path=False),
     }
 
     BITWISE = {
@@ -331,8 +368,27 @@ class PostgresParser(parser.Parser):
 
         return self.expression(exp.Extract(this=part, expression=value))
 
-    def _parse_unique_key(self) -> exp.Expr | None:
-        return None
+    def _parse_unique(self) -> exp.UniqueColumnConstraint:
+        return self.expression(
+            exp.UniqueColumnConstraint(
+                nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),
+                this=self._parse_schema(),
+                include=self._parse_index_params(),
+                options=self._parse_key_constraint_options(),
+            )
+        )
+
+    def _parse_primary_key(
+        self,
+        wrapped_optional: bool = False,
+        in_props: bool = False,
+        named_primary_key: bool = False,
+    ) -> exp.PrimaryKeyColumnConstraint | exp.PrimaryKey:
+        this = super()._parse_primary_key(wrapped_optional, in_props, named_primary_key)
+        if isinstance(this, exp.PrimaryKeyColumnConstraint):
+            this.set("include", self._parse_index_params())
+            this.set("options", this.args["options"] + self._parse_key_constraint_options())
+        return this
 
     def _parse_jsonb_exists(self) -> exp.JSONBExists:
         return self.expression(

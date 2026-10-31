@@ -213,6 +213,13 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
     corresponding expression to avoid creating invalid column references.
     """
     if isinstance(expression, exp.Select) and expression.args.get("qualify"):
+        parent = expression.parent
+        if isinstance(parent, exp.Insert) and isinstance(parent.parent, exp.MultitableInserts):
+            # A FROM-first multi-table INSERT branch shares its parent's FROM, so it can't be wrapped
+            raise UnsupportedError(
+                "QUALIFY is not supported in a FROM-first multi-table INSERT branch"
+            )
+
         taken = set(expression.named_selects)
         for select in expression.selects:
             if not select.alias_or_name:
@@ -412,7 +419,7 @@ def explode_projection_to_unnest(
 
     def _explode_projection_to_unnest(expression: exp.Expr) -> exp.Expr:
         if isinstance(expression, exp.Select):
-            from sqlglot.optimizer.scope import Scope
+            from sqlglot.optimizer.scope import Scope, find_in_scope
 
             taken_select_names = set(expression.named_selects)
             taken_source_names = {name for name, _ in Scope(expression).references}
@@ -434,7 +441,7 @@ def explode_projection_to_unnest(
 
             # we use list here because expression.selects is mutated inside the loop
             for select in list(expression.selects):
-                explode = select.find(exp.Explode)
+                explode = find_in_scope(select, exp.Explode)
 
                 if explode:
                     if (
@@ -489,7 +496,7 @@ def explode_projection_to_unnest(
                         alias = select.replace(exp.alias_(select.this, "", copy=False))
                     else:
                         alias = select.replace(exp.alias_(select, ""))
-                        explode = alias.find(exp.Explode)
+                        explode = find_in_scope(alias, exp.Explode)
                         assert explode
 
                     is_posexplode = isinstance(explode, exp.Posexplode)

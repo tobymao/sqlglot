@@ -22,6 +22,26 @@ SELECT
   *
 FROM a;
 
+((SELECT 1 UNION SELECT 2) INTERSECT SELECT 3 UNION SELECT 4) INTERSECT SELECT 5;
+(
+  (
+    SELECT
+      1
+    UNION
+    SELECT
+      2
+  )
+  INTERSECT
+  SELECT
+    3
+  UNION
+  SELECT
+    4
+)
+INTERSECT
+SELECT
+  5;
+
 WITH cte1 AS (
     SELECT a, z and e AS b
     FROM cte

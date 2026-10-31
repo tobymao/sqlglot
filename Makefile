@@ -28,8 +28,8 @@ install-dev:
 	@if [ -f sqlglot-integration-tests/Makefile ]; then \
 		$(MAKE) -C sqlglot-integration-tests install; \
 	fi
+	$(PIP) uninstall $(if $(UV),,-y) sqlglotc 2>/dev/null || true
 	$(PIP) install -e ".[dev]"
-	$(PIP) uninstall -y sqlglotc 2>/dev/null || true
 	@if ! command -v gh >/dev/null 2>&1; then \
 		echo ""; \
 		echo "gh (GitHub CLI) is not installed. It is needed to auto-create PRs for integration tests."; \
@@ -42,20 +42,30 @@ install-dev:
 		fi; \
 	fi
 
-# sqlglotc requires Python 3.10+ (sqlglot-mypy 1.20+ dropped 3.9). On 3.9
+# sqlglotc requires Python 3.10+ (mypy 2.4+ dropped 3.9). On 3.9
 # we skip the C build; tests fall back to pure-Python sqlglot.
 PY_GE_310 := $(shell python -c "import sys; print(int(sys.version_info >= (3, 10)))")
 
 install-devc:
 	@if [ "$(PY_GE_310)" = "1" ]; then \
-		cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC); \
+		echo "Building sqlglotc (log: .sqlglotc-build.log)"; \
+		(cd sqlglotc && MYPYC_OPT=0 python setup.py build_ext --inplace -j $(NPROC)) > .sqlglotc-build.log 2>&1 || { \
+			status=$$?; \
+			echo "sqlglotc build failed. See .sqlglotc-build.log for details." >&2; \
+			exit $$status; \
+		}; \
 	else \
 		echo "Skipping sqlglotc build: requires Python 3.10+"; \
 	fi
 
 install-devc-release: clean
 	@if [ "$(PY_GE_310)" = "1" ]; then \
-		cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC); \
+		echo "Building sqlglotc (log: .sqlglotc-build.log)"; \
+		(cd sqlglotc && python setup.py build_ext --inplace -j $(NPROC)) > .sqlglotc-build.log 2>&1 || { \
+			status=$$?; \
+			echo "sqlglotc build failed. See .sqlglotc-build.log for details." >&2; \
+			exit $$status; \
+		}; \
 	else \
 		echo "Skipping sqlglotc build: requires Python 3.10+"; \
 	fi

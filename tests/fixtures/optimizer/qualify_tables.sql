@@ -146,6 +146,14 @@ SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = i
 SELECT * FROM ((tbl1 AS tbl1 JOIN tbl2 AS tbl2 ON id1 = id2 JOIN tbl3 AS tbl3 ON id1 = id3)) AS _0;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN c.db.tbl2 AS tbl2 ON id1 = id2 JOIN c.db.tbl3 AS tbl3 ON id1 = id3) AS _0;
 
+# title: join construct with joins on multiple levels of parentheses
+SELECT * FROM ((t1 CROSS JOIN t2) CROSS JOIN t3) AS t;
+SELECT * FROM (SELECT * FROM c.db.t1 AS t1 CROSS JOIN c.db.t2 AS t2 CROSS JOIN c.db.t3 AS t3) AS t;
+
+# title: join construct starting with a subquery
+SELECT * FROM ((SELECT * FROM t1) CROSS JOIN t2) AS t;
+SELECT * FROM (SELECT * FROM (SELECT * FROM c.db.t1 AS t1) AS _0 CROSS JOIN c.db.t2 AS t2) AS t;
+
 # title: join construct within join construct
 SELECT * FROM (tbl1 AS tbl1 JOIN (tbl2 AS tbl2 JOIN tbl3 AS tbl3 ON id2 = id3) AS _0 ON id1 = id3) AS _1;
 SELECT * FROM (SELECT * FROM c.db.tbl1 AS tbl1 JOIN (SELECT * FROM c.db.tbl2 AS tbl2 JOIN c.db.tbl3 AS tbl3 ON id2 = id3) AS _0 ON id1 = id3) AS _1;
@@ -310,6 +318,31 @@ SELECT generate_series FROM TABLE(GENERATE_SERIES(0, 10)) AS t(generate_series);
 # dialect: starrocks
 SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
 SELECT g FROM TABLE(GENERATE_SERIES(0, 10)) AS t(g);
+
+# title: Qualify TABLE(SPLIT_TO_TABLE()) with its default columns
+# dialect: snowflake
+SELECT value FROM TABLE(SPLIT_TO_TABLE('a.b', '.'));
+SELECT value FROM TABLE(SPLIT_TO_TABLE('a.b', '.')) AS _0(SEQ, INDEX, VALUE);
+
+# title: Qualify correlated TABLE(SPLIT_TO_TABLE()) with a table alias
+# dialect: snowflake
+SELECT s.value FROM t, TABLE(SPLIT_TO_TABLE(t.a, '.')) AS s;
+SELECT s.value FROM C.DB.t AS T, TABLE(SPLIT_TO_TABLE(t.a, '.')) AS s(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with its default columns
+# dialect: snowflake
+SELECT value FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.');
+SELECT value FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS _0(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with a table alias
+# dialect: snowflake
+SELECT s.value FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s;
+SELECT s.value FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(SEQ, INDEX, VALUE);
+
+# title: Qualify LATERAL SPLIT_TO_TABLE() with alias on table and columns
+# dialect: snowflake
+SELECT v FROM t, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(x, y, v);
+SELECT v FROM C.DB.t AS T, LATERAL SPLIT_TO_TABLE(t.a, '.') AS s(x, y, v);
 
 # title: Qualify JSONB_TO_RECORDSET with typed alias columns and canonicalize_table_aliases
 # dialect: postgres

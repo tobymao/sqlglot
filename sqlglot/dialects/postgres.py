@@ -44,6 +44,10 @@ class Postgres(Dialect):
         "FMSS": "%-S",  # Second
         "HH12": "%I",  # 09
         "HH24": "%H",  # 09
+        "iw": "%V",  # ISO 8601 week of year
+        "IW": "%V",  # ISO 8601 week of year
+        "iyyy": "%G",  # ISO 8601 week-numbering year
+        "IYYY": "%G",  # ISO 8601 week-numbering year
         "mi": "%M",  # zero padded minute
         "MI": "%M",  # zero padded minute
         "mm": "%m",  # 01
@@ -104,6 +108,7 @@ class Postgres(Dialect):
             "#-": TokenType.HASH_DASH,
             "|/": TokenType.PIPE_SLASH,
             "||/": TokenType.DPIPE_SLASH,
+            "^@": TokenType.CARET_AT,
             "BEGIN": TokenType.BEGIN,
             "BIGSERIAL": TokenType.BIGSERIAL,
             "CSTRING": TokenType.PSEUDO_TYPE,

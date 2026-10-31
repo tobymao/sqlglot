@@ -132,6 +132,31 @@ class SQLiteParser(parser.Parser):
         TokenType.MATCH: binary_range_parser(exp.Match),
     }
 
+    def _parse_is(self, this: exp.Expr | None) -> exp.Expr | None:
+        """SQLite's IS / IS NOT is a null-safe equality against any expression.
+
+        Other dialects only accept NULL, TRUE, FALSE or UNKNOWN on the right
+        side, so anything else is parsed as IS [NOT] DISTINCT FROM; each
+        transpiler then emits the syntax it supports (SQLite keeps IS / IS
+        NOT) (#8855).
+        """
+        this = super()._parse_is(this)
+
+        is_node = this
+        wrapped_in_not = False
+        if isinstance(this, exp.Not) and isinstance(this.this, exp.Is):
+            is_node = this.this
+            wrapped_in_not = True
+
+        if (
+            isinstance(is_node, exp.Is)
+            and not isinstance(is_node.expression, (exp.Null, exp.Boolean))
+        ):
+            cls = exp.NullSafeNEQ if wrapped_in_not else exp.NullSafeEQ
+            this = cls(this=is_node.this, expression=is_node.expression)
+
+        return this
+
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
         # Ordering comparisons bind above IS, but range predicates bind below it.
         this = self._parse_bitwise()

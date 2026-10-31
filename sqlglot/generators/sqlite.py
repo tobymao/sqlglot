@@ -128,6 +128,12 @@ class SQLiteGenerator(generator.Generator):
         exp.DType.VARBINARY: "BLOB",
     }
 
+    def nullsafeeq_sql(self, expression: exp.NullSafeEQ) -> str:
+        return self.binary(expression, "IS")
+
+    def nullsafeneq_sql(self, expression: exp.NullSafeNEQ) -> str:
+        return self.binary(expression, "IS NOT")
+
     TOKEN_MAPPING = {
         TokenType.AUTO_INCREMENT: "AUTOINCREMENT",
     }

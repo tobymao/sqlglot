@@ -84,7 +84,10 @@ def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
         return False
 
     _, join_keys, _ = join_condition(join)
-    remaining_unique_outputs = unique_outputs - {c.name for c in join_keys}
+    # A transformation such as CAST can map distinct values to the same join key.
+    remaining_unique_outputs = unique_outputs - {
+        c.name for c in join_keys if isinstance(c, exp.Column)
+    }
     return not remaining_unique_outputs
 
 

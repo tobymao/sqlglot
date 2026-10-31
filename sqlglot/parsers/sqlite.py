@@ -7,6 +7,12 @@ from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import Token, TokenType
 
 
+def _build_date(args: list) -> exp.Date | exp.Anonymous:
+    if len(args) <= 1:
+        return exp.Date.from_arg_list(args)
+    return exp.Anonymous(this="DATE", expressions=args)
+
+
 def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
         args.append(exp.CurrentTimestamp())
@@ -89,6 +95,7 @@ class SQLiteParser(parser.Parser):
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
+        "DATE": _build_date,
         "DATETIME": lambda args: exp.Anonymous(this="DATETIME", expressions=args),
         "EDITDIST3": exp.Levenshtein.from_arg_list,
         "JSON_EXTRACT": _build_json_extract,

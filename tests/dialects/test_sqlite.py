@@ -204,6 +204,22 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT DATE()")
         self.validate_identity("SELECT DATE('now', 'start of month', '+1 month', '-1 day')")
         self.validate_all(
+            "SELECT DATE('2020-01-31', '+1 month')",
+            read={"sqlite": "SELECT DATE('2020-01-31', '+1 month')"},
+            write={
+                "sqlite": "SELECT DATE('2020-01-31', '+1 month')",
+                "duckdb": "SELECT DATE('2020-01-31', '+1 month')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+            read={"sqlite": "SELECT DATE('2020-03-15', 'start of month', '+1 day')"},
+            write={
+                "sqlite": "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+                "duckdb": "SELECT DATE('2020-03-15', 'start of month', '+1 day')",
+            },
+        )
+        self.validate_all(
             "SELECT DATE(d, '1 DAY') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL 1 DAY) FROM t",

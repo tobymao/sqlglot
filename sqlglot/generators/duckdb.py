@@ -111,7 +111,7 @@ def _apply_base64_alphabet_replacements(
     reverse: bool = False,
 ) -> exp.Expr:
     """
-    Apply base64 alphabet character replacements.
+    Translate base64 alphabet characters without cascading replacements.
 
     Base64 alphabet can be 1-3 chars: 1st = index 62 ('+'), 2nd = index 63 ('/'), 3rd = padding ('=').
     zip truncates to the shorter string, so 1-char alphabet only replaces '+', 2-char replaces '+/', etc.
@@ -123,14 +123,19 @@ def _apply_base64_alphabet_replacements(
                  If True, replace custom with default (decode)
     """
     if isinstance(alphabet, exp.Literal) and alphabet.is_string:
+        source, target = "", ""
         for default_char, new_char in zip("+/=", alphabet.this):
             if new_char != default_char:
-                find, replace = (new_char, default_char) if reverse else (default_char, new_char)
-                result = exp.Replace(
-                    this=result,
-                    expression=exp.Literal.string(find),
-                    replacement=exp.Literal.string(replace),
-                )
+                source += default_char
+                target += new_char
+        if source:
+            if reverse:
+                source, target = target, source
+            result = exp.Translate(
+                this=result,
+                from_=exp.Literal.string(source),
+                to=exp.Literal.string(target),
+            )
     return result
 
 
@@ -139,7 +144,7 @@ def _base64_decode_sql(self: DuckDBGenerator, expression: exp.Expr, to_string: b
     Transpile Snowflake BASE64_DECODE_STRING/BINARY to DuckDB.
 
     DuckDB uses FROM_BASE64() which returns BLOB. For string output, wrap with DECODE().
-    Custom alphabets require REPLACE() calls to convert to standard base64.
+    Custom alphabets require TRANSLATE() to convert to standard base64.
     """
     input_expr = expression.this
     alphabet = expression.args.get("alphabet")

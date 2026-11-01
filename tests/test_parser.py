@@ -1533,3 +1533,25 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT " + ",".join(f"x={i}" for i in range(100)), max_nodes=5)
         self.assertIsInstance(parse_one("SELECT 1, 2, 3"), exp.Select)
+
+    def test_parser_deeply_nested_raises_parse_error(self) -> None:
+        # 5000 nested parentheses exceed Python's default recursion limit.
+        # Before the fix, this raised RecursionError and crashed the worker.
+        sql = "(" * 5000 + "1" + ")" * 5000
+        with self.assertRaises(ParseError):
+            parse_one(sql)
+
+    def test_try_parse_recursion_does_not_cascade(self) -> None:
+        parser = Parser()
+        parser._recursion_error = True
+
+        called = []
+
+        def should_not_be_called():
+            called.append(True)
+            return exp.Literal.number(1)
+
+        result = parser._try_parse(should_not_be_called)
+
+        self.assertIsNone(result)
+        self.assertEqual(called, [])

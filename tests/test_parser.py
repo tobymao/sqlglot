@@ -1533,3 +1533,17 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("SELECT " + ",".join(f"x={i}" for i in range(100)), max_nodes=5)
         self.assertIsInstance(parse_one("SELECT 1, 2, 3"), exp.Select)
+
+    def test_describe_followed_by_dot(self):
+        # https://github.com/tobymao/sqlglot/issues/8870
+        for dialect in (None, "spark", "mysql", "snowflake"):
+            for sql in ("DESC.", "DESCRIBE.", "DESC. ;", "DESC ."):
+                with self.subTest(dialect=dialect, sql=sql):
+                    with self.assertRaises(ParseError):
+                        parse_one(sql, read=dialect)
+
+        # A style/kind keyword used as a db name must still work
+        self.assertEqual(
+            parse_one("DESCRIBE history.tbl", read="spark").sql("spark"),
+            "DESCRIBE history.tbl",
+        )

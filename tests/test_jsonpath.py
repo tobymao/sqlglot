@@ -38,6 +38,13 @@ class TestJsonpath(unittest.TestCase):
                 with self.assertRaises(ParseError):
                     parse(selector)
 
+    def test_invalid_integer_index_raises_parse_error(self):
+        for dialect in (None, "snowflake"):
+            for selector in ("$[2E]", "$[2e]", "$[1e5]", "$[-2E]", "$[-]", "$[1:2E]"):
+                with self.subTest(f"{selector} ({dialect})"):
+                    with self.assertRaises(ParseError):
+                        parse(selector, dialect=dialect)
+
     def test_identity(self):
         for selector, expected in (
             ("$.select", "$.select"),

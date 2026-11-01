@@ -113,7 +113,10 @@ def parse(path: str, dialect: DialectType = None) -> exp.JSONPath:
             number += token.text
 
         if number:
-            return int(number)
+            try:
+                return int(number)
+            except ValueError as e:
+                raise ParseError(_error(f"Invalid integer index: {number}")) from e
 
         return False
 

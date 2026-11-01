@@ -180,6 +180,7 @@ class BigQuery(Dialect):
         QUOTES = ["'", '"', '"""', "'''"]
         COMMENTS = ["--", "#", ("/*", "*/")]
         IDENTIFIERS = ["`"]
+        IDENTIFIER_ESCAPES = ["\\"]
         STRING_ESCAPES = ["\\"]
 
         HEX_STRINGS = [("0x", ""), ("0X", "")]

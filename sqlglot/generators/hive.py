@@ -274,6 +274,7 @@ class HiveGenerator(generator.Generator):
         exp.DType.TIME: "TIMESTAMP",
         exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
         exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+        exp.DType.UNION: "UNIONTYPE",
         exp.DType.UTINYINT: "SMALLINT",
         exp.DType.VARBINARY: "BINARY",
     }
@@ -517,6 +518,15 @@ class HiveGenerator(generator.Generator):
                 size = int(size_expression.name)
                 expression.set("this", exp.DType.FLOAT if size <= 32 else exp.DType.DOUBLE)
                 expression.set("expressions", None)
+        elif expression.is_type(exp.DType.UNION):
+            # Hive's UNIONTYPE members are unnamed, e.g. DuckDB's UNION(a INT) -> UNIONTYPE<INT>
+            expression.set(
+                "expressions",
+                [
+                    e.args["kind"] if isinstance(e, exp.ColumnDef) and e.args.get("kind") else e
+                    for e in expression.expressions
+                ],
+            )
         return super().datatype_sql(expression)
 
     def version_sql(self, expression: exp.Version) -> str:

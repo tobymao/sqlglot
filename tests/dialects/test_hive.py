@@ -252,7 +252,6 @@ class TestHive(Validator):
         # Column definitions we can't parse yet keep falling back to a Command
         for sql in (
             "ALTER TABLE t REPLACE COLUMNS (a INT COMMENT 'it''s')",
-            "ALTER TABLE t REPLACE COLUMNS (a UNIONTYPE<INT, STRING>)",
             "ALTER TABLE t REPLACE COLUMNS (a TIMESTAMPLOCALTZ)",
         ):
             with self.subTest(sql):
@@ -1089,6 +1088,23 @@ class TestHive(Validator):
             "CAST(a AS BIT)",
             write={
                 "hive": "CAST(a AS BOOLEAN)",
+            },
+        )
+        self.validate_identity("CREATE TABLE t (u UNIONTYPE<INT, STRING>)")
+        self.validate_identity("CAST(x AS UNIONTYPE<INT, ARRAY<STRING>, STRUCT<a: INT>>)")
+        self.validate_identity("ALTER TABLE t REPLACE COLUMNS (a UNIONTYPE<INT, STRING>)")
+        self.validate_identity("SELECT 1 UNION SELECT 2")
+        self.assertTrue(
+            exp.DataType.build("UNIONTYPE<INT, STRING>", dialect="hive").is_type(exp.DType.UNION)
+        )
+        self.validate_all(
+            "CAST(x AS UNIONTYPE<INT, STRING>)",
+            read={
+                "duckdb": "CAST(x AS UNION(a INT, b TEXT))",
+            },
+            write={
+                "hive": "CAST(x AS UNIONTYPE<INT, STRING>)",
+                "spark": "CAST(x AS UNIONTYPE<INT, STRING>)",
             },
         )
 

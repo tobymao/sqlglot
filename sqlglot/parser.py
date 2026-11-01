@@ -2190,7 +2190,7 @@ class Parser:
                 self.raise_error(error_message)
         return expression
 
-        def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> T | None:
+    def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> T | None:
         index = self._index
         error_level = self.error_level
         this: T | None = None

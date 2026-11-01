@@ -148,9 +148,8 @@ class SQLiteParser(parser.Parser):
             is_node = this.this
             wrapped_in_not = True
 
-        if (
-            isinstance(is_node, exp.Is)
-            and not isinstance(is_node.expression, (exp.Null, exp.Boolean))
+        if isinstance(is_node, exp.Is) and not isinstance(
+            is_node.expression, (exp.Null, exp.Boolean)
         ):
             cls = exp.NullSafeNEQ if wrapped_in_not else exp.NullSafeEQ
             this = cls(this=is_node.this, expression=is_node.expression)

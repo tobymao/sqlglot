@@ -396,6 +396,7 @@ class Parser:
         "_chunk_index",
         "_tokens_size",
         "_node_count",
+        "_recursion_error",
     )
 
     FUNCTIONS: t.ClassVar[dict[str, t.Callable]] = {
@@ -2046,6 +2047,7 @@ class Parser:
         self._chunks: list[list[Token]] = []
         self._chunk_index: i64 = 0
         self._node_count: int = 0
+        self._recursion_error: bool = False
 
     def reset(self) -> None:
         self.sql = ""
@@ -2061,6 +2063,7 @@ class Parser:
         self._chunks = []
         self._chunk_index = 0
         self._node_count = 0
+        self._recursion_error = False
 
     def _advance(self, times: i64 = 1) -> None:
         index = self._index + times
@@ -2187,15 +2190,22 @@ class Parser:
                 self.raise_error(error_message)
         return expression
 
-    def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> T | None:
+        def _try_parse(self, parse_method: t.Callable[[], T], retreat: bool = False) -> T | None:
         index = self._index
         error_level = self.error_level
         this: T | None = None
+
+        if self._recursion_error:
+            self._retreat(index)
+            return None
 
         self.error_level = ErrorLevel.IMMEDIATE
         try:
             this = parse_method()
         except ParseError:
+            this = None
+        except RecursionError:
+            self._recursion_error = True
             this = None
         finally:
             if not this or retreat:
@@ -2336,7 +2346,16 @@ class Parser:
 
         self._chunks = chunks
 
-        return self._parse_batch_statements(parse_method=parse_method, sep_first_statement=False)
+        try:
+            return self._parse_batch_statements(
+                parse_method=parse_method, sep_first_statement=False
+            )
+        except RecursionError:
+            self._recursion_error = True
+            raise ParseError(
+                "Maximum recursion depth exceeded while parsing SQL. "
+                "The input may be too deeply nested."
+            ) from None
 
     def _warn_unsupported(self) -> None:
         if self._tokens_size <= 1:

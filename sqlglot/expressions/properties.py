@@ -222,6 +222,10 @@ class OutputModelProperty(Property):
     arg_types = {"this": True}
 
 
+class InteractiveProperty(Property):
+    arg_types = {}
+
+
 class IsolatedLoadingProperty(Property):
     arg_types = {"no": False, "concurrent": False, "target": False}
 

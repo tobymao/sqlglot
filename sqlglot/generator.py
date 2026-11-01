@@ -765,6 +765,7 @@ class Generator:
         exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
         exp.IncludeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.InteractiveProperty: exp.Properties.Location.UNSUPPORTED,
         exp.IsolatedLoadingProperty: exp.Properties.Location.POST_NAME,
         exp.JournalProperty: exp.Properties.Location.POST_NAME,
         exp.LanguageProperty: exp.Properties.Location.POST_SCHEMA,

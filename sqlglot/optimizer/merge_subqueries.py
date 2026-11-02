@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.helpers import is_implicit_group_by_all
+from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -231,6 +231,28 @@ def _mergeable(
     outer_args = outer.args
     inner_name = from_or_join.alias_or_name
 
+    def _constant_projection_empties_group_by_all(column_free_aliases: set[str]) -> bool:
+        """
+        GROUP BY ALL infers its keys from the SELECT list, but engines (e.g. DuckDB) drop any
+        column-free SELECT item from that inferred set, unlike a column reference to the same
+        constant. Only unsafe if inlining would empty out every remaining key; a constant key
+        beside a real column key is harmless.
+        """
+        if not column_free_aliases or not is_implicit_group_by_all(t.cast(exp.Select, outer)):
+            return False
+
+        windows = outer_args.get("windows")
+        for s in t.cast(exp.Select, outer).selects:
+            if projection_has_aggregate(s, windows):
+                continue
+            if any(
+                column.table != inner_name or column.name not in column_free_aliases
+                for column in find_all_in_scope(s, exp.Column)
+            ):
+                return False
+
+        return True
+
     def _window_projection_blocks_merge(window_aliases: set[str]) -> bool:
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
@@ -378,6 +400,7 @@ def _mergeable(
     # Window tree walks, and precomputes what the checks below need per-projection.
     window_aliases: set[str] = set()
     number_literal_aliases: set[str] = set()
+    column_free_aliases: set[str] = set()
     projections: dict[str, exp.Expr] = {}
 
     for s in inner_select.selects:
@@ -385,14 +408,20 @@ def _mergeable(
         projections[name] = s
         if s.unalias().is_number:
             number_literal_aliases.add(name)
+        has_column = False
         for node in s.walk():
             if isinstance(node, (exp.AggFunc, exp.Select, *exp.SET_RETURNING_FUNCTIONS)):
                 return False
             if isinstance(node, exp.Window):
                 window_aliases.add(name)
+            if isinstance(node, exp.Column):
+                has_column = True
+        if not has_column:
+            column_free_aliases.add(name)
 
     return (
-        not _outer_select_joins_on_inner_select_join(projections)
+        not _constant_projection_empties_group_by_all(column_free_aliases)
+        and not _outer_select_joins_on_inner_select_join(projections)
         and not _window_projection_blocks_merge(window_aliases)
         and not _literal_group_unmergeable(number_literal_aliases)
         and not _literal_in_order_by(number_literal_aliases)

@@ -104,6 +104,14 @@ def unnest(select, parent_select, next_alias_name):
             )
         ).from_(select.subquery(inner_alias))
 
+    if (
+        isinstance(predicate, (exp.In, exp.Any))
+        and not select.args.get("group")
+        and not find_in_scope(select.selects[0], exp.AggFunc)
+        and find_in_scope(select.selects[0], exp.Anonymous)
+    ):
+        return
+
     alias = next_alias_name()
 
     # This subquery returns a scalar and can just be converted to a cross join

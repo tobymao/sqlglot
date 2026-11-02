@@ -38,6 +38,13 @@ class TestJsonpath(unittest.TestCase):
                 with self.assertRaises(ParseError):
                     parse(selector)
 
+    def test_non_decimal_index_raises_parse_error(self):
+        # An exponent-form array index must raise ParseError, not ValueError.
+        for selector in ("$[2E]", "$[1e5]", "$[-2E]"):
+            with self.subTest(selector):
+                with self.assertRaises(ParseError):
+                    parse(selector)
+
     def test_identity(self):
         for selector, expected in (
             ("$.select", "$.select"),

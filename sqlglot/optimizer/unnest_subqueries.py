@@ -487,8 +487,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             parent_predicate, exp.paren(exp.and_(parent_predicate.copy(), right, copy=False))
         )
 
+    group = select.args.get("group")
     parent_select.join(
-        select.group_by(*group_by, copy=False),
+        select.group_by(
+            *(key for key in group_by if not group or key not in group.expressions), copy=False
+        ),
         # A grouped key is constant per group, so any predicate on it can be checked in the join
         on=[predicate for key, _, predicate in keys if key in group_by],
         join_type="LEFT",

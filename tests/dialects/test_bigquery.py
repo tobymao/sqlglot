@@ -23,6 +23,26 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_identifier_escapes(self):
+        for escaped, name in (
+            (r"a\nb", "a\nb"),
+            (r"a\rb", "a\rb"),
+            (r"a\tb", "a\tb"),
+            (r"a\ab", "a\ab"),
+            (r"a\bb", "a\bb"),
+            (r"a\fb", "a\fb"),
+            (r"a\vb", "a\vb"),
+            (r"a\x00b", "a\x00b"),
+            (r"a\\nb", r"a\nb"),
+            (r"a\\\n\`b", "a\\\n`b"),
+        ):
+            with self.subTest(escaped):
+                sql = f"SELECT `{escaped}` AS result FROM (SELECT 1 AS `{escaped}`)"
+                expression = self.validate_identity(sql)
+                self.assertEqual(next(expression.find_all(exp.Column)).name, name)
+                pretty = expression.sql("bigquery", pretty=True)
+                self.assertEqual(self.parse_one(pretty), expression)
+
     def test_isnull_alias(self):
         self.validate_identity("SELECT 0 isnull", "SELECT 0 AS isnull")
         self.validate_identity(

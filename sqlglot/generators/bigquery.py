@@ -333,10 +333,6 @@ def _json_extract_sql(self: BigQueryGenerator, expression: JSON_EXTRACT_TYPE) ->
 
 
 class BigQueryGenerator(generator.Generator):
-    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-        super().__init__(*args, **kwargs)
-        self._escaped_identifier_end = r"\`"
-
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
@@ -686,6 +682,17 @@ class BigQueryGenerator(generator.Generator):
         "with",
         "within",
     }
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._escaped_identifier_end = r"\`"
+
+        # Escape existing backslashes before introducing new escape sequences.
+        self._identifier_escaped_sequences = {
+            **self._identifier_escaped_sequences,
+            **self.dialect.ESCAPED_SEQUENCES,
+        }
 
     def frombase_sql(self, expression: exp.FromBase) -> str:
         # Hex is the only base BigQuery can cast from, and the sign goes before the prefix, e.g. -0xff

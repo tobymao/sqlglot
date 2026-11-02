@@ -2886,15 +2886,16 @@ class Generator:
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
             query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
+            for key in ("order", "limit", "offset"):
+                query.set(key, expression.args.get(key))
             subquery = query.subquery(alias_node and alias_node.this, copy=False)
             subquery.set("pivots", expression.args.get("pivots"))
-            expression.set("pivots", None)
             return self.subquery_sql(subquery)
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
-        return f"({unions}){alias}{pivots}"
+        return f"({self.query_modifiers(expression, unions)}){alias}{pivots}"
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")

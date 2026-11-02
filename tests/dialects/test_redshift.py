@@ -652,6 +652,33 @@ FROM (
                 "": "INSERT INTO t(a, b) SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
             },
         )
+        self.validate_all(
+            "SELECT * FROM ((SELECT 1 UNION ALL SELECT 2 ORDER BY 1 LIMIT 1 OFFSET 1)) AS t(x)",
+            read={
+                "postgres": "SELECT * FROM ((VALUES (1), (2)) ORDER BY 1 LIMIT 1 OFFSET 1) AS t(x)",
+            },
+        )
+        self.validate_all(
+            """SELECT
+  *
+FROM (
+  (
+    SELECT
+      1
+    UNION ALL
+    SELECT
+      2
+    ORDER BY
+      1
+    LIMIT 1
+    OFFSET 1
+  )
+) AS t(x)""",
+            read={
+                "postgres": "SELECT * FROM ((VALUES (1), (2)) ORDER BY 1 LIMIT 1 OFFSET 1) AS t(x)",
+            },
+            pretty=True,
+        )
         self.validate_identity("CREATE TABLE table_backup BACKUP NO AS SELECT * FROM event")
         self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")
         self.validate_identity("CREATE TABLE table_backup (i INTEGER, b VARCHAR) BACKUP NO")

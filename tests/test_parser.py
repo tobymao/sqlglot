@@ -1,5 +1,6 @@
 import time
 import unittest
+from decimal import MAX_EMAX
 from unittest.mock import patch
 
 from sqlglot import Parser, exp, parse, parse_one
@@ -832,6 +833,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.comments, ["comment2"])
         self.assertEqual(expression.this.comments, ["comment3"])
         self.assertEqual(expression.args["with_"].comments, ["comment1.1", "comment1.2"])
+
+    def test_large_exponent_array_index(self):
+        sql = f"SELECT arr[1E{MAX_EMAX + 1}]"
+        for dialect in ("postgres", "duckdb"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(parse_one(sql, read=dialect).sql(dialect), sql)
 
     def test_type_literals(self):
         self.assertEqual(parse_one("int 1"), parse_one("CAST(1 AS INT)"))

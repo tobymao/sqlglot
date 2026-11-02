@@ -380,6 +380,36 @@ class TestExprs(unittest.TestCase):
             "SELECT * FROM READ_CSV('foo') AS r",
         )
 
+    def test_replace_tables_function_copy(self):
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                original = parse_one("SELECT * FROM f(1) AS t", dialect="clickhouse")
+                before = original.copy()
+                call = original.find(exp.Anonymous)
+                result = exp.replace_tables(
+                    original, {"f": "db.g"}, dialect="clickhouse", copy=copy
+                )
+                self.assertEqual(result.sql("clickhouse"), "SELECT * FROM db.g(1) AS t /* f */")
+                if copy:
+                    self.assertEqual(original, before)
+                    self.assertIsNot(result.find(exp.Anonymous), call)
+                else:
+                    self.assertIs(result, original)
+                    self.assertIs(result.find(exp.Anonymous), call)
+                for node in result.walk():
+                    for child in node.iter_expressions():
+                        self.assertIs(child.parent, node)
+
+    def test_replace_tables_builtin_parent(self):
+        for copy in (True, False):
+            with self.subTest(copy=copy):
+                original = parse_one("SELECT * FROM read_csv('foo') AS r", dialect="duckdb")
+                result = exp.replace_tables(original, {"foo": "c.d"}, dialect="duckdb", copy=copy)
+                self.assertEqual(result, original)
+                for node in result.walk():
+                    for child in node.iter_expressions():
+                        self.assertIs(child.parent, node)
+
     def test_expand(self):
         self.assertEqual(
             exp.expand(

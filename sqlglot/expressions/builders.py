@@ -845,6 +845,10 @@ def replace_tables(
 
     def _replace_tables(node: Expr) -> Expr:
         if isinstance(node, Table) and node.meta_get("replace") is not False:
+            call = node.this
+            if isinstance(call, Func) and not isinstance(call, Anonymous):
+                return node
+
             original = normalize_table_name(node, dialect=dialect)
             new_name = mapping.get(original)
 
@@ -854,13 +858,7 @@ def replace_tables(
                     **{k: v for k, v in node.args.items() if k not in TABLE_PARTS},
                     dialect=dialect,
                 )
-                # handle table function
-                call = node.this
-                if isinstance(call, Func):
-                    # avoid mangling built-in functions
-                    if not isinstance(call, Anonymous):
-                        return node
-                    call = call.copy()
+                if isinstance(call, Anonymous):
                     call.set("this", table.this)
                     table.set("this", call)
                 table.add_comments([original])

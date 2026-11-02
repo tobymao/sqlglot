@@ -539,6 +539,9 @@ ORDER BY
         self.validate_identity(
             "SELECT attr AS attr, JSON_TYPEOF(val) AS value_type FROM customer_orders_lineitem AS c, UNPIVOT c.c_orders AS val AT attr WHERE c_custkey = 9451"
         )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2) AS t PIVOT(SUM(x) FOR x IN (1))"
+        )
         self.validate_identity("SELECT JSON_PARSE('[]')")
 
         self.validate_identity("SELECT ARRAY(1, 2, 3)")
@@ -648,6 +651,33 @@ FROM (
             read={
                 "": "INSERT INTO t(a, b) SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS t (a, b)",
             },
+        )
+        self.validate_all(
+            "SELECT * FROM ((SELECT 1 UNION ALL SELECT 2 ORDER BY 1 LIMIT 1 OFFSET 1)) AS t(x)",
+            read={
+                "postgres": "SELECT * FROM ((VALUES (1), (2)) ORDER BY 1 LIMIT 1 OFFSET 1) AS t(x)",
+            },
+        )
+        self.validate_all(
+            """SELECT
+  *
+FROM (
+  (
+    SELECT
+      1
+    UNION ALL
+    SELECT
+      2
+    ORDER BY
+      1
+    LIMIT 1
+    OFFSET 1
+  )
+) AS t(x)""",
+            read={
+                "postgres": "SELECT * FROM ((VALUES (1), (2)) ORDER BY 1 LIMIT 1 OFFSET 1) AS t(x)",
+            },
+            pretty=True,
         )
         self.validate_identity("CREATE TABLE table_backup BACKUP NO AS SELECT * FROM event")
         self.validate_identity("CREATE TABLE table_backup BACKUP YES AS SELECT * FROM event")

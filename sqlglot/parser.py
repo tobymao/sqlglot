@@ -5211,6 +5211,7 @@ class Parser:
             return unnest
 
         if values := self._parse_derived_table_values():
+            values.set("pivots", self._parse_pivots())
             return values
 
         if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):

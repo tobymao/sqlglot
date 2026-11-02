@@ -454,7 +454,13 @@ class ParseTime(Expression, Func):
 
 
 class StrToDate(Expression, Func):
-    arg_types = {"this": True, "format": False, "safe": False, "default_year": False}
+    arg_types = {
+        "this": True,
+        "format": False,
+        "safe": False,
+        "default_year": False,
+        "nlsparam": False,
+    }
 
 
 class StrToTime(Expression, Func):
@@ -465,6 +471,7 @@ class StrToTime(Expression, Func):
         "safe": False,
         "target_type": False,
         "default_year": False,
+        "nlsparam": False,
     }
 
 

@@ -64,8 +64,11 @@ class TestPostgres(Validator):
                 self.validate_all(
                     f"SELECT NULL {operator} {predicate}",
                     write={
-                        dialect: f"SELECT NULL {operator} ({rhs})"
-                        for dialect in ("postgres", "sqlite", "duckdb", "snowflake", "redshift")
+                        "sqlite": f"SELECT NULL {'IS NOT' if operator == 'IS DISTINCT FROM' else 'IS'} ({rhs})",
+                        **{
+                            dialect: f"SELECT NULL {operator} ({rhs})"
+                            for dialect in ("postgres", "duckdb", "snowflake", "redshift")
+                        },
                     },
                 )
         self.validate_all(
@@ -100,7 +103,7 @@ class TestPostgres(Validator):
             "SELECT FALSE IS DISTINCT FROM NULL = NULL",
             write={
                 "postgres": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
-                "sqlite": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
+                "sqlite": "SELECT FALSE IS NOT (NULL = NULL)",
                 "snowflake": "SELECT FALSE IS DISTINCT FROM (NULL = NULL)",
             },
         )

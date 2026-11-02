@@ -2117,8 +2117,8 @@ a IS b BETWEEN 0 AND 1;
 
 # dialect: sqlite
 a IS DISTINCT FROM b BETWEEN 0 AND 1;
-(a IS DISTINCT FROM b) <= 1 AND (a IS DISTINCT FROM b) >= 0;
+(a IS NOT b) <= 1 AND (a IS NOT b) >= 0;
 
 # dialect: sqlite
 a IS NOT DISTINCT FROM b NOT BETWEEN 0 AND 1;
-(a IS NOT DISTINCT FROM b) < 0 OR (a IS NOT DISTINCT FROM b) > 1;
+(a IS b) < 0 OR (a IS b) > 1;

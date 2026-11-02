@@ -214,6 +214,19 @@ def _pop_table_column_aliases(derived_tables: Iterable[exp.Expr]) -> None:
             continue
         table_alias = derived_table.args.get("alias")
         if table_alias:
+            inner = (
+                derived_table.this
+                if isinstance(derived_table, (exp.Subquery, exp.CTE))
+                else derived_table
+            )
+            while isinstance(inner, exp.Paren):
+                inner = inner.this
+            # Keep column aliases when any set op in the chain uses BY NAME
+            if isinstance(inner, exp.SetOperation) and (
+                inner.args.get("by_name")
+                or any(s.args.get("by_name") for s in inner.find_all(exp.SetOperation))
+            ):
+                continue
             table_alias.set("columns", None)
 
 

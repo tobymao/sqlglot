@@ -813,9 +813,15 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
         expression = expression_stack.pop()
         set_op_scope = set_op_scope_stack[-1]
 
+        set_op_expr = set_op_scope.expression
+        propagate_outer = set_op_scope.outer_columns
+        # BY NAME matches columns by name, so positional outer_columns must not be pushed into arms
+        if isinstance(set_op_expr, exp.SetOperation) and set_op_expr.args.get("by_name"):
+            propagate_outer = []
+
         new_scope = set_op_scope.branch(
             expression,
-            outer_columns=set_op_scope.outer_columns,
+            outer_columns=propagate_outer,
             scope_type=ScopeType.SET_OPERATION,
         )
 

@@ -210,7 +210,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         return
 
     if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)) and (
-        select.args.get("group") or select.args.get("having") or find_in_scope(select, exp.AggFunc)
+        select.args.get("group")
+        or select.args.get("having")
+        or find_in_scope(select, exp.AggFunc, exp.Anonymous)
     ):
         return
 
@@ -259,6 +261,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
         elif not _is_plain_group(group):
             return
+        if any(find_in_scope(projection, exp.Anonymous) for projection in select.selects):
+            return
     elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
         value = select.selects[0]
         group = select.args.get("group")
@@ -273,7 +277,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if find_in_scope(value, exp.Window):
             return
 
-        if find_in_scope(value, exp.AggFunc):
+        if find_in_scope(value, exp.AggFunc, exp.Anonymous):
             projection = value.unalias().unnest()
             if (
                 not value.alias

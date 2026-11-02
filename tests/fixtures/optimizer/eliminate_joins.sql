@@ -634,3 +634,39 @@ LEFT JOIN (
 SELECT
   x.a
 FROM x;
+
+# title: Preserve left join when CAST collapses distinct keys
+# execute: true
+SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT t.b FROM (VALUES ('1'), ('01')) AS t(b)) AS y ON x.a = CAST(y.b AS INT) ORDER BY x.a;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT DISTINCT
+    t.b
+  FROM (VALUES
+    ('1'),
+    ('01')) AS t(b)
+) AS y
+  ON x.a = CAST(y.b AS INT)
+ORDER BY
+  x.a;
+
+# title: Preserve left join when TRY_CAST collapses grouped keys
+# execute: true
+SELECT x.a FROM x LEFT JOIN (SELECT t.b FROM (VALUES ('1'), ('01')) AS t(b) GROUP BY t.b) AS y ON TRY_CAST(y.b AS INT) = x.a ORDER BY x.a;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    t.b
+  FROM (VALUES
+    ('1'),
+    ('01')) AS t(b)
+  GROUP BY
+    t.b
+) AS y
+  ON TRY_CAST(y.b AS INT) = x.a
+ORDER BY
+  x.a;

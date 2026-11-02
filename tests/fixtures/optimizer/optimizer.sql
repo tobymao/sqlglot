@@ -1692,3 +1692,21 @@ SELECT
     "x"."b" > 0
   ) AS "c"
 FROM "x" AS "x";
+
+# title: Preserve left join when CAST collapses distinct keys
+# dialect: duckdb
+SELECT x.a FROM x LEFT JOIN (SELECT DISTINCT t.b FROM (VALUES ('1'), ('01')) AS t(b)) AS y ON x.a = CAST(y.b AS INT) ORDER BY x.a;
+WITH "y" AS (
+  SELECT DISTINCT
+    "t"."b" AS "b"
+  FROM (VALUES
+    ('1'),
+    ('01')) AS "t"("b")
+)
+SELECT
+  "x"."a" AS "a"
+FROM "x" AS "x"
+LEFT JOIN "y" AS "y"
+  ON "x"."a" = CAST("y"."b" AS INT)
+ORDER BY
+  "x"."a";

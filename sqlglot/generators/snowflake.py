@@ -499,6 +499,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.GetExtract: rename_func("GET"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, sep=""),
         exp.If: if_sql(name="IFF", false_value="NULL"),
+        exp.InteractiveProperty: lambda *_: "INTERACTIVE",
         exp.JSONArray: lambda self, e: self.func(
             "TO_VARIANT", self.func("ARRAY_CONSTRUCT", *e.expressions)
         ),
@@ -648,6 +649,7 @@ class SnowflakeGenerator(generator.Generator):
     PROPERTIES_LOCATION = {
         **generator.Generator.PROPERTIES_LOCATION,
         exp.CredentialsProperty: exp.Properties.Location.POST_WITH,
+        exp.InteractiveProperty: exp.Properties.Location.POST_CREATE,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
         exp.PartitionedByProperty: exp.Properties.Location.POST_SCHEMA,
         exp.RowAccessProperty: exp.Properties.Location.POST_SCHEMA,

@@ -4705,6 +4705,31 @@ class TestSnowflake(Validator):
             "CREATE DYNAMIC TABLE dt TARGET_LAG='1 minute' WAREHOUSE=my_wh (id) AS SELECT * FROM bla",
             "CREATE DYNAMIC TABLE dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_wh AS SELECT * FROM bla",
         )
+        create = self.validate_identity(
+            "CREATE INTERACTIVE TABLE t CLUSTER BY (a) AS SELECT a FROM s"
+        ).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.find(exp.InteractiveProperty), exp.InteractiveProperty)
+        self.validate_identity(
+            "CREATE OR REPLACE INTERACTIVE TABLE t CLUSTER BY (a, b) TARGET_LAG='5 minutes' WAREHOUSE=wh AS SELECT a, b FROM s"
+        )
+        self.validate_identity(
+            "CREATE INTERACTIVE TABLE IF NOT EXISTS db.s.t (a INT, b VARCHAR) CLUSTER BY (a) TARGET_LAG='1 hour' WAREHOUSE=wh INITIALIZATION_WAREHOUSE=init_wh AS SELECT a, b FROM s"
+        )
+        self.validate_all(
+            "CREATE OR REPLACE INTERACTIVE TABLE t CLUSTER BY (a) AS SELECT a FROM s",
+            write={
+                "duckdb": "CREATE OR REPLACE TABLE t AS SELECT a FROM s",
+                "snowflake": "CREATE OR REPLACE INTERACTIVE TABLE t CLUSTER BY (a) AS SELECT a FROM s",
+            },
+        )
+        self.validate_identity(
+            "CREATE INTERACTIVE WAREHOUSE wh WAREHOUSE_SIZE='SMALL'"
+        ).this.assert_is(exp.Identifier)
+        self.validate_identity(
+            "CREATE INTERACTIVE WAREHOUSE wh TABLES (t1, t2) WAREHOUSE_SIZE='SMALL'",
+            check_command_warning=True,
+        )
         self.validate_identity(
             "ALTER TABLE db_name.schmaName.tblName ADD COLUMN_1 VARCHAR NOT NULL TAG (key1='value_1')"
         )

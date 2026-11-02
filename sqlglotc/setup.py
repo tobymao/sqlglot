@@ -189,7 +189,11 @@ setup(
     packages=[],
     install_requires=_sqlglot_requirement(),
     ext_modules=mypycify(
-        _source_paths(), opt_level=os.environ.get("MYPYC_OPT", "2"), separate=True, verbose=True
+        _source_paths(),
+        opt_level=os.environ.get("MYPYC_OPT", "2"),
+        debug_level="0",
+        separate=True,
+        verbose=True,
     ),
     cmdclass={"build_ext": build_ext, "sdist": sdist},
 )

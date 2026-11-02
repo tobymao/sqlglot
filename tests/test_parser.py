@@ -76,6 +76,16 @@ class TestParser(unittest.TestCase):
         with self.assertRaises(ParseError):
             parse_one("")
 
+    def test_parse_describe_with_dot(self) -> None:
+        for sql in ("DESC.", "DESCRIBE.", "DESC. ;", "DESC ."):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                parse_one(sql, read="spark")
+
+        self.assertEqual(
+            parse_one("DESCRIBE EXTENDED db.tbl", read="spark").sql("spark"),
+            "DESCRIBE EXTENDED db.tbl",
+        )
+
     def test_parse_into(self):
         self.assertIsInstance(parse_one("(1)", into=exp.Tuple), exp.Tuple)
         self.assertIsInstance(parse_one("(1,)", into=exp.Tuple), exp.Tuple)

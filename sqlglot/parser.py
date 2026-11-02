@@ -3638,6 +3638,9 @@ class Parser:
             self._prev.text.upper() if self._match_texts(self.DESCRIBE_STYLES) else None
         )
         if self._match(TokenType.DOT):
+            if kind is None and style is None:
+                self.raise_error("Expected a table name after DESCRIBE")
+
             style = None
             self._retreat(self._index - 2)
 

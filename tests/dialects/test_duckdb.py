@@ -1,3 +1,4 @@
+from decimal import MAX_EMAX
 from unittest import mock
 
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
@@ -326,6 +327,7 @@ class TestDuckDB(Validator):
                 self.assertEqual(exp.column(keyword).sql("duckdb"), f'"{keyword}"')
 
     def test_duckdb(self):
+        self.validate_identity(f"SELECT arr[1E{MAX_EMAX + 1}]")
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(
             "TRUNC(3.14159, 2)",

@@ -1,3 +1,5 @@
+from decimal import MAX_EMAX
+
 from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -172,6 +174,7 @@ class TestPostgres(Validator):
         self.validate_identity(sql, expected_sql, pretty=True)
 
         self.validate_identity("UPDATE character SET x = 1")
+        self.validate_identity(f"SELECT arr[1E{MAX_EMAX + 1}]")
 
         self.validate_identity('WITH t AS (SELECT 1 AS "null") SELECT t.null FROM t')
         self.validate_identity('WITH t AS (SELECT 1 AS "true") SELECT t.true FROM t')

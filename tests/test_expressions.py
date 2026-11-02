@@ -334,6 +334,52 @@ class TestExprs(unittest.TestCase):
             "SELECT * FROM example.table /* sqlglot.meta replace=false */",
         )
 
+    def test_replace_tables_keeps_function_arguments(self):
+        def replace(sql, mapping, dialect):
+            return exp.replace_tables(
+                parse_one(sql, dialect=dialect), mapping, dialect=dialect
+            ).sql(dialect)
+
+        self.assertEqual(
+            replace(
+                "SELECT * FROM db1.pv1(sim_id = 1, d = '2026-01-01') AS p",
+                {"db1.pv1": "db2.pv2"},
+                "clickhouse",
+            ),
+            "SELECT * FROM db2.pv2(sim_id = 1, d = '2026-01-01') AS p /* db1.pv1 */",
+        )
+        self.assertEqual(
+            replace("SELECT * FROM ds.tvf(1, 'a')", {"ds.tvf": "proj.ds2.tvf2"}, "bigquery"),
+            "SELECT * FROM proj.ds2.tvf2(1, 'a') /* ds.tvf */",
+        )
+        self.assertEqual(
+            replace("SELECT * FROM f(1)", {"f": "db.g"}, "bigquery"),
+            "SELECT * FROM db.g(1) /* f */",
+        )
+        self.assertEqual(
+            replace(
+                "SELECT * FROM ds.tvf(1)", {"ds.tvf": '"my-project"."ds2"."tvf2"'}, "clickhouse"
+            ),
+            'SELECT * FROM "my-project"."ds2"."tvf2"(1) /* ds.tvf */',
+        )
+        self.assertEqual(
+            replace(
+                "SELECT * FROM numbers(10) JOIN pv.pv(a = 1) USING (x)",
+                {"pv.pv": "db.other"},
+                "clickhouse",
+            ),
+            "SELECT * FROM numbers(10) JOIN db.other(a = 1) /* pv.pv */ USING (x)",
+        )
+        # known functions get parsed into dedicated expressions, they shouldn't get mangled
+        self.assertEqual(
+            replace("SELECT * FROM generate_series(1, 3)", {"generate_series": "c.d"}, "postgres"),
+            "SELECT * FROM GENERATE_SERIES(1, 3)",
+        )
+        self.assertEqual(
+            replace("SELECT * FROM read_csv('foo') AS r", {"foo": "c.d"}, "duckdb"),
+            "SELECT * FROM READ_CSV('foo') AS r",
+        )
+
     def test_expand(self):
         self.assertEqual(
             exp.expand(

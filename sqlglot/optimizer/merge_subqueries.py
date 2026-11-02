@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.helpers import is_implicit_group_by_all
+from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -241,10 +241,13 @@ def _mergeable(
         if not column_free_aliases or not is_implicit_group_by_all(t.cast(exp.Select, outer)):
             return False
 
+        windows = outer_args.get("windows")
         for s in t.cast(exp.Select, outer).selects:
+            if projection_has_aggregate(s, windows):
+                continue
             if any(
                 column.table != inner_name or column.name not in column_free_aliases
-                for column in s.find_all(exp.Column)
+                for column in find_all_in_scope(s, exp.Column)
             ):
                 return False
 

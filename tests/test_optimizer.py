@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
+from decimal import MAX_EMAX
 from functools import partial
 from multiprocessing import get_context
 from unittest.mock import patch
@@ -2899,6 +2900,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         # Programmatic set operations with VALUES operands must not crash the Query-typed
         # left/right accessors in compiled builds
         annotate_types(exp.select("*").from_(exp.select("1").union("VALUES (2)").subquery("s")))
+
+        # Large numeric literal exponents exceeding decimal.MAX_EMAX must be typed as DOUBLE without error
+        self.assertEqual(
+            annotate_types(exp.Literal.number(f"1E{MAX_EMAX + 1}")).type,
+            exp.DataType.build("DOUBLE"),
+        )
 
     def test_annotate_types_reuse(self):
         annotator = TypeAnnotator(MappingSchema())

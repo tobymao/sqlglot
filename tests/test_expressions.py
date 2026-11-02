@@ -2,6 +2,7 @@ import datetime
 import math
 import sys
 import unittest
+from decimal import MAX_EMAX
 
 from sqlglot import ParseError, alias, exp, parse_one
 from sqlglot.parser import logger as parser_logger
@@ -1433,6 +1434,8 @@ FROM foo""",
 
     def test_is_int(self):
         self.assertTrue(parse_one("- -1").is_int)
+        self.assertFalse(exp.Literal.number(f"1E{MAX_EMAX + 1}").is_int)
+        self.assertFalse(exp.Literal.number("0.1.2").is_int)
 
     def test_is_star(self):
         assert parse_one("*").is_star

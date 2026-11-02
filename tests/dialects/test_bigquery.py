@@ -74,6 +74,8 @@ class TestBigQuery(Validator):
             "SELECT 'foo'/* c */'bar'",
             "SELECT CONCAT('foo' /* c */, 'bar')",
         )
+        self.validate_identity(r"SELECT `a\`b`")
+        self.validate_identity(r"SELECT `a\\b`")
 
         for prefix in ("c.db.", "db.", ""):
             with self.subTest(f"Parsing {prefix}INFORMATION_SCHEMA.X into a Table"):

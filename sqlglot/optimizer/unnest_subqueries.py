@@ -391,7 +391,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             parent_predicate = _replace(parent_predicate.parent, predicate)
         else:
             predicate = op_type(this=other, expression=exp.column("_x"))
-            parent_predicate = _replace(parent_predicate, f"ARRAY_ANY({alias}, _x -> {predicate})")
+            parent_predicate = _replace(
+                parent_predicate.parent, f"ARRAY_ANY({alias}, _x -> {predicate})"
+            )
     elif isinstance(parent_predicate, exp.In):
         if value.this in group_by:
             parent_predicate = _replace(parent_predicate, f"{other} = {alias}")

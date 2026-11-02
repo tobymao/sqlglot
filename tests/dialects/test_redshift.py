@@ -539,6 +539,9 @@ ORDER BY
         self.validate_identity(
             "SELECT attr AS attr, JSON_TYPEOF(val) AS value_type FROM customer_orders_lineitem AS c, UNPIVOT c.c_orders AS val AT attr WHERE c_custkey = 9451"
         )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2) AS t PIVOT(SUM(x) FOR x IN (1))"
+        )
         self.validate_identity("SELECT JSON_PARSE('[]')")
 
         self.validate_identity("SELECT ARRAY(1, 2, 3)")

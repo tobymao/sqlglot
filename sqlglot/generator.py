@@ -2881,16 +2881,18 @@ class Generator:
 
             selects.append(exp.Select(expressions=row))
 
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+
         if self.pretty:
             # This may result in poor performance for large-cardinality `VALUES` tables, due to
             # the deep nesting of the resulting exp.Unions. If this is a problem, either increase
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
             query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
-            return self.subquery_sql(query.subquery(alias_node and alias_node.this, copy=False))
+            subquery = query.subquery(alias_node and alias_node.this, copy=False)
+            return f"{self.subquery_sql(subquery)}{pivots}"
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
-        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         return f"({unions}){alias}{pivots}"
 
     def var_sql(self, expression: exp.Var) -> str:

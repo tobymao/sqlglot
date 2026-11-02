@@ -2332,18 +2332,19 @@ class TestDialect(Validator):
 
     def test_values_with_pivot(self):
         for sql in (
-            "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
-            "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+            "SELECT * FROM (VALUES (1), (2)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+            "SELECT * FROM VALUES (1), (2) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
         ):
             with self.subTest(sql=sql):
                 self.validate_all(
                     sql,
                     write={
-                        "": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
-                        "databricks": "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
-                        "duckdb": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
-                        "snowflake": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
-                        "spark": "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "": "SELECT * FROM (VALUES (1), (2)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "databricks": "SELECT * FROM VALUES (1), (2) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "duckdb": "SELECT * FROM (VALUES (1), (2)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "redshift": "SELECT * FROM (SELECT 1 AS x UNION ALL SELECT 2) AS t PIVOT(SUM(x) FOR x IN (1))",
+                        "snowflake": "SELECT * FROM (VALUES (1), (2)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "spark": "SELECT * FROM VALUES (1), (2) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
                     },
                 )
 

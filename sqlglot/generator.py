@@ -2862,7 +2862,8 @@ class Generator:
                 else values
             )
             values = self.query_modifiers(expression, values)
-            return f"{values} AS {alias}" if alias else values
+            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+            return f"{values} AS {alias}{pivots}" if alias else f"{values}{pivots}"
 
         # Converts `VALUES...` expression into a series of select unions.
         alias_node = expression.args.get("alias")
@@ -2889,7 +2890,8 @@ class Generator:
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
-        return f"({unions}){alias}"
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+        return f"({unions}){alias}{pivots}"
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")

@@ -2330,6 +2330,23 @@ class TestDialect(Validator):
             "SELECT * FROM tbl AS t LEFT JOIN LATERAL (SELECT * FROM b WHERE b.t_id = t.t_id) AS t ON TRUE"
         )
 
+    def test_values_with_pivot(self):
+        for sql in (
+            "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+            "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(
+                    sql,
+                    write={
+                        "": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "databricks": "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "duckdb": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "snowflake": "SELECT * FROM (VALUES (1)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                        "spark": "SELECT * FROM VALUES (1) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+                    },
+                )
+
     def test_set_operators(self):
         self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",

@@ -3637,10 +3637,6 @@ class Parser:
         style: str | None = (
             self._prev.text.upper() if self._match_texts(self.DESCRIBE_STYLES) else None
         )
-        # If a kind/style token is directly followed by a dot, it was actually
-        # an identifier (e.g. DESCRIBE history.tbl), so rewind to re-parse it.
-        # Without a matched kind/style there is nothing to rewind to, and
-        # retreating would loop forever on the DESC/DESCRIBE token itself.
         if (kind is not None or style is not None) and self._match(TokenType.DOT):
             style = None
             self._retreat(self._index - 2)

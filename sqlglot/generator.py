@@ -2888,8 +2888,10 @@ class Generator:
             query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
             for key in ("order", "limit", "offset"):
                 query.set(key, expression.args.get(key))
+                expression.set(key, None)
             subquery = query.subquery(alias_node and alias_node.this, copy=False)
             subquery.set("pivots", expression.args.get("pivots"))
+            expression.set("pivots", None)
             return self.subquery_sql(subquery)
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""

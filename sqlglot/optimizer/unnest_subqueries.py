@@ -6,10 +6,6 @@ from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot._typing import E
 
 
-NULL_ON_ZERO_ROWS_AGGREGATES = (exp.Sum, exp.Avg, exp.Min, exp.Max)
-SUPPORTED_SCALAR_AGGREGATES = (exp.Count, *NULL_ON_ZERO_ROWS_AGGREGATES)
-
-
 def unnest_subqueries(expression: E) -> E:
     """
     Rewrite sqlglot AST to convert some predicates with subqueries into joins.
@@ -286,7 +282,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 or len(select.selects) != 1
                 or not _is_supported_scalar_aggregate(projection)
                 or select.args.get("qualify")
-                or select.args.get("windows")
             ):
                 return
 
@@ -561,45 +556,21 @@ def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
 
 def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
     expression = expression.unnest()
-    if isinstance(expression, SUPPORTED_SCALAR_AGGREGATES):
-        # Only decorrelate single-expression aggregates
-        if expression.expressions:
-            return False
-        argument = expression.this
-        # Only COUNT supports omitted or star arguments
-        if argument is None:
-            return isinstance(expression, exp.Count)
-        argument = argument.unnest()
-        if isinstance(argument, exp.Star):
-            return isinstance(expression, exp.Count) and not any(argument.args.values())
-        return _is_supported_scalar_arithmetic(argument, inside_aggregate=True)
-    return _is_supported_scalar_arithmetic(expression, inside_aggregate=False)
-
-
-def _is_supported_scalar_arithmetic(expression: exp.Expr, *, inside_aggregate: bool) -> bool:
-    """Recognize argument arithmetic or NULL-on-0-rows aggregate arithmetic."""
-    expression = expression.unnest()
-    if isinstance(expression, exp.Column):
-        return inside_aggregate and not expression.is_star
-    if isinstance(expression, exp.CONSTANTS):
-        return inside_aggregate or expression.is_number
-    if isinstance(expression, exp.Distinct):
-        return (
-            inside_aggregate
-            and len(expression.expressions) == 1
-            and _is_supported_scalar_arithmetic(expression.expressions[0], inside_aggregate=True)
-        )
-    if isinstance(expression, NULL_ON_ZERO_ROWS_AGGREGATES):
-        return not inside_aggregate and _is_supported_scalar_aggregate(expression)
+    if isinstance(expression, (exp.Count, exp.Sum, exp.Avg, exp.Min, exp.Max)):
+        return True
+    if isinstance(expression, exp.Literal):
+        return expression.is_number
     if isinstance(expression, exp.Neg):
-        return _is_supported_scalar_arithmetic(expression.this, inside_aggregate=inside_aggregate)
-    if isinstance(expression, (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)):
-        return _is_supported_scalar_arithmetic(
-            expression.this, inside_aggregate=inside_aggregate
-        ) and _is_supported_scalar_arithmetic(
-            expression.expression, inside_aggregate=inside_aggregate
-        )
-    return False
+        operands = [expression.this]
+    elif isinstance(expression, (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)):
+        operands = [expression.this, expression.expression]
+    else:
+        return False
+    # COUNT inside arithmetic would need a non-NULL default for missing keys
+    return all(
+        not isinstance(operand.unnest(), exp.Count) and _is_supported_scalar_aggregate(operand)
+        for operand in operands
+    )
 
 
 def _has_aggregate_projection(select: exp.Select) -> bool:

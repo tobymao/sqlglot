@@ -2149,6 +2149,37 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
+    def test_eliminate_joins_casted_key(self):
+        for cast in ("CAST", "TRY_CAST"):
+            for distinct, group in (("DISTINCT", ""), ("", "GROUP BY events.occurred_at")):
+                for condition in (
+                    f"days.day = {cast}(event_times.occurred_at AS DATE)",
+                    f"{cast}(event_times.occurred_at AS DATE) = days.day",
+                ):
+                    sql = f"""
+                        SELECT days.day
+                        FROM (VALUES (DATE '2026-10-30'), (DATE '2026-10-31')) AS days(day)
+                        LEFT JOIN (
+                            SELECT {distinct} events.occurred_at
+                            FROM (VALUES
+                                (TIMESTAMP '2026-10-30 09:00:00'),
+                                (TIMESTAMP '2026-10-30 18:00:00')
+                            ) AS events(occurred_at)
+                            {group}
+                        ) AS event_times ON {condition}
+                        ORDER BY days.day
+                    """
+                    expected = self.conn.execute(sql).fetchall()
+                    self.assertEqual(len(expected), 3)
+                    for rule in (optimizer.eliminate_joins.eliminate_joins, optimizer.optimize):
+                        with self.subTest(
+                            cast=cast, distinct=distinct, condition=condition, rule=rule
+                        ):
+                            optimized = rule(parse_one(sql, read="duckdb"))
+                            self.assertEqual(
+                                self.conn.execute(optimized.sql("duckdb")).fetchall(), expected
+                            )
+
     def test_eliminate_ctes(self):
         self.check_file(
             "eliminate_ctes",

@@ -405,7 +405,7 @@ class TestParser(unittest.TestCase):
             for operator in ("=", "<"):
                 expression = parse_one(f"a IS NULL {operator} b", read=dialect)
                 if dialect == "sqlite" and operator == "<":
-                    self.assertIsInstance(expression, exp.Is)
+                    self.assertIsInstance(expression, exp.NullSafeEQ)
                     self.assertIsInstance(expression.expression, exp.Paren)
                     self.assertIsInstance(expression.expression.this, exp.LT)
                 else:

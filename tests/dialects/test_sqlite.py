@@ -116,7 +116,7 @@ class TestSQLite(Validator):
                 ("NULL IS NULL", exp.Is),
                 ("NULL IS NOT DISTINCT FROM NULL", exp.NullSafeEQ),
             ):
-                lhs = f"({predicate})" if suffix.startswith("BETWEEN") else predicate
+                lhs = "(NULL IS NULL)" if suffix.startswith("BETWEEN") else "NULL IS NULL"
                 expression = self.validate_identity(
                     f"SELECT {predicate} {suffix}", f"SELECT {lhs} {suffix}"
                 )
@@ -135,7 +135,7 @@ class TestSQLite(Validator):
         self.validate_all(
             "SELECT FALSE IS DISTINCT FROM TRUE IS DISTINCT FROM FALSE",
             write={
-                "sqlite": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
+                "sqlite": "SELECT (FALSE IS NOT TRUE) IS NOT FALSE",
                 "postgres": "SELECT (FALSE IS DISTINCT FROM TRUE) IS DISTINCT FROM FALSE",
             },
         )
@@ -143,7 +143,7 @@ class TestSQLite(Validator):
         self.validate_all(
             "SELECT FALSE IS DISTINCT FROM NULL = NULL",
             write={
-                "sqlite": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
+                "sqlite": "SELECT (FALSE IS NOT NULL) = NULL",
                 "postgres": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
                 "duckdb": "SELECT (FALSE IS DISTINCT FROM NULL) = NULL",
             },
@@ -986,3 +986,12 @@ class TestSQLite(Validator):
             "SELECT a IS NULL, a IS NOT NULL FROM t",
             "SELECT a IS NULL, NOT a IS NULL FROM t",
         )
+
+        for rhs in ("TRUE", "FALSE", "NULL"):
+            for wrapped in (f"({rhs})", f"(({rhs}))"):
+                for negate in (False, True):
+                    sql = f"SELECT 2 IS {'NOT ' if negate else ''}{wrapped}"
+                    expected = f"SELECT {'NOT ' if negate else ''}2 IS {rhs}"
+                    self.validate_all(sql, write={"sqlite": expected, "duckdb": expected})
+                    expression = self.parse_one(sql).expressions[0]
+                    self.assertIsInstance(expression.this if negate else expression, exp.Is)

@@ -30,8 +30,12 @@ from sqlglot.dialects.dialect import (
     groupconcat_sql,
     sha2_digest_sql,
 )
+from sqlglot.errors import ErrorLevel
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
+
+if t.TYPE_CHECKING:
+    from sqlglot.dialects.dialect import DialectType
 
 logger = logging.getLogger("sqlglot")
 
@@ -683,8 +687,35 @@ class BigQueryGenerator(generator.Generator):
         "within",
     }
 
-    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        pretty: bool | int | None = None,
+        identify: str | bool = False,
+        normalize: bool = False,
+        pad: int = 2,
+        indent: int = 2,
+        normalize_functions: str | bool | None = None,
+        unsupported_level: ErrorLevel = ErrorLevel.WARN,
+        max_unsupported: int = 3,
+        leading_comma: bool = False,
+        max_text_width: int = 80,
+        comments: bool = True,
+        dialect: DialectType = None,
+    ) -> None:
+        super().__init__(
+            pretty=pretty,
+            identify=identify,
+            normalize=normalize,
+            pad=pad,
+            indent=indent,
+            normalize_functions=normalize_functions,
+            unsupported_level=unsupported_level,
+            max_unsupported=max_unsupported,
+            leading_comma=leading_comma,
+            max_text_width=max_text_width,
+            comments=comments,
+            dialect=dialect,
+        )
 
         self._escaped_identifier_end = r"\`"
 

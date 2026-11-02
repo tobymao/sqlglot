@@ -2849,7 +2849,6 @@ class Generator:
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
         values_as_table = values_as_table and self.VALUES_AS_TABLE
-        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
 
         # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
         if values_as_table or not expression.find_ancestor(exp.From, exp.Join):
@@ -2863,6 +2862,7 @@ class Generator:
                 else values
             )
             values = self.query_modifiers(expression, values)
+            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
             return f"{values} AS {alias}{pivots}" if alias else f"{values}{pivots}"
 
         # Converts `VALUES...` expression into a series of select unions.
@@ -2887,10 +2887,13 @@ class Generator:
             # `sys.setrecursionlimit` to avoid RecursionErrors, or don't set `pretty`.
             query = reduce(lambda x, y: exp.union(x, y, distinct=False, copy=False), selects)
             subquery = query.subquery(alias_node and alias_node.this, copy=False)
-            return f"{self.subquery_sql(subquery)}{pivots}"
+            subquery.set("pivots", expression.args.get("pivots"))
+            expression.set("pivots", None)
+            return self.subquery_sql(subquery)
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
         return f"({unions}){alias}{pivots}"
 
     def var_sql(self, expression: exp.Var) -> str:

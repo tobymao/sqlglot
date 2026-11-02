@@ -2348,6 +2348,23 @@ class TestDialect(Validator):
                     },
                 )
 
+        self.validate_all(
+            "SELECT * FROM (VALUES (1), (2)) AS t(x) PIVOT(SUM(x) FOR x IN (1))",
+            write={
+                "redshift": """SELECT
+  *
+FROM (
+  SELECT
+    1 AS x
+  UNION ALL
+  SELECT
+    2
+) AS t
+PIVOT(SUM(x) FOR x IN (1))""",
+            },
+            pretty=True,
+        )
+
     def test_set_operators(self):
         self.validate_all(
             "SELECT * FROM a UNION SELECT * FROM b OFFSET 1",

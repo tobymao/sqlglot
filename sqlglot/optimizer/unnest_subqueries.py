@@ -32,6 +32,9 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
 
+        # Don't hoist a subquery out of a correlated, ungrouped aggregate if it's evaluated after the
+        # aggregation: the aggregate returns a row even for keys with no input rows, and the hoisted
+        # MAX(...) would turn the row's value into NULL
         if (
             scope.parent
             and scope.parent.expression is parent
@@ -197,12 +200,7 @@ def unnest(select, parent_select, next_alias_name):
 def decorrelate(select, parent_select, external_columns, next_alias_name):
     where = select.args.get("where")
 
-    if (
-        not select.selects
-        or not where
-        or where.find(exp.Or)
-        or select.find(exp.Limit, exp.Offset, exp.Fetch)
-    ):
+    if not where or where.find(exp.Or) or select.find(exp.Limit, exp.Offset, exp.Fetch):
         return
 
     parent_predicate = select.find_ancestor(exp.Predicate)
@@ -243,7 +241,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if isinstance(on_clause_ancestor, exp.Join) and on_clause_join_index is None:
         return
 
-    value = select.selects[0]
     zero_fill = False
 
     if isinstance(parent_predicate, exp.Exists):
@@ -263,6 +260,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         elif not _is_plain_group(group):
             return
     elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
+        value = select.selects[0]
         group = select.args.get("group")
         if group and not _has_plain_explicit_group(select):
             return
@@ -340,6 +338,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if isinstance(node, exp.Subquery)
     )
 
+    value = select.selects[0]
     key_aliases = {}
     group_by = []
 

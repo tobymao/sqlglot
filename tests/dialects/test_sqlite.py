@@ -965,7 +965,6 @@ class TestSQLite(Validator):
             check_command_warning=True,
         )
 
-
     def test_is_operator_null_safe_comparison(self):
         # issue #8855: SQLite's IS / IS NOT is a null-safe equality against any
         # expression; DuckDB and Postgres only accept NULL/TRUE/FALSE/UNKNOWN

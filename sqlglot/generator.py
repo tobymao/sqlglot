@@ -2849,6 +2849,7 @@ class Generator:
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
         values_as_table = values_as_table and self.VALUES_AS_TABLE
+        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
 
         # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
         if values_as_table or not expression.find_ancestor(exp.From, exp.Join):
@@ -2862,7 +2863,6 @@ class Generator:
                 else values
             )
             values = self.query_modifiers(expression, values)
-            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
             return f"{values} AS {alias}{pivots}" if alias else f"{values}{pivots}"
 
         # Converts `VALUES...` expression into a series of select unions.
@@ -2880,8 +2880,6 @@ class Generator:
                 ]
 
             selects.append(exp.Select(expressions=row))
-
-        pivots = self.expressions(expression, key="pivots", sep="", flat=True)
 
         if self.pretty:
             # This may result in poor performance for large-cardinality `VALUES` tables, due to

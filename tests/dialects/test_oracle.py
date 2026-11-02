@@ -271,6 +271,12 @@ class TestOracle(Validator):
         self.validate_identity("SELECT COUNT(*) * 10 FROM orders SAMPLE (10) SEED (1)")
         self.validate_identity("SELECT * FROM V$SESSION")
         self.validate_identity("SELECT TO_DATE('January 15, 1989, 11:00 A.M.')")
+        self.validate_identity(
+            "SELECT TO_DATE(c, 'DD-MON-YYYY', 'NLS_DATE_LANGUAGE = AMERICAN') FROM t"
+        )
+        self.validate_identity(
+            "SELECT TO_TIMESTAMP(c, 'DD-MON-YYYY', 'NLS_DATE_LANGUAGE = AMERICAN') FROM t"
+        )
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_all(
             "SELECT fred FROM barney WHERE dino ^= 'wilma'",

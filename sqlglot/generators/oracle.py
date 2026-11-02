@@ -89,8 +89,12 @@ class OracleGenerator(generator.Generator):
         exp.StrPosition: lambda self, e: strposition_sql(
             self, e, func_name="INSTR", supports_position=True, supports_occurrence=True
         ),
-        exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),
-        exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
+        exp.StrToTime: lambda self, e: self.func(
+            "TO_TIMESTAMP", e.this, self.format_time(e), e.args.get("nlsparam")
+        ),
+        exp.StrToDate: lambda self, e: self.func(
+            "TO_DATE", e.this, self.format_time(e), e.args.get("nlsparam")
+        ),
         exp.Subquery: lambda self, e: self.subquery_sql(e, sep=" "),
         exp.Substring: rename_func("SUBSTR"),
         exp.Table: lambda self, e: self.table_sql(e, sep=" "),

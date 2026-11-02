@@ -13,11 +13,20 @@ if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
 
 
+def _build_str_to_time(exp_class: type[E]) -> t.Callable[[list, Dialect], E]:
+    def _builder(args: list, dialect: Dialect) -> E:
+        expression = build_formatted_time(exp_class)(args, dialect)
+        expression.set("nlsparam", seq_get(args, 2))
+        return expression
+
+    return _builder
+
+
 def _build_to_timestamp(args: list, dialect: Dialect) -> exp.StrToTime | exp.Anonymous:
     if len(args) == 1:
         return exp.Anonymous(this="TO_TIMESTAMP", expressions=args)
 
-    return build_formatted_time(exp.StrToTime)(args, dialect)
+    return _build_str_to_time(exp.StrToTime)(args, dialect)
 
 
 class OracleParser(parser.Parser):
@@ -59,7 +68,7 @@ class OracleParser(parser.Parser):
         "SQUARE": lambda args: exp.Pow(this=seq_get(args, 0), expression=exp.Literal.number(2)),
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_TIMESTAMP": _build_to_timestamp,
-        "TO_DATE": build_formatted_time(exp.StrToDate),
+        "TO_DATE": _build_str_to_time(exp.StrToDate),
         "TRUNC": lambda args, dialect: build_trunc(
             args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
         ),

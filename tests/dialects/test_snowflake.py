@@ -4695,7 +4695,11 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_identity("CREATE SCOPED TEMPORARY TABLE t (a INT)")
-        self.validate_identity("CREATE OR REPLACE SCOPED TEMPORARY VIEW v AS SELECT 1")
+        self.validate_identity("CREATE OR REPLACE SCOPED TEMPORARY VIEW v AS SELECT 1 AS c")
+        self.validate_identity(
+            "CREATE SCOPED TEMP TABLE t (a INT)",
+            "CREATE SCOPED TEMPORARY TABLE t (a INT)",
+        )
         self.validate_all(
             "CREATE SCOPED TEMPORARY TABLE t (a INT)",
             write={

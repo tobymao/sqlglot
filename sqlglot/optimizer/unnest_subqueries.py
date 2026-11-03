@@ -104,6 +104,14 @@ def unnest(select, parent_select, next_alias_name):
             )
         ).from_(select.subquery(inner_alias))
 
+    if (
+        isinstance(predicate, (exp.In, exp.Any))
+        and not select.args.get("group")
+        and not find_in_scope(select.selects[0], exp.AggFunc)
+        and find_in_scope(select.selects[0], exp.Anonymous)
+    ):
+        return
+
     alias = next_alias_name()
 
     # This subquery returns a scalar and can just be converted to a cross join
@@ -210,7 +218,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         return
 
     if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)) and (
-        select.args.get("group") or select.args.get("having") or find_in_scope(select, exp.AggFunc)
+        select.args.get("group")
+        or select.args.get("having")
+        or find_in_scope(select, exp.AggFunc, exp.Anonymous)
     ):
         return
 
@@ -259,6 +269,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
         elif not _is_plain_group(group):
             return
+        if any(find_in_scope(projection, exp.Anonymous) for projection in select.selects):
+            return
     elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
         value = select.selects[0]
         group = select.args.get("group")
@@ -273,7 +285,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if find_in_scope(value, exp.Window):
             return
 
-        if find_in_scope(value, exp.AggFunc):
+        if find_in_scope(value, exp.AggFunc, exp.Anonymous):
             projection = value.unalias().unnest()
             if (
                 not value.alias

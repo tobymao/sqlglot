@@ -31,6 +31,28 @@ def unnest_subqueries(expression: E) -> E:
         parent = select.parent_select
         if not parent:
             continue
+
+        # Don't hoist a subquery out of a correlated, ungrouped aggregate if it's evaluated after the
+        # aggregation: the aggregate returns a row even for keys with no input rows, and the hoisted
+        # MAX(...) would turn the row's value into NULL
+        if (
+            scope.parent
+            and scope.parent.expression is parent
+            and scope.parent.is_correlated_subquery
+            and not _has_plain_explicit_group(parent)
+            and (
+                _has_aggregate_projection(parent)
+                or _has_order_aggregate(parent)
+                or parent.args.get("having")
+                or (
+                    (qualify := parent.args.get("qualify"))
+                    and projection_has_aggregate(qualify, parent.args.get("windows"))
+                )
+            )
+            and _is_post_aggregation(select, parent)
+        ):
+            continue
+
         if scope.external_columns:
             # a correlated set operation branch can't be hoisted out on its own
             if scope.scope_type != ScopeType.SET_OPERATION:
@@ -219,6 +241,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if isinstance(on_clause_ancestor, exp.Join) and on_clause_join_index is None:
         return
 
+    zero_fill = False
+
     if isinstance(parent_predicate, exp.Exists):
         if select.args.get("having") or select.args.get("qualify"):
             return
@@ -235,6 +259,32 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 return
         elif not _is_plain_group(group):
             return
+    elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
+        value = select.selects[0]
+        group = select.args.get("group")
+        if group and not _has_plain_explicit_group(select):
+            return
+
+        if not group and (
+            select.args.get("having") or select.args.get("qualify") or _has_order_aggregate(select)
+        ):
+            return
+
+        if find_in_scope(value, exp.Window):
+            return
+
+        if find_in_scope(value, exp.AggFunc):
+            projection = value.unalias().unnest()
+            if (
+                not value.alias
+                or len(select.selects) != 1
+                or not _is_supported_scalar_aggregate(projection)
+                or select.args.get("qualify")
+            ):
+                return
+
+            # Key-grouped COUNT returns scalar NULL when no group matches.
+            zero_fill = not group and isinstance(projection, exp.Count)
 
     # Joined columns may not be grouped, so keep post-group subqueries correlated.
     parent_group = parent_select.args.get("group")
@@ -403,18 +453,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
             )
     else:
-        # COUNT always returns 0 on empty datasets, so we need take that into consideration here
-        # by transforming all counts into 0 and using that as the coalesced value
-        if find_in_scope(value, exp.Count):
-
-            def remove_aggs(node):
-                if isinstance(node, exp.Count):
-                    return exp.Literal.number(0)
-                elif isinstance(node, exp.AggFunc):
-                    return exp.null()
-                return node
-
-            alias = exp.Coalesce(this=alias, expressions=[value.this.transform(remove_aggs)])
+        if zero_fill:
+            alias = exp.Coalesce(this=alias, expressions=[exp.Literal.number(0)])
 
         if is_subquery_projection and select.parent.alias:
             alias = exp.alias_(alias, select.parent.alias)
@@ -447,8 +487,11 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             parent_predicate, exp.paren(exp.and_(parent_predicate.copy(), right, copy=False))
         )
 
+    group = select.args.get("group")
     parent_select.join(
-        select.group_by(*group_by, copy=False),
+        select.group_by(
+            *(key for key in group_by if not group or key not in group.expressions), copy=False
+        ),
         # A grouped key is constant per group, so any predicate on it can be checked in the join
         on=[predicate for key, _, predicate in keys if key in group_by],
         join_type="LEFT",
@@ -484,6 +527,11 @@ def _is_plain_group(group: exp.Group) -> bool:
     )
 
 
+def _has_plain_explicit_group(select: exp.Select) -> bool:
+    group = select.args.get("group")
+    return isinstance(group, exp.Group) and not group.args.get("all") and _is_plain_group(group)
+
+
 def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
     # The nearest ordinary aggregate consumes input rows, even inside a window.
     # A window aggregate consumes post-group rows.
@@ -508,10 +556,33 @@ def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
     return node is not None and node.arg_key not in ("with_", "from_", "laterals", "joins", "where")
 
 
+def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
+    expression = expression.unnest()
+    if isinstance(expression, (exp.Count, exp.Sum, exp.Avg, exp.Min, exp.Max)):
+        return True
+    if isinstance(expression, exp.Literal):
+        return expression.is_number
+    if isinstance(expression, exp.Neg):
+        operands = [expression.this]
+    elif isinstance(expression, (exp.Add, exp.Sub, exp.Mul, exp.Div, exp.IntDiv, exp.Mod, exp.Pow)):
+        operands = [expression.this, expression.expression]
+    else:
+        return False
+    # COUNT inside arithmetic would need a non-NULL default for missing keys
+    return all(
+        not isinstance(operand.unnest(), exp.Count) and _is_supported_scalar_aggregate(operand)
+        for operand in operands
+    )
+
+
 def _has_aggregate_projection(select: exp.Select) -> bool:
     windows = select.args.get("windows")
-
     return any(projection_has_aggregate(projection, windows) for projection in select.selects)
+
+
+def _has_order_aggregate(select: exp.Select) -> bool:
+    order = select.args.get("order")
+    return order is not None and projection_has_aggregate(order, select.args.get("windows"))
 
 
 def _other_operand(expression: object) -> exp.Expr | None:

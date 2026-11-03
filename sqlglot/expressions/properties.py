@@ -524,7 +524,7 @@ class UsingProperty(Property):
 
 
 class TemporaryProperty(Property):
-    arg_types = {"this": False}
+    arg_types = {"this": False, "scoped": False}
 
 
 class VirtualProperty(Property):

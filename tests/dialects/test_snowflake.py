@@ -4812,8 +4812,13 @@ class TestSnowflake(Validator):
             "CREATE SCOPED TEMPORARY TABLE t (a INT)",
             write={
                 "duckdb": "CREATE TEMPORARY TABLE t (a INT)",
+                "oracle": "CREATE GLOBAL TEMPORARY TABLE t (a INT)",
                 "snowflake": "CREATE SCOPED TEMPORARY TABLE t (a INT)",
             },
+        )
+        self.validate_all(
+            "CREATE TEMPORARY TABLE ora$ptt_t (a INT)",
+            read={"oracle": "CREATE PRIVATE TEMPORARY TABLE ora$ptt_t (a INT)"},
         )
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",

@@ -794,7 +794,7 @@ class SnowflakeParser(parser.Parser):
         ),
         "SCOPED": lambda self: (
             self._match_texts(("TEMP", "TEMPORARY"))
-            and self.expression(exp.TemporaryProperty(this="SCOPED"))
+            and self.expression(exp.TemporaryProperty(scoped=True))
         ),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: (

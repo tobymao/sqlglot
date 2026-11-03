@@ -578,7 +578,9 @@ class SnowflakeGenerator(generator.Generator):
         exp.StrtokToArray: rename_func("STRTOK_TO_ARRAY"),
         exp.Stuff: rename_func("INSERT"),
         exp.StPoint: rename_func("ST_MAKEPOINT"),
-        exp.TemporaryProperty: lambda _, e: f"{e.name} TEMPORARY" if e.name else "TEMPORARY",
+        exp.TemporaryProperty: lambda _, e: (
+            "SCOPED TEMPORARY" if e.args.get("scoped") else "TEMPORARY"
+        ),
         exp.TimeAdd: date_delta_sql("TIMEADD"),
         exp.TimeSlice: lambda self, e: self.func(
             "TIME_SLICE",

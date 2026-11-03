@@ -799,23 +799,16 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
     yield from _traverse_subqueries(scope)
 
 
-def _by_name_outer_columns(set_op: exp.SetOperation, outer: list[str], arm: exp.Expr) -> list[str]:
-    # Walk the left spine to find the first arm's column names (the BY NAME reference)
-    node: exp.Expr = set_op
-    while isinstance(node, exp.SetOperation):
-        node = node.this
-    while isinstance(node, (exp.Subquery, exp.Paren)):
-        node = node.this
-    ref_names = node.named_selects if hasattr(node, "named_selects") else []
-    # Map first-arm column names to the outer aliases they should receive
-    col_map = dict(zip(ref_names, outer))
-
-    arm_node = arm
-    while isinstance(arm_node, (exp.Subquery, exp.Paren)):
-        arm_node = arm_node.this
-    arm_names = arm_node.named_selects if hasattr(arm_node, "named_selects") else []
-    # Reorder outer aliases so each column gets the alias matching its name, not its position
-    return [col_map.get(name, "") for name in arm_names]
+def _build_by_name_col_map(set_op: exp.SetOperation, outer: list[str]) -> dict[str, str] | None:
+    col_map: dict[str, str] = {}
+    outer_iter = iter(outer)
+    for arm in set_op.flatten():
+        for name in getattr(arm, "named_selects", []):
+            if name == "*":
+                return {}
+            if name not in col_map:
+                col_map[name] = next(outer_iter, "")
+    return col_map
 
 
 def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
@@ -827,6 +820,7 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     # Access the args directly instead of the left/right properties, because set operation
     # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
     expression_stack: list[exp.Expr] = [set_op.expression, set_op.this]
+    by_name_col_map = None
 
     while expression_stack:
         expression = expression_stack.pop()
@@ -834,14 +828,24 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
 
         outer = set_op_scope.outer_columns
         set_op_expr = set_op_scope.expression
-        # BY NAME matches columns by name, so right arms need outer aliases reordered to match
+        # BY NAME matches columns by name, so right arms need outer aliases reordered
         if (
             outer
             and prev_scope is not None
             and isinstance(set_op_expr, exp.SetOperation)
             and set_op_expr.args.get("by_name")
         ):
-            outer = _by_name_outer_columns(set_op_expr, outer, expression)
+            if by_name_col_map is None:
+                by_name_col_map = (
+                    _build_by_name_col_map(set_op, scope.outer_columns)
+                    if scope.outer_columns
+                    else {}
+                )
+
+            if by_name_col_map:
+                arm_node = expression.unnest()
+                arm_names = getattr(arm_node, "named_selects", [])
+                outer = [by_name_col_map.get(name, "") for name in arm_names]
 
         new_scope = set_op_scope.branch(
             expression,

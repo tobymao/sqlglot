@@ -1,6 +1,25 @@
 Changelog
 =========
 
+## [v30.29.0] - 2026-11-03
+### :boom: BREAKING CHANGES
+- due to [`1cbcaf6`](https://github.com/tobymao/sqlglot/commit/1cbcaf65566159b21c77488931f343ae1abac2a1) - preserve row presence when decorrelating scalar aggregates  *(PR [#8851](https://github.com/tobymao/sqlglot/pull/8851) by [@treysp](https://github.com/treysp))*:
+
+  preserve row presence when decorrelating scalar aggregates  (#8851)
+
+
+### :sparkles: New Features
+- [`007fe45`](https://github.com/tobymao/sqlglot/commit/007fe4504a85dced2659b43d6d8c42ce96d509a1) - **snowflake**: support SCOPED TEMPORARY objects *(PR [#8883](https://github.com/tobymao/sqlglot/pull/8883) by [@ramitmittal](https://github.com/ramitmittal))*
+
+### :bug: Bug Fixes
+- [`9619dd1`](https://github.com/tobymao/sqlglot/commit/9619dd185b2f7bbaa77d4ecb3abe44b83ac0905b) - **expression**: prevent unhandled ValueError in is_int on large exponents [GEMINI] *(PR [#8879](https://github.com/tobymao/sqlglot/pull/8879) by [@shadye-6](https://github.com/shadye-6))*
+  - :arrow_lower_right: *fixes issue [#8878](https://github.com/tobymao/sqlglot/issues/8878) opened by [@shadye-6](https://github.com/shadye-6)*
+- [`c891966`](https://github.com/tobymao/sqlglot/commit/c89196682c0a3767894079aa2eac608a82db6296) - **optimizer**: fix merge_subqueries for constant projections having GROUP_BY_ALL *(PR [#8849](https://github.com/tobymao/sqlglot/pull/8849) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`1cbcaf6`](https://github.com/tobymao/sqlglot/commit/1cbcaf65566159b21c77488931f343ae1abac2a1) - **optimizer**: preserve row presence when decorrelating scalar aggregates  *(PR [#8851](https://github.com/tobymao/sqlglot/pull/8851) by [@treysp](https://github.com/treysp))*
+  - :arrow_lower_right: *fixes issue [#8752](https://github.com/tobymao/sqlglot/issues/8752) opened by [@wjjc1017](https://github.com/wjjc1017)*
+- [`03ecb3e`](https://github.com/tobymao/sqlglot/commit/03ecb3ed161ff97872f61e20388f338d6b0f4871) - **optimizer**: skip decorrelation for anonymous funcs with unknown semantics *(PR [#8881](https://github.com/tobymao/sqlglot/pull/8881) by [@treysp](https://github.com/treysp))*
+
+
 ## [v30.27.0] - 2026-10-30
 ### :boom: BREAKING CHANGES
 - due to [`5b7af1e`](https://github.com/tobymao/sqlglot/commit/5b7af1e765052d256aacb7d42624aee1a076fac4) - parse ~ as a partial regex match from DuckDB 2.0 [a mix of models in Hermes Agent] *(PR [#8840](https://github.com/tobymao/sqlglot/pull/8840) by [@ryanduguid](https://github.com/ryanduguid))*:
@@ -16587,3 +16606,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.25.0]: https://github.com/tobymao/sqlglot/compare/v30.24.0...v30.25.0
 [v30.26.0]: https://github.com/tobymao/sqlglot/compare/v30.25.0...v30.26.0
 [v30.27.0]: https://github.com/tobymao/sqlglot/compare/v30.26.0...v30.27.0
+[v30.29.0]: https://github.com/tobymao/sqlglot/compare/v30.28.0...v30.29.0

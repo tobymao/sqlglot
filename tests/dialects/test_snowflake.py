@@ -4694,6 +4694,15 @@ class TestSnowflake(Validator):
                 "snowflake": "CREATE TABLE orders_clone CLONE orders",
             },
         )
+        self.validate_identity("CREATE SCOPED TEMPORARY TABLE t (a INT)")
+        self.validate_identity("CREATE OR REPLACE SCOPED TEMPORARY VIEW v AS SELECT 1")
+        self.validate_all(
+            "CREATE SCOPED TEMPORARY TABLE t (a INT)",
+            write={
+                "duckdb": "CREATE TEMPORARY TABLE t (a INT)",
+                "snowflake": "CREATE SCOPED TEMPORARY TABLE t (a INT)",
+            },
+        )
         self.validate_all(
             "CREATE OR REPLACE TRANSIENT TABLE a (id INT)",
             read={

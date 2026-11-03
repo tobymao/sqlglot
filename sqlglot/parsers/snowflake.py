@@ -791,6 +791,10 @@ class SnowflakeParser(parser.Parser):
             if self._match_text_seq("ACCESS", "POLICY")
             else self._parse_row()
         ),
+        "SCOPED": lambda self: (
+            self._match_text_seq("TEMPORARY")
+            and self.expression(exp.TemporaryProperty(this="SCOPED"))
+        ),
         "TAG": lambda self: self._parse_tag(),
         "USING": lambda self: (
             self._match_text_seq("TEMPLATE")

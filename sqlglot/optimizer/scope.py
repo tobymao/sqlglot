@@ -799,6 +799,25 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
     yield from _traverse_subqueries(scope)
 
 
+def _by_name_outer_columns(set_op: exp.SetOperation, outer: list[str], arm: exp.Expr) -> list[str]:
+    # Walk the left spine to find the first arm's column names (the BY NAME reference)
+    node: exp.Expr = set_op
+    while isinstance(node, exp.SetOperation):
+        node = node.this
+    while isinstance(node, (exp.Subquery, exp.Paren)):
+        node = node.this
+    ref_names = node.named_selects if hasattr(node, "named_selects") else []
+    # Map first-arm column names to the outer aliases they should receive
+    col_map = dict(zip(ref_names, outer))
+
+    arm_node = arm
+    while isinstance(arm_node, (exp.Subquery, exp.Paren)):
+        arm_node = arm_node.this
+    arm_names = arm_node.named_selects if hasattr(arm_node, "named_selects") else []
+    # Reorder outer aliases so each column gets the alias matching its name, not its position
+    return [col_map.get(name, "") for name in arm_names]
+
+
 def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     prev_scope: Scope | None = None
     set_op_scope_stack: list[Scope] = [scope]
@@ -813,15 +832,20 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
         expression = expression_stack.pop()
         set_op_scope = set_op_scope_stack[-1]
 
+        outer = set_op_scope.outer_columns
         set_op_expr = set_op_scope.expression
-        propagate_outer = set_op_scope.outer_columns
-        # BY NAME matches columns by name, so positional outer_columns must not be pushed into arms
-        if isinstance(set_op_expr, exp.SetOperation) and set_op_expr.args.get("by_name"):
-            propagate_outer = []
+        # BY NAME matches columns by name, so right arms need outer aliases reordered to match
+        if (
+            outer
+            and prev_scope is not None
+            and isinstance(set_op_expr, exp.SetOperation)
+            and set_op_expr.args.get("by_name")
+        ):
+            outer = _by_name_outer_columns(set_op_expr, outer, expression)
 
         new_scope = set_op_scope.branch(
             expression,
-            outer_columns=propagate_outer,
+            outer_columns=outer,
             scope_type=ScopeType.SET_OPERATION,
         )
 

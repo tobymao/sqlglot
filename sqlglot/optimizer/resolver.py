@@ -272,16 +272,6 @@ class Resolver:
             else:
                 column_aliases = []
 
-            # For set ops (esp. BY NAME), aliases live on the Subquery/CTE wrapper, not the union node
-            if (
-                not column_aliases
-                and isinstance(source, Scope)
-                and isinstance(source.expression, exp.SetOperation)
-            ):
-                parent = source.expression.parent
-                if isinstance(parent, (exp.Subquery, exp.CTE)):
-                    column_aliases = parent.alias_column_names
-
             if column_aliases:
                 # If the source's columns are aliased, their aliases shadow the corresponding column names.
                 # This can be expensive if there are lots of columns, so only do this if column_aliases exist.

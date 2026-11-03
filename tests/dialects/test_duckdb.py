@@ -263,6 +263,18 @@ class TestDuckDB(Validator):
             "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
         )
 
+    def test_digit_separators(self):
+        self.validate_identity("SELECT 1_000", "SELECT 1000")
+        self.validate_identity("SELECT 1_000_000", "SELECT 1000000")
+        self.validate_identity("SELECT 1_2_3 AS x", "SELECT 123 AS x")
+
+        # An underscore only separates two digits; anywhere else the number ends and the
+        # rest is the implicit alias (DuckDB test/sql/parser/digit_separators.test)
+        self.validate_identity("SELECT 1__2", "SELECT 1 AS __2")
+        self.validate_identity("SELECT 1_", "SELECT 1 AS _")
+        self.validate_identity("SELECT 1e_5", "SELECT 1 AS e_5")
+        self.validate_identity("SELECT 1._5", "SELECT 1. AS _5")
+
     def test_reserved_keyword_identifiers(self):
         # DuckDB keywords whose sqlglot entries used to carry the Postgres grammar's _p suffix,
         # plus DuckDB-specific reserved keywords (see duckdb_keywords())

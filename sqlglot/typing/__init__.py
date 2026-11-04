@@ -329,9 +329,15 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Coalesce,
             exp.Greatest,
             exp.Least,
-            exp.Max,
-            exp.Min,
         }
+    },
+    **{
+        expr_type: {
+            "annotator": lambda self, e: self._annotate_by_args(
+                e, "this", "expressions", array=e.args.get("count") is not None
+            )
+        }
+        for expr_type in {exp.Max, exp.Min}
     },
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_array_element(e)}

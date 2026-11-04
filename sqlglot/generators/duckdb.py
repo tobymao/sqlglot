@@ -1770,6 +1770,8 @@ class DuckDBGenerator(generator.Generator):
         exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
         exp.Initcap: _initcap_sql,
         exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
+        exp.Max: rename_func("MAX"),
+        exp.Min: rename_func("MIN"),
         exp.SHA: lambda self, e: _sha_sql(self, e, "SHA1"),
         exp.SHA1Digest: lambda self, e: _sha_sql(self, e, "SHA1", is_binary=True),
         exp.SHA2: lambda self, e: _sha_sql(self, e, "SHA256"),

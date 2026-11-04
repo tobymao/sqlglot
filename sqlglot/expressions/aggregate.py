@@ -180,7 +180,7 @@ class LogicalOr(Expression, AggFunc):
 
 
 class Max(Expression, AggFunc):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "count": False}
     is_var_len_args = True
 
 
@@ -189,7 +189,7 @@ class Median(Expression, AggFunc):
 
 
 class Min(Expression, AggFunc):
-    arg_types = {"this": True, "expressions": False}
+    arg_types = {"this": True, "expressions": False, "count": False}
     is_var_len_args = True
 
 

@@ -808,14 +808,34 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     # Access the args directly instead of the left/right properties, because set operation
     # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
     expression_stack: list[exp.Expr] = [set_op.expression, set_op.this]
+    by_name_col_map: dict[str, str] | None = None
 
     while expression_stack:
         expression = expression_stack.pop()
         set_op_scope = set_op_scope_stack[-1]
 
+        outer = set_op_scope.outer_columns
+        set_op_expr = set_op_scope.expression
+        # all arms need their outer aliases reordered for BY NAME
+        if (
+            outer
+            and prev_scope is not None
+            and isinstance(set_op_expr, exp.SetOperation)
+            and set_op_expr.args.get("by_name")
+        ):
+            if by_name_col_map is None:
+                names = set_op.named_selects
+                by_name_col_map = {} if "*" in names else dict(zip(names, scope.outer_columns))
+
+            if by_name_col_map:
+                arm_node = expression.unnest()
+                outer = [
+                    by_name_col_map.get(name, "") for name in getattr(arm_node, "named_selects", [])
+                ]
+
         new_scope = set_op_scope.branch(
             expression,
-            outer_columns=set_op_scope.outer_columns,
+            outer_columns=outer,
             scope_type=ScopeType.SET_OPERATION,
         )
 

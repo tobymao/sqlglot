@@ -1111,15 +1111,27 @@ class SetOperation(Expression, Query):
 
     @property
     def named_selects(self) -> list[str]:
-        expr: Expr = self
-        while isinstance(expr, SetOperation):
-            if expr.args.get("by_name"):
-                left = t.cast(Selectable, expr.this.unnest()).named_selects
-                right = t.cast(Selectable, expr.expression.unnest()).named_selects
-                return list(dict.fromkeys(left + right))
+        names = []
+        stack: list[Expr] = [self]
+        by_name = False
 
-            expr = expr.this.unnest()
-        return _named_selects(expr)
+        while stack:
+            expr = stack.pop()
+            if not isinstance(expr, SetOperation):
+                names.extend(t.cast(Selectable, expr).named_selects)
+                continue
+
+            while isinstance(expr, SetOperation):
+                if expr.args.get("by_name"):
+                    by_name = True
+                    stack.append(expr.expression.unnest())
+                    stack.append(expr.this.unnest())
+                    break
+                expr = expr.this.unnest()
+            else:
+                names.extend(_named_selects(expr))
+
+        return list(dict.fromkeys(names)) if by_name else names
 
     @property
     def is_star(self) -> bool:

@@ -153,7 +153,7 @@ def pushdown_cnf(
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
                 inner_predicate = replace_aliases(node, predicate)
-                if find_in_scope(inner_predicate, exp.AggFunc) or _is_scalar_aggregate(node):
+                if _is_scalar_aggregate(node):
                     node.having(inner_predicate, copy=False)
                 else:
                     node.where(inner_predicate, copy=False)
@@ -218,7 +218,7 @@ def pushdown_dnf(
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):
             inner_predicate = replace_aliases(table_node, predicate)
-            if find_in_scope(inner_predicate, exp.AggFunc) or _is_scalar_aggregate(table_node):
+            if _is_scalar_aggregate(table_node):
                 table_node.having(inner_predicate, copy=False)
             else:
                 table_node.where(inner_predicate, copy=False)
@@ -288,8 +288,14 @@ def nodes_for_predicate(
 
 
 def _is_scalar_aggregate(select: exp.Select) -> bool:
+    if select.args.get("having"):
+        return True
+
     windows = select.args.get("windows")
-    return any(projection_has_aggregate(s, windows) for s in select.selects)
+    order = select.args.get("order")
+    return any(projection_has_aggregate(s, windows) for s in select.selects) or (
+        order is not None and projection_has_aggregate(order, windows)
+    )
 
 
 OPERATOR_EXPRESSIONS = (exp.Binary, exp.Unary, exp.Predicate)

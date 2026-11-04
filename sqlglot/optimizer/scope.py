@@ -799,18 +799,6 @@ def _traverse_select(scope: Scope) -> Iterator[Scope]:
     yield from _traverse_subqueries(scope)
 
 
-def _build_by_name_col_map(set_op: exp.SetOperation, outer: list[str]) -> dict[str, str] | None:
-    col_map: dict[str, str] = {}
-    outer_iter = iter(outer)
-    for arm in set_op.flatten():
-        for name in getattr(arm, "named_selects", []):
-            if name == "*":
-                return {}
-            if name not in col_map:
-                col_map[name] = next(outer_iter, "")
-    return col_map
-
-
 def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     prev_scope: Scope | None = None
     set_op_scope_stack: list[Scope] = [scope]
@@ -820,7 +808,7 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
     # Access the args directly instead of the left/right properties, because set operation
     # operands aren't guaranteed to be Query nodes, e.g. in VALUES (1) UNION ALL SELECT 1
     expression_stack: list[exp.Expr] = [set_op.expression, set_op.this]
-    by_name_col_map = None
+    by_name_col_map: dict[str, str] | None = None
 
     while expression_stack:
         expression = expression_stack.pop()
@@ -836,11 +824,8 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
             and set_op_expr.args.get("by_name")
         ):
             if by_name_col_map is None:
-                by_name_col_map = (
-                    _build_by_name_col_map(set_op, scope.outer_columns)
-                    if scope.outer_columns
-                    else {}
-                )
+                names = set_op.named_selects
+                by_name_col_map = {} if "*" in names else dict(zip(names, scope.outer_columns))
 
             if by_name_col_map:
                 arm_node = expression.unnest()

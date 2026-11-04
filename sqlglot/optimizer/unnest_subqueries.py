@@ -36,7 +36,16 @@ def unnest_subqueries(expression: E) -> E:
         if isinstance(select.find_ancestor(exp.Anonymous, exp.Select), exp.Anonymous) or (
             not _has_plain_explicit_group(parent)
             and _is_post_aggregation(select, parent)
-            and any(find_in_scope(projection, exp.Anonymous) for projection in parent.selects)
+            and any(
+                find_in_scope(node, exp.Anonymous)
+                for node in (
+                    *parent.selects,
+                    parent.args.get("having"),
+                    parent.args.get("qualify"),
+                    parent.args.get("order"),
+                )
+                if node
+            )
         ):
             continue
 

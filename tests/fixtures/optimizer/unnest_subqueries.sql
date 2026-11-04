@@ -454,3 +454,33 @@ SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM(_u_0.b) ORDER BY x.b) AS n FROM 
 # execute: true
 WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;
 WITH q AS (SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0) SELECT q.total FROM q;
+
+# title: Preserve a scalar subquery with an anonymous aggregate only in HAVING
+# execute: true
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x HAVING FAVG(x.a) > 0;
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x HAVING FAVG(x.a) > 0;
+
+# title: Preserve a scalar subquery with an anonymous aggregate only in ORDER BY
+# execute: true
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x ORDER BY FAVG(x.a);
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x ORDER BY FAVG(x.a);
+
+# title: Preserve a scalar subquery with an anonymous aggregate only in QUALIFY
+# execute: true
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n, ROW_NUMBER() OVER () AS rn FROM x QUALIFY FAVG(x.a) > 0;
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n, ROW_NUMBER() OVER () AS rn FROM x QUALIFY FAVG(x.a) > 0;
+
+# title: Explicit grouping permits hoisting with an anonymous aggregate in HAVING
+# execute: true
+SELECT x.a, 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x GROUP BY x.a HAVING FAVG(x.a) > 0 ORDER BY x.a;
+SELECT x.a, 1 + MAX(_u_0.n) AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 GROUP BY x.a HAVING FAVG(x.a) > 0 ORDER BY x.a;
+
+# title: Anonymous function search in ORDER BY stops at a nested query
+# execute: true
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x ORDER BY (SELECT FAVG(y.b) FROM y);
+SELECT 1 + _u_0.n AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 ORDER BY (SELECT FAVG(y.b) FROM y);
+
+# title: Anonymous scalar functions in WHERE permit hoisting
+# execute: true
+SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x WHERE EVEN(x.a) > 0;
+SELECT 1 + _u_0.n AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 WHERE EVEN(x.a) > 0;

@@ -4276,11 +4276,7 @@ class Parser:
             self._advance()
             comments = self._prev_comments
             only = self._match(TokenType.ONLY)
-            relation = (
-                self._parse_wrapped(self._parse_table_parts, optional=True)
-                if only
-                else self._parse_table_parts()
-            )
+            relation = self._parse_wrapped(self._parse_table_parts, optional=True)
             if only and relation:
                 relation.set("only", True)
             self._match(TokenType.STAR)

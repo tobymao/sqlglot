@@ -26,6 +26,9 @@ if t.TYPE_CHECKING:
     from collections.abc import Iterable
 
 
+GROUPING_CONTAINERS = (exp.Group, exp.GroupingSets, exp.Cube, exp.Rollup, exp.Tuple, exp.Paren)
+
+
 def qualify_columns(
     expression: E,
     schema: dict[str, object] | Schema,
@@ -106,9 +109,6 @@ def qualify_columns(
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
-        if expand_alias_refs and not dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
-            _expand_alias_refs(scope, resolver, dialect)
-
         if is_select and expand_stars:
             _expand_stars(
                 scope,
@@ -121,7 +121,7 @@ def qualify_columns(
             )
 
         # HAVING precedence can depend on positional GROUP BY targets within a star.
-        if expand_alias_refs and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+        if expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
         if is_select:
@@ -507,13 +507,7 @@ def _expand_alias_refs(
         and (group := expression.args.get("group"))
     ):
         # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
-        for grouping in group.walk(
-            prune=lambda node: (
-                not isinstance(
-                    node, (exp.Group, exp.GroupingSets, exp.Cube, exp.Rollup, exp.Tuple, exp.Paren)
-                )
-            )
-        ):
+        for grouping in group.walk(prune=lambda node: not isinstance(node, GROUPING_CONTAINERS)):
             if isinstance(grouping, exp.Literal) and grouping.is_int:
                 index = int(grouping.to_py()) - 1
                 if 0 <= index < len(expression.selects):

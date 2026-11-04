@@ -2350,7 +2350,10 @@ LIFETIME(MIN 0 MAX 0)""",
             "SELECT 1e_5foo FROM (SELECT 7 AS `1e_5foo`)",
             'SELECT 1e_5foo FROM (SELECT 7 AS "1e_5foo")',
         )
-        self.validate_identity("SELECT 1e_5")
+        self.validate_identity(
+            "SELECT 1__2, 1_, 1e_5 FROM (SELECT 7 AS `1__2`, 8 AS `1_`, 9 AS `1e_5`)",
+            'SELECT 1__2, 1_, 1e_5 FROM (SELECT 7 AS "1__2", 8 AS "1_", 9 AS "1e_5")',
+        )
 
         # Digit separators still apply to actual numbers
         self.validate_identity("SELECT 1_000", "SELECT 1000")

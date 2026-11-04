@@ -267,12 +267,15 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT 1_000", "SELECT 1000")
         self.validate_identity("SELECT 1_000_000", "SELECT 1000000")
         self.validate_identity("SELECT 1_2_3 AS x", "SELECT 123 AS x")
+        self.validate_identity("SELECT 1_0.2_5", "SELECT 10.25")
+        self.validate_identity("SELECT 1.2e3_4", "SELECT 1.2e34")
 
         # An underscore only separates two digits; anywhere else the number ends and the
         # rest is the implicit alias (DuckDB test/sql/parser/digit_separators.test)
         self.validate_identity("SELECT 1__2", "SELECT 1 AS __2")
         self.validate_identity("SELECT 1_", "SELECT 1 AS _")
         self.validate_identity("SELECT 1e_5", "SELECT 1 AS e_5")
+        self.validate_identity("SELECT 1_0e_5", "SELECT 10 AS e_5")
         self.validate_identity("SELECT 1._5", "SELECT 1. AS _5")
 
     def test_reserved_keyword_identifiers(self):

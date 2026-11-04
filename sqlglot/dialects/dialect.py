@@ -808,6 +808,9 @@ class Dialect(metaclass=_Dialect):
     REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = True
     """Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length."""
 
+    REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL = True
+    """Whether REGEXP_EXTRACT returns NULL (rather than an empty string) when the pattern does not match."""
+
     SET_OP_DISTINCT_BY_DEFAULT: dict[Type[exp.Expr], bool | None] = {
         exp.Except: True,
         exp.Intersect: True,

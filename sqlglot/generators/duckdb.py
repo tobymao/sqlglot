@@ -4338,6 +4338,7 @@ class DuckDBGenerator(generator.Generator):
         position = expression.args.get("position")
         occurrence = expression.args.get("occurrence")
         null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+        null_if_no_match = expression.args.get("null_if_no_match")
 
         # Handle Snowflake's 'e' flag: it enables capture group extraction
         # In DuckDB, this is controlled by the group parameter directly
@@ -4381,6 +4382,15 @@ class DuckDBGenerator(generator.Generator):
         # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1
         elif non_single_occurrence:
             result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
+
+        # DuckDB's REGEXP_EXTRACT returns '' on no match, while the source dialect returns NULL.
+        # Gate on REGEXP_MATCHES so a genuine empty-string match is preserved as ''.
+        # The occurrence/extract-all paths above already yield NULL when out of range.
+        if null_if_no_match and name == "REGEXP_EXTRACT":
+            matches = exp.Anonymous(
+                this="REGEXP_MATCHES", expressions=[this, expression.expression, flags_expr]
+            )
+            result = exp.case().when(exp.not_(matches), exp.Null()).else_(result)
 
         return self.sql(result)
 

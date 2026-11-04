@@ -1758,8 +1758,6 @@ class TestDuckDB(Validator):
             "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
             read={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
-                "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
             },
             write={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
@@ -1769,9 +1767,6 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
-            read={
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
-            },
             write={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",

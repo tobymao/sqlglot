@@ -371,6 +371,7 @@ def _expand_alias_refs(
         return
 
     alias_to_expression: dict[str, tuple[exp.Expr, int]] = {}
+    grouped_columns: set[exp.Expr] = set()
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
@@ -423,7 +424,14 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            if table and (not alias_expr or skip_replace):
+            prefer_column = dialect.PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY
+            if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+                prefer_column = (
+                    isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
+                    or exp.column(column.this, table=table) in grouped_columns
+                )
+
+            if table and (not alias_expr or skip_replace or prefer_column):
                 column.set("table", table)
             elif not column.table and alias_expr and not skip_replace:
                 # For queries like SELECT x + 1 AS y FROM read_parquet('f') WHERE y > 1, we can't
@@ -487,6 +495,27 @@ def _expand_alias_refs(
 
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"), literal_index=True)
+
+    if (
+        dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS
+        and expression.args.get("having")
+        and (group := expression.args.get("group"))
+    ):
+        # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
+        for grouping in group.walk(
+            prune=lambda node: (
+                not isinstance(
+                    node, (exp.Group, exp.GroupingSets, exp.Cube, exp.Rollup, exp.Tuple, exp.Paren)
+                )
+            )
+        ):
+            if isinstance(grouping, exp.Literal) and grouping.is_int:
+                index = int(grouping.to_py()) - 1
+                if 0 <= index < len(expression.selects):
+                    grouping = expression.selects[index].unalias()
+            if isinstance(grouping, exp.Column):
+                grouped_columns.add(grouping)
+
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
 

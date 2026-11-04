@@ -11,6 +11,7 @@ from sqlglot.tokens import TokenType
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
     INDEX_OFFSET = 1
+    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
     USING_COLUMN_ORDER = UsingColumnOrder.USING_LIST
 
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {

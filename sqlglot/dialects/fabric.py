@@ -28,6 +28,8 @@ class Fabric(TSQL):
     - T-SQL Surface Area: https://learn.microsoft.com/en-us/fabric/data-warehouse/tsql-surface-area
     """
 
+    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
+
     # Fabric is case-sensitive unlike T-SQL which is case-insensitive
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
 

@@ -267,20 +267,16 @@ def nodes_for_predicate(
                 nodes[table] = node
 
         if isinstance(node, exp.Select) and len(tables) == 1:
-            # We can't push down window expressions
-            has_window_expression = any(
-                select for select in node.selects if find_in_scope(select, exp.Window)
-            )
-            has_udtf = any(
-                select for select in node.selects if select.find(exp.UDTF, exp.GenerateSeries)
+            has_window_or_srf = any(
+                find_in_scope(select, exp.Window, *exp.SET_RETURNING_FUNCTIONS)
+                for select in node.selects
             )
             # we can't push down predicates to select statements if they are referenced in
             # multiple places.
             if (
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
-                and not has_window_expression
-                and not has_udtf
+                and not has_window_or_srf
                 # LIMIT/OFFSET and QUALIFY select rows before the outer predicate runs
                 and not node.args.get("limit")
                 and not node.args.get("offset")

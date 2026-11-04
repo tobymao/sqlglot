@@ -9,6 +9,15 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_table_query_identifier(self):
+        self.validate_identity(
+            "SELECT (table.x) FROM (SELECT 1 AS x) AS `table`",
+            "SELECT (`table`.x) FROM (SELECT 1 AS x) AS `table`",
+        )
+        self.validate_identity(
+            "INSERT INTO t (`table`) TABLE u", "INSERT INTO t (`table`) SELECT * FROM u"
+        )
+
     def test_timestampadd(self):
         for unit in ("SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):
             with self.subTest(unit=unit):

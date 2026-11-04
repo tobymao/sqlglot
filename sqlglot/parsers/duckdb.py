@@ -110,6 +110,8 @@ _parse_regexp_full_match = binary_range_parser(exp.RegexpFullMatch)
 
 
 class DuckDBParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True

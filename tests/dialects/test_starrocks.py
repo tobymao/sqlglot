@@ -570,7 +570,7 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
                 "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt) + INTERVAL 5 MINUTE",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt, CAST('1970-01-01' AS TIMESTAMP)) + INTERVAL 5 MINUTE",
             },
         )
         self.validate_all(
@@ -581,7 +581,7 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
                 "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt, CAST('1970-01-01' AS TIMESTAMP))",
             },
         )
 

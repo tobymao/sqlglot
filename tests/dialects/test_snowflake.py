@@ -3192,49 +3192,72 @@ class TestSnowflake(Validator):
             "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'HOUR')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'HOUR')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP), CAST('1970-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'HOUR', 'END')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'HOUR', 'END')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP)) + INTERVAL 1 HOUR",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 HOUR, CAST('2024-03-15 14:37:42' AS TIMESTAMP), CAST('1970-01-01' AS TIMESTAMP)) + INTERVAL 1 HOUR",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'DAY')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'DAY')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE))",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE), CAST('1970-01-01' AS DATE))",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'DAY', 'END')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'DAY', 'END')",
-                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE)) + INTERVAL 1 DAY AS DATE)",
+                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 DAY, CAST('2024-03-15' AS DATE), CAST('1970-01-01' AS DATE)) + INTERVAL 1 DAY AS DATE)",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 15, 'MINUTE')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 15, 'MINUTE')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 15 MINUTE, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 15 MINUTE, CAST('2024-03-15 14:37:42' AS TIMESTAMP), CAST('1970-01-01' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(TIMESTAMP '2024-03-15 14:37:42', 1, 'QUARTER')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15 14:37:42' AS TIMESTAMP), 1, 'QUARTER')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 QUARTER, CAST('2024-03-15 14:37:42' AS TIMESTAMP))",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 QUARTER, CAST('2024-03-15 14:37:42' AS TIMESTAMP), CAST('1970-01-01' AS TIMESTAMP))",
+            },
+        )
+        # 8-day slices must align to Snowflake's 1970-01-01 origin, not DuckDB's default
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2021-03-18', 8, 'DAY')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2021-03-18' AS DATE), 8, 'DAY')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 8 DAY, CAST('2021-03-18' AS DATE), CAST('1970-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2021-03-18', 8, 'DAY', 'END')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2021-03-18' AS DATE), 8, 'DAY', 'END')",
+                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 8 DAY, CAST('2021-03-18' AS DATE), CAST('1970-01-01' AS DATE)) + INTERVAL 8 DAY AS DATE)",
+            },
+        )
+        # WEEK aligns to the Monday of the epoch's week (1969-12-29) under WEEK_START=0
+        self.validate_all(
+            "SELECT TIME_SLICE(DATE '2024-03-15', 2, 'WEEK')",
+            write={
+                "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 2, 'WEEK')",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 2 WEEK, CAST('2024-03-15' AS DATE), CAST('1969-12-29' AS DATE))",
             },
         )
         self.validate_all(
             "SELECT TIME_SLICE(DATE '2024-03-15', 1, 'WEEK', 'END')",
             write={
                 "snowflake": "SELECT TIME_SLICE(CAST('2024-03-15' AS DATE), 1, 'WEEK', 'END')",
-                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 WEEK, CAST('2024-03-15' AS DATE)) + INTERVAL 1 WEEK AS DATE)",
+                "duckdb": "SELECT CAST(TIME_BUCKET(INTERVAL 1 WEEK, CAST('2024-03-15' AS DATE), CAST('1969-12-29' AS DATE)) + INTERVAL 1 WEEK AS DATE)",
             },
         )
 

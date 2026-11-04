@@ -2425,33 +2425,37 @@ class DuckDBGenerator(generator.Generator):
         Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
 
         Snowflake: TIME_SLICE(date_expr, slice_length, 'UNIT' [, 'START'|'END'])
-        DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr)
+        DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr, origin)
 
-        For 'END' kind, add the interval to get the end of the slice.
-        For DATE type with 'END', cast result back to DATE to preserve type.
+        Snowflake aligns slices to the 1970-01-01 epoch, so an explicit origin is
+        required because DuckDB's default origin differs. For 'END' kind, add the
+        interval to get the next slice's start; for DATE input, cast back to DATE.
         """
         date_expr = expression.this
         slice_length = expression.expression
         unit = expression.unit
         kind = expression.text("kind").upper()
+        is_date = date_expr.is_type(exp.DType.DATE)
 
-        # Create INTERVAL expression: INTERVAL 'N' UNIT
         interval_expr = exp.Interval(this=slice_length, unit=unit)
 
-        # Create base time_bucket expression
-        time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr)
+        # WEEK aligns to the Monday of the epoch's week under Snowflake's default WEEK_START=0
+        is_week = bool(unit and unit.name.upper() == "WEEK")
+        origin_date = "1969-12-29" if is_week else "1970-01-01"
+        origin_expr = exp.cast(
+            exp.Literal.string(origin_date),
+            exp.DType.DATE if is_date else exp.DType.TIMESTAMP,
+        )
 
-        # Check if we need the end of the slice (default is start)
-        if not kind == "END":
-            # For 'START', return time_bucket directly
+        time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr, origin_expr)
+
+        if kind != "END":
             return self.sql(time_bucket_expr)
 
-        # For 'END', add the interval to get end of slice
         add_expr = exp.Add(this=time_bucket_expr, expression=interval_expr.copy())
 
-        # If input is DATE type, cast result back to DATE to preserve type
-        # DuckDB converts DATE to TIMESTAMP when adding intervals
-        if date_expr.is_type(exp.DType.DATE):
+        # DuckDB widens DATE to TIMESTAMP when adding intervals, so cast back
+        if is_date:
             return self.sql(exp.cast(add_expr, exp.DType.DATE))
 
         return self.sql(add_expr)

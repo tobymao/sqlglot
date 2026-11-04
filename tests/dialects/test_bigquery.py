@@ -3245,7 +3245,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-                "duckdb": '''SELECT CASE WHEN NOT REGEXP_MATCHES(abc, 'pattern(group)') THEN NULL ELSE REGEXP_EXTRACT(abc, 'pattern(group)', 1) END FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3254,7 +3254,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
-                "duckdb": '''SELECT CASE WHEN NOT REGEXP_MATCHES(abc, 'pattern(group)') THEN NULL ELSE REGEXP_EXTRACT(abc, 'pattern(group)', 1) END FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3263,7 +3263,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
-                "duckdb": '''SELECT CASE WHEN NOT REGEXP_MATCHES(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)') THEN NULL ELSE REGEXP_EXTRACT(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1) END FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3272,7 +3272,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
-                "duckdb": '''SELECT CASE WHEN NOT REGEXP_MATCHES(abc, 'pattern(group)') THEN NULL ELSE REGEXP_EXTRACT(abc, 'pattern(group)', 1) END FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 

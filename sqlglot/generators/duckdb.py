@@ -4367,7 +4367,12 @@ class DuckDBGenerator(generator.Generator):
         is_extract_all = isinstance(expression, exp.RegexpExtractAll)
         non_single_occurrence = occurrence and (not occurrence.is_int or occurrence.to_py() > 1)
 
-        if is_extract_all or non_single_occurrence:
+        # First REGEXP_EXTRACT_ALL match: no-match yields NULL (not ''), subject evaluated once
+        null_on_no_match = (
+            bool(null_if_no_match) and not is_extract_all and not non_single_occurrence
+        )
+
+        if is_extract_all or non_single_occurrence or null_on_no_match:
             name = "REGEXP_EXTRACT_ALL"
         else:
             name = "REGEXP_EXTRACT"
@@ -4379,18 +4384,13 @@ class DuckDBGenerator(generator.Generator):
         # Array slicing for REGEXP_EXTRACT_ALL with occurrence
         if is_extract_all and non_single_occurrence:
             result = exp.Bracket(this=result, expressions=[exp.Slice(this=occurrence)])
-        # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1
+        # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1, or the first match for NULL-on-no-match
         elif non_single_occurrence:
             result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
-
-        # DuckDB's REGEXP_EXTRACT returns '' on no match, while the source dialect returns NULL.
-        # Gate on REGEXP_MATCHES so a genuine empty-string match is preserved as ''.
-        # The occurrence/extract-all paths above already yield NULL when out of range.
-        if null_if_no_match and name == "REGEXP_EXTRACT":
-            matches = exp.Anonymous(
-                this="REGEXP_MATCHES", expressions=[this, expression.expression, flags_expr]
+        elif null_on_no_match:
+            result = exp.Anonymous(
+                this="ARRAY_EXTRACT", expressions=[result, exp.Literal.number(1)]
             )
-            result = exp.case().when(exp.not_(matches), exp.Null()).else_(result)
 
         return self.sql(result)
 

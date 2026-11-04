@@ -5406,14 +5406,14 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern)",
             write={
-                "duckdb": "CASE WHEN NOT REGEXP_MATCHES(subject, pattern) THEN NULL ELSE REGEXP_EXTRACT(subject, pattern) END",
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(subject, pattern), 1)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern)",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 3)",
             write={
-                "duckdb": "CASE WHEN NOT REGEXP_MATCHES(NULLIF(SUBSTRING(subject, 3), ''), pattern) THEN NULL ELSE REGEXP_EXTRACT(NULLIF(SUBSTRING(subject, 3), ''), pattern) END",
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(NULLIF(SUBSTRING(subject, 3), ''), pattern), 1)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 3)",
             },
         )
@@ -5427,14 +5427,14 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             write={
-                "duckdb": "CASE WHEN NOT REGEXP_MATCHES(subject, pattern) THEN NULL ELSE REGEXP_EXTRACT(subject, pattern) END",
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(subject, pattern), 1)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e', 0)",
             write={
-                "duckdb": "CASE WHEN NOT REGEXP_MATCHES(subject, pattern) THEN NULL ELSE REGEXP_EXTRACT(subject, pattern) END",
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(subject, pattern), 1)",
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )

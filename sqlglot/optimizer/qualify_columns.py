@@ -106,20 +106,25 @@ def qualify_columns(
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
-        if expand_alias_refs:
+        if expand_alias_refs and not dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+            _expand_alias_refs(scope, resolver, dialect)
+
+        if is_select and expand_stars:
+            _expand_stars(
+                scope,
+                resolver,
+                using_column_tables,
+                using_columns,
+                pseudocolumns,
+                annotator,
+                unannotated_scopes,
+            )
+
+        # HAVING precedence can depend on positional GROUP BY targets within a star.
+        if expand_alias_refs and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
             _expand_alias_refs(scope, resolver, dialect)
 
         if is_select:
-            if expand_stars:
-                _expand_stars(
-                    scope,
-                    resolver,
-                    using_column_tables,
-                    using_columns,
-                    pseudocolumns,
-                    annotator,
-                    unannotated_scopes,
-                )
             qualify_outputs(scope, dialect=dialect)
 
         _expand_group_by(scope, dialect)
@@ -371,7 +376,7 @@ def _expand_alias_refs(
         return
 
     alias_to_expression: dict[str, tuple[exp.Expr, int]] = {}
-    grouped_columns: set[exp.Expr] = set()
+    grouped_columns: set[tuple[str, str]] = set()
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
@@ -428,7 +433,7 @@ def _expand_alias_refs(
             if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
                 prefer_column = (
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
-                    or exp.column(column.this, table=table) in grouped_columns
+                    or (table.name, column.name) in grouped_columns
                 )
 
             if table and (not alias_expr or skip_replace or prefer_column):
@@ -512,9 +517,9 @@ def _expand_alias_refs(
             if isinstance(grouping, exp.Literal) and grouping.is_int:
                 index = int(grouping.to_py()) - 1
                 if 0 <= index < len(expression.selects):
-                    grouping = expression.selects[index].unalias()
+                    grouping = expression.selects[index].unalias().unnest()
             if isinstance(grouping, exp.Column):
-                grouped_columns.add(grouping)
+                grouped_columns.add((grouping.table, grouping.name))
 
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)

@@ -288,6 +288,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Trim,
             exp.ToBase32,
             exp.ToBase64,
+            exp.ToChar,
             exp.Translate,
             exp.TsOrDsToDateStr,
             exp.Typeof,

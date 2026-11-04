@@ -816,7 +816,7 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
 
         outer = set_op_scope.outer_columns
         set_op_expr = set_op_scope.expression
-        # BY NAME matches columns by name, so right arms need outer aliases reordered
+        # BY NAME matches columns by name, so all arms need their outer aliases reordered
         if (
             outer
             and prev_scope is not None
@@ -829,8 +829,9 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
 
             if by_name_col_map:
                 arm_node = expression.unnest()
-                arm_names = getattr(arm_node, "named_selects", [])
-                outer = [by_name_col_map.get(name, "") for name in arm_names]
+                outer = [
+                    by_name_col_map.get(name, "") for name in getattr(arm_node, "named_selects", [])
+                ]
 
         new_scope = set_op_scope.branch(
             expression,

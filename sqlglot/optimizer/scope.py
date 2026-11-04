@@ -816,7 +816,7 @@ def _traverse_set_operation(scope: Scope) -> Iterator[Scope]:
 
         outer = set_op_scope.outer_columns
         set_op_expr = set_op_scope.expression
-        # BY NAME matches columns by name, so all arms need their outer aliases reordered
+        # all arms need their outer aliases reordered for BY NAME
         if (
             outer
             and prev_scope is not None

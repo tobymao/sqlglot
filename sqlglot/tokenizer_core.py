@@ -1004,6 +1004,9 @@ class TokenizerCore:
             elif _CHAR_UPPER.get(self._peek, self._peek) == "E" and not scientific:
                 if (
                     numbers_can_be_underscore_separated
+                    # Where identifiers may start with a digit, `1e_5foo` is a single
+                    # identifier, so the exponent marker must not end the number here
+                    and not identifiers_can_start_with_digit
                     and self._current + 1 < self.size
                     and self.sql[self._current + 1] == "_"
                 ):

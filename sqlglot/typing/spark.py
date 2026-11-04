@@ -35,7 +35,6 @@ EXPRESSION_METADATA = {
             exp.Collation,
             exp.CurrentTimezone,
             exp.Randstr,
-            exp.ToChar,
         }
     },
     **{

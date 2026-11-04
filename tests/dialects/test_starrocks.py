@@ -570,7 +570,7 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
                 "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt, CAST('1970-01-01' AS TIMESTAMP)) + INTERVAL 5 MINUTE",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt, CAST('0001-01-01' AS DATE)) + INTERVAL 5 MINUTE",
             },
         )
         self.validate_all(
@@ -581,7 +581,22 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
                 "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt, CAST('1970-01-01' AS TIMESTAMP))",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt, CAST('0001-01-01' AS DATE))",
+            },
+        )
+        # StarRocks anchors at 0001-01-01, not Snowflake's epoch; 7-day slices expose the difference
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 7 DAY)",
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 7 DAY)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 7 DAY, dt, CAST('0001-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 7 DAY, CEIL)",
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 7 DAY, CEIL)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 7 DAY, dt, CAST('0001-01-01' AS DATE)) + INTERVAL 7 DAY",
             },
         )
 

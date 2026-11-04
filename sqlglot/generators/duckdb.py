@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     getbit_sql,
     groupconcat_sql,
     inline_array_unless_query,
+    map_date_part,
     months_between_sql,
     no_datetime_sql,
     no_comment_column_constraint_sql,
@@ -2433,19 +2434,20 @@ class DuckDBGenerator(generator.Generator):
         """
         date_expr = expression.this
         slice_length = expression.expression
-        unit = expression.unit
+        # Normalize unit aliases (e.g. W/WK/WOY -> WEEK) so the interval and origin agree
+        unit = map_date_part(expression.unit, self.dialect)
         kind = expression.text("kind").upper()
         is_date = date_expr.is_type(exp.DType.DATE)
 
         interval_expr = exp.Interval(this=slice_length, unit=unit)
 
-        # WEEK aligns to the Monday of the epoch's week under Snowflake's default WEEK_START=0
-        is_week = bool(unit and unit.name.upper() == "WEEK")
-        origin_date = "1969-12-29" if is_week else "1970-01-01"
-        origin_expr = exp.cast(
-            exp.Literal.string(origin_date),
-            exp.DType.DATE if is_date else exp.DType.TIMESTAMP,
-        )
+        origin = expression.args.get("origin")
+        if origin is None:
+            # Snowflake aligns to 1970-01-01; WEEK to the Monday of the epoch week (WEEK_START=0)
+            is_week = bool(unit and unit.name.upper() == "WEEK")
+            origin = exp.Literal.string("1969-12-29" if is_week else "1970-01-01")
+        # A DATE origin keeps a DATE input a DATE; DuckDB widens it for TIMESTAMP inputs
+        origin_expr = exp.cast(origin, exp.DType.DATE)
 
         time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr, origin_expr)
 

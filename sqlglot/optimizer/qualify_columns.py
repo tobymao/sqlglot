@@ -374,6 +374,9 @@ def _expand_alias_refs(
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
+    group = expression.args.get("group")
+    grouped_columns = {c.name for c in group.find_all(exp.Column)} if group else set()
+
     def replace_columns(
         node: exp.Expr | None, resolve_table: bool = False, literal_index: bool = False
     ) -> None:
@@ -400,19 +403,23 @@ def _expand_alias_refs(
             alias_expr, i = alias_to_expression.get(column.name, (None, 1))
 
             if alias_expr:
+                in_agg = bool(
+                    column.find_ancestor(exp.AggFunc)
+                    and not isinstance(column.find_ancestor(exp.Window, exp.Select), exp.Window)
+                )
+
                 # An aggregate alias must not be expanded into a GROUP BY or another (non-window) aggregate.
                 skip_replace = bool(
-                    find_in_scope(alias_expr, exp.AggFunc)
-                    and (
-                        is_group_by
-                        or (
-                            column.find_ancestor(exp.AggFunc)
-                            and not isinstance(
-                                column.find_ancestor(exp.Window, exp.Select), exp.Window
-                            )
-                        )
-                    )
+                    find_in_scope(alias_expr, exp.AggFunc) and (is_group_by or in_agg)
                 )
+
+                if (
+                    is_having
+                    and table
+                    and not dialect.PROJECTION_ALIASES_SHADOW_SOURCE_NAMES
+                    and (in_agg or column.name in grouped_columns)
+                ):
+                    skip_replace = True
 
                 # BigQuery's having clause gets confused if an alias matches a source.
                 # SELECT x.a, max(x.b) as x FROM x GROUP BY 1 HAVING x > 1;

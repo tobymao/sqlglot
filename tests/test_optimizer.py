@@ -4915,3 +4915,22 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema_ext = {"t": {"_col": "INT"}}
         query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
         optimizer.annotate_types.annotate_types(query, schema=schema_ext)
+
+    def test_qualify_having_input_column_precedence(self):
+        schema = {"t": {"a": "INT"}}
+
+        for sql, expected in (
+            (
+                "SELECT a + 1 AS a FROM t GROUP BY a HAVING a = 42",
+                'SELECT "t"."a" + 1 AS "a" FROM "t" AS "t" GROUP BY "t"."a" HAVING "t"."a" = 42',
+            ),
+            (
+                "SELECT a + 1 AS a FROM t GROUP BY a HAVING max(a) = 42",
+                'SELECT "t"."a" + 1 AS "a" FROM "t" AS "t" GROUP BY "t"."a" HAVING MAX("t"."a") = 42',
+            ),
+        ):
+            with self.subTest(sql=sql):
+                qual = optimizer.qualify.qualify(
+                    parse_one(sql, dialect="duckdb"), schema=schema, dialect="duckdb"
+                )
+                self.assertEqual(qual.sql("duckdb"), expected)

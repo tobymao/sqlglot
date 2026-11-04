@@ -63,6 +63,12 @@ SELECT SUM(x.a) AS a FROM x AS x HAVING SUM(x.a) > 3;
 SELECT SUM(a) AS c FROM x HAVING SUM(b) > 3;
 SELECT SUM(x.a) AS c FROM x AS x HAVING SUM(x.b) > 3;
 
+SELECT a + 1 AS a FROM x GROUP BY a HAVING a = 42;
+SELECT x.a + 1 AS a FROM x AS x GROUP BY x.a HAVING x.a = 42;
+
+SELECT a + 1 AS a FROM x GROUP BY a HAVING max(a) = 42;
+SELECT x.a + 1 AS a FROM x AS x GROUP BY x.a HAVING MAX(x.a) = 42;
+
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 

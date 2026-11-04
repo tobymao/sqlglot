@@ -234,11 +234,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is not None and parent_predicate.parent_select is not parent_select:
         return
 
-    if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)) and (
-        select.args.get("group")
-        or select.args.get("having")
-        or find_in_scope(select, exp.AggFunc, exp.Anonymous)
-    ):
+    if isinstance(parent_predicate, (exp.In, exp.Any, exp.All)):
         return
 
     # determine location of join that owns the ON clause whose subquery we will decorrelate
@@ -288,7 +284,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
             return
         if any(find_in_scope(projection, exp.Anonymous) for projection in select.selects):
             return
-    elif not isinstance(parent_predicate, (exp.All, exp.Any, exp.In)):
+    else:
         value = select.selects[0]
         group = select.args.get("group")
         if group and not _has_plain_explicit_group(select):
@@ -397,9 +393,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is None and not is_subquery_projection:
         return
 
-    if isinstance(parent_predicate, exp.In) and _is_negated(parent_predicate):
-        return
-
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
     agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg
@@ -451,36 +444,10 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         )
 
     alias = exp.column(value.alias, table_alias)
-    other = _other_operand(parent_predicate)
-    op_type = type(parent_predicate.parent) if parent_predicate else None
 
     if isinstance(parent_predicate, exp.Exists):
         alias = exp.column(next(key_aliases[key] for key in group_by), table_alias)
         parent_predicate = _replace(parent_predicate, f"NOT {alias} IS NULL")
-    elif isinstance(parent_predicate, exp.All):
-        assert issubclass(op_type, exp.Binary)
-        predicate = op_type(this=other, expression=exp.column("_x"))
-        parent_predicate = _replace(
-            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> {predicate})"
-        )
-    elif isinstance(parent_predicate, exp.Any):
-        assert issubclass(op_type, exp.Binary)
-        if value.this in group_by:
-            predicate = op_type(this=other, expression=alias)
-            parent_predicate = _replace(parent_predicate.parent, predicate)
-        else:
-            predicate = op_type(this=other, expression=exp.column("_x"))
-            parent_predicate = _replace(
-                parent_predicate.parent, f"ARRAY_ANY({alias}, _x -> {predicate})"
-            )
-    elif isinstance(parent_predicate, exp.In):
-        if value.this in group_by:
-            parent_predicate = _replace(parent_predicate, f"{other} = {alias}")
-        else:
-            parent_predicate = _replace(
-                parent_predicate,
-                f"ARRAY_ANY({alias}, _x -> _x = {parent_predicate.this})",
-            )
     else:
         if zero_fill:
             alias = exp.Coalesce(this=alias, expressions=[exp.Literal.number(0)])
@@ -617,9 +584,6 @@ def _has_order_aggregate(select: exp.Select) -> bool:
 def _other_operand(expression: object) -> exp.Expr | None:
     if isinstance(expression, exp.In):
         return expression.this
-
-    if isinstance(expression, (exp.Any, exp.All)):
-        return _other_operand(expression.parent)
 
     if isinstance(expression, exp.Binary):
         return (

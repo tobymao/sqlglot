@@ -1032,7 +1032,6 @@ def _expand_stars(
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
 
-    coalesced_columns = set()
     dialect = resolver.dialect
 
     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
@@ -1057,7 +1056,10 @@ def _expand_stars(
 
     for expression in scope_expression.selects:
         tables: list[str] = []
-        if isinstance(expression, exp.Star):
+        is_unqualified_star = isinstance(expression, exp.Star)
+        coalesced_columns = set()
+
+        if is_unqualified_star:
             # Only a string literal ILIKE pattern can filter the expansion at optimization time
             ilike = expression.args.get("ilike")
             if ilike and not ilike.is_string:
@@ -1104,7 +1106,7 @@ def _expand_stars(
         start = len(new_selections)
         # The selections of the USING columns, which go first, in order
         using_selections: dict[str, exp.Expr | None] = (
-            dict.fromkeys(using_columns) if isinstance(expression, exp.Star) else {}
+            dict.fromkeys(using_columns) if is_unqualified_star else {}
         )
 
         for table in tables:
@@ -1202,11 +1204,17 @@ def _expand_stars(
                     continue
 
             for name in columns:
-                if name in columns_to_exclude or name in coalesced_columns:
+                if name in columns_to_exclude or (
+                    is_unqualified_star and name in coalesced_columns
+                ):
                     continue
                 if ilike_pattern and not re.fullmatch(ilike_pattern, name, re.IGNORECASE):
                     continue
-                if name in using_column_tables and table in using_column_tables[name]:
+                if (
+                    is_unqualified_star
+                    and name in using_column_tables
+                    and table in using_column_tables[name]
+                ):
                     coalesced_columns.add(name)
                     # TODO (mypyc): use a separate variable to avoid reusing `tables` (list) with dict type
                     using_tables = using_column_tables[name]

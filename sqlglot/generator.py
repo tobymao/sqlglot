@@ -6053,6 +6053,14 @@ class Generator:
 
         return array_agg_sql
 
+    @unsupported_args("count")
+    def min_sql(self, expression: exp.Min) -> str:
+        return self.function_fallback_sql(expression)
+
+    @unsupported_args("count")
+    def max_sql(self, expression: exp.Max) -> str:
+        return self.function_fallback_sql(expression)
+
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
         column_expr = expression.this

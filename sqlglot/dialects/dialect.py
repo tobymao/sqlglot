@@ -2002,11 +2002,13 @@ def encode_decode_sql(
     return self.func(name, expression.this, expression.args.get("replace") if replace else None)
 
 
+@unsupported_args("count")
 def min_or_least(self: Generator, expression: exp.Min) -> str:
     name = "LEAST" if expression.expressions else "MIN"
     return rename_func(name)(self, expression)
 
 
+@unsupported_args("count")
 def max_or_greatest(self: Generator, expression: exp.Max) -> str:
     name = "GREATEST" if expression.expressions else "MAX"
     return rename_func(name)(self, expression)

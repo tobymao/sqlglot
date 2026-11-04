@@ -10,6 +10,56 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_min_max(self):
+        for name, func in (("MIN", exp.Min), ("MAX", exp.Max)):
+            with self.subTest(name=name):
+                self.validate_all(
+                    f"SELECT {name}(x) FROM t",
+                    write={
+                        "duckdb": f"SELECT {name}(x) FROM t",
+                        "postgres": f"SELECT {name}(x) FROM t",
+                        "snowflake": f"SELECT {name}(x) FROM t",
+                    },
+                )
+                sql = f"SELECT {name}(x, 2) FROM t"
+                self.validate_all(
+                    sql,
+                    write={
+                        "duckdb": sql,
+                        "postgres": UnsupportedError,
+                        "snowflake": UnsupportedError,
+                        "sqlite": UnsupportedError,
+                    },
+                )
+                expression = self.validate_identity(sql)
+                aggregate = expression.find(func)
+                self.assertEqual(aggregate.args["count"], exp.Literal.number(2))
+                self.assertFalse(aggregate.expressions)
+                for dialect in ("postgres", "snowflake", "sqlite"):
+                    with self.assertLogs(generator_logger, level="WARNING") as logs:
+                        self.assertEqual(expression.sql(dialect), sql)
+                    self.assertIn("Argument 'count' is not supported", logs.output[0])
+
+                for args, suffix in (
+                    ("DISTINCT x", ""),
+                    ("DISTINCT x, 2", ""),
+                    ("x, 2 ORDER BY x", ""),
+                    ("x, 2", " FILTER(WHERE x > 1)"),
+                    ("x, 2", " OVER ()"),
+                ):
+                    expression = self.validate_identity(f"SELECT {name}({args}){suffix} FROM t")
+                    self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+                for arg, dtype in (("1", "INT"), ("'a'", "VARCHAR")):
+                    for count in ("", ", 2"):
+                        expression = annotate_types(
+                            self.parse_one(f"{name}({arg}{count})"), dialect="duckdb"
+                        )
+                        self.assertEqual(
+                            expression.type,
+                            exp.DataType.build(f"ARRAY<{dtype}>" if count else dtype),
+                        )
+
     def test_date_trunc(self):
         for unit in ("MONTH", "HOUR"):
             self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")

@@ -1204,9 +1204,7 @@ def _expand_stars(
                     continue
 
             for name in columns:
-                if name in columns_to_exclude or (
-                    is_unqualified_star and name in coalesced_columns
-                ):
+                if name in columns_to_exclude or name in coalesced_columns:
                     continue
                 if ilike_pattern and not re.fullmatch(ilike_pattern, name, re.IGNORECASE):
                     continue

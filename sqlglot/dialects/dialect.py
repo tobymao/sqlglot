@@ -592,6 +592,12 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
+    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
+    """Whether input columns take precedence over projection aliases in HAVING and QUALIFY."""
+
+    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
+    """Whether HAVING aliases override ungrouped input columns outside aggregate functions."""
+
     ANNOTATE_ALL_SCOPES = False
     """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
 

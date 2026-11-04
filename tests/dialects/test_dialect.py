@@ -119,6 +119,71 @@ class Validator(unittest.TestCase):
 class TestDialect(Validator):
     maxDiff = None
 
+    def test_table_query(self):
+        dialects = ("", "duckdb", "postgres", "mysql", "presto", "trino")
+        for sql, expected in (
+            ("TABLE t", "SELECT * FROM t"),
+            ("TABLE db.t", "SELECT * FROM db.t"),
+            ("(TABLE t)", "(SELECT * FROM t)"),
+            ("TABLE t UNION ALL TABLE u", "SELECT * FROM t UNION ALL SELECT * FROM u"),
+            ("SELECT 1 EXCEPT TABLE t", "SELECT 1 EXCEPT SELECT * FROM t"),
+            ("TABLE t INTERSECT SELECT 1", "SELECT * FROM t INTERSECT SELECT 1"),
+            (
+                "TABLE t UNION TABLE u INTERSECT TABLE v",
+                "SELECT * FROM t UNION (SELECT * FROM u INTERSECT SELECT * FROM v)",
+            ),
+            ("SELECT * FROM (TABLE t) AS s", "SELECT * FROM (SELECT * FROM t) AS s"),
+            ("SELECT (TABLE t)", "SELECT (SELECT * FROM t)"),
+            ("SELECT EXISTS(TABLE t)", "SELECT EXISTS(SELECT * FROM t)"),
+            ("SELECT 1 IN (TABLE t)", "SELECT 1 IN (SELECT * FROM t)"),
+            ("SELECT 1 = ANY(TABLE t)", "SELECT 1 = ANY (SELECT * FROM t)"),
+            ("WITH t AS (TABLE u) TABLE t", "WITH t AS (SELECT * FROM u) SELECT * FROM t"),
+            ("CREATE TABLE t AS TABLE u", "CREATE TABLE t AS SELECT * FROM u"),
+            ("INSERT INTO t TABLE u", "INSERT INTO t SELECT * FROM u"),
+            ("INSERT INTO t (TABLE u)", "INSERT INTO t (SELECT * FROM u)"),
+            ("TABLE /* comment */ t", "/* comment */ SELECT * FROM t"),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(expected, read=dict.fromkeys(dialects, sql))
+
+        for dialect in dialects:
+            for sql, expected in (
+                (
+                    "TABLE t UNION ALL TABLE u ORDER BY x LIMIT 1",
+                    "SELECT * FROM t UNION ALL SELECT * FROM u ORDER BY x LIMIT 1",
+                ),
+                (
+                    "(TABLE t ORDER BY x LIMIT 1) UNION ALL TABLE u",
+                    "(SELECT * FROM t ORDER BY x LIMIT 1) UNION ALL SELECT * FROM u",
+                ),
+            ):
+                with self.subTest(dialect=dialect, sql=sql):
+                    self.assertEqual(parse_one(sql, dialect), parse_one(expected, dialect))
+
+        self.validate_all(
+            "SELECT * FROM t EXCEPT ALL SELECT * FROM u",
+            read=dict.fromkeys(
+                ("duckdb", "postgres", "mysql", "trino"), "TABLE t EXCEPT ALL TABLE u"
+            ),
+        )
+        self.validate_all(
+            "(SELECT * FROM t EXCEPT ALL SELECT * FROM u)",
+            read=dict.fromkeys(
+                ("duckdb", "postgres", "mysql", "trino"), "(TABLE t EXCEPT ALL TABLE u)"
+            ),
+        )
+        self.validate_all(
+            'SELECT * FROM "table"',
+            read={
+                "duckdb": 'TABLE "table"',
+                "postgres": 'TABLE "table"',
+                "mysql": "TABLE `table`",
+                "presto": 'TABLE "table"',
+                "trino": 'TABLE "table"',
+            },
+            write={"snowflake": 'SELECT * FROM "table"', "tsql": "SELECT * FROM [table]"},
+        )
+
     def test_preserve_original_names(self):
         expression = exp.select(
             parse_one("abs(1)", read="clickhouse"),

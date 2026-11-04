@@ -5,6 +5,8 @@ from sqlglot.tokens import TokenType
 
 
 class BaseParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,
         TokenType.LOCALTIME: exp.Localtime,

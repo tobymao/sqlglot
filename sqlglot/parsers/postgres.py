@@ -106,6 +106,8 @@ def _build_levenshtein_less_equal(args: list) -> exp.Levenshtein:
 
 
 class PostgresParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
     ALTER_DROP_REQUIRES_COLUMN = False

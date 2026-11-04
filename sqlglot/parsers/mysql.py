@@ -60,6 +60,8 @@ def _show_parser(*args: t.Any, **kwargs: t.Any) -> t.Callable[[MySQLParser], exp
 
 
 class MySQLParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
 
     NO_PAREN_FUNCTIONS = {

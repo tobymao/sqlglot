@@ -7,6 +7,16 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_table_query_function(self):
+        self.validate_identity(
+            "SELECT * FROM TABLE(sequence(start => 1, stop => 2))",
+            "SELECT * FROM TABLE(SEQUENCE(start => 1, stop => 2))",
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT * FROM TABLE(sequence(start => 1, stop => 2))) TABLE t",
+            "WITH t AS (SELECT * FROM TABLE(SEQUENCE(start => 1, stop => 2))) SELECT * FROM t",
+        )
+
     def test_bigquery_functions(self):
         for trino_fn, part in (
             ("YEAR", "YEAR"),

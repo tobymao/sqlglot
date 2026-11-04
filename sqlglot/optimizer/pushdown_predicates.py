@@ -4,6 +4,7 @@ from collections.abc import Iterable, Mapping
 import typing as t
 
 from sqlglot import exp
+from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope, Scope
 from sqlglot.optimizer.simplify import simplify
@@ -152,7 +153,7 @@ def pushdown_cnf(
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
                 inner_predicate = replace_aliases(node, predicate)
-                if find_in_scope(inner_predicate, exp.AggFunc):
+                if find_in_scope(inner_predicate, exp.AggFunc) or _is_scalar_aggregate(node):
                     node.having(inner_predicate, copy=False)
                 else:
                     node.where(inner_predicate, copy=False)
@@ -217,7 +218,7 @@ def pushdown_dnf(
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):
             inner_predicate = replace_aliases(table_node, predicate)
-            if find_in_scope(inner_predicate, exp.AggFunc):
+            if find_in_scope(inner_predicate, exp.AggFunc) or _is_scalar_aggregate(table_node):
                 table_node.having(inner_predicate, copy=False)
             else:
                 table_node.where(inner_predicate, copy=False)
@@ -284,6 +285,11 @@ def nodes_for_predicate(
             ):
                 nodes[table] = node
     return nodes
+
+
+def _is_scalar_aggregate(select: exp.Select) -> bool:
+    windows = select.args.get("windows")
+    return any(projection_has_aggregate(s, windows) for s in select.selects)
 
 
 OPERATOR_EXPRESSIONS = (exp.Binary, exp.Unary, exp.Predicate)

@@ -155,3 +155,6 @@ uv.lock
 .pi/
 .pi-subagents/
 .pi-loop.json.lock
+
+# Conformance test reports
+conformance/.reports/

@@ -48,6 +48,15 @@ python -m unittest tests.test_expressions.TestExpressions
 python -m unittest tests.test_expressions.TestExpressions.test_alias
 ```
 
+### Conformance Tests (real engines)
+`conformance/` runs queries on real engines (Postgres and Spark in Docker) and checks that sqlglot's roundtrip and transpiled SQL return the same results as the original query. Use it locally to validate dialect changes; it isn't part of CI. See `conformance/README.md`.
+```bash
+python -m conformance up                                       # start the engines, load the dataset
+python -m conformance run -k postgres/numeric                  # run a subset of cases
+python -m conformance run --read postgres --sql "SELECT 5 / 2" # check one query on every engine
+python -m conformance run --update-baseline                    # record fixed legs in conformance/baseline.json
+```
+
 ### Linting & Type Checking
 ```bash
 # Run linter and formatter only

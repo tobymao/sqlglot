@@ -1,0 +1,78 @@
+# Engines used by the conformance tests. Managed by `python -m conformance up/down`.
+#
+# Every engine is pinned to UTC and to settings that keep results deterministic. Host ports
+# are deliberately non-default so they don't clash with locally installed databases; override
+# them with CONFORMANCE_POSTGRES_PORT / CONFORMANCE_SPARK_PORT.
+name: sqlglot-conformance
+
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_USER: sqlglot
+      POSTGRES_PASSWORD: sqlglot
+      POSTGRES_DB: conformance
+      # The builtin PG_UNICODE_FAST locale sorts by code point, like Spark's default UTF8_BINARY
+      # collation, and applies full Unicode case mapping in UPPER/LOWER, like the JVM does
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C --locale-provider=builtin --builtin-locale=PG_UNICODE_FAST
+      TZ: UTC
+    command:
+      - postgres
+      - -c
+      - timezone=UTC
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+    ports:
+      - "127.0.0.1:${CONFORMANCE_POSTGRES_PORT:-55432}:5432"
+    # The dataset is reloaded automatically when missing, so there's no need to persist it
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqlglot -d conformance"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  spark:
+    image: apache/spark:4.2.0
+    environment:
+      SPARK_NO_DAEMONIZE: "1"
+      TZ: UTC
+    command:
+      - /opt/spark/sbin/start-connect-server.sh
+      - --driver-memory
+      - 2g
+      - --conf
+      - spark.driver.extraJavaOptions=-Duser.timezone=UTC
+      - --conf
+      - spark.sql.session.timeZone=UTC
+      - --conf
+      - spark.sql.ansi.enabled=true
+      - --conf
+      - spark.sql.catalogImplementation=in-memory
+      - --conf
+      - spark.sql.warehouse.dir=/tmp/warehouse
+      - --conf
+      - spark.sql.shuffle.partitions=4
+      - --conf
+      - spark.ui.enabled=false
+      - --conf
+      - spark.sql.parquet.datetimeRebaseModeInWrite=CORRECTED
+      - --conf
+      - spark.sql.parquet.datetimeRebaseModeInRead=CORRECTED
+      - --conf
+      - spark.sql.parquet.int96RebaseModeInWrite=CORRECTED
+      - --conf
+      - spark.sql.parquet.int96RebaseModeInRead=CORRECTED
+    ports:
+      - "127.0.0.1:${CONFORMANCE_SPARK_PORT:-55002}:15002"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/15002"]
+      interval: 3s
+      timeout: 5s
+      retries: 60
+      start_period: 5s

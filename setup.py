@@ -28,6 +28,11 @@ setup(
         # because the build dep (mypy 2.4+) dropped 3.9; on 3.9
         # `pip install sqlglot[c]` is a no-op and you just get pure-Python sqlglot.
         "c": [f"sqlglotc=={version}; python_version >= '3.10'"],
+        # Engine drivers for the conformance tests, see conformance/README.md
+        "conformance": [
+            "psycopg[binary]>=3.2",
+            "pyspark-client==4.2.0; python_version >= '3.10'",
+        ],
         # Deprecated: the Rust tokenizer has been replaced by sqlglotc.
         "rs": ["sqlglotrs==0.13.0", f"sqlglotc=={version}; python_version >= '3.10'"],
     },

@@ -1,4 +1,4 @@
-.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast test-branch unit testc unitc leakcheck style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures
+.PHONY: install install-dev install-devc install-devc-release install-pre-commit bench bench-parse bench-transpile bench-optimize test test-fast test-branch unit testc unitc leakcheck style check docs docs-serve hidec showc clean resolve-integration-conflicts update-fixtures conformance conformance-up conformance-down
 
 ifdef UV
     PIP := uv pip
@@ -146,3 +146,13 @@ resolve-integration-conflicts:
 
 update-fixtures:
 	python sqlglot-integration-tests/scripts/update_dbt_fixtures.py
+
+# Conformance tests run cases on real engines in Docker, see conformance/README.md
+conformance:
+	python -m conformance run $(ARGS)
+
+conformance-up:
+	python -m conformance up
+
+conformance-down:
+	python -m conformance down

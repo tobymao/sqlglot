@@ -4338,6 +4338,7 @@ class DuckDBGenerator(generator.Generator):
         position = expression.args.get("position")
         occurrence = expression.args.get("occurrence")
         null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+        null_if_no_match = expression.args.get("null_if_no_match")
 
         # Handle Snowflake's 'e' flag: it enables capture group extraction
         # In DuckDB, this is controlled by the group parameter directly
@@ -4366,7 +4367,7 @@ class DuckDBGenerator(generator.Generator):
         is_extract_all = isinstance(expression, exp.RegexpExtractAll)
         non_single_occurrence = occurrence and (not occurrence.is_int or occurrence.to_py() > 1)
 
-        if is_extract_all or non_single_occurrence:
+        if is_extract_all or non_single_occurrence or null_if_no_match:
             name = "REGEXP_EXTRACT_ALL"
         else:
             name = "REGEXP_EXTRACT"
@@ -4378,9 +4379,27 @@ class DuckDBGenerator(generator.Generator):
         # Array slicing for REGEXP_EXTRACT_ALL with occurrence
         if is_extract_all and non_single_occurrence:
             result = exp.Bracket(this=result, expressions=[exp.Slice(this=occurrence)])
-        # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1
-        elif non_single_occurrence:
-            result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
+        elif not is_extract_all and (non_single_occurrence or null_if_no_match):
+            # Non-participating capture group yields [NULL] in DuckDB; Snowflake returns '' on a match
+            if (
+                expression.args.get("empty_if_group_missing")
+                and group
+                and not (group.is_int and group.to_py() == 0)
+            ):
+                result = exp.Transform(
+                    this=result,
+                    expression=exp.Lambda(
+                        this=exp.Coalesce(
+                            this=exp.column("x"), expressions=[exp.Literal.string("")]
+                        ),
+                        expressions=[exp.to_identifier("x")],
+                    ),
+                )
+            return self.func(
+                "ARRAY_EXTRACT",
+                result,
+                occurrence if non_single_occurrence else exp.Literal.number(1),
+            )
 
         return self.sql(result)
 

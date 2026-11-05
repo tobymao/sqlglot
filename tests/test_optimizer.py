@@ -1,6 +1,7 @@
 import json
 import sys
 import tempfile
+import types
 import unittest
 from concurrent.futures import ProcessPoolExecutor, as_completed, wait
 from decimal import MAX_EMAX
@@ -4915,3 +4916,68 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema_ext = {"t": {"_col": "INT"}}
         query = optimizer.qualify.qualify(parse_one(sql), schema=schema_ext)
         optimizer.annotate_types.annotate_types(query, schema=schema_ext)
+
+
+class TestOptimizerRuleParams(unittest.TestCase):
+    def _optimize(self, **kwargs):
+        return optimizer.optimize(
+            parse_one("SELECT x FROM t WHERE x > 1"),
+            schema={"t": {"x": "int"}},
+            **kwargs,
+        )
+
+    @staticmethod
+    def _count_inspections(fn):
+        from sqlglot.optimizer import optimizer as optimizer_module
+
+        original = optimizer_module.inspect.getfullargspec
+        calls = []
+
+        def counting(rule, *args, **kwargs):
+            calls.append(rule)
+            return original(rule, *args, **kwargs)
+
+        with patch.object(
+            optimizer_module, "inspect", types.SimpleNamespace(getfullargspec=counting)
+        ):
+            fn()
+        return calls
+
+    def test_default_rules_are_not_reinspected(self):
+        results = []
+
+        def run_twice():
+            results.append(self._optimize())
+            results.append(self._optimize())
+
+        calls = self._count_inspections(run_twice)
+
+        self.assertEqual(calls, [])
+        self.assertEqual(results[0].sql(), results[1].sql())
+
+    def test_custom_rules_are_still_inspected_on_each_call(self):
+        def custom(expression, schema=None):
+            return expression
+
+        def run_twice():
+            self._optimize(rules=(custom,))
+            self._optimize(rules=(custom,))
+
+        calls = self._count_inspections(run_twice)
+
+        self.assertEqual(calls, [custom, custom])
+
+    def test_unhashable_custom_rule(self):
+        class UnhashableRule:
+            __hash__ = None
+
+            def __eq__(self, other):
+                return False
+
+            def __call__(self, expression, schema=None):
+                return expression
+
+        self.assertEqual(
+            self._optimize(rules=(UnhashableRule(),)).sql(),
+            parse_one("SELECT x FROM t WHERE x > 1").sql(),
+        )

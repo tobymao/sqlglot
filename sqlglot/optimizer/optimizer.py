@@ -54,6 +54,13 @@ RULES: tuple[OptimizerFn, ...] = (
     simplify,
 )
 
+# The default rules' signatures are fixed at import time. Resolve them once instead of
+# calling inspect.getfullargspec for every rule on every optimize() call. Keyed by id()
+# so looking up a custom rule never requires that rule to be hashable.
+_DEFAULT_RULE_PARAMS: dict[int, list[str]] = {
+    id(rule): inspect.getfullargspec(rule).args for rule in RULES
+}
+
 
 def optimize(
     expression: str | exp.Expr,
@@ -108,7 +115,10 @@ def optimize(
     optimized = exp.maybe_parse(expression, dialect=dialect, copy=copy)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
-        rule_params = inspect.getfullargspec(rule).args
+        rule_params = _DEFAULT_RULE_PARAMS.get(id(rule))
+        if rule_params is None:
+            # Custom rules are inspected on each call, since their signatures may change.
+            rule_params = inspect.getfullargspec(rule).args
         rule_kwargs = {
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }

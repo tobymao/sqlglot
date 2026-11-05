@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -570,7 +570,7 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 5 MINUTE, CEIL)",
                 "snowflake": "SELECT TIME_SLICE(dt, 5, 'MINUTE', 'END')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt) + INTERVAL 5 MINUTE",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 5 MINUTE, dt, CAST('0001-01-01' AS DATE)) + INTERVAL 5 MINUTE",
             },
         )
         self.validate_all(
@@ -581,9 +581,34 @@ class TestStarrocks(Validator):
             write={
                 "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 1 DAY, FLOOR)",
                 "snowflake": "SELECT TIME_SLICE(dt, 1, 'DAY', 'START')",
-                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 1 DAY, dt, CAST('0001-01-01' AS DATE))",
             },
         )
+        # StarRocks anchors at 0001-01-01, not Snowflake's epoch; 7-day slices expose the difference
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 7 DAY)",
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 7 DAY)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 7 DAY, dt, CAST('0001-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIME_SLICE(dt, INTERVAL 7 DAY, CEIL)",
+            write={
+                "starrocks": "SELECT TIME_SLICE(dt, INTERVAL 7 DAY, CEIL)",
+                "duckdb": "SELECT TIME_BUCKET(INTERVAL 7 DAY, dt, CAST('0001-01-01' AS DATE)) + INTERVAL 7 DAY",
+            },
+        )
+
+    def test_time_slice_origin_roundtrip(self):
+        for boundary, kind in (("", "START"), (", FLOOR", "START"), (", CEIL", "END")):
+            with self.subTest(boundary=boundary):
+                expression = self.parse_one(f"SELECT TIME_SLICE(dt, INTERVAL 7 DAY{boundary})")
+                sql = f"SELECT TIME_SLICE(dt, 7, DAY, '{kind}', '0001-01-01')"
+                self.assertEqual(expression.sql(), sql)
+                reparsed = parse_one(expression.sql())
+                self.assertEqual(reparsed.sql(), sql)
+                self.assertEqual(reparsed.sql("duckdb"), expression.sql("duckdb"))
 
     def test_aggregate_key(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/

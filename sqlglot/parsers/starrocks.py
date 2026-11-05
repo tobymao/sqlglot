@@ -38,6 +38,9 @@ def _build_time_slice(args: list[exp.Expr]) -> exp.TimeSlice | None:
         time_slice.set(
             "kind", exp.Literal.string("END" if boundary.name.upper() == "CEIL" else "START")
         )
+
+    # StarRocks anchors slices at 0001-01-01, unlike Snowflake's 1970-01-01 epoch
+    time_slice.set("origin", exp.Literal.string("0001-01-01"))
     return time_slice
 
 

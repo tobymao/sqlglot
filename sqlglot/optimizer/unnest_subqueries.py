@@ -32,6 +32,23 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
 
+        # Don't hoist anonymous functions because their input-row versus post-aggregation role is unknown.
+        if isinstance(select.find_ancestor(exp.Anonymous, exp.Select), exp.Anonymous) or (
+            not _has_plain_explicit_group(parent)
+            and _is_post_aggregation(select, parent)
+            and any(
+                find_in_scope(node, exp.Anonymous)
+                for node in (
+                    *parent.selects,
+                    parent.args.get("having"),
+                    parent.args.get("qualify"),
+                    parent.args.get("order"),
+                )
+                if node
+            )
+        ):
+            continue
+
         # Don't hoist a subquery out of a correlated, ungrouped aggregate if it's evaluated after the
         # aggregation: the aggregate returns a row even for keys with no input rows, and the hoisted
         # MAX(...) would turn the row's value into NULL

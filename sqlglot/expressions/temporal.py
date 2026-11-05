@@ -192,7 +192,7 @@ class TimestampTrunc(Expression, Func, TimeUnit):
 
 
 class TimeSlice(Expression, Func, TimeUnit):
-    arg_types = {"this": True, "expression": True, "unit": True, "kind": False}
+    arg_types = {"this": True, "expression": True, "unit": True, "kind": False, "origin": False}
 
 
 class TimeTrunc(Expression, Func, TimeUnit):

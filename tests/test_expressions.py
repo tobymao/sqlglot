@@ -669,6 +669,38 @@ class TestExprs(unittest.TestCase):
         )
         self.assertEqual(expression.named_selects, ["a", "c"])
 
+    def test_named_selects_set_operations(self):
+        for sql, expected in (
+            ("SELECT a, a UNION ALL SELECT b, c", ["a", "a"]),
+            ("SELECT a UNION ALL BY NAME SELECT a", ["a"]),
+            ("SELECT SUM(a) UNION ALL SELECT SUM(b)", [""]),
+            ("SELECT SUM(a) UNION ALL BY NAME SELECT SUM(b)", []),
+            (
+                "SELECT SUM(a) UNION ALL SELECT SUM(b) UNION ALL BY NAME SELECT COUNT(c)",
+                [""],
+            ),
+            (
+                "SELECT a UNION ALL BY NAME (SELECT b UNION ALL SELECT c)",
+                ["a", "b"],
+            ),
+            (
+                "SELECT a UNION ALL BY NAME ((SELECT c UNION ALL BY NAME SELECT b))",
+                ["a", "c", "b"],
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(parse_one(sql, dialect="duckdb").named_selects, expected)
+
+    def test_named_selects_long_by_name_chain(self):
+        for unique in (False, True):
+            with self.subTest(unique=unique):
+                names = [f"a{i}" if unique else "a" for i in range(2000)]
+                expression = parse_one(
+                    " UNION ALL BY NAME ".join(f"SELECT 1 AS {name}" for name in names),
+                    dialect="duckdb",
+                )
+                self.assertEqual(expression.named_selects, names if unique else ["a"])
+
     def test_selects(self):
         expression = parse_one("SELECT FROM x")
         self.assertEqual(expression.selects, [])

@@ -110,6 +110,8 @@ _parse_regexp_full_match = binary_range_parser(exp.RegexpFullMatch)
 
 
 class DuckDBParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
     MAP_KEYS_ARE_ARBITRARY_EXPRESSIONS = True
@@ -262,6 +264,8 @@ class DuckDBParser(parser.Parser):
             ("GROUP_CONCAT", "LISTAGG", "STRINGAGG"), lambda self: self._parse_string_agg()
         ),
         "APPROX_QUANTILE": lambda self: self._parse_distinct_arg_function(exp.ApproxQuantile),
+        "MAX": lambda self: self._parse_min_max(exp.Max),
+        "MIN": lambda self: self._parse_min_max(exp.Min),
         "QUANTILE": lambda self: self._parse_distinct_arg_function(exp.Quantile),
         "QUANTILE_CONT": lambda self: self._parse_distinct_arg_function(exp.PercentileCont),
         "QUANTILE_DISC": lambda self: self._parse_distinct_arg_function(exp.PercentileDisc),
@@ -315,6 +319,14 @@ class DuckDBParser(parser.Parser):
 
     SHOW_TRIE = new_trie(key.split(" ") for key in SHOW_PARSERS)
     SET_TRIE = new_trie(key.split(" ") for key in SET_PARSERS)
+
+    def _parse_min_max(self, func: type[exp.Min] | type[exp.Max]) -> exp.Min | exp.Max:
+        expression = self._parse_distinct_arg_function(func)
+        if len(expression.expressions) > 1:
+            self.raise_error(f"Expected at most 2 arguments for {func.__name__}")
+        expression.set("count", seq_get(expression.expressions, 0))
+        expression.set("expressions", None)
+        return expression
 
     def _parse_tilde(self, this: exp.Expr | None) -> exp.Expr | None:
         # ~ and !~ match anywhere in the string since DuckDB 2.0, and the whole string before it

@@ -6053,6 +6053,14 @@ class Generator:
 
         return array_agg_sql
 
+    @unsupported_args("count")
+    def min_sql(self, expression: exp.Min) -> str:
+        return self.function_fallback_sql(expression)
+
+    @unsupported_args("count")
+    def max_sql(self, expression: exp.Max) -> str:
+        return self.function_fallback_sql(expression)
+
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
         array_agg = self.function_fallback_sql(expression)
         column_expr = expression.this
@@ -6060,6 +6068,17 @@ class Generator:
             column_expr = column_expr.this
 
         return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
+
+    def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+        # Only the SQLGlot dialect serializes the internal origin for round-tripping.
+        origin = expression.args.get("origin") if self.dialect == "" else None
+        kind = expression.args.get("kind")
+        if origin is not None and kind is None:
+            kind = exp.Literal.string("START")
+
+        return self.func(
+            "TIME_SLICE", expression.this, expression.expression, expression.unit, kind, origin
+        )
 
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")

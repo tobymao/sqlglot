@@ -58,6 +58,8 @@ def _build_to_char(args: list, dialect: Dialect) -> exp.TimeToStr:
 
 
 class PrestoParser(parser.Parser):
+    SUPPORTS_TABLE_QUERY = True
+
     VALUES_FOLLOWED_BY_PAREN = False
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
 

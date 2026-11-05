@@ -9,6 +9,20 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_table_query(self):
+        for sql in ("TABLE ONLY t", "TABLE ONLY (t)"):
+            self.validate_all(
+                "SELECT * FROM ONLY t",
+                read={"postgres": sql, "duckdb": sql},
+            )
+
+        self.validate_all("SELECT * FROM t", read={"postgres": "TABLE t *", "duckdb": "TABLE t *"})
+        self.validate_identity("TABLE t FOR UPDATE", "SELECT * FROM t FOR UPDATE")
+        self.validate_identity(
+            "TABLE t ORDER BY x OFFSET 1 FETCH FIRST 1 ROW ONLY",
+            "SELECT * FROM t ORDER BY x OFFSET 1 FETCH FIRST 1 ROWS ONLY",
+        )
+
     def test_datetime_arithmetic(self):
         self.validate_all(
             "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND' - (CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND')",

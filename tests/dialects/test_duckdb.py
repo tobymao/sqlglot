@@ -10,6 +10,56 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_min_max(self):
+        for name, func in (("MIN", exp.Min), ("MAX", exp.Max)):
+            with self.subTest(name=name):
+                self.validate_all(
+                    f"SELECT {name}(x) FROM t",
+                    write={
+                        "duckdb": f"SELECT {name}(x) FROM t",
+                        "postgres": f"SELECT {name}(x) FROM t",
+                        "snowflake": f"SELECT {name}(x) FROM t",
+                    },
+                )
+                sql = f"SELECT {name}(x, 2) FROM t"
+                self.validate_all(
+                    sql,
+                    write={
+                        "duckdb": sql,
+                        "postgres": UnsupportedError,
+                        "snowflake": UnsupportedError,
+                        "sqlite": UnsupportedError,
+                    },
+                )
+                expression = self.validate_identity(sql)
+                aggregate = expression.find(func)
+                self.assertEqual(aggregate.args["count"], exp.Literal.number(2))
+                self.assertFalse(aggregate.expressions)
+                for dialect in ("postgres", "snowflake", "sqlite"):
+                    with self.assertLogs(generator_logger, level="WARNING") as logs:
+                        self.assertEqual(expression.sql(dialect), sql)
+                    self.assertIn("Argument 'count' is not supported", logs.output[0])
+
+                for args, suffix in (
+                    ("DISTINCT x", ""),
+                    ("DISTINCT x, 2", ""),
+                    ("x, 2 ORDER BY x", ""),
+                    ("x, 2", " FILTER(WHERE x > 1)"),
+                    ("x, 2", " OVER ()"),
+                ):
+                    expression = self.validate_identity(f"SELECT {name}({args}){suffix} FROM t")
+                    self.assertEqual(self.parse_one(expression.sql("duckdb")), expression)
+
+                for arg, dtype in (("1", "INT"), ("'a'", "VARCHAR")):
+                    for count in ("", ", 2"):
+                        expression = annotate_types(
+                            self.parse_one(f"{name}({arg}{count})"), dialect="duckdb"
+                        )
+                        self.assertEqual(
+                            expression.type,
+                            exp.DataType.build(f"ARRAY<{dtype}>" if count else dtype),
+                        )
+
     def test_date_trunc(self):
         for unit in ("MONTH", "HOUR"):
             self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")
@@ -262,6 +312,21 @@ class TestDuckDB(Validator):
         self.validate_identity(
             "SELECT NULL IS NOT NULL IS NULL", "SELECT (NOT NULL IS NULL) IS NULL"
         )
+
+    def test_digit_separators(self):
+        self.validate_identity("SELECT 1_000", "SELECT 1000")
+        self.validate_identity("SELECT 1_000_000", "SELECT 1000000")
+        self.validate_identity("SELECT 1_2_3 AS x", "SELECT 123 AS x")
+        self.validate_identity("SELECT 1_0.2_5", "SELECT 10.25")
+        self.validate_identity("SELECT 1.2e3_4", "SELECT 1.2e34")
+
+        # An underscore only separates two digits; anywhere else the number ends and the
+        # rest is the implicit alias (DuckDB test/sql/parser/digit_separators.test)
+        self.validate_identity("SELECT 1__2", "SELECT 1 AS __2")
+        self.validate_identity("SELECT 1_", "SELECT 1 AS _")
+        self.validate_identity("SELECT 1e_5", "SELECT 1 AS e_5")
+        self.validate_identity("SELECT 1_0e_5", "SELECT 10 AS e_5")
+        self.validate_identity("SELECT 1._5", "SELECT 1. AS _5")
 
     def test_reserved_keyword_identifiers(self):
         # DuckDB keywords whose sqlglot entries used to carry the Postgres grammar's _p suffix,
@@ -1693,8 +1758,6 @@ class TestDuckDB(Validator):
             "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
             read={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
-                "bigquery": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern') FROM t",
             },
             write={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern') FROM t",
@@ -1704,9 +1767,6 @@ class TestDuckDB(Validator):
         )
         self.validate_all(
             "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
-            read={
-                "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",
-            },
             write={
                 "duckdb": "SELECT REGEXP_EXTRACT(a, 'pattern', 2, 'i') FROM t",
                 "snowflake": "SELECT REGEXP_SUBSTR(a, 'pattern', 1, 1, 'i', 2) FROM t",

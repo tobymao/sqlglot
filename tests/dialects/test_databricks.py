@@ -25,6 +25,36 @@ class TestDatabricks(Validator):
             },
         )
 
+        # Databricks rejects a timestamp precision outside of 6 to 9, so any other
+        # precision is dropped instead of being preserved
+        for timestamp_type in ("TIMESTAMP", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ"):
+            for precision in list(range(6)) + [10]:
+                with self.subTest(timestamp_type=timestamp_type, precision=precision):
+                    self.validate_all(
+                        f"SELECT CAST(x AS {timestamp_type})",
+                        read={"databricks": f"SELECT CAST(x AS {timestamp_type}({precision}))"},
+                    )
+
+        self.validate_all(
+            "SELECT CAST('2024-01-01 00:00:00' AS TIMESTAMP)",
+            read={"trino": "SELECT TIMESTAMP '2024-01-01 00:00:00'"},
+        )
+        self.validate_all(
+            "SELECT CAST(x AS TIMESTAMP)",
+            read={
+                "mysql": "SELECT CAST(x AS DATETIME(3))",
+                "snowflake": "SELECT CAST(x AS TIMESTAMP(3))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(x AS TIMESTAMP(6))",
+            read={"mysql": "SELECT CAST(x AS DATETIME(6))"},
+        )
+        self.validate_all(
+            "SELECT CAST(x AS TIMESTAMP)",
+            read={"snowflake": "SELECT CAST(x AS TIMESTAMPTZ(3))"},
+        )
+
     def test_match_recognize(self):
         sql = (
             "SELECT symbol, start_tstamp, end_tstamp, run_length FROM stock_ticker "

@@ -592,6 +592,12 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
+    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
+    """Whether input columns take precedence over projection aliases in HAVING and QUALIFY."""
+
+    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
+    """Whether HAVING aliases override ungrouped input columns outside aggregate functions."""
+
     ANNOTATE_ALL_SCOPES = False
     """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
 
@@ -801,6 +807,12 @@ class Dialect(metaclass=_Dialect):
 
     REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL = True
     """Whether REGEXP_EXTRACT returns NULL when the position arg exceeds the string length."""
+
+    REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL = True
+    """Whether REGEXP_EXTRACT returns NULL rather than an empty string when the pattern does not match."""
+
+    REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY = False
+    """Whether REGEXP_EXTRACT returns an empty string for a non-participating capture group."""
 
     SET_OP_DISTINCT_BY_DEFAULT: dict[Type[exp.Expr], bool | None] = {
         exp.Except: True,
@@ -2002,11 +2014,13 @@ def encode_decode_sql(
     return self.func(name, expression.this, expression.args.get("replace") if replace else None)
 
 
+@unsupported_args("count")
 def min_or_least(self: Generator, expression: exp.Min) -> str:
     name = "LEAST" if expression.expressions else "MIN"
     return rename_func(name)(self, expression)
 
 
+@unsupported_args("count")
 def max_or_greatest(self: Generator, expression: exp.Max) -> str:
     name = "GREATEST" if expression.expressions else "MAX"
     return rename_func(name)(self, expression)

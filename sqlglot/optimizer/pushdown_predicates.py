@@ -4,6 +4,7 @@ from collections.abc import Iterable, Mapping
 import typing as t
 
 from sqlglot import exp
+from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
 from sqlglot.optimizer.scope import build_scope, find_in_scope, Scope
 from sqlglot.optimizer.simplify import simplify
@@ -152,7 +153,7 @@ def pushdown_cnf(
             if isinstance(node, exp.Select):
                 predicate.replace(exp.true())
                 inner_predicate = replace_aliases(node, predicate)
-                if find_in_scope(inner_predicate, exp.AggFunc):
+                if _is_scalar_aggregate(node):
                     node.having(inner_predicate, copy=False)
                 else:
                     node.where(inner_predicate, copy=False)
@@ -174,13 +175,15 @@ def pushdown_dnf(
     # only table a can be push down
     pushdown_tables: set[str] = set()
 
-    for a in predicates:
-        a_tables = exp.column_table_names(a)
+    for i, predicate in enumerate(predicates):
+        tables = exp.column_table_names(predicate)
+        if i == 0:
+            pushdown_tables = tables
+        else:
+            pushdown_tables &= tables
 
-        for b in predicates:
-            a_tables &= exp.column_table_names(b)
-
-        pushdown_tables.update(a_tables)
+        if not pushdown_tables:
+            break
 
     conditions: dict[str, exp.Expr] = {}
 
@@ -217,7 +220,7 @@ def pushdown_dnf(
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):
             inner_predicate = replace_aliases(table_node, predicate)
-            if find_in_scope(inner_predicate, exp.AggFunc):
+            if _is_scalar_aggregate(table_node):
                 table_node.having(inner_predicate, copy=False)
             else:
                 table_node.where(inner_predicate, copy=False)
@@ -267,16 +270,16 @@ def nodes_for_predicate(
                 nodes[table] = node
 
         if isinstance(node, exp.Select) and len(tables) == 1:
-            # We can't push down window expressions
-            has_window_expression = any(
-                select for select in node.selects if find_in_scope(select, exp.Window)
+            has_window_or_srf = any(
+                find_in_scope(select, exp.Window, *exp.SET_RETURNING_FUNCTIONS)
+                for select in node.selects
             )
             # we can't push down predicates to select statements if they are referenced in
             # multiple places.
             if (
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
-                and not has_window_expression
+                and not has_window_or_srf
                 # LIMIT/OFFSET and QUALIFY select rows before the outer predicate runs
                 and not node.args.get("limit")
                 and not node.args.get("offset")
@@ -284,6 +287,17 @@ def nodes_for_predicate(
             ):
                 nodes[table] = node
     return nodes
+
+
+def _is_scalar_aggregate(select: exp.Select) -> bool:
+    if select.args.get("having"):
+        return True
+
+    windows = select.args.get("windows")
+    order = select.args.get("order")
+    return any(projection_has_aggregate(s, windows) for s in select.selects) or (
+        order is not None and projection_has_aggregate(order, windows)
+    )
 
 
 OPERATOR_EXPRESSIONS = (exp.Binary, exp.Unary, exp.Predicate)

@@ -241,7 +241,11 @@ def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
             parameters=seq_get(args, 4),
             group=seq_get(args, 5) or exp.Literal.number(0),
             **(
-                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                {
+                    "null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL,
+                    "null_if_no_match": dialect.REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL,
+                    "empty_if_group_missing": dialect.REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY,
+                }
                 if expr_type is exp.RegexpExtract
                 else {}
             ),

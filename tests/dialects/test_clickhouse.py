@@ -2342,3 +2342,18 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "CREATE MATERIALIZED VIEW v REFRESH AS SELECT 1", check_command_warning=True
         ).assert_is(exp.Command)
+
+    def test_number_like_identifiers(self):
+        # ClickHouse identifiers may start with a digit, so a token that begins with one
+        # stays a single identifier even when it looks like a number with a separator
+        self.validate_identity(
+            "SELECT 1e_5foo FROM (SELECT 7 AS `1e_5foo`)",
+            'SELECT 1e_5foo FROM (SELECT 7 AS "1e_5foo")',
+        )
+        self.validate_identity(
+            "SELECT 1__2, 1_, 1e_5 FROM (SELECT 7 AS `1__2`, 8 AS `1_`, 9 AS `1e_5`)",
+            'SELECT 1__2, 1_, 1e_5 FROM (SELECT 7 AS "1__2", 8 AS "1_", 9 AS "1e_5")',
+        )
+
+        # Digit separators still apply to actual numbers
+        self.validate_identity("SELECT 1_000", "SELECT 1000")

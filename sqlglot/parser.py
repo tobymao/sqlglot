@@ -1945,6 +1945,9 @@ class Parser:
     # Whether implicit unnesting is supported, e.g. SELECT 1 FROM y.z AS z, z.a (Redshift)
     SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = False
 
+    # Whether TABLE name can be used as shorthand for SELECT * FROM name.
+    SUPPORTS_TABLE_QUERY: t.ClassVar = False
+
     # Whether field names can be digit-prefixed, e.g. data.144A_FLAG or data.144 (BigQuery)
     SUPPORTS_DIGIT_PREFIXED_FIELD_NAMES: t.ClassVar = False
 
@@ -2464,6 +2467,9 @@ class Parser:
 
         if self._match_text_seq("WHILE"):
             return self._parse_whileblock()
+
+        if self._is_table_query():
+            return self._parse_select()
 
         expression = self._parse_expression()
         expression = self._parse_set_operations(expression) if expression else self._parse_select()
@@ -4098,7 +4104,9 @@ class Parser:
             # Support parentheses for duckdb FROM-first syntax
             this = (
                 self._parse_table(consume_pipe=True)
-                if table and not self._match(TokenType.FROM, advance=False)
+                if table
+                and not self._match(TokenType.FROM, advance=False)
+                and not self._is_table_query()
                 else self._parse_select(nested=True, parse_set_operation=False)
             )
 
@@ -4263,6 +4271,19 @@ class Parser:
             if from_:
                 this.set("from_", from_)
 
+            this = self._parse_query_modifiers(this)
+        elif not table and self._is_table_query():
+            self._advance()
+            comments = self._prev_comments
+            only = self._match(TokenType.ONLY)
+            relation = self._parse_wrapped(self._parse_table_parts, optional=True)
+            if only and relation:
+                relation.set("only", True)
+            self._match(TokenType.STAR)
+            this = self.expression(
+                exp.Select(expressions=[exp.Star()], from_=exp.From(this=relation)),
+                comments=comments,
+            )
             this = self._parse_query_modifiers(this)
         elif (table or nested) and self._match(TokenType.L_PAREN):
             comments = self._prev_comments
@@ -7826,7 +7847,7 @@ class Parser:
 
         # Disambiguate between schema and subquery/CTE, e.g. in INSERT INTO table (<expr>),
         # expr can be of both types
-        if self._match_set(self.SELECT_START_TOKENS):
+        if self._match_set(self.SELECT_START_TOKENS) or self._is_table_query():
             self._retreat(index)
             return this
         args = self._parse_csv(lambda: self._parse_constraint() or self._parse_field_def())
@@ -9310,7 +9331,20 @@ class Parser:
     def _parse_expressions(self) -> list[exp.Expr]:
         return self._parse_csv(self._parse_expression)
 
+    def _is_table_query(self) -> bool:
+        return (
+            self.SUPPORTS_TABLE_QUERY
+            and self._curr.token_type == TokenType.TABLE
+            and (
+                self._next.token_type in self.ID_VAR_TOKENS
+                or self._next.token_type == TokenType.ONLY
+            )
+        )
+
     def _parse_select_or_expression(self, alias: bool = False) -> exp.Expr | None:
+        if self._is_table_query():
+            return self._parse_select()
+
         return (
             self._parse_set_operations(
                 self._parse_alias(self._parse_assignment(), explicit=True)

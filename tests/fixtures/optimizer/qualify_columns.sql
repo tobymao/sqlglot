@@ -864,7 +864,13 @@ SELECT * FROM w, x JOIN y USING (b);
 SELECT w.d AS d, w.e AS e, x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM w AS w, x AS x JOIN y AS y ON x.b = y.b;
 
 SELECT x.* FROM x JOIN y USING(b);
-SELECT x.a AS a, COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+SELECT x.a AS a, x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT x.*, y.* FROM x JOIN y USING(b);
+SELECT x.a AS a, x.b AS b, y.b AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+SELECT y.* FROM x LEFT JOIN y USING(b);
+SELECT y.b AS b, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
 
 # dialect: duckdb
 SELECT * FROM x LEFT JOIN y USING(b);

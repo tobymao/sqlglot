@@ -3230,6 +3230,15 @@ OPTIONS (
         )
 
     def test_regexp_extract(self):
+        for subject, pattern in (("Abc", "abc"), ("b", "a*"), ("b", "(a)?b"), ("b", "(a*)b")):
+            group = ", 1" if "(" in pattern else ""
+            self.validate_all(
+                f"REGEXP_EXTRACT('{subject}', '{pattern}')",
+                write={
+                    "duckdb": f"ARRAY_EXTRACT(REGEXP_EXTRACT_ALL('{subject}', '{pattern}'{group}), 1)",
+                },
+            )
+
         self.validate_identity("REGEXP_EXTRACT(x, '(?<)')")
         self.validate_identity("REGEXP_EXTRACT(`foo`, 'bar: (.+?)', 1, 1)")
         self.validate_identity(
@@ -3245,7 +3254,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)') FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3254,7 +3263,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3263,7 +3272,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 2) FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(NULLIF(SUBSTRING(abc, 2), ''), 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 
@@ -3272,7 +3281,7 @@ OPTIONS (
             "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
             write={
                 "bigquery": "SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1, 1) FROM table",
-                "duckdb": '''SELECT REGEXP_EXTRACT(abc, 'pattern(group)', 1) FROM "table"''',
+                "duckdb": '''SELECT ARRAY_EXTRACT(REGEXP_EXTRACT_ALL(abc, 'pattern(group)', 1), 1) FROM "table"''',
             },
         )
 

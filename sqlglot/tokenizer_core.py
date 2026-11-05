@@ -1001,10 +1001,24 @@ class TokenizerCore:
                     self._advance()
                 else:
                     break
-            elif _CHAR_UPPER.get(self._peek, self._peek) == "E" and not scientific:
+            elif (
+                _CHAR_UPPER.get(self._peek, self._peek) == "E"
+                and not scientific
+                and not (
+                    numbers_can_be_underscore_separated
+                    and self._current + 1 < self.size
+                    and self.sql[self._current + 1] == "_"
+                )
+            ):
                 scientific += 1
                 self._advance()
-            elif self._peek == "_" and numbers_can_be_underscore_separated:
+            elif (
+                self._peek == "_"
+                and numbers_can_be_underscore_separated
+                and self._char in _DIGIT_CHARS
+                and self._current + 1 < self.size
+                and self.sql[self._current + 1] in _DIGIT_CHARS
+            ):
                 is_underscore_separated = True
                 self._advance()
             elif self._peek.isidentifier():

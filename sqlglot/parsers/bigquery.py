@@ -135,7 +135,11 @@ def _build_regexp_extract(expr_type: type[E], default_group: exp.Expr | None = N
             occurrence=seq_get(args, 3),
             group=exp.Literal.number(1) if group else default_group,
             **(
-                {"null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL}
+                {
+                    "null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL,
+                    "null_if_no_match": dialect.REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL,
+                    "empty_if_group_missing": dialect.REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY,
+                }
                 if expr_type is exp.RegexpExtract
                 else {}
             ),

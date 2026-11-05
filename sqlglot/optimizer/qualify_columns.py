@@ -26,6 +26,9 @@ if t.TYPE_CHECKING:
     from collections.abc import Iterable
 
 
+GROUPING_CONTAINERS = (exp.Group, exp.GroupingSets, exp.Cube, exp.Rollup, exp.Tuple, exp.Paren)
+
+
 def qualify_columns(
     expression: E,
     schema: dict[str, object] | Schema,
@@ -106,20 +109,22 @@ def qualify_columns(
         # Refresh classification caches: a column just qualified in place may have been cached as external
         scope.clear_column_cache()
 
+        if is_select and expand_stars:
+            _expand_stars(
+                scope,
+                resolver,
+                using_column_tables,
+                using_columns,
+                pseudocolumns,
+                annotator,
+                unannotated_scopes,
+            )
+
+        # HAVING precedence can depend on positional GROUP BY targets within a star.
         if expand_alias_refs:
             _expand_alias_refs(scope, resolver, dialect)
 
         if is_select:
-            if expand_stars:
-                _expand_stars(
-                    scope,
-                    resolver,
-                    using_column_tables,
-                    using_columns,
-                    pseudocolumns,
-                    annotator,
-                    unannotated_scopes,
-                )
             qualify_outputs(scope, dialect=dialect)
 
         _expand_group_by(scope, dialect)
@@ -371,6 +376,7 @@ def _expand_alias_refs(
         return
 
     alias_to_expression: dict[str, tuple[exp.Expr, int]] = {}
+    grouped_columns: set[tuple[str, str]] = set()
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
@@ -423,7 +429,14 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            if table and (not alias_expr or skip_replace):
+            prefer_column = dialect.PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY
+            if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+                prefer_column = (
+                    isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
+                    or (table.name, column.name) in grouped_columns
+                )
+
+            if table and (not alias_expr or skip_replace or prefer_column):
                 column.set("table", table)
             elif not column.table and alias_expr and not skip_replace:
                 # For queries like SELECT x + 1 AS y FROM read_parquet('f') WHERE y > 1, we can't
@@ -487,6 +500,21 @@ def _expand_alias_refs(
 
     replace_columns(expression.args.get("where"))
     replace_columns(expression.args.get("group"), literal_index=True)
+
+    if (
+        dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS
+        and expression.args.get("having")
+        and (group := expression.args.get("group"))
+    ):
+        # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
+        for grouping in group.walk(prune=lambda node: not isinstance(node, GROUPING_CONTAINERS)):
+            if isinstance(grouping, exp.Literal) and grouping.is_int:
+                index = int(grouping.to_py()) - 1
+                if 0 <= index < len(expression.selects):
+                    grouping = expression.selects[index].unalias().unnest()
+            if isinstance(grouping, exp.Column):
+                grouped_columns.add((grouping.table, grouping.name))
+
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)
 
@@ -1032,7 +1060,6 @@ def _expand_stars(
     rename_columns: dict[int, dict[str, str]] = {}
     ilike_pattern: str | None = None
 
-    coalesced_columns = set()
     dialect = resolver.dialect
 
     if dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
@@ -1057,7 +1084,10 @@ def _expand_stars(
 
     for expression in scope_expression.selects:
         tables: list[str] = []
-        if isinstance(expression, exp.Star):
+        is_unqualified_star = isinstance(expression, exp.Star)
+        coalesced_columns = set()
+
+        if is_unqualified_star:
             # Only a string literal ILIKE pattern can filter the expansion at optimization time
             ilike = expression.args.get("ilike")
             if ilike and not ilike.is_string:
@@ -1104,7 +1134,7 @@ def _expand_stars(
         start = len(new_selections)
         # The selections of the USING columns, which go first, in order
         using_selections: dict[str, exp.Expr | None] = (
-            dict.fromkeys(using_columns) if isinstance(expression, exp.Star) else {}
+            dict.fromkeys(using_columns) if is_unqualified_star else {}
         )
 
         for table in tables:
@@ -1206,7 +1236,11 @@ def _expand_stars(
                     continue
                 if ilike_pattern and not re.fullmatch(ilike_pattern, name, re.IGNORECASE):
                     continue
-                if name in using_column_tables and table in using_column_tables[name]:
+                if (
+                    is_unqualified_star
+                    and name in using_column_tables
+                    and table in using_column_tables[name]
+                ):
                     coalesced_columns.add(name)
                     # TODO (mypyc): use a separate variable to avoid reusing `tables` (list) with dict type
                     using_tables = using_column_tables[name]

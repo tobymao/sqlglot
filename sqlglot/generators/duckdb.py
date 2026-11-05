@@ -24,6 +24,7 @@ from sqlglot.dialects.dialect import (
     getbit_sql,
     groupconcat_sql,
     inline_array_unless_query,
+    map_date_part,
     months_between_sql,
     no_datetime_sql,
     no_comment_column_constraint_sql,
@@ -1770,6 +1771,8 @@ class DuckDBGenerator(generator.Generator):
         exp.MakeInterval: lambda self, e: no_make_interval_sql(self, e, sep=" "),
         exp.Initcap: _initcap_sql,
         exp.MD5Digest: lambda self, e: self.func("UNHEX", self.func("MD5", e.this)),
+        exp.Max: rename_func("MAX"),
+        exp.Min: rename_func("MIN"),
         exp.SHA: lambda self, e: _sha_sql(self, e, "SHA1"),
         exp.SHA1Digest: lambda self, e: _sha_sql(self, e, "SHA1", is_binary=True),
         exp.SHA2: lambda self, e: _sha_sql(self, e, "SHA256"),
@@ -2423,32 +2426,37 @@ class DuckDBGenerator(generator.Generator):
         Transform Snowflake's TIME_SLICE to DuckDB's time_bucket.
 
         Snowflake: TIME_SLICE(date_expr, slice_length, 'UNIT' [, 'START'|'END'])
-        DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr)
+        DuckDB:    time_bucket(INTERVAL 'slice_length' UNIT, date_expr, origin)
 
-        For 'END' kind, add the interval to get the end of the slice.
-        For DATE type with 'END', cast result back to DATE to preserve type.
+        Snowflake aligns slices to the 1970-01-01 epoch, so an explicit origin is
+        required because DuckDB's default origin differs. For 'END' kind, add the
+        interval to get the next slice's start; for DATE input, cast back to DATE.
         """
         date_expr = expression.this
         slice_length = expression.expression
-        unit = expression.unit
+        # Normalize unit aliases (e.g. W/WK/WOY -> WEEK) so the interval and origin agree
+        unit = map_date_part(expression.unit, self.dialect)
         kind = expression.text("kind").upper()
 
-        # Create INTERVAL expression: INTERVAL 'N' UNIT
         interval_expr = exp.Interval(this=slice_length, unit=unit)
 
-        # Create base time_bucket expression
-        time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr)
+        origin = expression.args.get("origin")
+        if origin is None:
+            # Snowflake aligns to 1970-01-01; WEEK to the Monday of the epoch week (WEEK_START=0)
+            origin = exp.Literal.string(
+                "1969-12-29" if unit and unit.name.upper() == "WEEK" else "1970-01-01"
+            )
+        # A DATE origin keeps a DATE input a DATE; DuckDB widens it for TIMESTAMP inputs
+        time_bucket_expr = exp.func(
+            "time_bucket", interval_expr, date_expr, exp.cast(origin, exp.DType.DATE)
+        )
 
-        # Check if we need the end of the slice (default is start)
-        if not kind == "END":
-            # For 'START', return time_bucket directly
+        if kind != "END":
             return self.sql(time_bucket_expr)
 
-        # For 'END', add the interval to get end of slice
         add_expr = exp.Add(this=time_bucket_expr, expression=interval_expr.copy())
 
-        # If input is DATE type, cast result back to DATE to preserve type
-        # DuckDB converts DATE to TIMESTAMP when adding intervals
+        # DuckDB widens DATE to TIMESTAMP when adding intervals, so cast back
         if date_expr.is_type(exp.DType.DATE):
             return self.sql(exp.cast(add_expr, exp.DType.DATE))
 
@@ -4330,6 +4338,7 @@ class DuckDBGenerator(generator.Generator):
         position = expression.args.get("position")
         occurrence = expression.args.get("occurrence")
         null_if_pos_overflow = expression.args.get("null_if_pos_overflow")
+        null_if_no_match = expression.args.get("null_if_no_match")
 
         # Handle Snowflake's 'e' flag: it enables capture group extraction
         # In DuckDB, this is controlled by the group parameter directly
@@ -4358,7 +4367,7 @@ class DuckDBGenerator(generator.Generator):
         is_extract_all = isinstance(expression, exp.RegexpExtractAll)
         non_single_occurrence = occurrence and (not occurrence.is_int or occurrence.to_py() > 1)
 
-        if is_extract_all or non_single_occurrence:
+        if is_extract_all or non_single_occurrence or null_if_no_match:
             name = "REGEXP_EXTRACT_ALL"
         else:
             name = "REGEXP_EXTRACT"
@@ -4370,9 +4379,27 @@ class DuckDBGenerator(generator.Generator):
         # Array slicing for REGEXP_EXTRACT_ALL with occurrence
         if is_extract_all and non_single_occurrence:
             result = exp.Bracket(this=result, expressions=[exp.Slice(this=occurrence)])
-        # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1
-        elif non_single_occurrence:
-            result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
+        elif not is_extract_all and (non_single_occurrence or null_if_no_match):
+            # Non-participating capture group yields [NULL] in DuckDB; Snowflake returns '' on a match
+            if (
+                expression.args.get("empty_if_group_missing")
+                and group
+                and not (group.is_int and group.to_py() == 0)
+            ):
+                result = exp.Transform(
+                    this=result,
+                    expression=exp.Lambda(
+                        this=exp.Coalesce(
+                            this=exp.column("x"), expressions=[exp.Literal.string("")]
+                        ),
+                        expressions=[exp.to_identifier("x")],
+                    ),
+                )
+            return self.func(
+                "ARRAY_EXTRACT",
+                result,
+                occurrence if non_single_occurrence else exp.Literal.number(1),
+            )
 
         return self.sql(result)
 

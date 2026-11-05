@@ -435,7 +435,9 @@ class RegexpExtract(Expression, Func):
         "occurrence": False,
         "parameters": False,
         "group": False,
-        "null_if_pos_overflow": False,  # for transpilation target behavior
+        "null_if_pos_overflow": False,
+        "null_if_no_match": False,
+        "empty_if_group_missing": False,
     }
 
 

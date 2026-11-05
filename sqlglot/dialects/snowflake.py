@@ -24,6 +24,7 @@ class Snowflake(Dialect):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
     PREFER_CTE_ALIAS_COLUMN = True
+    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
     SUPPORTS_POSITIONAL_COLUMN_REFS = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False
@@ -36,6 +37,7 @@ class Snowflake(Dialect):
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = True
     STAR_ILIKE_BACKSLASH_ESCAPE = True
+    REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY = True
 
     # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {

@@ -1,4 +1,4 @@
-from sqlglot import exp
+from sqlglot import exp, parse_one
 from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
@@ -599,6 +599,16 @@ class TestStarrocks(Validator):
                 "duckdb": "SELECT TIME_BUCKET(INTERVAL 7 DAY, dt, CAST('0001-01-01' AS DATE)) + INTERVAL 7 DAY",
             },
         )
+
+    def test_time_slice_origin_roundtrip(self):
+        for boundary, kind in (("", "START"), (", FLOOR", "START"), (", CEIL", "END")):
+            with self.subTest(boundary=boundary):
+                expression = self.parse_one(f"SELECT TIME_SLICE(dt, INTERVAL 7 DAY{boundary})")
+                sql = f"SELECT TIME_SLICE(dt, 7, DAY, '{kind}', '0001-01-01')"
+                self.assertEqual(expression.sql(), sql)
+                reparsed = parse_one(expression.sql())
+                self.assertEqual(reparsed.sql(), sql)
+                self.assertEqual(reparsed.sql("duckdb"), expression.sql("duckdb"))
 
     def test_aggregate_key(self):
         # https://docs.starrocks.io/docs/table_design/table_types/aggregate_table/

@@ -13,6 +13,17 @@ _EXPRESSION_IS_COMPILED = is_compiled(_core_module)
 
 
 class TestGenerator(unittest.TestCase):
+    def test_time_slice_origin(self):
+        for boundary, kind in (("", ""), (", FLOOR", ", 'START'"), (", CEIL", ", 'END'")):
+            expression = parse_one(
+                f"SELECT TIME_SLICE(dt, INTERVAL 7 DAY{boundary})", read="starrocks"
+            )
+            for dialect in ("postgres", "mysql", "bigquery"):
+                with self.subTest(boundary=boundary, dialect=dialect):
+                    self.assertEqual(
+                        expression.sql(dialect), f"SELECT TIME_SLICE(dt, 7, DAY{kind})"
+                    )
+
     @unittest.skipIf(_EXPRESSION_IS_COMPILED, "mypyc compiled expressions cannot be subclassed")
     def test_fallback_function_sql(self):
         class SpecialUdf(Expression, Func):

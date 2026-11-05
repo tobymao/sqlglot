@@ -2437,19 +2437,19 @@ class DuckDBGenerator(generator.Generator):
         # Normalize unit aliases (e.g. W/WK/WOY -> WEEK) so the interval and origin agree
         unit = map_date_part(expression.unit, self.dialect)
         kind = expression.text("kind").upper()
-        is_date = date_expr.is_type(exp.DType.DATE)
 
         interval_expr = exp.Interval(this=slice_length, unit=unit)
 
         origin = expression.args.get("origin")
         if origin is None:
             # Snowflake aligns to 1970-01-01; WEEK to the Monday of the epoch week (WEEK_START=0)
-            is_week = bool(unit and unit.name.upper() == "WEEK")
-            origin = exp.Literal.string("1969-12-29" if is_week else "1970-01-01")
+            origin = exp.Literal.string(
+                "1969-12-29" if unit and unit.name.upper() == "WEEK" else "1970-01-01"
+            )
         # A DATE origin keeps a DATE input a DATE; DuckDB widens it for TIMESTAMP inputs
-        origin_expr = exp.cast(origin, exp.DType.DATE)
-
-        time_bucket_expr = exp.func("time_bucket", interval_expr, date_expr, origin_expr)
+        time_bucket_expr = exp.func(
+            "time_bucket", interval_expr, date_expr, exp.cast(origin, exp.DType.DATE)
+        )
 
         if kind != "END":
             return self.sql(time_bucket_expr)
@@ -2457,7 +2457,7 @@ class DuckDBGenerator(generator.Generator):
         add_expr = exp.Add(this=time_bucket_expr, expression=interval_expr.copy())
 
         # DuckDB widens DATE to TIMESTAMP when adding intervals, so cast back
-        if is_date:
+        if date_expr.is_type(exp.DType.DATE):
             return self.sql(exp.cast(add_expr, exp.DType.DATE))
 
         return self.sql(add_expr)

@@ -6069,6 +6069,17 @@ class Generator:
 
         return self._add_arrayagg_null_filter(array_agg, expression, column_expr)
 
+    def timeslice_sql(self, expression: exp.TimeSlice) -> str:
+        # Only the SQLGlot dialect serializes the internal origin for round-tripping.
+        origin = expression.args.get("origin") if self.dialect == "" else None
+        kind = expression.args.get("kind")
+        if origin is not None and kind is None:
+            kind = exp.Literal.string("START")
+
+        return self.func(
+            "TIME_SLICE", expression.this, expression.expression, expression.unit, kind, origin
+        )
+
     def slice_sql(self, expression: exp.Slice) -> str:
         step = self.sql(expression, "step")
         # An omitted end is written as `-` before a step, since `::` is the cast operator

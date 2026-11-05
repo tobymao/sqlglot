@@ -41,7 +41,14 @@ class TestDatabricks(Validator):
         )
         self.validate_all(
             "SELECT CAST(x AS TIMESTAMP)",
-            read={"snowflake": "SELECT CAST(x AS TIMESTAMP(3))"},
+            read={
+                "mysql": "SELECT CAST(x AS DATETIME(3))",
+                "snowflake": "SELECT CAST(x AS TIMESTAMP(3))",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(x AS TIMESTAMP(6))",
+            read={"mysql": "SELECT CAST(x AS DATETIME(6))"},
         )
         self.validate_all(
             "SELECT CAST(x AS TIMESTAMP)",

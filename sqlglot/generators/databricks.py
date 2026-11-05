@@ -10,6 +10,16 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.spark import SparkGenerator
 
 
+TIMESTAMP_TYPES = {
+    exp.DType.DATETIME,
+    exp.DType.TIME,
+    exp.DType.TIMESTAMP,
+    exp.DType.TIMESTAMPNTZ,
+    exp.DType.TIMESTAMPLTZ,
+    exp.DType.TIMESTAMPTZ,
+}
+
+
 class DatabricksGenerator(SparkGenerator):
     TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
     COPY_PARAMS_ARE_WRAPPED = False
@@ -73,25 +83,10 @@ class DatabricksGenerator(SparkGenerator):
     def datatype_sql(self, expression: exp.DataType) -> str:
         # Databricks only supports a timestamp precision of 6 (microseconds) or 7 to 9
         # (nanoseconds), so drop any other precision it would reject, e.g. TIMESTAMP(0)
-        if (
-            expression.this
-            in (
-                exp.DType.TIME,
-                exp.DType.TIMESTAMP,
-                exp.DType.TIMESTAMPNTZ,
-                exp.DType.TIMESTAMPLTZ,
-                exp.DType.TIMESTAMPTZ,
-            )
-            and expression.expressions
-        ):
+        if expression.this in TIMESTAMP_TYPES and expression.expressions:
             param = expression.expressions[0]
-            param_value = param.this if isinstance(param, exp.DataTypeParam) else param
-            precision = (
-                param_value.to_py()
-                if isinstance(param_value, exp.Literal) and param_value.is_number
-                else None
-            )
-            if isinstance(precision, int) and not 6 <= precision <= 9:
+            param = param.this if isinstance(param, exp.DataTypeParam) else param
+            if param.is_int and not 6 <= param.to_py() <= 9:
                 expression.set("expressions", None)
 
         return super().datatype_sql(expression)

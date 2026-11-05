@@ -5438,6 +5438,14 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )
+        # Capture group extraction: a non-participating group is '' on a match, NULL only on no-match
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e', 1)",
+            write={
+                "duckdb": "ARRAY_EXTRACT(LIST_TRANSFORM(REGEXP_EXTRACT_ALL(subject, pattern, 1), LAMBDA x : COALESCE(x, '')), 1)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e', 1)",
+            },
+        )
         self.validate_all(
             "REGEXP_SUBSTR_ALL(subject, pattern)",
             write={

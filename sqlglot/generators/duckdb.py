@@ -4388,6 +4388,13 @@ class DuckDBGenerator(generator.Generator):
         elif non_single_occurrence:
             result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
         elif null_on_no_match:
+            # Non-participating capture group yields [NULL] in DuckDB; Snowflake returns '' on a match
+            if group is not None and not (group.is_int and group.to_py() == 0):
+                lam = exp.Lambda(
+                    this=exp.Coalesce(this=exp.column("x"), expressions=[exp.Literal.string("")]),
+                    expressions=[exp.to_identifier("x")],
+                )
+                result = exp.Anonymous(this="LIST_TRANSFORM", expressions=[result, lam])
             result = exp.Anonymous(
                 this="ARRAY_EXTRACT", expressions=[result, exp.Literal.number(1)]
             )

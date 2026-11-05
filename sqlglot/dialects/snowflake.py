@@ -37,6 +37,7 @@ class Snowflake(Dialect):
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = True
     STAR_ILIKE_BACKSLASH_ESCAPE = True
+    REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY = True
 
     # https://docs.snowflake.com/en/sql-reference/functions/split_to_table
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {

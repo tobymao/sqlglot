@@ -175,13 +175,15 @@ def pushdown_dnf(
     # only table a can be push down
     pushdown_tables: set[str] = set()
 
-    for a in predicates:
-        a_tables = exp.column_table_names(a)
+    for i, predicate in enumerate(predicates):
+        tables = exp.column_table_names(predicate)
+        if i == 0:
+            pushdown_tables = tables
+        else:
+            pushdown_tables &= tables
 
-        for b in predicates:
-            a_tables &= exp.column_table_names(b)
-
-        pushdown_tables.update(a_tables)
+        if not pushdown_tables:
+            break
 
     conditions: dict[str, exp.Expr] = {}
 

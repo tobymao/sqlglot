@@ -437,6 +437,7 @@ class RegexpExtract(Expression, Func):
         "group": False,
         "null_if_pos_overflow": False,
         "null_if_no_match": False,
+        "empty_if_group_missing": False,
     }
 
 

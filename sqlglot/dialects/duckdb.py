@@ -31,7 +31,6 @@ class DuckDB(Dialect):
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     UUID_IS_STRING_TYPE = False
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
-    REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL = False
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

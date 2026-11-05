@@ -5438,6 +5438,34 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e')",
             },
         )
+        for subject, pattern in (("Abc", "abc"), ("b", "a*")):
+            self.validate_all(
+                f"REGEXP_SUBSTR('{subject}', '{pattern}')",
+                write={
+                    "duckdb": f"ARRAY_EXTRACT(REGEXP_EXTRACT_ALL('{subject}', '{pattern}'), 1)",
+                },
+            )
+        for subject, pattern in (("b", "(a)?b"), ("b", "(a*)b"), ("x", "(a)?b")):
+            self.validate_all(
+                f"REGEXP_SUBSTR('{subject}', '{pattern}', 1, 1, 'e', 1)",
+                write={
+                    "duckdb": f"ARRAY_EXTRACT(LIST_TRANSFORM(REGEXP_EXTRACT_ALL('{subject}', '{pattern}', 1), LAMBDA x : COALESCE(x, '')), 1)",
+                },
+            )
+        self.validate_all(
+            "REGEXP_SUBSTR('AB', '(a)(b)', 1, 1, 'i', 2)",
+            write={
+                "duckdb": "ARRAY_EXTRACT(LIST_TRANSFORM(REGEXP_EXTRACT_ALL('AB', '(a)(b)', 2, 'i'), LAMBDA x : COALESCE(x, '')), 1)",
+            },
+        )
+        for occurrence in ("2", "n"):
+            self.validate_all(
+                f"REGEXP_SUBSTR('abb', '(a)?b', 1, {occurrence}, 'e', 1)",
+                write={
+                    "duckdb": f"ARRAY_EXTRACT(LIST_TRANSFORM(REGEXP_EXTRACT_ALL('abb', '(a)?b', 1), LAMBDA x : COALESCE(x, '')), {occurrence})",
+                },
+            )
+
         # Capture group extraction: a non-participating group is '' on a match, NULL only on no-match
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, 'e', 1)",

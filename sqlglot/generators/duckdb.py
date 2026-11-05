@@ -4367,12 +4367,7 @@ class DuckDBGenerator(generator.Generator):
         is_extract_all = isinstance(expression, exp.RegexpExtractAll)
         non_single_occurrence = occurrence and (not occurrence.is_int or occurrence.to_py() > 1)
 
-        # First REGEXP_EXTRACT_ALL match: no-match yields NULL (not ''), subject evaluated once
-        null_on_no_match = (
-            bool(null_if_no_match) and not is_extract_all and not non_single_occurrence
-        )
-
-        if is_extract_all or non_single_occurrence or null_on_no_match:
+        if is_extract_all or non_single_occurrence or null_if_no_match:
             name = "REGEXP_EXTRACT_ALL"
         else:
             name = "REGEXP_EXTRACT"
@@ -4384,19 +4379,26 @@ class DuckDBGenerator(generator.Generator):
         # Array slicing for REGEXP_EXTRACT_ALL with occurrence
         if is_extract_all and non_single_occurrence:
             result = exp.Bracket(this=result, expressions=[exp.Slice(this=occurrence)])
-        # ARRAY_EXTRACT for REGEXP_EXTRACT with occurrence > 1, or the first match for NULL-on-no-match
-        elif non_single_occurrence:
-            result = exp.Anonymous(this="ARRAY_EXTRACT", expressions=[result, occurrence])
-        elif null_on_no_match:
+        elif not is_extract_all and (non_single_occurrence or null_if_no_match):
             # Non-participating capture group yields [NULL] in DuckDB; Snowflake returns '' on a match
-            if group is not None and not (group.is_int and group.to_py() == 0):
-                lam = exp.Lambda(
-                    this=exp.Coalesce(this=exp.column("x"), expressions=[exp.Literal.string("")]),
-                    expressions=[exp.to_identifier("x")],
+            if (
+                expression.args.get("empty_if_group_missing")
+                and group
+                and not (group.is_int and group.to_py() == 0)
+            ):
+                result = exp.Transform(
+                    this=result,
+                    expression=exp.Lambda(
+                        this=exp.Coalesce(
+                            this=exp.column("x"), expressions=[exp.Literal.string("")]
+                        ),
+                        expressions=[exp.to_identifier("x")],
+                    ),
                 )
-                result = exp.Anonymous(this="LIST_TRANSFORM", expressions=[result, lam])
-            result = exp.Anonymous(
-                this="ARRAY_EXTRACT", expressions=[result, exp.Literal.number(1)]
+            return self.func(
+                "ARRAY_EXTRACT",
+                result,
+                occurrence if non_single_occurrence else exp.Literal.number(1),
             )
 
         return self.sql(result)

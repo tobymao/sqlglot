@@ -42,13 +42,6 @@ class Spark2Parser(HiveParser):
 
     FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR, TokenType.DIV}
 
-    PROPERTY_PARSERS = {
-        **HiveParser.PROPERTY_PARSERS,
-        "OPTIONS": lambda self: self.expression(
-            exp.OptionsProperty(expressions=self._parse_wrapped_csv(self._parse_key_value_property))
-        ),
-    }
-
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,
@@ -126,6 +119,19 @@ class Spark2Parser(HiveParser):
         "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
         "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
     }
+
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("OPTIONS", "(", advance=False):
+            self._advance()
+            return self.expression(
+                exp.OptionsProperty(
+                    expressions=self._parse_wrapped_csv(
+                        lambda: self._parse_key_value_property(optional=True)
+                    )
+                )
+            )
+
+        return super()._parse_property()
 
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
         if not self._match_text_seq("DROP", "COLUMNS"):

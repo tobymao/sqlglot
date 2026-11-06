@@ -3030,12 +3030,12 @@ class Parser:
         return self._parse_key_value_property()
 
     def _parse_key_value_property(
-        self, parse_value: t.Callable[[], exp.Expr | None] | None = None
+        self, parse_value: t.Callable[[], exp.Expr | None] | None = None, optional: bool = False
     ) -> exp.Property | None:
         index = self._index
         key = self._parse_column()
 
-        if not self._match(TokenType.EQ):
+        if not self._match(TokenType.EQ) and not optional:
             self._retreat(index)
             return None
 

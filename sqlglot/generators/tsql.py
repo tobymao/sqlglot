@@ -162,6 +162,7 @@ class TSQLGenerator(generator.Generator):
     ALTER_SET_WRAPPED = True
     ALTER_SET_TYPE = ""
     SUPPORTS_ALTER_COLUMN_NULLABILITY = True
+    SUPPORTS_ARRAY_SLICING = False
 
     EXPRESSIONS_WITHOUT_NESTED_CTES = {
         exp.Create,

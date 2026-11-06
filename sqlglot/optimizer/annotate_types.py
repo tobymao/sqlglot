@@ -376,13 +376,6 @@ class TypeAnnotator:
             else:
                 exp_type = None
 
-            offset = expression.args.get("offset") if isinstance(expression, exp.Unnest) else None
-            offset_name = (
-                (offset.name if isinstance(offset, exp.Identifier) else "offset")
-                if offset
-                else None
-            )
-
             struct_type = exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
 
             if struct_type:
@@ -404,8 +397,10 @@ class TypeAnnotator:
             else:
                 result = {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-            if offset_name:
-                result[offset_name] = exp.DType.BIGINT
+            if isinstance(expression, exp.Unnest) and isinstance(
+                offset := expression.args.get("offset"), exp.Identifier
+            ):
+                result[offset.name] = exp.DType.BIGINT
 
             return result
 

@@ -3722,6 +3722,37 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             exp.DataType.build("timestamp"),
         )
 
+    def test_unnest_offset_annotation(self):
+        for array, element in (
+            ("[DATE '2020-01-01']", "d"),
+            ("[STRUCT(DATE '2020-01-01' AS a)]", "d.a"),
+        ):
+            for clause, offset in (("WITH OFFSET", "offset"), ("WITH OFFSET AS pos", "pos")):
+                sql = f"SELECT {element}, {offset}, {offset} + 1 FROM UNNEST({array}) AS d {clause}"
+                with self.subTest(sql=sql):
+                    expression = annotate_types(
+                        optimizer.qualify.qualify(
+                            parse_one(sql, dialect="bigquery"), dialect="bigquery"
+                        ),
+                        dialect="bigquery",
+                    )
+                    self.assertEqual(
+                        [select.type for select in expression.selects],
+                        [exp.DataType.build(kind) for kind in ("DATE", "BIGINT", "BIGINT")],
+                    )
+
+        expression = annotate_types(
+            optimizer.qualify.qualify(
+                parse_one(
+                    'SELECT t."offset" FROM UNNEST([DATE \'2020-01-01\']) WITH ORDINALITY AS t("offset")',
+                    dialect="duckdb",
+                ),
+                dialect="duckdb",
+            ),
+            dialect="duckdb",
+        )
+        self.assertEqual(expression.selects[0].type, exp.DataType.build("DATE"))
+
     def test_unnest_struct_field_annotation(self):
         """Test that UNNEST of struct array without column aliases exposes struct fields with proper types"""
         expression = annotate_types(

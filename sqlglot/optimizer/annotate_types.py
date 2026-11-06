@@ -376,16 +376,22 @@ class TypeAnnotator:
             else:
                 exp_type = None
 
+            offset = expression.args.get("offset") if isinstance(expression, exp.Unnest) else None
+            offset_name = (
+                (offset.name if isinstance(offset, exp.Identifier) else "offset")
+                if offset
+                else None
+            )
+
             struct_type = exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
 
             if struct_type:
-                return {
+                result = {
                     col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
                     for col_def in struct_type.expressions
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
-
-            if isinstance(expression, exp.Values):
+            elif isinstance(expression, exp.Values):
                 # Like a set operation's, each VALUES column's type is coerced across all rows
                 column_types: list[exp.DataType | exp.DType] = [exp.DType.NULL] * len(values)
                 for row in expression.expressions:
@@ -394,9 +400,14 @@ class TypeAnnotator:
                             value.type or exp.DType.UNKNOWN, column_types[i]
                         )
 
-                return dict(zip(alias_column_names, column_types))
+                result = dict(zip(alias_column_names, column_types))
+            else:
+                result = {alias: column.type for alias, column in zip(alias_column_names, values)}
 
-            return {alias: column.type for alias, column in zip(alias_column_names, values)}
+            if offset_name:
+                result[offset_name] = exp.DType.BIGINT
+
+            return result
 
         if isinstance(expression, exp.SetOperation):
             return dict(self._get_setop_column_types(expression))

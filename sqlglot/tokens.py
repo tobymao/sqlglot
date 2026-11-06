@@ -538,8 +538,6 @@ class Tokenizer(_TokenizerBase):
         "REVOKE": TokenType.REVOKE,
         "OPTIMIZE": TokenType.COMMAND,
         "PREPARE": TokenType.COMMAND,
-        "RELEASE": TokenType.COMMAND,
-        "SAVEPOINT": TokenType.COMMAND,
         "VACUUM": TokenType.COMMAND,
         "USER-DEFINED": TokenType.USERDEFINED,
     }

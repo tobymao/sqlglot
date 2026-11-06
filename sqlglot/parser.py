@@ -2468,6 +2468,14 @@ class Parser:
         if self._match_text_seq("WHILE"):
             return self._parse_whileblock()
 
+        if self._next.token_type in self.ID_VAR_TOKENS and self._match_texts(
+            ("RELEASE", "SAVEPOINT")
+        ):
+            comments = self._prev_comments
+            command = self._parse_as_command(self._prev)
+            command.add_comments(comments, prepend=True)
+            return command
+
         if self._is_table_query():
             return self._parse_select()
 

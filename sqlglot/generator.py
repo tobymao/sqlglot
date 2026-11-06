@@ -2072,7 +2072,13 @@ class Generator:
         return f"{this} FILTER({where})"
 
     def per_sql(self, expression: exp.Per) -> str:
-        return f"{self.sql(expression, 'this')} PER ({self.expressions(expression, flat=True)})"
+        keys = ", ".join(
+            f"{self.sql(key, 'this')} {self.sql(key, 'with_fill')}"
+            if isinstance(key, exp.Ordered) and key.args.get("with_fill")
+            else self.sql(key)
+            for key in expression.expressions
+        )
+        return f"{self.sql(expression, 'this')} PER ({keys})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:

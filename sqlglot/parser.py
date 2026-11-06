@@ -5930,20 +5930,22 @@ class Parser:
         ):
             nulls_first = True
 
-        if self._match_text_seq("WITH", "FILL"):
-            with_fill = self.expression(
-                exp.WithFill(
-                    from_=self._match(TokenType.FROM) and self._parse_bitwise(),
-                    to=self._match_text_seq("TO") and self._parse_bitwise(),
-                    step=self._match_text_seq("STEP") and self._parse_bitwise(),
-                    interpolate=self._parse_interpolate(),
-                )
-            )
-        else:
-            with_fill = None
-
         return self.expression(
-            exp.Ordered(this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill)
+            exp.Ordered(
+                this=this, desc=desc, nulls_first=nulls_first, with_fill=self._parse_with_fill()
+            )
+        )
+
+    def _parse_with_fill(self) -> exp.WithFill | None:
+        if not self._match_text_seq("WITH", "FILL"):
+            return None
+        return self.expression(
+            exp.WithFill(
+                from_=self._match(TokenType.FROM) and self._parse_bitwise(),
+                to=self._match_text_seq("TO") and self._parse_bitwise(),
+                step=self._match_text_seq("STEP") and self._parse_bitwise(),
+                interpolate=self._parse_interpolate(),
+            )
         )
 
     def _parse_limit_options(self) -> exp.LimitOptions | None:
@@ -9001,10 +9003,18 @@ class Parser:
     def _parse_per(self, this: exp.Expr | None) -> exp.Expr | None:
         if self._next.token_type == TokenType.L_PAREN and self._match_text_seq("PER"):
             return self.expression(
-                exp.Per(this=this, expressions=self._parse_wrapped_csv(self._parse_disjunction))
+                exp.Per(this=this, expressions=self._parse_wrapped_csv(self._parse_per_key))
             )
 
         return this
+
+    def _parse_per_key(self) -> exp.Expr | None:
+        """A PER key, or one filled `WITH FILL`, e.g. `ds WITH FILL`, as an Ordered."""
+        this = self._parse_disjunction()
+        with_fill = self._parse_with_fill() if this else None
+        if with_fill is None:
+            return this
+        return self.expression(exp.Ordered(this=this, nulls_first=False, with_fill=with_fill))
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         func = this

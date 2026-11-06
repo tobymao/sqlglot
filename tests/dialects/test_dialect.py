@@ -5737,7 +5737,7 @@ FROM subquery2""",
         self.assertEqual(parsed_expr.this.args.get("zone").sql("postgres"), "INTERVAL '3 HOURS'")
 
     def test_underscore_scientific_notation(self):
-        for dialect in ("duckdb", "clickhouse"):
+        for dialect in ("duckdb", "clickhouse", "sqlite"):
             for notation in ("e", "E"):
                 for sign in ("", "-", "+"):
                     with self.subTest(f"Testing notation: {notation}, sign: {sign} for {dialect}"):

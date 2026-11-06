@@ -703,6 +703,12 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT X'0a', 0x0a", "SELECT x'0a', 10")
 
+    def test_digit_separators(self):
+        self.validate_identity("SELECT 1_000", "SELECT 1000")
+        self.validate_identity("SELECT 1_000_000 AS x", "SELECT 1000000 AS x")
+        self.validate_identity("SELECT 1_0.2_5", "SELECT 10.25")
+        self.validate_identity("SELECT .5_5", "SELECT 0.55")
+
     def test_window_null_treatment(self):
         self.validate_all(
             "SELECT FIRST_VALUE(Name) OVER (PARTITION BY AlbumId ORDER BY Bytes DESC) AS LargestTrack FROM tracks",

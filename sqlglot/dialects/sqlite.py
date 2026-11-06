@@ -23,6 +23,7 @@ class SQLite(Dialect):
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
     INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]

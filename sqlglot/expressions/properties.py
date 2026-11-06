@@ -338,6 +338,10 @@ class OnCommitProperty(Property):
     arg_types = {"delete": False}
 
 
+class OptionsProperty(Property):
+    arg_types = {"expressions": True}
+
+
 class PartitionedByProperty(Property):
     arg_types = {"this": True}
 

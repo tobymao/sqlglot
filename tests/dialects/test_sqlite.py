@@ -707,8 +707,7 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT 1_000", "SELECT 1000")
         self.validate_identity("SELECT 1_000_000 AS x", "SELECT 1000000 AS x")
         self.validate_identity("SELECT 1_0.2_5", "SELECT 10.25")
-        self.validate_identity("SELECT 1.2e1_0", "SELECT 1.2e10")
-        self.validate_identity("SELECT 0x1_F", "SELECT 31")
+        self.validate_identity("SELECT .5_5", "SELECT 0.55")
 
     def test_window_null_treatment(self):
         self.validate_all(

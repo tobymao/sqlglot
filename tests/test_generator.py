@@ -166,3 +166,25 @@ class TestGenerator(unittest.TestCase):
 
         with self.assertRaises(UnsupportedError):
             expression.sql(dialect="postgres", unsupported_level=ErrorLevel.RAISE)
+
+    def test_unsupported_slice(self):
+        # Dialects that delimit identifiers with brackets cannot express a slice inside one:
+        # the generated SQL parses back as an alias rather than a range, so x[1:2] silently
+        # becomes x AS "1:2". Warn instead of emitting SQL that means something else.
+        expression = parse_one("SELECT x[1:2] FROM t", read="duckdb")
+
+        for dialect in ("tsql", "fabric", "sqlite", "tableau", "exasol", "dax"):
+            with self.subTest(dialect=dialect):
+                with self.assertLogs(generator_logger, level="WARNING"):
+                    expression.sql(dialect=dialect)
+
+                with self.assertRaises(UnsupportedError):
+                    expression.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
+        # Dialects that do support slicing are unaffected.
+        for dialect in ("duckdb", "presto", "spark", "postgres", "bigquery", "clickhouse"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(
+                    expression.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE),
+                    "SELECT x[1:2] FROM t",
+                )

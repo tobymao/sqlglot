@@ -10,6 +10,7 @@ class TableauGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_ARRAY_SLICING = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 

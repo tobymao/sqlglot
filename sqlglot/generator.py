@@ -549,6 +549,11 @@ class Generator:
     # Whether EXCLUDE in window specification is supported
     SUPPORTS_WINDOW_EXCLUDE = False
 
+    # Whether a slice can be expressed inside a bracket, e.g. x[1:2]. This is False for
+    # dialects where brackets delimit identifiers, since there the slice would be re-read
+    # as an alias rather than as a range.
+    SUPPORTS_ARRAY_SLICING = True
+
     # Whether or not set op modifiers apply to the outer set op or select.
     # SELECT * FROM x UNION SELECT * FROM y LIMIT 1
     # True means limit 1 happens after the set op, False means it it happens on y.
@@ -6084,6 +6089,9 @@ class Generator:
         )
 
     def slice_sql(self, expression: exp.Slice) -> str:
+        if not self.SUPPORTS_ARRAY_SLICING:
+            self.unsupported("Slices are not supported")
+
         step = self.sql(expression, "step")
         # An omitted end is written as `-` before a step, since `::` is the cast operator
         end = self.sql(expression.expression) or ("-" if step else "")

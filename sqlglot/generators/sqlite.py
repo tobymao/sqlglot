@@ -101,6 +101,7 @@ class SQLiteGenerator(generator.Generator):
     SUPPORTS_WINDOW_EXCLUDE = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     SUPPORTS_MEDIAN = False
+    SUPPORTS_ARRAY_SLICING = False
     JSON_KEY_VALUE_PAIR_SEP = ","
     PARSE_JSON_NAME: str | None = None
 

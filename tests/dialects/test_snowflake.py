@@ -6575,6 +6575,18 @@ SINGLE = TRUE""",
             "CREATE OR REPLACE MATERIALIZED VIEW FOO (A, B) AS SELECT A, B FROM TBL"
         )
 
+    def test_create_view_ignore_grants(self):
+        for sql in (
+            "CREATE OR REPLACE VIEW v IGNORE GRANTS AS SELECT 1 AS a",
+            "CREATE OR REPLACE VIEW v (a INT) IGNORE GRANTS AS SELECT 1 AS a",
+            "CREATE OR REPLACE TABLE t (a INT) IGNORE GRANTS AS SELECT 1 AS a",
+        ):
+            parsed = parse_one(sql, read="snowflake")
+            self.assertIsInstance(parsed, exp.Create)
+            self.assertEqual(parsed.sql("snowflake"), sql)
+
+        self.validate_identity("CREATE OR REPLACE VIEW v COPY GRANTS AS SELECT 1 AS a")
+
     def test_create_view_change_tracking(self):
         self.validate_identity("CREATE VIEW v (c) CHANGE_TRACKING=TRUE AS SELECT 1 AS c")
         self.validate_identity(

@@ -789,6 +789,7 @@ class SnowflakeParser(parser.Parser):
         **parser.Parser.PROPERTY_PARSERS,
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
+        "IGNORE": lambda self: self._parse_ignore_property(),
         "INTERACTIVE": lambda self: self.expression(exp.InteractiveProperty()),
         "LOCATION": lambda self: self._parse_location_property(),
         "ROW": lambda self: (
@@ -1012,6 +1013,13 @@ class SnowflakeParser(parser.Parser):
         if self._match_text_seq("TAGS"):
             return self.expression(exp.CopyTagsProperty())
         return super()._parse_copy_property()
+
+    def _parse_ignore_property(self) -> exp.Property | None:
+        if not self._match_text_seq("GRANTS"):
+            self._retreat(self._index - 1)
+            return None
+
+        return self.expression(exp.IgnoreGrantsProperty())
 
     def _parse_tag(self) -> exp.Tags:
         return self.expression(exp.Tags(expressions=self._parse_wrapped_csv(self._parse_property)))

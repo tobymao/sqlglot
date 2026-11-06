@@ -3033,7 +3033,7 @@ class Parser:
         self, parse_value: t.Callable[[], exp.Expr | None] | None = None, optional: bool = False
     ) -> exp.Property | None:
         index = self._index
-        key = self._parse_column()
+        key = (self._parse_string() if optional else None) or self._parse_column()
 
         if not self._match(TokenType.EQ) and not optional:
             self._retreat(index)

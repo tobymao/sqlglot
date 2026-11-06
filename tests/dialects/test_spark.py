@@ -12,16 +12,17 @@ class TestSpark(Validator):
     def test_create_table_options(self):
         sql = "CREATE TABLE t (a INT) USING PARQUET OPTIONS ('path'='s3://b/t')"
         dialects = ("spark2", "spark", "databricks")
-        for separator in ("=", ""):
-            with self.subTest(separator=separator):
-                self.validate_all(
-                    sql,
-                    read=dict.fromkeys(
-                        dialects,
-                        f"CREATE TABLE t (a INT) USING parquet OPTIONS (path {separator} 's3://b/t')",
-                    ),
-                    write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError},
-                )
+        for key in ("path", "'path'", "`path`"):
+            for separator in ("=", ""):
+                with self.subTest(key=key, separator=separator):
+                    self.validate_all(
+                        sql,
+                        read=dict.fromkeys(
+                            dialects,
+                            f"CREATE TABLE t (a INT) USING parquet OPTIONS ({key} {separator} 's3://b/t')",
+                        ),
+                        write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError},
+                    )
         expression = self.validate_identity(sql)
         self.assertIsInstance(expression, exp.Create)
         options = expression.find(exp.OptionsProperty)
@@ -50,7 +51,7 @@ class TestSpark(Validator):
             read=dict.fromkeys(
                 dialects,
                 "CREATE TABLE t (a INT) USING CSV "
-                "OPTIONS ('header' TRUE, maxColumns 10, sep = '|') "
+                "OPTIONS ('header' TRUE, maxColumns 10, 'sep' '|') "
                 "TBLPROPERTIES (options='v')",
             ),
         )

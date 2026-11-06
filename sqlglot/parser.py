@@ -6970,6 +6970,9 @@ class Parser:
                 this = exp.DataType(this=exp.DType.TIMESTAMPLTZ, expressions=expressions)
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
+                # "TIMESTAMP" has already been mapped to TIMESTAMPTZ token
+                if type_token == TokenType.TIMESTAMPTZ:
+                    this = exp.DataType(this=exp.DType.TIMESTAMPNTZ, expressions=expressions)
         elif type_token == TokenType.INTERVAL:
             if self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS:
                 unit = self._parse_var(upper=True)

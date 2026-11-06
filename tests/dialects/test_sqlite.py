@@ -643,6 +643,10 @@ class TestSQLite(Validator):
         )
 
     def test_datediff(self):
+        self.assertEqual(
+            parse_one("DATEDIFF(a, b, 'day')").sql("sqlite", unsupported_level=ErrorLevel.RAISE),
+            "CAST((JULIANDAY(a) - JULIANDAY(b)) AS INTEGER)",
+        )
         self.validate_all(
             "DATEDIFF(a, b, 'day')",
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) AS INTEGER)"},

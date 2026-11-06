@@ -782,6 +782,7 @@ class Generator:
         exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.OnProperty: exp.Properties.Location.POST_SCHEMA,
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.OptionsProperty: exp.Properties.Location.UNSUPPORTED,
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,

@@ -9,6 +9,39 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_create_table_options(self):
+        sql = "CREATE TABLE t (a INT) USING PARQUET OPTIONS ('path'='s3://b/t')"
+        dialects = ("spark2", "spark", "databricks")
+        self.validate_all(
+            sql,
+            read=dict.fromkeys(
+                dialects,
+                "CREATE TABLE t (a INT) USING parquet OPTIONS (path = 's3://b/t')",
+            ),
+            write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError},
+        )
+        expression = self.validate_identity(sql)
+        self.assertIsInstance(expression, exp.Create)
+        options = expression.find(exp.OptionsProperty)
+        self.assertIsNotNone(options)
+        self.assertEqual(
+            options.expressions,
+            [exp.Property(this=exp.Literal.string("path"), value=exp.Literal.string("s3://b/t"))],
+        )
+
+        self.validate_identity(
+            "CREATE TABLE t (a INT) USING CSV "
+            "OPTIONS (header = TRUE, maxColumns = 10, sep = '|') "
+            "TBLPROPERTIES ('purpose' = 'test')",
+            "CREATE TABLE t (a INT) USING CSV "
+            "OPTIONS ('header'=TRUE, 'maxColumns'=10, 'sep'='|') "
+            "TBLPROPERTIES ('purpose'='test')",
+        )
+        self.validate_identity(
+            "CREATE TABLE t USING PARQUET "
+            "OPTIONS ('parquet.bloom.filter.enabled'='true') AS SELECT 1 AS a"
+        )
+
     def test_string_escapes(self):
         self.validate_identity(r"'\U0001F600'", "'\U0001f600'")
         self.validate_identity(r"r'\u0041\101\z'", r"'\\u0041\\101\\z'")

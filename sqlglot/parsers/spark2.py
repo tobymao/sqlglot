@@ -42,6 +42,13 @@ class Spark2Parser(HiveParser):
 
     FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR, TokenType.DIV}
 
+    PROPERTY_PARSERS = {
+        **HiveParser.PROPERTY_PARSERS,
+        "OPTIONS": lambda self: self.expression(
+            exp.OptionsProperty(expressions=self._parse_wrapped_csv(self._parse_key_value_property))
+        ),
+    }
+
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,

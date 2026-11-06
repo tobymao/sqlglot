@@ -1013,23 +1013,22 @@ class SnowflakeGenerator(generator.Generator):
 
     def createable_sql(self, expression: exp.Create, locations: defaultdict) -> str:
         is_materialized = expression.find(exp.MaterializedProperty)
-        copy_grants_property = expression.find(exp.CopyGrantsProperty)
+        grants_property = expression.find(exp.CopyGrantsProperty, exp.IgnoreGrantsProperty)
 
-        if expression.kind == "VIEW" and is_materialized and copy_grants_property:
-            # For materialized views, COPY GRANTS is located *before* the columns list
-            # This is in contrast to normal views where COPY GRANTS is located *after* the columns list
-            # We default CopyGrantsProperty to POST_SCHEMA which means we need to output it POST_NAME if a materialized view is detected
+        if expression.kind == "VIEW" and is_materialized and grants_property:
+            # Materialized views require COPY/IGNORE GRANTS before the column list,
+            # whereas normal views use the default POST_SCHEMA location.
             # ref: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view#syntax
             # ref: https://docs.snowflake.com/en/sql-reference/sql/create-view#syntax
             post_schema_properties = locations[exp.Properties.Location.POST_SCHEMA]
-            post_schema_properties.pop(post_schema_properties.index(copy_grants_property))
+            post_schema_properties.pop(post_schema_properties.index(grants_property))
 
             this_name = self.sql(expression.this, "this")
-            copy_grants = self.sql(copy_grants_property)
+            grants = self.sql(grants_property)
             this_schema = self.schema_columns_sql(expression.this)
             this_schema = f"{self.sep()}{this_schema}" if this_schema else ""
 
-            return f"{this_name}{self.sep()}{copy_grants}{this_schema}"
+            return f"{this_name}{self.sep()}{grants}{this_schema}"
 
         return super().createable_sql(expression, locations)
 

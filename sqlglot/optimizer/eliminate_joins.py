@@ -83,13 +83,28 @@ def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
     if not unique_outputs:
         return False
 
-    _, join_keys, _ = join_condition(join)
+    source_keys, join_keys, _ = join_condition(join)
 
     # we check for columns because transformations can map distinct values to the same join key
     remaining_unique_outputs = unique_outputs - {
-        c.name for c in join_keys if isinstance(c, exp.Column)
+        c.name
+        for s, c in zip(source_keys, join_keys)
+        if isinstance(c, exp.Column) and not _types_can_collapse(s.type, c.type)
     }
     return not remaining_unique_outputs
+
+
+def _types_can_collapse(s_type: exp.DataType | None, j_type: exp.DataType | None) -> bool:
+    if not s_type or not j_type or s_type.is_type("unknown") or j_type.is_type("unknown"):
+        return False
+
+    if s_type.this == j_type.this:
+        return False
+
+    if s_type.this in exp.DataType.INTEGER_TYPES and j_type.this in exp.DataType.INTEGER_TYPES:
+        return False
+
+    return not (s_type.this in exp.DataType.TEXT_TYPES and j_type.this in exp.DataType.TEXT_TYPES)
 
 
 def _unique_outputs(scope: Scope) -> set[str]:

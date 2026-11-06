@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import typing as t
 from collections.abc import Sequence
+
 from sqlglot import Schema, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -46,10 +47,10 @@ RULES: tuple[OptimizerFn, ...] = (
     optimize_joins,
     eliminate_subqueries,
     merge_subqueries,
+    annotate_types,
     eliminate_joins,
     eliminate_ctes,
     quote_identifiers,
-    annotate_types,
     canonicalize,
     simplify,
 )

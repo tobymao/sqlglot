@@ -2164,6 +2164,24 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
+    def test_eliminate_joins_implicit_cast(self):
+        schema = {
+            "a": {"id": "INT"},
+            "b": {"k": "VARCHAR"},
+            "c": {"id": "DOUBLE"},
+            "d": {"k": "BIGINT"},
+            "e": {"id": "INT"},
+            "f": {"k": "INT"},
+        }
+        sql_varchar = "SELECT a.id FROM a LEFT JOIN (SELECT DISTINCT b.k FROM b) AS q ON a.id = q.k"
+        self.assertIn("LEFT JOIN", optimizer.optimize(sql_varchar, schema=schema).sql())
+
+        sql_double = "SELECT c.id FROM c LEFT JOIN (SELECT DISTINCT d.k FROM d) AS q ON c.id = q.k"
+        self.assertIn("LEFT JOIN", optimizer.optimize(sql_double, schema=schema).sql())
+
+        sql_int = "SELECT e.id FROM e LEFT JOIN (SELECT DISTINCT f.k FROM f) AS q ON e.id = q.k"
+        self.assertNotIn("LEFT JOIN", optimizer.optimize(sql_int, schema=schema).sql())
+
     def test_eliminate_ctes(self):
         self.check_file(
             "eliminate_ctes",

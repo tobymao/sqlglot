@@ -307,14 +307,12 @@ class HiveParser(parser.Parser):
     def _parse_partition_and_order(
         self,
     ) -> tuple[list[exp.Expr], exp.Expr | None]:
-        return (
-            (
-                self._parse_csv(self._parse_assignment)
-                if self._match_set({TokenType.PARTITION_BY, TokenType.DISTRIBUTE_BY})
-                else []
-            ),
-            super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY)),
+        partition = (
+            self._parse_csv(self._parse_assignment)
+            if self._match(TokenType.DISTRIBUTE_BY)
+            else self._parse_partition_by()
         )
+        return partition, super()._parse_order(skip_order_token=self._match(TokenType.SORT_BY))
 
     def _parse_parameter(self) -> exp.Parameter:
         self._match(TokenType.L_BRACE)

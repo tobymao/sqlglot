@@ -3781,6 +3781,16 @@ SELECT
             window = self.validate_identity(f"SUM(a) OVER (PARTITION BY {partition} ORDER BY a)")
             self.assertIsInstance(window.args["partition_by"][0], exp.Column)
 
+        sql = "SELECT SUM(a) OVER (PARTITION BY EXCLUDING b, c ORDER BY b) FROM t"
+        for dialect in Dialects:
+            if dialect in (Dialects.DAX, Dialects.PRQL):
+                continue
+            with self.subTest(f"PARTITION BY EXCLUDING in {dialect}"):
+                expression = parse_one(sql, read=dialect)
+                window = expression.find(exp.Window)
+                self.assertIsInstance(window.args["partition_by"][0], exp.PartitionByExcluding)
+                self.assertEqual(expression.sql(dialect), sql)
+
     def test_per(self):
         for sql in (
             "AVG(AGG(revenue) PER (customer))",

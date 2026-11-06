@@ -210,6 +210,10 @@ class IcebergProperty(Property):
     arg_types = {}
 
 
+class IgnoreGrantsProperty(Property):
+    arg_types = {}
+
+
 class InheritsProperty(Property):
     arg_types = {"expressions": True}
 

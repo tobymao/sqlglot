@@ -350,7 +350,7 @@ class Generator:
     # Whether limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
-    # Whether limit and fetch allows expresions or just limits
+    # Whether limit and fetch allows expressions or just limits
     LIMIT_ONLY_LITERALS = False
 
     # Whether a table is allowed to be renamed with a db

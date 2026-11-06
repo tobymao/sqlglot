@@ -74,7 +74,7 @@ Children can either be:
 2. A list of Expression instances
 3. Another Python object, such as str or bool. This will always be a leaf node in the tree.
 
-Navigating this tree requires an understanding of the different Expression types. The best way to browse Expression types is directly in the code at [expressions.py](../sqlglot/expressions.py). Let's look at a simplified version of one Expression type:
+Navigating this tree requires an understanding of the different Expression types. The best way to browse Expression types is directly in the code under [sqlglot/expressions](../sqlglot/expressions/). Let's look at a simplified version of one Expression type:
 ```python
 class Column(Expression):
     arg_types = {
@@ -337,7 +337,7 @@ print(ast)
 # SELECT * FROM (SELECT a, b, c FROM x)
 ```
 
-The best place to browse all the available high-level builder methods and their parameters is, as always, directly in the code at [expressions.py](../sqlglot/expressions.py).
+The best place to browse all the available high-level builder methods and their parameters is, as always, directly in the code at [builders.py](../sqlglot/expressions/builders.py).
 
 ### Low-level builder methods
 

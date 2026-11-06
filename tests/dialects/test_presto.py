@@ -1437,7 +1437,7 @@ MATCH_RECOGNIZE (
             self.assertEqual(s.sql(dialect), json_extract_result)
             self.assertEqual(s.sql(dialect_json_extract_setting), json_extract_result)
 
-            # If the setting is overriden to False, then generate ROW access (dot notation)
+            # If the setting is overridden to False, then generate ROW access (dot notation)
             self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')
 
     def test_analyze(self):

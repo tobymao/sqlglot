@@ -298,6 +298,7 @@ class Generator:
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
         exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
+        exp.WithoutRowidProperty: lambda *_: "WITHOUT ROWID",
         exp.ForceProperty: lambda *_: "FORCE",
     }
 
@@ -838,6 +839,7 @@ class Generator:
         exp.WithProcedureOptions: exp.Properties.Location.POST_SCHEMA,
         exp.WithSchemaBindingProperty: exp.Properties.Location.POST_SCHEMA,
         exp.WithSystemVersioningProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.WithoutRowidProperty: exp.Properties.Location.UNSUPPORTED,
         exp.ForceProperty: exp.Properties.Location.POST_CREATE,
     }
 

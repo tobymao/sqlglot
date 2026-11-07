@@ -190,11 +190,16 @@ class SQLiteGenerator(generator.Generator):
         # can be transpiled to SQLite, so we explicitly override them accordingly
         exp.LikeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.ModuleProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.StrictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.TemporaryProperty: exp.Properties.Location.POST_CREATE,
         exp.VirtualProperty: exp.Properties.Location.POST_CREATE,
+        exp.WithoutRowidProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
     LIMIT_FETCH = "LIMIT"
+
+    def root_properties(self, properties: exp.Properties) -> str:
+        return self.expressions(properties, indent=False, sep=", ")
 
     def offset_limit_modifiers(
         self, expression: exp.Expr, fetch: bool, limit: exp.Fetch | exp.Limit | None

@@ -431,6 +431,10 @@ class StrictProperty(Property):
     arg_types = {}
 
 
+class WithoutRowidProperty(Property):
+    arg_types = {}
+
+
 class RowFormatProperty(Property):
     arg_types = {"this": True}
 

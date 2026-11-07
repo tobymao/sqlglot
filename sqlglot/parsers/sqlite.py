@@ -117,6 +117,7 @@ class SQLiteParser(parser.Parser):
         **parser.Parser.PROPERTY_PARSERS,
         "USING": lambda self, **kwargs: self._parse_module_property(),
         "VIRTUAL": lambda self: self.expression(exp.VirtualProperty()),
+        "WITHOUT": lambda self: self._parse_without_rowid(),
     }
 
     STATEMENT_PARSERS = {
@@ -222,6 +223,13 @@ class SQLiteParser(parser.Parser):
             return self.expression(exp.UniqueColumnConstraint())
 
         return super()._parse_unique()
+
+    def _parse_without_rowid(self) -> exp.WithoutRowidProperty | None:
+        index = self._index
+        if self._match_text_seq("ROWID"):
+            return self.expression(exp.WithoutRowidProperty())
+        self._retreat(index)
+        return None
 
     def _parse_module_property(self, **kwargs: t.Any) -> exp.ModuleProperty:
         name = self._parse_id_var()

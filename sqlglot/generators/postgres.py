@@ -318,6 +318,12 @@ class PostgresGenerator(generator.Generator):
 
         return sql
 
+    def star_sql(self, expression: exp.Star) -> str:
+        if expression.args.get("except_"):
+            self.unsupported("PostgreSQL does not support EXCEPT in the SELECT projection")
+
+        return super().star_sql(expression)
+
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
         exp.DType.TINYINT: "SMALLINT",

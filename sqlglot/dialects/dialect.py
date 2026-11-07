@@ -151,6 +151,10 @@ class NormalizationStrategy(str, AutoName):
     CASE_INSENSITIVE_UPPERCASE = auto()
     """Always case-insensitive (uppercase), regardless of quotes."""
 
+    CASE_INSENSITIVE_EXCEPT_TABLES = auto()
+    """Case-insensitive (lowercase) regardless of quotes, except table and UDF names, which are
+    case-sensitive, e.g. BigQuery's."""
+
 
 class UsingColumnOrder(str, AutoName):
     """Where star expansion places the columns of a `USING` or `NATURAL` join."""
@@ -1173,6 +1177,13 @@ class Dialect(metaclass=_Dialect):
         """
         if (
             isinstance(expression, exp.Identifier)
+            and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES
+            and _names_table_or_udf(expression)
+        ):
+            return expression
+
+        if (
+            isinstance(expression, exp.Identifier)
             and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
             and (
                 not expression.quoted
@@ -1180,6 +1191,7 @@ class Dialect(metaclass=_Dialect):
                 in (
                     NormalizationStrategy.CASE_INSENSITIVE,
                     NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+                    NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES,
                 )
             )
         ):
@@ -1205,7 +1217,10 @@ class Dialect(metaclass=_Dialect):
 
     def case_sensitive(self, text: str) -> bool:
         """Checks if text contains any case sensitive characters, based on the dialect's rules."""
-        if self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE:
+        if self.normalization_strategy in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES,
+        ):
             return False
 
         unsafe = (
@@ -2921,3 +2936,24 @@ def jarowinkler_similarity(func: str) -> t.Callable[[Generator, exp.JarowinklerS
         return self.func(func, this, expr)
 
     return jarowinklersimilarity_sql
+
+
+def _names_table_or_udf(identifier: exp.Identifier) -> bool:
+    """
+    Whether `identifier` is part of a table or UDF name, for `CASE_INSENSITIVE_EXCEPT_TABLES`.
+
+    Tables are detected by whether they're qualified, which is generally correct for BigQuery,
+    whose tables must be qualified with at least a dataset, unless @@dataset_id is set.
+    """
+    parent = identifier.parent
+    while isinstance(parent, exp.Dot):
+        parent = parent.parent
+    return bool(
+        isinstance(parent, exp.UserDefinedFunction)
+        or (
+            isinstance(parent, exp.Table)
+            and parent.db
+            and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
+        )
+        or identifier.meta_get("is_table")
+    )

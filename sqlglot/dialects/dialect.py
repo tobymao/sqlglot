@@ -1175,43 +1175,54 @@ class Dialect(metaclass=_Dialect):
         SQLGlot aims to understand and handle all of these different behaviors gracefully, so
         that it can analyze queries in the optimizer and successfully capture their semantics.
         """
-        if (
-            isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES
-            and _names_table_or_udf(expression)
+        if not isinstance(expression, exp.Identifier):
+            return expression
+
+        strategy = self.normalization_strategy
+        if strategy is NormalizationStrategy.CASE_SENSITIVE:
+            return expression
+
+        if strategy is NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES:
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent = parent.parent
+
+            # Table and UDF names are case-sensitive. Tables are detected by whether they're
+            # qualified, which is generally correct for BigQuery, whose tables must be qualified
+            # with at least a dataset, unless @@dataset_id is set.
+            if (
+                isinstance(parent, exp.UserDefinedFunction)
+                or (
+                    isinstance(parent, exp.Table)
+                    and parent.db
+                    and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
+                )
+                or expression.meta_get("is_table")
+            ):
+                return expression
+        elif expression.quoted and strategy not in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
         ):
             return expression
 
-        if (
-            isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
-            and (
-                not expression.quoted
-                or self.normalization_strategy
-                in (
-                    NormalizationStrategy.CASE_INSENSITIVE,
-                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-                    NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES,
-                )
-            )
+        if strategy in (
+            NormalizationStrategy.UPPERCASE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
         ):
-            if self.normalization_strategy in (
-                NormalizationStrategy.UPPERCASE,
-                NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-            ):
-                normalized = (
-                    expression.this.translate(ASCII_UPPER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.upper()
-                )
-            else:
-                normalized = (
-                    expression.this.translate(ASCII_LOWER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.lower()
-                )
+            normalized = (
+                expression.this.translate(ASCII_UPPER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.upper()
+            )
+        else:
+            normalized = (
+                expression.this.translate(ASCII_LOWER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.lower()
+            )
 
-            expression.set("this", normalized)
+        expression.set("this", normalized)
 
         return expression
 
@@ -2936,24 +2947,3 @@ def jarowinkler_similarity(func: str) -> t.Callable[[Generator, exp.JarowinklerS
         return self.func(func, this, expr)
 
     return jarowinklersimilarity_sql
-
-
-def _names_table_or_udf(identifier: exp.Identifier) -> bool:
-    """
-    Whether `identifier` is part of a table or UDF name, for `CASE_INSENSITIVE_EXCEPT_TABLES`.
-
-    Tables are detected by whether they're qualified, which is generally correct for BigQuery,
-    whose tables must be qualified with at least a dataset, unless @@dataset_id is set.
-    """
-    parent = identifier.parent
-    while isinstance(parent, exp.Dot):
-        parent = parent.parent
-    return bool(
-        isinstance(parent, exp.UserDefinedFunction)
-        or (
-            isinstance(parent, exp.Table)
-            and parent.db
-            and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
-        )
-        or identifier.meta_get("is_table")
-    )

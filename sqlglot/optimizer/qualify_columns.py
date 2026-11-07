@@ -73,7 +73,7 @@ def qualify_columns(
     # Qualified scopes that still lack types, in traversal order (sources precede dependents)
     unannotated_scopes: list[Scope] = []
 
-    for scope in traverse_scope(expression):
+    for scope in traverse_scope(expression, dialect=dialect):
         if dialect.PREFER_CTE_ALIAS_COLUMN:
             pushdown_cte_alias_columns(scope)
 
@@ -141,10 +141,12 @@ def qualify_columns(
     return expression
 
 
-def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
+def validate_qualify_columns(
+    expression: E, sql: str | None = None, dialect: DialectType = None
+) -> E:
     """Raise an `OptimizeError` if any columns aren't qualified"""
     all_unqualified_columns = []
-    for scope in traverse_scope(expression):
+    for scope in traverse_scope(expression, dialect=dialect):
         if isinstance(scope.expression, exp.Select):
             unqualified_columns = scope.unqualified_columns
 
@@ -584,12 +586,19 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            for agg in original.find_all(exp.AggFunc):
-                for col in agg.find_all(exp.Column):
-                    if not col.table:
+            if resolver.dialect.ORDER_BY_STANDALONE_ALIASES_ONLY:
+                for col in original.find_all(exp.Column):
+                    if not col.table and original.unnest() is not col:
                         if table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
+            else:
+                for agg in original.find_all(exp.AggFunc):
+                    for col in agg.find_all(exp.Column):
+                        if not col.table:
+                            if table := resolver.get_table(col):
+                                col.set("table", table)
+                                col.meta.pop("dot_parts", None)
 
             if original is not expanded:
                 original.replace(expanded)
@@ -604,6 +613,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                     if not _same_dot_parts(node, replacement.this):
                         continue
                     node.replace(exp.column(replacement.alias_or_name))
+
+        scope.clear_column_cache()
 
 
 def _same_dot_parts(left: exp.Expr, right: exp.Expr) -> bool:

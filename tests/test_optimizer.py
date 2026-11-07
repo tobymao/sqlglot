@@ -1673,6 +1673,36 @@ class TestOptimizer(unittest.TestCase):
                 self.assertEqual(order.name, "v")
                 self.assertTrue(order.is_type(dtype))
 
+    def test_order_by_expression_alias_binding(self):
+        schema = {"t": {"id": "INT", "email": "VARCHAR"}}
+        sql = "SELECT id AS email FROM t ORDER BY email LIKE 'a%' DESC, id"
+
+        for dialect in ("duckdb", "postgres"):
+            with self.subTest(dialect=dialect):
+                tree = qualify(parse_one(sql, dialect=dialect), schema=schema, dialect=dialect)
+                self.assertEqual(
+                    tree.sql(dialect),
+                    'SELECT "t"."id" AS "email" FROM "t" AS "t" ORDER BY "t"."email" LIKE \'a%\' DESC, "t"."id"',
+                )
+                self.assertEqual(
+                    [c.sql() for c in build_scope(tree).columns],
+                    ['"t"."id"', '"t"."email"', '"t"."id"'],
+                )
+                self.assertEqual(
+                    annotate_types(tree, schema=schema)
+                    .args["order"]
+                    .expressions[0]
+                    .this.this.type.sql(),
+                    "VARCHAR",
+                )
+
+        sf_tree = qualify(parse_one(sql, dialect="snowflake"), schema=schema, dialect="snowflake")
+        self.assertEqual(
+            sf_tree.sql("snowflake"),
+            'SELECT "T"."ID" AS "EMAIL" FROM "T" AS "T" ORDER BY "EMAIL" LIKE \'a%\' DESC, "T"."ID"',
+        )
+        self.assertEqual([c.sql() for c in build_scope(sf_tree).columns], ['"T"."ID"', '"T"."ID"'])
+
     def test_qualify_json_path_argument_order(self):
         expression = "ANY_VALUE(JSON_VALUE(j.Foo, '$') || JSON_VALUE(j.foo, '$'))"
         tree = parse_one(

@@ -16,6 +16,7 @@ logger = logging.getLogger("sqlglot")
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
     from collections.abc import Iterator
+    from sqlglot.dialects.dialect import Dialect, DialectType
 
 TRAVERSABLES = (exp.Query, exp.DDL, exp.DML)
 
@@ -100,6 +101,7 @@ class Scope:
     _local_columns: list[exp.Column] | None
     _pivots: list[exp.Pivot] | None
     _references: list[tuple[str, exp.Selectable]] | None
+    dialect: Dialect | None
 
     def __init__(
         self,
@@ -111,6 +113,7 @@ class Scope:
         lateral_sources: dict[str, exp.Table | Scope] | None = None,
         cte_sources: dict[str, exp.Table | Scope] | None = None,
         can_be_correlated: bool | None = None,
+        dialect: DialectType = None,
     ) -> None:
         self.expression = expression
         self.sources = sources or {}
@@ -128,6 +131,12 @@ class Scope:
         self.set_operation_scopes: list[Scope] = []
         self.udtf_scopes: list[Scope] = []
         self.can_be_correlated = can_be_correlated
+        if dialect or (isinstance(expression, exp.Expr) and expression.meta.get("dialect")):
+            from sqlglot.dialects.dialect import Dialect
+
+            self.dialect = Dialect.get_or_raise(dialect or expression.meta.get("dialect"))
+        else:
+            self.dialect = None
         self.clear_cache()
 
     def clear_column_cache(self) -> None:
@@ -179,6 +188,7 @@ class Scope:
             can_be_correlated=self.can_be_correlated
             or scope_type in (ScopeType.SUBQUERY, ScopeType.UDTF),
             outer_columns=outer_columns,
+            dialect=self.dialect,
         )
 
     def _collect(self) -> None:
@@ -669,7 +679,7 @@ class Scope:
         return scope_ref_count
 
 
-def traverse_scope(expression: exp.Expr) -> list[Scope]:
+def traverse_scope(expression: exp.Expr, dialect: DialectType = None) -> list[Scope]:
     """
     Traverse an expression by its "scopes".
 
@@ -696,26 +706,34 @@ def traverse_scope(expression: exp.Expr) -> list[Scope]:
 
     Args:
         expression: Expr to traverse
+        dialect: Dialect to traverse the scope for
 
     Returns:
         A list of the created scope instances
     """
     if isinstance(expression, TRAVERSABLES):
-        return list(_traverse_scope(Scope(expression)))
+        if dialect or (isinstance(expression, exp.Expr) and expression.meta.get("dialect")):
+            from sqlglot.dialects.dialect import Dialect
+
+            resolved_dialect = Dialect.get_or_raise(dialect or expression.meta.get("dialect"))
+        else:
+            resolved_dialect = None
+        return list(_traverse_scope(Scope(expression, dialect=resolved_dialect)))
     return []
 
 
-def build_scope(expression: exp.Expr) -> Scope | None:
+def build_scope(expression: exp.Expr, dialect: DialectType = None) -> Scope | None:
     """
     Build a scope tree.
 
     Args:
         expression: Expr to build the scope tree for.
+        dialect: Dialect to build the scope tree for.
 
     Returns:
         The root scope
     """
-    return seq_get(traverse_scope(expression), -1)
+    return seq_get(traverse_scope(expression, dialect=dialect), -1)
 
 
 def _traverse_scope(scope: Scope) -> Iterator[Scope]:
@@ -740,7 +758,9 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         ddl_expression = expression.expression
         if isinstance(ddl_expression, exp.Query):
             yield from _traverse_ctes(scope)
-            yield from _traverse_scope(Scope(ddl_expression, cte_sources=scope.cte_sources))
+            yield from _traverse_scope(
+                Scope(ddl_expression, cte_sources=scope.cte_sources, dialect=scope.dialect)
+            )
         return
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
@@ -762,7 +782,9 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
 
         for relation in relations:
             if isinstance(relation, exp.Table):
-                yield from _traverse_scope(Scope(relation, cte_sources=scope.cte_sources))
+                yield from _traverse_scope(
+                    Scope(relation, cte_sources=scope.cte_sources, dialect=scope.dialect)
+                )
 
         for query in find_all_in_scope(expression, exp.Query):
             # This check ensures we don't yield the CTE/nested queries twice
@@ -780,7 +802,9 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
                 # A query in FROM/JOIN position (e.g. UPDATE ... FROM (SELECT ...) AS s) acts
                 # like a derived table, so its scope stays rooted at the Subquery wrapper to
                 # pick up the wrapper's alias, column list and joins
-                yield from _traverse_scope(Scope(query, cte_sources=scope.cte_sources))
+                yield from _traverse_scope(
+                    Scope(query, cte_sources=scope.cte_sources, dialect=scope.dialect)
+                )
             else:
                 # Queries in value position (SET, WHERE, USING, ...) are scoped as subqueries,
                 # e.g. so their columns can be correlated to the DML's target table

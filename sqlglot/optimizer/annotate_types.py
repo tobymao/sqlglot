@@ -266,7 +266,7 @@ class TypeAnnotator:
         # This flag is used to avoid costly scope traversals when we only care about annotating
         # non-column expressions (partial type inference), e.g., when simplifying in the optimizer
         if annotate_scope:
-            for scope in traverse_scope(expression):
+            for scope in traverse_scope(expression, dialect=self.dialect):
                 self.annotate_scope(scope)
 
         # This takes care of non-traversable expressions
@@ -647,7 +647,14 @@ class TypeAnnotator:
 
         for ordered in order.expressions:
             alias_cols = [
-                c for c in ordered.find_all(exp.Column) if not c.table and c.name in alias_types
+                c
+                for c in ordered.find_all(exp.Column)
+                if not c.table
+                and c.name in alias_types
+                and (
+                    not (self.dialect and self.dialect.ORDER_BY_STANDALONE_ALIASES_ONLY)
+                    or ordered.this.unnest() is c
+                )
             ]
             for col in alias_cols:
                 self._set_type(col, alias_types[col.name])

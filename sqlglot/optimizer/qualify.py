@@ -74,6 +74,7 @@ def qualify(
     """
     schema = ensure_schema(schema, dialect=dialect)
     dialect = Dialect.get_or_raise(dialect)
+    expression.meta["dialect"] = dialect
 
     expression = normalize_identifiers(
         expression,
@@ -99,12 +100,13 @@ def qualify(
             expand_alias_refs=expand_alias_refs,
             expand_stars=expand_stars,
             allow_partial_qualification=allow_partial_qualification,
+            dialect=dialect,
         )
 
     if quote_identifiers:
         expression = quote_identifiers_func(expression, dialect=dialect, identify=identify)
 
     if validate_qualify_columns:
-        validate_qualify_columns_func(expression, sql=sql)
+        validate_qualify_columns_func(expression, sql=sql, dialect=dialect)
 
     return expression

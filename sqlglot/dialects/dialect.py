@@ -631,6 +631,11 @@ class Dialect(metaclass=_Dialect):
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
     """
 
+    ORDER_BY_STANDALONE_ALIASES_ONLY = False
+    """
+    Whether aliases in ORDER BY / DISTINCT ON must stand alone and cannot be used in expressions.
+    """
+
     SUPPORTS_LIMIT_ALL = False
     """
     Whether LIMIT ALL is supported (equivalent to no limit) as in Postgres.

@@ -975,6 +975,11 @@ class TestSQLite(Validator):
         self.validate_identity("ANALYZE tbl")
         self.validate_identity("ANALYZE schma.tbl")
 
+    def test_reindex(self):
+        self.validate_identity("REINDEX tbl", check_command_warning=True)
+        self.validate_identity("REINDEX schma.idx", check_command_warning=True)
+        self.validate_identity("SELECT reindex FROM t")
+
     def test_create_trigger(self):
         """Test that SQLite CREATE TRIGGER statements fall back to Command parsing."""
         self.validate_identity(

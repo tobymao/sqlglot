@@ -42,6 +42,7 @@ class SQLite(Dialect):
             "INDEXED BY": TokenType.INDEXED_BY,
             "MATCH": TokenType.MATCH,
             "REAL": TokenType.DOUBLE,
+            "REINDEX": TokenType.COMMAND,
         }
 
         KEYWORDS.pop("/*+")

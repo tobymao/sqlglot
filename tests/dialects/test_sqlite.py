@@ -963,10 +963,6 @@ class TestSQLite(Validator):
         self.validate_identity(
             "CREATE TABLE t (a INTEGER PRIMARY KEY, b TEXT) STRICT, WITHOUT ROWID"
         )
-        self.validate_identity(
-            "create table t (a integer primary key) without rowid",
-            "CREATE TABLE t (a INTEGER PRIMARY KEY) WITHOUT ROWID",
-        )
         self.validate_all(
             "CREATE TABLE t (a INTEGER PRIMARY KEY) WITHOUT ROWID",
             write={

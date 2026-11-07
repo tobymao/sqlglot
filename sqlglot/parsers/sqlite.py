@@ -225,9 +225,10 @@ class SQLiteParser(parser.Parser):
         return super()._parse_unique()
 
     def _parse_without_rowid(self) -> exp.WithoutRowidProperty | None:
+        index = self._index
         if self._match_text_seq("ROWID"):
             return self.expression(exp.WithoutRowidProperty())
-        self._retreat(self._index - 1)
+        self._retreat(index)
         return None
 
     def _parse_module_property(self, **kwargs: t.Any) -> exp.ModuleProperty:

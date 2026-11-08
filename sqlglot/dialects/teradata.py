@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from sqlglot import tokens
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import Dialect, NormalizationStrategy
 from sqlglot.generators.teradata import TeradataGenerator
 from sqlglot.parsers.teradata import TeradataParser
 from sqlglot.tokens import TokenType
 
 
 class Teradata(Dialect):
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TYPED_DIVISION = True
 
     TIME_MAPPING = {

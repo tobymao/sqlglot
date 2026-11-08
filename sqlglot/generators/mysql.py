@@ -149,7 +149,13 @@ class MySQLGenerator(generator.Generator):
     )
 
     TRANSFORMS = {
-        **generator.Generator.TRANSFORMS,
+        # The base Postgres-style array operators (@>, <@) don't exist in MySQL, so drop
+        # them to let arraycontainsall_sql / arraycontainedby_sql flag them as unsupported
+        **{
+            k: v
+            for k, v in generator.Generator.TRANSFORMS.items()
+            if k not in {exp.ArrayContainsAll, exp.ArrayContainedBy}
+        },
         exp.ArrayAgg: rename_func("GROUP_CONCAT"),
         exp.BitwiseAndAgg: rename_func("BIT_AND"),
         exp.BitwiseOrAgg: rename_func("BIT_OR"),

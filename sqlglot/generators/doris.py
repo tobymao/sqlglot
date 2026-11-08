@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import exp
+from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
     property_sql,
@@ -56,6 +56,9 @@ class DorisGenerator(MySQLGenerator):
 
     TRANSFORMS = {
         **MySQLGenerator.TRANSFORMS,
+        # Doris has arrays, so keep the base array operators instead of MySQL's unsupported ones
+        exp.ArrayContainedBy: generator.Generator.TRANSFORMS[exp.ArrayContainedBy],
+        exp.ArrayContainsAll: generator.Generator.TRANSFORMS[exp.ArrayContainsAll],
         exp.AddMonths: rename_func("MONTHS_ADD"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.ArgMax: rename_func("MAX_BY"),

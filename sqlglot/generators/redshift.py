@@ -44,6 +44,13 @@ class RedshiftGenerator(PostgresGenerator):
     # Redshift doesn't have `WITH` as part of their with_properties so we remove it
     WITH_PROPERTIES_PREFIX = " "
 
+    PROPERTIES_LOCATION = {
+        **PostgresGenerator.PROPERTIES_LOCATION,
+        exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
+    }
+
     TYPE_MAPPING = {
         **PostgresGenerator.TYPE_MAPPING,
         exp.DType.BINARY: "VARBYTE",

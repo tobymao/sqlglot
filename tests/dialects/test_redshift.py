@@ -497,6 +497,16 @@ class TestRedshift(Validator):
         self.validate_identity(
             "CREATE TABLE sales (salesid INTEGER NOT NULL) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE AUTO"
         )
+        self.validate_all(
+            "CREATE TABLE sales (salesid INTEGER) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE KEY",
+            write={
+                "redshift": "CREATE TABLE sales (salesid INTEGER) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE KEY",
+                "postgres": "CREATE TABLE sales (salesid INT)",
+                "snowflake": "CREATE TABLE sales (salesid INT)",
+                "databricks": "CREATE TABLE sales (salesid INT)",
+                "tsql": "CREATE TABLE sales (salesid INTEGER)",
+            },
+        )
         self.validate_identity(
             "COPY customer FROM 's3://mybucket/customer' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRedshiftRole' REGION 'us-east-1' FORMAT orc",
         )

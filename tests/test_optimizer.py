@@ -449,6 +449,46 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("normalize", normalize, schema=self.schema)
 
+    def test_qualify_outer_column_before_table_alias(self):
+        query = "SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t"
+        for dialect, table in (("postgres", "t"), ("duckdb", None), ("bigquery", None)):
+            with self.subTest(dialect=dialect):
+                qualified = qualify(
+                    parse_one(query, dialect=dialect), dialect=dialect, identify=False
+                )
+                inner = qualified.find(exp.Subquery).this.selects[0].this
+                self.assertEqual(
+                    inner,
+                    exp.column("x", table=table)
+                    if table
+                    else exp.TableColumn(this=exp.to_identifier("x")),
+                )
+
+        for sql, table in (
+            ("SELECT (SELECT x FROM (SELECT 1 AS x) AS x) FROM (SELECT 2 AS x) AS t", "x"),
+            ("SELECT (SELECT x FROM (SELECT 1 AS y) AS x)", None),
+            ("SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS x)) FROM (SELECT 2 AS x) AS t", "t"),
+            (
+                "SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 3 AS x) AS u) FROM (SELECT 2 AS x) AS t",
+                "u",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql, dialect="postgres"), dialect="postgres", identify=False
+                )
+                projection = next(
+                    s.selects[0].this
+                    for s in qualified.find_all(exp.Select)
+                    if isinstance(s.selects[0].this, (exp.Column, exp.TableColumn))
+                )
+                self.assertEqual(
+                    projection,
+                    exp.column("x", table=table)
+                    if table
+                    else exp.TableColumn(this=exp.to_identifier("x")),
+                )
+
     def test_qualify_columns_struct_field_and_source_alias(self):
         schema = {
             "customer": {

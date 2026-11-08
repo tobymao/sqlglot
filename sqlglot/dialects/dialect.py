@@ -669,6 +669,11 @@ class Dialect(metaclass=_Dialect):
         SELECT t FROM my_table AS t  -- Returns entire row as a struct
     """
 
+    TABLE_ALIASES_SHADOW_OUTER_COLUMN_NAMES = True
+    """
+    Whether a whole-row table reference takes precedence over a same-named outer column.
+    """
+
     SUPPORTS_STRUCT_STAR_EXPANSION = False
     """
     Whether the dialect supports expanding struct fields using star notation (e.g., struct_col.*).

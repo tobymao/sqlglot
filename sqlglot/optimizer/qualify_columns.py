@@ -974,6 +974,12 @@ def _qualify_columns(
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
                 and not resolver.has_unknown_sources
+                and (
+                    resolver.dialect.TABLE_ALIASES_SHADOW_OUTER_COLUMN_NAMES
+                    or not any(
+                        column_name in outer.all_columns for outer in resolver.outer_resolvers()
+                    )
+                )
             ):
                 # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
                 scope.replace(column, exp.TableColumn(this=column.this))

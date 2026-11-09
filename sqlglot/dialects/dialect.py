@@ -2112,7 +2112,10 @@ def regexp_extract_sql(
 @unsupported_args("position", "occurrence", "modifiers")
 def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
     return self.func(
-        "REGEXP_REPLACE", expression.this, expression.expression, expression.args["replacement"]
+        "REGEXP_REPLACE",
+        expression.this,
+        expression.expression,
+        expression.args.get("replacement") or exp.Literal.string(""),
     )
 
 

@@ -54,6 +54,7 @@ class Teradata(Dialect):
             "COLLECT": TokenType.COMMAND,
             "DEL": TokenType.DELETE,
             "EQ": TokenType.EQ,
+            "EXEC": TokenType.EXECUTE,
             "GE": TokenType.GTE,
             "GT": TokenType.GT,
             "HELP": TokenType.COMMAND,
@@ -72,6 +73,8 @@ class Teradata(Dialect):
             "UPD": TokenType.UPDATE,
         }
         KEYWORDS.pop("/*+")
+
+        COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.EXECUTE}
 
         # Teradata does not support % as a modulo operator
         SINGLE_TOKENS = {**tokens.Tokenizer.SINGLE_TOKENS}

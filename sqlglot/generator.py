@@ -4829,8 +4829,13 @@ class Generator:
     def lte_sql(self, expression: exp.LTE) -> str:
         return self.binary(expression, "<=")
 
-    def mod_sql(self, expression: exp.Mod) -> str:
-        this = self.sql(expression, "this")
+            def mod_sql(self, expression: exp.Mod) -> str:
+        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
+            expression.expression.replace(
+                exp.Nullif(this=expression.expression.copy(), expression=exp.Literal.number(0))
+            )
+            
+            this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         sql = f"{this} {self.maybe_comment(self.MOD_OPERATOR, comments=expression.comments)} {expr}"
 

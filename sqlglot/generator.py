@@ -4705,8 +4705,8 @@ class Generator:
                 if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)) and (
                     expression.args.get("safe") or not self.SAFE_INT_DIVISION
                 ):
-                    return self.sql(exp.IntDiv(this=l, expression=r))
-                return self._truncated_div_sql(l, r)
+                    return self.sql(exp.IntDiv(this=l, expression=expression.right))
+                return self._truncated_div_sql(l, expression.right)
 
         return self.binary(expression, "/")
 

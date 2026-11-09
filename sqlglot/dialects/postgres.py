@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp, tokens
-from sqlglot.dialects.dialect import Dialect
+from sqlglot.dialects.dialect import AliasPrecedence, Dialect
 from sqlglot.generators.postgres import PostgresGenerator
 from sqlglot.parsers.postgres import PostgresParser
 from sqlglot.tokens import TokenType
@@ -20,8 +20,12 @@ class Postgres(Dialect):
     CONCAT_WS_COALESCE = True
     NULL_ORDERING = "nulls_are_large"
     SUPPORTS_LIMIT_ALL = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
-    PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Distinct: AliasPrecedence.SOURCE,
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Order: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True

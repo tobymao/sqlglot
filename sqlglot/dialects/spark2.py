@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlglot import exp
+from sqlglot.dialects.dialect import AliasPrecedence
 from sqlglot.dialects.hive import Hive
 from sqlglot.generators.spark2 import Spark2Generator
 from sqlglot.parsers.spark2 import Spark2Parser
@@ -9,7 +11,11 @@ from sqlglot.typing.spark2 import EXPRESSION_METADATA
 
 class Spark2(Hive):
     ALTER_TABLE_SUPPORTS_CASCADE = False
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
+    COLUMN_ALIAS_PRECEDENCE = {
+        **Hive.COLUMN_ALIAS_PRECEDENCE,
+        exp.Having: AliasPrecedence.ALIAS,
+        exp.Qualify: AliasPrecedence.ALIAS,
+    }
     INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = True
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()

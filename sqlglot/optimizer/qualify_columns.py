@@ -6,7 +6,7 @@ import typing as t
 from collections import Counter
 
 from sqlglot import alias, exp
-from sqlglot.dialects.dialect import Dialect, DialectType, UsingColumnOrder
+from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
@@ -390,6 +390,7 @@ def _expand_alias_refs(
         if not node or (expand_only_groupby and not is_group_by):
             return
 
+        precedence = dialect.column_alias_precedence(node)
         for column in walk_in_scope(node, prune=lambda node: node.is_star):
             if not isinstance(column, exp.Column):
                 continue
@@ -429,8 +430,8 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            prefer_column = dialect.PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY
-            if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+            prefer_column = precedence == AliasPrecedence.SOURCE
+            if table and precedence == AliasPrecedence.GROUPED_SOURCE:
                 prefer_column = (
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
                     or (table.name, column.name) in grouped_columns
@@ -502,8 +503,8 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("group"), literal_index=True)
 
     if (
-        dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS
-        and expression.args.get("having")
+        (having := expression.args.get("having"))
+        and dialect.column_alias_precedence(having) == AliasPrecedence.GROUPED_SOURCE
         and (group := expression.args.get("group"))
     ):
         # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
@@ -569,9 +570,11 @@ def _expand_order_by_and_distinct_on(
     expr: exp.Expr = expression
 
     for modifier_key in ("order", "distinct"):
-        modifier = expr.args.get(modifier_key)
-        if isinstance(modifier, exp.Distinct):
-            modifier = modifier.args.get("on")
+        clause = expr.args.get(modifier_key)
+        if not isinstance(clause, exp.Expr):
+            continue
+
+        modifier = clause.args.get("on") if isinstance(clause, exp.Distinct) else clause
 
         if not isinstance(modifier, exp.Expr):
             continue
@@ -586,13 +589,12 @@ def _expand_order_by_and_distinct_on(
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            for node in (
-                (original,)
-                if resolver.dialect.PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY
-                else find_all_in_scope(original, exp.AggFunc)
-            ):
+            prefer_column = (
+                resolver.dialect.column_alias_precedence(clause, original) == AliasPrecedence.SOURCE
+            )
+            for node in (original,) if prefer_column else find_all_in_scope(original, exp.AggFunc):
                 for col in find_all_in_scope(node, exp.Column):
-                    if not col.table and original.unnest() is not col:
+                    if not col.table:
                         if tables := using_column_tables.get(col.name):
                             col.replace(
                                 exp.func(
@@ -602,10 +604,7 @@ def _expand_order_by_and_distinct_on(
                         elif table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
-                        elif (
-                            resolver.dialect.PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY
-                            and col.name in resolver.all_columns
-                        ):
+                        elif prefer_column and col.name in resolver.all_columns:
                             raise OptimizeError(f"Ambiguous column: {col.name}")
 
             if original is not expanded:

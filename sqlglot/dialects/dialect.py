@@ -169,6 +169,14 @@ class UsingColumnOrder(str, AutoName):
     """Where the left table has them (e.g. DuckDB)."""
 
 
+class AliasPrecedence(str, AutoName):
+    """Lookup precedence for input columns and projection aliases."""
+
+    ALIAS = auto()
+    SOURCE = auto()
+    GROUPED_SOURCE = auto()
+
+
 # "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
 # TIME_MAPPING so they roundtrip, since a lax %m/%d renders non-padded there for parse expressions
 # (see HiveGenerator.format_time).
@@ -596,11 +604,13 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
-    """Whether input columns take precedence over projection aliases in HAVING and QUALIFY."""
+    COLUMN_ALIAS_PRECEDENCE: dict[Type[exp.Expr], AliasPrecedence] = {}
+    """Alias lookup policies for HAVING, QUALIFY, ORDER BY and DISTINCT ON.
 
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
-    """Whether HAVING aliases override ungrouped input columns outside aggregate functions."""
+    Unspecified clauses prefer aliases. GROUPED_SOURCE prefers grouped input columns and
+    input columns inside aggregates, then aliases. Standalone ORDER BY / DISTINCT ON names
+    prefer aliases regardless of their clause's expression precedence.
+    """
 
     ANNOTATE_ALL_SCOPES = False
     """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
@@ -634,9 +644,6 @@ class Dialect(metaclass=_Dialect):
     """
     Whether ORDER BY ALL is supported (expands to all the selected columns) as in DuckDB, Spark3/Databricks
     """
-
-    PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY = False
-    """Whether input columns take precedence over aliases inside ORDER BY / DISTINCT ON expressions."""
 
     SUPPORTS_LIMIT_ALL = False
     """
@@ -1158,6 +1165,18 @@ class Dialect(metaclass=_Dialect):
     def __hash__(self) -> int:
         # Does not currently take dialect state into account
         return hash(type(self))
+
+    def column_alias_precedence(
+        self, clause: exp.Expr, expression: exp.Expr | None = None
+    ) -> AliasPrecedence:
+        """Resolve clause precedence, accounting for standalone output references."""
+        if (
+            isinstance(clause, (exp.Order, exp.Distinct))
+            and expression is not None
+            and isinstance(expression.unnest(), exp.Column)
+        ):
+            return AliasPrecedence.ALIAS
+        return self.COLUMN_ALIAS_PRECEDENCE.get(type(clause), AliasPrecedence.ALIAS)
 
     def normalize_identifier(self, expression: E) -> E:
         """

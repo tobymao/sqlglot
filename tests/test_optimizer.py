@@ -1708,6 +1708,44 @@ class TestOptimizer(unittest.TestCase):
         annotate_types(qualified, dialect="duckdb")
         self.assertTrue(qualified.args["order"].expressions[0].this.is_type(exp.DType.INT))
 
+    def test_qualify_duckdb_collated_alias(self):
+        for order, expected in (
+            ("email COLLATE NOCASE", [("x",), ("y",)]),
+            ("(email) COLLATE NOCASE", [("x",), ("y",)]),
+            ("(email COLLATE NOCASE)", [("x",), ("y",)]),
+            ("email COLLATE NOCASE COLLATE NOCASE", [("y",), ("x",)]),
+            ("(email || '') COLLATE NOCASE", [("y",), ("x",)]),
+            ("(email COLLATE NOCASE) || ''", [("y",), ("x",)]),
+            ("t.email COLLATE NOCASE", [("y",), ("x",)]),
+        ):
+            with self.subTest(order=order):
+                sql = (
+                    "SELECT id AS email FROM (VALUES ('x', 'z'), ('y', 'a')) t(id, email) "
+                    f"ORDER BY {order}"
+                )
+                qualified = qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb")
+                with duckdb.connect() as connection:
+                    self.assertEqual(connection.execute(sql).fetchall(), expected)
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), expected
+                    )
+
+        for distinct, expected in (
+            ("email COLLATE NOCASE", [("x",), ("y",)]),
+            ("(email || '') COLLATE NOCASE", [("x",)]),
+        ):
+            with self.subTest(distinct=distinct):
+                sql = (
+                    f"SELECT DISTINCT ON ({distinct}) id AS email "
+                    "FROM (VALUES ('x', 'a'), ('y', 'a')) t(id, email) ORDER BY id"
+                )
+                qualified = qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb")
+                with duckdb.connect() as connection:
+                    self.assertEqual(connection.execute(sql).fetchall(), expected)
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), expected
+                    )
+
     def test_qualify_order_by_ambiguous_alias(self):
         for dialect in ("duckdb", "postgres"):
             with self.subTest(dialect=dialect):

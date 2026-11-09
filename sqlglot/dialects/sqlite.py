@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import tokens
+from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
     UsingColumnOrder,
@@ -17,7 +18,10 @@ class SQLite(Dialect):
     ASCII_ONLY_NORMALIZATION = True
     TYPED_DIVISION = True
     SAFE_DIVISION = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     CONCAT_COALESCE = True

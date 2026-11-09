@@ -4,6 +4,7 @@ from itertools import product
 
 from sqlglot import exp, jsonpath, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
 )
@@ -24,7 +25,10 @@ class Snowflake(Dialect):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     SUPPORTS_USER_DEFINED_TYPES = False
     PREFER_CTE_ALIAS_COLUMN = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SUPPORTS_POSITIONAL_COLUMN_REFS = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     COPY_PARAMS_ARE_CSV = False

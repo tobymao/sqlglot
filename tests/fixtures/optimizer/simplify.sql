@@ -1050,6 +1050,18 @@ x = 1;
 x <> 1 AND x = 1;
 x <> 1 AND x = 1;
 
+x = 1 AND x = 2;
+x = 1 AND x = 2;
+
+x <> 1 AND x <> 2 AND x = 1;
+x <> 1 AND x = 1;
+
+x <> 1 AND x < 2 AND x < 5;
+x < 2 AND x <> 1;
+
+x = 1 OR x = 2 OR x < 0 OR x < 3;
+x < 3 OR x = 1 OR x = 2;
+
 SELECT nn.a > 1 AND nn.a < 1 AS r FROM nn;
 SELECT FALSE AS r FROM nn;
 

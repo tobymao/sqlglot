@@ -8,7 +8,45 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
-    def test_safe_div(self):
+    def test_safe_mod(self):
+        self.validate_all(
+                        "SELECT CAST(a AS INTEGER) % CAST(b AS INTEGER) FROM t",
+                        write={
+                                            "duckdb": "SELECT CAST(a AS INT) % NULLIF(CAST(b AS INT), 0) FROM t",
+                                            "snowflake": "SELECT CAST(a AS INT) % NULLIF(CAST(b AS INT), 0) FROM t",
+                                            "bigquery": "SELECT MOD(CAST(a AS INT64), NULLIF(CAST(b AS INT64), 0)) FROM t",
+                        },
+        )
+                for sql, expected in (
+                                (
+                                                    "SELECT 7 % 0",
+                                                    {
+                                                                            "duckdb": "SELECT 7 % NULLIF(0, 0)",
+                                                                            "snowflake": "SELECT 7 % NULLIF(0, 0)",
+                                                                            "bigquery": "SELECT MOD(7, NULLIF(0, 0))",
+                                                    },
+                                ),
+                                (
+                                                    "SELECT t.a % t.b FROM t",
+                                                    {
+                                                                            "duckdb": "SELECT t.a % NULLIF(t.b, 0) FROM t",
+                                                                            "snowflake": "SELECT t.a % NULLIF(t.b, 0) FROM t",
+                                                                            "bigquery": "SELECT MOD(t.a, NULLIF(t.b, 0)) FROM t",
+                                                    },
+                                ),
+                ):
+                                expression = annotate_types(
+                                                    self.parse_one(sql), schema={"t": {"a": "INT", "b": "INT"}}, dialect="sqlite"
+                                )
+                                self.assertEqual(
+                                                    {
+                                                                            dialect: expression.sql(dialect=dialect)
+                                                                            for dialect in ("duckdb", "snowflake", "bigquery")
+                                                    },
+                                                    expected,
+                                )
+                    
+        def test_safe_div(self):
         self.validate_all(
             "SELECT CAST(a AS INTEGER) / CAST(b AS INTEGER) FROM t",
             write={

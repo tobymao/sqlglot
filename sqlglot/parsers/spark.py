@@ -118,7 +118,6 @@ class SparkParser(Spark2Parser):
         return self.expression(exp.Placeholder(this=this, widget=True))
 
     def _parse_substring(self) -> exp.Substring:
-        # A start of 0 refers to the first character, and a negative length returns ''
         result = super()._parse_substring()
         result.set("zero_start", True)
         return result

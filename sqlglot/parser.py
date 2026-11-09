@@ -7834,9 +7834,7 @@ class Parser:
         if self._match(TokenType.DISTINCT):
             this = self.expression(
                 exp.Distinct(
-                    expressions=self._parse_csv(
-                        lambda: self._parse_per(self._parse_disjunction())
-                    )
+                    expressions=self._parse_csv(lambda: self._parse_per(self._parse_disjunction()))
                 )
             )
         else:

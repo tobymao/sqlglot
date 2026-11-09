@@ -3833,9 +3833,7 @@ SELECT
         self.assertIsInstance(window.this.this.this, exp.Per)
 
         # PER applies to the whole argument, not the last function in it.
-        per = self.validate_identity(
-            "MAX(LAG(SUM(x)) OVER (ORDER BY ds) - SUM(x) PER (ds))"
-        ).this
+        per = self.validate_identity("MAX(LAG(SUM(x)) OVER (ORDER BY ds) - SUM(x) PER (ds))").this
         self.assertIsInstance(per, exp.Per)
         self.assertIsInstance(per.this, exp.Sub)
         self.assertIsInstance(per.this.this, exp.Window)

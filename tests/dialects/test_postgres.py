@@ -1283,6 +1283,19 @@ FROM json_data, field_ids""",
                 "postgres": "SELECT TO_CHAR(x, 'IYYY-IW')",
             },
         )
+        self.validate_all(
+            "SELECT TO_CHAR(x, 'Dy DD Mon YYYY, Day Month')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%a %d %b %Y, %A %B')",
+                "postgres": "SELECT TO_CHAR(x, 'TMDy DD TMMon YYYY, TMDay TMMonth')",
+            },
+            write={
+                "bigquery": "SELECT FORMAT_DATE('%a %d %b %Y, %A %B', x)",
+                "duckdb": "SELECT STRFTIME(x, '%a %d %b %Y, %A %B')",
+                "postgres": "SELECT TO_CHAR(x, 'Dy DD Mon YYYY, Day Month')",
+            },
+        )
+        self.validate_identity("SELECT TO_CHAR(x, 'FMDay FMMonth')")
 
         self.validate_identity(
             'SELECT js, js IS JSON AS "json?", js IS JSON VALUE AS "scalar?", js IS JSON SCALAR AS "scalar?", js IS JSON OBJECT AS "object?", js IS JSON ARRAY AS "array?" FROM t'

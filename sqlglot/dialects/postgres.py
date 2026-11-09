@@ -60,6 +60,12 @@ class Postgres(Dialect):
         "TMDy": "%a",
         "TMMon": "%b",  # Sep
         "TMMonth": "%B",  # September
+        # Listed after the TM variants so that they are used for the inverse mapping.
+        # Day and Month are blank-padded to 9 characters in Postgres unless FM is used
+        "Dy": "%a",  # Tue
+        "Day": "%A",  # Tuesday
+        "Mon": "%b",  # Sep
+        "Month": "%B",  # September
         "day": "%Aenlower",  # tuesday
         "dy": "%aenlower",  # tue
         "TZ": "%Z",  # uppercase timezone name

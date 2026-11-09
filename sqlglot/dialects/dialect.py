@@ -151,6 +151,10 @@ class NormalizationStrategy(str, AutoName):
     CASE_INSENSITIVE_UPPERCASE = auto()
     """Always case-insensitive (uppercase), regardless of quotes."""
 
+    CASE_INSENSITIVE_EXCEPT_TABLES = auto()
+    """Case-insensitive (lowercase) regardless of quotes, except table and UDF names, which are
+    case-sensitive, e.g. BigQuery's."""
+
 
 class UsingColumnOrder(str, AutoName):
     """Where star expansion places the columns of a `USING` or `NATURAL` join."""
@@ -1171,41 +1175,63 @@ class Dialect(metaclass=_Dialect):
         SQLGlot aims to understand and handle all of these different behaviors gracefully, so
         that it can analyze queries in the optimizer and successfully capture their semantics.
         """
-        if (
-            isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
-            and (
-                not expression.quoted
-                or self.normalization_strategy
-                in (
-                    NormalizationStrategy.CASE_INSENSITIVE,
-                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-                )
-            )
-        ):
-            if self.normalization_strategy in (
-                NormalizationStrategy.UPPERCASE,
-                NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-            ):
-                normalized = (
-                    expression.this.translate(ASCII_UPPER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.upper()
-                )
-            else:
-                normalized = (
-                    expression.this.translate(ASCII_LOWER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.lower()
-                )
+        if not isinstance(expression, exp.Identifier):
+            return expression
 
-            expression.set("this", normalized)
+        strategy = self.normalization_strategy
+        if strategy is NormalizationStrategy.CASE_SENSITIVE:
+            return expression
+
+        if strategy is NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES:
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent = parent.parent
+
+            # Table and UDF names are case-sensitive. Tables are detected by whether they're
+            # qualified, which is generally correct for BigQuery, whose tables must be qualified
+            # with at least a dataset, unless @@dataset_id is set.
+            if (
+                isinstance(parent, exp.UserDefinedFunction)
+                or (
+                    isinstance(parent, exp.Table)
+                    and parent.db
+                    and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
+                )
+                or expression.meta_get("is_table")
+            ):
+                return expression
+        elif expression.quoted and strategy not in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+        ):
+            return expression
+
+        if strategy in (
+            NormalizationStrategy.UPPERCASE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+        ):
+            normalized = (
+                expression.this.translate(ASCII_UPPER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.upper()
+            )
+        else:
+            normalized = (
+                expression.this.translate(ASCII_LOWER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.lower()
+            )
+
+        expression.set("this", normalized)
 
         return expression
 
     def case_sensitive(self, text: str) -> bool:
         """Checks if text contains any case sensitive characters, based on the dialect's rules."""
-        if self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE:
+        if self.normalization_strategy in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES,
+        ):
             return False
 
         unsafe = (

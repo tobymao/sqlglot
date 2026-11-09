@@ -231,6 +231,11 @@ class TestDialect(Validator):
         lowercase_mysql = Dialect.get_or_raise("mysql, normalization_strategy = lowercase")
         self.assertEqual(lowercase_mysql.normalization_strategy.value, "LOWERCASE")
 
+        self.assertEqual(
+            Dialect.get_or_raise("bigquery").normalization_strategy,
+            "CASE_INSENSITIVE_EXCEPT_TABLES",
+        )
+
         with self.assertRaises(AttributeError) as cm:
             Dialect.get_or_raise("mysql, normalization_strategy")
 

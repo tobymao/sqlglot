@@ -6,11 +6,9 @@ import typing as t
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 from sqlglot import exp, jsonpath, tokens
-from sqlglot._typing import E
 from sqlglot.parsers.bigquery import BigQueryParser
 from sqlglot.generators.bigquery import BigQueryGenerator
 from sqlglot.dialects.dialect import (
-    ASCII_LOWER,
     Dialect,
     NormalizationStrategy,
 )
@@ -51,7 +49,7 @@ class BigQuery(Dialect):
     INITCAP_DEFAULT_DELIMITER_CHARS = ' \t\n\r\f\v\\[\\](){}/|<>!?@"^#$&~_,.:;*%+\\-'
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
-    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
+    NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES
     ASCII_ONLY_NORMALIZATION = True
 
     # bigquery udfs are case sensitive
@@ -131,35 +129,6 @@ class BigQuery(Dialect):
     }
 
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
-
-    def normalize_identifier(self, expression: E) -> E:
-        if (
-            isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE
-        ):
-            parent = expression.parent
-            while isinstance(parent, exp.Dot):
-                parent = parent.parent
-
-            # In BigQuery, CTEs are case-insensitive, but UDF and table names are case-sensitive
-            # by default. The following check uses a heuristic to detect tables based on whether
-            # they are qualified. This should generally be correct, because tables in BigQuery
-            # must be qualified with at least a dataset, unless @@dataset_id is set.
-            case_sensitive = (
-                isinstance(parent, exp.UserDefinedFunction)
-                or (
-                    isinstance(parent, exp.Table)
-                    and parent.db
-                    and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
-                )
-                or expression.meta_get("is_table")
-            )
-            if not case_sensitive:
-                expression.set("this", expression.this.translate(ASCII_LOWER))
-
-            return t.cast(E, expression)
-
-        return super().normalize_identifier(expression)
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):
         VAR_TOKENS = {

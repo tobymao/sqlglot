@@ -131,7 +131,7 @@ def qualify_columns(
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, using_column_tables)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -555,7 +555,9 @@ def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, using_column_tables: dict[str, dict[str, t.Any]]
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -584,12 +586,27 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            for agg in original.find_all(exp.AggFunc):
-                for col in agg.find_all(exp.Column):
-                    if not col.table:
-                        if table := resolver.get_table(col):
+            for node in (
+                (original,)
+                if resolver.dialect.PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY
+                else find_all_in_scope(original, exp.AggFunc)
+            ):
+                for col in find_all_in_scope(node, exp.Column):
+                    if not col.table and original.unnest() is not col:
+                        if tables := using_column_tables.get(col.name):
+                            col.replace(
+                                exp.func(
+                                    "coalesce", *[exp.column(col.name, table) for table in tables]
+                                )
+                            )
+                        elif table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
+                        elif (
+                            resolver.dialect.PREFER_COLUMNS_TO_ALIASES_IN_ORDER_BY
+                            and col.name in resolver.all_columns
+                        ):
+                            raise OptimizeError(f"Ambiguous column: {col.name}")
 
             if original is not expanded:
                 original.replace(expanded)
@@ -604,6 +621,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                     if not _same_dot_parts(node, replacement.this):
                         continue
                     node.replace(exp.column(replacement.alias_or_name))
+
+        scope.clear_column_cache()
 
 
 def _same_dot_parts(left: exp.Expr, right: exp.Expr) -> bool:

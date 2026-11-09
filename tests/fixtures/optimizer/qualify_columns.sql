@@ -250,6 +250,69 @@ SELECT *, r.x AS x FROM READ_PARQUET('data.parquet') AS r;
 SELECT 1 AS z FROM (SELECT * FROM t) c WHERE z > 0;
 SELECT 1 AS Z FROM (SELECT T.Z AS Z FROM T T) C WHERE C.Z > 0;
 
+# title: Input columns take precedence inside DuckDB ORDER BY expressions
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email LIKE 'a%' DESC, id;
+SELECT t.id AS email FROM t AS t ORDER BY t.email LIKE 'a%' DESC, t.id;
+
+# title: Input columns take precedence inside Postgres ORDER BY expressions
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT t.id AS email FROM t AS t ORDER BY t.email || '';
+
+# title: Parenthesized DuckDB ORDER BY names still reference aliases
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email, (email), 1;
+SELECT t.id AS email FROM t AS t ORDER BY email, (email), email;
+
+# title: Parenthesized Postgres ORDER BY names still reference aliases
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email, (email), 1;
+SELECT t.id AS email FROM t AS t ORDER BY email, (email), email;
+
+# title: Input columns take precedence inside DuckDB DISTINCT ON expressions
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email || '') id AS email FROM t;
+SELECT DISTINCT ON (t.email || '') t.id AS email FROM t AS t;
+
+# title: Input columns take precedence inside Postgres DISTINCT ON expressions
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email || '') id AS email FROM t;
+SELECT DISTINCT ON (t.email || '') t.id AS email FROM t AS t;
+
+# title: Standalone DISTINCT ON names still reference aliases
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email) id AS email FROM t;
+SELECT DISTINCT ON (email) t.id AS email FROM t AS t;
+
+# title: Snowflake ORDER BY alias bindings are preserved
+# dialect: snowflake
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT T.ID AS EMAIL FROM T AS T ORDER BY EMAIL || '';
+
+# title: Spark ORDER BY alias bindings are preserved
+# dialect: spark
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT t.id AS email FROM t AS t ORDER BY email || '';
+
 # execute: false
 select * from (values (1, 2));
 SELECT _0._col_0 AS _col_0, _0._col_1 AS _col_1 FROM (VALUES (1, 2)) AS _0(_col_0, _col_1);

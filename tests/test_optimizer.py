@@ -1673,6 +1673,90 @@ class TestOptimizer(unittest.TestCase):
                 self.assertEqual(order.name, "v")
                 self.assertTrue(order.is_type(dtype))
 
+    def test_qualify_order_by_source_columns(self):
+        schema = {"t": {"id": "INT", "email": "VARCHAR"}}
+        sql = "SELECT id AS email FROM t ORDER BY email LIKE 'a%' DESC, id"
+
+        for dialect in ("duckdb", "postgres"):
+            with self.subTest(dialect=dialect):
+                qualified = qualify(parse_one(sql, dialect=dialect), schema=schema, dialect=dialect)
+                self.assertEqual(
+                    qualified.sql(dialect),
+                    'SELECT "t"."id" AS "email" FROM "t" AS "t" ORDER BY "t"."email" LIKE \'a%\' DESC, "t"."id"',
+                )
+                scope = build_scope(qualified)
+                assert scope is not None
+                self.assertEqual(
+                    [column.sql() for column in scope.columns],
+                    ['"t"."id"', '"t"."email"', '"t"."id"'],
+                )
+                annotate_types(qualified, schema=schema)
+                order = qualified.args["order"].expressions[0].this
+                self.assertTrue(order.this.is_type(exp.DType.VARCHAR))
+                self.assertEqual(exp.Expr.load(json.loads(json.dumps(qualified.dump()))), qualified)
+
+                with duckdb.connect() as connection:
+                    connection.execute("CREATE TABLE t (id INT, email VARCHAR)")
+                    connection.execute("INSERT INTO t VALUES (1, 'b@x'), (2, 'a@x'), (3, 'c@x')")
+                    self.assertEqual(connection.execute(sql).fetchall(), [(2,), (1,), (3,)])
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), [(2,), (1,), (3,)]
+                    )
+
+    def test_qualify_order_by_alias_fallback(self):
+        qualified = qualify(parse_one("SELECT 1 AS x ORDER BY x + 1"), dialect="duckdb")
+        annotate_types(qualified, dialect="duckdb")
+        self.assertTrue(qualified.args["order"].expressions[0].this.is_type(exp.DType.INT))
+
+    def test_qualify_order_by_ambiguous_alias(self):
+        for dialect in ("duckdb", "postgres"):
+            with self.subTest(dialect=dialect):
+                with self.assertRaisesRegex(OptimizeError, "Ambiguous column: email"):
+                    qualify(
+                        parse_one("SELECT t.id AS email FROM t CROSS JOIN u ORDER BY email || ''"),
+                        schema={
+                            "t": {"id": "INT", "email": "VARCHAR"},
+                            "u": {"email": "VARCHAR"},
+                        },
+                        dialect=dialect,
+                    )
+
+    def test_qualify_order_by_using_column(self):
+        sql = (
+            "SELECT t.email AS id, 0 AS email FROM (VALUES ('a')) t(email) "
+            "FULL JOIN (VALUES ('b')) u(email) USING (email) ORDER BY email || ''"
+        )
+        for dialect in ("duckdb", "postgres"):
+            with self.subTest(dialect=dialect):
+                qualified = qualify(parse_one(sql, dialect=dialect), dialect=dialect)
+                self.assertIsInstance(
+                    qualified.args["order"].expressions[0].this.this, exp.Coalesce
+                )
+                with duckdb.connect() as connection:
+                    self.assertEqual(connection.execute(sql).fetchall(), [("a", 0), (None, 0)])
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(),
+                        [("a", 0), (None, 0)],
+                    )
+
+    def test_qualify_order_by_alias_in_subquery(self):
+        sql = (
+            "SELECT id AS email FROM (VALUES (1, 'b'), (2, 'a')) t(id, email) "
+            "ORDER BY id - (SELECT id AS email FROM (VALUES (1), (4)) u(id) "
+            "ORDER BY email DESC LIMIT 1) * id, id"
+        )
+        for dialect in ("duckdb", "postgres"):
+            with self.subTest(dialect=dialect):
+                qualified = qualify(parse_one(sql, dialect=dialect), dialect=dialect)
+                subquery = qualified.find(exp.Subquery)
+                assert subquery is not None
+                self.assertFalse(subquery.this.args["order"].expressions[0].this.table)
+                with duckdb.connect() as connection:
+                    self.assertEqual(connection.execute(sql).fetchall(), [(2,), (1,)])
+                    self.assertEqual(
+                        connection.execute(qualified.sql("duckdb")).fetchall(), [(2,), (1,)]
+                    )
+
     def test_qualify_json_path_argument_order(self):
         expression = "ANY_VALUE(JSON_VALUE(j.Foo, '$') || JSON_VALUE(j.foo, '$'))"
         tree = parse_one(

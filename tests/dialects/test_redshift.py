@@ -498,13 +498,13 @@ class TestRedshift(Validator):
             "CREATE TABLE sales (salesid INTEGER NOT NULL) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE AUTO"
         )
         self.validate_all(
-            "CREATE TABLE sales (salesid INTEGER) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE KEY",
+            "CREATE TABLE t (a INTEGER) DISTSTYLE KEY DISTKEY(a) SORTKEY(a)",
             write={
-                "redshift": "CREATE TABLE sales (salesid INTEGER) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE KEY",
-                "postgres": "CREATE TABLE sales (salesid INT)",
-                "snowflake": "CREATE TABLE sales (salesid INT)",
-                "databricks": "CREATE TABLE sales (salesid INT)",
-                "tsql": "CREATE TABLE sales (salesid INTEGER)",
+                "redshift": "CREATE TABLE t (a INTEGER) DISTSTYLE KEY DISTKEY(a) SORTKEY(a)",
+                "postgres": "CREATE TABLE t (a INT)",
+                "snowflake": "CREATE TABLE t (a INT)",
+                "databricks": "CREATE TABLE t (a INT)",
+                "tsql": "CREATE TABLE t (a INTEGER)",
             },
         )
         self.validate_identity(

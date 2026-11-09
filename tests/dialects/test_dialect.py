@@ -5700,11 +5700,12 @@ FROM subquery2""",
         def assert_custom_duckdb_sql(
             query: str,
             *,
+            read_dialects: Iterable[str] = ("bigquery", "snowflake"),
             includes: t.Optional[Iterable[str]] = None,
             excludes: t.Optional[Iterable[str]] = None,
             chr_chars: t.Optional[Iterable[str]] = None,
         ) -> None:
-            for dialect in ("bigquery", "snowflake"):
+            for dialect in read_dialects:
                 with self.subTest(f"DuckDB generation for {query} from {dialect}"):
                     expression = parse_one(query, read=dialect)
                     self.assert_duckdb_sql(
@@ -5714,7 +5715,6 @@ FROM subquery2""",
         assert_custom_duckdb_sql(
             "INITCAP(col, '')", includes=("UPPER(LEFT(",), excludes=("REGEXP_MATCHES(",)
         )
-        assert_custom_duckdb_sql("INITCAP(col, NULL)", includes=("REGEXP_MATCHES(", "REPLACE("))
         assert_custom_duckdb_sql("INITCAP(col, ' ')", includes=("' '",))
         assert_custom_duckdb_sql("INITCAP(col, '@')", includes=("'@'",), excludes=("CHR(",))
         assert_custom_duckdb_sql("INITCAP(col, '_@')", includes=("'_@'",))
@@ -5727,34 +5727,29 @@ FROM subquery2""",
             "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))",
             includes=("SELECT delimiter FROM settings", "REPLACE("),
         )
-
-    def test_initcap_nested_duckdb(self):
-        # The DuckDB rewrite feeds the generated SQL of the inner INITCAP into
-        # exp.case().when() as a raw string. That string contains a LAMBDA and
-        # escaped delimiter literals, so re-parsing it with the default dialect
-        # raised ParseError. The inner SQL must be embedded verbatim instead.
-        for read_dialect in ("", "postgres", "snowflake", "bigquery", "duckdb"):
-            with self.subTest(f"Nested INITCAP read from {read_dialect or 'default'}"):
-                single_sql = parse_one("INITCAP(col)", read=read_dialect or None).sql("duckdb")
-                nested_sql = parse_one("INITCAP(INITCAP(col))", read=read_dialect or None).sql(
-                    "duckdb"
-                )
-
-                self.assertIn(single_sql, nested_sql)
-                self.assertIn("ARRAY_TO_STRING(", nested_sql)
-                # The result must still be valid DuckDB SQL.
-                self.assertIsNotNone(parse_one(nested_sql, read="duckdb"))
-
-        for sql in (
-            "INITCAP(INITCAP(INITCAP(col)))",
-            "INITCAP(INITCAP(LOWER(col)))",
-            "INITCAP(UPPER(INITCAP(col)))",
-            "INITCAP(INITCAP(col, ' '))",
-        ):
-            with self.subTest(f"Nested INITCAP {sql}"):
-                generated = parse_one(sql, read="postgres").sql("duckdb")
-                self.assertIn("ARRAY_TO_STRING(", generated)
-                self.assertIsNotNone(parse_one(generated, read="duckdb"))
+        assert_custom_duckdb_sql(
+            "INITCAP(NULL)",
+            read_dialects=("", "postgres", "snowflake", "bigquery", "duckdb"),
+            includes=("REGEXP_MATCHES(LEFT(NULL, 1),",),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(col, NULL)",
+            includes=("REGEXP_MATCHES(", "REPLACE(NULL,"),
+            excludes=("CONCAT(",),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(INITCAP(col))",
+            read_dialects=("", "postgres", "snowflake", "bigquery", "duckdb"),
+            includes=(
+                "REGEXP_MATCHES(LEFT(ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1),",
+                "LIST_TRANSFORM(REGEXP_EXTRACT_ALL(ARRAY_TO_STRING(",
+            ),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(INITCAP(col, NULL))",
+            includes=("REGEXP_MATCHES(LEFT(ARRAY_TO_STRING(", "REPLACE(NULL,"),
+            excludes=("CONCAT(",),
+        )
 
     def test_initcap_custom_delimiter_warning(self):
         expression = parse_one("INITCAP(col, '_')", read="bigquery")

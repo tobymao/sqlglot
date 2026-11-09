@@ -6587,6 +6587,16 @@ SINGLE = TRUE""",
             parsed = self.validate_identity(sql)
             self.assertIsInstance(parsed, exp.Create)
 
+    def test_create_function_ignore_grants(self):
+        for sql in (
+            "CREATE OR REPLACE FUNCTION f() IGNORE GRANTS RETURNS INT AS '1'",
+            "CREATE OR REPLACE FUNCTION f(x INT, y VARCHAR) IGNORE GRANTS RETURNS INT AS 'x + LENGTH(y)'",
+            "CREATE OR REPLACE FUNCTION f() IGNORE GRANTS RETURNS TABLE (a INT) AS 'SELECT 1'",
+        ):
+            parsed = self.validate_identity(sql)
+            self.assertIsInstance(parsed, exp.Create)
+            self.assertEqual(parsed.kind, "FUNCTION")
+
     def test_create_view_change_tracking(self):
         self.validate_identity("CREATE VIEW v (c) CHANGE_TRACKING=TRUE AS SELECT 1 AS c")
         self.validate_identity(

@@ -98,9 +98,8 @@ class TeradataGenerator(generator.Generator):
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 
+    @generator.unsupported_args("return_status")
     def execute_sql(self, expression: exp.Execute) -> str:
-        if expression.args.get("return_status"):
-            self.unsupported("Teradata EXECUTE does not support a return status")
         this = self.sql(expression, "this")
         arguments = f"({self.expressions(expression, flat=True)})" if expression.expressions else ""
         return f"EXECUTE {this}{arguments}"

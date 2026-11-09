@@ -768,7 +768,7 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT a @> b, a <@ b",
             write={
-                "doris": "SELECT a @> b, a <@ b",
+                "doris": UnsupportedError,
                 "mysql": UnsupportedError,
                 "postgres": "SELECT a @> b, a <@ b",
                 "singlestore": UnsupportedError,

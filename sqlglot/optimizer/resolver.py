@@ -88,6 +88,9 @@ class Resolver:
         if not table_name:
             return None
 
+        return self._get_table_identifier(table_name)
+
+    def _get_table_identifier(self, table_name: str) -> exp.Identifier:
         if table_name not in self.scope.selected_sources:
             return exp.to_identifier(table_name)
 
@@ -102,6 +105,35 @@ class Resolver:
             return exp.to_identifier(node_alias.this)
 
         return exp.to_identifier(table_name)
+
+    def get_outer_table(self, column: exp.Column) -> exp.Identifier | None:
+        """Resolve an outer column without exposing inaccessible sources of enclosing queries."""
+        child = self.scope
+        for outer in self.outer_resolvers():
+            # Lateral scopes already expose preceding sources through lateral_sources.
+            # Derived tables and CTEs cannot reference their containing query's sources.
+            skip = child.is_cte or child.is_derived_table or isinstance(child.expression, exp.UDTF)
+            expression = child.expression
+            child = outer.scope
+            if skip:
+                continue
+
+            join = expression.find_ancestor(exp.Join, exp.Select)
+            source_columns = (
+                outer._get_available_source_columns(join)
+                if isinstance(join, exp.Join) and join.parent is outer.scope.expression
+                else outer._get_all_source_columns()
+            )
+            if any(column.name in columns for columns in source_columns.values()):
+                table_name = outer._get_table_name_from_sources(column.name, source_columns)
+                if not table_name:
+                    raise OptimizeError(f"Ambiguous column '{column.name}'")
+                return outer._get_table_identifier(table_name)
+
+            if any(not columns or "*" in columns for columns in source_columns.values()):
+                raise OptimizeError(f"Cannot resolve '{column.name}' due to missing source schemas")
+
+        return None
 
     def outer_resolvers(self) -> list[Resolver]:
         """Resolvers for the outer scopes a correlated subquery can reference, innermost first."""

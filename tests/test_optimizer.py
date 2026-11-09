@@ -449,6 +449,25 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("normalize", normalize, schema=self.schema)
 
+    def test_qualify_postgres_ambiguous_whole_row_reference(self):
+        for sql in (
+            "SELECT (SELECT x FROM (SELECT 1 AS x) AS x CROSS JOIN (SELECT 3 AS x) AS u) FROM (SELECT 2 AS x) AS t",
+            "SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 2 AS x) AS t CROSS JOIN (SELECT 3 AS x) AS u",
+            "SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 2 AS x) AS t CROSS JOIN (SELECT 3 AS x) AS u) FROM (SELECT 4 AS x) AS v",
+        ):
+            with self.subTest(sql=sql):
+                with self.assertRaisesRegex(OptimizeError, "Ambiguous column 'x'"):
+                    qualify(parse_one(sql, dialect="postgres"), dialect="postgres")
+
+        with self.assertRaisesRegex(OptimizeError, "due to missing source schemas"):
+            qualify(
+                parse_one(
+                    "SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM unknown_table",
+                    dialect="postgres",
+                ),
+                dialect="postgres",
+            )
+
     def test_qualify_columns_struct_field_and_source_alias(self):
         schema = {
             "customer": {

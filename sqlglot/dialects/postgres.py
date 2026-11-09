@@ -24,6 +24,7 @@ class Postgres(Dialect):
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
+    TABLE_ALIASES_SHADOW_OUTER_COLUMN_NAMES = False
 
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {
         exp.ExplodingGenerateSeries: "generate_series",

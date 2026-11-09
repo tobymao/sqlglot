@@ -976,7 +976,14 @@ def _qualify_columns(
                 and not resolver.has_unknown_sources
             ):
                 # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
-                scope.replace(column, exp.TableColumn(this=column.this))
+                if not resolver.dialect.TABLE_ALIASES_SHADOW_OUTER_COLUMN_NAMES:
+                    if column_name in resolver.all_columns:
+                        raise OptimizeError(f"Ambiguous column '{column_name}'")
+                    table = resolver.get_outer_table(column)
+                if table:
+                    column.set("table", table)
+                else:
+                    scope.replace(column, exp.TableColumn(this=column.this))
 
     pivots = scope.pivots
 

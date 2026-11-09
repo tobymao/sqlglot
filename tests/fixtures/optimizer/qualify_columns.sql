@@ -1539,3 +1539,105 @@ SELECT unp AS unp FROM (SELECT 7 AS unp, 1 AS a, 2 AS b) AS _0 UNPIVOT(v FOR k I
 # execute: false
 SELECT ARRAY_AGG(piv) AS arr FROM unknown_table AS u PIVOT(SUM(u.v) FOR u.k IN (82 AS a)) AS piv;
 SELECT ARRAY_AGG(piv) AS arr FROM unknown_table AS u PIVOT(SUM(u.v) FOR u.k IN (82 AS a)) AS piv;
+
+# title: PostgreSQL whole-row resolution: outer column
+# dialect: postgres
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: local column
+# dialect: postgres
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS x) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT x.x AS x FROM (SELECT 1 AS x) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: whole row
+# dialect: postgres
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v;
+
+# title: PostgreSQL whole-row resolution: nested outer
+# dialect: postgres
+# execute: false
+SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS x)) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS _col_0) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: nearest outer
+# dialect: postgres
+# execute: false
+SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT u.x AS x FROM (SELECT 1 AS y) AS x) AS _col_0 FROM (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: later lateral source
+# dialect: postgres
+# execute: false
+SELECT s.v FROM LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 2 AS x) AS u;
+SELECT s.v AS v FROM LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 2 AS x) AS u;
+
+# title: PostgreSQL whole-row resolution: preceding lateral source
+# dialect: postgres
+# execute: false
+SELECT s.v FROM (SELECT 2 AS x) AS t CROSS JOIN LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u;
+SELECT s.v AS v FROM (SELECT 2 AS x) AS t CROSS JOIN LATERAL (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u;
+
+# title: PostgreSQL whole-row resolution: lateral grandparent
+# dialect: postgres
+# execute: false
+SELECT (SELECT s.v FROM LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT s.v AS v FROM LATERAL (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: derived boundary
+# dialect: postgres
+# execute: false
+SELECT (SELECT s.v FROM (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT s.v AS v FROM (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: cte boundary
+# dialect: postgres
+# execute: false
+SELECT (WITH c AS (SELECT x AS v FROM (SELECT 1 AS y) AS x) SELECT c.v FROM c CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (WITH c AS (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) SELECT c.v AS v FROM c AS c CROSS JOIN (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: quoted outer
+# dialect: postgres
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS "T";
+SELECT (SELECT "T".x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS "T";
+
+# title: PostgreSQL whole-row resolution: union outer
+# dialect: postgres
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x UNION ALL SELECT 3 LIMIT 1) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x UNION ALL SELECT 3 AS "3" LIMIT 1) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: PostgreSQL whole-row resolution: join excludes later sources
+# dialect: postgres
+# execute: false
+SELECT 1 AS v FROM (SELECT 0 AS z) AS t JOIN (SELECT 0 AS y) AS u ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x WHERE x IS NOT NULL) JOIN (SELECT NULL::integer AS x) AS w ON TRUE;
+SELECT 1 AS v FROM (SELECT 0 AS z) AS t JOIN (SELECT 0 AS y) AS u ON EXISTS(SELECT x AS x FROM (SELECT 1 AS y) AS x WHERE x IS NOT NULL) JOIN (SELECT CAST(NULL AS INT) AS x) AS w ON TRUE;
+
+# title: PostgreSQL whole-row resolution: join uses preceding sources
+# dialect: postgres
+# execute: false
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN (SELECT 0 AS y) AS u ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x WHERE x = 2) JOIN (SELECT 3 AS x) AS w ON TRUE;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN (SELECT 0 AS y) AS u ON EXISTS(SELECT t.x AS x FROM (SELECT 1 AS y) AS x WHERE t.x = 2) JOIN (SELECT 3 AS x) AS w ON TRUE;
+
+# title: PostgreSQL whole-row resolution: noncorrelated derived table
+# dialect: postgres
+# execute: false
+SELECT s.v FROM (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 2 AS x) AS u;
+SELECT s.v AS v FROM (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS s CROSS JOIN (SELECT 2 AS x) AS u;
+
+# title: duckdb whole-row alias precedes outer column
+# dialect: duckdb
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: bigquery whole-row alias precedes outer column
+# dialect: bigquery
+# execute: false
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;

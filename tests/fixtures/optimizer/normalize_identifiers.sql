@@ -112,3 +112,7 @@ SELECT `foä` FROM `baü`;
 # dialect: sqlite
 SELECT "FoÄ" FROM "BaÜ";
 SELECT "foÄ" FROM "baÜ";
+
+# dialect: teradata
+SELECT "FOO" FROM BAR;
+SELECT "foo" FROM bar;

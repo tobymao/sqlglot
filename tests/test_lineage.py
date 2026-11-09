@@ -607,6 +607,16 @@ class TestLineage(unittest.TestCase):
                 dialect="duckdb",
             )
 
+        node = lineage(
+            "LN_NO",
+            'SELECT LN_NO FROM (SELECT "LN_NO" FROM LOAN_TABLE) T',
+            schema={"LOAN_TABLE": {"LN_NO": "INT"}},
+            dialect="teradata",
+        )
+        self.assertEqual(node.name, "ln_no")
+        self.assertEqual(node.downstream[0].name, "t.ln_no")
+        self.assertEqual(node.downstream[0].downstream[0].name, 'loan_table."ln_no"')
+
     def test_ddl_lineage(self) -> None:
         sql = """
         INSERT /*+ HINT1 */

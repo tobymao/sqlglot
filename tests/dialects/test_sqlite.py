@@ -259,6 +259,41 @@ class TestSQLite(Validator):
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL (NULL) DAY) FROM t",
             },
         )
+        self.validate_all(
+            "SELECT DATE(d, '-1 MONTH') FROM t",
+            read={
+                "bigquery": "SELECT DATE_SUB(d, INTERVAL 1 MONTH) FROM t",
+                "mysql": "SELECT DATE_SUB(d, INTERVAL 1 MONTH) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, '2 DAY') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL -2 DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (-n) || ' DAY') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL n DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (-(n + 1)) || ' DAY') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL (n + 1) DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (n) || ' DAY') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL -n DAY) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_SUB(d, '1'') ; SELECT 1; --')",
+            write={"sqlite": "SELECT DATE(d, '-1'') ; SELECT 1; --')"},
+        )
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch')")
         self.validate_identity("SELECT DATETIME(1092941466, 'auto')")
         self.validate_identity("SELECT DATETIME(1092941466, 'unixepoch', 'localtime')")

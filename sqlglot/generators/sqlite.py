@@ -292,6 +292,30 @@ class SQLiteGenerator(generator.Generator):
         modifier = f"{modifier} {unit.name}" if unit else modifier
         return self.func("DATE", expression.this, exp.Literal.string(modifier))
 
+    def datesub_sql(self, expression: exp.DateSub) -> str:
+        # SQLite has no DATE_SUB, so add the negated amount instead
+        amount = expression.expression
+        unit = expression.args.get("unit")
+        if isinstance(amount, exp.Interval):
+            unit = unit or amount.unit
+            amount = amount.this
+
+        amount = amount.unnest()
+        negated: exp.Expr
+        if isinstance(amount, exp.Neg):
+            negated = amount.this
+        elif isinstance(amount, exp.Literal):
+            text = amount.name
+            negated = exp.Literal.string(text[1:] if text.startswith("-") else f"-{text}")
+        else:
+            negated = exp.Neg(
+                this=amount
+                if isinstance(amount, (exp.Column, exp.Func))
+                else exp.paren(amount, copy=False)
+            )
+
+        return self.dateadd_sql(exp.DateAdd(this=expression.this, expression=negated, unit=unit))
+
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):
             return self.func("DATE", expression.this)

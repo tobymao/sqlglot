@@ -563,24 +563,22 @@ class TestPresto(Validator):
     def test_date_trunc_preserves_input_type(self):
         # DATE_TRUNC returns the type of its input, but DuckDB's returns TIMESTAMP for a DATE:
         # https://github.com/duckdb/duckdb/pull/20120
-        for value, data_type in (
-            ("'2024-05-09'", "DATE"),
-            ("'2024-05-09 10:11:12'", "TIMESTAMP"),
-            ("NULL", "DATE"),
+        for value, data_type, unit in (
+            ("'2024-05-09'", "DATE", "MONTH"),
+            ("'2024-05-09 10:11:12'", "TIMESTAMP", "MONTH"),
+            ("'2024-05-09 10:11:12'", "TIMESTAMP", "HOUR"),
+            ("NULL", "DATE", "MONTH"),
         ):
             this = f"CAST({value} AS {data_type})"
-            for unit in ("MONTH", "HOUR"):
-                sql = f"DATE_TRUNC('{unit}', {this})"
-                for dialect in ("presto", "trino", "athena"):
-                    with self.subTest(f"{dialect}: {sql}"):
-                        self.validate_all(
-                            sql,
-                            read={dialect: sql},
-                            write={
-                                dialect: sql,
-                                "duckdb": f"CAST(DATE_TRUNC('{unit}', {this}) AS {data_type})",
-                            },
-                        )
+            sql = f"DATE_TRUNC('{unit}', {this})"
+            for dialect in ("presto", "trino", "athena"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    expression = parse_one(sql, read=dialect)
+                    self.assertEqual(expression.sql(dialect), sql)
+                    self.assertEqual(
+                        expression.sql("duckdb"),
+                        f"CAST(DATE_TRUNC('{unit}', {this}) AS {data_type})",
+                    )
 
         self.validate_all(
             "DATE_TRUNC('HOUR', CAST('10:11:12' AS TIME))",

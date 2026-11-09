@@ -237,7 +237,7 @@ def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
         parameters = seq_get(args, 4)
 
         if not group:
-            if parameters and "e" in parameters.name:
+            if parameters and parameters.is_string and "e" in parameters.name:
                 group = exp.Literal.number(1)
             else:
                 group = exp.Literal.number(0)

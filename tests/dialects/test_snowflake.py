@@ -5510,6 +5510,14 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
+        # Non-literal flags: group must not be stripped based on identifier name
+        self.validate_all(
+            "REGEXP_SUBSTR(subject, pattern, 1, 1, regex_params, 1)",
+            write={
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, regex_params, 1)",
+            },
+        )
+
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")
         self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
         self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")

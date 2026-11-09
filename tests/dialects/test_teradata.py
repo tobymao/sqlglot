@@ -378,6 +378,147 @@ class TestTeradata(Validator):
             "SELECT CAST(Col1 AS INT) FROM Test1",
         )
 
+    def test_projection_attributes(self):
+        for sql, expected in (
+            ("SELECT x (TITLE 'Display heading') FROM t", None),
+            ("SELECT x (NAMED result) FROM t", None),
+            ("SELECT x (NAMED 'result name') FROM t", 'SELECT x (NAMED "result name") FROM t'),
+            ("SELECT x (NAMED result) (TITLE 'Heading') FROM t", None),
+            (
+                "SELECT x (FORMAT '999', TITLE 'Heading', NAMED result) FROM t",
+                "SELECT x (FORMAT '999') (TITLE 'Heading') (NAMED result) FROM t",
+            ),
+            (
+                "SELECT (x + 1) (TITLE 'Heading', NAMED result) FROM t",
+                "SELECT (x + 1) (TITLE 'Heading') (NAMED result) FROM t",
+            ),
+            ("SELECT COALESCE(x, 1) (TITLE 'Heading') FROM t", None),
+            ("SELECT COALESCE(title, named, x) FROM t", None),
+            ("SELECT t.x (TITLE 'Heading') AS result FROM t", None),
+            ("SELECT x FROM t WHERE x (NAMED result) > 1", None),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertEqual(expression, self.parse_one(expected or sql))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertIsNone(expression.find(exp.Anonymous))
+                self.assertTrue(expression.find(exp.Column))
+
+        title = self.parse_one("SELECT x (TITLE 'Not an alias') FROM t").expressions[0]
+        self.assertEqual(title.output_name, "x")
+        named = self.parse_one("SELECT x (TITLE 'Heading', NAMED result) FROM t").expressions[0]
+        self.assertEqual(named.output_name, "result")
+        self.validate_all(
+            "SELECT x (NAMED result) FROM t",
+            write={"postgres": "SELECT x AS result FROM t"},
+        )
+
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        for sql in (
+            "SELECT 1 (TITLE 'Heading')",
+            "SELECT 1 (NAMED result)",
+            "SELECT 1 (FORMAT '999', TITLE 'Heading')",
+        ):
+            expression = annotate_types(self.parse_one(sql), dialect="teradata")
+            self.assertTrue(expression.expressions[0].is_type(exp.DType.INT))
+
+        for sql in (
+            "SELECT x (TITLE)",
+            "SELECT x (TITLE heading)",
+            "SELECT x (NAMED)",
+            "SELECT x (TITLE 'a', TITLE 'b')",
+            "SELECT x (NAMED a, NAMED b)",
+            "SELECT x (TITLE 'a',)",
+            "SELECT x (TITLE 'a', unknown)",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql, error_level=ErrorLevel.RAISE)
+
+        for sql in (
+            "SELECT x (TITLE 'Heading') FROM t",
+            "SELECT x FROM t WHERE x (NAMED result) > 1",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(UnsupportedError):
+                self.parse_one(sql).sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+    def test_postfix_conversions(self):
+        from sqlglot.lineage import lineage
+        from sqlglot.optimizer.annotate_types import annotate_types
+        from sqlglot.optimizer.canonicalize import canonicalize
+        from sqlglot.optimizer.simplify import simplify
+
+        for sql, expected in (
+            ("SELECT x (BIGINT) FROM t", None),
+            ("SELECT '2024' (INTEGER)", "SELECT '2024' (INT)"),
+            ("SELECT t.x (DECIMAL(10, 2)) AS result FROM t", None),
+            ("SELECT (x + 1) (FLOAT) FROM t", None),
+            ("SELECT COALESCE(x, 1) (SMALLINT) FROM t", None),
+            ("SELECT x (CHAR(4)) FROM t", None),
+            ("SELECT x (VARCHAR(8)) FROM t", None),
+            ("SELECT x (DATE) FROM t", None),
+            ("SELECT x (TIMESTAMP(6) WITH TIME ZONE) FROM t", None),
+            ("SELECT x (INT, FORMAT '9999') (CHAR(4)) FROM t", None),
+            ("SELECT x (FORMAT '9999', INT) FROM t", "SELECT x (INT, FORMAT '9999') FROM t"),
+            ("SELECT x (FORMAT '9999') (CHAR(4)) FROM t", None),
+            ("SELECT x (BYTEINT) FROM t", None),
+            ("SELECT x FROM t WHERE x (BIGINT) > 1", None),
+            (
+                "SELECT x (NAMED result, INT, FORMAT '9999', TITLE 'Heading') FROM t",
+                "SELECT x (INT, FORMAT '9999') (TITLE 'Heading') (NAMED result) FROM t",
+            ),
+            (
+                "SELECT x (TITLE 'Heading', INT, NAMED result) FROM t",
+                "SELECT x (INT) (TITLE 'Heading') (NAMED result) FROM t",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertTrue(expression.find(exp.TeradataCast))
+                self.assertIsNone(expression.find(exp.Anonymous))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertEqual(expression, self.parse_one(expected or sql))
+
+        expression = annotate_types(self.parse_one("SELECT x (BIGINT) FROM t"))
+        self.assertEqual(expression.expressions[0].type.this, exp.DType.BIGINT)
+        self.assertEqual(expression.expressions[0].output_name, "x")
+        self.assertEqual([column.name for column in expression.find_all(exp.Column)], ["x"])
+        byteint = self.parse_one("SELECT x (BYTEINT) FROM t").expressions[0]
+        self.assertEqual(byteint.to.this, exp.DType.TINYINT)
+        self.assertNotEqual(byteint.to.this, exp.DType.SMALLINT)
+        with self.assertRaises(UnsupportedError):
+            expression.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+        # Generic CAST simplification must not erase a native format override.
+        expression = annotate_types(self.parse_one("SELECT 1 (INT, FORMAT '9999')"))
+        self.assertTrue(canonicalize(expression.copy()).find(exp.TeradataCast))
+        self.assertTrue(simplify(expression.copy()).find(exp.TeradataCast))
+        root = lineage(
+            "result",
+            "SELECT x (TITLE 'Heading', INT, NAMED result) FROM t",
+            schema={"t": {"x": "INT"}},
+            dialect="teradata",
+        )
+        self.assertEqual(root.downstream[0].name, "t.x")
+
+        self.validate_identity("SELECT COALESCE(DATE, x) FROM t")
+        self.validate_identity(
+            "SELECT example_udf(DATE '2024-01-02')",
+            "SELECT EXAMPLE_UDF(CAST('2024-01-02' AS DATE))",
+        )
+        self.validate_identity("SELECT example_udf(x) FROM t", "SELECT EXAMPLE_UDF(x) FROM t")
+
+        for sql in (
+            "SELECT x (INT,)",
+            "SELECT x (INT, FORMAT)",
+            "SELECT x (INT, FORMAT '9999', FORMAT '999')",
+            "SELECT x (FORMAT '9999',)",
+            "SELECT x (INT, BIGINT)",
+            "SELECT x (DECIMAL(10, 2)",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql, error_level=ErrorLevel.RAISE)
+
     def test_time(self):
         self.validate_identity("CAST(CURRENT_TIMESTAMP(6) AS TIMESTAMP WITH TIME ZONE)")
 

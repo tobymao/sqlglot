@@ -64,6 +64,7 @@ class TeradataGenerator(generator.Generator):
         exp.DType.GEOMETRY: "ST_GEOMETRY",
         exp.DType.DOUBLE: "DOUBLE PRECISION",
         exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+        exp.DType.TINYINT: "BYTEINT",
     }
 
     PROPERTIES_LOCATION = {
@@ -108,6 +109,20 @@ class TeradataGenerator(generator.Generator):
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         prefix, suffix = ("(", ")") if expression.this else ("", "")
         return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
+
+    def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
+        return f"{self.sql(expression, 'this')} (TITLE {self.sql(expression, 'title')})"
+
+    def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
+        return f"{self.sql(expression, 'this')} (NAMED {self.sql(expression, 'alias')})"
+
+    def teradatacast_sql(self, expression: exp.TeradataCast) -> str:
+        this = self.sql(expression, "this")
+        if isinstance(expression.this, (exp.Binary, exp.Unary)):
+            this = self.wrap(expression.this)
+        fmt = self.sql(expression, "format")
+        fmt = f", FORMAT {fmt}" if fmt else ""
+        return f"{this} ({self.sql(expression, 'to')}{fmt})"
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):

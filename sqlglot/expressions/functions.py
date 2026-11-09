@@ -69,6 +69,24 @@ class Cast(Expression, Func):
         return self.to.is_type(*dtypes)
 
 
+class TeradataCast(Expression):
+    """A native postfix conversion, retaining Teradata FORMAT semantics."""
+
+    arg_types = {"this": True, "to": True, "format": False}
+
+    @property
+    def to(self) -> DataType:
+        return self.args["to"]
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
+
+
 class TryCast(Cast):
     arg_types = {
         **Cast.arg_types,

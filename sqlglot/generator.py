@@ -4055,6 +4055,15 @@ class Generator:
         fmt = self.sql(expression, "format")
         return f"{this} (FORMAT {fmt})"
 
+    def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
+        self.unsupported("Teradata TITLE display headings are not supported")
+        return self.sql(expression, "this")
+
+    def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
+        if not isinstance(expression.parent, exp.Select):
+            self.unsupported("Teradata NAMED on subexpressions is not supported")
+        return self.alias_sql(expression)
+
     def _jsonobject_sql(
         self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""
     ) -> str:
@@ -4352,6 +4361,12 @@ class Generator:
 
     def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
         return self.binary(expression, "^")
+
+    def teradatacast_sql(self, expression: exp.TeradataCast) -> str:
+        self.unsupported("Teradata postfix conversions are not supported")
+        fmt = self.sql(expression, "format")
+        fmt = f" FORMAT {fmt}" if fmt else ""
+        return f"CAST({self.sql(expression, 'this')} AS {self.sql(expression, 'to')}{fmt})"
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         format_sql = self.sql(expression, "format")

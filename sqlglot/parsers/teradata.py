@@ -32,6 +32,21 @@ class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
+    POSTFIX_TYPE_TOKENS = {
+        TokenType.TINYINT,
+        TokenType.SMALLINT,
+        TokenType.INT,
+        TokenType.BIGINT,
+        TokenType.DECIMAL,
+        TokenType.FLOAT,
+        TokenType.DOUBLE,
+        TokenType.CHAR,
+        TokenType.VARCHAR,
+        TokenType.DATE,
+        TokenType.TIME,
+        TokenType.TIMESTAMP,
+    }
+
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,
@@ -233,15 +248,21 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        # Teradata uses a `(FORMAT <format_string>)` clause after column references to
-        # override the output format. When we see this pattern we do not
-        # parse it as a function call.  The syntax is documented at
-        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+        # Data attributes following a column are not function arguments.
         if (
-            self._next
+            self._curr.text.upper() not in (functions or self.FUNCTIONS)
+            and self._next
             and self._next.token_type == TokenType.L_PAREN
             and self._index + 2 < len(self._tokens)
-            and self._tokens[self._index + 2].token_type == TokenType.FORMAT
+            and (
+                self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE", "NAMED"}
+                or (
+                    self._tokens[self._index + 2].token_type in self.POSTFIX_TYPE_TOKENS
+                    and self._index + 3 < len(self._tokens)
+                    and self._tokens[self._index + 3].token_type
+                    in {TokenType.L_PAREN, TokenType.R_PAREN, TokenType.COMMA, TokenType.WITH}
+                )
+            )
         ):
             return None
 
@@ -255,15 +276,79 @@ class TeradataParser(parser.Parser):
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
 
-        if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):
-            # `(FORMAT <format_string>)` after a column specifies a Teradata format override.
-            # See https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
-            fmt_string = self._parse_string()
-            self._match_r_paren()
+        while (
+            this
+            and self._curr.token_type == TokenType.L_PAREN
+            and (
+                self._next.text.upper() in {"FORMAT", "TITLE", "NAMED"}
+                or self._next.token_type in self.POSTFIX_TYPE_TOKENS
+            )
+        ):
+            self._advance()
+            attributes = set()
+            to = None
+            fmt = None
+            title = None
+            alias = None
+            while True:
+                attribute = self._curr.text.upper()
+                if self._curr.token_type in self.POSTFIX_TYPE_TOKENS:
+                    if "TYPE" in attributes:
+                        self.raise_error("Duplicate datatype in postfix conversion")
+                    attributes.add("TYPE")
+                    to = self._parse_postfix_type()
+                    if self._match(TokenType.COMMA):
+                        continue
+                    break
 
-            this = self.expression(exp.FormatPhrase(this=this, format=fmt_string))
+                self._advance()
+                if attribute in attributes:
+                    self.raise_error(f"Duplicate {attribute} attribute")
+                attributes.add(attribute)
+
+                if attribute == "FORMAT":
+                    fmt = self._parse_string()
+                    if not fmt:
+                        self.raise_error("Expected format string")
+                elif attribute == "TITLE":
+                    title = self._parse_string()
+                    if not title:
+                        self.raise_error("Expected heading after TITLE")
+                elif attribute == "NAMED":
+                    alias = self._parse_id_var()
+                    if not alias:
+                        self.raise_error("Expected alias after NAMED")
+                else:
+                    self.raise_error("Expected FORMAT, TITLE or NAMED")
+                    break
+
+                if not self._match(TokenType.COMMA):
+                    break
+            self._match_r_paren()
+            if to:
+                this = self.expression(exp.TeradataCast(this=this, to=to, format=fmt))
+            elif fmt:
+                this = self.expression(exp.FormatPhrase(this=this, format=fmt))
+            if title:
+                this = self.expression(exp.TeradataTitle(this=this, title=title))
+            if alias:
+                this = self.expression(exp.TeradataNamed(this=this, alias=alias))
+            this = super()._parse_column_ops(this)
 
         return this
+
+    def _parse_postfix_type(self) -> exp.DataType | None:
+        token = self._curr
+        to = self._parse_types(allow_identifiers=False)
+        if not isinstance(to, exp.DataType):
+            self.raise_error("Expected datatype in postfix conversion")
+            return None
+        if to.this == exp.DType.ARRAY:
+            self.raise_error("Array datatypes are not supported in postfix conversions")
+            return None
+        if token.text.upper() == "BYTEINT":
+            to.set("this", exp.DType.TINYINT)
+        return to
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         window = super()._parse_window(this, alias)

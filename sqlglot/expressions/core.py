@@ -2317,6 +2317,34 @@ class FormatPhrase(Expression):
 
     arg_types = {"this": True, "format": True}
 
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
+
+
+class TeradataTitle(Expression):
+    """A Teradata TITLE phrase: a display heading, not a column alias."""
+
+    arg_types = {"this": True, "title": True}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
+
+
+class TeradataNamed(Alias):
+    """A Teradata NAMED phrase, including aliases attached to subexpressions."""
+
+    arg_types = {"this": True, "alias": True}
+
 
 class Between(Expression, Predicate):
     arg_types = {"this": True, "low": True, "high": True, "symmetric": False}

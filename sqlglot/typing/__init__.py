@@ -65,7 +65,15 @@ EXPRESSION_METADATA: ExprMetadataType = {
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_unary(e)}
         for expr_type in subclasses(
-            exp.__name__, (exp.Unary, exp.Alias, exp.IgnoreNulls, exp.RespectNulls)
+            exp.__name__,
+            (
+                exp.Unary,
+                exp.Alias,
+                exp.IgnoreNulls,
+                exp.RespectNulls,
+                exp.FormatPhrase,
+                exp.TeradataTitle,
+            ),
         )
     },
     **{
@@ -360,6 +368,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
         expr_type: {"annotator": lambda self, e: self._set_type(e, e.args["to"])}
         for expr_type in {
             exp.Cast,
+            exp.TeradataCast,
             exp.TryCast,
         }
     },

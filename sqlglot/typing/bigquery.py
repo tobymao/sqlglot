@@ -166,19 +166,17 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
 
             if col_types and _all_struct_kind(unnested):
                 # Each branch's row is itself the struct value, not N separate columns
-                projection_type = exp.DataType(
-                    this=exp.DType.STRUCT,
-                    expressions=[
-                        exp.ColumnDef(
-                            this=exp.to_identifier(name),
-                            kind=kind
-                            if isinstance(kind, exp.DataType)
-                            else exp.DataType.build(kind),
-                        )
-                        for name, kind in col_types
-                    ],
-                    nested=True,
-                )
+                field_types = [(name, exp.DataType.build(kind)) for name, kind in col_types]
+
+                if not any(kind.is_type(exp.DType.UNKNOWN) for _, kind in field_types):
+                    projection_type = exp.DataType(
+                        this=exp.DType.STRUCT,
+                        expressions=[
+                            exp.ColumnDef(this=exp.to_identifier(name), kind=kind)
+                            for name, kind in field_types
+                        ],
+                        nested=True,
+                    )
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
             elif len(col_types) == 1:

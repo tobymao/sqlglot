@@ -202,13 +202,16 @@ def _regexpextract_sql(
     # Other dialects don't support all of the following parameters, so we need to
     # generate default values as necessary to ensure the transpilation is correct
     group = expression.args.get("group")
+    parameters = expression.args.get("parameters")
 
-    # To avoid generating all these default values, we set group to None if
-    # it's 0 (also default value) which doesn't trigger the following chain
-    if group and group.name == "0":
-        group = None
+    # Strip default group to avoid generating unnecessary trailing args:
+    # with 'e' flag the default group is 1, without 'e' it's 0
+    if group:
+        has_e = parameters and "e" in parameters.name
+        if group.name == ("1" if has_e else "0"):
+            group = None
 
-    parameters = expression.args.get("parameters") or (group and exp.Literal.string("c"))
+    parameters = parameters or (group and exp.Literal.string("c"))
     occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))
     position = expression.args.get("position") or (occurrence and exp.Literal.number(1))
 

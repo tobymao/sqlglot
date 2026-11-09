@@ -774,7 +774,7 @@ class ClickHouseGenerator(generator.Generator):
         if (
             values_as_table
             and len(expression.expressions) > 1
-            and (alias or isinstance(expression.parent, (exp.From, exp.Table)))
+            and (alias or isinstance(expression.parent, (exp.From, exp.Join, exp.Table)))
         ):
             values = f"(VALUES{self.seg('')}{self.expressions(expression)})"
             values = self.query_modifiers(expression, values)

@@ -6086,6 +6086,9 @@ class Generator:
         )
 
     def slice_sql(self, expression: exp.Slice) -> str:
+        if "[" in self.dialect.tokenizer_class._IDENTIFIERS:
+            self.unsupported("Slices are not supported")
+
         step = self.sql(expression, "step")
         # An omitted end is written as `-` before a step, since `::` is the cast operator
         end = self.sql(expression.expression) or ("-" if step else "")

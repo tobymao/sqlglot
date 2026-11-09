@@ -1,11 +1,46 @@
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_safe_div(self):
+        self.validate_all(
+            "SELECT CAST(a AS INTEGER) / CAST(b AS INTEGER) FROM t",
+            write={
+                "duckdb": "SELECT CAST(a AS INT) // NULLIF(CAST(b AS INT), 0) FROM t",
+                "snowflake": "SELECT CAST(TRUNC(CAST(a AS INT) / NULLIF(CAST(b AS INT), 0)) AS BIGINT) FROM t",
+                "bigquery": "SELECT DIV(CAST(a AS INT64), NULLIF(CAST(b AS INT64), 0)) FROM t",
+            },
+        )
+        for sql, expected in (
+            (
+                "SELECT 7 / 0",
+                {
+                    "duckdb": "SELECT 7 // NULLIF(0, 0)",
+                    "snowflake": "SELECT CAST(TRUNC(7 / NULLIF(0, 0)) AS BIGINT)",
+                    "bigquery": "SELECT DIV(7, NULLIF(0, 0))",
+                },
+            ),
+            (
+                "SELECT t.a / t.b FROM t",
+                {
+                    "duckdb": "SELECT CAST(TRUNC(t.a / NULLIF(t.b, 0)) AS BIGINT) FROM t",
+                    "snowflake": "SELECT CAST(TRUNC(t.a / NULLIF(t.b, 0)) AS BIGINT) FROM t",
+                    "bigquery": "SELECT CAST(TRUNC(t.a / NULLIF(t.b, 0)) AS INT64) FROM t",
+                },
+            ),
+        ):
+            expression = annotate_types(
+                self.parse_one(sql), schema={"t": {"a": "INT", "b": "INT"}}, dialect="sqlite"
+            )
+            for dialect, output in expected.items():
+                with self.subTest(sql=sql, dialect=dialect):
+                    self.assertEqual(expression.sql(dialect), output)
 
     def test_subquery_modifiers(self):
         for source, expected in (

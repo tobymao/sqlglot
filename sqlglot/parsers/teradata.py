@@ -79,9 +79,32 @@ class TeradataParser(parser.Parser):
         TokenType.DATABASE: lambda self: self.expression(
             exp.Use(this=self._parse_table(schema=False))
         ),
+        TokenType.EXECUTE: lambda self: self._parse_execute(),
         TokenType.REPLACE: lambda self: self._parse_create(),
         TokenType.LOCK: lambda self: self._parse_locking_statement(),
     }
+
+    def _parse_execute(self) -> exp.Execute | exp.Command:
+        start = self._prev
+        this = self._parse_table_parts(schema=True)
+        expressions = []
+
+        if self._match(TokenType.L_PAREN) and not self._match(TokenType.R_PAREN):
+            while True:
+                argument = self._parse_assignment()
+                if argument is None:
+                    # Do not discard omitted arguments or replace them with NULL.
+                    return self._parse_as_command(start)
+                expressions.append(argument)
+                if not self._match(TokenType.COMMA):
+                    break
+            self._match_r_paren()
+
+        if self._curr:
+            # Preserve other EXECUTE forms, such as EXECUTE IMMEDIATE.
+            return self._parse_as_command(start)
+
+        return self.expression(exp.Execute(this=this, expressions=expressions))
 
     def _parse_locking_statement(self) -> exp.LockingStatement:
         # Reuse exp.LockingProperty parsing for the lock kind, type etc

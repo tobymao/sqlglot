@@ -1,9 +1,85 @@
-from sqlglot import ErrorLevel, UnsupportedError, exp
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse
 from tests.dialects.test_dialect import Validator
 
 
 class TestTeradata(Validator):
     dialect = "teradata"
+
+    def test_execute(self):
+        for sql, expected in (
+            ("EXEC example_macro", "EXECUTE example_macro"),
+            ("EXEC example_macro()", "EXECUTE example_macro"),
+            ("EXECUTE example_macro()", "EXECUTE example_macro"),
+            ("EXECUTE example_macro", "EXECUTE example_macro"),
+            ("EXEC example_db.example_macro(1)", "EXECUTE example_db.example_macro(1)"),
+            ("EXECUTE example_macro(1, 'value')", "EXECUTE example_macro(1, 'value')"),
+            ("EXECUTE example_macro(NULL, -2)", "EXECUTE example_macro(NULL, -2)"),
+            (
+                "EXECUTE example_macro(arg_a=1, arg_b='value')",
+                "EXECUTE example_macro(arg_a = 1, arg_b = 'value')",
+            ),
+            (
+                "EXECUTE example_macro(DATE '2024-01-02', COALESCE(NULL, 3), 'a;b')",
+                "EXECUTE example_macro(CAST('2024-01-02' AS DATE), COALESCE(NULL, 3), 'a;b')",
+            ),
+            (
+                'EXECUTE "example db"."example macro"(1)',
+                'EXECUTE "example db"."example macro"(1)',
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected).assert_is(exp.Execute)
+                self.assertEqual(expression, self.parse_one(expected, error_level=ErrorLevel.RAISE))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertIsNone(expression.find(exp.Anonymous))
+
+        expression = self.parse_one("EXEC example_db.example_macro(1, arg_b = 'value')")
+        self.assertEqual(expression.name, "example_macro")
+        self.assertEqual(expression.this.db, "example_db")
+        self.assertEqual(len(expression.expressions), 2)
+        self.assertIsInstance(expression.expressions[1], exp.EQ)
+        self.assertEqual(expression.expressions[1].this.name, "arg_b")
+
+        expressions = parse(
+            "EXEC example_macro('a;b'); SELECT 1; EXECUTE example_db.example_macro(2)",
+            read=self.dialect,
+            error_level=ErrorLevel.RAISE,
+        )
+        self.assertEqual(
+            [type(expression) for expression in expressions],
+            [exp.Execute, exp.Select, exp.Execute],
+        )
+        self.assertEqual(expressions[0].expressions, [exp.Literal.string("a;b")])
+
+    def test_execute_command_fallback(self):
+        for sql in (
+            "EXECUTE example_macro(, 2)",
+            "EXECUTE example_macro(1,)",
+            "EXECUTE example_macro(,)",
+            "EXEC example_macro(1,, 3)",
+            "EXECUTE IMMEDIATE 'SELECT 1'",
+            "EXECUTE example_statement USING value_a",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
+
+    def test_execute_return_status(self):
+        expression = exp.Execute(
+            this=exp.to_table("example_macro"),
+            return_status=exp.Parameter(this=exp.Var(this="status")),
+        )
+        with self.assertRaises(UnsupportedError):
+            expression.sql("teradata", unsupported_level=ErrorLevel.RAISE)
+
+    def test_execute_parse_errors(self):
+        for sql in (
+            "EXECUTE",
+            "EXECUTE example_macro(1",
+            "EXECUTE example_macro(arg_a =)",
+        ):
+            with self.subTest(sql=sql):
+                with self.assertRaises(ParseError):
+                    self.parse_one(sql, error_level=ErrorLevel.RAISE)
 
     def test_teradata(self):
         self.validate_all(

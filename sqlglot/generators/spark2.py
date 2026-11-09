@@ -202,7 +202,7 @@ class Spark2Generator(HiveGenerator):
                 "REGEXP_REPLACE",
                 e.this,
                 e.expression,
-                e.args["replacement"],
+                e.args.get("replacement") or exp.Literal.string(""),
                 e.args.get("position"),
             ),
             exp.Select: transforms.preprocess(

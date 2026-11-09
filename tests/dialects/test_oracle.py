@@ -215,6 +215,19 @@ class TestOracle(Validator):
             "AS OF SCN 123456",
         )
 
+    def test_regexp_replace(self):
+        for sql, expected in (
+            ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '')"),
+            ("REGEXP_REPLACE(subject, pattern)", "REGEXP_REPLACE(subject, pattern, '')"),
+            ("REGEXP_REPLACE(subject, pattern, NULL)", "REGEXP_REPLACE(subject, pattern, NULL)"),
+        ):
+            self.validate_all(
+                sql,
+                write=dict.fromkeys(
+                    ("bigquery", "hive", "spark2", "spark", "databricks"), expected
+                ),
+            )
+
     def test_oracle(self):
         self.validate_identity("1 /* /* */", "1 /* / * */")
         self.validate_all(

@@ -1113,6 +1113,13 @@ TBLPROPERTIES (
             "SELECT SUBSTRING(ENCODE('Spark SQL', 'utf-8'), 5)",
         )
         self.validate_all(
+            "SELECT SUBSTR(x, 0, 2)",
+            write={
+                "duckdb": "SELECT SUBSTRING(x, CASE WHEN 0 = 0 THEN 1 ELSE 0 END, CASE WHEN 2 < 0 THEN 0 ELSE 2 END)",
+                "spark": "SELECT SUBSTRING(x, 0, 2)",
+            },
+        )
+        self.validate_all(
             "MAP_FROM_ARRAYS(ARRAY(1), c)",
             write={
                 "duckdb": "MAP([1], c)",

@@ -1255,9 +1255,14 @@ def _build_capitalization_sql(
     if delimiters_sql == "''":
         return f"UPPER(LEFT({value_to_split}, 1)) || LOWER(SUBSTRING({value_to_split}, 2))"
 
-    delim_regex_sql = f"CONCAT('[', {delimiters_sql}, ']')"
-    split_regex_sql = f"CONCAT('([', {delimiters_sql}, ']+|[^', {delimiters_sql}, ']+)')"
+    delim_regex_sql = f"'[' || {delimiters_sql} || ']'"
+    split_regex_sql = f"'([' || {delimiters_sql} || ']+|[^' || {delimiters_sql} || ']+)'"
 
+    # `value_to_split` is already DuckDB SQL. For a nested INITCAP it contains
+    # LAMBDA expressions and escaped delimiter literals, which the default
+    # dialect cannot parse. Parse these fragments with the dialect we are
+    # generating for, so that nesting works and the emitted SQL stays unchanged.
+    #
     # REGEXP_EXTRACT_ALL produces a list of string segments, alternating between delimiter and non-delimiter segments.
     # We do not know whether the first segment is a delimiter or not, so we check the first character of the string
     # with REGEXP_MATCHES. If the first char is a delimiter, we capitalize even list indexes, otherwise capitalize odd.
@@ -1269,15 +1274,17 @@ def _build_capitalization_sql(
             self.func(
                 "LIST_TRANSFORM",
                 self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                "(seg, idx) -> CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
+                "LAMBDA seg, idx : CASE WHEN idx % 2 = 0 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
             ),
+            dialect="duckdb",
         )
         .else_(
             self.func(
                 "LIST_TRANSFORM",
                 self.func("REGEXP_EXTRACT_ALL", value_to_split, split_regex_sql),
-                "(seg, idx) -> CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
+                "LAMBDA seg, idx : CASE WHEN idx % 2 = 1 THEN UPPER(LEFT(seg, 1)) || LOWER(SUBSTRING(seg, 2)) ELSE seg END",
             ),
+            dialect="duckdb",
         ),
         "''",
     )

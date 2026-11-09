@@ -3806,8 +3806,16 @@ SELECT
             "AVG(AVG(AGG(x) PER (c)) PER (d))",
             "SUM(x) FILTER(WHERE y > 0) PER (c)",
             "SUM(x) OVER w PER (c)",
+            "ARG_MAX(COUNT(DISTINCT u) PER (ds WITH FILL), ds)",
+            "AVG(SUM(x) PER (c, ds WITH FILL))",
+            "AVG(SUM(x) PER (ds WITH FILL FROM 1 TO 10 STEP 1))",
         ):
             self.validate_identity(sql)
+
+        key = parse_one("AVG(SUM(x) PER (c, ds WITH FILL))").find(exp.Per).expressions[1]
+        self.assertIsInstance(key, exp.Ordered)
+        self.assertIsInstance(key.args["with_fill"], exp.WithFill)
+        self.assertEqual(key.this, exp.column("ds"))
 
         per = self.validate_identity(
             "AVG(LAG(AGG(revenue)) OVER (PARTITION BY customer ORDER BY year) PER (customer))"

@@ -5700,11 +5700,12 @@ FROM subquery2""",
         def assert_custom_duckdb_sql(
             query: str,
             *,
+            read_dialects: Iterable[str] = ("bigquery", "snowflake"),
             includes: t.Optional[Iterable[str]] = None,
             excludes: t.Optional[Iterable[str]] = None,
             chr_chars: t.Optional[Iterable[str]] = None,
         ) -> None:
-            for dialect in ("bigquery", "snowflake"):
+            for dialect in read_dialects:
                 with self.subTest(f"DuckDB generation for {query} from {dialect}"):
                     expression = parse_one(query, read=dialect)
                     self.assert_duckdb_sql(
@@ -5714,7 +5715,6 @@ FROM subquery2""",
         assert_custom_duckdb_sql(
             "INITCAP(col, '')", includes=("UPPER(LEFT(",), excludes=("REGEXP_MATCHES(",)
         )
-        assert_custom_duckdb_sql("INITCAP(col, NULL)", includes=("REGEXP_MATCHES(", "REPLACE("))
         assert_custom_duckdb_sql("INITCAP(col, ' ')", includes=("' '",))
         assert_custom_duckdb_sql("INITCAP(col, '@')", includes=("'@'",), excludes=("CHR(",))
         assert_custom_duckdb_sql("INITCAP(col, '_@')", includes=("'_@'",))
@@ -5726,6 +5726,29 @@ FROM subquery2""",
         assert_custom_duckdb_sql(
             "INITCAP(col, (SELECT delimiter FROM settings LIMIT 1))",
             includes=("SELECT delimiter FROM settings", "REPLACE("),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(NULL)",
+            read_dialects=("", "postgres", "snowflake", "bigquery", "duckdb"),
+            includes=("REGEXP_MATCHES(LEFT(NULL, 1),",),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(col, NULL)",
+            includes=("REGEXP_MATCHES(", "REPLACE(NULL,"),
+            excludes=("CONCAT(",),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(INITCAP(col))",
+            read_dialects=("", "postgres", "snowflake", "bigquery", "duckdb"),
+            includes=(
+                "REGEXP_MATCHES(LEFT(ARRAY_TO_STRING(CASE WHEN REGEXP_MATCHES(LEFT(col, 1),",
+                "LIST_TRANSFORM(REGEXP_EXTRACT_ALL(ARRAY_TO_STRING(",
+            ),
+        )
+        assert_custom_duckdb_sql(
+            "INITCAP(INITCAP(col, NULL))",
+            includes=("REGEXP_MATCHES(LEFT(ARRAY_TO_STRING(", "REPLACE(NULL,"),
+            excludes=("CONCAT(",),
         )
 
     def test_initcap_custom_delimiter_warning(self):

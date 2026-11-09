@@ -305,7 +305,7 @@ class SQLiteGenerator(generator.Generator):
         if isinstance(amount, exp.Neg):
             negated = amount.this
         elif isinstance(amount, exp.Literal):
-            text = amount.name
+            text = amount.name.removeprefix("+")
             negated = exp.Literal.string(text[1:] if text.startswith("-") else f"-{text}")
         else:
             negated = exp.Neg(

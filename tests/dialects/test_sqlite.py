@@ -273,6 +273,10 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
+            "SELECT DATE(d, '-2 DAY') FROM t",
+            read={"mysql": "SELECT DATE_SUB(d, INTERVAL '+2' DAY) FROM t"},
+        )
+        self.validate_all(
             "SELECT DATE(d, (-n) || ' DAY') FROM t",
             read={
                 "mysql": "SELECT DATE_SUB(d, INTERVAL n DAY) FROM t",
@@ -289,6 +293,10 @@ class TestSQLite(Validator):
             read={
                 "mysql": "SELECT DATE_SUB(d, INTERVAL -n DAY) FROM t",
             },
+        )
+        self.validate_all(
+            "SELECT DATE(d, (-(SELECT 1)) || ' DAY') FROM t",
+            read={"mysql": "SELECT DATE_SUB(d, INTERVAL (SELECT 1) DAY) FROM t"},
         )
         self.validate_all(
             "SELECT DATE_SUB(d, '1'') ; SELECT 1; --')",

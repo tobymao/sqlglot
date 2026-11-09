@@ -2243,7 +2243,6 @@ class Mod(Expression, Binary):
     arg_types = {"this": True, "expression": True, "safe": False}
 
 
-
 class Mul(Expression, Binary):
     pass
 

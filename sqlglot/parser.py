@@ -7831,8 +7831,6 @@ class Parser:
 
         this: exp.Expr | None
 
-        # PER applies to the whole argument, e.g. MAX(LAG(x) OVER (...) - x PER (c)), but
-        # inside DISTINCT, which modifies the aggregate.
         if self._match(TokenType.DISTINCT):
             this = self.expression(
                 exp.Distinct(

@@ -1,4 +1,4 @@
-from sqlglot import exp, ParseError, parse_one, transpile
+from sqlglot import ErrorLevel, exp, ParseError, parse_one, transpile
 from sqlglot.optimizer.annotate_types import annotate_types, TypeAnnotator
 from sqlglot.schema import MappingSchema
 from tests.dialects.test_dialect import Validator
@@ -6,6 +6,16 @@ from tests.dialects.test_dialect import Validator
 
 class TestRedshift(Validator):
     dialect = "redshift"
+
+    def test_star_except(self):
+        expression = parse_one("SELECT * EXCEPT (a) FROM t", read="bigquery")
+
+        for unsupported_level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+            with self.subTest(unsupported_level=unsupported_level):
+                self.assertEqual(
+                    expression.sql(self.dialect, unsupported_level=unsupported_level),
+                    "SELECT * EXCLUDE (a) FROM t",
+                )
 
     def test_sha2_type(self):
         for bits, expected in (

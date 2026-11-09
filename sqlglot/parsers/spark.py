@@ -117,6 +117,11 @@ class SparkParser(Spark2Parser):
         self._match(TokenType.R_BRACE)
         return self.expression(exp.Placeholder(this=this, widget=True))
 
+    def _parse_substring(self) -> exp.Substring:
+        result = super()._parse_substring()
+        result.set("zero_start", True)
+        return result
+
     FUNCTION_PARSERS = {
         **Spark2Parser.FUNCTION_PARSERS,
         "LISTAGG": lambda self: self._parse_string_agg(),

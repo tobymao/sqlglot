@@ -217,8 +217,8 @@ SELECT r FROM range(3) AS r(range);
 SELECT r AS r FROM RANGE(0, 3) AS r(range);
 
 # dialect: duckdb
-SELECT r.range AS x FROM range(3) AS r(range) ORDER BY SUM(x) OVER ();
-SELECT r.range AS x FROM RANGE(0, 3) AS r(range) ORDER BY SUM(x) OVER ();
+SELECT r.range AS x FROM range(3) AS r ORDER BY SUM(x) OVER ();
+SELECT r.range AS x FROM RANGE(0, 3) AS r ORDER BY SUM(x) OVER ();
 
 # dialect: duckdb
 SELECT range + 1 AS range FROM range(3) AS r;

@@ -595,16 +595,12 @@ def _expand_order_by_and_distinct_on(
                 for col in find_all_in_scope(node, exp.Column):
                     if not col.table:
                         if prefer_column and (tables := using_column_tables.get(col.name)):
-                            if precedence == AliasPrecedence.SOURCE:
-                                for source in scope.selected_sources:
-                                    if source not in tables:
-                                        columns = resolver.get_source_columns(source)
-                                        if col.name in columns:
-                                            raise OptimizeError(f"Ambiguous column: {col.name}")
-                                        if not columns or "*" in columns:
-                                            raise OptimizeError(
-                                                f"Cannot resolve '{col.name}' due to missing source schemas"
-                                            )
+                            if precedence == AliasPrecedence.SOURCE and any(
+                                col.name in resolver.get_source_columns(source)
+                                for source in scope.selected_sources
+                                if source not in tables
+                            ):
+                                raise OptimizeError(f"Ambiguous column: {col.name}")
                             col.replace(
                                 exp.func(
                                     "coalesce", *[exp.column(col.name, table) for table in tables]
@@ -615,10 +611,6 @@ def _expand_order_by_and_distinct_on(
                             col.meta.pop("dot_parts", None)
                         elif prefer_column and col.name in resolver.all_columns:
                             raise OptimizeError(f"Ambiguous column: {col.name}")
-                        elif prefer_column and resolver.has_unknown_sources:
-                            raise OptimizeError(
-                                f"Cannot resolve '{col.name}' due to missing source schemas"
-                            )
 
             if original is not expanded:
                 original.replace(expanded)

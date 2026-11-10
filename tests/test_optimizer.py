@@ -1791,35 +1791,6 @@ class TestOptimizer(unittest.TestCase):
             self.assertEqual(connection.execute(sql).fetchall(), [(2,), (1,)])
             self.assertEqual(connection.execute(qualified.sql("duckdb")).fetchall(), [(2,), (1,)])
 
-        with self.assertRaisesRegex(OptimizeError, "missing source schemas"):
-            qualify(
-                parse_one(
-                    "SELECT 0 AS email FROM t JOIN u USING (email) CROSS JOIN v ORDER BY email || ''"
-                ),
-                schema={"t": {"email": "VARCHAR"}, "u": {"email": "VARCHAR"}},
-                dialect="postgres",
-            )
-
-    def test_qualify_order_by_unknown_source(self):
-        sql = "SELECT 1 AS email FROM t ORDER BY email || ''"
-        for dialect in ("duckdb", "postgres"):
-            with self.subTest(dialect=dialect):
-                with self.assertRaisesRegex(OptimizeError, "missing source schemas"):
-                    qualify(parse_one(sql, dialect=dialect), dialect=dialect)
-
-                qualified = qualify(
-                    parse_one(sql, dialect=dialect),
-                    schema={"t": {"email": "VARCHAR"}},
-                    dialect=dialect,
-                )
-                scope = build_scope(qualified)
-                assert scope is not None
-                self.assertEqual([c.sql() for c in scope.columns], ['"t"."email"'])
-                annotate_types(qualified, schema={"t": {"email": "VARCHAR"}})
-                self.assertTrue(
-                    qualified.args["order"].expressions[0].this.this.is_type(exp.DType.VARCHAR)
-                )
-
     def test_qualify_order_by_alias_in_subquery(self):
         sql = (
             "SELECT id AS email FROM (VALUES (1, 'b'), (2, 'a')) t(id, email) "

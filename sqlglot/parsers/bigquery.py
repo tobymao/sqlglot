@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -8,6 +7,7 @@ from sqlglot.dialects.dialect import (
     binary_from_function,
     build_date_delta_with_interval,
     build_formatted_time,
+    regexp_capture_group_count,
 )
 from sqlglot.helper import seq_get, split_num_words
 from sqlglot.tokens import TokenType
@@ -123,17 +123,14 @@ def _build_parse_datetime(args: list, dialect: Dialect) -> exp.ParseDatetime:
 
 def _build_regexp_extract(expr_type: type[E], default_group: exp.Expr | None = None) -> t.Callable:
     def _builder(args: list, dialect: Dialect) -> E:
-        try:
-            group = re.compile(args[1].name).groups == 1
-        except re.error:
-            group = False
-
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             position=seq_get(args, 2),
             occurrence=seq_get(args, 3),
-            group=exp.Literal.number(1) if group else default_group,
+            group=exp.Literal.number(1)
+            if regexp_capture_group_count(seq_get(args, 1)) == 1
+            else default_group,
             **(
                 {
                     "null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL,

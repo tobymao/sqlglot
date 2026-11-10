@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import logging
+import re
 import string
 import typing as t
 import sys
@@ -2769,6 +2770,15 @@ def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[Builde
         return like_expr
 
     return _builder
+
+
+def regexp_capture_group_count(pattern: exp.Expression | None) -> int | None:
+    if pattern and pattern.is_string:
+        try:
+            return re.compile(pattern.name).groups
+        except re.error:
+            pass
+    return None
 
 
 def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[BuilderArgs, Dialect], E]:

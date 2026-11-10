@@ -508,7 +508,7 @@ class Dialect(metaclass=_Dialect):
     """
 
     SAFE_DIVISION = False
-    """Whether division by zero throws an error (`False`) or returns NULL (`True`)."""
+    """Whether division or modulo by zero throws an error (`False`) or returns NULL (`True`)."""
 
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
@@ -1381,6 +1381,11 @@ DialectType = t.Union[str, Dialect, Type[Dialect], None]
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expr], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
+
+
+def mod_func_sql(self: Generator, expression: exp.Mod) -> str:
+    self.nullif_zero_divisor(expression)
+    return self.func("MOD", expression.this, expression.expression)
 
 
 def bracket_to_element_at_sql(self: Generator, expression: exp.Bracket) -> str:

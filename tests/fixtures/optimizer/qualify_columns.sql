@@ -455,6 +455,44 @@ SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS 
 SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
 SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
 
+# title: Postgres LATERAL subqueries see columns of preceding sources, but not their own or later ones
+# execute: false
+# dialect: postgres
+SELECT s.x AS x FROM (SELECT 2 AS x) AS t, LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS s;
+SELECT s.x AS x FROM (SELECT 2 AS x) AS t, LATERAL (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS s;
+
+# execute: false
+# dialect: postgres
+SELECT l.x AS x FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l;
+SELECT l.x AS x FROM LATERAL (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS l;
+
+# execute: false
+# dialect: postgres
+SELECT l.x AS a, t.x AS b FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l, (SELECT 2 AS x) AS t;
+SELECT l.x AS a, t.x AS b FROM LATERAL (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS l, (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.x AS x FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.x AS x FROM LATERAL (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS l) AS v FROM (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.v AS v FROM LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS l, (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.v AS v FROM LATERAL (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS l, (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres derived tables don't see the columns of their sibling sources
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.v AS r FROM (SELECT 3 AS x) AS u, (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS l) AS r FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.v AS r FROM (SELECT 3 AS x) AS u, (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS l) AS r FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres outer column is left as is when qualifying it would bind to an inner source
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
+
 # title: DuckDB resolves whole-row references to inner table aliases before outer columns
 # execute: false
 # dialect: duckdb

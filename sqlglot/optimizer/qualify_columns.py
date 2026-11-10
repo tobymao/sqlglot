@@ -924,6 +924,25 @@ def _qualify_positional_column(
     return False
 
 
+def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Identifier | None:
+    column_name = column.name
+    scope = resolver.scope
+    shadowing_sources = set(scope.selected_sources)
+
+    for outer_resolver in resolver.outer_resolvers():
+        # Only a subquery sees all of its parent's sources, e.g. a LATERAL's scope holds the ones it can reference
+        if scope.is_subquery and column_name in outer_resolver.all_columns:
+            table = outer_resolver.get_table(column)
+
+            # A source in between with the same name would capture the qualified column
+            return table if table and table.name not in shadowing_sources else None
+
+        scope = outer_resolver.scope
+        shadowing_sources.update(scope.selected_sources)
+
+    return None
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -997,13 +1016,17 @@ def _qualify_columns(
                 and len(column.parts) == 1
                 and column_name in scope.selected_sources
                 and not resolver.has_unknown_sources
-                and not (
-                    resolver.dialect.OUTER_COLUMNS_SHADOW_TABLE_ALIASES
-                    and any(column_name in r.all_columns for r in resolver.outer_resolvers())
-                )
             ):
-                # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
-                scope.replace(column, exp.TableColumn(this=column.this))
+                outer_table = (
+                    _get_outer_column_table(column, resolver)
+                    if resolver.dialect.OUTER_COLUMNS_SHADOW_TABLE_ALIASES
+                    else None
+                )
+                if outer_table:
+                    column.set("table", outer_table)
+                else:
+                    # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
+                    scope.replace(column, exp.TableColumn(this=column.this))
 
     pivots = scope.pivots
 

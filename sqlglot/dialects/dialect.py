@@ -175,6 +175,7 @@ class AliasPrecedence(str, AutoName):
     ALIAS = auto()
     SOURCE = auto()
     GROUPED_SOURCE = auto()
+    MERGED_SOURCE = auto()
 
 
 # "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
@@ -608,8 +609,9 @@ class Dialect(metaclass=_Dialect):
     """Alias lookup policies for HAVING, QUALIFY, ORDER BY and DISTINCT ON.
 
     Unspecified clauses prefer aliases. GROUPED_SOURCE prefers grouped input columns and
-    input columns inside aggregates, then aliases. Standalone ORDER BY / DISTINCT ON names
-    prefer aliases regardless of their clause's expression precedence.
+    input columns inside aggregates, then aliases. MERGED_SOURCE prefers merged USING keys
+    over other input columns. Standalone ORDER BY / DISTINCT ON names prefer aliases
+    regardless of their clause's expression precedence.
     """
 
     ANNOTATE_ALL_SCOPES = False

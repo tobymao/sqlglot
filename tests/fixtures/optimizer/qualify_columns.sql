@@ -217,8 +217,8 @@ SELECT r FROM range(3) AS r(range);
 SELECT r AS r FROM RANGE(0, 3) AS r(range);
 
 # dialect: duckdb
-SELECT r.range AS x FROM range(3) AS r ORDER BY SUM(x) OVER ();
-SELECT r.range AS x FROM RANGE(0, 3) AS r ORDER BY SUM(x) OVER ();
+SELECT r.range AS x FROM range(3) AS r(range) ORDER BY SUM(x) OVER ();
+SELECT r.range AS x FROM RANGE(0, 3) AS r(range) ORDER BY SUM(x) OVER ();
 
 # dialect: duckdb
 SELECT range + 1 AS range FROM range(3) AS r;
@@ -312,6 +312,13 @@ SELECT T.ID AS EMAIL FROM T AS T ORDER BY EMAIL || '';
 # schema: {"t": {"id": "INT", "email": "VARCHAR"}}
 SELECT id AS email FROM t ORDER BY email || '';
 SELECT t.id AS email FROM t AS t ORDER BY email || '';
+
+# title: ClickHouse aggregate arguments retain alias binding despite USING columns
+# dialect: clickhouse
+# execute: false
+# schema: {"t": {"x": "INT", "k": "VARCHAR"}, "u": {"k": "VARCHAR"}}
+SELECT x AS k FROM t JOIN u USING (k) GROUP BY x ORDER BY MAX(k);
+SELECT t.x AS k FROM t AS t JOIN u AS u ON t.k = u.k GROUP BY t.x ORDER BY MAX(k);
 
 # execute: false
 select * from (values (1, 2));

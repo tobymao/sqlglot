@@ -39,6 +39,13 @@ SELECT r.range AS x, ROW_NUMBER() OVER () AS n FROM range(3) AS r QUALIFY x > 1;
 # dialect: duckdb
 SELECT r.x + 1 AS y FROM (SELECT * FROM READ_PARQUET('f')) AS r WHERE y > 1;
 
+# dialect: duckdb
+SELECT 1 AS email FROM READ_PARQUET('f') AS r ORDER BY email || '';
+# dialect: duckdb
+SELECT DISTINCT ON (email || '') 1 AS email FROM READ_PARQUET('f') AS r;
+# dialect: duckdb
+SELECT r.range AS x FROM range(3) AS r ORDER BY SUM(x) OVER ();
+
 -- A source name can also name one of its columns.
 # dialect: duckdb
 SELECT r FROM range(3) AS r;

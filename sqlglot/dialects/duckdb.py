@@ -24,9 +24,9 @@ class DuckDB(Dialect):
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_LIMIT_ALL = True
     COLUMN_ALIAS_PRECEDENCE = {
-        exp.Distinct: AliasPrecedence.SOURCE,
+        exp.Distinct: AliasPrecedence.MERGED_SOURCE,
         exp.Having: AliasPrecedence.GROUPED_SOURCE,
-        exp.Order: AliasPrecedence.SOURCE,
+        exp.Order: AliasPrecedence.MERGED_SOURCE,
         exp.Qualify: AliasPrecedence.SOURCE,
     }
     SUPPORTS_FIXED_SIZE_ARRAYS = True

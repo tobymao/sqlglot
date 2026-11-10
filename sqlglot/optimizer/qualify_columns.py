@@ -430,7 +430,7 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            prefer_column = precedence == AliasPrecedence.SOURCE
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
             if table and precedence == AliasPrecedence.GROUPED_SOURCE:
                 prefer_column = (
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
@@ -589,13 +589,22 @@ def _expand_order_by_and_distinct_on(
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            prefer_column = (
-                resolver.dialect.column_alias_precedence(clause, original) == AliasPrecedence.SOURCE
-            )
+            precedence = resolver.dialect.column_alias_precedence(clause, original)
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
             for node in (original,) if prefer_column else find_all_in_scope(original, exp.AggFunc):
                 for col in find_all_in_scope(node, exp.Column):
                     if not col.table:
-                        if tables := using_column_tables.get(col.name):
+                        if prefer_column and (tables := using_column_tables.get(col.name)):
+                            if precedence == AliasPrecedence.SOURCE:
+                                for source in scope.selected_sources:
+                                    if source not in tables:
+                                        columns = resolver.get_source_columns(source)
+                                        if col.name in columns:
+                                            raise OptimizeError(f"Ambiguous column: {col.name}")
+                                        if not columns or "*" in columns:
+                                            raise OptimizeError(
+                                                f"Cannot resolve '{col.name}' due to missing source schemas"
+                                            )
                             col.replace(
                                 exp.func(
                                     "coalesce", *[exp.column(col.name, table) for table in tables]
@@ -606,6 +615,10 @@ def _expand_order_by_and_distinct_on(
                             col.meta.pop("dot_parts", None)
                         elif prefer_column and col.name in resolver.all_columns:
                             raise OptimizeError(f"Ambiguous column: {col.name}")
+                        elif prefer_column and resolver.has_unknown_sources:
+                            raise OptimizeError(
+                                f"Cannot resolve '{col.name}' due to missing source schemas"
+                            )
 
             if original is not expanded:
                 original.replace(expanded)

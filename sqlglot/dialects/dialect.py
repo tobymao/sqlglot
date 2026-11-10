@@ -173,9 +173,16 @@ class AliasPrecedence(str, AutoName):
     """Lookup precedence for input columns and projection aliases."""
 
     ALIAS = auto()
+    """Prefer aliases, e.g. SELECT a AS b FROM t ORDER BY b sorts by a."""
+
     SOURCE = auto()
+    """Prefer inputs, e.g. SELECT a AS b FROM t ORDER BY b + 1 uses t.b."""
+
     GROUPED_SOURCE = auto()
+    """Prefer grouped inputs or aggregate arguments to aliases, e.g. GROUP BY b HAVING b > 0."""
+
     MERGED_SOURCE = auto()
+    """Merged keys win: t JOIN u USING (b) CROSS JOIN v ORDER BY b + 1 uses the USING key."""
 
 
 # "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in

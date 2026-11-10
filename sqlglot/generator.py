@@ -4693,11 +4693,14 @@ class Generator:
             return self.func("CONCAT", *(exp.cast(e, exp.DType.TEXT) for e in expression.flatten()))
         return self.binary(expression, "||")
 
+    def nullif_zero_divisor(self, expression: exp.Div | exp.Mod) -> None:
+        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
+            divisor = expression.right
+            divisor.replace(exp.Nullif(this=divisor.copy(), expression=exp.Literal.number(0)))
+
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
-
-        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
-            r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
+        self.nullif_zero_divisor(expression)
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
             if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
@@ -4836,6 +4839,7 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
+        self.nullif_zero_divisor(expression)
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         sql = f"{this} {self.maybe_comment(self.MOD_OPERATOR, comments=expression.comments)} {expr}"

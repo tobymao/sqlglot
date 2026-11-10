@@ -779,6 +779,7 @@ class BigQueryGenerator(generator.Generator):
         return self.func("DATE_TRUNC", expression.this, unit_sql, expression.args.get("zone"))
 
     def mod_sql(self, expression: exp.Mod) -> str:
+        self.nullif_zero_divisor(expression)
         this = expression.this
         expr = expression.expression
         return self.func(

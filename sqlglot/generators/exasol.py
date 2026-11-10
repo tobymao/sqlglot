@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
     groupconcat_sql,
+    mod_func_sql,
     no_last_day_sql,
     rename_func,
     strposition_sql,
@@ -356,7 +357,7 @@ class ExasolGenerator(generator.Generator):
             rename_func("EDIT_DISTANCE")
         ),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/mod.htm
-        exp.Mod: rename_func("MOD"),
+        exp.Mod: mod_func_sql,
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/from_posix_time.htm
         exp.UnixToTime: lambda self, e: self.func("FROM_POSIX_TIME", e.this),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/rank.htm

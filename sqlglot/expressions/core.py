@@ -2240,7 +2240,7 @@ class LTE(Expression, Binary, Predicate):
 
 
 class Mod(Expression, Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "safe": False}
 
 
 class Mul(Expression, Binary):

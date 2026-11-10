@@ -977,7 +977,7 @@ class TestHive(Validator):
             write={
                 "spark2": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
                 "spark": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
-                "databricks": "SELECT EXISTS(ARRAY(2, 3), x -> x % 2 = 0)",
+                "databricks": "SELECT EXISTS(ARRAY(2, 3), x -> x % NULLIF(2, 0) = 0)",
             },
         )
 

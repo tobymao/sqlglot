@@ -141,7 +141,7 @@ def build_extract_json_with_path(
     return _builder
 
 
-def build_mod(args: BuilderArgs) -> exp.Mod:
+def build_mod(args: BuilderArgs, dialect: Dialect) -> exp.Mod:
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
 
@@ -149,7 +149,7 @@ def build_mod(args: BuilderArgs) -> exp.Mod:
     this = exp.Paren(this=this) if isinstance(this, exp.Binary) else this
     expression = exp.Paren(this=expression) if isinstance(expression, exp.Binary) else expression
 
-    return exp.Mod(this=this, expression=expression)
+    return exp.Mod(this=this, expression=expression, safe=dialect.SAFE_DIVISION)
 
 
 def build_pad(args: BuilderArgs, is_left: bool = True):
@@ -6703,6 +6703,8 @@ class Parser:
 
             if isinstance(this, exp.Div):
                 this.set("typed", self.dialect.TYPED_DIVISION)
+                this.set("safe", self.dialect.SAFE_DIVISION)
+            elif isinstance(this, exp.Mod):
                 this.set("safe", self.dialect.SAFE_DIVISION)
 
         return this

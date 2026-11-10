@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp, generator
-from sqlglot.dialects.dialect import rename_func
+from sqlglot.dialects.dialect import mod_func_sql
 
 
 class DruidGenerator(generator.Generator):
@@ -25,6 +25,6 @@ class DruidGenerator(generator.Generator):
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
         exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
-        exp.Mod: rename_func("MOD"),
+        exp.Mod: mod_func_sql,
         exp.Array: lambda self, e: f"ARRAY[{self.expressions(e)}]",
     }

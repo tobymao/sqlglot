@@ -2116,6 +2116,39 @@ COMMENT='客户账户表'"""
             },
         )
 
+    def test_safe_mod(self):
+        self.validate_all(
+            "a % b",
+            read={
+                "hive": "a % b",
+                "sqlite": "a % b",
+            },
+            write={
+                "bigquery": "MOD(a, NULLIF(b, 0))",
+                "clickhouse": "a % nullIf(b, 0)",
+                "databricks": "a % NULLIF(b, 0)",
+                "duckdb": "a % NULLIF(b, 0)",
+                "hive": "a % b",
+                "mysql": "a % b",
+                "oracle": "MOD(a, NULLIF(b, 0))",
+                "postgres": "a % NULLIF(b, 0)",
+                "snowflake": "a % NULLIF(b, 0)",
+                "spark": "a % b",
+                "sqlite": "a % b",
+                "starrocks": "a % b",
+                "teradata": "a MOD NULLIF(b, 0)",
+                "trino": "a % NULLIF(b, 0)",
+                "tsql": "a % NULLIF(b, 0)",
+            },
+        )
+        self.validate_all(
+            "MOD(a, b)",
+            write={
+                "mysql": "a % b",
+                "duckdb": "a % NULLIF(b, 0)",
+            },
+        )
+
     def test_timestamp_trunc(self):
         hive_dialects = ("spark", "databricks")
         for dialect in ("postgres", "snowflake", *hive_dialects):

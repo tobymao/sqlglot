@@ -930,15 +930,21 @@ def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Ident
     shadowing_sources = set(scope.selected_sources)
 
     for outer_resolver in resolver.outer_resolvers():
-        # Only a subquery sees all of its parent's sources, e.g. a LATERAL's scope holds the ones it can reference
-        if scope.is_subquery and column_name in outer_resolver.all_columns:
-            table = outer_resolver.get_table(column)
+        source_columns = outer_resolver._get_all_source_columns()
+        # A LATERAL's scope already holds the preceding sources it can reference.
+        if scope.is_subquery:
+            join = scope.expression.find_ancestor(exp.Join, exp.Select)
+            if isinstance(join, exp.Join) and join.parent is outer_resolver.scope.expression:
+                source_columns = outer_resolver._get_available_source_columns(join, join_group=True)
 
-            # A source in between with the same name would capture the qualified column
-            return table if table and table.name not in shadowing_sources else None
+            if any(column_name in columns for columns in source_columns.values()):
+                table = outer_resolver.get_table(column, source_columns)
+
+                # A source in between with the same name would capture the qualified column
+                return table if table and table.name not in shadowing_sources else None
 
         scope = outer_resolver.scope
-        shadowing_sources.update(scope.selected_sources)
+        shadowing_sources.update(source_columns)
 
     return None
 

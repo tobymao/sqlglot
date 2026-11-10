@@ -455,6 +455,30 @@ SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS 
 SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
 SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
 
+# title: Postgres subqueries in JOIN ON cannot reference later sources
+# execute: false
+# dialect: postgres
+SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT x FROM (SELECT NULL::INT AS y) AS x) IS NOT NULL JOIN (SELECT 3 AS x) AS v ON TRUE;
+SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT x AS x FROM (SELECT CAST(NULL AS INT) AS y) AS x) IS NOT NULL JOIN (SELECT 3 AS x) AS v ON TRUE;
+
+# title: Postgres later sources do not make JOIN ON outer columns ambiguous
+# execute: false
+# dialect: postgres
+SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS x) AS "U" ON (SELECT x FROM (SELECT 4 AS y) AS x) = 2 JOIN (SELECT 3 AS x) AS v ON TRUE;
+SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS x) AS "U" ON (SELECT "U".x AS x FROM (SELECT 4 AS y) AS x) = 2 JOIN (SELECT 3 AS x) AS v ON TRUE;
+
+# title: Postgres nested JOIN ON subqueries skip invisible sources when resolving outer columns
+# execute: false
+# dialect: postgres
+SELECT (SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT (SELECT x FROM (SELECT 4 AS y) AS x)) = 5 JOIN (SELECT 3 AS x) AS v ON TRUE) AS r FROM (SELECT 5 AS x) AS w;
+SELECT (SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT (SELECT w.x AS x FROM (SELECT 4 AS y) AS x) AS _col_0) = 5 JOIN (SELECT 3 AS x) AS v ON TRUE) AS r FROM (SELECT 5 AS x) AS w;
+
+# title: Postgres JOIN ON subqueries cannot reference preceding comma-separated join groups
+# execute: false
+# dialect: postgres
+SELECT a.y FROM (SELECT NULL::INT AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
+SELECT a.y AS y FROM (SELECT CAST(NULL AS INT) AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x AS x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
+
 # title: Postgres LATERAL subqueries see columns of preceding sources, but not their own or later ones
 # execute: false
 # dialect: postgres

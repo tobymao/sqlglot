@@ -4055,6 +4055,10 @@ class Generator:
         fmt = self.sql(expression, "format")
         return f"{this} (FORMAT {fmt})"
 
+    def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
+        self.unsupported("Teradata TITLE display headings are not supported")
+        return self.sql(expression, "this")
+
     def _jsonobject_sql(
         self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""
     ) -> str:

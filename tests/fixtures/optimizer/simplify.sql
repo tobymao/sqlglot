@@ -1445,6 +1445,27 @@ DATE_TRUNC(CAST('2023-12-15' AS DATE), WEEK(MONDAY));
 DATE_TRUNC(x, WEEK(MONDAY)) = CAST('2008-11-10' AS DATE);
 DATE_TRUNC(x, WEEK(MONDAY)) = CAST('2008-11-10' AS DATE);
 
+-- A time zone moves the truncation boundaries, so it must not be simplified
+# dialect: bigquery
+TIMESTAMP_TRUNC(CAST('2024-02-10 03:00:00+00' AS TIMESTAMP), DAY, 'America/New_York');
+TIMESTAMP_TRUNC(CAST('2024-02-10 03:00:00+00' AS TIMESTAMP), DAY, 'America/New_York');
+
+# dialect: bigquery
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') >= CAST('2024-01-01 03:00:00' AS TIMESTAMP);
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') >= CAST('2024-01-01 03:00:00' AS TIMESTAMP);
+
+# dialect: bigquery
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') = CAST('2024-01-01 00:00:00' AS TIMESTAMP);
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') = CAST('2024-01-01 00:00:00' AS TIMESTAMP);
+
+# dialect: bigquery
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') IN (CAST('2024-01-01 00:00:00' AS TIMESTAMP));
+TIMESTAMP_TRUNC(x, DAY, 'America/New_York') IN (CAST('2024-01-01 00:00:00' AS TIMESTAMP));
+
+# dialect: postgres
+DATE_TRUNC('DAY', x, 'America/New_York') = CAST('2024-01-01 00:00:00' AS TIMESTAMP);
+DATE_TRUNC('DAY', x, 'America/New_York') = CAST('2024-01-01 00:00:00' AS TIMESTAMP);
+
 -- T-SQL week truncation follows @@DATEFIRST, which defaults to 7 (Sunday)
 # dialect: tsql
 DATETRUNC(WEEK, CAST('2021-12-08' AS DATETIME2));

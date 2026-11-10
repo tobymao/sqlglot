@@ -5510,7 +5510,17 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
 
+        # 'e' with no capture groups: falls back to whole match (group 0)
+        self.validate_all(
+            "REGEXP_SUBSTR('a1b2c3', 'a[0-9]', 1, 1, 'e')",
+            write={
+                "duckdb": "ARRAY_EXTRACT(REGEXP_EXTRACT_ALL('a1b2c3', 'a[0-9]'), 1)",
+                "snowflake": "REGEXP_SUBSTR('a1b2c3', 'a[0-9]', 1, 1, 'e')",
+            },
+        )
+
         # Non-literal flags: group must not be stripped based on identifier name
+        self.validate_identity("REGEXP_SUBSTR(subject, pattern, 1, 1, regex_params)")
         self.validate_all(
             "REGEXP_SUBSTR(subject, pattern, 1, 1, regex_params, 1)",
             write={

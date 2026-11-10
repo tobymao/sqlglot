@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -238,7 +239,14 @@ def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
 
         if not group:
             if parameters and parameters.is_string and "e" in parameters.name:
-                group = exp.Literal.number(1)
+                pattern = seq_get(args, 1)
+                try:
+                    no_groups = (
+                        pattern and pattern.is_string and re.compile(pattern.name).groups == 0
+                    )
+                except re.error:
+                    no_groups = False
+                group = None if no_groups else exp.Literal.number(1)
             else:
                 group = exp.Literal.number(0)
 

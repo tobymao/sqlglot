@@ -206,8 +206,8 @@ def _regexpextract_sql(
 
     # Strip default group to avoid generating unnecessary trailing args:
     # with 'e' flag the default group is 1, without 'e' it's 0
-    if group and (parameters is None or parameters.is_string):
-        has_e = parameters and "e" in parameters.name
+    if group:
+        has_e = parameters and parameters.is_string and "e" in parameters.name
         if group.name == ("1" if has_e else "0"):
             group = None
 

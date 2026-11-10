@@ -3818,6 +3818,11 @@ class DuckDBGenerator(generator.Generator):
         length = expression.expression
         is_binary = _is_binary(arg)
 
+        if expression.args.get("negative_length_returns_empty"):
+            # A negative length returns an empty string. Clamping it to 0 instead of
+            # returning '' directly keeps the result NULL when the input is NULL.
+            length = exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
+
         if is_binary:
             # LEFT/RIGHT(blob, n) becomes UNHEX(LEFT/RIGHT(HEX(blob), n * 2))
             # Each byte becomes 2 hex chars, so multiply length by 2
@@ -3828,14 +3833,6 @@ class DuckDBGenerator(generator.Generator):
             )
         else:
             result = exp.Anonymous(this=func_name, expressions=[arg, length])
-
-        if expression.args.get("negative_length_returns_empty") and not (
-            length.is_int and length.to_py() >= 0
-        ):
-            empty: exp.Expression = exp.Literal.string("")
-            if is_binary:
-                empty = exp.Unhex(this=empty)
-            result = exp.case().when(length < exp.Literal.number(0), empty).else_(result)
 
         return self.sql(result)
 

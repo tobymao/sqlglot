@@ -1098,7 +1098,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT LEFT(x, 2), RIGHT(x, 2)",
             write={
-                "duckdb": "SELECT LEFT(x, 2), RIGHT(x, 2)",
+                "duckdb": "SELECT LEFT(x, CASE WHEN 2 < 0 THEN 0 ELSE 2 END), RIGHT(x, CASE WHEN 2 < 0 THEN 0 ELSE 2 END)",
                 "presto": "SELECT SUBSTR(x, 1, 2), SUBSTR(x, LENGTH(x) - (2 - 1))",
                 "hive": "SELECT SUBSTRING(x, 1, 2), SUBSTRING(x, LENGTH(x) - (2 - 1))",
                 "spark": "SELECT LEFT(x, 2), RIGHT(x, 2)",
@@ -1107,7 +1107,7 @@ TBLPROPERTIES (
         self.validate_all(
             "SELECT LEFT(x, n), RIGHT(x, -1)",
             write={
-                "duckdb": "SELECT CASE WHEN n < 0 THEN '' ELSE LEFT(x, n) END, CASE WHEN -1 < 0 THEN '' ELSE RIGHT(x, -1) END",
+                "duckdb": "SELECT LEFT(x, CASE WHEN n < 0 THEN 0 ELSE n END), RIGHT(x, CASE WHEN -1 < 0 THEN 0 ELSE -1 END)",
                 "spark": "SELECT LEFT(x, n), RIGHT(x, -1)",
             },
         )

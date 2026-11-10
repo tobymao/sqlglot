@@ -957,7 +957,7 @@ class TestMySQL(Validator):
         self.validate_all(
             "SELECT LEFT(x, n), RIGHT(x, -1)",
             write={
-                "duckdb": "SELECT CASE WHEN n < 0 THEN '' ELSE LEFT(x, n) END, CASE WHEN -1 < 0 THEN '' ELSE RIGHT(x, -1) END",
+                "duckdb": "SELECT LEFT(x, CASE WHEN n < 0 THEN 0 ELSE n END), RIGHT(x, CASE WHEN -1 < 0 THEN 0 ELSE -1 END)",
                 "mysql": "SELECT LEFT(x, n), RIGHT(x, -1)",
             },
         )

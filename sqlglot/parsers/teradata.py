@@ -260,7 +260,7 @@ class TeradataParser(parser.Parser):
             and self._next.text.upper() in {"FORMAT", "TITLE"}
         ):
             self._advance()
-            attributes = {}
+            attributes: dict[str, exp.Expr | None] = {}
             while True:
                 attribute = self._curr.text.upper()
                 if self._curr.token_type not in (

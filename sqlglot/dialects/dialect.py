@@ -692,6 +692,15 @@ class Dialect(metaclass=_Dialect):
         SELECT t FROM my_table AS t  -- Returns entire row as a struct
     """
 
+    OUTER_COLUMNS_SHADOW_TABLE_ALIASES = False
+    """
+    Whether a column of an outer query takes precedence over a same-named table alias of the
+    current query, when a table is referenced as a column.
+
+    For example, in Postgres the subquery's `x` is the outer column `t.x`, not the row of `x`:
+        SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 2 AS x) AS t
+    """
+
     SUPPORTS_STRUCT_STAR_EXPANSION = False
     """
     Whether the dialect supports expanding struct fields using star notation (e.g., struct_col.*).

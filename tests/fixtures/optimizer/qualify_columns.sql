@@ -444,6 +444,23 @@ SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK
 WITH t AS (SELECT 1 AS c) SELECT t FROM t;
 WITH t AS (SELECT 1 AS c) SELECT t AS t FROM t AS t;
 
+# title: Postgres resolves outer columns before whole-row references to inner table aliases
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
+
+# title: DuckDB resolves whole-row references to inner table aliases before outer columns
+# execute: false
+# dialect: duckdb
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
 --------------------------------------
 -- Derived tables
 --------------------------------------

@@ -924,6 +924,43 @@ def _qualify_positional_column(
     return False
 
 
+def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Identifier | None:
+    column_name = column.name
+    scope = resolver.scope
+    shadowing_sources = set(scope.selected_sources)
+
+    # Correlated columns can reach this scope from a descendant with shadowing aliases.
+    if id(column) not in scope.column_index:
+        column_scope: Scope | None = next(
+            (inner for inner in scope.traverse() if id(column) in inner.column_index), None
+        )
+        while column_scope and column_scope is not scope:
+            shadowing_sources.update(column_scope.selected_sources)
+            column_scope = column_scope.parent
+
+    for outer_resolver in resolver.outer_resolvers():
+        source_columns = outer_resolver._get_all_source_columns()
+        # A LATERAL's scope already holds the preceding sources it can reference.
+        if scope.is_subquery:
+            join = scope.expression.find_ancestor(exp.Join, exp.Select)
+            if (
+                isinstance(join, exp.Join)
+                and join.find_ancestor(exp.Select) is outer_resolver.scope.expression
+            ):
+                source_columns = outer_resolver._get_available_source_columns(join, join_group=True)
+
+            if any(column_name in columns for columns in source_columns.values()):
+                table = outer_resolver.get_table(column, source_columns)
+
+                # A source in between with the same name would capture the qualified column
+                return table if table and table.name not in shadowing_sources else None
+
+        scope = outer_resolver.scope
+        shadowing_sources.update(source_columns)
+
+    return None
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -998,8 +1035,16 @@ def _qualify_columns(
                 and column_name in scope.selected_sources
                 and not resolver.has_unknown_sources
             ):
-                # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
-                scope.replace(column, exp.TableColumn(this=column.this))
+                outer_table = (
+                    _get_outer_column_table(column, resolver)
+                    if resolver.dialect.OUTER_COLUMNS_SHADOW_TABLE_ALIASES
+                    else None
+                )
+                if outer_table:
+                    column.set("table", outer_table)
+                else:
+                    # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
+                    scope.replace(column, exp.TableColumn(this=column.this))
 
     pivots = scope.pivots
 

@@ -237,9 +237,10 @@ class TeradataParser(parser.Parser):
         if (
             self._next
             and self._next.token_type == TokenType.L_PAREN
-            and self._index + 2 < len(self._tokens)
+            and self._index + 3 < len(self._tokens)
             and self._tokens[self._index + 2].token_type in {TokenType.FORMAT, TokenType.VAR}
             and self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE"}
+            and self._tokens[self._index + 3].token_type != TokenType.L_PAREN
         ):
             return None
 
@@ -263,13 +264,9 @@ class TeradataParser(parser.Parser):
             attributes: dict[str, exp.Expr | None] = {}
             while True:
                 attribute = self._curr.text.upper()
-                if self._curr.token_type not in (
-                    TokenType.FORMAT,
-                    TokenType.VAR,
-                ) or attribute not in {"FORMAT", "TITLE"}:
+                if not self._match_texts(("FORMAT", "TITLE")):
                     self.raise_error("Expected FORMAT or TITLE")
                     break
-                self._advance()
                 if attribute in attributes:
                     self.raise_error(f"Duplicate {attribute} attribute")
                 value = self._parse_string()

@@ -2773,7 +2773,7 @@ def build_like(expr_type: Type[E], not_like: bool = False) -> t.Callable[[Builde
 
 
 def regexp_capture_group_count(pattern: exp.Expression | None) -> int | None:
-    if pattern and pattern.is_string:
+    if pattern and (pattern.is_string or isinstance(pattern, exp.RawString)):
         try:
             return re.compile(pattern.name).groups
         except re.error:

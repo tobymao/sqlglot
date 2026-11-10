@@ -1104,6 +1104,13 @@ TBLPROPERTIES (
                 "spark": "SELECT LEFT(x, 2), RIGHT(x, 2)",
             },
         )
+        self.validate_all(
+            "SELECT LEFT(x, n), RIGHT(x, -1)",
+            write={
+                "duckdb": "SELECT CASE WHEN n < 0 THEN '' ELSE LEFT(x, n) END, CASE WHEN -1 < 0 THEN '' ELSE RIGHT(x, -1) END",
+                "spark": "SELECT LEFT(x, n), RIGHT(x, -1)",
+            },
+        )
         self.validate_identity(
             "SELECT SUBSTR('Spark' FROM 5 FOR 1)", "SELECT SUBSTRING('Spark', 5, 1)"
         )

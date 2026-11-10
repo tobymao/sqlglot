@@ -954,6 +954,13 @@ class TestMySQL(Validator):
 
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT LEFT('str', 2)")
+        self.validate_all(
+            "SELECT LEFT(x, n), RIGHT(x, -1)",
+            write={
+                "duckdb": "SELECT CASE WHEN n < 0 THEN '' ELSE LEFT(x, n) END, CASE WHEN -1 < 0 THEN '' ELSE RIGHT(x, -1) END",
+                "mysql": "SELECT LEFT(x, n), RIGHT(x, -1)",
+            },
+        )
         self.validate_identity("SELECT INSTR('str', 'substr')", "SELECT LOCATE('substr', 'str')")
         self.validate_identity("SELECT UCASE('foo')", "SELECT UPPER('foo')")
         self.validate_identity("SELECT LCASE('foo')", "SELECT LOWER('foo')")

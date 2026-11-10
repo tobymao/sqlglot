@@ -3829,7 +3829,9 @@ class DuckDBGenerator(generator.Generator):
         else:
             result = exp.Anonymous(this=func_name, expressions=[arg, length])
 
-        if expression.args.get("negative_length_returns_empty"):
+        if expression.args.get("negative_length_returns_empty") and not (
+            length.is_int and length.to_py() >= 0
+        ):
             empty: exp.Expression = exp.Literal.string("")
             if is_binary:
                 empty = exp.Unhex(this=empty)

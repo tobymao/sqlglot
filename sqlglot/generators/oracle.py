@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
     groupconcat_sql,
+    mod_func_sql,
     no_ilike_sql,
     nth_value_from_sql,
     rename_func,
@@ -77,7 +78,7 @@ class OracleGenerator(generator.Generator):
         exp.ILike: no_ilike_sql,
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
-        exp.Mod: rename_func("MOD"),
+        exp.Mod: mod_func_sql,
         exp.NthValue: nth_value_from_sql,
         exp.Rand: rename_func("DBMS_RANDOM.VALUE"),
         exp.Select: transforms.preprocess(

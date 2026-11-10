@@ -98,9 +98,19 @@ class TeradataGenerator(generator.Generator):
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 
+    def execute_sql(self, expression: exp.Execute) -> str:
+        if expression.args.get("return_status"):
+            self.unsupported("Teradata EXECUTE does not support a return status")
+        this = self.sql(expression, "this")
+        arguments = f"({self.expressions(expression, flat=True)})" if expression.expressions else ""
+        return f"EXECUTE {this}{arguments}"
+
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         prefix, suffix = ("(", ")") if expression.this else ("", "")
         return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
+
+    def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
+        return f"{self.sql(expression, 'this')} (TITLE {self.sql(expression, 'title')})"
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):

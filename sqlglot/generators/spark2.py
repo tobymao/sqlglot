@@ -142,6 +142,7 @@ class Spark2Generator(HiveGenerator):
         exp.AutoIncrementProperty: exp.Properties.Location.UNSUPPORTED,
         exp.CharacterSetProperty: exp.Properties.Location.UNSUPPORTED,
         exp.CollateProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.OptionsProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
     TS_OR_DS_EXPRESSIONS: t.ClassVar = (
@@ -201,7 +202,7 @@ class Spark2Generator(HiveGenerator):
                 "REGEXP_REPLACE",
                 e.this,
                 e.expression,
-                e.args["replacement"],
+                e.args.get("replacement") or exp.Literal.string(""),
                 e.args.get("position"),
             ),
             exp.Select: transforms.preprocess(
@@ -271,6 +272,9 @@ class Spark2Generator(HiveGenerator):
             return super().fileformatproperty_sql(expression)
 
         return f"USING {expression.name.upper()}"
+
+    def optionsproperty_sql(self, expression: exp.OptionsProperty) -> str:
+        return f"OPTIONS ({self.expressions(expression, flat=True)})"
 
     def altercolumn_sql(self, expression: exp.AlterColumn) -> str:
         if expression.args.get("exists"):

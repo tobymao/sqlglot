@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import tokens
+from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
     UsingColumnOrder,
@@ -17,12 +18,16 @@ class SQLite(Dialect):
     ASCII_ONLY_NORMALIZATION = True
     TYPED_DIVISION = True
     SAFE_DIVISION = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
     INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
@@ -41,6 +46,7 @@ class SQLite(Dialect):
             "INDEXED BY": TokenType.INDEXED_BY,
             "MATCH": TokenType.MATCH,
             "REAL": TokenType.DOUBLE,
+            "REINDEX": TokenType.COMMAND,
         }
 
         KEYWORDS.pop("/*+")

@@ -528,6 +528,7 @@ EXPRESSION_METADATA = {
             exp.DecompressString,
             exp.HexDecodeString,
             exp.Hex,
+            exp.JSONFormat,
             exp.Randstr,
             exp.RegexpExtract,
             exp.RegexpReplace,

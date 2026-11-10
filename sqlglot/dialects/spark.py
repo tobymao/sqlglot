@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import typing as t
 
+from sqlglot import exp
+from sqlglot.dialects.dialect import AliasPrecedence
 from sqlglot.dialects.spark2 import Spark2
 from sqlglot.generators.spark import SparkGenerator
 from sqlglot.parsers.spark import SparkParser
@@ -10,8 +12,11 @@ from sqlglot.typing.spark import EXPRESSION_METADATA
 
 
 class Spark(Spark2):
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        **Spark2.COLUMN_ALIAS_PRECEDENCE,
+        exp.Having: AliasPrecedence.GROUPED_SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_LIMIT_ALL = True
     SUPPORTS_NULL_TYPE = True

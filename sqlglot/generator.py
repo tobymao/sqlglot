@@ -202,6 +202,7 @@ class Generator:
         exp.HeapProperty: lambda *_: "HEAP",
         exp.HybridProperty: lambda *_: "HYBRID",
         exp.IcebergProperty: lambda *_: "ICEBERG",
+        exp.IgnoreGrantsProperty: lambda *_: "IGNORE GRANTS",
         exp.InheritsProperty: lambda self, e: f"INHERITS ({self.expressions(e, flat=True)})",
         exp.InlineLengthColumnConstraint: lambda self, e: f"INLINE LENGTH {self.sql(e, 'this')}",
         exp.InputModelProperty: lambda self, e: f"INPUT{self.sql(e, 'this')}",
@@ -297,6 +298,7 @@ class Generator:
         exp.WithProcedureOptions: lambda self, e: f"WITH {self.expressions(e, flat=True)}",
         exp.WithSchemaBindingProperty: lambda self, e: f"WITH SCHEMA {self.sql(e, 'this')}",
         exp.WithOperator: lambda self, e: f"{self.sql(e, 'this')} WITH {self.sql(e, 'op')}",
+        exp.WithoutRowidProperty: lambda *_: "WITHOUT ROWID",
         exp.ForceProperty: lambda *_: "FORCE",
     }
 
@@ -350,7 +352,7 @@ class Generator:
     # Whether limit and fetch are supported (possible values: "ALL", "LIMIT", "FETCH")
     LIMIT_FETCH = "ALL"
 
-    # Whether limit and fetch allows expresions or just limits
+    # Whether limit and fetch allows expressions or just limits
     LIMIT_ONLY_LITERALS = False
 
     # Whether a table is allowed to be renamed with a db
@@ -745,8 +747,8 @@ class Generator:
         exp.DictRange: exp.Properties.Location.POST_SCHEMA,
         exp.DictProperty: exp.Properties.Location.POST_SCHEMA,
         exp.DynamicProperty: exp.Properties.Location.POST_CREATE,
-        exp.DistKeyProperty: exp.Properties.Location.POST_SCHEMA,
-        exp.DistStyleProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.DistKeyProperty: exp.Properties.Location.UNSUPPORTED,
+        exp.DistStyleProperty: exp.Properties.Location.UNSUPPORTED,
         exp.EmptyProperty: exp.Properties.Location.POST_SCHEMA,
         exp.EncodeProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.EngineProperty: exp.Properties.Location.POST_SCHEMA,
@@ -763,6 +765,7 @@ class Generator:
         exp.HybridProperty: exp.Properties.Location.POST_CREATE,
         exp.InheritsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.IcebergProperty: exp.Properties.Location.POST_CREATE,
+        exp.IgnoreGrantsProperty: exp.Properties.Location.POST_SCHEMA,
         exp.IncludeProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.InteractiveProperty: exp.Properties.Location.UNSUPPORTED,
@@ -782,6 +785,7 @@ class Generator:
         exp.NoPrimaryIndexProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.OnProperty: exp.Properties.Location.POST_SCHEMA,
         exp.OnCommitProperty: exp.Properties.Location.POST_EXPRESSION,
+        exp.OptionsProperty: exp.Properties.Location.UNSUPPORTED,
         exp.Order: exp.Properties.Location.POST_SCHEMA,
         exp.OutputModelProperty: exp.Properties.Location.POST_SCHEMA,
         exp.PartitionedByProperty: exp.Properties.Location.POST_WITH,
@@ -809,7 +813,7 @@ class Generator:
         exp.SharingProperty: exp.Properties.Location.POST_EXPRESSION,
         exp.SequenceProperties: exp.Properties.Location.POST_EXPRESSION,
         exp.TriggerProperties: exp.Properties.Location.POST_EXPRESSION,
-        exp.SortKeyProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.SortKeyProperty: exp.Properties.Location.UNSUPPORTED,
         exp.SqlReadWriteProperty: exp.Properties.Location.POST_SCHEMA,
         exp.SqlSecurityProperty: exp.Properties.Location.POST_SCHEMA,
         exp.StabilityProperty: exp.Properties.Location.POST_SCHEMA,
@@ -835,6 +839,7 @@ class Generator:
         exp.WithProcedureOptions: exp.Properties.Location.POST_SCHEMA,
         exp.WithSchemaBindingProperty: exp.Properties.Location.POST_SCHEMA,
         exp.WithSystemVersioningProperty: exp.Properties.Location.POST_SCHEMA,
+        exp.WithoutRowidProperty: exp.Properties.Location.UNSUPPORTED,
         exp.ForceProperty: exp.Properties.Location.POST_CREATE,
     }
 
@@ -2069,7 +2074,13 @@ class Generator:
         return f"{this} FILTER({where})"
 
     def per_sql(self, expression: exp.Per) -> str:
-        return f"{self.sql(expression, 'this')} PER ({self.expressions(expression, flat=True)})"
+        keys = ", ".join(
+            f"{self.sql(key, 'this')} {self.sql(key, 'with_fill')}"
+            if isinstance(key, exp.Ordered) and key.args.get("with_fill")
+            else self.sql(key)
+            for key in expression.expressions
+        )
+        return f"{self.sql(expression, 'this')} PER ({keys})"
 
     def hint_sql(self, expression: exp.Hint) -> str:
         if not self.QUERY_HINTS:
@@ -4044,6 +4055,10 @@ class Generator:
         fmt = self.sql(expression, "format")
         return f"{this} (FORMAT {fmt})"
 
+    def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
+        self.unsupported("Teradata TITLE display headings are not supported")
+        return self.sql(expression, "this")
+
     def _jsonobject_sql(
         self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""
     ) -> str:
@@ -4682,11 +4697,14 @@ class Generator:
             return self.func("CONCAT", *(exp.cast(e, exp.DType.TEXT) for e in expression.flatten()))
         return self.binary(expression, "||")
 
+    def nullif_zero_divisor(self, expression: exp.Div | exp.Mod) -> None:
+        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
+            divisor = expression.right
+            divisor.replace(exp.Nullif(this=divisor.copy(), expression=exp.Literal.number(0)))
+
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
-
-        if not self.dialect.SAFE_DIVISION and expression.args.get("safe"):
-            r.replace(exp.Nullif(this=r.copy(), expression=exp.Literal.number(0)))
+        self.nullif_zero_divisor(expression)
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
             if not l.is_type(*exp.DataType.REAL_TYPES) and not r.is_type(*exp.DataType.REAL_TYPES):
@@ -4700,8 +4718,8 @@ class Generator:
                 if all(e.is_int or isinstance(e, exp.Cast) for e in (l, r)) and (
                     expression.args.get("safe") or not self.SAFE_INT_DIVISION
                 ):
-                    return self.sql(exp.IntDiv(this=l, expression=r))
-                return self._truncated_div_sql(l, r)
+                    return self.sql(exp.IntDiv(this=l, expression=expression.right))
+                return self._truncated_div_sql(l, expression.right)
 
         return self.binary(expression, "/")
 
@@ -4825,6 +4843,7 @@ class Generator:
         return self.binary(expression, "<=")
 
     def mod_sql(self, expression: exp.Mod) -> str:
+        self.nullif_zero_divisor(expression)
         this = self.sql(expression, "this")
         expr = self.sql(expression, "expression")
         sql = f"{this} {self.maybe_comment(self.MOD_OPERATOR, comments=expression.comments)} {expr}"
@@ -6081,6 +6100,9 @@ class Generator:
         )
 
     def slice_sql(self, expression: exp.Slice) -> str:
+        if "[" in self.dialect.tokenizer_class._IDENTIFIERS:
+            self.unsupported("Slices are not supported")
+
         step = self.sql(expression, "step")
         # An omitted end is written as `-` before a step, since `::` is the cast operator
         end = self.sql(expression.expression) or ("-" if step else "")

@@ -79,9 +79,32 @@ class TeradataParser(parser.Parser):
         TokenType.DATABASE: lambda self: self.expression(
             exp.Use(this=self._parse_table(schema=False))
         ),
+        TokenType.EXECUTE: lambda self: self._parse_execute(),
         TokenType.REPLACE: lambda self: self._parse_create(),
         TokenType.LOCK: lambda self: self._parse_locking_statement(),
     }
+
+    def _parse_execute(self) -> exp.Execute | exp.Command:
+        start = self._prev
+        this = self._parse_table_parts(schema=True)
+        expressions = []
+
+        if self._match(TokenType.L_PAREN) and not self._match(TokenType.R_PAREN):
+            while True:
+                argument = self._parse_assignment()
+                if argument is None:
+                    # Do not discard omitted arguments or replace them with NULL.
+                    return self._parse_as_command(start)
+                expressions.append(argument)
+                if not self._match(TokenType.COMMA):
+                    break
+            self._match_r_paren()
+
+        if self._curr:
+            # Preserve other EXECUTE forms, such as EXECUTE IMMEDIATE.
+            return self._parse_as_command(start)
+
+        return self.expression(exp.Execute(this=this, expressions=expressions))
 
     def _parse_locking_statement(self) -> exp.LockingStatement:
         # Reuse exp.LockingProperty parsing for the lock kind, type etc
@@ -210,15 +233,14 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        # Teradata uses a `(FORMAT <format_string>)` clause after column references to
-        # override the output format. When we see this pattern we do not
-        # parse it as a function call.  The syntax is documented at
-        # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
+        # Column data attributes are not function arguments.
         if (
             self._next
             and self._next.token_type == TokenType.L_PAREN
-            and self._index + 2 < len(self._tokens)
-            and self._tokens[self._index + 2].token_type == TokenType.FORMAT
+            and self._index + 3 < len(self._tokens)
+            and self._tokens[self._index + 2].token_type in {TokenType.FORMAT, TokenType.VAR}
+            and self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE"}
+            and self._tokens[self._index + 3].token_type != TokenType.L_PAREN
         ):
             return None
 
@@ -232,13 +254,35 @@ class TeradataParser(parser.Parser):
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
 
-        if self._match_pair(TokenType.L_PAREN, TokenType.FORMAT):
-            # `(FORMAT <format_string>)` after a column specifies a Teradata format override.
-            # See https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Types-and-Literals/Data-Type-Formats-and-Format-Phrases/FORMAT
-            fmt_string = self._parse_string()
+        while (
+            this
+            and self._curr.token_type == TokenType.L_PAREN
+            and self._next.token_type in {TokenType.FORMAT, TokenType.VAR}
+            and self._next.text.upper() in {"FORMAT", "TITLE"}
+        ):
+            self._advance()
+            attributes: dict[str, exp.Expr | None] = {}
+            while True:
+                attribute = self._curr.text.upper()
+                if not self._match_texts(("FORMAT", "TITLE")):
+                    self.raise_error("Expected FORMAT or TITLE")
+                    break
+                if attribute in attributes:
+                    self.raise_error(f"Duplicate {attribute} attribute")
+                value = self._parse_string()
+                if not value:
+                    self.raise_error(f"Expected string after {attribute}")
+                elif attribute == "TITLE" and not value.is_string:
+                    self.raise_error("Expected string literal after TITLE")
+                attributes[attribute] = value
+                if not self._match(TokenType.COMMA):
+                    break
             self._match_r_paren()
-
-            this = self.expression(exp.FormatPhrase(this=this, format=fmt_string))
+            if "FORMAT" in attributes:
+                this = self.expression(exp.FormatPhrase(this=this, format=attributes["FORMAT"]))
+            if "TITLE" in attributes:
+                this = self.expression(exp.TeradataTitle(this=this, title=attributes["TITLE"]))
+            this = super()._parse_column_ops(this)
 
         return this
 

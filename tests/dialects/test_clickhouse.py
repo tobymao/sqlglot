@@ -1167,6 +1167,32 @@ class TestClickhouse(Validator):
         self.validate_identity("INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))")
         self.validate_identity("SELECT * FROM VALUES ((1), (2), (3))")
 
+        # A multi-row VALUES relation must be parenthesized, otherwise ClickHouse parses it as
+        # the values() table function with a single argument list
+        self.validate_identity(
+            "SELECT * FROM (VALUES (1, 'x'), (2, 'y')) AS t(a, b)",
+            "SELECT * FROM (VALUES ((1), ('x')), ((2), ('y'))) AS t(a, b)",
+        )
+        self.validate_identity("SELECT * FROM (VALUES ((1), ('x')), ((2), ('y'))) AS t(a, b)")
+        self.validate_identity(
+            "SELECT * FROM numbers(1) AS n CROSS JOIN (VALUES (1), (2)) "
+            "SETTINGS joined_subquery_requires_alias = 0",
+            "SELECT * FROM numbers(1) AS n CROSS JOIN (VALUES ((1)), ((2))) "
+            "SETTINGS joined_subquery_requires_alias = 0",
+        )
+        self.validate_identity(
+            "WITH t(a, b) AS (VALUES (1, 'x'), (2, 'y')) SELECT * FROM t",
+            "WITH t(a, b) AS (SELECT * FROM (VALUES ((1), ('x')), ((2), ('y'))) AS _values) SELECT * FROM t",
+        )
+        self.validate_all(
+            "WITH t(a, b) AS (SELECT * FROM (VALUES (1, 'x'), (2, 'y')) AS _values) SELECT * FROM t",
+            read={
+                "duckdb": "WITH t(a, b) AS (VALUES (1, 'x'), (2, 'y')) SELECT * FROM t",
+                "postgres": "WITH t(a, b) AS (VALUES (1, 'x'), (2, 'y')) SELECT * FROM t",
+                "trino": "WITH t(a, b) AS (VALUES (1, 'x'), (2, 'y')) SELECT * FROM t",
+            },
+        )
+
         self.validate_all(
             "SELECT col FROM (SELECT 1 AS col) AS _t",
             read={

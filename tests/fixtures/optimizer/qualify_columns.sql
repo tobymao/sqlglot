@@ -250,6 +250,76 @@ SELECT *, r.x AS x FROM READ_PARQUET('data.parquet') AS r;
 SELECT 1 AS z FROM (SELECT * FROM t) c WHERE z > 0;
 SELECT 1 AS Z FROM (SELECT T.Z AS Z FROM T T) C WHERE C.Z > 0;
 
+# title: Input columns take precedence inside DuckDB ORDER BY expressions
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email LIKE 'a%' DESC, id;
+SELECT t.id AS email FROM t AS t ORDER BY t.email LIKE 'a%' DESC, t.id;
+
+# title: Input columns take precedence inside Postgres ORDER BY expressions
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT t.id AS email FROM t AS t ORDER BY t.email || '';
+
+# title: Parenthesized DuckDB ORDER BY names still reference aliases
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email, (email), 1;
+SELECT t.id AS email FROM t AS t ORDER BY email, (email), email;
+
+# title: Parenthesized Postgres ORDER BY names still reference aliases
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email, (email), 1;
+SELECT t.id AS email FROM t AS t ORDER BY email, (email), email;
+
+# title: Input columns take precedence inside DuckDB DISTINCT ON expressions
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email || '') id AS email FROM t;
+SELECT DISTINCT ON (t.email || '') t.id AS email FROM t AS t;
+
+# title: Input columns take precedence inside Postgres DISTINCT ON expressions
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email || '') id AS email FROM t;
+SELECT DISTINCT ON (t.email || '') t.id AS email FROM t AS t;
+
+# title: Standalone DISTINCT ON names still reference aliases
+# dialect: postgres
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT DISTINCT ON (email) id AS email FROM t;
+SELECT DISTINCT ON (email) t.id AS email FROM t AS t;
+
+# title: Snowflake ORDER BY alias bindings are preserved
+# dialect: snowflake
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT T.ID AS EMAIL FROM T AS T ORDER BY EMAIL || '';
+
+# title: Spark ORDER BY alias bindings are preserved
+# dialect: spark
+# execute: false
+# schema: {"t": {"id": "INT", "email": "VARCHAR"}}
+SELECT id AS email FROM t ORDER BY email || '';
+SELECT t.id AS email FROM t AS t ORDER BY email || '';
+
+# title: ClickHouse aggregate arguments retain alias binding despite USING columns
+# dialect: clickhouse
+# execute: false
+# schema: {"t": {"x": "INT", "k": "VARCHAR"}, "u": {"k": "VARCHAR"}}
+SELECT x AS k FROM t JOIN u USING (k) GROUP BY x ORDER BY MAX(k);
+SELECT t.x AS k FROM t AS t JOIN u AS u ON t.k = u.k GROUP BY t.x ORDER BY MAX(k);
+
 # execute: false
 select * from (values (1, 2));
 SELECT _0._col_0 AS _col_0, _0._col_1 AS _col_1 FROM (VALUES (1, 2)) AS _0(_col_0, _col_1);
@@ -373,6 +443,139 @@ SELECT tbl.first AS first, tbl.second AS second FROM (SELECT 'val' AS col, STACK
 # dialect: postgres
 WITH t AS (SELECT 1 AS c) SELECT t FROM t;
 WITH t AS (SELECT 1 AS c) SELECT t AS t FROM t AS t;
+
+# title: Postgres resolves outer columns before whole-row references to inner table aliases
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS z) AS t;
+
+# title: Postgres subqueries in JOIN ON cannot reference later sources
+# execute: false
+# dialect: postgres
+SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT x FROM (SELECT NULL::INT AS y) AS x) IS NOT NULL JOIN (SELECT 3 AS x) AS v ON TRUE;
+SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT x AS x FROM (SELECT CAST(NULL AS INT) AS y) AS x) IS NOT NULL JOIN (SELECT 3 AS x) AS v ON TRUE;
+
+# title: Postgres later sources do not make JOIN ON outer columns ambiguous
+# execute: false
+# dialect: postgres
+SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS x) AS "U" ON (SELECT x FROM (SELECT 4 AS y) AS x) = 2 JOIN (SELECT 3 AS x) AS v ON TRUE;
+SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS x) AS "U" ON (SELECT "U".x AS x FROM (SELECT 4 AS y) AS x) = 2 JOIN (SELECT 3 AS x) AS v ON TRUE;
+
+# title: Postgres nested JOIN ON subqueries skip invisible sources when resolving outer columns
+# execute: false
+# dialect: postgres
+SELECT (SELECT t.y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT (SELECT x FROM (SELECT 4 AS y) AS x)) = 5 JOIN (SELECT 3 AS x) AS v ON TRUE) AS r FROM (SELECT 5 AS x) AS w;
+SELECT (SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (SELECT (SELECT w.x AS x FROM (SELECT 4 AS y) AS x) AS _col_0) = 5 JOIN (SELECT 3 AS x) AS v ON TRUE) AS r FROM (SELECT 5 AS x) AS w;
+
+# title: Postgres JOIN ON subqueries cannot reference preceding comma-separated join groups
+# execute: false
+# dialect: postgres
+SELECT a.y FROM (SELECT NULL::INT AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
+SELECT a.y AS y FROM (SELECT CAST(NULL AS INT) AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x AS x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
+
+# title: Postgres EXISTS in JOIN ON cannot reference preceding comma-separated sources
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x);
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS(SELECT x AS x FROM (SELECT 1 AS y) AS x);
+
+# title: Postgres EXISTS in a nested join cannot reference sources outside its join group
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x)) ON TRUE;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS(SELECT x AS x FROM (SELECT 1 AS y) AS x)) ON TRUE;
+
+# title: Postgres nested joins resolve visible columns despite matching columns outside the group
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS x) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 4) ON TRUE;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS x) AS w ON (SELECT w.x AS x FROM (SELECT 1 AS y) AS x) = 4) ON TRUE;
+
+# title: Postgres outer columns can come from a nested right join operand
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN ((SELECT 4 AS w) AS w JOIN (SELECT 5 AS x) AS q ON TRUE) ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN ((SELECT 4 AS w) AS w JOIN (SELECT 5 AS x) AS q ON TRUE) ON (SELECT q.x AS x FROM (SELECT 1 AS y) AS x) = 5;
+
+# title: Postgres outer columns can come from a nested left join operand
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, ((SELECT 3 AS z) AS u JOIN (SELECT 5 AS x) AS q ON TRUE) JOIN (SELECT 4 AS w) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, ((SELECT 3 AS z) AS u JOIN (SELECT 5 AS x) AS q ON TRUE) JOIN (SELECT 4 AS w) AS w ON (SELECT q.x AS x FROM (SELECT 1 AS y) AS x) = 5;
+
+# title: Postgres nested joins can resolve columns in an enclosing query
+# execute: false
+# dialect: postgres
+SELECT (SELECT 1 FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5) ON TRUE) AS v FROM (SELECT 5 AS x) AS o;
+SELECT (SELECT 1 AS "1" FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON (SELECT o.x AS x FROM (SELECT 1 AS y) AS x) = 5) ON TRUE) AS v FROM (SELECT 5 AS x) AS o;
+
+# title: Postgres LATERAL subqueries see columns of preceding sources, but not their own or later ones
+# execute: false
+# dialect: postgres
+SELECT s.x AS x FROM (SELECT 2 AS x) AS t, LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS s;
+SELECT s.x AS x FROM (SELECT 2 AS x) AS t, LATERAL (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS s;
+
+# execute: false
+# dialect: postgres
+SELECT l.x AS x FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l;
+SELECT l.x AS x FROM LATERAL (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS l;
+
+# execute: false
+# dialect: postgres
+SELECT l.x AS a, t.x AS b FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l, (SELECT 2 AS x) AS t;
+SELECT l.x AS a, t.x AS b FROM LATERAL (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS l, (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.x AS x FROM LATERAL (SELECT x FROM (SELECT 1 AS y) AS x) AS l) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.x AS x FROM LATERAL (SELECT t.x AS x FROM (SELECT 1 AS y) AS x) AS l) AS v FROM (SELECT 2 AS x) AS t;
+
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.v AS v FROM LATERAL (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS l, (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.v AS v FROM LATERAL (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS l, (SELECT 3 AS x) AS u) AS v FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres derived tables don't see the columns of their sibling sources
+# execute: false
+# dialect: postgres
+SELECT (SELECT l.v AS r FROM (SELECT 3 AS x) AS u, (SELECT x AS v FROM (SELECT 1 AS y) AS x) AS l) AS r FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT l.v AS r FROM (SELECT 3 AS x) AS u, (SELECT t.x AS v FROM (SELECT 1 AS y) AS x) AS l) AS r FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres outer column is left as is when qualifying it would bind to an inner source
+# execute: false
+# dialect: postgres
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
+
+# title: Postgres propagated outer columns respect descendant table aliases
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres propagated outer columns respect aliases between their owning and resolving scopes
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT (SELECT x) FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT (SELECT x AS x) AS _col_0 FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres propagated outer columns ignore aliases in sibling subqueries
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT x) + (SELECT t.y FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT t.x AS x) + (SELECT t.y AS y FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
+# title: DuckDB resolves whole-row references to inner table aliases before outer columns
+# execute: false
+# dialect: duckdb
+SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS t;
 
 --------------------------------------
 -- Derived tables

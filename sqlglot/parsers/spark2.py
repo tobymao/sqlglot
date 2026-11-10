@@ -120,6 +120,19 @@ class Spark2Parser(HiveParser):
         "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
     }
 
+    def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
+        if self._match_text_seq("OPTIONS", "(", advance=False):
+            self._advance()
+            return self.expression(
+                exp.OptionsProperty(
+                    expressions=self._parse_wrapped_csv(
+                        lambda: self._parse_key_value_property(optional=True)
+                    )
+                )
+            )
+
+        return super()._parse_property()
+
     def _parse_drop_column(self) -> exp.Drop | exp.Command | None:
         if not self._match_text_seq("DROP", "COLUMNS"):
             return super()._parse_drop_column()

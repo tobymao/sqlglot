@@ -1,6 +1,49 @@
 Changelog
 =========
 
+## [v30.30.0] - 2026-11-06
+### :boom: BREAKING CHANGES
+- due to [`2609055`](https://github.com/tobymao/sqlglot/commit/26090558386544da0932d78945c24ca97e303e31) - respect input column precedence in HAVING and QUALIFY *(PR [#8898](https://github.com/tobymao/sqlglot/pull/8898) by [@georgesittas](https://github.com/georgesittas))*:
+
+  respect input column precedence in HAVING and QUALIFY (#8898)
+
+
+### :sparkles: New Features
+- [`11bb075`](https://github.com/tobymao/sqlglot/commit/11bb0753404272d35dd82656cdaaf632713f0df6) - **Snowflake**: Fix snowflake TO_CHAR type and update integration tests *(PR [#8900](https://github.com/tobymao/sqlglot/pull/8900) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`5574695`](https://github.com/tobymao/sqlglot/commit/55746950bc05108548b9f3029ebe66fb3ac3903b) - **Bigquery**: Add fix for BQ UNNEST offset type *(PR [#8911](https://github.com/tobymao/sqlglot/pull/8911) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`70315ab`](https://github.com/tobymao/sqlglot/commit/70315ab81b2c3d14f0e14e6abfb81ca47731e070) - **snowflake**: support ignore grants *(PR [#8917](https://github.com/tobymao/sqlglot/pull/8917) by [@asarama](https://github.com/asarama))*
+  - :arrow_lower_right: *addresses issue [#8916](https://github.com/tobymao/sqlglot/issues/8916) opened by [@asarama](https://github.com/asarama)*
+
+### :bug: Bug Fixes
+- [`bd21922`](https://github.com/tobymao/sqlglot/commit/bd219221d26d01c962a99c64bf20f52317d07e80) - **optimizer**: do not hoist subqueries across anonymous function boundaries *(PR [#8884](https://github.com/tobymao/sqlglot/pull/8884) by [@treysp](https://github.com/treysp))*
+- [`20a6349`](https://github.com/tobymao/sqlglot/commit/20a6349f8122fecc98e388e762f8f364d7bfddb7) - **optimizer**: preserve subqueries with anonymous aggregates in query clauses *(PR [#8894](https://github.com/tobymao/sqlglot/pull/8894) by [@georgesittas](https://github.com/georgesittas))*
+- [`87db60b`](https://github.com/tobymao/sqlglot/commit/87db60bfed0b67e1e1cb28fea5568cddc76042d9) - **optimizer**: preserve outer aliases in BY NAME set operations *(commit by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`38fe7c9`](https://github.com/tobymao/sqlglot/commit/38fe7c90bb35c35321037fa4a8df09b4625aa611) - **optimizer**: preserve USING columns on qualified star expansion *(PR [#8893](https://github.com/tobymao/sqlglot/pull/8893) by [@ansh-rohilla](https://github.com/ansh-rohilla))*
+  - :arrow_lower_right: *fixes issue [#8890](https://github.com/tobymao/sqlglot/issues/8890) opened by [@AlexanderNenninger](https://github.com/AlexanderNenninger)*
+- [`0b07964`](https://github.com/tobymao/sqlglot/commit/0b0796435cc284c47e48e87c9c11433f440aef35) - **duckdb**: only treat `_` between two digits as a digit separator [DEEPSEEK] *(PR [#8892](https://github.com/tobymao/sqlglot/pull/8892) by [@inchang-ing](https://github.com/inchang-ing))*
+  - :arrow_lower_right: *fixes issue [#8889](https://github.com/tobymao/sqlglot/issues/8889) opened by [@AlexanderNenninger](https://github.com/AlexanderNenninger)*
+- [`987ce0a`](https://github.com/tobymao/sqlglot/commit/987ce0a8e3f65ce41296dd65433eceab386e350a) - **optimizer**: skip predicate pushdown for set-returning functions *(PR [#8885](https://github.com/tobymao/sqlglot/pull/8885) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`2663e6b`](https://github.com/tobymao/sqlglot/commit/2663e6b3d37a0dec2c7a92b977a8b45d7961eac0) - **optimizer**: Fix pushdown predicates for scalar aggregates *(PR [#8886](https://github.com/tobymao/sqlglot/pull/8886) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`63065da`](https://github.com/tobymao/sqlglot/commit/63065dac2a204ca6b2b4a70ac7ef76b91804a8fc) - **optimizer**: preserve aggregation when pushing predicates into queries with HAVING, ORDER BY *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`3c90c25`](https://github.com/tobymao/sqlglot/commit/3c90c25c06e12070bac56eafb02d44d4bf546cb3) - **duckdb**: distinguish top-n min and max aggregates *(PR [#8896](https://github.com/tobymao/sqlglot/pull/8896) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8888](https://github.com/tobymao/sqlglot/issues/8888) opened by [@AlexanderNenninger](https://github.com/AlexanderNenninger)*
+- [`8604b18`](https://github.com/tobymao/sqlglot/commit/8604b1832612bf2ff3fc8ef359043bc61306fb3a) - **parser**: support TABLE query shorthand *(PR [#8897](https://github.com/tobymao/sqlglot/pull/8897) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8891](https://github.com/tobymao/sqlglot/issues/8891) opened by [@AlexanderNenninger](https://github.com/AlexanderNenninger)*
+- [`2609055`](https://github.com/tobymao/sqlglot/commit/26090558386544da0932d78945c24ca97e303e31) - **optimizer**: respect input column precedence in HAVING and QUALIFY *(PR [#8898](https://github.com/tobymao/sqlglot/pull/8898) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8887](https://github.com/tobymao/sqlglot/issues/8887) opened by [@AlexanderNenninger](https://github.com/AlexanderNenninger)*
+- [`d1a3ab0`](https://github.com/tobymao/sqlglot/commit/d1a3ab0430e0373d614db901ed99d543ea27b6e2) - **optimizer**: avoid quadratic table resolution in pushdown_dnf ([#8906](https://github.com/tobymao/sqlglot/pull/8906)) *(PR [#8908](https://github.com/tobymao/sqlglot/pull/8908) by [@ansh-rohilla](https://github.com/ansh-rohilla))*
+  - :arrow_lower_right: *fixes issue [#8906](https://github.com/tobymao/sqlglot/issues/8906) opened by [@sebastianbreguel](https://github.com/sebastianbreguel)*
+- [`8a0b36a`](https://github.com/tobymao/sqlglot/commit/8a0b36a1229d40e67b42f2c4627bca5306077c02) - **databricks**: drop timestamp precision Databricks doesn't support [CLAUDE] *(PR [#8905](https://github.com/tobymao/sqlglot/pull/8905) by [@ksaiharshavinay](https://github.com/ksaiharshavinay))*
+  - :arrow_lower_right: *fixes issue [#8903](https://github.com/tobymao/sqlglot/issues/8903) opened by [@baruchoxman](https://github.com/baruchoxman)*
+- [`b33976b`](https://github.com/tobymao/sqlglot/commit/b33976b6d5395044dc521ed7efcaba8325cb8c77) - **duckdb**: align Snowflake TIME_SLICE transpilation to epoch origin *(PR [#8899](https://github.com/tobymao/sqlglot/pull/8899) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`509ca56`](https://github.com/tobymao/sqlglot/commit/509ca56b21456f867e353efb7cf15b7a9a662959) - **duckdb**: preserve Snowflake and BigQuery regex extraction semantics *(commit by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`4f4674e`](https://github.com/tobymao/sqlglot/commit/4f4674e9b54f1e519af477e04dc3075f0d0dc13a) - **hive**: support PARTITION BY EXCLUDING in windows *(PR [#8912](https://github.com/tobymao/sqlglot/pull/8912) by [@barakalon](https://github.com/barakalon))*
+- [`79ba138`](https://github.com/tobymao/sqlglot/commit/79ba1384dc19024fae84cf4da9bfb271ecb6c332) - **sqlite**: do not mark DAY unit as unsupported in DATEDIFF *(PR [#8914](https://github.com/tobymao/sqlglot/pull/8914) by [@EduardoAndradeSLima](https://github.com/EduardoAndradeSLima))*
+- [`f511cf1`](https://github.com/tobymao/sqlglot/commit/f511cf1e5aa94aa86f081cdb95ef1627cbc8862f) - **snowflake**: grants property handling *(commit by [@georgesittas](https://github.com/georgesittas))*
+- [`8486881`](https://github.com/tobymao/sqlglot/commit/848688117ba6c5a74f9bf4f1b87b522c693ced22) - **spark**: preserve CREATE TABLE data source options *(PR [#8919](https://github.com/tobymao/sqlglot/pull/8919) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#8918](https://github.com/tobymao/sqlglot/issues/8918) opened by [@1w323](https://github.com/1w323)*
+
+
 ## [v30.29.0] - 2026-11-03
 ### :boom: BREAKING CHANGES
 - due to [`1cbcaf6`](https://github.com/tobymao/sqlglot/commit/1cbcaf65566159b21c77488931f343ae1abac2a1) - preserve row presence when decorrelating scalar aggregates  *(PR [#8851](https://github.com/tobymao/sqlglot/pull/8851) by [@treysp](https://github.com/treysp))*:
@@ -16607,3 +16650,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.26.0]: https://github.com/tobymao/sqlglot/compare/v30.25.0...v30.26.0
 [v30.27.0]: https://github.com/tobymao/sqlglot/compare/v30.26.0...v30.27.0
 [v30.29.0]: https://github.com/tobymao/sqlglot/compare/v30.28.0...v30.29.0
+[v30.30.0]: https://github.com/tobymao/sqlglot/compare/v30.29.0...v30.30.0

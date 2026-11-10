@@ -141,7 +141,7 @@ def build_extract_json_with_path(
     return _builder
 
 
-def build_mod(args: BuilderArgs) -> exp.Mod:
+def build_mod(args: BuilderArgs, dialect: Dialect) -> exp.Mod:
     this = seq_get(args, 0)
     expression = seq_get(args, 1)
 
@@ -149,7 +149,7 @@ def build_mod(args: BuilderArgs) -> exp.Mod:
     this = exp.Paren(this=this) if isinstance(this, exp.Binary) else this
     expression = exp.Paren(this=expression) if isinstance(expression, exp.Binary) else expression
 
-    return exp.Mod(this=this, expression=expression)
+    return exp.Mod(this=this, expression=expression, safe=dialect.SAFE_DIVISION)
 
 
 def build_pad(args: BuilderArgs, is_left: bool = True):
@@ -3030,12 +3030,12 @@ class Parser:
         return self._parse_key_value_property()
 
     def _parse_key_value_property(
-        self, parse_value: t.Callable[[], exp.Expr | None] | None = None
+        self, parse_value: t.Callable[[], exp.Expr | None] | None = None, optional: bool = False
     ) -> exp.Property | None:
         index = self._index
-        key = self._parse_column()
+        key = (self._parse_string() if optional else None) or self._parse_column()
 
-        if not self._match(TokenType.EQ):
+        if not self._match(TokenType.EQ) and not optional:
             self._retreat(index)
             return None
 
@@ -5930,20 +5930,22 @@ class Parser:
         ):
             nulls_first = True
 
-        if self._match_text_seq("WITH", "FILL"):
-            with_fill = self.expression(
-                exp.WithFill(
-                    from_=self._match(TokenType.FROM) and self._parse_bitwise(),
-                    to=self._match_text_seq("TO") and self._parse_bitwise(),
-                    step=self._match_text_seq("STEP") and self._parse_bitwise(),
-                    interpolate=self._parse_interpolate(),
-                )
-            )
-        else:
-            with_fill = None
-
         return self.expression(
-            exp.Ordered(this=this, desc=desc, nulls_first=nulls_first, with_fill=with_fill)
+            exp.Ordered(
+                this=this, desc=desc, nulls_first=nulls_first, with_fill=self._parse_with_fill()
+            )
+        )
+
+    def _parse_with_fill(self) -> exp.WithFill | None:
+        if not self._match_text_seq("WITH", "FILL"):
+            return None
+        return self.expression(
+            exp.WithFill(
+                from_=self._match(TokenType.FROM) and self._parse_bitwise(),
+                to=self._match_text_seq("TO") and self._parse_bitwise(),
+                step=self._match_text_seq("STEP") and self._parse_bitwise(),
+                interpolate=self._parse_interpolate(),
+            )
         )
 
     def _parse_limit_options(self) -> exp.LimitOptions | None:
@@ -6702,6 +6704,8 @@ class Parser:
             if isinstance(this, exp.Div):
                 this.set("typed", self.dialect.TYPED_DIVISION)
                 this.set("safe", self.dialect.SAFE_DIVISION)
+            elif isinstance(this, exp.Mod):
+                this.set("safe", self.dialect.SAFE_DIVISION)
 
         return this
 
@@ -6970,6 +6974,9 @@ class Parser:
                 this = exp.DataType(this=exp.DType.TIMESTAMPLTZ, expressions=expressions)
             elif self._match_text_seq("WITHOUT", "TIME", "ZONE"):
                 maybe_func = False
+                # "TIMESTAMP" has already been mapped to TIMESTAMPTZ token
+                if type_token == TokenType.TIMESTAMPTZ:
+                    type_token = TokenType.TIMESTAMPNTZ
         elif type_token == TokenType.INTERVAL:
             if self._curr.text.upper() in self.dialect.VALID_INTERVAL_UNITS:
                 unit = self._parse_var(upper=True)
@@ -7828,11 +7835,13 @@ class Parser:
 
         if self._match(TokenType.DISTINCT):
             this = self.expression(
-                exp.Distinct(expressions=self._parse_csv(self._parse_disjunction))
+                exp.Distinct(
+                    expressions=self._parse_csv(lambda: self._parse_per(self._parse_disjunction()))
+                )
             )
         else:
             self._match(TokenType.ALL)  # ALL is the default/no-op aggregate modifier (SQL-92)
-            this = self._parse_select_or_expression(alias=alias)
+            this = self._parse_per(self._parse_select_or_expression(alias=alias))
 
         return self._parse_limit(
             self._parse_respect_or_ignore_nulls(
@@ -9001,10 +9010,17 @@ class Parser:
     def _parse_per(self, this: exp.Expr | None) -> exp.Expr | None:
         if self._next.token_type == TokenType.L_PAREN and self._match_text_seq("PER"):
             return self.expression(
-                exp.Per(this=this, expressions=self._parse_wrapped_csv(self._parse_disjunction))
+                exp.Per(this=this, expressions=self._parse_wrapped_csv(self._parse_per_key))
             )
 
         return this
+
+    def _parse_per_key(self) -> exp.Expr | None:
+        this = self._parse_disjunction()
+        with_fill = self._parse_with_fill() if this else None
+        if with_fill is None:
+            return this
+        return self.expression(exp.Ordered(this=this, nulls_first=False, with_fill=with_fill))
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         func = this
@@ -9058,7 +9074,7 @@ class Parser:
             over = None
             self._match(TokenType.ALIAS)
         elif not self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS):
-            return self._parse_per(this)
+            return this
         else:
             over = self._prev.text.upper()
 
@@ -9066,11 +9082,9 @@ class Parser:
             func.pop_comments()
 
         if not self._match(TokenType.L_PAREN):
-            return self._parse_per(
-                self.expression(
-                    exp.Window(this=this, alias=self._parse_id_var(False), over=over),
-                    comments=comments,
-                )
+            return self.expression(
+                exp.Window(this=this, alias=self._parse_id_var(False), over=over),
+                comments=comments,
             )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
@@ -9127,7 +9141,7 @@ class Parser:
         if self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS, advance=False):
             return self._parse_window(window, alias=alias)
 
-        return self._parse_per(window)
+        return window
 
     def _parse_partition_and_order(
         self,

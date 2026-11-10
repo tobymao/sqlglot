@@ -1,6 +1,7 @@
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
@@ -557,6 +558,43 @@ class TestPresto(Validator):
                 "presto": "SELECT WEEK_OF_YEAR(y)",
                 "trino": "SELECT WEEK_OF_YEAR(y)",
             },
+        )
+
+    def test_date_trunc_preserves_input_type(self):
+        # DATE_TRUNC returns the type of its input, but DuckDB's returns TIMESTAMP for a DATE:
+        # https://github.com/duckdb/duckdb/pull/20120
+        for value, data_type, unit in (
+            ("'2024-05-09'", "DATE", "MONTH"),
+            ("'2024-05-09 10:11:12'", "TIMESTAMP", "MONTH"),
+            ("'2024-05-09 10:11:12'", "TIMESTAMP", "HOUR"),
+            ("NULL", "DATE", "MONTH"),
+        ):
+            this = f"CAST({value} AS {data_type})"
+            sql = f"DATE_TRUNC('{unit}', {this})"
+            for dialect in ("presto", "trino", "athena"):
+                with self.subTest(f"{dialect}: {sql}"):
+                    expression = parse_one(sql, read=dialect)
+                    self.assertEqual(expression.sql(dialect), sql)
+                    self.assertEqual(
+                        expression.sql("duckdb"),
+                        f"CAST(DATE_TRUNC('{unit}', {this}) AS {data_type})",
+                    )
+
+        self.validate_all(
+            "DATE_TRUNC('HOUR', CAST('10:11:12' AS TIME))",
+            write={
+                "duckdb": "CAST(DATE_TRUNC('HOUR', CAST('1970-01-01' AS DATE) + CAST('10:11:12' AS TIME)) AS TIME)",
+            },
+        )
+
+        expression = annotate_types(
+            self.parse_one("SELECT DATE_TRUNC('MONTH', t.d) FROM t"),
+            schema={"t": {"d": "DATE"}},
+            dialect="presto",
+        )
+        self.assertEqual(
+            expression.sql("duckdb"),
+            "SELECT CAST(DATE_TRUNC('MONTH', t.d) AS DATE) FROM t",
         )
 
     def test_ddl(self):
@@ -1437,7 +1475,7 @@ MATCH_RECOGNIZE (
             self.assertEqual(s.sql(dialect), json_extract_result)
             self.assertEqual(s.sql(dialect_json_extract_setting), json_extract_result)
 
-            # If the setting is overriden to False, then generate ROW access (dot notation)
+            # If the setting is overridden to False, then generate ROW access (dot notation)
             self.assertEqual(s.sql(dialect_row_access_setting), 'SELECT col.x.y."special string"')
 
     def test_analyze(self):

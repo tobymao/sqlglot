@@ -2240,7 +2240,7 @@ class LTE(Expression, Binary, Predicate):
 
 
 class Mod(Expression, Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "safe": False}
 
 
 class Mul(Expression, Binary):
@@ -2316,6 +2316,28 @@ class FormatPhrase(Expression):
     """
 
     arg_types = {"this": True, "format": True}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
+
+
+class TeradataTitle(Expression):
+    """A Teradata TITLE display heading, which does not rename the expression."""
+
+    arg_types = {"this": True, "title": True}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
 
 
 class Between(Expression, Predicate):

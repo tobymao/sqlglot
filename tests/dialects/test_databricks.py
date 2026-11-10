@@ -6,6 +6,18 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_timestamp_without_time_zone(self):
+        expression = self.parse_one("TIMESTAMP WITHOUT TIME ZONE", into=exp.DataType)
+        self.assertEqual(expression.this, exp.DType.TIMESTAMPNTZ)
+
+        self.validate_all(
+            "CAST(x AS TIMESTAMP(6) WITHOUT TIME ZONE)",
+            write={
+                "databricks": "CAST(x AS TIMESTAMP_NTZ(6))",
+                "duckdb": "CAST(x AS TIMESTAMP(6))",
+            },
+        )
+
     def test_timestamp_precision(self):
         for timestamp_type in ("TIMESTAMP", "TIMESTAMP_NTZ", "TIMESTAMP_LTZ"):
             for precision in range(6, 10):

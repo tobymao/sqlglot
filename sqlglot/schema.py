@@ -408,8 +408,10 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
         new_trie([parts], self.mapping_trie)
-        self._find_cache.pop((normalized_table, True), None)
-        self._find_cache.pop((normalized_table, False), None)
+
+        # A new table can change how partially-qualified names resolve (or make them ambiguous),
+        # so any cached lookup may be stale, not just the one for this table's full path
+        self._find_cache.clear()
 
     def column_names(
         self,

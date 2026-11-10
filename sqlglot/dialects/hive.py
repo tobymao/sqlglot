@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from sqlglot import exp, jsonpath, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
 )
@@ -20,7 +21,10 @@ class Hive(Dialect):
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     CONCAT_WS_COALESCE = True
     ARRAY_AGG_INCLUDES_NULLS = None
     REGEXP_EXTRACT_DEFAULT_GROUP = 1

@@ -110,6 +110,21 @@ def _annotate_concat(self: TypeAnnotator, expression: exp.Concat) -> exp.Concat:
     return annotated
 
 
+def _all_struct_kind(node: exp.Expr) -> bool:
+    # True only if every leaf SELECT of this (possibly nested) UNION is SELECT AS STRUCT.
+    # Iterative, not recursive, since a long UNION chain can exceed the recursion limit.
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        if isinstance(n, exp.SetOperation):
+            stack.append(n.this.unnest())
+            stack.append(n.expression.unnest())
+        elif not (isinstance(n, exp.Select) and n.args.get("kind") == "STRUCT"):
+            return False
+
+    return True
+
+
 def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
     array_args = expression.expressions
 
@@ -148,9 +163,23 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
         # Handle ARRAY(SELECT ... UNION ALL SELECT ...) - set operations
         elif isinstance(unnested, exp.SetOperation):
             col_types = self._get_setop_column_types(unnested)
+
+            if col_types and _all_struct_kind(unnested):
+                # Each branch's row is itself the struct value, not N separate columns
+                field_types = [(name, exp.DataType.build(kind)) for name, kind in col_types]
+
+                if not any(kind.is_type(exp.DType.UNKNOWN) for _, kind in field_types):
+                    projection_type = exp.DataType(
+                        this=exp.DType.STRUCT,
+                        expressions=[
+                            exp.ColumnDef(this=exp.to_identifier(name), kind=kind)
+                            for name, kind in field_types
+                        ],
+                        nested=True,
+                    )
             # For ARRAY constructor, there should only be one projection
             # https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#array
-            if len(col_types) == 1:
+            elif len(col_types) == 1:
                 projection_type = col_types[0][1]
 
         # If we successfully determine a projection type and it's not UNKNOWN, wrap it in ARRAY

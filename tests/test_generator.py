@@ -166,3 +166,20 @@ class TestGenerator(unittest.TestCase):
 
         with self.assertRaises(UnsupportedError):
             expression.sql(dialect="postgres", unsupported_level=ErrorLevel.RAISE)
+
+    def test_unsupported_slice(self):
+        expression = parse_one("SELECT x[1:2] FROM t", read="duckdb")
+
+        for dialect in ("tsql", "fabric", "sqlite", "tableau", "exasol", "dax"):
+            with self.subTest(dialect=dialect):
+                with self.assertLogs(generator_logger, level="WARNING") as logs:
+                    self.assertEqual(expression.sql(dialect=dialect), "SELECT x[1:2] FROM t")
+                self.assertIn("Slices are not supported", logs.output[0])
+
+                with self.assertRaises(UnsupportedError):
+                    expression.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
+        self.assertEqual(
+            expression.sql(dialect="duckdb", unsupported_level=ErrorLevel.RAISE),
+            "SELECT x[1:2] FROM t",
+        )

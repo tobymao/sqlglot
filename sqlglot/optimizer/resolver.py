@@ -33,24 +33,31 @@ class Resolver:
         self._outer_resolvers: list[Resolver] | None = None
         self._select_aliases: set[str] | None = None
 
-    def get_table(self, column: exp.Column | exp.Identifier) -> exp.Identifier | None:
+    def get_table(
+        self,
+        column: exp.Column | exp.Identifier,
+        source_columns: dict[str, Sequence[str]] | None = None,
+    ) -> exp.Identifier | None:
         """
         Get the table for a column or struct root identifier.
 
         Args:
             column: A column or struct root identifier attached to the query AST, so its
                 enclosing scope, joins, and aliases are available during resolution.
+            source_columns: If provided, restrict the lookup to these source columns.
         Returns:
             The table name if it can be found/inferred.
         """
         column_name = column.name
 
-        join_context = self._get_column_join_context(column)
+        join_context = self._get_column_join_context(column) if source_columns is None else None
         is_semi_or_anti_join = join_context is not None and join_context.is_semi_or_anti_join
 
         # A SEMI/ANTI join's own table is excluded from the global lookup below, so skip it here
         table_name = (
-            None if is_semi_or_anti_join else self._get_table_name_from_sources(column_name)
+            None
+            if is_semi_or_anti_join
+            else self._get_table_name_from_sources(column_name, source_columns)
         )
 
         if not table_name and join_context is not None:
@@ -66,6 +73,7 @@ class Resolver:
 
         if (
             not table_name
+            and source_columns is None
             and column_name not in self.all_columns
             and column.find_ancestor(exp.Select) is self.scope.expression
             and not (
@@ -297,7 +305,7 @@ class Resolver:
     def _get_table_name_from_sources(
         self, column_name: str, source_columns: dict[str, Sequence[str]] | None = None
     ) -> str | None:
-        if not source_columns:
+        if source_columns is None:
             # If not supplied, get all sources to calculate unambiguous columns
             if self._unambiguous_columns is None:
                 self._unambiguous_columns = self._get_unambiguous_columns(
@@ -336,7 +344,9 @@ class Resolver:
 
         return None
 
-    def _get_available_source_columns(self, join_ancestor: exp.Join) -> dict[str, Sequence[str]]:
+    def _get_available_source_columns(
+        self, join_ancestor: exp.Join, join_group: bool = False
+    ) -> dict[str, Sequence[str]]:
         """
         Get the source columns that are available at the point where a column is referenced.
 
@@ -353,17 +363,43 @@ class Resolver:
         The unqualified column `c` is not ambiguous if no other sources up until that
         join i.e t_1, ..., t_n, contain a column named `c`.
 
-        """
-        args = self.scope.expression.args
+        With join_group=True, use the enclosing join group and treat comma joins as boundaries.
 
-        # Collect tables in order: FROM clause tables + joined tables up to current join
-        from_name = args["from_"].alias_or_name
-        available_sources = {from_name: self.get_source_columns(from_name)}
+        """
+        expression = join_ancestor.parent if join_group else self.scope.expression
+        assert expression is not None
+        args = expression.args
+
+        # Collect the sources visible up to the current join.
+        from_ = args.get("from_")
+        sources = [from_.this if from_ else expression]
 
         for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
+            if join_group and not (
+                join.args.get("on")
+                or join.args.get("using")
+                or join.method
+                or join.side
+                or join.kind
+            ):
+                sources.clear()
+
             # An earlier SEMI/ANTI join's table is only visible within its own ON clause
             if join is join_ancestor or not join.is_semi_or_anti_join:
-                available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+                sources.append(join.this)
+
+        available_sources = {}
+        while sources:
+            source = sources.pop()
+            if name := source.alias_or_name:
+                available_sources[name] = self.get_source_columns(name)
+            elif isinstance(source, exp.Subquery):
+                sources.append(source.this)
+                sources.extend(
+                    join.this
+                    for join in source.this.args.get("joins") or []
+                    if not join.is_semi_or_anti_join
+                )
 
         return available_sources
 

@@ -33,6 +33,13 @@ def _build_approx_percentile(args: list) -> exp.Expr:
     return exp.ApproxQuantile.from_arg_list(args)
 
 
+def _build_date_trunc(args: list) -> exp.DateTrunc | exp.TimestampTrunc:
+    # Presto/Trino DATE_TRUNC returns the type of its input
+    trunc = date_trunc_to_time(args)
+    trunc.set("input_type_preserved", True)
+    return trunc
+
+
 def _build_from_unixtime(args: list) -> exp.Expr:
     if len(args) == 3:
         return exp.UnixToTime(
@@ -94,7 +101,7 @@ class PrestoParser(parser.Parser):
         ),
         "DATE_FORMAT": build_formatted_time(exp.TimeToStr),
         "DATE_PARSE": build_formatted_time(exp.StrToTime),
-        "DATE_TRUNC": date_trunc_to_time,
+        "DATE_TRUNC": _build_date_trunc,
         "DAY_OF_WEEK": exp.DayOfWeekIso.from_arg_list,
         "DOW": exp.DayOfWeekIso.from_arg_list,
         "DOY": exp.DayOfYear.from_arg_list,

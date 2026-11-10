@@ -967,6 +967,15 @@ class Simplifier:
             if any(isinstance(e, exp.Is) and e.args.get("negate") for e in (left, right)):
                 return None
 
+            # A pair can only combine below if both are ranges in the same direction or, under AND,
+            # if they are comparisons of different kinds. Bail out early otherwise, so that long
+            # chains like x = 1 OR x = 2 OR ... skip the costly operand matching for every pair.
+            same_direction = (isinstance(left, self.LT_LTE) and isinstance(right, self.LT_LTE)) or (
+                isinstance(left, self.GT_GTE) and isinstance(right, self.GT_GTE)
+            )
+            if not same_direction and (or_ or left.__class__ is right.__class__):
+                return None
+
             ll, lr = left.this, left.expression
             rl, rr = right.this, right.expression
 
@@ -1508,7 +1517,11 @@ class Simplifier:
         return expression
 
     def _is_datetrunc_predicate(self, left: exp.Expr, right: exp.Expr) -> bool:
-        return isinstance(left, self.DATETRUNCS) and _is_date_literal(right)
+        return (
+            isinstance(left, self.DATETRUNCS)
+            and not left.args.get("zone")
+            and _is_date_literal(right)
+        )
 
     @annotate_types_on_change
     @catch(ModuleNotFoundError, UnsupportedUnit)
@@ -1524,7 +1537,7 @@ class Simplifier:
                 else extract_type(this)
             )
             date = extract_date(this)
-            if date and expression.unit:
+            if date and expression.unit and not expression.args.get("zone"):
                 return date_literal(
                     datetime_floor(date, _trunc_unit(expression.unit, self.dialect), self.dialect),
                     trunc_type,

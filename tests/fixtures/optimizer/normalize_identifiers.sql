@@ -78,6 +78,11 @@ SELECT @X;
 SELECT `foo`, `BaR` FROM baz CROSS JOIN `bla` CROSS JOIN bloo;
 SELECT `FOO`, `BAR` FROM BAZ CROSS JOIN `BLA` CROSS JOIN BLOO;
 
+# title: case_insensitive_except_tables keeps qualified table names' case in any dialect
+# dialect: trino,normalization_strategy=case_insensitive_except_tables
+WITH Cte AS (SELECT 1) SELECT o.Amount, "Foo" FROM "my-proj".Sales.Orders AS O CROSS JOIN Cte;
+WITH cte AS (SELECT 1) SELECT o.amount, "foo" FROM "my-proj".Sales.Orders AS o CROSS JOIN cte;
+
 # title: duckdb only normalizes ascii characters
 # dialect: duckdb
 SELECT "FoÄ" FROM "BaÜ";
@@ -107,3 +112,7 @@ SELECT `foä` FROM `baü`;
 # dialect: sqlite
 SELECT "FoÄ" FROM "BaÜ";
 SELECT "foÄ" FROM "baÜ";
+
+# dialect: teradata
+SELECT "FOO" FROM BAR;
+SELECT "foo" FROM bar;

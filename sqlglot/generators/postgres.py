@@ -318,6 +318,12 @@ class PostgresGenerator(generator.Generator):
 
         return sql
 
+    def star_sql(self, expression: exp.Star) -> str:
+        if self.STAR_EXCEPT == "EXCEPT" and expression.args.get("except_"):
+            self.unsupported("PostgreSQL does not support EXCEPT in the SELECT projection")
+
+        return super().star_sql(expression)
+
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
         exp.DType.TINYINT: "SMALLINT",
@@ -397,7 +403,7 @@ class PostgresGenerator(generator.Generator):
             "REGEXP_REPLACE",
             e.this,
             e.expression,
-            e.args.get("replacement"),
+            e.args.get("replacement") or exp.Literal.string(""),
             e.args.get("position"),
             e.args.get("occurrence"),
             regexp_replace_global_modifier(e),

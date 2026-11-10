@@ -151,6 +151,10 @@ class NormalizationStrategy(str, AutoName):
     CASE_INSENSITIVE_UPPERCASE = auto()
     """Always case-insensitive (uppercase), regardless of quotes."""
 
+    CASE_INSENSITIVE_EXCEPT_TABLES = auto()
+    """Case-insensitive (lowercase) regardless of quotes, except table and UDF names, which are
+    case-sensitive, e.g. BigQuery's."""
+
 
 class UsingColumnOrder(str, AutoName):
     """Where star expansion places the columns of a `USING` or `NATURAL` join."""
@@ -163,6 +167,22 @@ class UsingColumnOrder(str, AutoName):
 
     IN_PLACE = auto()
     """Where the left table has them (e.g. DuckDB)."""
+
+
+class AliasPrecedence(str, AutoName):
+    """Lookup precedence for input columns and projection aliases."""
+
+    ALIAS = auto()
+    """Prefer aliases, e.g. SELECT a AS b FROM t ORDER BY b sorts by a."""
+
+    SOURCE = auto()
+    """Prefer inputs, e.g. SELECT a AS b FROM t ORDER BY b + 1 uses t.b."""
+
+    GROUPED_SOURCE = auto()
+    """Prefer grouped inputs or aggregate arguments to aliases, e.g. GROUP BY b HAVING b > 0."""
+
+    MERGED_SOURCE = auto()
+    """Merged keys win: t JOIN u USING (b) CROSS JOIN v ORDER BY b + 1 uses the USING key."""
 
 
 # "Strict" dialects (e.g. modern Hive, Spark 3+) map their zero-padded MM/dd/HH/hh/mm/ss to these in
@@ -488,7 +508,7 @@ class Dialect(metaclass=_Dialect):
     """
 
     SAFE_DIVISION = False
-    """Whether division by zero throws an error (`False`) or returns NULL (`True`)."""
+    """Whether division or modulo by zero throws an error (`False`) or returns NULL (`True`)."""
 
     CONCAT_COALESCE = False
     """A `NULL` arg in `CONCAT` yields `NULL` by default, but in some dialects it yields an empty string."""
@@ -592,11 +612,14 @@ class Dialect(metaclass=_Dialect):
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
-    """Whether input columns take precedence over projection aliases in HAVING and QUALIFY."""
+    COLUMN_ALIAS_PRECEDENCE: dict[Type[exp.Expr], AliasPrecedence] = {}
+    """Alias lookup policies for HAVING, QUALIFY, ORDER BY and DISTINCT ON.
 
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
-    """Whether HAVING aliases override ungrouped input columns outside aggregate functions."""
+    Unspecified clauses prefer aliases. GROUPED_SOURCE prefers grouped input columns and
+    input columns inside aggregates, then aliases. MERGED_SOURCE prefers merged USING keys
+    over other input columns. Standalone ORDER BY / DISTINCT ON names prefer aliases
+    regardless of their clause's expression precedence.
+    """
 
     ANNOTATE_ALL_SCOPES = False
     """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
@@ -667,6 +690,15 @@ class Dialect(metaclass=_Dialect):
 
     For example, in BigQuery:
         SELECT t FROM my_table AS t  -- Returns entire row as a struct
+    """
+
+    OUTER_COLUMNS_SHADOW_TABLE_ALIASES = False
+    """
+    Whether a column of an outer query takes precedence over a same-named table alias of the
+    current query, when a table is referenced as a column.
+
+    For example, in Postgres the subquery's `x` is the outer column `t.x`, not the row of `x`:
+        SELECT (SELECT x FROM (SELECT 1 AS y) AS x) FROM (SELECT 2 AS x) AS t
     """
 
     SUPPORTS_STRUCT_STAR_EXPANSION = False
@@ -1152,6 +1184,18 @@ class Dialect(metaclass=_Dialect):
         # Does not currently take dialect state into account
         return hash(type(self))
 
+    def column_alias_precedence(
+        self, clause: exp.Expr, expression: exp.Expr | None = None
+    ) -> AliasPrecedence:
+        """Resolve clause precedence, accounting for standalone output references."""
+        if (
+            isinstance(clause, (exp.Order, exp.Distinct))
+            and expression is not None
+            and isinstance(expression.unnest(), exp.Column)
+        ):
+            return AliasPrecedence.ALIAS
+        return self.COLUMN_ALIAS_PRECEDENCE.get(type(clause), AliasPrecedence.ALIAS)
+
     def normalize_identifier(self, expression: E) -> E:
         """
         Transforms an identifier in a way that resembles how it'd be resolved by this dialect.
@@ -1171,41 +1215,63 @@ class Dialect(metaclass=_Dialect):
         SQLGlot aims to understand and handle all of these different behaviors gracefully, so
         that it can analyze queries in the optimizer and successfully capture their semantics.
         """
-        if (
-            isinstance(expression, exp.Identifier)
-            and self.normalization_strategy is not NormalizationStrategy.CASE_SENSITIVE
-            and (
-                not expression.quoted
-                or self.normalization_strategy
-                in (
-                    NormalizationStrategy.CASE_INSENSITIVE,
-                    NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-                )
-            )
-        ):
-            if self.normalization_strategy in (
-                NormalizationStrategy.UPPERCASE,
-                NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
-            ):
-                normalized = (
-                    expression.this.translate(ASCII_UPPER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.upper()
-                )
-            else:
-                normalized = (
-                    expression.this.translate(ASCII_LOWER)
-                    if self.ASCII_ONLY_NORMALIZATION
-                    else expression.this.lower()
-                )
+        if not isinstance(expression, exp.Identifier):
+            return expression
 
-            expression.set("this", normalized)
+        strategy = self.normalization_strategy
+        if strategy is NormalizationStrategy.CASE_SENSITIVE:
+            return expression
+
+        if strategy is NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES:
+            parent = expression.parent
+            while isinstance(parent, exp.Dot):
+                parent = parent.parent
+
+            # Table and UDF names are case-sensitive. Tables are detected by whether they're
+            # qualified, which is generally correct for BigQuery, whose tables must be qualified
+            # with at least a dataset, unless @@dataset_id is set.
+            if (
+                isinstance(parent, exp.UserDefinedFunction)
+                or (
+                    isinstance(parent, exp.Table)
+                    and parent.db
+                    and (parent.meta_get("quoted_table") or not parent.meta_get("maybe_column"))
+                )
+                or expression.meta_get("is_table")
+            ):
+                return expression
+        elif expression.quoted and strategy not in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+        ):
+            return expression
+
+        if strategy in (
+            NormalizationStrategy.UPPERCASE,
+            NormalizationStrategy.CASE_INSENSITIVE_UPPERCASE,
+        ):
+            normalized = (
+                expression.this.translate(ASCII_UPPER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.upper()
+            )
+        else:
+            normalized = (
+                expression.this.translate(ASCII_LOWER)
+                if self.ASCII_ONLY_NORMALIZATION
+                else expression.this.lower()
+            )
+
+        expression.set("this", normalized)
 
         return expression
 
     def case_sensitive(self, text: str) -> bool:
         """Checks if text contains any case sensitive characters, based on the dialect's rules."""
-        if self.normalization_strategy is NormalizationStrategy.CASE_INSENSITIVE:
+        if self.normalization_strategy in (
+            NormalizationStrategy.CASE_INSENSITIVE,
+            NormalizationStrategy.CASE_INSENSITIVE_EXCEPT_TABLES,
+        ):
             return False
 
         unsafe = (
@@ -1324,6 +1390,11 @@ DialectType = t.Union[str, Dialect, Type[Dialect], None]
 
 def rename_func(name: str) -> t.Callable[[Generator, exp.Expr], str]:
     return lambda self, expression: self.func(name, *flatten(expression.args.values()))
+
+
+def mod_func_sql(self: Generator, expression: exp.Mod) -> str:
+    self.nullif_zero_divisor(expression)
+    return self.func("MOD", expression.this, expression.expression)
 
 
 def bracket_to_element_at_sql(self: Generator, expression: exp.Bracket) -> str:
@@ -2086,7 +2157,10 @@ def regexp_extract_sql(
 @unsupported_args("position", "occurrence", "modifiers")
 def regexp_replace_sql(self: Generator, expression: exp.RegexpReplace) -> str:
     return self.func(
-        "REGEXP_REPLACE", expression.this, expression.expression, expression.args["replacement"]
+        "REGEXP_REPLACE",
+        expression.this,
+        expression.expression,
+        expression.args.get("replacement") or exp.Literal.string(""),
     )
 
 

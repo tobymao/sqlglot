@@ -769,6 +769,19 @@ class ClickHouseGenerator(generator.Generator):
         else:
             values_as_table = True
 
+        # An unparenthesized VALUES in FROM is the values() table function, which takes a single
+        # argument list, so a multi-row VALUES relation must be parenthesized to parse
+        if (
+            values_as_table
+            and len(expression.expressions) > 1
+            and (alias or isinstance(expression.parent, (exp.From, exp.Join, exp.Table)))
+        ):
+            values = f"(VALUES{self.seg('')}{self.expressions(expression)})"
+            values = self.query_modifiers(expression, values)
+            pivots = self.expressions(expression, key="pivots", sep="", flat=True)
+            alias_sql = self.sql(alias)
+            return f"{values} AS {alias_sql}{pivots}" if alias_sql else f"{values}{pivots}"
+
         return super().values_sql(expression, values_as_table=values_as_table)
 
     def timestamptrunc_sql(self, expression: exp.DateTrunc | exp.TimestampTrunc) -> str:

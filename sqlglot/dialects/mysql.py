@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import tokens
+from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
     UsingColumnOrder,
@@ -31,8 +32,10 @@ class MySQL(Dialect):
     CONCAT_WS_COALESCE = True
     SUPPORTS_USER_DEFINED_TYPES = False
     SAFE_DIVISION = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.GROUPED_SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
     LEAST_GREATEST_IGNORES_NULLS = False
 

@@ -6,7 +6,7 @@ import typing as t
 from collections import Counter
 
 from sqlglot import alias, exp
-from sqlglot.dialects.dialect import Dialect, DialectType, UsingColumnOrder
+from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
@@ -131,7 +131,7 @@ def qualify_columns(
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, using_column_tables)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -390,6 +390,7 @@ def _expand_alias_refs(
         if not node or (expand_only_groupby and not is_group_by):
             return
 
+        precedence = dialect.column_alias_precedence(node)
         for column in walk_in_scope(node, prune=lambda node: node.is_star):
             if not isinstance(column, exp.Column):
                 continue
@@ -429,8 +430,8 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            prefer_column = dialect.PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY
-            if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
+            if table and precedence == AliasPrecedence.GROUPED_SOURCE:
                 prefer_column = (
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
                     or (table.name, column.name) in grouped_columns
@@ -502,8 +503,8 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("group"), literal_index=True)
 
     if (
-        dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS
-        and expression.args.get("having")
+        (having := expression.args.get("having"))
+        and dialect.column_alias_precedence(having) == AliasPrecedence.GROUPED_SOURCE
         and (group := expression.args.get("group"))
     ):
         # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
@@ -555,7 +556,9 @@ def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, using_column_tables: dict[str, dict[str, t.Any]]
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -567,9 +570,11 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     expr: exp.Expr = expression
 
     for modifier_key in ("order", "distinct"):
-        modifier = expr.args.get(modifier_key)
-        if isinstance(modifier, exp.Distinct):
-            modifier = modifier.args.get("on")
+        clause = expr.args.get(modifier_key)
+        if not isinstance(clause, exp.Expr):
+            continue
+
+        modifier = clause.args.get("on") if isinstance(clause, exp.Distinct) else clause
 
         if not isinstance(modifier, exp.Expr):
             continue
@@ -584,12 +589,28 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            for agg in original.find_all(exp.AggFunc):
-                for col in agg.find_all(exp.Column):
+            precedence = resolver.dialect.column_alias_precedence(clause, original)
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
+            for node in (original,) if prefer_column else find_all_in_scope(original, exp.AggFunc):
+                for col in find_all_in_scope(node, exp.Column):
                     if not col.table:
-                        if table := resolver.get_table(col):
+                        if prefer_column and (tables := using_column_tables.get(col.name)):
+                            if precedence == AliasPrecedence.SOURCE and any(
+                                col.name in resolver.get_source_columns(source)
+                                for source in scope.selected_sources
+                                if source not in tables
+                            ):
+                                raise OptimizeError(f"Ambiguous column: {col.name}")
+                            col.replace(
+                                exp.func(
+                                    "coalesce", *[exp.column(col.name, table) for table in tables]
+                                )
+                            )
+                        elif table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
+                        elif prefer_column and col.name in resolver.all_columns:
+                            raise OptimizeError(f"Ambiguous column: {col.name}")
 
             if original is not expanded:
                 original.replace(expanded)
@@ -604,6 +625,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                     if not _same_dot_parts(node, replacement.this):
                         continue
                     node.replace(exp.column(replacement.alias_or_name))
+
+        scope.clear_column_cache()
 
 
 def _same_dot_parts(left: exp.Expr, right: exp.Expr) -> bool:
@@ -901,6 +924,43 @@ def _qualify_positional_column(
     return False
 
 
+def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Identifier | None:
+    column_name = column.name
+    scope = resolver.scope
+    shadowing_sources = set(scope.selected_sources)
+
+    # Correlated columns can reach this scope from a descendant with shadowing aliases.
+    if id(column) not in scope.column_index:
+        column_scope: Scope | None = next(
+            (inner for inner in scope.traverse() if id(column) in inner.column_index), None
+        )
+        while column_scope and column_scope is not scope:
+            shadowing_sources.update(column_scope.selected_sources)
+            column_scope = column_scope.parent
+
+    for outer_resolver in resolver.outer_resolvers():
+        source_columns = outer_resolver._get_all_source_columns()
+        # A LATERAL's scope already holds the preceding sources it can reference.
+        if scope.is_subquery:
+            join = scope.expression.find_ancestor(exp.Join, exp.Select)
+            if (
+                isinstance(join, exp.Join)
+                and join.find_ancestor(exp.Select) is outer_resolver.scope.expression
+            ):
+                source_columns = outer_resolver._get_available_source_columns(join, join_group=True)
+
+            if any(column_name in columns for columns in source_columns.values()):
+                table = outer_resolver.get_table(column, source_columns)
+
+                # A source in between with the same name would capture the qualified column
+                return table if table and table.name not in shadowing_sources else None
+
+        scope = outer_resolver.scope
+        shadowing_sources.update(source_columns)
+
+    return None
+
+
 def _qualify_columns(
     scope: Scope,
     resolver: Resolver,
@@ -975,8 +1035,16 @@ def _qualify_columns(
                 and column_name in scope.selected_sources
                 and not resolver.has_unknown_sources
             ):
-                # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
-                scope.replace(column, exp.TableColumn(this=column.this))
+                outer_table = (
+                    _get_outer_column_table(column, resolver)
+                    if resolver.dialect.OUTER_COLUMNS_SHADOW_TABLE_ALIASES
+                    else None
+                )
+                if outer_table:
+                    column.set("table", outer_table)
+                else:
+                    # BigQuery and Postgres allow tables to be referenced as columns, treating them as structs/records
+                    scope.replace(column, exp.TableColumn(this=column.this))
 
     pivots = scope.pivots
 

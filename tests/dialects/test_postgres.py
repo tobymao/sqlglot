@@ -1,4 +1,4 @@
-from sqlglot import ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -8,6 +8,22 @@ from tests.dialects.test_dialect import Validator
 class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
+
+    def test_regexp_replace_omitted_replacement(self):
+        for sql, expected in (
+            ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '', 'g')"),
+            ("REGEXP_REPLACE(subject, pattern)", "REGEXP_REPLACE(subject, pattern, '', 'g')"),
+            (
+                "REGEXP_REPLACE(subject, pattern, NULL)",
+                "REGEXP_REPLACE(subject, pattern, NULL, 'g')",
+            ),
+            (
+                "REGEXP_REPLACE(subject, pattern, replacement)",
+                "REGEXP_REPLACE(subject, pattern, replacement, 'g')",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(expected, read={"oracle": sql})
 
     def test_table_query(self):
         for sql in ("TABLE ONLY t", "TABLE ONLY (t)"):
@@ -22,6 +38,20 @@ class TestPostgres(Validator):
             "TABLE t ORDER BY x OFFSET 1 FETCH FIRST 1 ROW ONLY",
             "SELECT * FROM t ORDER BY x OFFSET 1 FETCH FIRST 1 ROWS ONLY",
         )
+
+    def test_star_except(self):
+        expression = parse_one("SELECT * EXCEPT (a) FROM t", read="bigquery")
+
+        self.assertEqual(expression.sql("duckdb"), "SELECT * EXCLUDE (a) FROM t")
+        self.assertEqual(expression.sql("snowflake"), "SELECT * EXCLUDE (a) FROM t")
+
+        with self.assertLogs(generator_logger, level="WARNING") as cm:
+            self.assertEqual(expression.sql("postgres"), "SELECT * EXCEPT (a) FROM t")
+        self.assertIn("PostgreSQL does not support EXCEPT", cm.output[0])
+
+        for unsupported_level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+            with self.assertRaises(UnsupportedError):
+                expression.sql("postgres", unsupported_level=unsupported_level)
 
     def test_datetime_arithmetic(self):
         self.validate_all(

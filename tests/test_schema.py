@@ -189,6 +189,17 @@ class TestSchema(unittest.TestCase):
         schema.add_table("test")
         self.assertEqual(schema.column_names("test"), ["x", "y"])
 
+    def test_schema_add_table_invalidates_partial_lookups(self):
+        schema = MappingSchema({"db": {"t1": {"a": "int"}}})
+        self.assertEqual(schema.column_names(to_table("t1")), ["a"])
+
+        schema.add_table("db.t1", {"a": "int", "b": "int"})
+        self.assertEqual(schema.column_names(to_table("t1")), ["a", "b"])
+
+        schema.add_table("db2.t1", {"c": "int"})
+        with self.assertRaises(SchemaError):
+            schema.column_names(to_table("t1"))
+
     def test_schema_get_column_type(self):
         schema = MappingSchema({"A": {"b": "varchar"}})
         self.assertEqual(schema.get_column_type("a", "B").this, exp.DataType.Type.VARCHAR)

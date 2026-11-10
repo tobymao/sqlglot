@@ -382,6 +382,9 @@ class TestTeradata(Validator):
         from sqlglot.lineage import lineage
         from sqlglot.optimizer.annotate_types import annotate_types
 
+        self.validate_identity("SELECT COALESCE(TITLE(x), 'Untitled') FROM t")
+        self.validate_identity("SELECT UPPER(TITLE(x (TITLE 'Heading'))) FROM t")
+
         for sql, expected in (
             ("SELECT x (TITLE 'Display heading') FROM t", None),
             ("SELECT t.x (TITLE '') AS result FROM t", None),

@@ -378,6 +378,55 @@ class TestTeradata(Validator):
             "SELECT CAST(Col1 AS INT) FROM Test1",
         )
 
+    def test_title(self):
+        from sqlglot.lineage import lineage
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        for sql, expected in (
+            ("SELECT x (TITLE 'Display heading') FROM t", None),
+            ("SELECT t.x (TITLE '') AS result FROM t", None),
+            ("SELECT COALESCE(x, 1) (TITLE 'Heading') FROM t", None),
+            ("SELECT (x + 1) (TITLE 'Heading') FROM t", None),
+            (
+                "SELECT x (TITLE 'Heading', FORMAT '999') FROM t",
+                "SELECT x (FORMAT '999') (TITLE 'Heading') FROM t",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertEqual(expression, self.parse_one(expected or sql))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertIsNone(expression.find(exp.Anonymous))
+        title = self.parse_one("SELECT x (TITLE 'Not an alias') FROM t").expressions[0]
+        self.assertEqual(title.output_name, "x")
+        formatted = self.parse_one("SELECT x (FORMAT '999', TITLE 'Heading') FROM t").expressions[0]
+        self.assertEqual(formatted.output_name, "x")
+        self.assertEqual([column.name for column in title.find_all(exp.Column)], ["x"])
+        self.assertTrue(
+            annotate_types(self.parse_one("SELECT 1 (FORMAT '999', TITLE 'Heading')"))
+            .expressions[0]
+            .is_type(exp.DType.INT)
+        )
+        root = lineage(
+            "result",
+            "SELECT x (TITLE 'Heading') AS result FROM t",
+            schema={"t": {"x": "INT"}},
+            dialect="teradata",
+        )
+        self.assertEqual(root.downstream[0].name, "t.x")
+        self.validate_identity('SELECT example_udf("TITLE")', 'SELECT EXAMPLE_UDF("TITLE")')
+        for sql in (
+            "SELECT x (TITLE)",
+            "SELECT x (TITLE heading)",
+            "SELECT x (TITLE :heading)",
+            "SELECT x (TITLE 'a', TITLE 'b')",
+            "SELECT x (TITLE 'a',)",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql, error_level=ErrorLevel.RAISE)
+        with self.assertRaises(UnsupportedError):
+            title.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
     def test_time(self):
         self.validate_identity("CAST(CURRENT_TIMESTAMP(6) AS TIMESTAMP WITH TIME ZONE)")
 

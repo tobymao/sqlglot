@@ -553,6 +553,24 @@ SELECT (SELECT l.v AS r FROM (SELECT 3 AS x) AS u, (SELECT t.x AS v FROM (SELECT
 SELECT (SELECT x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
 SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS x) AS v FROM (SELECT 2 AS x) AS x;
 
+# title: Postgres propagated outer columns respect descendant table aliases
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT x FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT x AS x FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres propagated outer columns respect aliases between their owning and resolving scopes
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT (SELECT x) FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT (SELECT x AS x) AS _col_0 FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
+# title: Postgres propagated outer columns ignore aliases in sibling subqueries
+# execute: false
+# dialect: postgres
+SELECT (SELECT (SELECT x) + (SELECT t.y FROM (SELECT 1 AS y) AS t) FROM (SELECT 3 AS z) AS x) FROM (SELECT 2 AS x) AS t;
+SELECT (SELECT (SELECT t.x AS x) + (SELECT t.y AS y FROM (SELECT 1 AS y) AS t) AS _col_0 FROM (SELECT 3 AS z) AS x) AS _col_0 FROM (SELECT 2 AS x) AS t;
+
 # title: DuckDB resolves whole-row references to inner table aliases before outer columns
 # execute: false
 # dialect: duckdb

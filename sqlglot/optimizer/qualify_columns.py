@@ -929,6 +929,15 @@ def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Ident
     scope = resolver.scope
     shadowing_sources = set(scope.selected_sources)
 
+    # Correlated columns can reach this scope from a descendant with shadowing aliases.
+    if id(column) not in scope.column_index:
+        column_scope: Scope | None = next(
+            (inner for inner in scope.traverse() if id(column) in inner.column_index), None
+        )
+        while column_scope and column_scope is not scope:
+            shadowing_sources.update(column_scope.selected_sources)
+            column_scope = column_scope.parent
+
     for outer_resolver in resolver.outer_resolvers():
         source_columns = outer_resolver._get_all_source_columns()
         # A LATERAL's scope already holds the preceding sources it can reference.

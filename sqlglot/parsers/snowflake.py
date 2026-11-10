@@ -236,13 +236,13 @@ def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
     def _builder(args: list, dialect: Dialect) -> E:
         group = seq_get(args, 5)
         parameters = seq_get(args, 4)
+        inferred_group = False
 
         if not group:
+            inferred_group = True
             if parameters and parameters.is_string and "e" in parameters.name:
-                group = (
-                    None
-                    if regexp_capture_group_count(seq_get(args, 1)) == 0
-                    else exp.Literal.number(1)
+                group = exp.Literal.number(
+                    0 if regexp_capture_group_count(seq_get(args, 1)) == 0 else 1
                 )
             else:
                 group = exp.Literal.number(0)
@@ -254,6 +254,7 @@ def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
             occurrence=seq_get(args, 3),
             parameters=parameters,
             group=group,
+            inferred_group=inferred_group,
             **(
                 {
                     "null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL,

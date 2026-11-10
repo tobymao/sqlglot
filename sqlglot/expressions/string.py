@@ -438,6 +438,7 @@ class RegexpExtract(Expression, Func):
         "null_if_pos_overflow": False,
         "null_if_no_match": False,
         "empty_if_group_missing": False,
+        "inferred_group": False,
     }
 
 
@@ -449,6 +450,7 @@ class RegexpExtractAll(Expression, Func):
         "parameters": False,
         "position": False,
         "occurrence": False,
+        "inferred_group": False,
     }
 
 

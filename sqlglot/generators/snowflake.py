@@ -204,12 +204,9 @@ def _regexpextract_sql(
     group = expression.args.get("group")
     parameters = expression.args.get("parameters")
 
-    # Strip default group to avoid generating unnecessary trailing args:
-    # with 'e' flag the default group is 1, without 'e' it's 0
-    if group:
-        has_e = parameters and parameters.is_string and "e" in parameters.name
-        if group.name == ("1" if has_e else "0"):
-            group = None
+    has_e = parameters and parameters.is_string and "e" in parameters.name
+    if expression.args.get("inferred_group") or (group and not has_e and group.name == "0"):
+        group = None
 
     parameters = parameters or (group and exp.Literal.string("c"))
     occurrence = expression.args.get("occurrence") or (parameters and exp.Literal.number(1))

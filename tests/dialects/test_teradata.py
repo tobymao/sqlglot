@@ -430,6 +430,61 @@ class TestTeradata(Validator):
         with self.assertRaises(UnsupportedError):
             title.sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
+    def test_named(self):
+        from sqlglot.lineage import lineage
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        for sql, expected in (
+            ("SELECT x (NAMED result) FROM t", None),
+            ('SELECT x (NAMED "result name") FROM t', None),
+            ("SELECT x (NAMED 'result name') FROM t", 'SELECT x (NAMED "result name") FROM t'),
+            ("SELECT (x + 1) (NAMED result) FROM t", None),
+            (
+                "SELECT x (NAMED result, TITLE 'Heading', FORMAT '999') FROM t",
+                "SELECT x (FORMAT '999') (TITLE 'Heading') (NAMED result) FROM t",
+            ),
+            ("SELECT x FROM t WHERE x (NAMED result) > 1", None),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected)
+                self.assertEqual(expression, self.parse_one(expected or sql))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertIsNone(expression.find(exp.Anonymous))
+        self.assertEqual(
+            self.parse_one("SELECT x (NAMED result) FROM t").expressions[0].output_name, "result"
+        )
+        self.validate_all(
+            "SELECT x (NAMED result) FROM t", write={"postgres": "SELECT x AS result FROM t"}
+        )
+        self.assertTrue(
+            annotate_types(self.parse_one("SELECT 1 (NAMED result)"))
+            .expressions[0]
+            .is_type(exp.DType.INT)
+        )
+        root = lineage(
+            "result",
+            "SELECT x (NAMED result) FROM t",
+            schema={"t": {"x": "INT"}},
+            dialect="teradata",
+        )
+        self.assertEqual(root.downstream[0].name, "t.x")
+        self.validate_identity('SELECT example_udf("NAMED")', 'SELECT EXAMPLE_UDF("NAMED")')
+        self.validate_identity("SELECT example_udf(NAMED(x))", "SELECT EXAMPLE_UDF(NAMED(x))")
+        for sql in (
+            "SELECT x (NAMED)",
+            "SELECT x (NAMED 123)",
+            "SELECT x (NAMED :alias)",
+            "SELECT x (NAMED a, NAMED b)",
+            "SELECT x (NAMED result,)",
+            "SELECT x (NAMED result, 'TITLE' 'Heading')",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql, error_level=ErrorLevel.RAISE)
+        with self.assertRaises(UnsupportedError):
+            self.parse_one("SELECT x FROM t WHERE x (NAMED result) > 1").sql(
+                "postgres", unsupported_level=ErrorLevel.RAISE
+            )
+
     def test_time(self):
         self.validate_identity("CAST(CURRENT_TIMESTAMP(6) AS TIMESTAMP WITH TIME ZONE)")
 

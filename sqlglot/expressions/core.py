@@ -2340,6 +2340,12 @@ class TeradataTitle(Expression):
         return self.this.output_name
 
 
+class TeradataNamed(Alias):
+    """A Teradata NAMED alias, including aliases attached to subexpressions."""
+
+    arg_types = {"this": True, "alias": True}
+
+
 class Between(Expression, Predicate):
     arg_types = {"this": True, "low": True, "high": True, "symmetric": False}
 

@@ -112,6 +112,9 @@ class TeradataGenerator(generator.Generator):
     def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
         return f"{self.sql(expression, 'this')} (TITLE {self.sql(expression, 'title')})"
 
+    def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
+        return f"{self.sql(expression, 'this')} (NAMED {self.sql(expression, 'alias')})"
+
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):
             # We don't actually want to print the unknown type in CAST(<value> AS FORMAT <format>)

@@ -298,6 +298,12 @@ EXPRESSION_METADATA: ExprMetadataType = {
         }
     },
     **{
+        expr_type: {"returns": exp.DType.VARIANT}
+        for expr_type in {
+            exp.ToVariant,
+        }
+    },
+    **{
         expr_type: {"annotator": annotate_by_numeric_arg}
         for expr_type in {
             exp.Ceil,

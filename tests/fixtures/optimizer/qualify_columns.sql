@@ -479,6 +479,42 @@ SELECT (SELECT t.y AS y FROM (SELECT 1 AS y) AS t JOIN (SELECT 2 AS z) AS u ON (
 SELECT a.y FROM (SELECT NULL::INT AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
 SELECT a.y AS y FROM (SELECT CAST(NULL AS INT) AS x, 1 AS y) AS a, (SELECT 2 AS z) AS t JOIN (SELECT 3 AS z) AS u ON (SELECT x AS x FROM (SELECT 1 AS y) AS x) IS NOT NULL;
 
+# title: Postgres EXISTS in JOIN ON cannot reference preceding comma-separated sources
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x);
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS(SELECT x AS x FROM (SELECT 1 AS y) AS x);
+
+# title: Postgres EXISTS in a nested join cannot reference sources outside its join group
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS (SELECT x FROM (SELECT 1 AS y) AS x)) ON TRUE;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON EXISTS(SELECT x AS x FROM (SELECT 1 AS y) AS x)) ON TRUE;
+
+# title: Postgres nested joins resolve visible columns despite matching columns outside the group
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS x) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 4) ON TRUE;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS x) AS w ON (SELECT w.x AS x FROM (SELECT 1 AS y) AS x) = 4) ON TRUE;
+
+# title: Postgres outer columns can come from a nested right join operand
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN ((SELECT 4 AS w) AS w JOIN (SELECT 5 AS x) AS q ON TRUE) ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, (SELECT 3 AS z) AS u JOIN ((SELECT 4 AS w) AS w JOIN (SELECT 5 AS x) AS q ON TRUE) ON (SELECT q.x AS x FROM (SELECT 1 AS y) AS x) = 5;
+
+# title: Postgres outer columns can come from a nested left join operand
+# execute: false
+# dialect: postgres
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, ((SELECT 3 AS z) AS u JOIN (SELECT 5 AS x) AS q ON TRUE) JOIN (SELECT 4 AS w) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5;
+SELECT 1 AS v FROM (SELECT 2 AS x) AS t, ((SELECT 3 AS z) AS u JOIN (SELECT 5 AS x) AS q ON TRUE) JOIN (SELECT 4 AS w) AS w ON (SELECT q.x AS x FROM (SELECT 1 AS y) AS x) = 5;
+
+# title: Postgres nested joins can resolve columns in an enclosing query
+# execute: false
+# dialect: postgres
+SELECT (SELECT 1 FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON (SELECT x FROM (SELECT 1 AS y) AS x) = 5) ON TRUE) AS v FROM (SELECT 5 AS x) AS o;
+SELECT (SELECT 1 AS "1" FROM (SELECT 2 AS x) AS t JOIN ((SELECT 3 AS z) AS u JOIN (SELECT 4 AS w) AS w ON (SELECT o.x AS x FROM (SELECT 1 AS y) AS x) = 5) ON TRUE) AS v FROM (SELECT 5 AS x) AS o;
+
 # title: Postgres LATERAL subqueries see columns of preceding sources, but not their own or later ones
 # execute: false
 # dialect: postgres

@@ -363,14 +363,16 @@ class Resolver:
         The unqualified column `c` is not ambiguous if no other sources up until that
         join i.e t_1, ..., t_n, contain a column named `c`.
 
-        With join_group=True, comma joins also delimit the visible sources.
+        With join_group=True, use the enclosing join group and treat comma joins as boundaries.
 
         """
-        args = self.scope.expression.args
+        expression = join_ancestor.parent if join_group else self.scope.expression
+        assert expression is not None
+        args = expression.args
 
-        # Collect tables in order: FROM clause tables + joined tables up to current join
-        from_name = args["from_"].alias_or_name
-        available_sources = {from_name: self.get_source_columns(from_name)}
+        # Collect the sources visible up to the current join.
+        from_ = args.get("from_")
+        sources = [from_.this if from_ else expression]
 
         for join in args["joins"][: t.cast(int, join_ancestor.index) + 1]:
             if join_group and not (
@@ -380,11 +382,24 @@ class Resolver:
                 or join.side
                 or join.kind
             ):
-                available_sources.clear()
+                sources.clear()
 
             # An earlier SEMI/ANTI join's table is only visible within its own ON clause
             if join is join_ancestor or not join.is_semi_or_anti_join:
-                available_sources[join.alias_or_name] = self.get_source_columns(join.alias_or_name)
+                sources.append(join.this)
+
+        available_sources = {}
+        while sources:
+            source = sources.pop()
+            if name := source.alias_or_name:
+                available_sources[name] = self.get_source_columns(name)
+            elif isinstance(source, exp.Subquery):
+                sources.append(source.this)
+                sources.extend(
+                    join.this
+                    for join in source.this.args.get("joins") or []
+                    if not join.is_semi_or_anti_join
+                )
 
         return available_sources
 

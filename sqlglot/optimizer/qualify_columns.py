@@ -934,7 +934,10 @@ def _get_outer_column_table(column: exp.Column, resolver: Resolver) -> exp.Ident
         # A LATERAL's scope already holds the preceding sources it can reference.
         if scope.is_subquery:
             join = scope.expression.find_ancestor(exp.Join, exp.Select)
-            if isinstance(join, exp.Join) and join.parent is outer_resolver.scope.expression:
+            if (
+                isinstance(join, exp.Join)
+                and join.find_ancestor(exp.Select) is outer_resolver.scope.expression
+            ):
                 source_columns = outer_resolver._get_available_source_columns(join, join_group=True)
 
             if any(column_name in columns for columns in source_columns.values()):

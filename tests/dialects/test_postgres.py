@@ -9,6 +9,22 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_regexp_replace_omitted_replacement(self):
+        for sql, expected in (
+            ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '', 'g')"),
+            ("REGEXP_REPLACE(subject, pattern)", "REGEXP_REPLACE(subject, pattern, '', 'g')"),
+            (
+                "REGEXP_REPLACE(subject, pattern, NULL)",
+                "REGEXP_REPLACE(subject, pattern, NULL, 'g')",
+            ),
+            (
+                "REGEXP_REPLACE(subject, pattern, replacement)",
+                "REGEXP_REPLACE(subject, pattern, replacement, 'g')",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(expected, read={"oracle": sql})
+
     def test_table_query(self):
         for sql in ("TABLE ONLY t", "TABLE ONLY (t)"):
             self.validate_all(

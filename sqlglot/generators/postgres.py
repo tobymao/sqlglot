@@ -403,7 +403,7 @@ class PostgresGenerator(generator.Generator):
             "REGEXP_REPLACE",
             e.this,
             e.expression,
-            e.args.get("replacement"),
+            e.args.get("replacement") or exp.Literal.string(""),
             e.args.get("position"),
             e.args.get("occurrence"),
             regexp_replace_global_modifier(e),

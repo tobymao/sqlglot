@@ -3804,8 +3804,11 @@ SELECT
             "LAG(AVG(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
             "SUM(SUM(AGG(revenue) PER (customer))) OVER (ORDER BY year)",
             "AVG(AVG(AGG(x) PER (c)) PER (d))",
-            "SUM(x) FILTER(WHERE y > 0) PER (c)",
-            "SUM(x) OVER w PER (c)",
+            "AVG(SUM(x) FILTER(WHERE y > 0) PER (c))",
+            "AVG(SUM(x) OVER w PER (c))",
+            "AVG(SUM(x) - SUM(y) PER (c))",
+            "COUNT(DISTINCT SUM(x) - SUM(y) PER (c))",
+            "AVG((SUM(x) - SUM(y)) * 2 PER (c))",
             "ARG_MAX(COUNT(DISTINCT u) PER (ds WITH FILL), ds)",
             "AVG(SUM(x) PER (c, ds WITH FILL))",
             "AVG(SUM(x) PER (ds WITH FILL FROM 1 TO 10 STEP 1))",
@@ -3828,6 +3831,12 @@ SELECT
         )
         self.assertIsInstance(window, exp.Window)
         self.assertIsInstance(window.this.this.this, exp.Per)
+
+        # PER applies to the whole argument, not the last function in it.
+        per = self.validate_identity("MAX(LAG(SUM(x)) OVER (ORDER BY ds) - SUM(x) PER (ds))").this
+        self.assertIsInstance(per, exp.Per)
+        self.assertIsInstance(per.this, exp.Sub)
+        self.assertIsInstance(per.this.this, exp.Window)
 
         nested = self.validate_identity("AVG(AVG(AGG(x) PER (c)) PER (d))").this
         self.assertIsInstance(nested, exp.Per)

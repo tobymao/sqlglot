@@ -7833,11 +7833,13 @@ class Parser:
 
         if self._match(TokenType.DISTINCT):
             this = self.expression(
-                exp.Distinct(expressions=self._parse_csv(self._parse_disjunction))
+                exp.Distinct(
+                    expressions=self._parse_csv(lambda: self._parse_per(self._parse_disjunction()))
+                )
             )
         else:
             self._match(TokenType.ALL)  # ALL is the default/no-op aggregate modifier (SQL-92)
-            this = self._parse_select_or_expression(alias=alias)
+            this = self._parse_per(self._parse_select_or_expression(alias=alias))
 
         return self._parse_limit(
             self._parse_respect_or_ignore_nulls(
@@ -9070,7 +9072,7 @@ class Parser:
             over = None
             self._match(TokenType.ALIAS)
         elif not self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS):
-            return self._parse_per(this)
+            return this
         else:
             over = self._prev.text.upper()
 
@@ -9078,11 +9080,9 @@ class Parser:
             func.pop_comments()
 
         if not self._match(TokenType.L_PAREN):
-            return self._parse_per(
-                self.expression(
-                    exp.Window(this=this, alias=self._parse_id_var(False), over=over),
-                    comments=comments,
-                )
+            return self.expression(
+                exp.Window(this=this, alias=self._parse_id_var(False), over=over),
+                comments=comments,
             )
 
         window_alias = self._parse_id_var(any_token=False, tokens=self.WINDOW_ALIAS_TOKENS)
@@ -9139,7 +9139,7 @@ class Parser:
         if self._match_set(self.WINDOW_BEFORE_PAREN_TOKENS, advance=False):
             return self._parse_window(window, alias=alias)
 
-        return self._parse_per(window)
+        return window
 
     def _parse_partition_and_order(
         self,

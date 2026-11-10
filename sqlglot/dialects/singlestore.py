@@ -1,12 +1,16 @@
-from sqlglot import TokenType
+from sqlglot import exp, TokenType
+from sqlglot.dialects.dialect import AliasPrecedence
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.singlestore import SingleStoreGenerator
 from sqlglot.parsers.singlestore import SingleStoreParser, cast_to_time6
 
 
 class SingleStore(MySQL):
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
+    COLUMN_ALIAS_PRECEDENCE = {
+        **MySQL.COLUMN_ALIAS_PRECEDENCE,
+        exp.Having: AliasPrecedence.ALIAS,
+        exp.Qualify: AliasPrecedence.ALIAS,
+    }
     SUPPORTS_ORDER_BY_ALL = True
 
     MYSQL_INVERSE_TIME_MAPPING = MySQL.INVERSE_TIME_MAPPING

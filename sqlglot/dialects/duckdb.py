@@ -4,6 +4,7 @@ from __future__ import annotations
 from sqlglot import exp, tokens
 
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
     UsingColumnOrder,
@@ -22,8 +23,12 @@ class DuckDB(Dialect):
     CONCAT_WS_COALESCE = True
     SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_LIMIT_ALL = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Distinct: AliasPrecedence.MERGED_SOURCE,
+        exp.Having: AliasPrecedence.GROUPED_SOURCE,
+        exp.Order: AliasPrecedence.MERGED_SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SUPPORTS_FIXED_SIZE_ARRAYS = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
     QUERY_RESULTS_ARE_STRUCTS = True
@@ -61,6 +66,16 @@ class DuckDB(Dialect):
         "%f_eight": "%n",
         "%f_nine": "%n",
     }
+
+    def column_alias_precedence(
+        self, clause: exp.Expr, expression: exp.Expr | None = None
+    ) -> AliasPrecedence:
+        if isinstance(clause, (exp.Order, exp.Distinct)) and expression is not None:
+            expression = expression.unnest()
+            # OrderBinder also recognizes one COLLATE around a projection reference.
+            if isinstance(expression, exp.Collate):
+                expression = expression.this
+        return super().column_alias_precedence(clause, expression)
 
     def to_json_path(self, path: exp.Expr | None) -> exp.Expr | None:
         if isinstance(path, exp.Literal):

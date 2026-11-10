@@ -6,7 +6,7 @@ import typing as t
 from collections import Counter
 
 from sqlglot import alias, exp
-from sqlglot.dialects.dialect import Dialect, DialectType, UsingColumnOrder
+from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
@@ -131,7 +131,7 @@ def qualify_columns(
 
         # DISTINCT ON and ORDER BY follow the same rules (tested in DuckDB, Postgres, ClickHouse)
         # https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
-        _expand_order_by_and_distinct_on(scope, resolver)
+        _expand_order_by_and_distinct_on(scope, resolver, using_column_tables)
 
         if dialect.ANNOTATE_ALL_SCOPES:
             annotator.annotate_scope(scope)
@@ -390,6 +390,7 @@ def _expand_alias_refs(
         if not node or (expand_only_groupby and not is_group_by):
             return
 
+        precedence = dialect.column_alias_precedence(node)
         for column in walk_in_scope(node, prune=lambda node: node.is_star):
             if not isinstance(column, exp.Column):
                 continue
@@ -429,8 +430,8 @@ def _expand_alias_refs(
                         node.parts[0].name in projections
                         for node in alias_expr.find_all(exp.Column)
                     )
-            prefer_column = dialect.PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY
-            if table and is_having and dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS:
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
+            if table and precedence == AliasPrecedence.GROUPED_SOURCE:
                 prefer_column = (
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
                     or (table.name, column.name) in grouped_columns
@@ -502,8 +503,8 @@ def _expand_alias_refs(
     replace_columns(expression.args.get("group"), literal_index=True)
 
     if (
-        dialect.HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS
-        and expression.args.get("having")
+        (having := expression.args.get("having"))
+        and dialect.column_alias_precedence(having) == AliasPrecedence.GROUPED_SOURCE
         and (group := expression.args.get("group"))
     ):
         # Only standalone grouping columns shadow HAVING aliases, not columns inside expressions.
@@ -555,7 +556,9 @@ def _expand_group_by(scope: Scope, dialect: Dialect) -> None:
     expression.set("group", group)
 
 
-def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
+def _expand_order_by_and_distinct_on(
+    scope: Scope, resolver: Resolver, using_column_tables: dict[str, dict[str, t.Any]]
+) -> None:
     expression = scope.expression
 
     if not isinstance(expression, exp.Selectable):
@@ -567,9 +570,11 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
     expr: exp.Expr = expression
 
     for modifier_key in ("order", "distinct"):
-        modifier = expr.args.get(modifier_key)
-        if isinstance(modifier, exp.Distinct):
-            modifier = modifier.args.get("on")
+        clause = expr.args.get(modifier_key)
+        if not isinstance(clause, exp.Expr):
+            continue
+
+        modifier = clause.args.get("on") if isinstance(clause, exp.Distinct) else clause
 
         if not isinstance(modifier, exp.Expr):
             continue
@@ -584,12 +589,28 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                 scope, modifier_expressions, resolver.dialect, alias_names=alias_names
             ),
         ):
-            for agg in original.find_all(exp.AggFunc):
-                for col in agg.find_all(exp.Column):
+            precedence = resolver.dialect.column_alias_precedence(clause, original)
+            prefer_column = precedence in (AliasPrecedence.SOURCE, AliasPrecedence.MERGED_SOURCE)
+            for node in (original,) if prefer_column else find_all_in_scope(original, exp.AggFunc):
+                for col in find_all_in_scope(node, exp.Column):
                     if not col.table:
-                        if table := resolver.get_table(col):
+                        if prefer_column and (tables := using_column_tables.get(col.name)):
+                            if precedence == AliasPrecedence.SOURCE and any(
+                                col.name in resolver.get_source_columns(source)
+                                for source in scope.selected_sources
+                                if source not in tables
+                            ):
+                                raise OptimizeError(f"Ambiguous column: {col.name}")
+                            col.replace(
+                                exp.func(
+                                    "coalesce", *[exp.column(col.name, table) for table in tables]
+                                )
+                            )
+                        elif table := resolver.get_table(col):
                             col.set("table", table)
                             col.meta.pop("dot_parts", None)
+                        elif prefer_column and col.name in resolver.all_columns:
+                            raise OptimizeError(f"Ambiguous column: {col.name}")
 
             if original is not expanded:
                 original.replace(expanded)
@@ -604,6 +625,8 @@ def _expand_order_by_and_distinct_on(scope: Scope, resolver: Resolver) -> None:
                     if not _same_dot_parts(node, replacement.this):
                         continue
                     node.replace(exp.column(replacement.alias_or_name))
+
+        scope.clear_column_cache()
 
 
 def _same_dot_parts(left: exp.Expr, right: exp.Expr) -> bool:

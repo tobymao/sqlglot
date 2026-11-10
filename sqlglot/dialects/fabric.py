@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 
-from sqlglot.dialects.dialect import NormalizationStrategy
+from sqlglot import exp
+from sqlglot.dialects.dialect import AliasPrecedence, NormalizationStrategy
 from sqlglot.dialects.tsql import TSQL
 from sqlglot.generators.fabric import FabricGenerator
 from sqlglot.parsers.fabric import FabricParser
@@ -28,7 +29,11 @@ class Fabric(TSQL):
     - T-SQL Surface Area: https://learn.microsoft.com/en-us/fabric/data-warehouse/tsql-surface-area
     """
 
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = False
+    COLUMN_ALIAS_PRECEDENCE = {
+        **TSQL.COLUMN_ALIAS_PRECEDENCE,
+        exp.Having: AliasPrecedence.ALIAS,
+        exp.Qualify: AliasPrecedence.ALIAS,
+    }
 
     # Fabric is case-sensitive unlike T-SQL which is case-insensitive
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import typing as t
 
-from sqlglot import tokens
+from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
 )
@@ -23,7 +24,10 @@ class Presto(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     LOG_BASE_FIRST: bool | None = None
     SUPPORTS_LIMIT_ALL = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     SUPPORTS_VALUES_DEFAULT = False
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = False

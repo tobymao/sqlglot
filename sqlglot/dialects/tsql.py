@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from sqlglot import tokens
+from sqlglot import exp, tokens
 from sqlglot.dialects.dialect import (
+    AliasPrecedence,
     Dialect,
     NormalizationStrategy,
 )
@@ -17,7 +18,10 @@ class TSQL(Dialect):
 
     LOG_BASE_FIRST = False
     TYPED_DIVISION = True
-    PREFER_COLUMNS_TO_ALIASES_IN_HAVING_AND_QUALIFY = True
+    COLUMN_ALIAS_PRECEDENCE = {
+        exp.Having: AliasPrecedence.SOURCE,
+        exp.Qualify: AliasPrecedence.SOURCE,
+    }
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
     JSON_EXTRACT_SCALAR_SCALAR_ONLY = True

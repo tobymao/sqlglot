@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import UsingColumnOrder
+from sqlglot.dialects.dialect import AliasPrecedence, UsingColumnOrder
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.starrocks import StarRocksGenerator
 from sqlglot.parsers.starrocks import StarRocksParser
@@ -11,7 +11,10 @@ from sqlglot.tokens import TokenType
 class StarRocks(MySQL):
     STRICT_JSON_PATH_SYNTAX = False
     INDEX_OFFSET = 1
-    HAVING_ALIASES_SHADOW_UNGROUPED_COLUMNS = False
+    COLUMN_ALIAS_PRECEDENCE = {
+        **MySQL.COLUMN_ALIAS_PRECEDENCE,
+        exp.Having: AliasPrecedence.SOURCE,
+    }
     USING_COLUMN_ORDER = UsingColumnOrder.USING_LIST
 
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {

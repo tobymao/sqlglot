@@ -1508,7 +1508,11 @@ class Simplifier:
         return expression
 
     def _is_datetrunc_predicate(self, left: exp.Expr, right: exp.Expr) -> bool:
-        return isinstance(left, self.DATETRUNCS) and _is_date_literal(right)
+        return (
+            isinstance(left, self.DATETRUNCS)
+            and not left.args.get("zone")
+            and _is_date_literal(right)
+        )
 
     @annotate_types_on_change
     @catch(ModuleNotFoundError, UnsupportedUnit)
@@ -1524,7 +1528,7 @@ class Simplifier:
                 else extract_type(this)
             )
             date = extract_date(this)
-            if date and expression.unit:
+            if date and expression.unit and not expression.args.get("zone"):
                 return date_literal(
                     datetime_floor(date, _trunc_unit(expression.unit, self.dialect), self.dialect),
                     trunc_type,

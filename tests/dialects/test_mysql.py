@@ -2120,7 +2120,6 @@ COMMENT='客户账户表'"""
         self.validate_all(
             "a % b",
             read={
-                "mysql": "MOD(a, b)",
                 "hive": "a % b",
                 "sqlite": "a % b",
             },
@@ -2140,6 +2139,13 @@ COMMENT='客户账户表'"""
                 "teradata": "a MOD NULLIF(b, 0)",
                 "trino": "a % NULLIF(b, 0)",
                 "tsql": "a % NULLIF(b, 0)",
+            },
+        )
+        self.validate_all(
+            "MOD(a, b)",
+            write={
+                "mysql": "a % b",
+                "duckdb": "a % NULLIF(b, 0)",
             },
         )
 

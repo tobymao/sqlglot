@@ -149,6 +149,118 @@ SELECT x.b AS b, y.b AS b2 FROM (SELECT x.b AS b FROM x AS x WHERE x.b = 1) AS x
 SELECT x.b AS b, y.b AS b2 FROM (SELECT x.b AS b FROM x AS x) AS x RIGHT JOIN (SELECT y.b AS b FROM y AS y) AS y ON x.b = y.b;
 SELECT x.b AS b, y.b AS b2 FROM x AS x RIGHT JOIN y AS y ON x.b = y.b;
 
+# title: Left join with a constant projection
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, 1 AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with COALESCE
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, COALESCE(y.c, 0) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, COALESCE(y.c, 0) AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with CASE
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CASE WHEN y.c IS NULL THEN 0 ELSE y.c END AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, CASE WHEN y.c IS NULL THEN 0 ELSE y.c END AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with IS NULL
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c IS NULL AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c IS NULL AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with a null-safe comparison
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c IS NOT DISTINCT FROM NULL AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c IS NOT DISTINCT FROM NULL AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with OR TRUE
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c = 1 OR TRUE AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c = 1 OR TRUE AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with CONCAT
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CONCAT(y.c, 'x') AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, CONCAT(y.c, 'x') AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with a nested non-null-propagating expression
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, COALESCE(y.c, 0) + 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, COALESCE(y.c, 0) + 1 AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Right join with a constant on the null-supplying side
+SELECT q.a, y.c FROM (SELECT x.b, 1 AS a FROM x) AS q RIGHT JOIN y ON q.b = y.b;
+SELECT q.a AS a, y.c AS c FROM (SELECT x.b AS b, 1 AS a FROM x AS x) AS q RIGHT JOIN y AS y ON q.b = y.b;
+
+# title: Full join with non-null-propagating projections on both sides
+SELECT p.a, q.c FROM (SELECT x.b, 1 AS a FROM x) AS p FULL JOIN (SELECT y.b, COALESCE(y.c, 0) AS c FROM y) AS q ON p.b = q.b;
+SELECT p.a AS a, q.c AS c FROM (SELECT x.b AS b, 1 AS a FROM x AS x) AS p FULL JOIN (SELECT y.b AS b, COALESCE(y.c, 0) AS c FROM y AS y) AS q ON p.b = q.b;
+
+# title: Joined subquery on the null-supplying side of a later right join
+SELECT q.c FROM x JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b RIGHT JOIN y AS r ON x.a = r.b;
+SELECT q.c AS c FROM x AS x JOIN (SELECT y.b AS b, 1 AS c FROM y AS y) AS q ON x.a = q.b RIGHT JOIN y AS r ON x.a = r.b;
+
+# title: Joined subquery on the null-supplying side of a later full join
+SELECT q.c FROM x JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b FULL JOIN y AS r ON x.a = r.b;
+SELECT q.c AS c FROM x AS x JOIN (SELECT y.b AS b, 1 AS c FROM y AS y) AS q ON x.a = q.b FULL JOIN y AS r ON x.a = r.b;
+
+# title: Left join with a constant referenced only in WHERE
+SELECT x.a FROM x LEFT JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b WHERE q.c IS NULL;
+SELECT x.a AS a FROM x AS x LEFT JOIN (SELECT y.b AS b, 1 AS c FROM y AS y) AS q ON x.a = q.b WHERE q.c IS NULL;
+
+# title: Left join with a constant in a CTE
+WITH cte AS (SELECT y.b, 1 AS c FROM y) SELECT x.a, q.c FROM x LEFT JOIN cte AS q ON x.a = q.b;
+WITH cte AS (SELECT y.b AS b, 1 AS c FROM y AS y) SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN cte AS q ON x.a = q.b;
+
+# title: Constant projection inside a parenthesized left join
+WITH cte AS (SELECT y.b, 1 AS c FROM y) SELECT x.a, q.c FROM (x LEFT JOIN cte AS q ON x.a = q.b);
+WITH cte AS (SELECT y.b AS b, 1 AS c FROM y AS y) SELECT x.a AS a, q.c AS c FROM (x AS x LEFT JOIN cte AS q ON x.a = q.b);
+
+# title: Constant projection inside the null-supplying side of an enclosing join
+WITH cte AS (SELECT y.b, 1 AS c FROM y) SELECT x.a, q.c FROM x LEFT JOIN (y AS r JOIN cte AS q ON r.b = q.b) ON x.a = r.b;
+WITH cte AS (SELECT y.b AS b, 1 AS c FROM y AS y) SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (y AS r JOIN cte AS q ON r.b = q.b) ON x.a = r.b;
+
+# title: Constant projection in the first source of a parenthesized right join
+WITH cte AS (SELECT y.b, 1 AS c FROM y) SELECT q.c FROM (cte AS q RIGHT JOIN x ON x.a = q.b);
+WITH cte AS (SELECT y.b AS b, 1 AS c FROM y AS y) SELECT q.c AS c FROM (cte AS q RIGHT JOIN x AS x ON x.a = q.b);
+
+# title: First source of a parenthesized join is null-supplied by a later right join
+WITH cte AS (SELECT y.b, 1 AS c FROM y) SELECT q.c FROM (cte AS q JOIN x ON x.a = q.b) RIGHT JOIN y AS r ON x.a = r.b;
+WITH cte AS (SELECT y.b AS b, 1 AS c FROM y AS y) SELECT q.c AS c FROM (cte AS q JOIN x AS x ON x.a = q.b) RIGHT JOIN y AS r ON x.a = r.b;
+
+# title: Left join with an unused constant projection can merge
+SELECT x.a, q.b FROM x LEFT JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, y.b AS b FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with null-propagating arithmetic can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c + 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, y.c + 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with nested null-propagating expressions can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CAST(-(y.c + 1) AS BIGINT) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, CAST(-(y.c + 1) AS BIGINT) AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with null-propagating comparisons can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, NOT y.c = 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, NOT y.c = 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with arithmetic propagating NULL from the right operand can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, 1 - y.c AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, 1 - y.c AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with a NULL projection can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, NULL AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, NULL AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Constant on the preserved side of a left join can merge
+SELECT q.a, y.c FROM (SELECT x.b, 1 AS a FROM x) AS q LEFT JOIN y ON q.b = y.b;
+SELECT 1 AS a, y.c AS c FROM x AS x LEFT JOIN y AS y ON x.b = y.b;
+
+# title: Constant on the preserved side of a right join can merge
+SELECT x.a, q.c FROM x RIGHT JOIN (SELECT y.b, 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, 1 AS c FROM x AS x RIGHT JOIN y AS y ON x.a = y.b;
+
+# title: A preceding right join does not prevent merging a later constant projection
+SELECT q.c FROM x RIGHT JOIN y AS r ON x.a = r.b JOIN (SELECT y.b, 1 AS c FROM y) AS q ON r.b = q.b;
+SELECT 1 AS c FROM x AS x RIGHT JOIN y AS r ON x.a = r.b JOIN y AS y ON r.b = y.b;
+
+# title: Inner join with COALESCE can merge
+SELECT x.a, q.c FROM x JOIN (SELECT y.b, COALESCE(y.c, 0) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, COALESCE(y.c, 0) AS c FROM x AS x JOIN y AS y ON x.a = y.b;
+
 # title: Inner join
 SELECT x.b AS b, y.b AS b2 FROM (SELECT x.b AS b FROM x AS x WHERE x.b = 1) AS x INNER JOIN (SELECT y.b AS b FROM y AS y WHERE y.b = 2) AS y ON x.b = y.b;
 SELECT x.b AS b, y.b AS b2 FROM x AS x INNER JOIN y AS y ON x.b = y.b AND y.b = 2 WHERE x.b = 1;

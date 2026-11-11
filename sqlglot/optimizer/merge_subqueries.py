@@ -170,7 +170,7 @@ def merge_ctes(
             continue
         alias = table.alias_or_name
         if _mergeable(
-            outer_scope, inner_scope, leave_tables_isolated, from_or_join
+            outer_scope, inner_scope, leave_tables_isolated, from_or_join, table
         ) and copy_budget.consume(outer_scope, inner_scope, alias):
             _rename_inner_sources(outer_scope, inner_scope, alias)
             _merge_from(outer_scope, inner_scope, table, alias)
@@ -203,7 +203,7 @@ def merge_derived_tables(
             if not isinstance(inner_scope, Scope):
                 continue
             if _mergeable(
-                outer_scope, inner_scope, leave_tables_isolated, from_or_join
+                outer_scope, inner_scope, leave_tables_isolated, from_or_join, subquery
             ) and copy_budget.consume(outer_scope, inner_scope, alias):
                 _rename_inner_sources(outer_scope, inner_scope, alias)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
@@ -222,6 +222,7 @@ def _mergeable(
     inner_scope: Scope,
     leave_tables_isolated: bool,
     from_or_join: FromOrJoin,
+    source: exp.Selectable,
 ) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
@@ -229,7 +230,7 @@ def _mergeable(
     inner_select = inner_scope.expression.unnest()
     outer = outer_scope.expression
     outer_args = outer.args
-    inner_name = from_or_join.alias_or_name
+    inner_name = source.alias_or_name
 
     def _constant_projection_empties_group_by_all(column_free_aliases: set[str]) -> bool:
         """
@@ -370,6 +371,58 @@ def _mergeable(
         }
         return bool(number_literal_aliases & ordered)
 
+    def _is_null_propagating(expression: exp.Expr) -> bool:
+        """Conservatively check whether the projection is NULL when all inner sources are NULL."""
+        stack = [expression]
+        while stack:
+            node = stack.pop().unalias().unnest()
+            if isinstance(node, exp.Null) or (
+                isinstance(node, exp.Column) and node.table in inner_scope.selected_sources
+            ):
+                return True
+            if isinstance(node, (exp.Cast, exp.Neg, exp.Not)):
+                stack.append(node.this)
+            elif isinstance(
+                node,
+                (
+                    exp.Add,
+                    exp.Sub,
+                    exp.Mul,
+                    exp.Div,
+                    exp.IntDiv,
+                    exp.Mod,
+                    exp.EQ,
+                    exp.NEQ,
+                    exp.GT,
+                    exp.GTE,
+                    exp.LT,
+                    exp.LTE,
+                ),
+            ):
+                stack.extend((node.expression, node.this))
+        return False
+
+    def _outer_join_blocks_merge(projections: dict[str, exp.Expr]) -> bool:
+        node: exp.Expr = source
+        joins = node.args.get("joins", [])
+        while True:
+            if (isinstance(node, exp.Join) and node.side in ("LEFT", "FULL")) or any(
+                j.side in ("RIGHT", "FULL") for j in joins
+            ):
+                break
+            if node is outer or not node.parent:
+                return False
+            # Include later joins and enclosing parenthesized joins that null-extend this source.
+            start = node.index + 1 if node.arg_key == "joins" and node.index is not None else 0
+            joins = node.parent.args.get("joins", [])[start:]
+            node = node.parent
+
+        referenced = {c.name for c in outer_scope.columns if c.table == inner_name}
+        return any(
+            name in referenced and not _is_null_propagating(projection)
+            for name, projection in projections.items()
+        )
+
     if (
         not isinstance(outer, exp.Select)
         or outer.is_star
@@ -425,6 +478,7 @@ def _mergeable(
         and not _window_projection_blocks_merge(window_aliases)
         and not _literal_group_unmergeable(number_literal_aliases)
         and not _literal_in_order_by(number_literal_aliases)
+        and not _outer_join_blocks_merge(projections)
         and not (inner_scope.is_cte and _is_recursive())
     )
 

@@ -401,9 +401,15 @@ class MappingSchema(AbstractMappingSchema, Schema):
         parts = self._normalize_table_parts(table, dialect=dialect, normalize=normalize)
 
         if match_depth and not self.empty and len(parts) != self.depth():
-            table_name = ".".join(reversed(parts))
+            table = exp.maybe_parse(
+                table, into=exp.Table, dialect=dialect or self.dialect, copy=True
+            )
+            for part, name in zip(reversed(table.parts), parts):
+                if isinstance(part, exp.Identifier):
+                    part.set("this", name)
             raise SchemaError(
-                f"Table {table_name} must match the schema's nesting level: {self.depth()}."
+                f"Table {table.sql(dialect=self.dialect)} must match the "
+                f"schema's nesting level: {self.depth()}."
             )
 
         normalized_column_mapping = {

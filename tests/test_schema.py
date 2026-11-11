@@ -369,6 +369,28 @@ class TestSchema(unittest.TestCase):
             "Table catalog.db.tbl must match the schema's nesting level: 1.",
         )
 
+    def test_schema_add_table_error_formatting(self):
+        for dialect, read, sql, expected in (
+            ("postgres", None, '"foo.bar"', '"foo.bar"'),
+            ("bigquery", None, "`foo bar`", "`foo bar`"),
+            ("tsql", None, "[foo.bar]", "[foo.bar]"),
+            ("snowflake", None, "foo", "FOO"),
+            ("tsql", "postgres", '"foo.bar"', "[foo.bar]"),
+        ):
+            schema = MappingSchema({"db": {"items": {"id": "INT"}}}, dialect=dialect)
+            expression = to_table(sql, dialect=read or dialect)
+            for table in (sql, expression):
+                with self.subTest(dialect=dialect, read=read, table=table):
+                    with self.assertRaises(SchemaError) as ctx:
+                        schema.add_table(table, {"id": "INT"}, dialect=read)
+
+                    self.assertEqual(
+                        str(ctx.exception),
+                        f"Table {expected} must match the schema's nesting level: 2.",
+                    )
+
+            self.assertEqual(expression.sql(read or dialect), sql)
+
     def test_has_column(self):
         schema = MappingSchema({"x": {"c": "int"}})
         self.assertTrue(schema.has_column("x", exp.column("c")))

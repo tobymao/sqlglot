@@ -2118,6 +2118,40 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_string_comparisons(self):
+        with duckdb.connect() as conn:
+            for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):
+                column_type = dtype if dtype not in (None, "UNKNOWN") else "INT"
+                conn.execute(f"CREATE OR REPLACE TABLE x (a {column_type})")
+                conn.execute("INSERT INTO x VALUES (9), (10), (11), (NULL)")
+                schema = {"x": {"a": dtype}} if dtype else None
+
+                for predicate, text_expected in (
+                    ("x.a > '10' AND x.a > '9'", "x.a > '9'"),
+                    ("x.a > '10' OR x.a > '9'", "x.a > '10'"),
+                    ("x.a < '10' AND x.a < '9'", "x.a < '10'"),
+                    ("x.a < '10' OR x.a < '9'", "x.a < '9'"),
+                    ("x.a < '9' AND x.a = '10'", "x.a = '10'"),
+                ):
+                    with self.subTest(dtype=dtype, predicate=predicate):
+                        sql = f"SELECT x.a, {predicate} AS p FROM x ORDER BY x.a"
+                        expression = parse_one(sql, dialect="duckdb")
+                        if dtype:
+                            annotate_types(expression, schema=schema, dialect="duckdb")
+
+                        simplified = optimizer.simplify.simplify(expression, dialect="duckdb")
+                        self.assertEqual(
+                            simplified.selects[1].this.sql(),
+                            text_expected if dtype == "TEXT" else predicate,
+                        )
+                        expected = conn.execute(sql).fetchall()
+                        self.assertEqual(
+                            conn.execute(simplified.sql("duckdb")).fetchall(), expected
+                        )
+
+                        optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb")
+                        self.assertEqual(conn.execute(optimized.sql("duckdb")).fetchall(), expected)
+
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1

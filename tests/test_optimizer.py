@@ -2141,6 +2141,36 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_optimize_uncorrelated_in_nulls(self):
+        for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
+            for predicate in (
+                f"x.a IN (SELECT y.b FROM y{where})",
+                f"x.a = ANY (SELECT y.b FROM y{where})",
+            ):
+                for sql in (
+                    f"SELECT x.a, {predicate} AS r FROM x",
+                    f"SELECT x.a, NOT ({predicate}) AS r FROM x",
+                    f"SELECT x.a, ({predicate}) AND x.a > 1 AS r FROM x",
+                    f"SELECT x.a, ({predicate}) OR x.a > 1 AS r FROM x",
+                    f"SELECT x.a FROM x WHERE NOT ({predicate})",
+                    f"SELECT x.a FROM x WHERE NOT (({predicate}) AND x.a > 1)",
+                    f"SELECT x.a FROM x WHERE ({predicate}) IS NULL",
+                    f"SELECT x.a FROM x WHERE COALESCE(({predicate}), TRUE)",
+                    f"SELECT x.a FROM x WHERE ({predicate}) = FALSE",
+                    f"SELECT x.a FROM x WHERE ({predicate}) AND x.a > 1",
+                    f"SELECT x.a FROM x WHERE ({predicate}) OR x.a > 1",
+                    f"SELECT x.a FROM x GROUP BY x.a HAVING ({predicate}) IS NULL",
+                    f"SELECT x.a FROM x ORDER BY ({predicate}), x.a",
+                ):
+                    with self.subTest(sql=sql):
+                        optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                        expected = self.conn.execute(sql).fetchall()
+                        actual = self.conn.execute(optimized.sql("duckdb")).fetchall()
+                        if "ORDER BY" in sql:
+                            self.assertEqual(actual, expected)
+                        else:
+                            self.assertCountEqual(actual, expected)
+
     def test_optimize_subqueries_in_aggregates(self):
         for projection in (
             "SUM(CASE WHEN x.a = (SELECT LENGTH(w.d) FROM w WHERE w.e = 'b') THEN 1 ELSE 0 END)",

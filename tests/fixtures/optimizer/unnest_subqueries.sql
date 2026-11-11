@@ -10,6 +10,41 @@ SELECT * FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a =
 SELECT * FROM x WHERE x.a = ANY (SELECT y.a AS a FROM y);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL;
 
+# title: projected IN preserves UNKNOWN
+# execute: true
+SELECT x.a, x.a IN (SELECT y.b AS b FROM y) AS r FROM x;
+SELECT x.a, x.a IN (SELECT y.b AS b FROM y) AS r FROM x;
+
+# title: projected ANY preserves UNKNOWN
+# execute: true
+SELECT x.a, x.a = ANY (SELECT y.b AS b FROM y) AS r FROM x;
+SELECT x.a, x.a = ANY (SELECT y.b AS b FROM y) AS r FROM x;
+
+# title: negated ANY preserves UNKNOWN
+# execute: true
+SELECT x.a FROM x WHERE NOT (x.a = ANY (SELECT y.b AS b FROM y));
+SELECT x.a FROM x WHERE NOT (x.a = ANY (SELECT y.b AS b FROM y));
+
+# title: parenthesized IN conjunct is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a > 1 AND ((x.a IN (SELECT y.b AS b FROM y))) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a > 1 AND ((NOT _u_0.b IS NULL)) ORDER BY x.a;
+
+# title: parenthesized ANY conjunct is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a > 1 AND ((x.a = ANY (SELECT y.b AS b FROM y))) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a > 1 AND ((NOT _u_0.b IS NULL)) ORDER BY x.a;
+
+# title: equality around a different ANY comparison is not a membership predicate
+# execute: true
+SELECT x.a FROM x WHERE (x.a > ANY (SELECT y.b AS b FROM y)) = FALSE;
+SELECT x.a FROM x WHERE (x.a > ANY (SELECT y.b AS b FROM y)) = FALSE;
+
+# title: IN under OR in WHERE is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a = 1 OR x.a IN (SELECT y.b AS b FROM y) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a = 1 OR NOT _u_0.b IS NULL ORDER BY x.a;
+
 SELECT * FROM x WHERE x.a = (SELECT SUM(y.b) AS b FROM y WHERE x.a = y.a);
 SELECT * FROM x LEFT JOIN (SELECT SUM(y.b) AS b, y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0._u_1 WHERE x.a = _u_0.b;
 

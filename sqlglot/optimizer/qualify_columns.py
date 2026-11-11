@@ -311,8 +311,13 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
             table = table or source_table
 
-            if i == 0 or using_identifier_count == 1:
-                lhs: exp.Expr = exp.column(identifier, table=table)
+            if tables := column_tables.get(identifier):
+                lhs: exp.Expr = exp.func(
+                    "coalesce",
+                    *[exp.column(identifier, table=t) for t in tables],
+                )
+            elif i == 0 or using_identifier_count == 1:
+                lhs = exp.column(identifier, table=table)
             else:
                 coalesce_columns = [
                     exp.column(identifier, table=t)

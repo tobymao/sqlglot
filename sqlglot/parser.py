@@ -5689,6 +5689,7 @@ class Parser:
 
         if not unpivot:
             names = self._pivot_column_names(t.cast(list[exp.Expr], expressions))
+            has_prefix = bool(names) and self.PREFIXED_PIVOT_COLUMNS
 
             columns: list[exp.Expr] = []
             all_fields = []
@@ -5701,11 +5702,7 @@ class Parser:
 
                 all_fields.append(
                     [
-                        # An explicit `<field> AS <alias>` names the output column directly,
-                        # so it wins over the dialect's string-identifying convention
-                        fld.sql()
-                        if self.IDENTIFY_PIVOT_STRINGS and not isinstance(fld, exp.PivotAlias)
-                        else fld.alias_or_name
+                        self._pivot_column_value_name(fld, has_prefix)
                         for fld in pivot_field_expressions
                     ]
                 )
@@ -5735,6 +5732,13 @@ class Parser:
 
     def _pivot_column_names(self, aggregations: list[exp.Expr]) -> list[str]:
         return [agg.alias for agg in aggregations if agg.alias]
+
+    def _pivot_column_value_name(self, field: exp.Expr, has_prefix: bool) -> str:
+        return (
+            field.sql()
+            if self.IDENTIFY_PIVOT_STRINGS and not isinstance(field, exp.PivotAlias)
+            else field.alias_or_name
+        )
 
     def _parse_prewhere(self, skip_where_token: bool = False) -> exp.PreWhere | None:
         if not skip_where_token and not self._match(TokenType.PREWHERE):

@@ -2703,16 +2703,20 @@ class Generator:
         in_exprs = expression.fields[0].expressions
         step = len(columns) // len(in_exprs)
 
-        # Derive the per-value suffix from the first stored column vs the first IN-list value.
-        # This correctly handles dialects (e.g. Spark single-agg) that ignore agg aliases.
-        first_base = in_exprs[0].sql() if src_identify_pivot_strings else in_exprs[0].alias_or_name
-        first_stored = columns[0].name
+        suffix = ""
+        if len(expression.expressions) != 1 or expression.expressions[0].alias:
+            # Derive the per-value suffix from the first stored column vs the first IN-list value.
+            # This correctly handles dialects (e.g. Spark single-agg) that ignore agg aliases.
+            first_base = (
+                in_exprs[0].sql() if src_identify_pivot_strings else in_exprs[0].alias_or_name
+            )
+            first_stored = columns[0].name
 
-        # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)
-        if not first_stored.startswith(first_base):
-            return None
+            # exit if only suffix matches, not prefix. (e.g. BigQuery, which cannot be fixed)
+            if not first_stored.startswith(first_base):
+                return None
 
-        suffix = first_stored[len(first_base) :]
+            suffix = first_stored[len(first_base) :]
 
         # Whether the target dialect would append an agg-name suffix for this pivot.
         # Spark single-agg uniquely drops the agg alias entirely.

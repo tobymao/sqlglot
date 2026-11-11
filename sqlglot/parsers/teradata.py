@@ -143,6 +143,39 @@ class TeradataParser(parser.Parser):
         TokenType.DSTAR: exp.Pow,
     }
 
+    def _parse_substring(self) -> exp.Substring:
+        # Do not repair omitted arguments in a comma-separated value list.
+        mixed = self._curr.token_type != TokenType.COMMA
+        args = t.cast(list[t.Optional[exp.Expr]], self._parse_csv(self._parse_bitwise))
+        mixed = mixed and len(args) == 1 and self._prev.token_type != TokenType.COMMA
+        start, length = None, None
+
+        if self._match(TokenType.FROM):
+            start = self._parse_bitwise()
+            if mixed and start is not None and self._match(TokenType.COMMA, expression=start):
+                length = self._parse_bitwise()
+                if length is None:
+                    self.raise_error("Expected substring length")
+                if not self._match(TokenType.R_PAREN, advance=False):
+                    self.raise_error("Expecting )")
+
+        while self._curr:
+            if self._match(TokenType.FROM):
+                start = self._parse_bitwise()
+            elif self._match(TokenType.FOR):
+                if not start:
+                    start = exp.Literal.number(1)
+                length = self._parse_bitwise()
+            else:
+                break
+
+        if start:
+            args.append(start)
+        if length:
+            args.append(length)
+
+        return self.validate_expression(exp.Substring.from_arg_list(args), args)
+
     def _parse_translate(self) -> exp.TranslateCharacters:
         this = self._parse_assignment()
         self._match(TokenType.USING)

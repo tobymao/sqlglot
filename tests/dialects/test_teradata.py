@@ -311,6 +311,76 @@ class TestTeradata(Validator):
     def test_power(self):
         self.validate_all("a ** b", write={"teradata": "a ** b", "mysql": "POWER(a, b)"})
 
+    def test_substring(self):
+        expected = exp.Substring(
+            this=exp.column("label"),
+            start=exp.column("start_pos"),
+            length=exp.column("length_value"),
+        )
+        for arguments in (
+            "label FROM start_pos, length_value",
+            "label FROM start_pos FOR length_value",
+            "label, start_pos, length_value",
+        ):
+            with self.subTest(arguments=arguments):
+                expression = self.validate_identity(
+                    f"SELECT SUBSTRING({arguments}) FROM demo.events",
+                    "SELECT SUBSTRING(label, start_pos, length_value) FROM demo.events",
+                )
+                self.assertEqual(expression.find(exp.Substring), expected)
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+                self.assertEqual(
+                    {column.name for column in expression.find_all(exp.Column)},
+                    {"label", "start_pos", "length_value"},
+                )
+
+        self.validate_all(
+            "SUBSTRING(label FROM start_pos + 1, length_value * 2)",
+            write={
+                "teradata": "SUBSTRING(label, start_pos + 1, length_value * 2)",
+                "postgres": "SUBSTRING(label FROM start_pos + 1 FOR length_value * 2)",
+                "duckdb": "SUBSTRING(label, start_pos + 1, length_value * 2)",
+            },
+        )
+        self.validate_identity(
+            "SELECT SUBSTRING(SUBSTRING('abcdef' FROM 2, 4) FROM 2, 2), other FROM demo.events",
+            "SELECT SUBSTRING(SUBSTRING('abcdef', 2, 4), 2, 2), other FROM demo.events",
+        )
+        self.validate_identity(
+            "SUBSTRING(label FROM COALESCE(start_pos, 1), ABS(length_value))",
+            "SUBSTRING(label, COALESCE(start_pos, 1), ABS(length_value))",
+        )
+        self.validate_identity("SUBSTRING(label FROM start_pos)", "SUBSTRING(label, start_pos)")
+        self.validate_identity("SUBSTRING(label, start_pos)")
+
+        expression = self.parse_one(
+            "SUBSTRING(label FROM start_pos /* start */, length_value /* length */)"
+        ).assert_is(exp.Substring)
+        self.assertEqual(expression.args["start"].comments, [" start "])
+        self.assertEqual(expression.args["length"].comments, [" length "])
+        expression = self.parse_one(
+            "SUBSTRING(label FROM start_pos, /* separator */ length_value)"
+        ).assert_is(exp.Substring)
+        self.assertEqual(expression.args["start"].comments, [" separator "])
+
+    def test_substring_parse_errors(self):
+        for sql in (
+            "SELECT SUBSTRING(label FROM start_pos,), other FROM demo.events",
+            "SUBSTRING(label FROM start_pos,)",
+            "SUBSTRING(label FROM start_pos,",
+            "SUBSTRING(label FROM , length_value)",
+            "SUBSTRING(label FROM start_pos, length_value, other)",
+            "SUBSTRING(label FROM start_pos FOR length_value, other)",
+            "SELECT SUBSTRING(label FROM start_pos, length_value FROM demo.events",
+            "SUBSTRING(label FROM start_pos FOR , length_value)",
+            "SUBSTRING(label, FROM start_pos, length_value)",
+            "SUBSTRING(, label FROM start_pos, length_value)",
+        ):
+            with self.subTest(sql=sql):
+                with self.assertRaises(ParseError):
+                    self.parse_one(sql, error_level=ErrorLevel.RAISE)
+
     def test_abbrev(self):
         self.validate_identity("a LT b", "a < b")
         self.validate_identity("a LE b", "a <= b")

@@ -237,7 +237,16 @@ class AbstractMappingSchema:
         Returns:
             The schema of the target table.
         """
-        parts = self.table_parts(table)[0 : len(self.supported_table_args)]
+        return self._find(
+            self.table_parts(table),
+            raise_on_missing=raise_on_missing,
+            ensure_data_types=ensure_data_types,
+        )
+
+    def _find(
+        self, parts: Sequence[str], raise_on_missing: bool = True, ensure_data_types: bool = False
+    ) -> t.Any | None:
+        parts = list(parts[0 : len(self.supported_table_args)])
         resolved_parts = self._find_in_trie(parts, self.mapping_trie, raise_on_missing)
 
         if resolved_parts is None:
@@ -312,9 +321,11 @@ class MappingSchema(AbstractMappingSchema, Schema):
         self.normalize: bool = normalize
         self._dialect: Dialect = Dialect.get_or_raise(dialect)
         self._type_mapping_cache: dict[str, exp.DataType] = {}
-        self._normalized_table_cache: dict[tuple[exp.Table, DialectType, bool], exp.Table] = {}
+        self._normalized_table_cache: dict[
+            tuple[tuple[tuple[str, bool | None], ...], DialectType, bool], tuple[str, ...]
+        ] = {}
         self._normalized_name_cache: dict[tuple[str, DialectType, bool, bool], str] = {}
-        self._find_cache: dict[tuple[exp.Table, bool], dict[str, object] | None] = {}
+        self._find_cache: dict[tuple[tuple[str, ...], bool], dict[str, object] | None] = {}
         self._depth: int = 0
         schema = {} if schema is None else schema
         udf_mapping = {} if udf_mapping is None else udf_mapping
@@ -339,14 +350,14 @@ class MappingSchema(AbstractMappingSchema, Schema):
             udf_mapping=mapping_schema.udf_mapping,
         )
 
-    def find(
-        self, table: exp.Table, raise_on_missing: bool = True, ensure_data_types: bool = False
+    def _find(
+        self, parts: Sequence[str], raise_on_missing: bool = True, ensure_data_types: bool = False
     ) -> t.Any | None:
-        cache_key = (table, ensure_data_types)
+        cache_key = (tuple(parts), ensure_data_types)
         schema = self._find_cache.get(cache_key)
 
         if schema is None:
-            schema = super().find(table, raise_on_missing=raise_on_missing)
+            schema = super()._find(parts, raise_on_missing=raise_on_missing)
             if ensure_data_types and isinstance(schema, dict):
                 schema = {
                     col: self._to_data_type(dtype) if isinstance(dtype, str) else dtype
@@ -387,12 +398,12 @@ class MappingSchema(AbstractMappingSchema, Schema):
             normalize: whether to normalize identifiers according to the dialect of interest.
             match_depth: whether to enforce that the table must match the schema's depth or not.
         """
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        parts = self._normalize_table_parts(table, dialect=dialect, normalize=normalize)
 
-        if match_depth and not self.empty and len(normalized_table.parts) != self.depth():
+        if match_depth and not self.empty and len(parts) != self.depth():
+            table_name = ".".join(reversed(parts))
             raise SchemaError(
-                f"Table {normalized_table.sql(dialect=self.dialect)} must match the "
-                f"schema's nesting level: {self.depth()}."
+                f"Table {table_name} must match the schema's nesting level: {self.depth()}."
             )
 
         normalized_column_mapping = {
@@ -400,11 +411,9 @@ class MappingSchema(AbstractMappingSchema, Schema):
             for key, value in ensure_column_mapping(column_mapping).items()
         }
 
-        schema = self.find(normalized_table, raise_on_missing=False)
+        schema = self._find(parts, raise_on_missing=False)
         if schema and not normalized_column_mapping:
             return
-
-        parts = self.table_parts(normalized_table)
 
         nested_set(self.mapping, tuple(reversed(parts)), normalized_column_mapping)
         new_trie([parts], self.mapping_trie)
@@ -420,16 +429,16 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: bool | None = None,
     ) -> list[str]:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        parts = self._normalize_table_parts(table, dialect=dialect, normalize=normalize)
 
-        schema: dict[str, object] | None = self.find(normalized_table)
+        schema: dict[str, object] | None = self._find(parts)
         if schema is None:
             return []
 
         if not only_visible or not self.visible:
             return list(schema)
 
-        visible = self.nested_get(self.table_parts(normalized_table), self.visible) or []
+        visible = self.nested_get(parts, self.visible) or []
         return [col for col in schema if col in visible]
 
     def get_column_type(
@@ -439,13 +448,13 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: bool | None = None,
     ) -> exp.DataType:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        parts = self._normalize_table_parts(table, dialect=dialect, normalize=normalize)
 
         normalized_column_name = self._normalize_name(
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self._find(parts, raise_on_missing=False)
         if table_schema:
             column_type = table_schema.get(normalized_column_name)
 
@@ -499,13 +508,13 @@ class MappingSchema(AbstractMappingSchema, Schema):
         dialect: DialectType = None,
         normalize: bool | None = None,
     ) -> bool:
-        normalized_table = self._normalize_table(table, dialect=dialect, normalize=normalize)
+        parts = self._normalize_table_parts(table, dialect=dialect, normalize=normalize)
 
         normalized_column_name = self._normalize_name(
             column if isinstance(column, str) else column.this, dialect=dialect, normalize=normalize
         )
 
-        table_schema: dict[str, object] | None = self.find(normalized_table, raise_on_missing=False)
+        table_schema: dict[str, object] | None = self._find(parts, raise_on_missing=False)
         return normalized_column_name in table_schema if table_schema else False
 
     def _normalize(self, schema: dict[str, object]) -> dict[str, object]:
@@ -601,33 +610,36 @@ class MappingSchema(AbstractMappingSchema, Schema):
 
         return parts
 
-    def _normalize_table(
+    def _normalize_table_parts(
         self,
         table: exp.Table | str,
         dialect: DialectType = None,
         normalize: bool | None = None,
-    ) -> exp.Table:
+    ) -> tuple[str, ...]:
         dialect = dialect or self.dialect
         normalize = self.normalize if normalize is None else normalize
 
-        # Cache normalized tables by object id for exp.Table inputs
-        # This is effective when the same Table object is looked up multiple times
-        if isinstance(table, exp.Table) and (
-            cached := self._normalized_table_cache.get((table, dialect, normalize))
-        ):
+        table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=False)
+        parts = table.parts
+        cache_key = (
+            tuple(
+                (part.name, part.quoted if isinstance(part, exp.Identifier) else None)
+                for part in parts
+            ),
+            dialect,
+            normalize,
+        )
+        if (cached := self._normalized_table_cache.get(cache_key)) is not None:
             return cached
 
-        normalized_table = exp.maybe_parse(table, into=exp.Table, dialect=dialect, copy=normalize)
-
-        if normalize:
-            for part in normalized_table.parts:
-                if isinstance(part, exp.Identifier):
-                    part.replace(
-                        normalize_name(part, dialect=dialect, is_table=True, normalize=normalize)
-                    )
-
-        self._normalized_table_cache[(normalized_table, dialect, normalize)] = normalized_table
-        return normalized_table
+        normalized_parts = tuple(
+            normalize_name(part, dialect=dialect, is_table=True).name
+            if normalize and isinstance(part, exp.Identifier)
+            else part.name
+            for part in reversed(parts)
+        )
+        self._normalized_table_cache[cache_key] = normalized_parts
+        return normalized_parts
 
     def _normalize_name(
         self,

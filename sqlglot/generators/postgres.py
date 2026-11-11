@@ -503,8 +503,19 @@ class PostgresGenerator(generator.Generator):
 
         if param_constraint:
             mode_sql = self.sql(param_constraint)
-            param_constraint.pop()  # Remove to prevent double-rendering
-            base_sql = super().columndef_sql(expression, sep)
+
+            # Removing the constraint from `expression` mutates the caller's AST:
+            # generate(..., copy=False) (used by transpile) then produces the mode
+            # once, but the mode is lost on any subsequent generation. It also
+            # relies on parent links, which aren't set for freshly parsed trees,
+            # so pop() was a no-op and the mode was rendered twice. Work on a copy
+            # instead, whose parent links are complete, and leave the input intact.
+            without_mode = expression.copy()
+            mode = without_mode.find(exp.InOutColumnConstraint)
+            if mode:
+                mode.pop()
+
+            base_sql = super().columndef_sql(without_mode, sep)
             return f"{mode_sql} {base_sql}"
 
         return super().columndef_sql(expression, sep)

@@ -3633,6 +3633,17 @@ class DuckDBGenerator(generator.Generator):
         result = exp.replace_placeholders(self.APPROXIMATE_SIMILARITY_TEMPLATE.copy(), expr=expr)
         return f"({self.sql(result)})"
 
+    def arrayall_sql(self, expression: exp.ArrayAll) -> str:
+        return self.func(
+            "LIST_REDUCE",
+            exp.Transform(this=expression.this, expression=expression.expression),
+            exp.Lambda(
+                this=exp.and_(exp.to_identifier("_a"), exp.to_identifier("_b")),
+                expressions=[exp.to_identifier("_a"), exp.to_identifier("_b")],
+            ),
+            exp.true(),
+        )
+
     def arrayuniqueagg_sql(self, expression: exp.ArrayUniqueAgg) -> str:
         return self.sql(
             exp.Filter(

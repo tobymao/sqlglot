@@ -451,9 +451,19 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         parent_predicate = _replace(parent_predicate, f"NOT {alias} IS NULL")
     elif isinstance(parent_predicate, exp.All):
         assert issubclass(op_type, exp.Binary)
-        predicate = op_type(this=other, expression=exp.column("_x"))
+        if value.this in group_by:
+            predicate = op_type(this=other, expression=alias)
+        else:
+            predicate = exp.ArrayAll(
+                this=alias,
+                expression=exp.Lambda(
+                    this=op_type(this=other, expression=exp.column("_x")),
+                    expressions=[exp.to_identifier("_x")],
+                ),
+            )
+        # ALL is true over an empty set, represented by a missing LEFT JOIN match.
         parent_predicate = _replace(
-            parent_predicate.parent, f"ARRAY_ALL({alias}, _x -> {predicate})"
+            parent_predicate.parent, exp.paren(alias.is_(exp.null()).or_(predicate))
         )
     elif isinstance(parent_predicate, exp.Any):
         assert issubclass(op_type, exp.Binary)

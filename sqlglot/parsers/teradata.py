@@ -125,7 +125,7 @@ class TeradataParser(parser.Parser):
         if self._curr.token_type != TokenType.STRING and not self._is_hex_character_charset():
             return super()._parse_primary()
 
-        expressions = []
+        expressions: list[exp.Expr] = []
         while self._curr.token_type == TokenType.STRING or self._is_hex_character_charset():
             if expressions and self._is_connected() and self.ADJACENT_STRINGS_CANNOT_BE_CONNECTED:
                 self.raise_error("Adjacent string literals need whitespace or comments")

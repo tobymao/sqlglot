@@ -110,6 +110,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.EndsWith,
             exp.Exists,
             exp.In,
+            exp.IsArray,
             exp.IsInf,
             exp.IsNan,
             exp.LogicalAnd,

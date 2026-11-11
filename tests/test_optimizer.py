@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -2401,6 +2402,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
         self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
+
+    def test_merge_subqueries_match(self):
+        sql = (
+            "SELECT x.a, q.c FROM x LEFT JOIN "
+            "(SELECT y.b, y.c MATCH 'hit' AS c FROM y) AS q ON x.a = q.b ORDER BY x.a"
+        )
+        optimized = optimizer.optimize(
+            sql, schema={"x": {"a": "INT"}, "y": {"b": "INT", "c": "TEXT"}}, dialect="sqlite"
+        )
+
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.create_function("match", 2, lambda term, value: int(value == term))
+        connection.executescript(
+            "CREATE TABLE x(a INT); INSERT INTO x VALUES (1), (2); "
+            "CREATE TABLE y(b INT, c TEXT); INSERT INTO y VALUES (1, 'hit');"
+        )
+        self.assertEqual(connection.execute(sql).fetchall(), [(1, 1), (2, None)])
+        self.assertEqual(
+            connection.execute(optimized.sql("sqlite")).fetchall(), [(1, 1), (2, None)]
+        )
 
     def test_merge_subqueries_copy_budget(self):
         # Each CTE references its source's projection twice, so merging the whole chain would

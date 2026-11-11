@@ -169,6 +169,10 @@ SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c IS NULL AS
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c IS NOT DISTINCT FROM NULL AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c IS NOT DISTINCT FROM NULL AS c FROM y AS y) AS q ON x.a = q.b;
 
+# title: Left join with a null-safe inequality
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c IS DISTINCT FROM NULL AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c IS DISTINCT FROM NULL AS c FROM y AS y) AS q ON x.a = q.b;
+
 # title: Left join with OR TRUE
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c = 1 OR TRUE AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c = 1 OR TRUE AS c FROM y AS y) AS q ON x.a = q.b;
@@ -253,9 +257,21 @@ SELECT x.a AS a, y.c & 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CAST(-(y.c + 1) AS BIGINT) AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, CAST(-(y.c + 1) AS BIGINT) AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
 
-# title: Left join with a predicate projection is conservatively retained
+# title: Left join with null-propagating comparisons can merge
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, NOT y.c = 1 AS c FROM y) AS q ON x.a = q.b;
-SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, NOT y.c = 1 AS c FROM y AS y) AS q ON x.a = q.b;
+SELECT x.a AS a, NOT y.c = 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
+# title: Left join with a struct field can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT t.b, t.s.a AS c FROM (VALUES (2, STRUCT(3 AS a)), (3, NULL)) AS t(b, s)) AS q ON x.a = q.b;
+SELECT x.a AS a, t.s.a AS c FROM x AS x LEFT JOIN (VALUES (2, STRUCT(3 AS a)), (3, NULL)) AS t(b, s) ON x.a = t.b;
+
+# title: Left join with a nested struct field can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT t.b, t.s.n.a AS c FROM (VALUES (2, STRUCT(STRUCT(3 AS a) AS n)), (3, NULL)) AS t(b, s)) AS q ON x.a = q.b;
+SELECT x.a AS a, t.s.n.a AS c FROM x AS x LEFT JOIN (VALUES (2, STRUCT(STRUCT(3 AS a) AS n)), (3, NULL)) AS t(b, s) ON x.a = t.b;
+
+# title: Left join with a field of a constructed struct stays isolated
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, (STRUCT(1 AS a, y.c AS b)).a AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, (STRUCT(1 AS a, y.c AS b)).a AS c FROM y AS y) AS q ON x.a = q.b;
 
 # title: Left join with arithmetic propagating NULL from the right operand can merge
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, 1 - y.c AS c FROM y) AS q ON x.a = q.b;

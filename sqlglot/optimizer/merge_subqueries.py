@@ -144,9 +144,11 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 # conservative list, not a claim that every instance returns a non-NULL value.
 NULL_PROPAGATION_EXCEPTIONS = (
     exp.Func,  # Binary functions include AND/OR, which need not propagate NULL.
-    exp.Predicate,  # Includes IS NULL and null-safe comparisons.
+    exp.Is,  # IS NULL/TRUE/FALSE return booleans for NULL inputs.
+    exp.NullSafeEQ,
+    exp.NullSafeNEQ,
+    exp.Match,  # MATCH can invoke a user-defined function, e.g., in SQLite.
     exp.DPipe,  # Concatenation ignores NULL operands in some dialects.
-    exp.Dot,  # Dotted syntax can also contain function calls.
     exp.NestedJSONSelect,  # Dialect-specific JSON field access.
     exp.Operator,  # User-defined operators have unknown NULL behavior.
     exp.PropertyEQ,  # Named field syntax: name := value.
@@ -394,7 +396,10 @@ def _mergeable(
                 isinstance(node, exp.Column) and node.table in inner_scope.selected_sources
             ):
                 return True
-            if isinstance(node, (exp.Cast, exp.Unary)):
+            if isinstance(node, exp.Dot):
+                if isinstance(node.expression, exp.Identifier):
+                    stack.append(node.this)
+            elif isinstance(node, (exp.Cast, exp.Unary)):
                 stack.append(node.this)
             elif isinstance(node, exp.Binary) and not isinstance(node, NULL_PROPAGATION_EXCEPTIONS):
                 stack.extend((node.expression, node.this))

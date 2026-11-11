@@ -46,7 +46,9 @@ def _build_trunc(args: list, dialect: Dialect) -> exp.DateTrunc | exp.Trunc | ex
     trunc = build_trunc(args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD")
     if isinstance(trunc, exp.DateTrunc) and trunc.unit.is_string:
         unit = TERADATA_TRUNC_FORMAT_TO_UNIT.get(trunc.unit.name.upper())
-        if unit:
+        if unit == "WEEK":
+            trunc.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+        elif unit:
             trunc.set("unit", exp.Literal.string(unit))
     return trunc
 

@@ -644,9 +644,10 @@ class TestTeradata(Validator):
             },
             write={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
-                "duckdb": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
+                "duckdb": "CAST(DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE) + INTERVAL '1' DAY) + INTERVAL '-1' DAY AS DATE)",
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK)",
                 "tsql": "DATETRUNC(WEEK, CAST('2024-05-15' AS DATE))",
+                "snowflake": UnsupportedError,
             },
         )
         self.validate_all(
@@ -680,8 +681,19 @@ class TestTeradata(Validator):
         self.validate_identity("TRUNC(x, 'IYYY')")
         self.validate_identity("TRUNC(x, 'CC')")
         # Preserve Teradata-specific week-of-month ('W') and week-of-year ('WW') formats
-        self.validate_identity("TRUNC(x, 'W')")
-        self.validate_identity("TRUNC(x, 'WW')")
+        # for Teradata round trips, while reporting cross-dialect generation as unsupported
+        for unit in ("W", "WW"):
+            self.validate_all(
+                f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
+                write={
+                    "teradata": f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
+                    "duckdb": UnsupportedError,
+                    "bigquery": UnsupportedError,
+                    "postgres": UnsupportedError,
+                    "snowflake": UnsupportedError,
+                    "tsql": UnsupportedError,
+                },
+            )
 
         # Unsupported DateTrunc units/args warn/raise in Teradata
         with self.assertRaises(UnsupportedError):

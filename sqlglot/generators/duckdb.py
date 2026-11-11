@@ -4629,7 +4629,7 @@ class DuckDBGenerator(generator.Generator):
         date = expression.this
 
         week_start = _week_trunc_start_dow(unit)
-        unit = unit_to_str(expression)
+        unit = unit_to_str(expression) if week_start else weekstart_unit_to_str(self, expression)
 
         if week_start:
             result = self.sql(

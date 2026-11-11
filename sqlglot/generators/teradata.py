@@ -119,14 +119,10 @@ class TeradataGenerator(generator.Generator):
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit
         if isinstance(unit, exp.WeekStart):
-            day = unit.name.upper()
-            if day == "MONDAY":
+            if unit.name.upper() == "MONDAY":
                 unit = exp.Literal.string("IW")
             else:
-                if day != "SUNDAY":
-                    self.unsupported(
-                        f"WEEK({day}) is not supported; falling back to the default week start day"
-                    )
+                self.weekstart_name(unit)
                 unit = exp.Literal.string("DAY")
         elif isinstance(unit, (exp.Literal, exp.Var)):
             unit_name = unit.name.upper()

@@ -284,13 +284,16 @@ class TSQLGenerator(generator.Generator):
     @unsupported_args("zone")
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit_expr = expression.unit
-        unit = (
-            exp.var(self.weekstart_name(unit_expr))
-            if isinstance(unit_expr, exp.WeekStart)
-            else unit_to_var(expression)
-        )
-        if isinstance(unit, exp.Var) and unit.name.upper() == "ISOWEEK":
-            unit = exp.var("ISO_WEEK")
+        if isinstance(unit_expr, exp.WeekStart):
+            unit: exp.Expr | None = exp.var(
+                "ISO_WEEK" if unit_expr.name.upper() == "MONDAY" else self.weekstart_name(unit_expr)
+            )
+        else:
+            if unit_expr.is_string and unit_expr.name.upper() in ("W", "WW"):
+                self.unsupported(f"Unexpected interval unit: {unit_expr.name}")
+            unit = unit_to_var(expression)
+            if isinstance(unit, exp.Var) and unit.name.upper() == "ISOWEEK":
+                unit = exp.var("ISO_WEEK")
         return self.func("DATETRUNC", unit, expression.this)
 
     def select_sql(self, expression: exp.Select) -> str:

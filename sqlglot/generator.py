@@ -6659,6 +6659,13 @@ class Generator:
 
         return name
 
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        unit = expression.unit
+        if unit.is_string and unit.name.upper() in ("W", "WW"):
+            self.unsupported(f"Unexpected interval unit: {unit.name}")
+
+        return self.function_fallback_sql(expression)
+
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
         this = self.expressions(expression)
         charset = self.sql(expression, "charset")

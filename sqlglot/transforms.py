@@ -1116,25 +1116,30 @@ def inherit_struct_field_names(expression: exp.Expr) -> exp.Expr:
     ):
         field_names: list[exp.Identifier] = [fld.this for fld in first_item.expressions]
 
-        # Apply field names to subsequent structs that don't have them
-        for struct in expression.expressions[1:]:
-            if not isinstance(struct, exp.Struct) or len(struct.expressions) != len(field_names):
-                continue
+        # Apply field names to subsequent structs/tuples that don't have them
+        for item in expression.expressions[1:]:
+            named_fields: list[exp.PropertyEQ] = []
 
-            # Convert unnamed expressions to PropertyEQ with inherited names
-            new_expressions: list[exp.PropertyEQ] = []
-            for i, expr in enumerate(struct.expressions):
-                if not isinstance(expr, exp.PropertyEQ):
-                    # Create PropertyEQ: field_name := value, preserving the type from the inner expression
-                    property_eq = exp.PropertyEQ(
-                        this=field_names[i].copy(),
-                        expression=expr,
-                    )
-                    property_eq.type = expr.type
-                    new_expressions.append(property_eq)
-                else:
-                    new_expressions.append(expr)
+            if isinstance(item, exp.Tuple) and len(item.expressions) == len(field_names):
+                for j, val in enumerate(item.expressions):
+                    property_eq = exp.PropertyEQ(this=field_names[j].copy(), expression=val)
+                    property_eq.type = val.type
+                    named_fields.append(property_eq)
+                new_struct = exp.Struct(expressions=named_fields)
+                new_struct.type = item.type
+                item.replace(new_struct)
+            elif isinstance(item, exp.Struct) and len(item.expressions) == len(field_names):
+                for j, expr in enumerate(item.expressions):
+                    if not isinstance(expr, exp.PropertyEQ):
+                        property_eq = exp.PropertyEQ(
+                            this=field_names[j].copy(),
+                            expression=expr,
+                        )
+                        property_eq.type = expr.type
+                        named_fields.append(property_eq)
+                    else:
+                        named_fields.append(expr)
 
-            struct.set("expressions", new_expressions)
+                item.set("expressions", named_fields)
 
     return expression

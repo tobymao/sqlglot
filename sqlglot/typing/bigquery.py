@@ -203,6 +203,15 @@ def _annotate_array(self: TypeAnnotator, expression: exp.Array) -> exp.Array:
             self._set_type(expression, array_type)
             return expression
 
+    # BigQuery inherits field names from the first STRUCT in a literal array
+    first_type = array_args[0].type if array_args else None
+    if first_type and first_type.is_type(exp.DType.STRUCT) and first_type.expressions:
+        self._set_type(
+            expression,
+            exp.DataType(this=exp.DType.ARRAY, expressions=[first_type.copy()], nested=True),
+        )
+        return expression
+
     return self._annotate_by_args(expression, "expressions", array=True)
 
 

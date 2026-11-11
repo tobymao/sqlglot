@@ -242,6 +242,12 @@ class Resolver:
                                     source_expr.type = element_types[0].copy()
                             elif col_type:
                                 source_expr.type = col_type.copy()
+                        elif isinstance(unnest_expr, exp.Array):
+                            first_elem = seq_get(unnest_expr.expressions, 0)
+                            if isinstance(first_elem, exp.Struct) and all(
+                                isinstance(f, exp.PropertyEQ) for f in first_elem.expressions
+                            ):
+                                columns.extend(f.name for f in first_elem.expressions)
 
                     columns.extend(self._struct_field_names(source_expr.type))
                 elif isinstance(source_expr, exp.Lateral) and isinstance(

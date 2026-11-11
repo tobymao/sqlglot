@@ -2171,6 +2171,31 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         else:
                             self.assertCountEqual(actual, expected)
 
+    def test_optimize_uncorrelated_exists(self):
+        for subquery in (
+            "SELECT y.b FROM y",
+            "SELECT y.b FROM y WHERE y.b IS NULL",
+            "SELECT y.b FROM y WHERE FALSE",
+            "SELECT SUM(y.b) FROM y WHERE FALSE",
+            "SELECT y.b FROM y LIMIT 0",
+            "SELECT y.b FROM y LIMIT 1 OFFSET 1",
+            "SELECT y.b FROM y UNION ALL SELECT z.b FROM z",
+        ):
+            for sql in (
+                f"SELECT x.a, COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x GROUP BY x.a",
+                f"SELECT COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x",
+                f"SELECT COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x WHERE FALSE",
+                f"SELECT COUNT(*), SUM(CASE WHEN EXISTS ({subquery}) THEN 1 ELSE 0 END) FROM x",
+                f"SELECT COUNT(*), SUM(CASE WHEN NOT EXISTS ({subquery}) THEN 1 ELSE 0 END) FROM x",
+                f"SELECT x.a, COUNT(*) AS n FROM x GROUP BY x.a HAVING EXISTS ({subquery})",
+            ):
+                with self.subTest(sql=sql):
+                    optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                    self.assertCountEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                    )
+
     def test_optimize_subqueries_in_aggregates(self):
         for projection in (
             "SUM(CASE WHEN x.a = (SELECT LENGTH(w.d) FROM w WHERE w.e = 'b') THEN 1 ELSE 0 END)",

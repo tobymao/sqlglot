@@ -64,5 +64,5 @@ SELECT x.a, y.b, z.b, v.a, w.c FROM x JOIN (y LEFT JOIN y AS z ON y.c = z.c) ON 
 
 # title: Preserve predicates referencing unnamed join operands
 # execute: true
-SELECT x.a, y.b, z.b FROM x CROSS JOIN y JOIN (y AS z) ON x.b = z.b AND y.c = z.c ORDER BY x.a, y.b, z.b;
-SELECT x.a, y.b, z.b FROM x CROSS JOIN y JOIN (y AS z) ON x.b = z.b AND y.c = z.c ORDER BY x.a, y.b, z.b;
+SELECT x.a, y.b, z.b FROM x CROSS JOIN y JOIN (y AS z JOIN y AS w ON z.c = w.c) ON x.b = z.b AND y.c = z.c ORDER BY x.a, y.b, z.b;
+SELECT x.a, y.b, z.b FROM x CROSS JOIN y JOIN (y AS z JOIN y AS w ON z.c = w.c) ON x.b = z.b AND y.c = z.c ORDER BY x.a, y.b, z.b;

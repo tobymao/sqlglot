@@ -1047,7 +1047,7 @@ WITH cte AS (SELECT a.b.c.d.f.g FROM tbl1) SELECT g FROM (SELECT g FROM tbl2) tb
 WITH cte AS (SELECT tbl1.a.b.c.d.f.g AS g FROM tbl1 AS tbl1) SELECT COALESCE(tbl2.g, cte.g) AS g FROM (SELECT tbl2.g AS g FROM tbl2 AS tbl2) AS tbl2 JOIN cte AS cte ON tbl2.g = cte.g;
 
 SELECT x.b FROM x JOIN y USING (b) JOIN z USING (b);
-SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
+SELECT x.b AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON COALESCE(x.b, y.b) = z.b;
 
 SELECT b FROM x AS x2 JOIN y AS y2 USING (b);
 SELECT COALESCE(x2.b, y2.b) AS b FROM x AS x2 JOIN y AS y2 ON x2.b = y2.b;
@@ -1056,7 +1056,7 @@ SELECT b FROM x JOIN y USING (b) WHERE b = 1 and y.b = 2;
 SELECT COALESCE(x.b, y.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b WHERE COALESCE(x.b, y.b) = 1 AND y.b = 2;
 
 SELECT b FROM x JOIN y USING (b) JOIN z USING (b);
-SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON x.b = z.b;
+SELECT COALESCE(x.b, y.b, z.b) AS b FROM x AS x JOIN y AS y ON x.b = y.b JOIN z AS z ON COALESCE(x.b, y.b) = z.b;
 
 # dialect: duckdb
 SELECT * FROM x JOIN y USING(b);
@@ -1108,6 +1108,11 @@ SELECT x.b AS b FROM t AS t JOIN x AS x ON t.a = x.a;
 # execute: false
 SELECT a FROM t1 JOIN t2 USING(a);
 SELECT COALESCE(t1.a, t2.a) AS a FROM t1 AS t1 JOIN t2 AS t2 ON t1.a = t2.a;
+
+# title: Reuse the merged USING column without a known schema
+# execute: false
+SELECT a FROM t1 FULL JOIN t2 USING (a) JOIN t3 USING (a);
+SELECT COALESCE(t1.a, t2.a, t3.a) AS a FROM t1 AS t1 FULL JOIN t2 AS t2 ON t1.a = t2.a JOIN t3 AS t3 ON COALESCE(t1.a, t2.a) = t3.a;
 
 WITH m(a) AS (SELECT 1), n(b) AS (SELECT 1) SELECT * FROM m JOIN n AS foo(a) USING (a);
 WITH m AS (SELECT 1 AS a), n AS (SELECT 1 AS b) SELECT COALESCE(m.a, foo.a) AS a FROM m AS m JOIN n AS foo(a) ON m.a = foo.a;

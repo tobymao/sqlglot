@@ -1898,6 +1898,32 @@ class TestOptimizer(unittest.TestCase):
             "WITH T AS (SELECT 1 AS A) SELECT T.$2 AS _COL_0 FROM T AS T",
         )
 
+    def test_qualify_columns_using_after_outer_join(self):
+        source = "(VALUES (1, 'c1'), (2, 'c2'), (2, 'c3'), (3, 'c4'), (NULL, 'cn')) AS c(k, vc)"
+        for side in ("FULL", "RIGHT"):
+            for join in (
+                f"JOIN {source} USING (k)",
+                f"LEFT JOIN {source} USING (k)",
+                f"FULL JOIN {source} USING (k)",
+                f"SEMI JOIN {source} USING (k)",
+                f"ANTI JOIN {source} USING (k)",
+                f"ANTI JOIN (VALUES (0)) AS d(k) USING (k) JOIN {source} USING (k)",
+                f"NATURAL JOIN {source}",
+            ):
+                with self.subTest(side=side, join=join):
+                    sql = (
+                        "SELECT * FROM (VALUES (1, 'a1'), (NULL, 'an')) AS a(k, va) "
+                        f"{side} JOIN (VALUES (1, 'b1'), (2, 'b2'), (NULL, 'bn')) AS b(k, vb) "
+                        f"USING (k) {join}"
+                    )
+                    expected = self.conn.execute(sql).fetchall()
+                    for transform in (qualify, optimizer.optimize):
+                        with self.subTest(transform=transform.__name__):
+                            transformed = transform(parse_one(sql, read="duckdb"), dialect="duckdb")
+                            self.assertCountEqual(
+                                self.conn.execute(transformed.sql("duckdb")).fetchall(), expected
+                            )
+
     def test_qualify_columns__with_invisible(self):
         schema = MappingSchema(self.schema, {"x": {"a"}, "y": {"b"}, "z": {"b"}})
         self.check_file("qualify_columns__with_invisible", qualify_columns, schema=schema)

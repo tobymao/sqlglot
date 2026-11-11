@@ -239,7 +239,7 @@ class TeradataParser(parser.Parser):
             and self._next.token_type == TokenType.L_PAREN
             and self._index + 3 < len(self._tokens)
             and self._tokens[self._index + 2].token_type in {TokenType.FORMAT, TokenType.VAR}
-            and self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE"}
+            and self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE", "NAMED"}
             and self._tokens[self._index + 3].token_type != TokenType.L_PAREN
         ):
             return None
@@ -258,20 +258,26 @@ class TeradataParser(parser.Parser):
             this
             and self._curr.token_type == TokenType.L_PAREN
             and self._next.token_type in {TokenType.FORMAT, TokenType.VAR}
-            and self._next.text.upper() in {"FORMAT", "TITLE"}
+            and self._next.text.upper() in {"FORMAT", "TITLE", "NAMED"}
         ):
             self._advance()
             attributes: dict[str, exp.Expr | None] = {}
             while True:
                 attribute = self._curr.text.upper()
-                if not self._match_texts(("FORMAT", "TITLE")):
-                    self.raise_error("Expected FORMAT or TITLE")
+                if not self._match_texts(("FORMAT", "TITLE", "NAMED")):
+                    self.raise_error("Expected FORMAT, TITLE or NAMED")
                     break
                 if attribute in attributes:
                     self.raise_error(f"Duplicate {attribute} attribute")
-                value = self._parse_string()
+                value = (
+                    self._parse_id_var(any_token=False, tokens={TokenType.VAR, TokenType.STRING})
+                    if attribute == "NAMED"
+                    else self._parse_string()
+                )
                 if not value:
-                    self.raise_error(f"Expected string after {attribute}")
+                    self.raise_error(f"Expected value after {attribute}")
+                elif attribute == "NAMED" and not isinstance(value, exp.Identifier):
+                    self.raise_error("Expected alias after NAMED")
                 elif attribute == "TITLE" and not value.is_string:
                     self.raise_error("Expected string literal after TITLE")
                 attributes[attribute] = value
@@ -282,9 +288,41 @@ class TeradataParser(parser.Parser):
                 this = self.expression(exp.FormatPhrase(this=this, format=attributes["FORMAT"]))
             if "TITLE" in attributes:
                 this = self.expression(exp.TeradataTitle(this=this, title=attributes["TITLE"]))
+            if "NAMED" in attributes:
+                this = self.expression(exp.TeradataNamed(this=this, alias=attributes["NAMED"]))
             this = super()._parse_column_ops(this)
 
         return this
+
+    def _parse_projections(self) -> tuple[list[exp.Expr], list[exp.Expr] | None]:
+        projections, exclude = super()._parse_projections()
+        for i, projection in enumerate(projections):
+            alias = (
+                projection
+                if isinstance(projection, exp.Alias)
+                and not isinstance(projection, exp.TeradataNamed)
+                else None
+            )
+            this = alias.this if alias else projection
+            node = this
+            named_alias = None
+            while isinstance(node, (exp.FormatPhrase, exp.TeradataTitle, exp.TeradataNamed)):
+                child = node.this
+                if isinstance(node, exp.TeradataNamed):
+                    if alias or named_alias:
+                        child.add_comments(node.args["alias"].pop_comments())
+                    named_alias = named_alias or node.args["alias"]
+                    child.add_comments(node.pop_comments())
+                    if node is this:
+                        this = child
+                    node.replace(child)
+                node = child
+            if named_alias:
+                if alias:
+                    alias.set("this", this)
+                else:
+                    projections[i] = self.expression(exp.Alias(this=this, alias=named_alias))
+        return projections, exclude
 
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         window = super()._parse_window(this, alias)

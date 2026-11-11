@@ -4059,6 +4059,10 @@ class Generator:
         self.unsupported("Teradata TITLE display headings are not supported")
         return self.sql(expression, "this")
 
+    def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
+        self.unsupported("Teradata NAMED on subexpressions is not supported")
+        return self.sql(expression, "this")
+
     def _jsonobject_sql(
         self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""
     ) -> str:

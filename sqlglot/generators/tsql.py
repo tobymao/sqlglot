@@ -16,7 +16,9 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     trim_sql,
+    unit_to_var,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
@@ -278,6 +280,18 @@ class TSQLGenerator(generator.Generator):
 
     def scope_resolution(self, rhs: str, scope_name: str) -> str:
         return f"{scope_name}::{rhs}"
+
+    @unsupported_args("zone")
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        unit_expr = expression.unit
+        unit = (
+            exp.var(self.weekstart_name(unit_expr))
+            if isinstance(unit_expr, exp.WeekStart)
+            else unit_to_var(expression)
+        )
+        if isinstance(unit, exp.Var) and unit.name.upper() == "ISOWEEK":
+            unit = exp.var("ISO_WEEK")
+        return self.func("DATETRUNC", unit, expression.this)
 
     def select_sql(self, expression: exp.Select) -> str:
         self._prepare_limit_offset(expression)

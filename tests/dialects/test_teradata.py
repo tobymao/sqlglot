@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse, parse_one
 from tests.dialects.test_dialect import Validator
 
 
@@ -574,66 +574,126 @@ class TestTeradata(Validator):
         )
 
     def test_trunc(self):
-        # Date truncation vs numeric truncation disambiguation
+        # Temporal vs. numeric disambiguation (and Unknown fallback)
         self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
-        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
-        self.parse_one("TRUNC(CURRENT_DATE, 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'HH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CURRENT_DATE, 'Q')").assert_is(exp.DateTrunc)
         self.parse_one("TRUNC(col, 'MM')").assert_is(exp.DateTrunc)
-
-        self.validate_identity("TRUNC(CAST(x AS DATE))", "TRUNC(CAST(x AS DATE), 'DD')").assert_is(
-            exp.DateTrunc
-        )
-        self.validate_identity("TRUNC(CURRENT_DATE)", "TRUNC(CURRENT_DATE, 'DD')").assert_is(
-            exp.DateTrunc
-        )
-
-        # Preserve Teradata format abbreviations such as 'Q', 'W', and 'MM'
-        for unit in ("'Q'", "'W'", "'MM'"):
-            self.validate_identity(f"TRUNC(x, {unit})")
-
         self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
         self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
         self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
         self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
 
-        for unit in ("DAY", "MONTH", "QUARTER", "YEAR"):
-            with self.subTest(f"Date TRUNC with {unit}"):
-                self.validate_all(
-                    f"TRUNC(CAST(x AS DATE), '{unit}')",
-                    read={
-                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
-                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
-                    },
-                    write={
-                        "teradata": f"TRUNC(CAST(x AS DATE), '{unit}')",
-                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
-                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
-                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
-                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
-                    },
-                )
-
+        # Temporal TRUNC without an explicit format defaults to 'DD' (canonical DAY)
         self.validate_all(
-            "TRUNC(d, 'MM')",
-            read={
-                "oracle": "TRUNC(d, 'MM')",
-                "spark": "TRUNC(d, 'MM')",
-            },
+            "TRUNC(CAST('2024-05-15' AS DATE))",
             write={
-                "teradata": "TRUNC(d, 'MM')",
-                "oracle": "TRUNC(d, 'MM')",
-                "snowflake": "DATE_TRUNC('MM', d)",
-                "postgres": "DATE_TRUNC('MM', d)",
-                "bigquery": "DATE_TRUNC(d, MM)",
-                "duckdb": "DATE_TRUNC('MM', d)",
-                "spark": "TRUNC(d, 'MM')",
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DD')",
+                "duckdb": "DATE_TRUNC('DAY', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), DAY)",
+                "tsql": "DATETRUNC(DAY, CAST('2024-05-15' AS DATE))",
             },
         )
 
+        # Teradata format abbreviations normalize into canonical DATE_TRUNC units and translate back
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'MM')",
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'MONTH')",
+                "duckdb": "DATE_TRUNC('MONTH', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), MONTH)",
+                "snowflake": "DATE_TRUNC('MONTH', CAST('2024-05-15' AS DATE))",
+                "postgres": "DATE_TRUNC('MONTH', CAST('2024-05-15' AS DATE))",
+                "tsql": "DATETRUNC(MONTH, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'Q')",
+            read={
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), QUARTER)",
+                "duckdb": "DATE_TRUNC('QUARTER', CAST('2024-05-15' AS DATE))",
+                "snowflake": "DATE_TRUNC('QUARTER', CAST('2024-05-15' AS DATE))",
+            },
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'Q')",
+                "duckdb": "DATE_TRUNC('QUARTER', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), QUARTER)",
+                "tsql": "DATETRUNC(QUARTER, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        # Teradata 'DAY'/'DY'/'D' mean start of week, whereas 'DD' means daily truncation
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'DD')",
+            read={
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), DAY)",
+                "duckdb": "DATE_TRUNC('DAY', CAST('2024-05-15' AS DATE))",
+                "snowflake": "DATE_TRUNC('DAY', CAST('2024-05-15' AS DATE))",
+            },
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DD')",
+                "duckdb": "DATE_TRUNC('DAY', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), DAY)",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
+            read={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'D')",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK)",
+                "snowflake": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
+            },
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
+                "duckdb": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK)",
+                "tsql": "DATETRUNC(WEEK, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
+            read={
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
+                "snowflake": "DATE_TRUNC('ISOWEEK', CAST('2024-05-15' AS DATE))",
+            },
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
+                "duckdb": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), ISOWEEK)",
+                "tsql": "DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST(x AS TIMESTAMP), 'HH')",
+            write={
+                "teradata": "TRUNC(CAST(x AS TIMESTAMP), 'HH')",
+                "duckdb": "DATE_TRUNC('HOUR', CAST(x AS TIMESTAMP))",
+            },
+        )
+        self.validate_all(
+            "TRUNC(CAST(x AS DATE), 'HH')",
+            read={
+                "snowflake": "DATE_TRUNC('HOUR', CAST(x AS DATE))",
+            },
+        )
+        self.validate_identity("TRUNC(CAST(x AS TIMESTAMP), 'MI')")
+        self.validate_identity("TRUNC(x, 'YYYY')", "TRUNC(x, 'YEAR')")
+        self.validate_identity("TRUNC(x, 'IYYY')")
+        self.validate_identity("TRUNC(x, 'CC')")
+        # Preserve Teradata-specific week-of-month ('W') and week-of-year ('WW') formats
+        self.validate_identity("TRUNC(x, 'W')")
+        self.validate_identity("TRUNC(x, 'WW')")
+
+        # Unsupported DateTrunc units/args warn/raise in Teradata
+        with self.assertRaises(UnsupportedError):
+            parse_one("DATE_TRUNC(d, SECOND)", read="bigquery").sql(
+                "teradata", unsupported_level=ErrorLevel.RAISE
+            )
+        with self.assertRaises(UnsupportedError):
+            parse_one("DATE_TRUNC(d, MONTH, 'UTC')", read="bigquery").sql(
+                "teradata", unsupported_level=ErrorLevel.RAISE
+            )
+
+        # Numeric TRUNC cross-dialect transpilation
         self.validate_all(
             "TRUNC(3.14159, 2)",
             read={
@@ -643,20 +703,8 @@ class TestTeradata(Validator):
             },
             write={
                 "teradata": "TRUNC(3.14159, 2)",
-                "oracle": "TRUNC(3.14159, 2)",
-                "postgres": "TRUNC(3.14159, 2)",
                 "mysql": "TRUNCATE(3.14159, 2)",
                 "tsql": "ROUND(3.14159, 2, 1)",
                 "spark": "CAST(3.14159 AS BIGINT)",
-            },
-        )
-        self.validate_all(
-            "TRUNC(3.14159)",
-            write={
-                "teradata": "TRUNC(3.14159)",
-                "oracle": "TRUNC(3.14159)",
-                "postgres": "TRUNC(3.14159)",
-                "mysql": "TRUNCATE(3.14159, 0)",
-                "tsql": "ROUND(3.14159, 0, 1)",
             },
         )

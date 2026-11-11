@@ -2947,6 +2947,16 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )
+        self.validate_all(
+            "SELECT DATETRUNC(MONTH, CAST('2024-05-15' AS DATE))",
+            read={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2024-05-15' AS DATE), MONTH)",
+            },
+            write={
+                "tsql": "SELECT DATETRUNC(MONTH, CAST('2024-05-15' AS DATE))",
+                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('2024-05-15' AS DATE))",
+            },
+        )
 
     def test_numeric_trunc(self):
         # T-SQL doesn't have native TRUNC - uses ROUND with third parameter = 1

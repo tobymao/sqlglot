@@ -11,8 +11,25 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     to_number_with_nls_param,
 )
+from sqlglot.generator import unsupported_args
 from sqlglot.parsers.teradata import is_window_aggregate
 from collections import defaultdict
+
+
+UNIT_TO_TERADATA_TRUNC_FORMAT = {
+    "CENTURY": "CC",
+    "YEAR": "YEAR",
+    "ISOYEAR": "IYYY",
+    "QUARTER": "Q",
+    "MONTH": "MONTH",
+    "WEEK": "DAY",
+    "ISOWEEK": "IW",
+    "DAY": "DD",
+    "HOUR": "HH",
+    "MINUTE": "MI",
+}
+
+TERADATA_SPECIFIC_TRUNC_FORMATS = {"W", "WW"}
 
 
 def _date_add_sql(
@@ -95,9 +112,33 @@ class TeradataGenerator(generator.Generator):
         exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         exp.DateAdd: _date_add_sql("+"),
         exp.DateSub: _date_add_sql("-"),
-        exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
+
+    @unsupported_args("zone")
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        unit = expression.unit
+        if isinstance(unit, exp.WeekStart):
+            day = unit.name.upper()
+            if day == "MONDAY":
+                unit = exp.Literal.string("IW")
+            else:
+                if day != "SUNDAY":
+                    self.unsupported(
+                        f"WEEK({day}) is not supported; falling back to the default week start day"
+                    )
+                unit = exp.Literal.string("DAY")
+        elif isinstance(unit, (exp.Literal, exp.Var)):
+            unit_name = unit.name.upper()
+            mapped = UNIT_TO_TERADATA_TRUNC_FORMAT.get(unit_name)
+            if mapped:
+                unit = exp.Literal.string(mapped)
+            elif unit_name in TERADATA_SPECIFIC_TRUNC_FORMATS:
+                unit = exp.Literal.string(unit_name)
+            else:
+                self.unsupported(f"Unexpected interval unit: {unit_name}")
+
+        return self.func("TRUNC", expression.this, unit)
 
     def execute_sql(self, expression: exp.Execute) -> str:
         if expression.args.get("return_status"):

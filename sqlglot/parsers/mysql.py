@@ -141,12 +141,18 @@ class MySQLParser(parser.Parser):
         "FORMAT": exp.NumberToStr.from_arg_list,
         "FROM_UNIXTIME": build_formatted_time(exp.UnixToTime),
         "ISNULL": isnull_to_is_null,
+        "LEFT": lambda args: exp.Left(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
+        ),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True),
         "MAKETIME": exp.TimeFromParts.from_arg_list,
         "MONTH": lambda args: exp.Month(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
         "MONTHNAME": lambda args: exp.TimeToStr(
             this=exp.TsOrDsToDate(this=seq_get(args, 0)),
             format=exp.Literal.string("%B"),
+        ),
+        "RIGHT": lambda args: exp.Right(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
         ),
         "SCHEMA": exp.CurrentSchema.from_arg_list,
         "DATABASE": exp.CurrentSchema.from_arg_list,

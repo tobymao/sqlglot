@@ -177,6 +177,22 @@ SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, y.c = 1 OR TRU
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CONCAT(y.c, 'x') AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, CONCAT(y.c, 'x') AS c FROM y AS y) AS q ON x.a = q.b;
 
+# title: Left join with GREATEST
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, GREATEST(y.c, 1) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, GREATEST(y.c, 1) AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with a binary function
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, POWER(y.c, 0) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, POWER(y.c, 0) AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with NULLIF
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, NULLIF(1, y.c) AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, NULLIF(1, y.c) AS c FROM y AS y) AS q ON x.a = q.b;
+
+# title: Left join with dialect-dependent concatenation
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CAST(y.c AS TEXT) || 'x' AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, CAST(y.c AS TEXT) || 'x' AS c FROM y AS y) AS q ON x.a = q.b;
+
 # title: Left join with a nested non-null-propagating expression
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, COALESCE(y.c, 0) + 1 AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, COALESCE(y.c, 0) + 1 AS c FROM y AS y) AS q ON x.a = q.b;
@@ -229,13 +245,17 @@ SELECT x.a AS a, y.b AS b FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c + 1 AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, y.c + 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
 
+# title: Left join with null-propagating bitwise arithmetic can merge
+SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, y.c & 1 AS c FROM y) AS q ON x.a = q.b;
+SELECT x.a AS a, y.c & 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+
 # title: Left join with nested null-propagating expressions can merge
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, CAST(-(y.c + 1) AS BIGINT) AS c FROM y) AS q ON x.a = q.b;
 SELECT x.a AS a, CAST(-(y.c + 1) AS BIGINT) AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
 
-# title: Left join with null-propagating comparisons can merge
+# title: Left join with a predicate projection is conservatively retained
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, NOT y.c = 1 AS c FROM y) AS q ON x.a = q.b;
-SELECT x.a AS a, NOT y.c = 1 AS c FROM x AS x LEFT JOIN y AS y ON x.a = y.b;
+SELECT x.a AS a, q.c AS c FROM x AS x LEFT JOIN (SELECT y.b AS b, NOT y.c = 1 AS c FROM y AS y) AS q ON x.a = q.b;
 
 # title: Left join with arithmetic propagating NULL from the right operand can merge
 SELECT x.a, q.c FROM x LEFT JOIN (SELECT y.b, 1 - y.c AS c FROM y) AS q ON x.a = q.b;

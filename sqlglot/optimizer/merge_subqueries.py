@@ -380,23 +380,21 @@ def _mergeable(
                 isinstance(node, exp.Column) and node.table in inner_scope.selected_sources
             ):
                 return True
-            if isinstance(node, (exp.Cast, exp.Neg, exp.Not)):
+            if isinstance(node, (exp.Cast, exp.Unary)):
                 stack.append(node.this)
-            elif isinstance(
+            # Functions, predicates, field access, and nonstandard operators need their own
+            # NULL rules. In particular, || does not propagate NULL in every dialect.
+            elif isinstance(node, exp.Binary) and not isinstance(
                 node,
                 (
-                    exp.Add,
-                    exp.Sub,
-                    exp.Mul,
-                    exp.Div,
-                    exp.IntDiv,
-                    exp.Mod,
-                    exp.EQ,
-                    exp.NEQ,
-                    exp.GT,
-                    exp.GTE,
-                    exp.LT,
-                    exp.LTE,
+                    exp.Func,
+                    exp.Predicate,
+                    exp.DPipe,
+                    exp.Dot,
+                    exp.NestedJSONSelect,
+                    exp.Operator,
+                    exp.PropertyEQ,
+                    exp.Kwarg,
                 ),
             ):
                 stack.extend((node.expression, node.this))

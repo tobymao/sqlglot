@@ -8539,7 +8539,9 @@ class Parser:
 
             if not to:
                 to = exp.DType.UNKNOWN.into_expr()
-            if to.this in exp.DataType.TEMPORAL_TYPES:
+            if to.this in exp.DataType.TEMPORAL_TYPES and not (
+                fmt_string and fmt_string.find(exp.HexCharacterString)
+            ):
                 this = self.expression(
                     (exp.StrToDate if to.this == exp.DType.DATE else exp.StrToTime)(
                         this=this,

@@ -32,6 +32,9 @@ class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
+    HEX_CHARACTER_SUFFIXES = {"XC", "XCV", "XCF"}
+    HEX_CHARACTER_SETS = {"_LATIN", "_UNICODE", "_KANJISJIS", "_GRAPHIC"}
+
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,
@@ -83,6 +86,94 @@ class TeradataParser(parser.Parser):
         TokenType.REPLACE: lambda self: self._parse_create(),
         TokenType.LOCK: lambda self: self._parse_locking_statement(),
     }
+
+    def _is_hex_character_charset(self) -> bool:
+        suffix = seq_get(self._tokens, self._index + 2)
+        return (
+            self._curr.token_type == TokenType.VAR
+            and self._curr.text.upper() in self.HEX_CHARACTER_SETS
+            and self._next.token_type == TokenType.STRING
+            and suffix is not None
+            and suffix.token_type == TokenType.VAR
+            and suffix.text.upper() in self.HEX_CHARACTER_SUFFIXES
+            and self._next.end + 1 == suffix.start
+        )
+
+    def _parse_atom(self) -> exp.Expr | None:
+        if self._curr.token_type == TokenType.STRING or self._is_hex_character_charset():
+            return self._parse_column_ops(self._parse_primary())
+        return super()._parse_atom()
+
+    def _parse_string(self) -> exp.Expr | None:
+        if self._curr.token_type == TokenType.STRING or self._is_hex_character_charset():
+            value = self._parse_primary()
+            if isinstance(value, exp.Concat) and all(e.is_string for e in value.expressions):
+                first, last = value.expressions[0], value.expressions[-1]
+                return self.expression(
+                    exp.Literal.string("".join(e.this for e in value.expressions)),
+                    comments=[c for e in value.expressions for c in e.comments or []],
+                ).update_positions(
+                    line=last.meta.get("line"),
+                    col=last.meta.get("col"),
+                    start=first.meta.get("start"),
+                    end=last.meta.get("end"),
+                )
+            return value
+        return super()._parse_string()
+
+    def _parse_primary(self) -> exp.Expr | None:
+        if self._curr.token_type != TokenType.STRING and not self._is_hex_character_charset():
+            return super()._parse_primary()
+
+        expressions = []
+        while self._curr.token_type == TokenType.STRING or self._is_hex_character_charset():
+            if expressions and self._is_connected() and self.ADJACENT_STRINGS_CANNOT_BE_CONNECTED:
+                self.raise_error("Adjacent string literals need whitespace or comments")
+            prefix = self._curr if self._is_hex_character_charset() else None
+            if prefix:
+                self._advance()
+            token = self._curr
+            self._advance()
+            if (
+                self._curr.token_type == TokenType.VAR
+                and self._curr.text.upper() in self.HEX_CHARACTER_SUFFIXES
+                and token.end + 1 == self._curr.start
+            ):
+                suffix = self._curr
+                self._advance()
+                if len(token.text) > 31000 or any(
+                    c not in "0123456789abcdefABCDEF" for c in token.text
+                ):
+                    self.raise_error("Invalid hexadecimal character literal", token)
+                value = self.expression(
+                    exp.HexCharacterString(
+                        this=token.text,
+                        kind=suffix.text.upper(),
+                        character_set=prefix.text[1:].upper() if prefix else None,
+                    ),
+                    token,
+                    comments=(prefix.comments or []) + (token.comments or [])
+                    if prefix
+                    else token.comments,
+                )
+                self._add_comments(value)
+                value.update_positions(
+                    line=suffix.line,
+                    col=suffix.col,
+                    start=prefix.start if prefix else token.start,
+                    end=suffix.end,
+                )
+            else:
+                value = self.PRIMARY_PARSERS[TokenType.STRING](self, token)
+            expressions.append(value)
+
+        return (
+            self.expression(
+                exp.Concat(expressions=expressions, coalesce=self.dialect.CONCAT_COALESCE)
+            )
+            if len(expressions) > 1
+            else expressions[0]
+        )
 
     def _parse_execute(self) -> exp.Execute | exp.Command:
         start = self._prev

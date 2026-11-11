@@ -409,6 +409,11 @@ EXPRESSION_METADATA: ExprMetadataType = {
     exp.Dot: {"annotator": lambda self, e: self._annotate_dot(e)},
     exp.Explode: {"annotator": lambda self, e: self._annotate_explode(e)},
     exp.Extract: {"annotator": lambda self, e: self._annotate_extract(e)},
+    exp.HexCharacterString: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DType.CHAR if e.text("kind").upper() == "XCF" else exp.DType.VARCHAR
+        )
+    },
     exp.HexString: {
         "annotator": lambda self, e: self._set_type(
             e,

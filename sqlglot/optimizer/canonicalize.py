@@ -128,6 +128,9 @@ def coerce_type(node: exp.Expr, promote_to_inferred_datetime_type: bool) -> exp.
 
 
 def remove_redundant_casts(expression: exp.Expr) -> exp.Expr:
+    fmt = expression.args.get("format")
+    if isinstance(fmt, exp.Expr) and fmt.find(exp.HexCharacterString):
+        return expression
     if (
         isinstance(expression, exp.Cast)
         and expression.this.type

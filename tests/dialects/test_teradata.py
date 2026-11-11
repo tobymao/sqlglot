@@ -1,4 +1,8 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.canonicalize import canonicalize
+from sqlglot.optimizer.optimizer import optimize
+from sqlglot.optimizer.simplify import simplify
 from tests.dialects.test_dialect import Validator
 
 
@@ -338,6 +342,165 @@ class TestTeradata(Validator):
         )
 
         self.validate_identity("CREATE TABLE z (a SYSUDTLIB.INT)")
+
+    def test_hex_character_literals(self):
+        for sql, expected, payload, kind, charset in (
+            ("'0A'XC", "'0A'XC", "0A", "XC", None),
+            ("'0'XC", "'0'XC", "0", "XC", None),
+            ("''XC", "''XC", "", "XC", None),
+            ("'aB'xc", "'aB'XC", "aB", "XC", None),
+            ("'0041'XCV", "'0041'XCV", "0041", "XCV", None),
+            ("'0041'XCF", "'0041'XCF", "0041", "XCF", None),
+            ("_Latin 'C1C'XC", "_LATIN 'C1C'XC", "C1C", "XC", "LATIN"),
+            ("_Unicode '0041'XC", "_UNICODE '0041'XC", "0041", "XC", "UNICODE"),
+            ("_KanjiSJIS '82A0'XC", "_KANJISJIS '82A0'XC", "82A0", "XC", "KANJISJIS"),
+            ("_Graphic ''XCF", "_GRAPHIC ''XCF", "", "XCF", "GRAPHIC"),
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql, expected).assert_is(exp.HexCharacterString)
+                self.assertEqual(expression.this, payload)
+                self.assertEqual(expression.args["kind"], kind)
+                self.assertEqual(expression.args.get("character_set"), charset)
+                self.assertFalse(expression.is_string)
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertEqual(expression, self.parse_one(expected))
+                self.assertEqual(expression.meta["start"], 0)
+                self.assertEqual(expression.meta["end"], len(sql) - 1)
+                self.assertEqual(list(expression.find_all(exp.Column)), [])
+                self.assertTrue(
+                    annotate_types(expression).is_type(
+                        exp.DType.CHAR if kind == "XCF" else exp.DType.VARCHAR
+                    )
+                )
+
+        self.validate_identity("SELECT '0D0A'XC AS separator")
+        self.validate_identity("SELECT LOWER('41'XC), COALESCE('41'XC, '42'XCF)")
+        self.validate_identity("SELECT '41'XC || label FROM demo.events")
+        self.validate_identity("SELECT '0A' AS XC")
+        self.validate_identity("SELECT '0A' XC", "SELECT '0A' AS XC")
+        self.validate_identity("SELECT _LATIN FROM demo.events")
+        self.validate_identity("SELECT '41'XCextra", "SELECT '41' AS XCextra")
+        self.validate_identity(
+            "SELECT '41' /* separator */ XC", "SELECT '41' AS XC /* separator */"
+        )
+        self.validate_identity("X'0A'")
+        self.validate_identity("0x0A", "X'0A'")
+
+        literal = "'A'XC"
+        statements = parse(f"SELECT {literal}; SELECT 1; SELECT {literal}", read=self.dialect)
+        self.assertEqual(len(statements), 3)
+        self.assertIsInstance(statements[0].expressions[0], exp.HexCharacterString)
+        self.assertEqual(statements[1].expressions, [exp.Literal.number(1)])
+        expression = self.parse_one("_LATIN /* charset */ '41'XC /* value */")
+        self.assertEqual(expression.comments, [" charset ", " value "])
+        self.assertEqual(expression.this, "41")
+        self.validate_identity("SELECT label LIKE 'a' ESCAPE '21'XC FROM demo.events")
+        self.validate_identity("SELECT label LIKE 'a' ESCAPE _LATIN '21'XC FROM demo.events")
+        self.assertTrue(
+            annotate_types(exp.HexCharacterString(this="41", kind="xcf")).is_type(exp.DType.CHAR)
+        )
+
+    def test_hex_character_temporal_formats(self):
+        for function in ("CAST", "TRYCAST"):
+            for dtype in ("DATE", "TIMESTAMP"):
+                sql = f"{function}('2024-01-01' AS {dtype} FORMAT _LATIN '595959592D4D4D2D4444'XC)"
+                with self.subTest(sql=sql):
+                    expression = self.validate_identity(sql)
+                    self.assertIsInstance(expression.args["format"], exp.HexCharacterString)
+                    self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                    for dialect in ("postgres", "snowflake", "duckdb", "sqlite"):
+                        with self.assertRaises(UnsupportedError):
+                            expression.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+        self.validate_identity(
+            "CAST('2024-01-01' AS DATE FORMAT 'YYYY' '-MM-DD')",
+            "CAST('2024-01-01' AS DATE FORMAT 'YYYY-MM-DD')",
+        )
+        self.validate_identity("CAST('2024-01-01' AS DATE FORMAT 'YYYY-' '4D4D'XC '-DD')")
+
+    def test_hex_character_formatted_cast_optimization(self):
+        for sql in (
+            "SELECT CAST('2024-01-02' AS DATE FORMAT _LATIN '595959592D44442D4D4D'XC) = DATE '2024-01-02'",
+            "SELECT CAST('value' AS VARCHAR FORMAT '58'XC)",
+            "SELECT CAST(1 AS BYTEINT FORMAT '39'XC) = 1",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.parse_one(sql)
+                for optimized in (
+                    simplify(expression.copy()),
+                    canonicalize(annotate_types(expression.copy()), dialect=self.dialect),
+                    optimize(expression.copy(), dialect=self.dialect),
+                ):
+                    self.assertIsNotNone(optimized.find(exp.HexCharacterString))
+                    with self.assertRaises(UnsupportedError):
+                        optimized.sql("postgres", unsupported_level=ErrorLevel.RAISE)
+
+    def test_hex_character_literals_concat(self):
+        for sql in (
+            "'0A'XC '0D'XC",
+            "'A' '41'XC 'B'",
+            "_LATIN '41'XC _LATIN '42'XC",
+            "'41'XC _UNICODE '0042'XCF",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql).assert_is(exp.Concat)
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+                self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+                self.assertEqual(list(expression.find_all(exp.Column)), [])
+                simplified = simplify(expression.copy())
+                self.assertEqual(
+                    [node.this for node in simplified.find_all(exp.HexCharacterString)],
+                    [node.this for node in expression.find_all(exp.HexCharacterString)],
+                )
+        expression = self.validate_identity("CONCAT('41'XCF)").assert_is(exp.Concat)
+        self.assertTrue(annotate_types(expression).is_type(exp.DType.VARCHAR))
+        self.assertTrue(
+            annotate_types(self.parse_one(expression.sql(self.dialect))).is_type(exp.DType.VARCHAR)
+        )
+
+    def test_hex_character_literals_parse_errors(self):
+        for sql in ("'G1'XC", "'41 42'XCV", "'41''42'XCF", "'\n41'XC", "'" + "A" * 31001 + "'XC"):
+            with self.subTest(sql=sql[:80]):
+                with self.assertRaises(ParseError):
+                    self.parse_one(sql, error_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            self.parse_one("'" + "A" * 31000 + "'XC").this,
+            "A" * 31000,
+        )
+        with self.assertRaises(ParseError) as error:
+            self.parse_one("SELECT 'ZZ'XC FROM demo.events")
+        self.assertEqual(error.exception.errors[0]["highlight"], "'ZZ'")
+
+    def test_hex_character_literals_unsupported(self):
+        for dialect in ("", "postgres", "duckdb", "bigquery", "mysql", "spark"):
+            with self.subTest(dialect=dialect):
+                expression = self.parse_one("_UNICODE '0041'XC")
+                for level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+                    with self.assertRaises(UnsupportedError):
+                        expression.sql(dialect, unsupported_level=level)
+                with self.assertLogs("sqlglot", level="WARNING"):
+                    self.assertEqual(expression.sql(dialect), "_UNICODE '0041'XC")
+                self.assertEqual(
+                    expression.sql(dialect, unsupported_level=ErrorLevel.IGNORE),
+                    "_UNICODE '0041'XC",
+                )
+                escape = self.parse_one("SELECT label LIKE 'a' ESCAPE '21'XC FROM demo.events")
+                with self.assertRaises(UnsupportedError):
+                    escape.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+
+        interval = exp.Interval(
+            this=exp.HexCharacterString(this="31", kind="XC", character_set="LATIN"),
+            unit=exp.var("DAY"),
+        )
+        for dialect in ("postgres", "snowflake"):
+            with self.subTest(dialect=dialect):
+                with self.assertRaises(UnsupportedError):
+                    interval.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+                with self.assertLogs("sqlglot", level="WARNING"):
+                    self.assertEqual(interval.sql(dialect), "INTERVAL _LATIN '31'XC DAY")
+                self.assertEqual(
+                    interval.sql(dialect, unsupported_level=ErrorLevel.IGNORE),
+                    "INTERVAL _LATIN '31'XC DAY",
+                )
 
     def test_cast(self):
         self.validate_all(

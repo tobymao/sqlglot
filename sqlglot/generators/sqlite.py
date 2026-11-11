@@ -317,6 +317,9 @@ class SQLiteGenerator(generator.Generator):
         return self.dateadd_sql(exp.DateAdd(this=expression.this, expression=negated, unit=unit))
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
+        fmt = expression.args.get("format")
+        if isinstance(fmt, exp.Expr) and fmt.find(exp.HexCharacterString):
+            return super().cast_sql(expression, safe_prefix=safe_prefix)
         if expression.is_type("date"):
             return self.func("DATE", expression.this)
         if expression.is_type("datetime", "timestamp", "timestampntz"):

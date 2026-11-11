@@ -474,6 +474,8 @@ class Generator:
     # Whether CONCAT requires >1 arguments
     SUPPORTS_SINGLE_ARG_CONCAT = True
 
+    HEX_CHARACTER_STRINGS_SUPPORTED = False
+
     # Whether LAST_DAY function supports a date part argument
     LAST_DAY_SUPPORTS_DATE_PART = True
 
@@ -875,6 +877,7 @@ class Generator:
 
     # Exprs that can remain unwrapped when appearing in the context of an INTERVAL
     UNWRAPPED_INTERVAL_VALUES: t.ClassVar[tuple[type[exp.Expr], ...]] = (
+        exp.HexCharacterString,
         exp.Column,
         exp.Literal,
         exp.Neg,
@@ -1656,6 +1659,16 @@ class Generator:
         if self.dialect.BIT_START:
             return f"{self.dialect.BIT_START}{this}{self.dialect.BIT_END}"
         return f"{int(this, 2)}"
+
+    def hexcharacterstring_sql(self, expression: exp.HexCharacterString) -> str:
+        if not self.HEX_CHARACTER_STRINGS_SUPPORTED:
+            self.unsupported(
+                "Hexadecimal character literals require source character-set semantics"
+            )
+        charset = self.sql(expression, "character_set")
+        literal = self.sql(exp.Literal.string(expression.this))
+        kind = self.sql(expression, "kind")
+        return f"_{charset} {literal}{kind}" if charset else f"{literal}{kind}"
 
     def hexstring_sql(
         self, expression: exp.HexString, binary_function_repr: str | None = None
@@ -4197,7 +4210,9 @@ class Generator:
             unit = self.TIME_PART_SINGULARS.get(unit, unit)
         unit = f" {unit}" if unit else ""
 
-        if self.SINGLE_STRING_INTERVAL:
+        if self.SINGLE_STRING_INTERVAL and not (
+            expression.this and expression.this.find(exp.HexCharacterString)
+        ):
             this = expression.this.name if expression.this else ""
             if this:
                 interval_keyword = f"{interval_keyword} " if interval_keyword else ""

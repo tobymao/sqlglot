@@ -497,6 +497,14 @@ class HexString(Expression, Condition):
     is_primitive = True
 
 
+class HexCharacterString(Expression, Condition):
+    """Encoded character data; interpretation depends on the source character set."""
+
+    arg_types = {"this": True, "kind": True, "character_set": False}
+    is_primitive = True
+    _hash_raw_args = True
+
+
 class ByteString(Expression, Condition):
     arg_types = {"this": True, "is_bytes": False}
     is_primitive = True

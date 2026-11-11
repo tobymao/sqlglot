@@ -419,6 +419,9 @@ def cast_value(value: datetime | date | str, to: exp.DataType) -> date | None:
 
 
 def extract_date(cast: exp.Expr) -> date | None:
+    fmt = cast.args.get("format")
+    if isinstance(fmt, exp.Expr) and fmt.find(exp.HexCharacterString):
+        return None
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
@@ -1263,6 +1266,9 @@ class Simplifier:
         return expression
 
     def _simplify_integer_cast(self, expr: t.Any) -> t.Any:
+        fmt = expr.args.get("format") if isinstance(expr, exp.Cast) else None
+        if isinstance(fmt, exp.Expr) and fmt.find(exp.HexCharacterString):
+            return expr
         if isinstance(expr, exp.Cast) and isinstance(expr.this, exp.Cast):
             this = self._simplify_integer_cast(expr.this)
         else:

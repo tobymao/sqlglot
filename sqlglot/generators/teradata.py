@@ -58,6 +58,7 @@ class TeradataGenerator(generator.Generator):
     CAN_IMPLEMENT_ARRAY_ANY = True
     TZ_TO_WITH_TIME_ZONE = True
     ARRAY_SIZE_NAME = "CARDINALITY"
+    HEX_CHARACTER_STRINGS_SUPPORTED = True
 
     TYPE_MAPPING = {
         **generator.Generator.TYPE_MAPPING,
@@ -114,6 +115,17 @@ class TeradataGenerator(generator.Generator):
 
     def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
         return f"{self.sql(expression, 'this')} (NAMED {self.sql(expression, 'alias')})"
+
+    def concat_sql(self, expression: exp.Concat) -> str:
+        if (
+            len(expression.expressions) > 1
+            and any(isinstance(e, exp.HexCharacterString) for e in expression.expressions)
+            and all(
+                isinstance(e, exp.HexCharacterString) or e.is_string for e in expression.expressions
+            )
+        ):
+            return self.expressions(expression, sep=" ")
+        return super().concat_sql(expression)
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.to.this == exp.DType.UNKNOWN and expression.args.get("format"):

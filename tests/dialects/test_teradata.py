@@ -457,7 +457,10 @@ class TestTeradata(Validator):
         )
         self.validate_all(
             "SELECT x (NAMED result) FROM t",
-            write={"teradata": "SELECT x AS result FROM t", "postgres": "SELECT x AS result FROM t"},
+            write={
+                "teradata": "SELECT x AS result FROM t",
+                "postgres": "SELECT x AS result FROM t",
+            },
         )
         self.assertTrue(
             annotate_types(self.parse_one("SELECT 1 (NAMED result)"))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.dialects.dialect import build_trunc
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.trie import new_trie
@@ -137,6 +138,9 @@ class TeradataParser(parser.Parser):
         **parser.Parser.FUNCTIONS,
         "CARDINALITY": exp.ArraySize.from_arg_list,
         "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+        "TRUNC": lambda args, dialect: build_trunc(
+            args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
+        ),
     }
 
     EXPONENT = {

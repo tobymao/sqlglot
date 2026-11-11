@@ -572,3 +572,91 @@ class TestTeradata(Validator):
             "SELECT AVG(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
             "SELECT AVG(x) OVER (ORDER BY d) FROM t",
         )
+
+    def test_trunc(self):
+        # Date truncation vs numeric truncation disambiguation
+        self.parse_one("TRUNC(CAST(x AS DATE), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CAST(x AS TIMESTAMP), 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(CURRENT_DATE, 'MONTH')").assert_is(exp.DateTrunc)
+        self.parse_one("TRUNC(col, 'MM')").assert_is(exp.DateTrunc)
+
+        self.validate_identity("TRUNC(CAST(x AS DATE))", "TRUNC(CAST(x AS DATE), 'DD')").assert_is(
+            exp.DateTrunc
+        )
+        self.validate_identity("TRUNC(CURRENT_DATE)", "TRUNC(CURRENT_DATE, 'DD')").assert_is(
+            exp.DateTrunc
+        )
+
+        # Preserve Teradata format abbreviations such as 'Q', 'W', and 'MM'
+        for unit in ("'Q'", "'W'", "'MM'"):
+            self.validate_identity(f"TRUNC(x, {unit})")
+
+        self.validate_identity("TRUNC(3.14159, 2)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(3.14159)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(price, 0)").assert_is(exp.Trunc)
+        self.validate_identity("TRUNC(foo, bar)").assert_is(exp.Anonymous)
+
+        for unit in ("DAY", "MONTH", "QUARTER", "YEAR"):
+            with self.subTest(f"Date TRUNC with {unit}"):
+                self.validate_all(
+                    f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    read={
+                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
+                    },
+                    write={
+                        "teradata": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
+                        "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "tsql": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
+                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    },
+                )
+
+        self.validate_all(
+            "TRUNC(d, 'MM')",
+            read={
+                "oracle": "TRUNC(d, 'MM')",
+                "spark": "TRUNC(d, 'MM')",
+            },
+            write={
+                "teradata": "TRUNC(d, 'MM')",
+                "oracle": "TRUNC(d, 'MM')",
+                "snowflake": "DATE_TRUNC('MM', d)",
+                "postgres": "DATE_TRUNC('MM', d)",
+                "bigquery": "DATE_TRUNC(d, MM)",
+                "duckdb": "DATE_TRUNC('MM', d)",
+                "spark": "TRUNC(d, 'MM')",
+            },
+        )
+
+        self.validate_all(
+            "TRUNC(3.14159, 2)",
+            read={
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+            },
+            write={
+                "teradata": "TRUNC(3.14159, 2)",
+                "oracle": "TRUNC(3.14159, 2)",
+                "postgres": "TRUNC(3.14159, 2)",
+                "mysql": "TRUNCATE(3.14159, 2)",
+                "tsql": "ROUND(3.14159, 2, 1)",
+                "spark": "CAST(3.14159 AS BIGINT)",
+            },
+        )
+        self.validate_all(
+            "TRUNC(3.14159)",
+            write={
+                "teradata": "TRUNC(3.14159)",
+                "oracle": "TRUNC(3.14159)",
+                "postgres": "TRUNC(3.14159)",
+                "mysql": "TRUNCATE(3.14159, 0)",
+                "tsql": "ROUND(3.14159, 0, 1)",
+            },
+        )

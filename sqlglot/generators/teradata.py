@@ -95,6 +95,7 @@ class TeradataGenerator(generator.Generator):
         exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
         exp.DateAdd: _date_add_sql("+"),
         exp.DateSub: _date_add_sql("-"),
+        exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 

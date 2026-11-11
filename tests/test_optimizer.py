@@ -2230,6 +2230,36 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
 
+    def test_optimize_correlated_all(self):
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE x (a INT, b INT)")
+            connection.execute("CREATE TABLE y (b INT, c INT)")
+            connection.execute(
+                "INSERT INTO x VALUES (1, 1), (2, 2), (3, 3), (NULL, 4), "
+                "(5, 5), (6, 6), (NULL, 7), (8, NULL)"
+            )
+            connection.execute(
+                "INSERT INTO y VALUES (1, 1), (NULL, 2), (0, 4), "
+                "(1, 5), (NULL, 5), (7, 6), (NULL, 6)"
+            )
+            for column in ("b", "c"):
+                for op in ("=", "<>", ">", ">=", "<", "<="):
+                    predicate = f"x.a {op} ALL (SELECT y.{column} FROM y WHERE y.c = x.b)"
+                    for sql in (
+                        f"SELECT x.a, x.b, {predicate} AS r FROM x",
+                        f"SELECT x.a, x.b FROM x WHERE {predicate}",
+                        f"SELECT x.a, x.b FROM x WHERE NOT ({predicate})",
+                    ):
+                        with self.subTest(sql=sql):
+                            optimized = optimizer.optimize(
+                                sql, schema=self.schema, dialect="duckdb"
+                            )
+                            self.assertIsNone(optimized.find(exp.All))
+                            self.assertCountEqual(
+                                connection.execute(sql).fetchall(),
+                                connection.execute(optimized.sql("duckdb")).fetchall(),
+                            )
+
     def test_optimize_subqueries_in_aggregates(self):
         for projection in (
             "SUM(CASE WHEN x.a = (SELECT LENGTH(w.d) FROM w WHERE w.e = 'b') THEN 1 ELSE 0 END)",

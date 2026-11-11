@@ -2734,6 +2734,14 @@ class TestDuckDB(Validator):
         self.validate_identity("SELECT [{'a': (SELECT 1)}]")
         self.validate_identity("SELECT LIST_VALUE((SELECT 1))", "SELECT [(SELECT 1)]")
 
+    def test_array_all(self):
+        for array in ("[]", "[1, 2]", "[1, NULL]", "[0, NULL]", "[NULL]", "CAST(NULL AS INT[])"):
+            with self.subTest(array=array):
+                self.validate_all(
+                    f"SELECT LIST_REDUCE(LIST_TRANSFORM({array}, LAMBDA x : x > 0), LAMBDA _a, _b : _a AND _b, TRUE)",
+                    read={"": f"SELECT ARRAY_ALL({array}, x -> x > 0)"},
+                )
+
     def test_cast(self):
         self.validate_identity("x::int[3]", "CAST(x AS INT[3])")
         self.validate_identity("CAST(x AS REAL)")

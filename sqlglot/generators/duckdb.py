@@ -47,6 +47,15 @@ from builtins import type as Type
 
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
+_TIMESTAMP_DIFF_US_FACTORS: dict[str, int] = {
+    "MICROSECOND": 1,
+    "MILLISECOND": 1000,
+    "SECOND": 1000000,
+    "MINUTE": 60000000,
+    "HOUR": 3600000000,
+    "DAY": 86400000000,
+}
+
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
@@ -1807,9 +1816,6 @@ class DuckDBGenerator(generator.Generator):
         exp.TimeDiff: _timediff_sql,
         exp.Timestamp: no_timestamp_sql,
         exp.TimestampAdd: _date_delta_to_binary_interval_op(),
-        exp.TimestampDiff: lambda self, e: self.func(
-            "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
-        ),
         exp.TimestampSub: _date_delta_to_binary_interval_op(),
         exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
         exp.TimeStrToTime: timestrtotime_sql,
@@ -4723,6 +4729,43 @@ class DuckDBGenerator(generator.Generator):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
         return result
+
+    def timestampdiff_sql(self, expression: exp.TimestampDiff) -> str:
+        unit = expression.unit
+
+        if _is_nanosecond_unit(unit):
+            return _handle_nanosecond_diff(self, expression.this, expression.expression)
+
+        unit_str = unit.name.upper() if isinstance(unit, (exp.Var, exp.Literal)) else ""
+        divisor = _TIMESTAMP_DIFF_US_FACTORS.get(unit_str)
+
+        if divisor is not None:
+            # EPOCH_US gives absolute UTC microseconds, avoiding DATE_DIFF's boundary-crossing semantics
+            # Cast bare NULLs to TIMESTAMPTZ so DuckDB can resolve the EPOCH_US overload
+            this = (
+                exp.cast(expression.this, exp.DType.TIMESTAMPTZ)
+                if isinstance(expression.this, exp.Null)
+                else expression.this
+            )
+            expr = (
+                exp.cast(expression.expression, exp.DType.TIMESTAMPTZ)
+                if isinstance(expression.expression, exp.Null)
+                else expression.expression
+            )
+            diff: exp.Expr = exp.func("EPOCH_US", this) - exp.func("EPOCH_US", expr)
+            if divisor > 1:
+                # IntDiv (//) truncates toward zero; regular / returns DOUBLE and CAST rounds
+                return self.sql(
+                    exp.IntDiv(this=exp.paren(diff), expression=exp.Literal.number(divisor))
+                )
+            return self.sql(exp.cast(diff, exp.DType.BIGINT))
+
+        return self.func(
+            "DATE_DIFF",
+            exp.Literal.string(unit_str or "DAY"),
+            expression.expression,
+            expression.this,
+        )
 
     def trim_sql(self, expression: exp.Trim) -> str:
         expression.this.replace(_cast_to_varchar(expression.this))

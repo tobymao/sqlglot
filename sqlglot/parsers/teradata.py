@@ -134,6 +134,7 @@ class TeradataParser(parser.Parser):
                 self._advance()
             token = self._curr
             self._advance()
+            value: exp.Expr
             if (
                 self._curr.token_type == TokenType.VAR
                 and self._curr.text.upper() in self.HEX_CHARACTER_SUFFIXES

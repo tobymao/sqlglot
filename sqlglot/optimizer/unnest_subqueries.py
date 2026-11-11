@@ -95,9 +95,6 @@ def unnest(select, parent_select, next_alias_name):
         )
         or parent_select is not predicate.parent_select
         or not parent_select.args.get("from_")
-        # NOT IN has three-valued semantics that the LEFT-JOIN-anti rewrite doesn't preserve:
-        # a NULL in the subquery makes NOT IN evaluate to NULL for every outer row.
-        or (isinstance(predicate, exp.In) and _is_negated(predicate))
     ):
         return
 
@@ -168,19 +165,22 @@ def unnest(select, parent_select, next_alias_name):
         return
 
     if isinstance(predicate, exp.Any):
-        predicate = predicate.find_ancestor(exp.EQ)
+        predicate = predicate.parent
 
-        if not predicate or parent_select is not predicate.parent_select:
+        if not isinstance(predicate, exp.EQ) or parent_select is not predicate.parent_select:
             return
+
+    # The join's non-NULL check maps UNKNOWN to FALSE, which is only safe in AND/OR filters.
+    ancestor = predicate.parent
+    while isinstance(ancestor, (exp.And, exp.Or, exp.Paren)):
+        # Moving a predicate from ON to WHERE is only safe for an inner-join conjunct.
+        if isinstance(ancestor, exp.Or) and isinstance(clause, exp.Join):
+            return
+        ancestor = ancestor.parent
+    if not isinstance(ancestor, (exp.Where, exp.Join)) or ancestor is not clause:
+        return
 
     if isinstance(clause, exp.Join):
-        # Moving a predicate from ON to WHERE is only safe for an inner-join conjunct.
-        ancestor = predicate.parent
-        while isinstance(ancestor, (exp.And, exp.Paren)):
-            ancestor = ancestor.parent
-        if ancestor is not clause:
-            return
-
         # A later RIGHT/FULL join can preserve rows that the hoisted WHERE would discard.
         joins = parent_select.args.get("joins") or []
         if any(join.side in ("RIGHT", "FULL") for join in joins[joins.index(clause) + 1 :]):

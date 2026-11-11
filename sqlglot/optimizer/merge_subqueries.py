@@ -140,6 +140,20 @@ SAFE_TO_REPLACE_UNWRAPPED = (
 )
 
 
+# These Binary subclasses are opaque to the NULL-propagation check. This is a
+# conservative list, not a claim that every instance returns a non-NULL value.
+NULL_PROPAGATION_EXCEPTIONS = (
+    exp.Func,  # Binary functions include AND/OR, which need not propagate NULL.
+    exp.Predicate,  # Includes IS NULL and null-safe comparisons.
+    exp.DPipe,  # Concatenation ignores NULL operands in some dialects.
+    exp.Dot,  # Dotted syntax can also contain function calls.
+    exp.NestedJSONSelect,  # Dialect-specific JSON field access.
+    exp.Operator,  # User-defined operators have unknown NULL behavior.
+    exp.PropertyEQ,  # Named field syntax: name := value.
+    exp.Kwarg,  # Named argument syntax: name => value.
+)
+
+
 def merge_ctes(
     expression: E,
     leave_tables_isolated: bool = False,
@@ -382,21 +396,7 @@ def _mergeable(
                 return True
             if isinstance(node, (exp.Cast, exp.Unary)):
                 stack.append(node.this)
-            # Functions, predicates, field access, and nonstandard operators need their own
-            # NULL rules. In particular, || does not propagate NULL in every dialect.
-            elif isinstance(node, exp.Binary) and not isinstance(
-                node,
-                (
-                    exp.Func,
-                    exp.Predicate,
-                    exp.DPipe,
-                    exp.Dot,
-                    exp.NestedJSONSelect,
-                    exp.Operator,
-                    exp.PropertyEQ,
-                    exp.Kwarg,
-                ),
-            ):
+            elif isinstance(node, exp.Binary) and not isinstance(node, NULL_PROPAGATION_EXCEPTIONS):
                 stack.extend((node.expression, node.this))
         return False
 

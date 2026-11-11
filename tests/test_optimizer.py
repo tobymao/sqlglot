@@ -2118,6 +2118,40 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_string_comparisons(self):
+        with duckdb.connect() as conn:
+            for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):
+                column_type = dtype if dtype not in (None, "UNKNOWN") else "INT"
+                conn.execute(f"CREATE OR REPLACE TABLE x (a {column_type})")
+                conn.execute("INSERT INTO x VALUES (9), (10), (11), (NULL)")
+                schema = {"x": {"a": dtype}} if dtype else None
+
+                for predicate, text_expected in (
+                    ("x.a > '10' AND x.a > '9'", "x.a > '9'"),
+                    ("x.a > '10' OR x.a > '9'", "x.a > '10'"),
+                    ("x.a < '10' AND x.a < '9'", "x.a < '10'"),
+                    ("x.a < '10' OR x.a < '9'", "x.a < '9'"),
+                    ("x.a < '9' AND x.a = '10'", "x.a = '10'"),
+                ):
+                    with self.subTest(dtype=dtype, predicate=predicate):
+                        sql = f"SELECT x.a, {predicate} AS p FROM x ORDER BY x.a"
+                        expression = parse_one(sql, dialect="duckdb")
+                        if dtype:
+                            annotate_types(expression, schema=schema, dialect="duckdb")
+
+                        simplified = optimizer.simplify.simplify(expression, dialect="duckdb")
+                        self.assertEqual(
+                            simplified.selects[1].this.sql(),
+                            text_expected if dtype == "TEXT" else predicate,
+                        )
+                        expected = conn.execute(sql).fetchall()
+                        self.assertEqual(
+                            conn.execute(simplified.sql("duckdb")).fetchall(), expected
+                        )
+
+                        optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb")
+                        self.assertEqual(conn.execute(optimized.sql("duckdb")).fetchall(), expected)
+
     def test_simplify_nested(self):
         sql = """
         SELECT x, 1 + 1
@@ -2140,6 +2174,61 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
+
+    def test_optimize_uncorrelated_in_nulls(self):
+        for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
+            for predicate in (
+                f"x.a IN (SELECT y.b FROM y{where})",
+                f"x.a = ANY (SELECT y.b FROM y{where})",
+            ):
+                for sql in (
+                    f"SELECT x.a, {predicate} AS r FROM x",
+                    f"SELECT x.a, NOT ({predicate}) AS r FROM x",
+                    f"SELECT x.a, ({predicate}) AND x.a > 1 AS r FROM x",
+                    f"SELECT x.a, ({predicate}) OR x.a > 1 AS r FROM x",
+                    f"SELECT x.a FROM x WHERE NOT ({predicate})",
+                    f"SELECT x.a FROM x WHERE NOT (({predicate}) AND x.a > 1)",
+                    f"SELECT x.a FROM x WHERE ({predicate}) IS NULL",
+                    f"SELECT x.a FROM x WHERE COALESCE(({predicate}), TRUE)",
+                    f"SELECT x.a FROM x WHERE ({predicate}) = FALSE",
+                    f"SELECT x.a FROM x WHERE ({predicate}) AND x.a > 1",
+                    f"SELECT x.a FROM x WHERE ({predicate}) OR x.a > 1",
+                    f"SELECT x.a FROM x GROUP BY x.a HAVING ({predicate}) IS NULL",
+                    f"SELECT x.a FROM x ORDER BY ({predicate}), x.a",
+                ):
+                    with self.subTest(sql=sql):
+                        optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                        expected = self.conn.execute(sql).fetchall()
+                        actual = self.conn.execute(optimized.sql("duckdb")).fetchall()
+                        if "ORDER BY" in sql:
+                            self.assertEqual(actual, expected)
+                        else:
+                            self.assertCountEqual(actual, expected)
+
+    def test_optimize_uncorrelated_exists(self):
+        for subquery in (
+            "SELECT y.b FROM y",
+            "SELECT y.b FROM y WHERE y.b IS NULL",
+            "SELECT y.b FROM y WHERE FALSE",
+            "SELECT SUM(y.b) FROM y WHERE FALSE",
+            "SELECT y.b FROM y LIMIT 0",
+            "SELECT y.b FROM y LIMIT 1 OFFSET 1",
+            "SELECT y.b FROM y UNION ALL SELECT z.b FROM z",
+        ):
+            for sql in (
+                f"SELECT x.a, COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x GROUP BY x.a",
+                f"SELECT COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x",
+                f"SELECT COUNT(*) AS n, EXISTS ({subquery}) AS e FROM x WHERE FALSE",
+                f"SELECT COUNT(*), SUM(CASE WHEN EXISTS ({subquery}) THEN 1 ELSE 0 END) FROM x",
+                f"SELECT COUNT(*), SUM(CASE WHEN NOT EXISTS ({subquery}) THEN 1 ELSE 0 END) FROM x",
+                f"SELECT x.a, COUNT(*) AS n FROM x GROUP BY x.a HAVING EXISTS ({subquery})",
+            ):
+                with self.subTest(sql=sql):
+                    optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                    self.assertCountEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                    )
 
     def test_optimize_subqueries_in_aggregates(self):
         for projection in (

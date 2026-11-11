@@ -72,9 +72,15 @@ class Spark2Parser(HiveParser):
             ),
             zone=seq_get(args, 1),
         ),
+        "LEFT": lambda args: exp.Left(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
+        ),
         "LTRIM": lambda args: build_trim(args, reverse_args=True),
         "INT": build_as_cast("int"),
         "MAP_FROM_ARRAYS": exp.Map.from_arg_list,
+        "RIGHT": lambda args: exp.Right(
+            this=seq_get(args, 0), expression=seq_get(args, 1), negative_length_returns_empty=True
+        ),
         "RLIKE": exp.RegexpLike.from_arg_list,
         "RTRIM": lambda args: build_trim(args, is_left=False, reverse_args=True),
         "SHIFTLEFT": binary_from_function(exp.BitwiseLeftShift),

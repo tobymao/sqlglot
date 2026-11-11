@@ -10,6 +10,41 @@ SELECT * FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a =
 SELECT * FROM x WHERE x.a = ANY (SELECT y.a AS a FROM y);
 SELECT * FROM x LEFT JOIN (SELECT y.a AS a FROM y GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE NOT _u_0.a IS NULL;
 
+# title: projected IN preserves UNKNOWN
+# execute: true
+SELECT x.a, x.a IN (SELECT y.b AS b FROM y) AS r FROM x;
+SELECT x.a, x.a IN (SELECT y.b AS b FROM y) AS r FROM x;
+
+# title: projected ANY preserves UNKNOWN
+# execute: true
+SELECT x.a, x.a = ANY (SELECT y.b AS b FROM y) AS r FROM x;
+SELECT x.a, x.a = ANY (SELECT y.b AS b FROM y) AS r FROM x;
+
+# title: negated ANY preserves UNKNOWN
+# execute: true
+SELECT x.a FROM x WHERE NOT (x.a = ANY (SELECT y.b AS b FROM y));
+SELECT x.a FROM x WHERE NOT (x.a = ANY (SELECT y.b AS b FROM y));
+
+# title: parenthesized IN conjunct is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a > 1 AND ((x.a IN (SELECT y.b AS b FROM y))) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a > 1 AND ((NOT _u_0.b IS NULL)) ORDER BY x.a;
+
+# title: parenthesized ANY conjunct is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a > 1 AND ((x.a = ANY (SELECT y.b AS b FROM y))) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a > 1 AND ((NOT _u_0.b IS NULL)) ORDER BY x.a;
+
+# title: equality around a different ANY comparison is not a membership predicate
+# execute: true
+SELECT x.a FROM x WHERE (x.a > ANY (SELECT y.b AS b FROM y)) = FALSE;
+SELECT x.a FROM x WHERE (x.a > ANY (SELECT y.b AS b FROM y)) = FALSE;
+
+# title: IN under OR in WHERE is unnested
+# execute: true
+SELECT x.a FROM x WHERE x.a = 1 OR x.a IN (SELECT y.b AS b FROM y) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT y.b AS b FROM y GROUP BY y.b) AS _u_0 ON x.a = _u_0.b WHERE x.a = 1 OR NOT _u_0.b IS NULL ORDER BY x.a;
+
 SELECT * FROM x WHERE x.a = (SELECT SUM(y.b) AS b FROM y WHERE x.a = y.a);
 SELECT * FROM x LEFT JOIN (SELECT SUM(y.b) AS b, y.a AS _u_1 FROM y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0._u_1 WHERE x.a = _u_0.b;
 
@@ -155,19 +190,19 @@ SELECT BIT_COUNT(EXISTS(SELECT 1 WHERE FALSE)) AS col FROM t0;
 
 # title: EXISTS in SELECT with GROUP BY - empty subquery should return 0, not eliminate rows
 SELECT EXISTS (SELECT 1 WHERE FALSE) AS ref0 FROM t1, t0 GROUP BY t0.c2;
-SELECT NOT MAX(_u_0."1") IS NULL AS ref0 FROM t1, t0 LEFT JOIN (SELECT 1 WHERE FALSE) AS _u_0 ON TRUE GROUP BY t0.c2;
+SELECT EXISTS(SELECT 1 WHERE FALSE) AS ref0 FROM t1, t0 GROUP BY t0.c2;
 
 # title: EXISTS in SELECT with GROUP BY - non-empty subquery should return 1
 SELECT EXISTS (SELECT 1 WHERE TRUE) AS ref0 FROM t1, t0 GROUP BY t0.c2;
-SELECT NOT MAX(_u_0."1") IS NULL AS ref0 FROM t1, t0 LEFT JOIN (SELECT 1 WHERE TRUE) AS _u_0 ON TRUE GROUP BY t0.c2;
+SELECT EXISTS(SELECT 1 WHERE TRUE) AS ref0 FROM t1, t0 GROUP BY t0.c2;
 
 # title: Multiple EXISTS in SELECT with GROUP BY
 SELECT EXISTS (SELECT 1 WHERE FALSE) AS ref0, EXISTS (SELECT 1 WHERE TRUE) AS ref1 FROM t1, t0 GROUP BY t0.c2;
-SELECT NOT MAX(_u_0."1") IS NULL AS ref0, NOT MAX(_u_1."1") IS NULL AS ref1 FROM t1, t0 LEFT JOIN (SELECT 1 WHERE FALSE) AS _u_0 ON TRUE LEFT JOIN (SELECT 1 WHERE TRUE) AS _u_1 ON TRUE GROUP BY t0.c2;
+SELECT EXISTS(SELECT 1 WHERE FALSE) AS ref0, EXISTS(SELECT 1 WHERE TRUE) AS ref1 FROM t1, t0 GROUP BY t0.c2;
 
 # title: EXISTS in SELECT with HAVING clause
 SELECT EXISTS (SELECT 1 WHERE FALSE) AS ref0 FROM t1 GROUP BY t1.c0 HAVING COUNT(*) > 0;
-SELECT NOT MAX(_u_0."1") IS NULL AS ref0 FROM t1 LEFT JOIN (SELECT 1 WHERE FALSE) AS _u_0 ON TRUE GROUP BY t1.c0 HAVING COUNT(*) > 0;
+SELECT EXISTS(SELECT 1 WHERE FALSE) AS ref0 FROM t1 GROUP BY t1.c0 HAVING COUNT(*) > 0;
 
 # title: Skip unnesting GENERATE_SERIES
 WITH t2 AS (SELECT CAST(t1.c1 AS BIGINT) AS ref1 FROM GENERATE_SERIES((SELECT MAX(x.a) FROM x AS x), 10, 1) AS t1(c1)) SELECT t2.ref1 AS ref1 FROM t2 AS t2;
@@ -398,7 +433,7 @@ SELECT x.b FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y WHERE y.b = 2) AS _u_0
 # title: EXISTS inside an aggregate
 # execute: true
 SELECT SUM(CASE WHEN EXISTS(SELECT 1 AS a WHERE FALSE) THEN 1 ELSE 0 END) AS total FROM x;
-SELECT SUM(CASE WHEN NOT _u_0.a IS NULL THEN 1 ELSE 0 END) AS total FROM x LEFT JOIN (SELECT 1 AS a WHERE FALSE) AS _u_0 ON TRUE;
+SELECT SUM(CASE WHEN EXISTS(SELECT 1 AS a WHERE FALSE) THEN 1 ELSE 0 END) AS total FROM x;
 
 # title: Scalar subquery outside an aggregate
 # execute: true

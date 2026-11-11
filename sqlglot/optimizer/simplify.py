@@ -998,6 +998,8 @@ class Simplifier:
                     l = l.to_py()
                     r = r.to_py()
                 elif l.is_string and r.is_string:
+                    if not all(c.is_type(*exp.DataType.TEXT_TYPES) for c in columns):
+                        return None
                     l = l.name
                     r = r.name
                 else:

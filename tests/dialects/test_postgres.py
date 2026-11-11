@@ -1841,6 +1841,39 @@ FROM json_data, field_ids""",
                 read="postgres",
             )
 
+    def test_function_parameter_mode_without_copy(self):
+        # transpile() and Expression.sql(copy=False) generate without copying the
+        # AST. A parameter mode must be emitted exactly once on those paths too,
+        # and generating must not strip the mode from the caller's AST.
+        for sql in (
+            "CREATE FUNCTION foo(IN a INT)",
+            "CREATE FUNCTION foo(OUT a INT)",
+            "CREATE FUNCTION foo(INOUT a INT)",
+            "CREATE FUNCTION foo(VARIADIC a INT[])",
+            "CREATE FUNCTION foo(a INT, OUT b INT, INOUT c VARCHAR, VARIADIC d INT[])",
+            "CREATE FUNCTION foo(IN a INT DEFAULT 0, OUT b INT)",
+            "CREATE OR REPLACE FUNCTION foo(INOUT y VARCHAR DEFAULT 'test')",
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    transpile(sql, read="postgres", write="postgres")[0], sql
+                )
+
+                expression = self.parse_one(sql)
+                self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)
+                # Regenerating the same tree must be idempotent.
+                self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)
+                # The mode constraint is still part of the AST.
+                modes = list(expression.find_all(exp.InOutColumnConstraint))
+                self.assertTrue(modes)
+                self.assertEqual(expression.sql(dialect="postgres"), sql)
+
+        # Unrelated column definitions are unaffected.
+        self.assertEqual(
+            transpile("CREATE TABLE t (a INT NOT NULL)", read="postgres", write="postgres")[0],
+            "CREATE TABLE t (a INT NOT NULL)",
+        )
+
     def test_alter_mixed_actions(self):
         for sql in (
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d",

@@ -462,7 +462,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
                 ),
             )
         # ALL is true over an empty set, represented by a missing LEFT JOIN match.
-        parent_predicate = _replace(parent_predicate.parent, alias.is_(exp.null()).or_(predicate))
+        parent_predicate = _replace(
+            parent_predicate.parent, exp.paren(alias.is_(exp.null()).or_(predicate))
+        )
     elif isinstance(parent_predicate, exp.Any):
         assert issubclass(op_type, exp.Binary)
         if value.this in group_by:

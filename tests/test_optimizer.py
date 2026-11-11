@@ -2247,8 +2247,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     predicate = f"x.a {op} ALL (SELECT y.{column} FROM y WHERE y.c = x.b)"
                     for sql in (
                         f"SELECT x.a, x.b, {predicate} AS r FROM x",
+                        f"SELECT x.a, x.b, {predicate} AND x.b = 1 AS r FROM x",
                         f"SELECT x.a, x.b FROM x WHERE {predicate}",
                         f"SELECT x.a, x.b FROM x WHERE NOT ({predicate})",
+                        f"SELECT x.a, x.b FROM x WHERE NOT {predicate}",
                     ):
                         with self.subTest(sql=sql):
                             optimized = optimizer.optimize(

@@ -11,7 +11,6 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     to_number_with_nls_param,
 )
-from sqlglot.generator import unsupported_args
 from sqlglot.parsers.teradata import is_window_aggregate
 from collections import defaultdict
 
@@ -115,8 +114,10 @@ class TeradataGenerator(generator.Generator):
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 
-    @unsupported_args("zone")
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        self._warn_unsupported_arg(expression, "zone")
         unit = expression.unit
         if isinstance(unit, exp.WeekStart):
             if unit.name.upper() == "MONDAY":

@@ -48,15 +48,8 @@ def unsupported_args(
     def decorator(func: GeneratorMethod) -> GeneratorMethod:
         @wraps(func)
         def _func(generator: G, expression: E) -> str:
-            expression_name = expression.__class__.__name__
-            dialect_name = generator.dialect.__class__.__name__
-
             for arg_name, diagnostic in diagnostic_by_arg.items():
-                if expression.args.get(arg_name):
-                    diagnostic = diagnostic or UNSUPPORTED_TEMPLATE.format(
-                        arg_name, expression_name, dialect_name
-                    )
-                    generator.unsupported(diagnostic)
+                generator._warn_unsupported_arg(expression, arg_name, diagnostic)
 
             return func(generator, expression)
 
@@ -1052,6 +1045,17 @@ class Generator:
 
             expression = sqlglot.transforms.move_ctes_to_top_level(expression)
         return expression
+
+    def _warn_unsupported_arg(
+        self, expression: exp.Expr, arg_name: str, diagnostic: str | None = None
+    ) -> None:
+        if expression.args.get(arg_name):
+            self.unsupported(
+                diagnostic
+                or UNSUPPORTED_TEMPLATE.format(
+                    arg_name, expression.__class__.__name__, self.dialect.__class__.__name__
+                )
+            )
 
     def unsupported(self, message: str) -> None:
         if self.unsupported_level == ErrorLevel.IMMEDIATE:

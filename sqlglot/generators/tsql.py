@@ -18,7 +18,6 @@ from sqlglot.dialects.dialect import (
     trim_sql,
     unit_to_var,
 )
-from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import find_in_scope
 from sqlglot.parsers.tsql import OPTIONS_THAT_REQUIRE_EQUAL
@@ -281,8 +280,10 @@ class TSQLGenerator(generator.Generator):
     def scope_resolution(self, rhs: str, scope_name: str) -> str:
         return f"{scope_name}::{rhs}"
 
-    @unsupported_args("zone")
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        self._warn_unsupported_arg(expression, "zone")
         unit_expr = expression.unit
         if isinstance(unit_expr, exp.WeekStart):
             unit: exp.Expr | None = exp.var(

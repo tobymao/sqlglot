@@ -2973,6 +2973,10 @@ FROM OPENJSON(@json) WITH (
             ).sql("tsql", unsupported_level=ErrorLevel.RAISE),
             "SELECT DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
         )
+        with self.assertRaises(UnsupportedError):
+            parse_one("SELECT DATE_TRUNC(d, MONTH, 'UTC')", read="bigquery").sql(
+                "tsql", unsupported_level=ErrorLevel.RAISE
+            )
 
     def test_numeric_trunc(self):
         # T-SQL doesn't have native TRUNC - uses ROUND with third parameter = 1

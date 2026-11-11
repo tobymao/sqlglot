@@ -294,6 +294,36 @@ class TeradataParser(parser.Parser):
 
         return this
 
+    def _parse_projections(self) -> tuple[list[exp.Expr], list[exp.Expr] | None]:
+        projections, exclude = super()._parse_projections()
+        for i, projection in enumerate(projections):
+            alias = (
+                projection
+                if isinstance(projection, exp.Alias)
+                and not isinstance(projection, exp.TeradataNamed)
+                else None
+            )
+            this = alias.this if alias else projection
+            node = this
+            named_alias = None
+            while isinstance(node, (exp.FormatPhrase, exp.TeradataTitle, exp.TeradataNamed)):
+                child = node.this
+                if isinstance(node, exp.TeradataNamed):
+                    if alias or named_alias:
+                        child.add_comments(node.args["alias"].pop_comments())
+                    named_alias = named_alias or node.args["alias"]
+                    child.add_comments(node.pop_comments())
+                    if node is this:
+                        this = child
+                    node.replace(child)
+                node = child
+            if named_alias:
+                if alias:
+                    alias.set("this", this)
+                else:
+                    projections[i] = self.expression(exp.Alias(this=this, alias=named_alias))
+        return projections, exclude
+
     def _parse_window(self, this: exp.Expr | None, alias: bool = False) -> exp.Expr | None:
         window = super()._parse_window(this, alias)
 

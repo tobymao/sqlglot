@@ -4060,9 +4060,8 @@ class Generator:
         return self.sql(expression, "this")
 
     def teradatanamed_sql(self, expression: exp.TeradataNamed) -> str:
-        if not isinstance(expression.parent, exp.Select):
-            self.unsupported("Teradata NAMED on subexpressions is not supported")
-        return self.alias_sql(expression)
+        self.unsupported("Teradata NAMED on subexpressions is not supported")
+        return self.sql(expression, "this")
 
     def _jsonobject_sql(
         self, expression: exp.JSONObject | exp.JSONObjectAgg, name: str = ""

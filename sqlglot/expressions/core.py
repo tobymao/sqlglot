@@ -2341,7 +2341,7 @@ class TeradataTitle(Expression):
 
 
 class TeradataNamed(Alias):
-    """A Teradata NAMED alias, including aliases attached to subexpressions."""
+    """A Teradata NAMED alias on a subexpression; projections use ordinary Alias."""
 
     arg_types = {"this": True, "alias": True}
 

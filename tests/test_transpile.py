@@ -129,6 +129,10 @@ class TestTranspile(unittest.TestCase):
             "SELECT c AS (a, b, c) /* foo */ FROM t",
         )
         self.validate(
+            "SELECT a FROM t GROUP /* c */ BY a ORDER -- d\nBY a",
+            "SELECT a FROM t /* c */ GROUP BY a /* d */ ORDER BY a",
+        )
+        self.validate(
             "SELECT * FROM t1\n/*x*/\nUNION ALL SELECT * FROM t2",
             "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
         )

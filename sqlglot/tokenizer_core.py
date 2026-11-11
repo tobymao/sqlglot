@@ -560,6 +560,7 @@ class TokenizerCore:
         "format_strings",
         "identifiers",
         "comments",
+        "comment_start_chars",
         "string_escapes",
         "byte_string_escapes",
         "identifier_escapes",
@@ -631,6 +632,7 @@ class TokenizerCore:
         self.format_strings = format_strings
         self.identifiers = identifiers
         self.comments = comments
+        self.comment_start_chars = {comment[0] for comment in comments}
         self.string_escapes = string_escapes
         self.byte_string_escapes = byte_string_escapes
         self.identifier_escapes = identifier_escapes
@@ -837,6 +839,8 @@ class TokenizerCore:
         skip = False
         trie = self.keyword_trie
         single_token = char in single_tokens
+        word_size = 0
+        comments: list[tuple[int, str]] = []
 
         while chars:
             if not skip:
@@ -846,12 +850,30 @@ class TokenizerCore:
                 trie = sub
                 if 0 in trie:
                     word = chars
+                    word_size = size
 
             end = self._current + size
             size += 1
 
             if end < sql_size:
                 char = sql[end]
+
+                # A comment between the words of a keyword, e.g. GROUP /* c */ BY, acts as whitespace
+                if (prev_space or " " in trie) and char in self.comment_start_chars:
+                    comment = self._keyword_comment(end)
+                    if comment:
+                        comment_size, comment_text = comment
+                        comments.append((size, comment_text))
+                        size += comment_size - 1
+                        if prev_space:
+                            skip = True
+                        else:
+                            char = " "
+                            chars += char
+                            prev_space = True
+                            skip = False
+                        continue
+
                 single_token = single_token or char in single_tokens
                 is_space = char.isspace()
 
@@ -875,7 +897,15 @@ class TokenizerCore:
             if prev_space or single_token or not char:
                 word = word.upper()
                 if word in self.keywords:
-                    self._advance(size - 1)
+                    if comments:
+                        # Advance one character at a time so that line numbers count the
+                        # newlines in the skipped comments, and keep only the comments
+                        # that are inside the keyword
+                        for _ in range(word_size):
+                            self._advance()
+                        self._comments.extend(text for at, text in comments if at < word_size)
+                    else:
+                        self._advance(size - 1)
                     self._add(self.keywords[word], text=word)
                     return
 
@@ -884,6 +914,40 @@ class TokenizerCore:
             return
 
         self._scan_var()
+
+    def _keyword_comment(self, start: int) -> tuple[int, str] | None:
+        """The size and text of the comment that starts at `start`, if there is one."""
+        sql = self.sql
+        for comment_start, comment_end in self.comments.items():
+            if not sql.startswith(comment_start, start) or comment_start == self.hint_start:
+                continue
+
+            text_start = start + len(comment_start)
+            if comment_end:
+                end = text_start
+                depth = 1
+                while depth:
+                    close = sql.find(comment_end, end)
+                    if close < 0:
+                        return None
+                    open_ = sql.find(comment_start, end) if self.nested_comments else -1
+                    if 0 <= open_ < close:
+                        depth += 1
+                        end = open_ + len(comment_start)
+                    else:
+                        depth -= 1
+                        end = close + len(comment_end)
+                return end - start, sql[text_start : end - len(comment_end)]
+
+            if comment_start == "--" and self.dash_comment_requires_boundary:
+                if text_start < self.size and not sql[text_start].isspace():
+                    return None
+
+            end = sql.find("\n", text_start)
+            if end < 0:
+                end = self.size
+            return end - start, sql[text_start:end]
+        return None
 
     def _scan_comment(self, comment_start: str) -> bool:
         if comment_start not in self.comments:

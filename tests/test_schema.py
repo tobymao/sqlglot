@@ -1,4 +1,6 @@
+import gc
 import unittest
+import weakref
 
 from sqlglot import exp, parse_one, to_table
 from sqlglot.errors import SchemaError
@@ -367,6 +369,28 @@ class TestSchema(unittest.TestCase):
             "Table catalog.db.tbl must match the schema's nesting level: 1.",
         )
 
+    def test_schema_add_table_error_formatting(self):
+        for dialect, read, sql, expected in (
+            ("postgres", None, '"foo.bar"', '"foo.bar"'),
+            ("bigquery", None, "`foo bar`", "`foo bar`"),
+            ("tsql", None, "[foo.bar]", "[foo.bar]"),
+            ("snowflake", None, "foo", "FOO"),
+            ("tsql", "postgres", '"foo.bar"', "[foo.bar]"),
+        ):
+            schema = MappingSchema({"db": {"items": {"id": "INT"}}}, dialect=dialect)
+            expression = to_table(sql, dialect=read or dialect)
+            for table in (sql, expression):
+                with self.subTest(dialect=dialect, read=read, table=table):
+                    with self.assertRaises(SchemaError) as ctx:
+                        schema.add_table(table, {"id": "INT"}, dialect=read)
+
+                    self.assertEqual(
+                        str(ctx.exception),
+                        f"Table {expected} must match the schema's nesting level: 2.",
+                    )
+
+            self.assertEqual(expression.sql(read or dialect), sql)
+
     def test_has_column(self):
         schema = MappingSchema({"x": {"c": "int"}})
         self.assertTrue(schema.has_column("x", exp.column("c")))
@@ -378,6 +402,99 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(found, {"c": "int"})
         found = schema.find(exp.to_table("x"), ensure_data_types=True)
         self.assertEqual(found, {"c": exp.DataType.build("int")})
+
+    def test_cache_does_not_retain_queries(self):
+        class Marker:
+            pass
+
+        for normalize in (False, True):
+            for method, args in (
+                ("find", ()),
+                ("column_names", ()),
+                ("get_column_type", ("id",)),
+                ("has_column", ("id",)),
+                ("add_table", ({"id": "INT"},)),
+            ):
+                with self.subTest(normalize=normalize, method=method):
+                    schema = MappingSchema(
+                        {"items": {"id": "INT"}}, dialect="duckdb", normalize=normalize
+                    )
+                    query = parse_one("SELECT id FROM items", dialect="duckdb")
+                    table = query.find(exp.Table)
+                    marker = Marker()
+                    # Compiled expressions cannot be weakly referenced directly.
+                    query.meta["marker"] = table.meta["marker"] = marker
+                    marker_ref = weakref.ref(marker)
+
+                    getattr(schema, method)(table, *args)
+                    del query, table, marker
+                    gc.collect()
+
+                    self.assertIsNone(marker_ref())
+                    self.assertEqual(schema.column_names("items"), ["id"])
+
+    def test_cache_ignores_aliases(self):
+        schema = MappingSchema({"items": {"id": "INT"}})
+        for alias in ("a", "b"):
+            table = exp.table_("items", alias=alias)
+            self.assertEqual(schema.column_names(table), ["id"])
+            self.assertEqual(schema.find(table), {"id": "INT"})
+
+        self.assertEqual(len(schema._find_cache), 1)
+        self.assertEqual(len(schema._normalized_table_cache), 1)
+
+    def test_cache_normalization(self):
+        schema = MappingSchema(
+            {
+                "foo": {"lower": "INT"},
+                "Foo": {"mixed": "INT"},
+                "FOO": {"upper": "INT"},
+            },
+            dialect="postgres",
+            normalize=False,
+        )
+        table = exp.table_("Foo")
+        for dialect, normalize, expected in (
+            ("postgres", True, "lower"),
+            ("postgres", False, "mixed"),
+            ("snowflake", True, "upper"),
+            ("bigquery", True, "mixed"),
+        ):
+            with self.subTest(dialect=dialect, normalize=normalize):
+                self.assertEqual(
+                    schema.column_names(table, dialect=dialect, normalize=normalize), [expected]
+                )
+                self.assertEqual(
+                    schema.column_names("Foo", dialect=dialect, normalize=normalize), [expected]
+                )
+        self.assertEqual(table.sql(), "Foo")
+
+        table.this.set("quoted", True)
+        self.assertEqual(schema.column_names(table, normalize=True), ["mixed"])
+        table.this.set("quoted", False)
+        self.assertEqual(schema.column_names(table, normalize=True), ["lower"])
+        self.assertEqual(schema.column_names(to_table("Foo()"), normalize=True), ["mixed"])
+
+        self.assertEqual(schema.find(exp.table_("Foo")), {"mixed": "INT"})
+        self.assertEqual(schema.find(exp.table_("foo")), {"lower": "INT"})
+        self.assertEqual(schema.find(exp.table_("FOO")), {"upper": "INT"})
+
+    def test_cache_table_mutation(self):
+        schema = MappingSchema(
+            {
+                "db": {"items": {"id": "INT"}, "other": {"value": "TEXT"}},
+                "other_db": {"items": {"other_id": "INT"}},
+            }
+        )
+        table = to_table("db.items")
+        self.assertEqual(schema.column_names(table), ["id"])
+        table.this.set("this", "other")
+        self.assertEqual(schema.column_names(table), ["value"])
+        table.this.set("this", "items")
+        table.args["db"].set("this", "other_db")
+        self.assertEqual(schema.column_names(table), ["other_id"])
+        table.args["db"].set("this", "db")
+        self.assertEqual(schema.column_names(table), ["id"])
 
     def test_custom_schema(self):
         class CustomSchema(Schema):

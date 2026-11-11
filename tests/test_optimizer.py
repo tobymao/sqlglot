@@ -3423,9 +3423,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_annotate_types_caches_schema_lookups(self):
         schema = MappingSchema({"t": {"a": "INT"}})
         qualified = qualify(parse_one("SELECT a, a FROM t"), schema=schema)
-        pre = len(schema._find_cache)
+        schema._find_cache.clear()
         annotate_types(qualified, schema=schema)
-        self.assertEqual(len(schema._find_cache) - pre, 1)
+        self.assertEqual(len(schema._find_cache), 1)
 
     def test_annotate_types_caches_positional_aliases(self):
         for width in (4, 64):

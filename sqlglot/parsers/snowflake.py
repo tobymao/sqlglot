@@ -11,6 +11,7 @@ from sqlglot.dialects.dialect import (
     build_like,
     build_replace_with_optional_replacement,
     build_timetostr_or_tochar,
+    regexp_capture_group_count,
     build_trunc,
     date_trunc_to_time,
     map_date_part,
@@ -233,13 +234,27 @@ def _build_trunc(args: list, dialect: Dialect) -> exp.DateTrunc | exp.Trunc | ex
 
 def _build_regexp_extract(expr_type: type[E]) -> t.Callable[[list, Dialect], E]:
     def _builder(args: list, dialect: Dialect) -> E:
+        group = seq_get(args, 5)
+        parameters = seq_get(args, 4)
+        inferred_group = False
+
+        if not group:
+            inferred_group = True
+            if parameters and parameters.is_string and "e" in parameters.name:
+                group = exp.Literal.number(
+                    0 if regexp_capture_group_count(seq_get(args, 1)) == 0 else 1
+                )
+            else:
+                group = exp.Literal.number(0)
+
         return expr_type(
             this=seq_get(args, 0),
             expression=seq_get(args, 1),
             position=seq_get(args, 2),
             occurrence=seq_get(args, 3),
-            parameters=seq_get(args, 4),
-            group=seq_get(args, 5) or exp.Literal.number(0),
+            parameters=parameters,
+            group=group,
+            inferred_group=inferred_group,
             **(
                 {
                     "null_if_pos_overflow": dialect.REGEXP_EXTRACT_POSITION_OVERFLOW_RETURNS_NULL,

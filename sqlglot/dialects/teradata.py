@@ -8,6 +8,8 @@ from sqlglot.tokens import TokenType
 
 
 class Teradata(Dialect):
+    # Teradata's 'DAY' TRUNC format starts the week on Sunday by default
+    WEEK_OFFSET = -1
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     TYPED_DIVISION = True
 

@@ -3,9 +3,55 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.dialects.dialect import Dialect, build_trunc
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
 from sqlglot.trie import new_trie
+
+# https://docs.teradata.com/r/Lake-Working-with-SQL/SQL-Functions/SQL-Date-and-Time-Functions-and-Expressions/DateTime-and-Interval-Functions-and-Expressions/TRUNC-Date/TRUNC-Date-Syntax/ROUND-Date-and-TRUNC-Date-Argument-Types-and-Rules/TRUNC-and-ROUND-Date-Formats
+TERADATA_TRUNC_FORMAT_TO_UNIT = {
+    "CC": "CENTURY",
+    "SCC": "CENTURY",
+    "SYYYY": "YEAR",
+    "YYYY": "YEAR",
+    "YEAR": "YEAR",
+    "SYEAR": "YEAR",
+    "YYY": "YEAR",
+    "YY": "YEAR",
+    "Y": "YEAR",
+    "IYYY": "ISOYEAR",
+    "IYY": "ISOYEAR",
+    "IY": "ISOYEAR",
+    "I": "ISOYEAR",
+    "Q": "QUARTER",
+    "MONTH": "MONTH",
+    "MON": "MONTH",
+    "MM": "MONTH",
+    "RM": "MONTH",
+    "DAY": "WEEK",
+    "DY": "WEEK",
+    "D": "WEEK",
+    "IW": "ISOWEEK",
+    "DDD": "DAY",
+    "DD": "DAY",
+    "J": "DAY",
+    "HH": "HOUR",
+    "HH12": "HOUR",
+    "HH24": "HOUR",
+    "MI": "MINUTE",
+}
+
+
+def _build_trunc(args: list, dialect: Dialect) -> exp.DateTrunc | exp.Trunc | exp.Anonymous:
+    trunc = build_trunc(args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD")
+    if isinstance(trunc, exp.DateTrunc) and trunc.unit.is_string:
+        unit = TERADATA_TRUNC_FORMAT_TO_UNIT.get(trunc.unit.name.upper())
+        if unit == "WEEK":
+            trunc.set("unit", exp.WeekStart(this=exp.var("SUNDAY")))
+        elif unit:
+            trunc.set("unit", exp.Literal.string(unit))
+    return trunc
+
 
 # Ranking and navigation functions don't take a frame and FIRST_VALUE/LAST_VALUE have their own default
 NON_FRAMED_WINDOW_FUNCTIONS = (
@@ -137,6 +183,7 @@ class TeradataParser(parser.Parser):
         **parser.Parser.FUNCTIONS,
         "CARDINALITY": exp.ArraySize.from_arg_list,
         "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
+        "TRUNC": _build_trunc,
     }
 
     EXPONENT = {

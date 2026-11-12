@@ -1,5 +1,5 @@
 from sqlglot import exp, parse_one
-from sqlglot.errors import ParseError, UnsupportedError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
 from tests.dialects.test_dialect import Validator
@@ -2947,6 +2947,36 @@ FROM OPENJSON(@json) WITH (
                 "tsql": "SELECT DATETRUNC(YEAR, CAST('foo1' AS DATE))",
             },
         )
+        self.validate_all(
+            "SELECT DATETRUNC(MONTH, CAST('2024-05-15' AS DATE))",
+            read={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2024-05-15' AS DATE), MONTH)",
+            },
+            write={
+                "tsql": "SELECT DATETRUNC(MONTH, CAST('2024-05-15' AS DATE))",
+                "duckdb": "SELECT DATE_TRUNC('MONTH', CAST('2024-05-15' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
+            read={
+                "bigquery": "SELECT DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
+            },
+            write={
+                "tsql": "SELECT DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        self.assertEqual(
+            parse_one(
+                "SELECT DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
+                read="bigquery",
+            ).sql("tsql", unsupported_level=ErrorLevel.RAISE),
+            "SELECT DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
+        )
+        with self.assertRaises(UnsupportedError):
+            parse_one("SELECT DATE_TRUNC(d, MONTH, 'UTC')", read="bigquery").sql(
+                "tsql", unsupported_level=ErrorLevel.RAISE
+            )
 
     def test_numeric_trunc(self):
         # T-SQL doesn't have native TRUNC - uses ROUND with third parameter = 1

@@ -2398,6 +2398,8 @@ def weekstart_unit_to_str(
     unit = expression.args.get("unit")
     if isinstance(unit, exp.WeekStart):
         return exp.Literal.string(self.weekstart_name(unit))
+    if isinstance(unit, exp.Literal) and unit.name.upper() in ("W", "WW"):
+        self.unsupported(f"Unexpected interval unit: {unit.name}")
 
     return unit_to_str(expression, default)
 

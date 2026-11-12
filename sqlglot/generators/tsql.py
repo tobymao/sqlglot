@@ -16,6 +16,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     trim_sql,
+    unit_to_var,
 )
 from sqlglot.helper import seq_get
 from sqlglot.optimizer.scope import find_in_scope
@@ -278,6 +279,23 @@ class TSQLGenerator(generator.Generator):
 
     def scope_resolution(self, rhs: str, scope_name: str) -> str:
         return f"{scope_name}::{rhs}"
+
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        self._warn_unsupported_arg(expression, "zone")
+        unit_expr = expression.unit
+        if isinstance(unit_expr, exp.WeekStart):
+            unit: exp.Expr | None = exp.var(
+                "ISO_WEEK" if unit_expr.name.upper() == "MONDAY" else self.weekstart_name(unit_expr)
+            )
+        else:
+            if unit_expr.is_string and unit_expr.name.upper() in ("W", "WW"):
+                self.unsupported(f"Unexpected interval unit: {unit_expr.name}")
+            unit = unit_to_var(expression)
+            if isinstance(unit, exp.Var) and unit.name.upper() == "ISOWEEK":
+                unit = exp.var("ISO_WEEK")
+        return self.func("DATETRUNC", unit, expression.this)
 
     def select_sql(self, expression: exp.Select) -> str:
         self._prepare_limit_offset(expression)

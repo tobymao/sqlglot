@@ -31,6 +31,14 @@ class TestTeradata(Validator):
         self.validate_identity('SELECT curdate, "curdate", t.curdate FROM t')
         self.validate_identity("CREATE TABLE t (curdate DATE)")
 
+    def test_current_time(self):
+        self.validate_identity("current_time", "CURRENT_TIME").assert_is(exp.CurrentTime)
+        for precision in (0, 3, 6):
+            self.validate_identity(f"CURRENT_TIME({precision})").assert_is(exp.CurrentTime)
+        self.validate_identity("SELECT CURRENT_TIME AS request_time")
+        self.validate_identity("CURRENT_TIME AT TIME ZONE 'America Pacific'")
+        self.validate_identity('SELECT t.current_time, "CURRENT_TIME" FROM t')
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

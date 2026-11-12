@@ -23,6 +23,81 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_pivot_output_column_names(self):
+        for sql, expected in (
+            (
+                "SELECT * FROM (SELECT CAST('2020-01-31' AS DATE) AS d, 1 AS v) "
+                "PIVOT(SUM(v) AS amount FOR d IN (CAST('2020-01-31' AS DATE)))",
+                "SELECT `_1`.`amount_2020_01_31` AS `amount_2020_01_31` "
+                "FROM (SELECT CAST('2020-01-31' AS DATE) AS `d`, 1 AS `v`) AS `_0` "
+                "PIVOT(SUM(`_0`.`v`) AS `amount` FOR `_0`.`d` "
+                "IN (CAST('2020-01-31' AS DATE))) AS `_1`",
+            ),
+            (
+                "SELECT * FROM (SELECT CAST('2020-1-3' AS DATE) AS d, 1 AS v) "
+                "PIVOT(SUM(v) AS amount FOR d IN "
+                "((CAST('2020-1-3' AS DATE)), CAST('0001-01-01' AS DATE)))",
+                "SELECT `_1`.`amount_2020_01_03` AS `amount_2020_01_03`, "
+                "`_1`.`amount_1_01_01` AS `amount_1_01_01` "
+                "FROM (SELECT CAST('2020-1-3' AS DATE) AS `d`, 1 AS `v`) AS `_0` "
+                "PIVOT(SUM(`_0`.`v`) AS `amount` FOR `_0`.`d` "
+                "IN ((CAST('2020-1-3' AS DATE)), CAST('0001-01-01' AS DATE))) AS `_1`",
+            ),
+            (
+                "SELECT * FROM (SELECT '2020-01-31' AS d, 1 AS v) "
+                "PIVOT(SUM(v) AS amount FOR d IN ('2020-01-31'))",
+                "SELECT `_1`.`amount_2020-01-31` AS `amount_2020-01-31` "
+                "FROM (SELECT '2020-01-31' AS `d`, 1 AS `v`) AS `_0` "
+                "PIVOT(SUM(`_0`.`v`) AS `amount` FOR `_0`.`d` IN ('2020-01-31')) AS `_1`",
+            ),
+            (
+                "SELECT * FROM (SELECT DATE '2020-01-31' AS d, 1 AS v) "
+                "PIVOT(SUM(v) AS amount FOR d IN (DATE '2020-01-31' AS `jan-uary`))",
+                "SELECT `_1`.`amount_jan-uary` AS `amount_jan-uary` "
+                "FROM (SELECT CAST('2020-01-31' AS DATE) AS `d`, 1 AS `v`) AS `_0` "
+                "PIVOT(SUM(`_0`.`v`) AS `amount` FOR `_0`.`d` "
+                "IN (CAST('2020-01-31' AS DATE) AS `jan-uary`)) AS `_1`",
+            ),
+            (
+                "SELECT * FROM (SELECT CAST('2020-01-31' AS DATE) AS d, 1 AS v) "
+                "PIVOT(SUM(v) FOR d IN (CAST('2020-01-31' AS DATE), "
+                "(CAST('2020-1-3' AS DATE)), CAST('0001-01-01' AS DATE), "
+                "(CAST('2020-01-31' AS DATE)) AS `jan-uary`))",
+                "SELECT `_1`.`_2020_01_31` AS `_2020_01_31`, "
+                "`_1`.`_2020_01_03` AS `_2020_01_03`, `_1`.`_1_01_01` AS `_1_01_01`, "
+                "`_1`.`jan-uary` AS `jan-uary` "
+                "FROM (SELECT CAST('2020-01-31' AS DATE) AS `d`, 1 AS `v`) AS `_0` "
+                "PIVOT(SUM(`_0`.`v`) FOR `_0`.`d` IN (CAST('2020-01-31' AS DATE), "
+                "(CAST('2020-1-3' AS DATE)), CAST('0001-01-01' AS DATE), "
+                "(CAST('2020-01-31' AS DATE)) AS `jan-uary`)) AS `_1`",
+            ),
+        ):
+            with self.subTest(sql):
+                self.validate_identity(
+                    qualify(
+                        self.parse_one(sql), dialect="bigquery", validate_qualify_columns=False
+                    ).sql("bigquery"),
+                    expected,
+                )
+
+    def test_pivot_date_output_column_names_duckdb(self):
+        sql = (
+            "SELECT * FROM (SELECT CAST('2020-01-31' AS DATE) AS k, 1 AS v) "
+            "PIVOT(SUM(v) FOR k IN (CAST('2020-01-31' AS DATE), "
+            "CAST('2020-1-3' AS DATE), CAST('2020-01-01' AS DATE) AS january))"
+        )
+        self.assertEqual(
+            qualify(self.parse_one(sql), dialect="bigquery", validate_qualify_columns=False).sql(
+                "duckdb"
+            ),
+            'SELECT "_1"."_2020_01_31" AS "_2020_01_31", '
+            '"_1"."_2020_01_03" AS "_2020_01_03", "_1"."january" AS "january" '
+            'FROM (SELECT CAST(\'2020-01-31\' AS DATE) AS "k", 1 AS "v") AS "_0" '
+            'PIVOT(SUM("v") FOR "k" IN (CAST(\'2020-01-31\' AS DATE) AS "_2020_01_31", '
+            "CAST('2020-1-3' AS DATE) AS \"_2020_01_03\", "
+            'CAST(\'2020-01-01\' AS DATE) AS "january")) AS "_1"',
+        )
+
     def test_identifier_escapes(self):
         for escaped, name in (
             (r"a\nb", "a\nb"),

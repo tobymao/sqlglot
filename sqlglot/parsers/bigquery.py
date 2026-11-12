@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -391,6 +392,19 @@ class BigQueryParser(parser.Parser):
         "SAFE_OFFSET": (0, True),
         "SAFE_ORDINAL": (1, True),
     }
+
+    def _pivot_column_value_name(self, field: exp.Expr, has_prefix: bool) -> str:
+        value = field.unnest()
+        if type(value) is exp.Cast and value.is_type(exp.DType.DATE) and value.this.is_string:
+            # Add leading 0s to month and day in YYYY-M-D date strings
+            if match := re.fullmatch(r"([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})", value.name):
+                year, month, day = (int(part) for part in match.groups())
+                name = f"{year}_{month:02}_{day:02}"
+            else:
+                name = value.name.replace("-", "_")
+            return name if has_prefix else f"_{name}"
+
+        return super()._pivot_column_value_name(field, has_prefix)
 
     def _parse_for_in(self) -> exp.ForIn | exp.Command:
         index = self._index

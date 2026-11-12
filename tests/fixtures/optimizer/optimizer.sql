@@ -1761,12 +1761,15 @@ SELECT
   "y"."b" AS "b",
   "z"."c" AS "c",
   "v"."a" AS "a"
-FROM "x" AS "x", "y" AS "y"
-RIGHT JOIN "y" AS "z"
-  ON "y"."b" = "z"."b"
-CROSS JOIN "x" AS "v"
-WHERE
-  "v"."a" = "x"."a" AND "y"."b" > 0
+FROM "x" AS "x"
+JOIN (
+  "y" AS "y"
+    RIGHT JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+  ON "y"."b" > 0
+JOIN "x" AS "v"
+  ON "v"."a" = "x"."a"
 ORDER BY
   "x"."a",
   "y"."b",
@@ -1781,14 +1784,212 @@ SELECT
   "y"."b" AS "b",
   "z"."c" AS "c",
   "v"."a" AS "a"
-FROM "x" AS "x", "y" AS "y"
-FULL JOIN "y" AS "z"
-  ON "y"."b" = "z"."b"
-CROSS JOIN "x" AS "v"
-WHERE
-  "v"."a" = "x"."a" AND "y"."b" > 0
+FROM "x" AS "x"
+JOIN (
+  "y" AS "y"
+    FULL JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+  ON "y"."b" > 0
+JOIN "x" AS "v"
+  ON "v"."a" = "x"."a"
 ORDER BY
   "x"."a",
   "y"."b",
   "z"."c",
   "v"."a";
+
+# title: Unnest IN after a comma join group
+# dialect: postgres
+SELECT x.a, y.b, z.c FROM x, y RIGHT JOIN y AS z ON y.b = z.b WHERE x.a IN (SELECT v.a FROM x AS v) AND y.b > 0 ORDER BY x.a, y.b, z.c;
+WITH "_u_0" AS (
+  SELECT
+    "v"."a" AS "a"
+  FROM "x" AS "v"
+  GROUP BY
+    "v"."a"
+)
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c"
+FROM "x" AS "x"
+JOIN (
+  "y" AS "y"
+    RIGHT JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+  ON "y"."b" > 0
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."a" = "x"."a"
+WHERE
+  NOT "_u_0"."a" IS NULL
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c";
+
+# title: Decorrelate EXISTS after a comma join group
+# dialect: postgres
+SELECT x.a, y.b, z.c FROM x, y FULL JOIN y AS z ON y.b = z.b WHERE EXISTS (SELECT 1 FROM x AS v WHERE v.a = x.a) AND y.b > 0 ORDER BY x.a, y.b, z.c;
+WITH "_u_0" AS (
+  SELECT
+    "v"."a" AS "_u_1"
+  FROM "x" AS "v"
+  GROUP BY
+    "v"."a"
+)
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c"
+FROM "x" AS "x"
+JOIN (
+  "y" AS "y"
+    FULL JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+  ON "y"."b" > 0
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "x"."a"
+WHERE
+  NOT "_u_0"."_u_1" IS NULL
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c";
+
+# title: Decorrelate scalar aggregates after a comma join group
+# dialect: postgres
+SELECT x.a, y.b, z.c, (SELECT COUNT(*) FROM x AS v WHERE v.a = x.a) AS n FROM x, y RIGHT JOIN y AS z ON y.b = z.b ORDER BY x.a, y.b, z.c, n;
+WITH "_u_0" AS (
+  SELECT
+    COUNT(*) AS "_col_0",
+    "v"."a" AS "_u_1"
+  FROM "x" AS "v"
+  GROUP BY
+    "v"."a"
+)
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c",
+  COALESCE("_u_0"."_col_0", 0) AS "n"
+FROM "x" AS "x"
+CROSS JOIN (
+  "y" AS "y"
+    RIGHT JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."_u_1" = "x"."a"
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c",
+  "n";
+
+# title: Keep preceding sources visible to LATERAL
+# dialect: trino
+SELECT x.a, y.b, z.c, l.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b, LATERAL (SELECT x.a + 1 AS a) AS l WHERE y.b > 0 ORDER BY x.a, y.b, z.c, l.a;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c",
+  "l"."a" AS "a"
+FROM "x" AS "x"
+JOIN (
+  "y" AS "y"
+    RIGHT JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+  ON "y"."b" > 0
+CROSS JOIN LATERAL (
+  SELECT
+    "x"."a" + 1 AS "a"
+) AS "l"
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c",
+  "l"."a";
+
+# title: Retain nested comma join groups during merging
+# dialect: postgres
+SELECT t.a, t.b, t.c FROM (SELECT x.a, y.b, z.c FROM x, y RIGHT JOIN y AS z ON y.b = z.b) AS t WHERE t.a IN (SELECT v.a FROM x AS v) ORDER BY t.a, t.b, t.c;
+WITH "t" AS (
+  SELECT
+    "x"."a" AS "a",
+    "y"."b" AS "b",
+    "z"."c" AS "c"
+  FROM "x" AS "x"
+  CROSS JOIN (
+    "y" AS "y"
+      RIGHT JOIN "y" AS "z"
+        ON "y"."b" = "z"."b"
+  )
+), "_u_0" AS (
+  SELECT
+    "v"."a" AS "a"
+  FROM "x" AS "v"
+  GROUP BY
+    "v"."a"
+)
+SELECT
+  "t"."a" AS "a",
+  "t"."b" AS "b",
+  "t"."c" AS "c"
+FROM "t" AS "t"
+LEFT JOIN "_u_0" AS "_u_0"
+  ON "_u_0"."a" = "t"."a"
+WHERE
+  NOT "_u_0"."a" IS NULL
+ORDER BY
+  "t"."a",
+  "t"."b",
+  "t"."c";
+
+# title: Expand USING before normalizing comma join groups
+# dialect: postgres
+SELECT * FROM (SELECT x.a FROM x) AS q, y FULL JOIN y AS z USING (b) ORDER BY q.a, y.b, y.c, z.c;
+SELECT
+  "x"."a" AS "a",
+  COALESCE("y"."b", "z"."b") AS "b",
+  "y"."c" AS "c",
+  "z"."c" AS "c"
+FROM "x" AS "x"
+CROSS JOIN (
+  "y" AS "y"
+    FULL JOIN "y" AS "z"
+      ON "y"."b" = "z"."b"
+)
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "y"."c",
+  "z"."c";
+
+# title: Keep derived-table filters inside the comma join group
+# dialect: postgres
+SELECT x.a, s.b, z.c FROM x, (SELECT y.b FROM y WHERE y.b = 2) AS s RIGHT JOIN y AS z ON s.b = z.b ORDER BY x.a, s.b, z.c;
+WITH "s" AS (
+  SELECT
+    "y"."b" AS "b"
+  FROM "y" AS "y"
+  WHERE
+    "y"."b" = 2
+)
+SELECT
+  "x"."a" AS "a",
+  "s"."b" AS "b",
+  "z"."c" AS "c"
+FROM "x" AS "x"
+CROSS JOIN (
+  "s" AS "s"
+    RIGHT JOIN "y" AS "z"
+      ON "s"."b" = "z"."b"
+)
+ORDER BY
+  "x"."a",
+  "s"."b",
+  "z"."c";

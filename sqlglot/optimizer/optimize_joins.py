@@ -19,6 +19,8 @@ def optimize_joins(expression: E) -> E:
         'SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a'
     """
 
+    expression = normalize_join_groups(expression)
+
     for select in expression.find_all(exp.Select):
         joins: list[exp.Join] = select.args.get("joins", [])
 
@@ -115,6 +117,40 @@ def normalize(expression: E) -> E:
 
             if not join.args.get("on") and not join.args.get("using"):
                 join.set("on", exp.true())
+    return expression
+
+
+def normalize_join_groups(expression: E) -> E:
+    """Parenthesize comma join groups containing RIGHT or FULL joins."""
+    for parent in expression.find_all(exp.Select, exp.Table, exp.Subquery):
+        joins: list[exp.Join] = parent.args.get("joins") or []
+        if not any(join.side in ("RIGHT", "FULL") for join in joins):
+            continue
+
+        grouped = joins.copy()
+        end = len(joins)
+        outer = False
+        for i in range(len(joins) - 1, -1, -1):
+            join = joins[i]
+            if not any(join.args.get(k) for k in JOIN_ATTRS):
+                if outer:
+                    # JOIN binds more tightly than comma. Keep its left operand inside the group
+                    # before other optimizer rules add joins that reference preceding sources.
+                    operand = join.this
+                    operand.set(
+                        "joins", [*(operand.args.get("joins") or []), *grouped[i + 1 : end]]
+                    )
+                    join.set("this", exp.Subquery(this=operand))
+                    join.set("kind", "CROSS")
+                    del grouped[i + 1 : end]
+                end = i
+                outer = False
+            elif join.side in ("RIGHT", "FULL"):
+                outer = True
+
+        if len(grouped) != len(joins):
+            parent.set("joins", grouped)
+
     return expression
 
 

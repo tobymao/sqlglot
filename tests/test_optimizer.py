@@ -2592,6 +2592,39 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                                 connection.execute(optimized.sql(dialect)).fetchall(), expected
                             )
 
+    def test_normalize_join_groups(self):
+        for sql, expected in (
+            (
+                "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z, d FULL JOIN e ON d.w = e.v",
+                "SELECT * FROM a CROSS JOIN (b RIGHT JOIN c ON b.y = c.z) "
+                "CROSS JOIN (d FULL JOIN e ON d.w = e.v)",
+            ),
+            (
+                "SELECT * FROM a, (b LEFT JOIN c ON b.y = c.z) RIGHT JOIN d ON c.z = d.w",
+                "SELECT * FROM a CROSS JOIN ((b LEFT JOIN c ON b.y = c.z) "
+                "RIGHT JOIN d ON c.z = d.w)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                result = optimizer.optimize_joins.normalize_join_groups(parse_one(sql))
+                self.assertEqual(result, parse_one(expected))
+                self.assertEqual(
+                    optimizer.optimize_joins.normalize_join_groups(result.copy()), result
+                )
+                for node in result.walk():
+                    if node.index is not None:
+                        assert node.parent is not None and node.arg_key is not None
+                        self.assertIs(node.parent.args[node.arg_key][node.index], node)
+
+        for dialect in ("sqlite", "hive", "clickhouse", "bigquery"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(
+                    "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z", dialect=dialect
+                )
+                self.assertEqual(
+                    optimizer.optimize_joins.normalize_join_groups(expression.copy()), expression
+                )
+
     def test_optimize_positional_joins(self):
         for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):
             for sql in (
@@ -2639,11 +2672,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
     def test_nearest_joins(self):
+        self.assertEqual(
+            optimizer.optimize_joins.optimize_joins(
+                parse_one(
+                    "SELECT a.id, b.id, c.id, d.id FROM a, b JOIN c NEAREST 1 BY DISTANCE "
+                    "ABS(b.id - c.id) RIGHT JOIN d ON c.id = d.id",
+                    dialect="duckdb",
+                )
+            ).sql("duckdb"),
+            "SELECT a.id, b.id, c.id, d.id FROM a CROSS JOIN (b JOIN c NEAREST 1 BY DISTANCE "
+            "ABS(b.id - c.id) RIGHT JOIN d ON c.id = d.id)",
+        )
         for sql in (
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
             "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
-            "SELECT a.id, b.id, c.id, d.id FROM a, b JOIN c NEAREST 1 BY DISTANCE ABS(b.id - c.id) "
-            "RIGHT JOIN d ON c.id = d.id",
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
             "JOIN c ON a.id = c.id AND b.id = c.id WHERE b.id > 1",
             "SELECT a.id, b.id FROM a JOIN (SELECT id FROM b WHERE id > 1) AS b "

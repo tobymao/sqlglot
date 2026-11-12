@@ -372,6 +372,12 @@ class Generator:
     # Whether top-k distance/similarity joins are supported
     SUPPORTS_NEAREST_JOIN = False
 
+    # Whether MATCH_CONDITION in ASOF joins is supported
+    SUPPORTS_MATCH_CONDITION = False
+
+    # Whether ASOF JOIN MATCH_CONDITION should be folded into the ON clause
+    MATCH_CONDITION_IN_ON = False
+
     # Whether table hints should be generated
     TABLE_HINTS = True
 
@@ -3042,6 +3048,15 @@ class Generator:
             )
             if op
         )
+        if (
+            match_condition := expression.args.get("match_condition")
+        ) and not self.SUPPORTS_MATCH_CONDITION:
+            if self.MATCH_CONDITION_IN_ON and not expression.args.get("using"):
+                expression = expression.on(match_condition)
+                expression.set("match_condition", None)
+            else:
+                self.unsupported("MATCH_CONDITION is not supported.")
+
         match_cond = self.sql(expression, "match_condition")
         match_cond = f" MATCH_CONDITION ({match_cond})" if match_cond else ""
         nearest = self.sql(expression, "nearest")

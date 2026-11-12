@@ -1053,6 +1053,37 @@ class TestSnowflake(Validator):
         self.validate_identity(
             "SELECT * FROM DATA AS DATA_L ASOF JOIN DATA AS DATA_R MATCH_CONDITION (DATA_L.VAL > DATA_R.VAL) ON DATA_L.ID = DATA_R.ID"
         )
+        self.validate_all(
+            "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) ON t.id = u.id",
+            write={
+                "snowflake": "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) ON t.id = u.id",
+                "duckdb": "SELECT * FROM t ASOF JOIN u ON t.id = u.id AND t.ts >= u.ts",
+                "clickhouse": "SELECT * FROM t ASOF JOIN u ON t.id = u.id AND t.ts >= u.ts",
+                "postgres": UnsupportedError,
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t ASOF LEFT JOIN u MATCH_CONDITION (t.ts >= u.ts) ON t.id = u.id OR t.id2 = u.id2",
+            write={
+                "duckdb": "SELECT * FROM t ASOF LEFT JOIN u ON (t.id = u.id OR t.id2 = u.id2) AND t.ts >= u.ts",
+                "clickhouse": "SELECT * FROM t ASOF LEFT JOIN u ON (t.id = u.id OR t.id2 = u.id2) AND t.ts >= u.ts",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts)",
+            write={
+                "snowflake": "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts)",
+                "duckdb": "SELECT * FROM t ASOF JOIN u ON t.ts >= u.ts",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) USING (id)",
+            write={
+                "snowflake": "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) USING (id)",
+                "duckdb": UnsupportedError,
+                "clickhouse": UnsupportedError,
+            },
+        )
         self.validate_identity(
             """SELECT TO_TIMESTAMP('2025-01-16T14:45:30.123+0500', 'yyyy-mm-DDThh24:mi:ss.ff9tzhtzm')"""
         )

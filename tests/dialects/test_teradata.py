@@ -817,9 +817,8 @@ class TestTeradata(Validator):
         self.validate_identity("TRUNC(x, 'YYYY')", "TRUNC(x, 'YEAR')")
         self.validate_identity("TRUNC(x, 'IYYY')")
         self.validate_identity("TRUNC(x, 'CC')")
-        # Preserve Teradata-specific week-of-month ('W') and week-of-year ('WW') formats
-        # for Teradata round trips, while reporting cross-dialect generation as unsupported
-        for unit in ("W", "WW"):
+        # Preserve native calendar boundaries and reject unsupported translations.
+        for unit in ("CC", "W", "WW"):
             self.validate_all(
                 f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
                 write={

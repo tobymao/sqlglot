@@ -290,7 +290,11 @@ class TSQLGenerator(generator.Generator):
                 "ISO_WEEK" if unit_expr.name.upper() == "MONDAY" else self.weekstart_name(unit_expr)
             )
         else:
-            if unit_expr.is_string and unit_expr.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
+            if unit_expr.is_string and unit_expr.name.upper() in (
+                "CENTURY_OF_ERA",
+                "WEEK_OF_MONTH",
+                "WEEK_OF_YEAR",
+            ):
                 self.unsupported(f"Unexpected interval unit: {unit_expr.name}")
             unit = unit_to_var(expression)
             if isinstance(unit, exp.Var) and unit.name.upper() == "ISOWEEK":

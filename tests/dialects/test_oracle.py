@@ -1148,6 +1148,18 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
 
+    def test_trunc_century(self):
+        for fmt in ("CC", "SCC"):
+            self.validate_all(
+                f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
+                write={
+                    "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "exasol": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "duckdb": UnsupportedError,
+                },
+            )
+
     def test_trunc_type_inference(self):
         # Tests for build_trunc discrimination logic (shared across Oracle, Exasol, Snowflake)
         # 5 cases: temporal+?, ?+string, numeric+?, ?+int, ?+?

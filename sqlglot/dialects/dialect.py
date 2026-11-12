@@ -2241,8 +2241,9 @@ def build_trunc(
 
 # https://docs.teradata.com/r/Lake-Working-with-SQL/SQL-Functions/SQL-Date-and-Time-Functions-and-Expressions/DateTime-and-Interval-Functions-and-Expressions/TRUNC-Date/TRUNC-Date-Syntax/ROUND-Date-and-TRUNC-Date-Argument-Types-and-Rules/TRUNC-and-ROUND-Date-Formats
 TRUNC_FORMAT_TO_UNIT = {
-    "CC": "CENTURY",
-    "SCC": "CENTURY",
+    # These centuries start at year 1, unlike DuckDB's multiples of 100.
+    "CC": "CENTURY_OF_ERA",
+    "SCC": "CENTURY_OF_ERA",
     "SYYYY": "YEAR",
     "SYYY": "YEAR",
     "YYYY": "YEAR",
@@ -2284,7 +2285,7 @@ def build_formatted_trunc(
     trunc = build_trunc(args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD")
     if isinstance(trunc, exp.DateTrunc) and trunc.unit.is_string:
         unit = TRUNC_FORMAT_TO_UNIT.get(trunc.unit.name.upper())
-        if unit in ("WEEK", "ISOWEEK"):
+        if unit == "ISOWEEK" or (unit == "WEEK" and dialect.WEEK_OFFSET):
             start = 1 if unit == "ISOWEEK" else week_offset_to_dow(dialect.WEEK_OFFSET)
             day = next(day for day, dow in WEEK_START_DAY_TO_DOW.items() if dow == start)
             trunc.set("unit", exp.WeekStart(this=exp.var(day)))
@@ -2294,7 +2295,7 @@ def build_formatted_trunc(
 
 
 UNIT_TO_TRUNC_FORMAT = {
-    "CENTURY": "CC",
+    "CENTURY_OF_ERA": "CC",
     "YEAR": "YEAR",
     "ISOYEAR": "IYYY",
     "QUARTER": "Q",
@@ -2488,7 +2489,11 @@ def weekstart_unit_to_str(
     unit = expression.args.get("unit")
     if isinstance(unit, exp.WeekStart):
         return exp.Literal.string(self.weekstart_name(unit))
-    if isinstance(unit, exp.Literal) and unit.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
+    if isinstance(unit, exp.Literal) and unit.name.upper() in (
+        "CENTURY_OF_ERA",
+        "WEEK_OF_MONTH",
+        "WEEK_OF_YEAR",
+    ):
         self.unsupported(f"Unexpected interval unit: {unit.name}")
 
     return unit_to_str(expression, default)

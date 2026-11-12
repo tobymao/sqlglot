@@ -775,7 +775,11 @@ class BigQueryGenerator(generator.Generator):
 
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit
-        if unit.is_string and unit.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
+        if unit.is_string and unit.name.upper() in (
+            "CENTURY_OF_ERA",
+            "WEEK_OF_MONTH",
+            "WEEK_OF_YEAR",
+        ):
             self.unsupported(f"Unexpected interval unit: {unit.name}")
         unit_sql = unit.name if unit.is_string else self.sql(unit)
         return self.func("DATE_TRUNC", expression.this, unit_sql, expression.args.get("zone"))

@@ -31,6 +31,17 @@ def build_int_div(args: list) -> exp.IntDiv | exp.Paren:
     return exp.Paren(this=exp.IntDiv(this=this, expression=expression))
 
 
+def _build_trunc(args: list) -> exp.DateTrunc:
+    unit = seq_get(args, 1)
+    if unit and unit.is_string:
+        unit = exp.Literal.string(
+            {"MM": "MONTH", "MON": "MONTH", "YY": "YEAR", "YYYY": "YEAR"}.get(
+                unit.name.upper(), unit.name
+            )
+        )
+    return exp.DateTrunc(this=seq_get(args, 0), unit=unit)
+
+
 class Spark2Parser(HiveParser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
 
@@ -107,7 +118,7 @@ class Spark2Parser(HiveParser):
             ),
             zone=seq_get(args, 1),
         ),
-        "TRUNC": lambda args: exp.DateTrunc(unit=seq_get(args, 1), this=seq_get(args, 0)),
+        "TRUNC": _build_trunc,
         "WEEKOFYEAR": lambda args: exp.WeekOfYear(this=exp.TsOrDsToDate(this=seq_get(args, 0))),
     }
 

@@ -64,6 +64,15 @@ class TestDuckDB(Validator):
         for unit in ("MONTH", "HOUR"):
             self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")
 
+        self.validate_all(
+            "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+            write={
+                "duckdb": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+                "oracle": UnsupportedError,
+                "teradata": UnsupportedError,
+            },
+        )
+
     def test_join_by_type(self):
         for table in ("directed", "straight_join"):
             self.validate_identity(

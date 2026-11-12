@@ -13,6 +13,18 @@ class TestSpark(Validator):
         sql = "TRUNC(CAST('2024-05-15' AS DATE), 'WW')"
         self.assertEqual(self.parse_one(sql).sql("spark", unsupported_level=ErrorLevel.RAISE), sql)
 
+    def test_trunc_aliases(self):
+        for fmt, unit in (("MM", "MONTH"), ("MON", "MONTH"), ("YY", "YEAR"), ("YYYY", "YEAR")):
+            for dialect in ("spark2", "spark", "databricks"):
+                for alias in (fmt, fmt.lower()):
+                    with self.subTest(dialect=dialect, alias=alias):
+                        expression = parse_one(f"TRUNC(DATE '2024-05-15', '{alias}')", read=dialect)
+                        for target in (dialect, "oracle", "teradata"):
+                            self.assertEqual(
+                                expression.sql(target, unsupported_level=ErrorLevel.RAISE),
+                                f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
+                            )
+
     def test_create_table_options(self):
         sql = "CREATE TABLE t (a INT) USING PARQUET OPTIONS ('path'='s3://b/t')"
         dialects = ("spark2", "spark", "databricks")
@@ -416,7 +428,9 @@ TBLPROPERTIES (
         )
 
         # Spark TRUNC is date-only, should parse to DateTrunc (not numeric Trunc)
-        self.validate_identity("TRUNC(date_col, 'MM')").assert_is(exp.DateTrunc)
+        self.validate_identity("TRUNC(date_col, 'MM')", "TRUNC(date_col, 'MONTH')").assert_is(
+            exp.DateTrunc
+        )
 
         # Numeric TRUNC from other dialects - Spark has no native support, uses CAST to BIGINT
         self.validate_all(

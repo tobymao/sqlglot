@@ -553,7 +553,11 @@ class TestExasol(Validator):
                 self.validate_all(
                     f"SELECT TRUNC(CAST('2006-12-31' AS DATE), '{fmt}') AS TRUNC",
                     write={
-                        "exasol": f"SELECT DATE_TRUNC('{unit}', DATE '2006-12-31') AS TRUNC",
+                        "exasol": (
+                            "SELECT TRUNC(CAST('2006-12-31' AS DATE), 'IW') AS TRUNC"
+                            if unit == "WEEK"
+                            else f"SELECT DATE_TRUNC('{unit}', DATE '2006-12-31') AS TRUNC"
+                        ),
                         "presto": f"SELECT DATE_TRUNC('{unit}', CAST('2006-12-31' AS DATE)) AS TRUNC",
                     },
                 )
@@ -639,7 +643,7 @@ class TestExasol(Validator):
         self.validate_identity("SELECT TRUNC(123.456, 2) AS TRUNC")
         self.validate_identity("SELECT DIV(1234, 2) AS DIV")
 
-        for fmt in ("W", "WW", "IYYY"):
+        for fmt in ("IW", "W", "WW", "IYYY", "CC"):
             self.validate_all(
                 f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
                 write={
@@ -647,6 +651,12 @@ class TestExasol(Validator):
                     "oracle": f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
                     "teradata": f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
                 },
+            )
+
+        for fmt in ("DAY", "DY", "D"):
+            self.validate_identity(
+                f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
+                "DATE_TRUNC('WEEK', DATE '2024-05-15')",
             )
 
         # Numeric truncation identity

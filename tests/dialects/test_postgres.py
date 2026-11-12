@@ -335,6 +335,22 @@ class TestPostgres(Validator):
             "SELECT date_col - INTERVAL '1 HOUR' AS one_hour_later",
         )
         self.validate_identity(
+            "SELECT INTERVAL '1 day' + '2024-01-01'::date",
+            "SELECT INTERVAL '1 DAY' + CAST('2024-01-01' AS DATE)",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL '1 day' + '2 hours'::interval",
+            "SELECT INTERVAL '1 DAY' + CAST('2 hours' AS INTERVAL)",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL '1 day' + 1 * 2",
+            "SELECT INTERVAL '1 DAY' + 1 * 2",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL '1 day' + '2024-01-01' dt",
+            "SELECT INTERVAL '1 DAY' + '2024-01-01' AS dt",
+        )
+        self.validate_identity(
             "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"
         )
         self.validate_identity(

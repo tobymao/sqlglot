@@ -200,6 +200,7 @@ class TSQLGenerator(generator.Generator):
         exp.DType.TIMESTAMPNTZ: "DATETIME2",
         exp.DType.TIMESTAMPTZ: "DATETIMEOFFSET",
         exp.DType.SMALLDATETIME: "SMALLDATETIME",
+        exp.DType.TINYINT: "SMALLINT",
         exp.DType.UTINYINT: "TINYINT",
         exp.DType.VARIANT: "SQL_VARIANT",
         exp.DType.UUID: "UNIQUEIDENTIFIER",

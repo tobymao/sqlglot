@@ -79,6 +79,7 @@ class TeradataGenerator(generator.Generator):
         **generator.Generator.TYPE_MAPPING,
         exp.DType.GEOMETRY: "ST_GEOMETRY",
         exp.DType.DOUBLE: "DOUBLE PRECISION",
+        exp.DType.TINYINT: "BYTEINT",
         exp.DType.TIMESTAMPTZ: "TIMESTAMP",
     }
 

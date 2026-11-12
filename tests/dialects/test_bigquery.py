@@ -3693,7 +3693,7 @@ OPTIONS (
                     "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                     "spark2": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
                     "spark": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
-                    "databricks": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
+                    "databricks": f"SELECT * FROM tbl CROSS JOIN LATERAL (SELECT * EXCEPT (pos), pos AS {alias} FROM POSEXPLODE(col)) AS _t0(ref, {alias})",
                 },
             )
 

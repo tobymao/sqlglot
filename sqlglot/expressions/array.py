@@ -289,6 +289,7 @@ class Unnest(Expression, Func, UDTF):
         "expressions": True,
         "alias": False,
         "offset": False,
+        "offset_base": False,
         "explode_array": False,
     }
 

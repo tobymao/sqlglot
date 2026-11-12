@@ -2338,7 +2338,7 @@ class TestDialect(Validator):
                 "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) WITH ORDINALITY AS t(a)",
                 "spark2": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, a",
                 "spark": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, a",
-                "databricks": "SELECT a FROM x LATERAL VIEW POSEXPLODE(y) t AS pos, a",
+                "databricks": "SELECT a FROM x CROSS JOIN LATERAL (SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS ordinality FROM POSEXPLODE(y)) AS t(a, ordinality)",
             },
         )
 
@@ -2348,7 +2348,7 @@ class TestDialect(Validator):
             write={
                 "presto": "SELECT * FROM x CROSS JOIN UNNEST(y) AS t",
                 "spark": UnsupportedError,
-                "databricks": UnsupportedError,
+                "databricks": "SELECT * FROM x CROSS JOIN LATERAL EXPLODE(y) AS t",
             },
         )
 

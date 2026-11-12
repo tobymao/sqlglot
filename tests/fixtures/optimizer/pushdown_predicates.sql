@@ -98,6 +98,25 @@ SELECT s.a FROM (SELECT a, b FROM x ORDER BY a OFFSET 3) AS s WHERE s.b = 1;
 SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
 SELECT s.a FROM (SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 10) AS s WHERE s.b = 1;
 
+-- DISTINCT ON selects a row before the outer filter runs
+SELECT s.a FROM (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) AS s WHERE s.b > 0;
+SELECT s.a FROM (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) AS s WHERE s.b > 0;
+
+WITH s AS (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) SELECT s.a FROM s WHERE s.b > 0;
+WITH s AS (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) SELECT s.a FROM s WHERE s.b > 0;
+
+-- JOIN predicates must also remain outside DISTINCT ON
+SELECT x.a, y.c FROM x JOIN (SELECT DISTINCT ON (y.b) y.b, y.c FROM y ORDER BY y.b, y.c) AS y ON x.b = y.b AND y.c > 0;
+SELECT x.a, y.c FROM x JOIN (SELECT DISTINCT ON (y.b) y.b, y.c FROM y ORDER BY y.b, y.c) AS y ON x.b = y.b AND y.c > 0;
+
+-- DNF predicates must not be copied below DISTINCT ON
+SELECT s.a FROM (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) AS s WHERE (s.a = 1 AND s.b > 0) OR (s.a = 2 AND s.b > 1);
+SELECT s.a FROM (SELECT DISTINCT ON (x.a) x.a, x.b FROM x ORDER BY x.a, x.b) AS s WHERE (s.a = 1 AND s.b > 0) OR (s.a = 2 AND s.b > 1);
+
+-- Plain DISTINCT still allows predicate pushdown
+SELECT s.a FROM (SELECT DISTINCT x.a, x.b FROM x) AS s WHERE s.b > 0;
+SELECT s.a FROM (SELECT DISTINCT x.a, x.b FROM x WHERE x.b > 0) AS s WHERE TRUE;
+
 -- The RHS of a RIGHT JOIN is preserved, so a WHERE predicate on it can't become a match-only ON predicate
 SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;
 SELECT x.a, y.b FROM x RIGHT JOIN y ON x.a = y.b WHERE y.b = 3;

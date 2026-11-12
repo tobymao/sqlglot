@@ -270,6 +270,7 @@ def nodes_for_predicate(
                 nodes[table] = node
 
         if isinstance(node, exp.Select) and len(tables) == 1:
+            distinct = node.args.get("distinct")
             has_window_or_srf = any(
                 find_in_scope(select, exp.Window, *exp.SET_RETURNING_FUNCTIONS)
                 for select in node.selects
@@ -280,10 +281,11 @@ def nodes_for_predicate(
                 not node.args.get("group")
                 and scope_ref_count[id(source)] < 2
                 and not has_window_or_srf
-                # LIMIT/OFFSET and QUALIFY select rows before the outer predicate runs
+                # These clauses select rows before the outer predicate runs
                 and not node.args.get("limit")
                 and not node.args.get("offset")
                 and not node.args.get("qualify")
+                and not (distinct and distinct.args.get("on"))
             ):
                 nodes[table] = node
     return nodes

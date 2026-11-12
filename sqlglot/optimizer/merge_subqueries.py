@@ -497,24 +497,36 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
     Renames any sources in the inner query that conflict with names in the outer query.
     """
     inner_taken = set(inner_scope.selected_sources)
-    outer_taken = {name for name, _ in outer_scope.references}
+    outer_taken = {name for name, _ in outer_scope.references if name != alias}
+    replacement_columns = {id(column) for column in outer_scope.source_columns(alias)}
+    for scope in outer_scope.traverse():
+        if scope is not outer_scope and any(
+            id(column) in replacement_columns for column in scope.external_columns
+        ):
+            outer_taken.update(name for name, _ in scope.references)
+
     conflicts = outer_taken.intersection(inner_taken)
-    conflicts -= {alias}
+    if not conflicts:
+        return
 
     taken = outer_taken.union(inner_taken)
+    taken.update(column.table for column in outer_scope.external_columns)
+    inner_columns = {id(column) for column in inner_scope.columns if column.table in inner_taken}
+    for scope in inner_scope.traverse():
+        if scope is not inner_scope and any(
+            id(column) in inner_columns for column in scope.external_columns
+        ):
+            taken.update(name for name, _ in scope.references)
 
     for conflict in conflicts:
         new_name = find_new_name(taken, conflict)
+        taken.add(new_name)
 
         source, _ = inner_scope.selected_sources[conflict]
-        new_alias = exp.to_identifier(new_name)
-
-        if isinstance(source, exp.Table) and source.alias:
-            source.set("alias", exp.TableAlias(this=new_alias))
-        elif isinstance(source, exp.Table):
-            source.replace(exp.alias_(source, new_alias))
-        elif isinstance(source.parent, exp.Subquery):
-            source.parent.set("alias", exp.TableAlias(this=new_alias))
+        alias_holder = source.parent if isinstance(source.parent, exp.Subquery) else source
+        table_alias = alias_holder.args.get("alias") or exp.TableAlias()
+        table_alias.set("this", exp.to_identifier(new_name))
+        alias_holder.set("alias", table_alias)
 
         for column in inner_scope.source_columns(conflict):
             column.set("table", exp.to_identifier(new_name))

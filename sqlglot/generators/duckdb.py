@@ -1615,7 +1615,7 @@ class DuckDBGenerator(generator.Generator):
     MULTI_ARG_DISTINCT = False
     CAN_IMPLEMENT_ARRAY_ANY = True
     SUPPORTS_TO_NUMBER = False
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_DROP_ALTER_ICEBERG_PROPERTY = False
 

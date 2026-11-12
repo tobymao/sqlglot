@@ -1,6 +1,9 @@
+import gc
+import tracemalloc
 import unittest
 
 from sqlglot import exp, parse_one
+from sqlglot.dialects import Dialect, Dialects
 from sqlglot.errors import ErrorLevel, UnsupportedError
 from sqlglot.expressions import Expression, Func
 from sqlglot.generator import logger as generator_logger
@@ -13,6 +16,27 @@ _EXPRESSION_IS_COMPILED = is_compiled(_core_module)
 
 
 class TestGenerator(unittest.TestCase):
+    def test_generator_memory(self):
+        for name in Dialects:
+            with self.subTest(dialect=name):
+                dialect = Dialect.get_or_raise(name)
+                for _ in range(100):
+                    dialect.generator()
+                gc.collect()
+
+                # The leaked SELECT_KINDS tuples are not tracked by gc after collection.
+                tracemalloc.start()
+                try:
+                    before = tracemalloc.get_traced_memory()[0]
+                    for _ in range(1000):
+                        dialect.generator()
+                    gc.collect()
+                    after = tracemalloc.get_traced_memory()[0]
+                finally:
+                    tracemalloc.stop()
+
+                self.assertLess(after - before, 1024)
+
     def test_time_slice_origin(self):
         for boundary, kind in (("", ""), (", FLOOR", ", 'START'"), (", CEIL", ", 'END'")):
             expression = parse_one(

@@ -225,7 +225,7 @@ def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
 
 class HiveGenerator(generator.Generator):
     BYTE_STRING_FUNCTION = "UNHEX"
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_GROUPING_SETS_AS_SUFFIX = True

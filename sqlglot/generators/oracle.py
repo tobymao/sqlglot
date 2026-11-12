@@ -22,7 +22,7 @@ def _trim_sql(self: OracleGenerator, expression: exp.Trim) -> str:
 
 
 class OracleGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     LOCKING_READS_SUPPORTED = True

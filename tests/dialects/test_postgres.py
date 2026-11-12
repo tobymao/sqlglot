@@ -796,6 +796,16 @@ FROM json_data, field_ids""",
             },
         )
         self.validate_all(
+            "SELECT a @> b, a <@ b",
+            write={
+                "doris": UnsupportedError,
+                "mysql": UnsupportedError,
+                "postgres": "SELECT a @> b, a <@ b",
+                "singlestore": UnsupportedError,
+                "starrocks": "SELECT ARRAY_CONTAINS_ALL(a, b), ARRAY_CONTAINS_ALL(b, a)",
+            },
+        )
+        self.validate_all(
             "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",
             write={
                 "duckdb": "SELECT REGEXP_REPLACE('mr .', '[^a-zA-Z]', '', 'g')",

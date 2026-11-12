@@ -828,6 +828,7 @@ class Lateral(Expression, UDTF):
         "view": False,
         "outer": False,
         "alias": False,
+        "joins": False,
         "cross_apply": False,  # True -> CROSS APPLY, False -> OUTER APPLY
         "ordinality": False,
     }

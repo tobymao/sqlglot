@@ -444,7 +444,9 @@ class HiveGenerator(generator.Generator):
         return super().ignorenulls_sql(expression)
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        return rename_func("EXPLODE")(self, expression)
+        return rename_func("EXPLODE")(self, expression) + self.expressions(
+            expression, key="joins", sep="", flat=True
+        )
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
         if isinstance(expression.this, exp.JSONPathWildcard):

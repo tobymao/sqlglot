@@ -6,7 +6,6 @@ from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType
 from sqlglot.optimizer.isolate_table_selects import isolate_table_selects
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
-from sqlglot.optimizer.optimize_joins import normalize_join_groups
 from sqlglot.optimizer.qualify_columns import (
     qualify_columns as qualify_columns_func,
     quote_identifiers as quote_identifiers_func,
@@ -101,8 +100,6 @@ def qualify(
             expand_stars=expand_stars,
             allow_partial_qualification=allow_partial_qualification,
         )
-
-    expression = normalize_join_groups(expression)
 
     if quote_identifiers:
         expression = quote_identifiers_func(expression, dialect=dialect, identify=identify)

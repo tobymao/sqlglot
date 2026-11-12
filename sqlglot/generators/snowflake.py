@@ -840,10 +840,12 @@ class SnowflakeGenerator(generator.Generator):
         value = (
             ""
             if isinstance(expression_parent, (exp.From, exp.Join, exp.Lateral))
+            or expression.args.get("joins")
             else f"{value} FROM "
         )
 
-        return f"{value}{explode}{alias}"
+        joins = self.expressions(expression, key="joins", sep="", flat=True)
+        return f"{value}{explode}{alias}{joins}"
 
     def undrop_sql(self, expression: exp.Undrop) -> str:
         this = self.sql(expression, "this")

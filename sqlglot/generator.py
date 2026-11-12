@@ -3158,7 +3158,8 @@ class Generator:
             ordinality = f" WITH ORDINALITY{alias}"
             alias = ""
 
-        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}"
+        joins = self.expressions(expression, key="joins", sep="", flat=True)
+        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}{joins}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
@@ -3743,7 +3744,8 @@ class Generator:
             else:
                 suffix = alias
 
-        return f"UNNEST({args}){suffix}"
+        joins = self.expressions(expression, key="joins", sep="", flat=True)
+        return f"UNNEST({args}){suffix}{joins}"
 
     def prewhere_sql(self, expression: exp.PreWhere) -> str:
         return ""

@@ -221,19 +221,19 @@ SELECT s.a, p.b FROM (SELECT a FROM x WHERE a = 2) AS s JOIN (SELECT y.b FROM y 
 # title: Keep predicates referencing an earlier comma group in WHERE
 # execute: true
 SELECT x.a, y.b, z.c, v.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b, x AS v WHERE v.a = x.a AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
-SELECT x.a, y.b, z.c, v.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b, x AS v WHERE v.a = x.a AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
+SELECT x.a, y.b, z.c, v.a FROM x CROSS JOIN (y RIGHT JOIN y AS z ON y.b = z.b), x AS v WHERE v.a = x.a AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
 
 # title: Keep DNF predicates referencing an earlier comma group in WHERE
 # execute: true
 SELECT x.a, y.b, z.c, v.a FROM x, y FULL JOIN y AS z ON y.b = z.b, x AS v WHERE (v.a = x.a AND v.a > 0) OR (v.a > x.a AND v.a < 5) ORDER BY x.a, y.b, z.c, v.a;
-SELECT x.a, y.b, z.c, v.a FROM x, y FULL JOIN y AS z ON y.b = z.b, x AS v WHERE (v.a < 5 AND v.a > x.a) OR (v.a = x.a AND v.a > 0) ORDER BY x.a, y.b, z.c, v.a;
+SELECT x.a, y.b, z.c, v.a FROM x CROSS JOIN (y FULL JOIN y AS z ON y.b = z.b), x AS v WHERE (v.a = x.a AND v.a > 0) OR (v.a > x.a AND v.a < 5) ORDER BY x.a, y.b, z.c, v.a;
 
-# title: Push predicates within the same preserved comma group
+# title: Keep predicates outside parenthesized join groups
 # execute: true
 SELECT x.a, y.b, z.c, v.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b, x AS v WHERE v.a = y.b AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
-SELECT x.a, y.b, z.c, v.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b JOIN x AS v ON v.a = y.b WHERE TRUE AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
+SELECT x.a, y.b, z.c, v.a FROM x CROSS JOIN (y RIGHT JOIN y AS z ON y.b = z.b), x AS v WHERE v.a = y.b AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
 
-# title: Push DNF predicates within the same preserved comma group
+# title: Keep DNF predicates outside parenthesized join groups
 # execute: true
 SELECT x.a, y.b, z.c, v.a FROM x, y FULL JOIN y AS z ON y.b = z.b, x AS v WHERE (v.a = y.b AND v.a > 0) OR (v.a > y.b AND v.a < 5) ORDER BY x.a, y.b, z.c, v.a;
-SELECT x.a, y.b, z.c, v.a FROM x, y FULL JOIN y AS z ON y.b = z.b JOIN x AS v ON (v.a < 5 AND v.a > y.b) OR (v.a = y.b AND v.a > 0) WHERE (v.a < 5 AND v.a > y.b) OR (v.a = y.b AND v.a > 0) ORDER BY x.a, y.b, z.c, v.a;
+SELECT x.a, y.b, z.c, v.a FROM x CROSS JOIN (y FULL JOIN y AS z ON y.b = z.b), x AS v WHERE (v.a = y.b AND v.a > 0) OR (v.a > y.b AND v.a < 5) ORDER BY x.a, y.b, z.c, v.a;

@@ -2592,6 +2592,57 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                                 connection.execute(optimized.sql(dialect)).fetchall(), expected
                             )
 
+    def test_optimize_comma_join_predicates(self):
+        schema = {
+            "a": {"x": "INT"},
+            "b": {"y": "INT"},
+            "c": {"z": "INT"},
+            "d": {"w": "INT"},
+            "e": {"v": "INT"},
+        }
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (10), (30)) t(y)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+            connection.execute("CREATE TABLE d AS SELECT * FROM (VALUES (10), (40)) t(w)")
+            connection.execute("CREATE TABLE e AS SELECT * FROM (VALUES (10), (50)) t(v)")
+
+            for sql in (
+                "SELECT a.x, b.y, c.z, d.w FROM a, b RIGHT JOIN c ON b.y = c.z "
+                "JOIN d ON c.z = d.w WHERE d.w > 0",
+                "SELECT a.x, b.y, c.z, d.w FROM a, b RIGHT JOIN c ON b.y = c.z "
+                "JOIN d ON c.z = d.w WHERE (d.w > 0 AND d.w < 20) OR (d.w = 40 AND a.x > 0)",
+                "SELECT a.x, c.z FROM a, b RIGHT JOIN (SELECT z FROM c) AS c ON b.y = c.z "
+                "RIGHT JOIN d ON c.z = d.w WHERE c.z = 10",
+                "SELECT a.x, b.y, d.w FROM a, b RIGHT JOIN c ON b.y = c.z, "
+                "d RIGHT JOIN e ON d.w = e.v WHERE b.y = d.w",
+                "SELECT a.x, u.y, c.z FROM a, UNNEST(ARRAY[10, 30]) AS u(y) "
+                "RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, u.y, u.ord, c.z FROM a, UNNEST(ARRAY[10, 30]) "
+                "WITH ORDINALITY AS u(y, ord) RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, u.y, c.z FROM a, LATERAL (SELECT 10 AS y) AS u "
+                "RIGHT JOIN c ON u.y = c.z",
+            ):
+                expected = connection.execute(sql).fetchall()
+                for dialect in ("duckdb", "postgres"):
+                    for rule in (
+                        optimizer.optimize_joins.optimize_joins,
+                        optimizer.pushdown_predicates.pushdown_predicates,
+                        optimizer.optimize,
+                    ):
+                        with self.subTest(sql=sql, dialect=dialect, rule=rule.__name__):
+                            expression = parse_one(sql, dialect=dialect)
+                            result = (
+                                rule(expression, schema=schema, dialect=dialect)
+                                if rule is optimizer.optimize
+                                else rule(expression)
+                            )
+                            output = result.sql(dialect)
+                            self.assertCountEqual(connection.execute(output).fetchall(), expected)
+                            self.assertEqual(
+                                parse_one(output, dialect=dialect).sql(dialect), output
+                            )
+
     def test_normalize_join_groups(self):
         for sql, expected in (
             (

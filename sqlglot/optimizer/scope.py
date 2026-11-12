@@ -226,7 +226,7 @@ class Scope:
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
             elif type(node) is exp.Lateral or (
-                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
+                isinstance(node, exp.UDTF) and _is_from_or_join(node)
             ):
                 if _is_semi_or_anti_join_rhs(node):
                     self._semi_anti_join_tables.add(node.alias_or_name)
@@ -991,6 +991,8 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
         node: exp.Expr = expression
 
         if isinstance(expression, exp.UDTF):
+            if node is not scope.expression:
+                expressions.extend(join.this for join in node.args.get("joins") or [])
             lateral_sources = sources
             scope_type = ScopeType.UDTF
             scopes = scope.udtf_scopes

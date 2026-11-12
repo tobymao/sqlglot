@@ -19,9 +19,11 @@ def optimize_joins(expression: E) -> E:
         'SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a'
     """
 
-    expression = normalize_join_groups(expression)
+    for select in expression.find_all(exp.Select, exp.Table, exp.Subquery, exp.UDTF):
+        normalize_join_groups(select)
+        if not isinstance(select, exp.Select):
+            continue
 
-    for select in expression.find_all(exp.Select):
         joins: list[exp.Join] = select.args.get("joins", [])
 
         if not _is_reorderable(joins):
@@ -105,8 +107,6 @@ def normalize(expression: E) -> E:
             continue
 
         if not any(join.args.get(k) for k in JOIN_ATTRS):
-            if not _can_convert_to_cross_join(join):
-                continue
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":
@@ -121,53 +121,32 @@ def normalize(expression: E) -> E:
 
 
 def normalize_join_groups(expression: E) -> E:
-    """Parenthesize comma join groups containing RIGHT or FULL joins."""
-    for parent in expression.find_all(exp.Select, exp.Table, exp.Subquery):
-        joins: list[exp.Join] = parent.args.get("joins") or []
-        if not any(join.side in ("RIGHT", "FULL") for join in joins):
-            continue
+    """Parenthesize comma join groups in this expression's immediate join list."""
+    joins: list[exp.Join] = expression.args.get("joins") or []
+    if not any(join.side in ("RIGHT", "FULL") for join in joins):
+        return expression
 
-        grouped = joins.copy()
-        end = len(joins)
-        outer = False
-        for i in range(len(joins) - 1, -1, -1):
-            join = joins[i]
-            if not any(join.args.get(k) for k in JOIN_ATTRS):
-                if outer:
-                    # JOIN binds more tightly than comma. Keep its left operand inside the group
-                    # before other optimizer rules add joins that reference preceding sources.
-                    operand = join.this
-                    operand.set(
-                        "joins", [*(operand.args.get("joins") or []), *grouped[i + 1 : end]]
-                    )
-                    join.set("this", exp.Subquery(this=operand))
-                    join.set("kind", "CROSS")
-                    del grouped[i + 1 : end]
-                end = i
-                outer = False
-            elif join.side in ("RIGHT", "FULL"):
-                outer = True
+    grouped = joins.copy()
+    end = len(joins)
+    outer = False
+    for i in range(len(joins) - 1, -1, -1):
+        join = joins[i]
+        if not any(join.args.get(k) for k in JOIN_ATTRS):
+            if outer:
+                # JOIN binds more tightly than comma, so its left operand excludes preceding groups.
+                operand = join.this
+                operand.set("joins", [*(operand.args.get("joins") or []), *grouped[i + 1 : end]])
+                join.set("this", exp.Subquery(this=operand))
+                join.set("kind", "CROSS")
+                del grouped[i + 1 : end]
+            end = i
+            outer = False
+        elif join.side in ("RIGHT", "FULL"):
+            outer = True
 
-        if len(grouped) != len(joins):
-            parent.set("joins", grouped)
-
+    if len(grouped) != len(joins):
+        expression.set("joins", grouped)
     return expression
-
-
-def _can_convert_to_cross_join(join: exp.Join) -> bool:
-    if join.parent is not None and join.index is not None:
-        joins = join.parent.args.get("joins", [])
-        for index in range(join.index + 1, len(joins)):
-            sibling = joins[index]
-            if not any(sibling.args.get(k) for k in JOIN_ATTRS):
-                break
-
-            # JOIN binds more tightly than comma. Including the preceding tables in
-            # a RIGHT/FULL join's left operand changes its unmatched rows.
-            if sibling.side in ("RIGHT", "FULL"):
-                return False
-
-    return True
 
 
 def other_table_names(join: exp.Join) -> set[str]:

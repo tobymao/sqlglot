@@ -503,8 +503,12 @@ class PostgresGenerator(generator.Generator):
 
         if param_constraint:
             mode_sql = self.sql(param_constraint)
-            param_constraint.pop()  # Remove to prevent double-rendering
-            base_sql = super().columndef_sql(expression, sep)
+            constraints = expression.args.get("constraints") or []
+            expression.set("constraints", [c for c in constraints if c is not param_constraint])
+            try:
+                base_sql = super().columndef_sql(expression, sep)
+            finally:
+                expression.set("constraints", constraints)
             return f"{mode_sql} {base_sql}"
 
         return super().columndef_sql(expression, sep)

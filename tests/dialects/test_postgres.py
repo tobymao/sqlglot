@@ -1476,6 +1476,38 @@ FROM json_data, field_ids""",
             "SELECT * FROM schema_name.table_name AS st WHERE JSON_EXTRACT_PATH_TEXT(CAST((st.data) AS JSON), VARIADIC ARRAY[CAST('test' AS TEXT)]) = CAST('test' AS TEXT)",
         )
 
+    def test_function_parameter_modes(self):
+        for sql in (
+            "CREATE FUNCTION foo(IN a INT)",
+            "CREATE FUNCTION foo(OUT a INT)",
+            "CREATE FUNCTION foo(INOUT a INT)",
+            "CREATE FUNCTION foo(VARIADIC a INT[])",
+            "CREATE FUNCTION foo(a INT, OUT b INT, INOUT c VARCHAR, VARIADIC d INT[])",
+            "CREATE FUNCTION foo(a INT)",
+            "CREATE FUNCTION foo(IN a INT DEFAULT 0, OUT b INT)",
+        ):
+            expression = self.parse_one(sql)
+            mode_constraints = [
+                constraint
+                for column_def in expression.find_all(exp.ColumnDef)
+                for constraint in column_def.constraints
+                if isinstance(constraint, exp.InOutColumnConstraint)
+            ]
+            for constraint in mode_constraints:
+                self.assertIsNotNone(constraint.parent)
+                self.assertEqual(constraint.arg_key, "constraints")
+                self.assertEqual(constraint.index, 0)
+
+            self.assertEqual(transpile(sql, read="postgres", write="postgres")[0], sql)
+            self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)
+            self.assertEqual(expression.sql(dialect="postgres"), sql)
+            self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)
+
+            for constraint in mode_constraints:
+                self.assertIsNotNone(constraint.parent)
+                self.assertEqual(constraint.arg_key, "constraints")
+                self.assertEqual(constraint.index, 0)
+
     def test_ddl(self):
         # Checks that user-defined types are parsed into DataType instead of Identifier
         self.parse_one("CREATE TABLE t (a udt)").this.expressions[0].args["kind"].assert_is(

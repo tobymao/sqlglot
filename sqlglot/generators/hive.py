@@ -443,8 +443,10 @@ class HiveGenerator(generator.Generator):
 
         return super().ignorenulls_sql(expression)
 
-    @unsupported_args("offset")
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
     def unnest_sql(self, expression: exp.Unnest) -> str:
+        self._warn_unsupported_arg(expression, "offset")
         if joins := expression.args.get("joins"):
             if not self.SUPPORTS_JOINED_UNNEST:
                 self.unsupported("Joined UNNEST operands are not supported")

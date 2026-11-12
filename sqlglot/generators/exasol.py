@@ -6,6 +6,7 @@ from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     Dialect,
+    date_trunc_to_trunc_sql,
     groupconcat_sql,
     mod_func_sql,
     no_last_day_sql,
@@ -13,6 +14,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
     timestrtotime_sql,
     timestamptrunc_sql,
+    weekstart_unit_to_str,
 )
 from sqlglot.errors import UnsupportedError
 from sqlglot.generator import unsupported_args
@@ -92,22 +94,13 @@ def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp
 def _trunc_sql(
     self: ExasolGenerator, kind: str, expression: exp.DateTrunc | exp.TimestampTrunc
 ) -> str:
-    unit_expr = expression.args.get("unit")
-    unit = (
-        self.weekstart_name(unit_expr)
-        if isinstance(unit_expr, exp.WeekStart)
-        else expression.text("unit")
-    )
+    unit = weekstart_unit_to_str(self, expression)
     node = expression.this.this if isinstance(expression.this, exp.Cast) else expression.this
     expr_sql = self.sql(node)
     if isinstance(node, exp.Literal) and node.is_string:
         text = node.this.replace("T", " ") if kind == "TIMESTAMP" else node.this
         expr_sql = f"{kind} {self.sql(exp.Literal.string(text))}"
-    return f"DATE_TRUNC({self.sql(exp.Literal.string(unit))}, {expr_sql})"
-
-
-def _date_trunc_sql(self: ExasolGenerator, expression: exp.DateTrunc) -> str:
-    return _trunc_sql(self, "DATE", expression)
+    return f"DATE_TRUNC({self.sql(unit)}, {expr_sql})"
 
 
 def _timestamp_trunc_sql(
@@ -310,6 +303,16 @@ class ExasolGenerator(generator.Generator):
         exp.DType.TIMESTAMPNTZ: "TIMESTAMP",
     }
 
+    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
+        if isinstance(expression.unit, exp.WeekStart) or expression.unit.name in (
+            "CENTURY",
+            "WEEK_OF_MONTH",
+            "WEEK_OF_YEAR",
+            "ISOYEAR",
+        ):
+            return date_trunc_to_trunc_sql(self, expression)
+        return _trunc_sql(self, "DATE", expression)
+
     def select_sql(self, expression: exp.Select) -> str:
         processed = _qualify_unscoped_star(expression)
         processed = _add_local_prefix_for_aliases(processed, self.dialect)
@@ -348,7 +351,6 @@ class ExasolGenerator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
         exp.IntDiv: rename_func("DIV"),
         exp.TsOrDsDiff: _date_diff_sql,
-        exp.DateTrunc: _date_trunc_sql,
         exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
         exp.DatetimeTrunc: timestamptrunc_sql(),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),

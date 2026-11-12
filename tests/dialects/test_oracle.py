@@ -1140,13 +1140,26 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        # Make sure units are not normalized e.g 'Q' -> 'QUARTER' and 'W' -> 'WEEK'
+        # Preserve Oracle format models when generating normalized units.
         # https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/ROUND-and-TRUNC-Date-Functions.html
         for unit in (
             "'Q'",
             "'W'",
         ):
             self.validate_identity(f"TRUNC(x, {unit})")
+
+    def test_trunc_century(self):
+        for fmt in ("CC", "SCC"):
+            self.validate_all(
+                f"TRUNC(CAST('2024-05-15' AS DATE), '{fmt}')",
+                write={
+                    "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "exasol": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "postgres": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+                    "duckdb": UnsupportedError,
+                },
+            )
 
     def test_trunc_type_inference(self):
         # Tests for build_trunc discrimination logic (shared across Oracle, Exasol, Snowflake)
@@ -1203,36 +1216,52 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        # Date truncation with various units
-        for unit in ("DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):
-            with self.subTest(f"Date TRUNC with {unit}"):
+        for fmt, unit in (("DD", "DAY"), ("MONTH", "MONTH"), ("Q", "QUARTER"), ("YEAR", "YEAR")):
+            with self.subTest(fmt=fmt):
                 self.validate_all(
-                    f"TRUNC(CAST(x AS DATE), '{unit}')",
+                    f"TRUNC(CAST(x AS DATE), '{fmt}')",
                     write={
-                        "oracle": f"TRUNC(CAST(x AS DATE), '{unit}')",
+                        "oracle": f"TRUNC(CAST(x AS DATE), '{fmt}')",
+                        "teradata": f"TRUNC(CAST(x AS DATE), '{fmt}')",
                         "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
                         "postgres": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
                         "bigquery": f"DATE_TRUNC(CAST(x AS DATE), {unit})",
                         "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS DATE))",
                         "tsql": f"DATETRUNC({unit}, CAST(x AS DATE))",
-                        "spark": f"TRUNC(CAST(x AS DATE), '{unit}')",
                     },
                 )
 
-        # Timestamp truncation with various units
-        for unit in ("HOUR", "MINUTE", "SECOND", "DAY", "MONTH", "YEAR"):
-            with self.subTest(f"Timestamp TRUNC with {unit}"):
+        for fmt, unit in (("HH", "HOUR"), ("MI", "MINUTE"), ("DD", "DAY")):
+            with self.subTest(fmt=fmt):
                 self.validate_all(
-                    f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
+                    f"TRUNC(CAST(x AS TIMESTAMP), '{fmt}')",
                     write={
-                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
-                        "snowflake": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
-                        "postgres": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
+                        "oracle": f"TRUNC(CAST(x AS TIMESTAMP), '{fmt}')",
                         "duckdb": f"DATE_TRUNC('{unit}', CAST(x AS TIMESTAMP))",
                         "tsql": f"DATETRUNC({unit}, CAST(x AS DATETIME2))",
-                        "spark": f"TRUNC(CAST(x AS TIMESTAMP), '{unit}')",
                     },
                 )
+
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
+            write={
+                "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
+                "tsql": "DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
+            },
+        )
+        for fmt in ("W", "WW"):
+            self.validate_all(
+                f"TRUNC(CAST(x AS DATE), '{fmt}')",
+                write={
+                    "oracle": f"TRUNC(CAST(x AS DATE), '{fmt}')",
+                    "teradata": f"TRUNC(CAST(x AS DATE), '{fmt}')",
+                    "duckdb": UnsupportedError,
+                    "spark": UnsupportedError,
+                    "exasol": f"TRUNC(CAST(x AS DATE), '{fmt}')",
+                },
+            )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl")

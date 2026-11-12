@@ -755,6 +755,7 @@ class TestTeradata(Validator):
             "TRUNC(CAST('2024-05-15' AS DATE))",
             write={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DD')",
+                "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'DD')",
                 "duckdb": "DATE_TRUNC('DAY', CAST('2024-05-15' AS DATE))",
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), DAY)",
                 "tsql": "DATETRUNC(DAY, CAST('2024-05-15' AS DATE))",
@@ -782,6 +783,7 @@ class TestTeradata(Validator):
             },
             write={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'Q')",
+                "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'Q')",
                 "duckdb": "DATE_TRUNC('QUARTER', CAST('2024-05-15' AS DATE))",
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), QUARTER)",
                 "tsql": "DATETRUNC(QUARTER, CAST('2024-05-15' AS DATE))",
@@ -805,11 +807,12 @@ class TestTeradata(Validator):
             "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
             read={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'D')",
+                "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK)",
-                "snowflake": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
             },
             write={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
+                "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'DAY')",
                 "duckdb": "CAST(DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE) + INTERVAL '1' DAY) + INTERVAL '-1' DAY AS DATE)",
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK)",
                 "tsql": "DATETRUNC(WEEK, CAST('2024-05-15' AS DATE))",
@@ -820,12 +823,13 @@ class TestTeradata(Validator):
             "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
             read={
                 "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
-                "snowflake": "DATE_TRUNC('ISOWEEK', CAST('2024-05-15' AS DATE))",
+                "duckdb": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
+                "snowflake": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
             },
             write={
                 "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'IW')",
                 "duckdb": "DATE_TRUNC('WEEK', CAST('2024-05-15' AS DATE))",
-                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), ISOWEEK)",
+                "bigquery": "DATE_TRUNC(CAST('2024-05-15' AS DATE), WEEK(MONDAY))",
                 "tsql": "DATETRUNC(ISO_WEEK, CAST('2024-05-15' AS DATE))",
             },
         )
@@ -846,13 +850,22 @@ class TestTeradata(Validator):
         self.validate_identity("TRUNC(x, 'YYYY')", "TRUNC(x, 'YEAR')")
         self.validate_identity("TRUNC(x, 'IYYY')")
         self.validate_identity("TRUNC(x, 'CC')")
-        # Preserve Teradata-specific week-of-month ('W') and week-of-year ('WW') formats
-        # for Teradata round trips, while reporting cross-dialect generation as unsupported
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                "postgres": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+                "duckdb": UnsupportedError,
+            },
+        )
+        # Preserve native calendar boundaries and reject unsupported translations.
         for unit in ("W", "WW"):
             self.validate_all(
                 f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
                 write={
                     "teradata": f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
+                    "oracle": f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
+                    "exasol": f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
                     "duckdb": UnsupportedError,
                     "bigquery": UnsupportedError,
                     "postgres": UnsupportedError,

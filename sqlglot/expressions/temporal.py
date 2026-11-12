@@ -163,7 +163,13 @@ class DatetimeTrunc(Expression, Func, TimeUnit):
 
 
 class DateTrunc(Expression, Func):
-    arg_types = {"unit": True, "this": True, "zone": False, "input_type_preserved": False}
+    arg_types = {
+        "unit": True,
+        "this": True,
+        "zone": False,
+        "input_type_preserved": False,
+        "century_from_zero": False,
+    }
 
     def __init__(self, **args):
         # Across most dialects it's safe to unabbreviate the unit (e.g. 'Q' -> 'QUARTER') except Oracle
@@ -188,7 +194,13 @@ class DateTrunc(Expression, Func):
 
 
 class TimestampTrunc(Expression, Func, TimeUnit):
-    arg_types = {"this": True, "unit": True, "zone": False, "input_type_preserved": False}
+    arg_types = {
+        "this": True,
+        "unit": True,
+        "zone": False,
+        "input_type_preserved": False,
+        "century_from_zero": False,
+    }
 
 
 class TimeSlice(Expression, Func, TimeUnit):

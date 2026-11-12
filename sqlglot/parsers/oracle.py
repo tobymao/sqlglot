@@ -3,7 +3,11 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
-from sqlglot.dialects.dialect import build_formatted_time, build_timetostr_or_tochar, build_trunc
+from sqlglot.dialects.dialect import (
+    build_formatted_time,
+    build_timetostr_or_tochar,
+    build_formatted_trunc,
+)
 from sqlglot.helper import ensure_list, seq_get
 from sqlglot.parser import IsPredicatePrecedence, OPTIONS_TYPE, build_coalesce
 from sqlglot.tokens import TokenType
@@ -69,9 +73,7 @@ class OracleParser(parser.Parser):
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_TIMESTAMP": _build_to_timestamp,
         "TO_DATE": _build_str_to_time(exp.StrToDate),
-        "TRUNC": lambda args, dialect: build_trunc(
-            args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD"
-        ),
+        "TRUNC": build_formatted_trunc,
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

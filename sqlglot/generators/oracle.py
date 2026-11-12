@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    date_trunc_to_trunc_sql,
     groupconcat_sql,
     mod_func_sql,
     no_ilike_sql,
@@ -73,7 +74,7 @@ class OracleGenerator(generator.Generator):
         exp.DateStrToDate: lambda self, e: self.func(
             "TO_DATE", e.this, exp.Literal.string("YYYY-MM-DD")
         ),
-        exp.DateTrunc: lambda self, e: self.func("TRUNC", e.this, e.unit),
+        exp.DateTrunc: date_trunc_to_trunc_sql,
         exp.EuclideanDistance: rename_func("L2_DISTANCE"),
         exp.ILike: no_ilike_sql,
         exp.LogicalOr: rename_func("MAX"),

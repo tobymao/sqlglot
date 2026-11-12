@@ -64,6 +64,40 @@ class TestDuckDB(Validator):
         for unit in ("MONTH", "HOUR"):
             self.validate_identity(f"DATE_TRUNC('{unit}', CAST('2024-05-09' AS DATE))")
 
+        self.validate_all(
+            "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+            write={
+                "duckdb": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+                "oracle": UnsupportedError,
+                "teradata": UnsupportedError,
+                "postgres": UnsupportedError,
+                "exasol": UnsupportedError,
+            },
+        )
+
+    def test_date_trunc_century(self):
+        for unit in ("CENTURY", "CENTURIES", "C", "CENT"):
+            for dtype in ("DATE", "TIMESTAMP"):
+                with self.subTest(unit=unit, dtype=dtype):
+                    sql = f"DATE_TRUNC('{unit}', CAST('2024-05-15' AS {dtype}))"
+                    expression = self.validate_identity(sql)
+                    self.assertEqual(
+                        expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE), sql
+                    )
+                    self.assertEqual(
+                        self.parse_one(sql.replace("DATE_TRUNC", "DATETRUNC")), expression
+                    )
+                    for dialect in ("postgres", "exasol"):
+                        with self.assertRaises(UnsupportedError):
+                            expression.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+
+        for dtype in ("DATE", "TIMESTAMP"):
+            sql = f"DATE_TRUNC('CENTURY', CAST('2024-05-15' AS {dtype}))"
+            expression = parse_one(sql, read="postgres")
+            self.assertEqual(expression.sql("postgres", unsupported_level=ErrorLevel.RAISE), sql)
+            with self.assertRaisesRegex(UnsupportedError, "century boundaries"):
+                expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)
+
     def test_join_by_type(self):
         for table in ("directed", "straight_join"):
             self.validate_identity(

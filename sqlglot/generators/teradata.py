@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    date_trunc_to_trunc_sql,
     max_or_greatest,
     min_or_least,
     rename_func,
@@ -13,22 +14,6 @@ from sqlglot.dialects.dialect import (
 )
 from sqlglot.parsers.teradata import is_window_aggregate
 from collections import defaultdict
-
-
-UNIT_TO_TERADATA_TRUNC_FORMAT = {
-    "CENTURY": "CC",
-    "YEAR": "YEAR",
-    "ISOYEAR": "IYYY",
-    "QUARTER": "Q",
-    "MONTH": "MONTH",
-    "WEEK": "DAY",
-    "ISOWEEK": "IW",
-    "DAY": "DD",
-    "HOUR": "HH",
-    "MINUTE": "MI",
-}
-
-TERADATA_SPECIFIC_TRUNC_FORMATS = {"W", "WW"}
 
 
 def _date_add_sql(
@@ -110,33 +95,11 @@ class TeradataGenerator(generator.Generator):
         exp.ToChar: lambda self, e: self.function_fallback_sql(e),
         exp.ToNumber: to_number_with_nls_param,
         exp.Use: lambda self, e: f"DATABASE {self.sql(e, 'this')}",
+        exp.DateTrunc: date_trunc_to_trunc_sql,
         exp.DateAdd: _date_add_sql("+"),
         exp.DateSub: _date_add_sql("-"),
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
-
-    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
-    # override of an undecorated base-class method.
-    def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
-        self._warn_unsupported_arg(expression, "zone")
-        unit = expression.unit
-        if isinstance(unit, exp.WeekStart):
-            if unit.name.upper() == "MONDAY":
-                unit = exp.Literal.string("IW")
-            else:
-                self.weekstart_name(unit)
-                unit = exp.Literal.string("DAY")
-        elif isinstance(unit, (exp.Literal, exp.Var)):
-            unit_name = unit.name.upper()
-            mapped = UNIT_TO_TERADATA_TRUNC_FORMAT.get(unit_name)
-            if mapped:
-                unit = exp.Literal.string(mapped)
-            elif unit_name in TERADATA_SPECIFIC_TRUNC_FORMATS:
-                unit = exp.Literal.string(unit_name)
-            else:
-                self.unsupported(f"Unexpected interval unit: {unit_name}")
-
-        return self.func("TRUNC", expression.this, unit)
 
     def execute_sql(self, expression: exp.Execute) -> str:
         if expression.args.get("return_status"):

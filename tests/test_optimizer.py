@@ -2347,6 +2347,25 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
 
+    def test_optimize_special_joins(self):
+        for sql in (
+            "SELECT x.a, y.b FROM x ASOF JOIN y ON x.a >= y.b WHERE y.b = 2",
+            "SELECT x.a, y.b FROM x ASOF JOIN (SELECT b FROM y) AS y ON x.a >= y.b WHERE y.b = 2",
+            "SELECT x.a, y.b FROM x ASOF LEFT JOIN y ON x.a >= y.b "
+            "WHERE (x.a = 2 AND y.b = 2) OR (x.a = 3 AND y.b = 2)",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN y WHERE y.b = 3",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y) AS y WHERE y.b = 3",
+            "SELECT x.a, y.b FROM (SELECT a FROM x) AS x POSITIONAL JOIN y WHERE x.a = 3",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN y "
+            "WHERE (x.a = 2 AND y.b = 2) OR (x.a = 3 AND y.b = 4)",
+        ):
+            with self.subTest(sql=sql):
+                optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                self.assertCountEqual(
+                    self.conn.execute(sql).fetchall(),
+                    self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                )
+
     def test_pushdown_dnf_many_predicates(self):
         n = 50
         condition = " OR ".join(f"(x.a = {i:03d} AND x.b = {i:03d})" for i in range(n))

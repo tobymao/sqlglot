@@ -147,3 +147,59 @@ SELECT x.a, z.b FROM x JOIN (SELECT b FROM z) AS z ON x.b = z.b FULL JOIN y ON x
 -- A later RIGHT JOIN null-extends the source of an earlier one
 SELECT x.a, z.b FROM x RIGHT JOIN z ON x.b = z.b RIGHT JOIN y ON x.b = y.b WHERE z.b = 3;
 SELECT x.a, z.b FROM x RIGHT JOIN z ON x.b = z.b RIGHT JOIN y ON x.b = y.b WHERE z.b = 3;
+
+-- ASOF matches must be selected before applying the WHERE filter
+# dialect: duckdb
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+
+# dialect: duckdb
+SELECT a.id, b.val FROM a ASOF JOIN (SELECT id, ts, val FROM b) AS b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+SELECT a.id, b.val FROM a ASOF JOIN (SELECT id, ts, val FROM b) AS b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+
+# dialect: duckdb
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE (a.id = 1 AND b.val > 10) OR (a.id = 2 AND b.val > 20);
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE (a.id = 1 AND b.val > 10) OR (a.id = 2 AND b.val > 20);
+
+# dialect: snowflake
+SELECT a.id, b.val FROM a ASOF JOIN b MATCH_CONDITION (a.ts >= b.ts) ON a.id = b.id WHERE b.val > 10;
+SELECT a.id, b.val FROM a ASOF JOIN b MATCH_CONDITION (a.ts >= b.ts) ON a.id = b.id WHERE b.val > 10;
+
+# dialect: clickhouse
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+SELECT a.id, b.val FROM a ASOF JOIN b ON a.id = b.id AND a.ts >= b.ts WHERE b.val > 10;
+
+-- ANY matches must not be changed by prefiltering the RHS
+# dialect: clickhouse
+SELECT a.id, b.val FROM a ANY JOIN b ON a.id = b.id WHERE b.val > 10;
+SELECT a.id, b.val FROM a ANY JOIN b ON a.id = b.id WHERE b.val > 10;
+
+# dialect: clickhouse
+SELECT a.id, b.val FROM a ANY JOIN (SELECT id, val FROM b) AS b ON a.id = b.id WHERE (a.id = 1 AND b.val > 10) OR (a.id = 2 AND b.val > 20);
+SELECT a.id, b.val FROM a ANY JOIN (SELECT id, val FROM b) AS b ON a.id = b.id WHERE (a.id = 1 AND b.val > 10) OR (a.id = 2 AND b.val > 20);
+
+-- Positional joins have no ON clause, and filtering either input changes row pairings
+# dialect: duckdb
+SELECT x.a, y.b FROM x POSITIONAL JOIN y WHERE y.b = 3;
+SELECT x.a, y.b FROM x POSITIONAL JOIN y WHERE y.b = 3;
+
+# dialect: duckdb
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x POSITIONAL JOIN y WHERE x.a = 3;
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x POSITIONAL JOIN y WHERE x.a = 3;
+
+# dialect: duckdb
+SELECT x.a, y.b FROM x JOIN (SELECT b FROM y) AS y ON x.a = y.b POSITIONAL JOIN z WHERE y.b = 3;
+SELECT x.a, y.b FROM x JOIN (SELECT b FROM y) AS y ON x.a = y.b POSITIONAL JOIN z WHERE y.b = 3;
+
+# dialect: clickhouse
+SELECT x.a, y.b FROM x PASTE JOIN y WHERE y.b = 3;
+SELECT x.a, y.b FROM x PASTE JOIN y WHERE y.b = 3;
+
+# dialect: clickhouse
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x PASTE JOIN y WHERE x.a = 3;
+SELECT x.a, y.b FROM (SELECT a FROM x) AS x PASTE JOIN y WHERE x.a = 3;
+
+-- Predicates inside independent subqueries can still be pushed down
+# dialect: duckdb
+SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT y.b FROM (SELECT b FROM y) AS y WHERE y.b = 3) AS y WHERE y.b > 2;
+SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT y.b FROM (SELECT b FROM y WHERE b = 3) AS y WHERE TRUE) AS y WHERE y.b > 2;

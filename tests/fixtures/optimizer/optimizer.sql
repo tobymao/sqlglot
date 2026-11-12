@@ -4,6 +4,15 @@ SELECT
   CASE WHEN "x"."a" > 1 THEN "x"."b" ELSE 2 END AS "result"
 FROM "x" AS "x";
 
+# title: Preserve POSITIONAL JOIN
+# dialect: duckdb
+SELECT x.a, y.c FROM x POSITIONAL JOIN y;
+SELECT
+  "x"."a" AS "a",
+  "y"."c" AS "c"
+FROM "x" AS "x"
+POSITIONAL JOIN "y" AS "y";
+
 # title: lateral
 # execute: false
 SELECT a, m FROM z LATERAL VIEW EXPLODE([1, 2]) q AS m;

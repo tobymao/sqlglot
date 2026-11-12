@@ -2429,19 +2429,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
-    def test_optimize_paste_joins(self):
-        for sql in (
-            "SELECT * FROM x PASTE JOIN y",
-            "SELECT * FROM x PASTE JOIN y JOIN z ON x.a = z.a AND y.a = z.a",
-        ):
-            with self.subTest(sql=sql):
-                expression = parse_one(sql, dialect="clickhouse")
-                self.assertEqual(
-                    optimizer.optimize_joins.optimize_joins(expression.copy()), expression
-                )
-                self.assertEqual(
-                    optimizer.optimize_joins.reorder_joins(expression.copy()), expression
-                )
+    def test_optimize_positional_joins(self):
+        for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):
+            for sql in (
+                f"SELECT * FROM x {kind} JOIN y",
+                f"SELECT * FROM x {kind} JOIN y JOIN z ON x.a = z.a AND y.a = z.a",
+                f"SELECT * FROM x JOIN z ON x.a = z.a AND z.a = 2 {kind} JOIN y",
+            ):
+                for rule in (
+                    optimizer.optimize_joins.optimize_joins,
+                    optimizer.optimize_joins.reorder_joins,
+                ):
+                    with self.subTest(sql=sql, rule=rule.__name__):
+                        expression = parse_one(sql, dialect=dialect)
+                        self.assertEqual(rule(expression.copy()), expression)
 
     def test_nearest_joins(self):
         for sql in (

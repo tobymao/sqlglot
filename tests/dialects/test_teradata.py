@@ -5,6 +5,18 @@ from tests.dialects.test_dialect import Validator
 class TestTeradata(Validator):
     dialect = "teradata"
 
+    def test_characters(self):
+        self.validate_identity("characters(x)", "LENGTH(x)").assert_is(exp.Length)
+        for value in ("x", "'abc'", "''", "'a  '", "'\u00e9\u4e2d'", "NULL"):
+            self.validate_all(
+                f"CHARACTERS({value})",
+                write={
+                    "teradata": f"LENGTH({value})",
+                    "databricks": f"LENGTH({value})",
+                    "postgres": f"LENGTH({value})",
+                },
+            )
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

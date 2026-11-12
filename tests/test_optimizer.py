@@ -2323,6 +2323,30 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_pushdown_predicates(self):
         self.check_file("pushdown_predicates", optimizer.pushdown_predicates.pushdown_predicates)
 
+    def test_optimize_distinct_on_predicates(self):
+        subquery = (
+            "SELECT DISTINCT ON (k) id, k, v FROM "
+            "(VALUES (1, 1, 0), (2, 1, 1), (3, 2, 0), (4, 2, 3)) AS t(id, k, v) "
+            "ORDER BY k, id"
+        )
+        for dialect in ("duckdb", "postgres"):
+            for sql in (
+                f"SELECT sub.id, sub.v FROM ({subquery}) AS sub WHERE sub.v > 0",
+                f"WITH sub AS ({subquery}) SELECT sub.id, sub.v FROM sub WHERE sub.v > 0",
+                f"SELECT sub.id, sub.v FROM ({subquery}) AS sub "
+                "WHERE (sub.k = 1 AND sub.v > 0) OR (sub.k = 2 AND sub.v > 1)",
+                f"SELECT x.k, sub.id FROM (VALUES (1), (2)) AS x(k) JOIN ({subquery}) AS sub "
+                "ON x.k = sub.k AND sub.v > 0",
+                f"SELECT x.k, sub.id FROM (VALUES (1), (2)) AS x(k) LEFT JOIN ({subquery}) AS sub "
+                "ON x.k = sub.k AND sub.v > 0",
+            ):
+                with self.subTest(sql=sql, dialect=dialect):
+                    optimized = optimizer.optimize(sql, dialect=dialect)
+                    self.assertCountEqual(
+                        self.conn.execute(sql).fetchall(),
+                        self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                    )
+
     def test_pushdown_dnf_many_predicates(self):
         n = 50
         condition = " OR ".join(f"(x.a = {i:03d} AND x.b = {i:03d})" for i in range(n))

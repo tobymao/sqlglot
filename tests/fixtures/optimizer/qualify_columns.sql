@@ -1546,6 +1546,16 @@ SELECT t.k AS k FROM (VALUES (20, {'k': 99})) AS t(k, s) SEMI JOIN (VALUES ({'k'
 SELECT s.k, u.k FROM (VALUES (20, {'k': 99}, {'k': 88})) AS t(k, s, u) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k AND s.k = 20 ANTI JOIN (VALUES (20)) AS u(k) ON t.k = u.k AND s.k = 20;
 SELECT t.s.k AS k, t.u.k AS k FROM (VALUES (20, {'k': 99}, {'k': 88})) AS t(k, s, u) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k AND s.k = 20 ANTI JOIN (VALUES (20)) AS u(k) ON t.k = u.k AND t.s.k = 20;
 
+# title: SEMI JOIN alias without a matching column preserves struct fallback
+# dialect: duckdb
+SELECT t.id FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) SEMI JOIN (VALUES (1)) AS s(v) ON t.k = s.k;
+SELECT t.id AS id FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) SEMI JOIN (VALUES (1)) AS s(v) ON t.k = t.s.k;
+
+# title: ANTI JOIN alias without a matching column preserves nested struct fallback
+# dialect: duckdb
+SELECT t.id FROM (VALUES (1, 10, {'payload': {'k': 10}}), (2, 20, {'payload': {'k': 99}})) AS t(id, k, s) ANTI JOIN (VALUES (1)) AS s(v) ON t.k = s.payload.k;
+SELECT t.id AS id FROM (VALUES (1, 10, {'payload': {'k': 10}}), (2, 20, {'payload': {'k': 99}})) AS t(id, k, s) ANTI JOIN (VALUES (1)) AS s(v) ON t.k = t.s.payload.k;
+
 # title: bare USING column after SEMI JOIN resolves to the left table
 # dialect: duckdb
 SELECT b FROM x SEMI JOIN y USING (b);

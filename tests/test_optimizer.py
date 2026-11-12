@@ -2366,6 +2366,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT x.v, y.b FROM (SELECT COALESCE(a, 0) AS v FROM x) AS x POSITIONAL JOIN y",
             "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y ORDER BY b DESC) AS y",
             "SELECT z.b FROM z POSITIONAL JOIN (SELECT 1 AS a) AS x",
+            "SELECT x.a, y.b FROM ((SELECT a FROM x WHERE a = 2) AS x POSITIONAL JOIN y)",
+            "SELECT x.a, y.b FROM (x POSITIONAL JOIN (SELECT b FROM y WHERE b = 3) AS y)",
+            "WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM (s POSITIONAL JOIN y)",
         ):
             with self.subTest(sql=sql):
                 optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
@@ -2628,6 +2631,44 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     self.assertEqual(
                         optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
                     )
+
+    def test_merge_asof_join_inputs(self):
+        schema = {"x": {"id": "INT", "ts": "INT"}, "y": {"id": "INT", "ts": "INT", "val": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute(
+                "CREATE TABLE x (id INT, ts INT); INSERT INTO x VALUES (1, 20), (2, 20); "
+                "CREATE TABLE y (id INT, ts INT, val INT); "
+                "INSERT INTO y VALUES (1, 10, 100), (1, 15, 5)"
+            )
+            for dialect in ("duckdb", "clickhouse", "snowflake"):
+                condition = (
+                    "MATCH_CONDITION (x.ts >= s.ts) ON x.id = s.id"
+                    if dialect == "snowflake"
+                    else "ON x.id = s.id AND x.ts >= s.ts"
+                )
+                for subquery in (
+                    "SELECT id, ts, val FROM y WHERE val > 10",
+                    "SELECT id, ts, COALESCE(val, 0) AS val FROM y",
+                ):
+                    for sql in (
+                        f"SELECT x.id, s.val FROM x ASOF JOIN ({subquery}) AS s {condition}",
+                        f"WITH s AS ({subquery}) SELECT x.id, s.val FROM x ASOF JOIN s {condition}",
+                    ):
+                        with self.subTest(sql=sql, dialect=dialect):
+                            expression = qualify(
+                                parse_one(sql, dialect=dialect), schema=schema, dialect=dialect
+                            )
+                            self.assertEqual(
+                                optimizer.merge_subqueries.merge_subqueries(expression.copy()),
+                                expression,
+                            )
+                            optimized = optimizer.optimize(
+                                expression, schema=schema, dialect=dialect
+                            )
+                            self.assertCountEqual(
+                                connection.execute(expression.sql("duckdb")).fetchall(),
+                                connection.execute(optimized.sql("duckdb")).fetchall(),
+                            )
 
     def test_merge_subqueries_match(self):
         sql = (

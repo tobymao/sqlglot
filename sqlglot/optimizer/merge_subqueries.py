@@ -435,9 +435,11 @@ def _mergeable(
         or outer_scope.pivots
         # Merging can move filters and projections across row pairing and NULL padding.
         or any(
-            join.method == "POSITIONAL" or join.kind == "PASTE" or join.args.get("nearest")
-            for select in (outer, inner_select)
-            for join in select.args.get("joins", [])
+            join.method in ("ASOF", "POSITIONAL")
+            or join.kind in ("ASOF", "PASTE")
+            or join.args.get("nearest")
+            for scope in (outer_scope, inner_scope)
+            for join in scope.find_all(exp.Join)
         )
         or (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         or (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))

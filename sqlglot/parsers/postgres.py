@@ -368,6 +368,15 @@ class PostgresParser(parser.Parser):
 
         return self.expression(exp.Extract(this=part, expression=value))
 
+    def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:
+        args = self._parse_csv(self._parse_assignment)
+        return self.validate_expression(
+            exp.ConvertToCharset(
+                this=seq_get(args, 0), source=seq_get(args, 1), dest=seq_get(args, 2)
+            ),
+            args,
+        )
+
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
         return self.expression(
             exp.UniqueColumnConstraint(

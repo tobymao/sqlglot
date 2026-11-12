@@ -2570,6 +2570,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_optimize_comma_joins(self):
+        schema = {"a": {"x": "INT"}, "b": {"y": "INT"}, "c": {"z": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (10), (30)) t(y)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+
+            for dialect in ("duckdb", "postgres"):
+                for side in ("RIGHT", "FULL"):
+                    with self.subTest(dialect=dialect, side=side):
+                        sql = f"SELECT * FROM a, b {side} JOIN c ON b.y = c.z"
+                        expected = connection.execute(sql).fetchall()
+                        for optimized in (
+                            optimizer.optimize_joins.optimize_joins(
+                                parse_one(sql, dialect=dialect)
+                            ),
+                            optimizer.optimize(sql, schema=schema, dialect=dialect),
+                        ):
+                            self.assertCountEqual(
+                                connection.execute(optimized.sql(dialect)).fetchall(), expected
+                            )
+
     def test_optimize_positional_joins(self):
         for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):
             for sql in (
@@ -2620,6 +2642,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for sql in (
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
             "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
+            "SELECT a.id, b.id, c.id, d.id FROM a, b JOIN c NEAREST 1 BY DISTANCE ABS(b.id - c.id) "
+            "RIGHT JOIN d ON c.id = d.id",
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id) "
             "JOIN c ON a.id = c.id AND b.id = c.id WHERE b.id > 1",
             "SELECT a.id, b.id FROM a JOIN (SELECT id FROM b WHERE id > 1) AS b "

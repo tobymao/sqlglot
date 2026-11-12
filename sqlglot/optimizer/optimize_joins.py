@@ -6,7 +6,7 @@ from sqlglot.errors import OptimizeError
 from sqlglot._typing import E
 from sqlglot.helper import tsort
 
-JOIN_ATTRS = ("on", "side", "kind", "using", "method")
+JOIN_ATTRS = ("on", "side", "kind", "using", "method", "nearest")
 
 
 def optimize_joins(expression: E) -> E:
@@ -103,6 +103,8 @@ def normalize(expression: E) -> E:
             continue
 
         if not any(join.args.get(k) for k in JOIN_ATTRS):
+            if not _can_convert_to_cross_join(join):
+                continue
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":
@@ -114,6 +116,22 @@ def normalize(expression: E) -> E:
             if not join.args.get("on") and not join.args.get("using"):
                 join.set("on", exp.true())
     return expression
+
+
+def _can_convert_to_cross_join(join: exp.Join) -> bool:
+    if join.parent is not None and join.index is not None:
+        joins = join.parent.args.get("joins", [])
+        for index in range(join.index + 1, len(joins)):
+            sibling = joins[index]
+            if not any(sibling.args.get(k) for k in JOIN_ATTRS):
+                break
+
+            # JOIN binds more tightly than comma. Including the preceding tables in
+            # a RIGHT/FULL join's left operand changes its unmatched rows.
+            if sibling.side in ("RIGHT", "FULL"):
+                return False
+
+    return True
 
 
 def other_table_names(join: exp.Join) -> set[str]:

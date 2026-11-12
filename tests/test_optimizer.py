@@ -2358,6 +2358,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT x.a, y.b FROM (SELECT a FROM x) AS x POSITIONAL JOIN y WHERE x.a = 3",
             "SELECT x.a, y.b FROM x POSITIONAL JOIN y "
             "WHERE (x.a = 2 AND y.b = 2) OR (x.a = 3 AND y.b = 4)",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y WHERE b = 3) AS y",
+            "SELECT x.a, y.b FROM (SELECT a FROM x WHERE a = 2) AS x POSITIONAL JOIN y",
+            "WITH s AS (SELECT b FROM y WHERE b = 3) SELECT x.a, s.b FROM x POSITIONAL JOIN s",
+            "WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM s POSITIONAL JOIN y",
+            "SELECT y.b, x.v FROM y POSITIONAL JOIN (SELECT COALESCE(a, 0) AS v FROM x) AS x",
+            "SELECT x.v, y.b FROM (SELECT COALESCE(a, 0) AS v FROM x) AS x POSITIONAL JOIN y",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y ORDER BY b DESC) AS y",
+            "SELECT z.b FROM z POSITIONAL JOIN (SELECT 1 AS a) AS x",
         ):
             with self.subTest(sql=sql):
                 optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
@@ -2492,6 +2500,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
+    def test_eliminate_positional_joins(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for source in ("SELECT 1 AS b", "SELECT COUNT(*) AS b FROM y"):
+                sql = f"SELECT x.a FROM x {kind} JOIN ({source}) AS y"
+                with self.subTest(sql=sql):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.eliminate_joins.eliminate_joins(expression.copy()), expression
+                    )
+
     def test_eliminate_ctes(self):
         self.check_file(
             "eliminate_ctes",
@@ -2593,6 +2611,23 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
         self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
+
+    def test_merge_positional_join_inputs(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for sql in (
+                f"SELECT x.a, y.b FROM x {kind} JOIN (SELECT b FROM y WHERE b = 3) AS y",
+                f"SELECT x.a, y.b FROM (SELECT a FROM x WHERE a = 2) AS x {kind} JOIN y",
+                f"WITH s AS (SELECT b FROM y WHERE b = 3) SELECT x.a, s.b FROM x {kind} JOIN s",
+                f"WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM s {kind} JOIN y",
+                f"SELECT x.a, y.v FROM x {kind} JOIN (SELECT COALESCE(b, 0) AS v FROM y) AS y",
+                f"SELECT x.v, y.b FROM (SELECT COALESCE(a, 0) AS v FROM x) AS x {kind} JOIN y",
+                f"SELECT x.a, y.b FROM x {kind} JOIN (SELECT b FROM y ORDER BY b DESC) AS y",
+            ):
+                with self.subTest(sql=sql):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
+                    )
 
     def test_merge_subqueries_match(self):
         sql = (

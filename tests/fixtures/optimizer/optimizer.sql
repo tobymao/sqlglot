@@ -7,11 +7,20 @@ FROM "x" AS "x";
 # title: Preserve POSITIONAL JOIN
 # dialect: duckdb
 SELECT x.a, y.c FROM x POSITIONAL JOIN y;
+WITH "x_2" AS (
+  SELECT
+    "x"."a" AS "a"
+  FROM "x" AS "x"
+), "y_2" AS (
+  SELECT
+    "y"."c" AS "c"
+  FROM "y" AS "y"
+)
 SELECT
   "x"."a" AS "a",
   "y"."c" AS "c"
-FROM "x" AS "x"
-POSITIONAL JOIN "y" AS "y";
+FROM "x_2" AS "x"
+POSITIONAL JOIN "y_2" AS "y";
 
 # title: lateral
 # execute: false

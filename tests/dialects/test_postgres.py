@@ -1855,9 +1855,7 @@ FROM json_data, field_ids""",
             "CREATE OR REPLACE FUNCTION foo(INOUT y VARCHAR DEFAULT 'test')",
         ):
             with self.subTest(sql=sql):
-                self.assertEqual(
-                    transpile(sql, read="postgres", write="postgres")[0], sql
-                )
+                self.assertEqual(transpile(sql, read="postgres", write="postgres")[0], sql)
 
                 expression = self.parse_one(sql)
                 self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)

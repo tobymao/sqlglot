@@ -2241,9 +2241,8 @@ def build_trunc(
 
 # https://docs.teradata.com/r/Lake-Working-with-SQL/SQL-Functions/SQL-Date-and-Time-Functions-and-Expressions/DateTime-and-Interval-Functions-and-Expressions/TRUNC-Date/TRUNC-Date-Syntax/ROUND-Date-and-TRUNC-Date-Argument-Types-and-Rules/TRUNC-and-ROUND-Date-Formats
 TRUNC_FORMAT_TO_UNIT = {
-    # These centuries start at year 1, unlike DuckDB's multiples of 100.
-    "CC": "CENTURY_OF_ERA",
-    "SCC": "CENTURY_OF_ERA",
+    "CC": "CENTURY",
+    "SCC": "CENTURY",
     "SYYYY": "YEAR",
     "SYYY": "YEAR",
     "YYYY": "YEAR",
@@ -2295,11 +2294,15 @@ def build_formatted_trunc(
 
 
 UNIT_TO_TRUNC_FORMAT = {
-    "CENTURY_OF_ERA": "CC",
+    "CENTURY": "CC",
     "YEAR": "YEAR",
+    "YY": "YEAR",
+    "YYYY": "YEAR",
     "ISOYEAR": "IYYY",
     "QUARTER": "Q",
     "MONTH": "MONTH",
+    "MM": "MONTH",
+    "MON": "MONTH",
     "WEEK": "IW",
     "WEEK_OF_MONTH": "W",
     "WEEK_OF_YEAR": "WW",
@@ -2310,7 +2313,7 @@ UNIT_TO_TRUNC_FORMAT = {
 }
 
 
-@unsupported_args("zone")
+@unsupported_args("zone", "century_from_zero")
 def date_trunc_to_trunc_sql(self: Generator, expression: exp.DateTrunc) -> str:
     unit = expression.unit
     if isinstance(unit, exp.WeekStart):
@@ -2484,17 +2487,23 @@ def unit_to_str(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
 
 
 def weekstart_unit_to_str(
-    self: Generator, expression: exp.Expr, default: str = "DAY"
+    self: Generator,
+    expression: exp.Expr,
+    default: str = "DAY",
+    *,
+    century_from_zero: bool = False,
 ) -> exp.Expr | None:
     unit = expression.args.get("unit")
     if isinstance(unit, exp.WeekStart):
         return exp.Literal.string(self.weekstart_name(unit))
-    if isinstance(unit, exp.Literal) and unit.name.upper() in (
-        "CENTURY_OF_ERA",
-        "WEEK_OF_MONTH",
-        "WEEK_OF_YEAR",
-    ):
+    if isinstance(unit, exp.Literal) and unit.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
         self.unsupported(f"Unexpected interval unit: {unit.name}")
+    if (
+        isinstance(unit, (exp.Literal, exp.Var))
+        and map_date_part(unit).name.upper() == "CENTURY"
+        and bool(expression.args.get("century_from_zero")) != century_from_zero
+    ):
+        self.unsupported("Cannot preserve century boundaries starting at different years")
 
     return unit_to_str(expression, default)
 

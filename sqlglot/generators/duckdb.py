@@ -4639,7 +4639,11 @@ class DuckDBGenerator(generator.Generator):
         date = expression.this
 
         week_start = _week_trunc_start_dow(unit)
-        unit = unit_to_str(expression) if week_start else weekstart_unit_to_str(self, expression)
+        unit = (
+            unit_to_str(expression)
+            if week_start
+            else weekstart_unit_to_str(self, expression, century_from_zero=True)
+        )
 
         if week_start:
             result = self.sql(
@@ -4673,7 +4677,11 @@ class DuckDBGenerator(generator.Generator):
         week_start = _week_trunc_start_dow(expression.args.get("unit"))
 
         # The week start emulation below is exact, so avoid weekstart_unit_to_str's degrade warning
-        unit = unit_to_str(expression) if week_start else weekstart_unit_to_str(self, expression)
+        unit = (
+            unit_to_str(expression)
+            if week_start
+            else weekstart_unit_to_str(self, expression, century_from_zero=True)
+        )
         date_unit = is_date_unit(unit) or bool(week_start)
 
         def _trunc_expr(this: exp.Expr) -> exp.Expr:
@@ -4681,7 +4689,11 @@ class DuckDBGenerator(generator.Generator):
                 return _build_week_trunc_expression(
                     this, week_start, preserve_start_day=True, cast_to_date=False
                 )
-            return exp.func("DATE_TRUNC", unit, this)
+            return exp.DateTrunc(
+                unit=unit,
+                this=this,
+                century_from_zero=expression.args.get("century_from_zero"),
+            )
 
         if date_unit and zone:
             # BigQuery's TIMESTAMP_TRUNC with timezone truncates in the target timezone and returns as UTC.

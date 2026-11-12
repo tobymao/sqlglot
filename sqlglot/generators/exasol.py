@@ -305,7 +305,7 @@ class ExasolGenerator(generator.Generator):
 
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         if isinstance(expression.unit, exp.WeekStart) or expression.unit.name in (
-            "CENTURY_OF_ERA",
+            "CENTURY",
             "WEEK_OF_MONTH",
             "WEEK_OF_YEAR",
             "ISOYEAR",

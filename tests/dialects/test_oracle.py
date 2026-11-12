@@ -1156,6 +1156,7 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
                     "oracle": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
                     "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
                     "exasol": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                    "postgres": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
                     "duckdb": UnsupportedError,
                 },
             )

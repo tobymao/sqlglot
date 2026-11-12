@@ -817,8 +817,16 @@ class TestTeradata(Validator):
         self.validate_identity("TRUNC(x, 'YYYY')", "TRUNC(x, 'YEAR')")
         self.validate_identity("TRUNC(x, 'IYYY')")
         self.validate_identity("TRUNC(x, 'CC')")
+        self.validate_all(
+            "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+            write={
+                "teradata": "TRUNC(CAST('2024-05-15' AS DATE), 'CC')",
+                "postgres": "DATE_TRUNC('CENTURY', CAST('2024-05-15' AS DATE))",
+                "duckdb": UnsupportedError,
+            },
+        )
         # Preserve native calendar boundaries and reject unsupported translations.
-        for unit in ("CC", "W", "WW"):
+        for unit in ("W", "WW"):
             self.validate_all(
                 f"TRUNC(CAST('2024-05-15' AS DATE), '{unit}')",
                 write={

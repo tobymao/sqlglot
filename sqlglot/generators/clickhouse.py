@@ -186,6 +186,7 @@ class ClickHouseGenerator(generator.Generator):
     SUPPORTS_TO_NUMBER = False
     JOIN_HINTS = False
     TABLE_HINTS = False
+    MATCH_CONDITION_IN_ON = True
     GROUPINGS_SEP = ""
     SET_OP_MODIFIERS = False
     SET_OP_LIMITS = True

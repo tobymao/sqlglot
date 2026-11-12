@@ -13,6 +13,35 @@ class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
 
+    def test_asof_join(self):
+        for op in (">", ">=", "<", "<="):
+            with self.subTest(op=op):
+                self.validate_all(
+                    f"SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts {op} u.ts) ON t.id = u.id AND t.category = u.category",
+                    write={
+                        "snowflake": f"SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts {op} u.ts) ON t.id = u.id AND t.category = u.category",
+                        "duckdb": f"SELECT * FROM t ASOF LEFT JOIN u ON (t.id = u.id AND t.category = u.category) AND t.ts {op} u.ts",
+                        "clickhouse": f"SELECT * FROM t ASOF LEFT JOIN u ON (t.id = u.id AND t.category = u.category) AND t.ts {op} u.ts",
+                        "postgres": UnsupportedError,
+                    },
+                )
+
+        self.validate_all(
+            "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts)",
+            write={
+                "snowflake": "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts)",
+                "duckdb": "SELECT * FROM t ASOF LEFT JOIN u ON t.ts >= u.ts",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) USING (id)",
+            write={
+                "snowflake": "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) USING (id)",
+                "duckdb": UnsupportedError,
+                "clickhouse": UnsupportedError,
+            },
+        )
+
     def test_base64_alphabet(self):
         self.validate_all(
             "SELECT BASE64_ENCODE(TO_BINARY('FBFF', 'HEX'), 0, '/+=')",

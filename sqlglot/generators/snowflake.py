@@ -403,6 +403,7 @@ class SnowflakeGenerator(generator.Generator):
 
     IS_BOOL_ALLOWED = False
     DIRECTED_JOINS = True
+    SUPPORTS_MATCH_CONDITION = True
     SUPPORTS_UESCAPE = False
     TRY_SUPPORTED = False
 

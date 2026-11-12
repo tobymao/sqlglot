@@ -1598,6 +1598,7 @@ class DuckDBGenerator(generator.Generator):
     QUERY_HINTS = False
     LIMIT_FETCH = "LIMIT"
     SUPPORTS_NEAREST_JOIN = True
+    MATCH_CONDITION_IN_ON = True
     STRUCT_DELIMITER = ("(", ")")
     RENAME_TABLE_WITH_DB = False
     NVL2_SUPPORTED = False

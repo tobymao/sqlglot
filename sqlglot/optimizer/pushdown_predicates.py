@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
+from sqlglot.optimizer.optimize_joins import JOIN_ATTRS, _can_convert_to_cross_join
 from sqlglot.optimizer.scope import build_scope, find_in_scope, Scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
@@ -60,7 +61,14 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
             if where:
                 selected_sources: Sources = scope.selected_sources
-                join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
+                join_bounds: dict[str, tuple[int, int]] = {}
+                group_start = -1
+                for i, join in enumerate(joins):
+                    if not any(
+                        join.args.get(k) for k in JOIN_ATTRS
+                    ) and not _can_convert_to_cross_join(join):
+                        group_start = i
+                    join_bounds[join.alias_or_name] = (group_start, i)
 
                 # A RIGHT or FULL join null-extends everything joined before it, and an outer WHERE filter
                 # removes those rows, so a source can only be pushed into if no such join comes after it.
@@ -78,7 +86,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                         if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
-                        position = join_index.get(parent.alias_or_name, -1)
+                        position = join_bounds.get(parent.alias_or_name, (-1, -1))[1]
                     else:
                         position = -1
 
@@ -88,7 +96,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                 selected_sources = reachable
 
                 if pushdown_allowed:
-                    pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
+                    pushdown(where.this, selected_sources, scope_ref_count, dialect, join_bounds)
 
             # joins should only pushdown into itself, not to other joins
             # so we limit the selected sources to only itself
@@ -114,7 +122,7 @@ def pushdown(
     sources: Sources,
     scope_ref_count: Mapping[int, int],
     dialect: DialectType,
-    join_index: Mapping[str, int] | None = None,
+    join_bounds: Mapping[str, tuple[int, int]] | None = None,
 ) -> None:
     if not condition:
         return
@@ -129,16 +137,16 @@ def pushdown(
     )
 
     if cnf_like:
-        pushdown_cnf(predicates, sources, scope_ref_count, join_index=join_index)
+        pushdown_cnf(predicates, sources, scope_ref_count, join_bounds=join_bounds)
     else:
-        pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
+        pushdown_dnf(predicates, sources, scope_ref_count, join_bounds=join_bounds)
 
 
 def pushdown_cnf(
     predicates: Iterable[exp.Expr],
     sources: Sources,
     scope_ref_count: Mapping[int, int],
-    join_index: Mapping[str, int] | None = None,
+    join_bounds: Mapping[str, tuple[int, int]] | None = None,
 ) -> None:
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
@@ -149,10 +157,13 @@ def pushdown_cnf(
                 name = node.alias_or_name
                 predicate_tables = exp.column_table_names(predicate, name)
 
-                if join_index:
-                    # Don't push the predicate if it references tables that appear in later joins
-                    this_index = join_index[name]
-                    if all(join_index.get(table, -1) < this_index for table in predicate_tables):
+                if join_bounds:
+                    # References must precede this join and remain in its preserved comma group.
+                    group_start, this_index = join_bounds[name]
+                    if all(
+                        group_start <= join_bounds.get(table, (-1, -1))[1] < this_index
+                        for table in predicate_tables
+                    ):
                         predicate.replace(exp.true())
                         node.on(predicate, copy=False)
                         break
@@ -169,7 +180,7 @@ def pushdown_dnf(
     predicates: Iterable[exp.Expr],
     sources: Sources,
     scope_ref_count: Mapping[int, int],
-    join_index: Mapping[str, int] | None = None,
+    join_bounds: Mapping[str, tuple[int, int]] | None = None,
 ) -> None:
     """
     If the predicates are in DNF form, we can only push down conditions that are in all blocks.
@@ -218,10 +229,13 @@ def pushdown_dnf(
         predicate = conditions[table]
 
         if isinstance(table_node, exp.Join):
-            if join_index:
-                this_index = join_index[table]
+            if join_bounds:
+                group_start, this_index = join_bounds[table]
                 predicate_tables = exp.column_table_names(predicate, table)
-                if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
+                if not all(
+                    group_start <= join_bounds.get(t, (-1, -1))[1] < this_index
+                    for t in predicate_tables
+                ):
                     continue
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):

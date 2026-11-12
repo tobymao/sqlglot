@@ -1752,3 +1752,43 @@ ORDER BY
   "y"."b",
   "z"."b",
   "w"."c";
+
+# title: Preserve comma groups during RIGHT JOIN predicate pushdown
+# dialect: postgres
+SELECT x.a, y.b, z.c, v.a FROM x, y RIGHT JOIN y AS z ON y.b = z.b, x AS v WHERE v.a = x.a AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c",
+  "v"."a" AS "a"
+FROM "x" AS "x", "y" AS "y"
+RIGHT JOIN "y" AS "z"
+  ON "y"."b" = "z"."b"
+CROSS JOIN "x" AS "v"
+WHERE
+  "v"."a" = "x"."a" AND "y"."b" > 0
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c",
+  "v"."a";
+
+# title: Preserve comma groups during FULL JOIN predicate pushdown
+# dialect: postgres
+SELECT x.a, y.b, z.c, v.a FROM x, y FULL JOIN y AS z ON y.b = z.b, x AS v WHERE v.a = x.a AND y.b > 0 ORDER BY x.a, y.b, z.c, v.a;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."c" AS "c",
+  "v"."a" AS "a"
+FROM "x" AS "x", "y" AS "y"
+FULL JOIN "y" AS "z"
+  ON "y"."b" = "z"."b"
+CROSS JOIN "x" AS "v"
+WHERE
+  "v"."a" = "x"."a" AND "y"."b" > 0
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."c",
+  "v"."a";

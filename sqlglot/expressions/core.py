@@ -46,6 +46,7 @@ TABLE_PARTS = ("this", "db", "catalog")
 COLUMN_PARTS = ("this", "table", "db", "catalog")
 POSITION_META_KEYS: tuple[str, ...] = ("line", "col", "start", "end")
 UNITTEST: bool = "unittest" in sys.modules or "pytest" in sys.modules
+_IMMUTABLE_META_TYPES: frozenset[type] = frozenset((int, str, bool, float, type(None)))
 
 
 @trait
@@ -1014,7 +1015,11 @@ class Expression(Expr):
             if node._type is not None:
                 copy._type = deepcopy(node._type)
             if node._meta is not None:
-                copy._meta = deepcopy(node._meta)
+                # Positions and flags are immutable, so only other values need a deep copy
+                meta = copy._meta = dict(node._meta)
+                for k, v in meta.items():
+                    if type(v) not in _IMMUTABLE_META_TYPES:
+                        meta[k] = deepcopy(v)
             if node._hash is not None:
                 copy._hash = node._hash
 

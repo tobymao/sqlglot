@@ -133,7 +133,7 @@ def _timestrtotime_sql(self: TSQLGenerator, expression: exp.TimeStrToTime):
 
 
 class TSQLGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

@@ -6,7 +6,7 @@ from sqlglot.dialects.dialect import mod_func_sql
 
 
 class DruidGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

@@ -273,7 +273,7 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
 
 
 class PostgresGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_DECODE_CASE = False
 

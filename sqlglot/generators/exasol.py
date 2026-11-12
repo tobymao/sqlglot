@@ -273,7 +273,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
 
 
 class ExasolGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

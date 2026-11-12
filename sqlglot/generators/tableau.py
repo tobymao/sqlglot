@@ -6,7 +6,7 @@ from sqlglot.dialects.dialect import rename_func, strposition_sql as _strpositio
 
 
 class TableauGenerator(generator.Generator):
-    SELECT_KINDS: tuple[str, ...] = ()
+    SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False

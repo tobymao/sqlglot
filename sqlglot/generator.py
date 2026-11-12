@@ -409,7 +409,7 @@ class Generator:
     NVL2_SUPPORTED = True
 
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
-    SELECT_KINDS: tuple[str, ...] = ("STRUCT", "VALUE")
+    SELECT_KINDS: t.ClassVar[tuple[str, ...]] = ("STRUCT", "VALUE")
 
     # Whether VALUES statements can be used as derived tables.
     # MySQL 5 and Redshift do not allow this, so when False, it will convert

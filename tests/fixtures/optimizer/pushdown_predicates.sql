@@ -203,3 +203,17 @@ SELECT x.a, y.b FROM (SELECT a FROM x) AS x PASTE JOIN y WHERE x.a = 3;
 # dialect: duckdb
 SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT y.b FROM (SELECT b FROM y) AS y WHERE y.b = 3) AS y WHERE y.b > 2;
 SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT y.b FROM (SELECT b FROM y WHERE b = 3) AS y WHERE TRUE) AS y WHERE y.b > 2;
+
+-- Parenthesized operands remain in the current scope
+# dialect: duckdb
+SELECT x.a, y.b FROM (x POSITIONAL JOIN y) JOIN z ON x.a = z.b WHERE y.b = 3;
+SELECT x.a, y.b FROM (x POSITIONAL JOIN y) JOIN z ON x.a = z.b WHERE y.b = 3;
+
+# dialect: duckdb
+SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) JOIN z ON x.a = z.b WHERE y.b = 2;
+SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) JOIN z ON x.a = z.b WHERE y.b = 2;
+
+-- A special join inside a separate scope does not block ordinary predicate pushdown
+# dialect: duckdb
+SELECT s.a, p.b FROM (SELECT a FROM x) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON s.a = p.b WHERE s.a = 2;
+SELECT s.a, p.b FROM (SELECT a FROM x WHERE a = 2) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON p.b = s.a WHERE TRUE;

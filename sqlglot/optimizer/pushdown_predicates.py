@@ -54,7 +54,7 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                 join.method in ("ASOF", "POSITIONAL")
                 or join.kind in ("ASOF", "ANY", "PASTE")
                 or join.args.get("nearest")
-                for join in joins
+                for join in scope.find_all(exp.Join)
             ):
                 continue
 

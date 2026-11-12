@@ -5415,6 +5415,7 @@ class Parser:
 
         expressions = self._parse_wrapped_csv(self._parse_equality)
         offset: bool | exp.Expr = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
+        offset_base = None
 
         alias = self._parse_table_alias() if with_alias else None
 
@@ -5431,12 +5432,15 @@ class Parser:
                 offset = columns.pop()
 
         if not offset and self._match_pair(TokenType.WITH, TokenType.OFFSET):
+            offset_base = 0
             self._match(TokenType.ALIAS)
             offset = self._parse_id_var(
                 any_token=False, tokens=self.UNNEST_OFFSET_ALIAS_TOKENS
             ) or exp.to_identifier("offset")
 
-        return self.expression(exp.Unnest(expressions=expressions, alias=alias, offset=offset))
+        return self.expression(
+            exp.Unnest(expressions=expressions, alias=alias, offset=offset, offset_base=offset_base)
+        )
 
     def _parse_derived_table_values(self, allow_value_synonym: bool = False) -> exp.Values | None:
         is_derived = self._match_pair(TokenType.L_PAREN, TokenType.VALUES)

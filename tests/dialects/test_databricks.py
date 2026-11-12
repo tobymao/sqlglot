@@ -6,6 +6,104 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_unnest(self):
+        self.validate_all(
+            "SELECT b.name, t.id FROM a CROSS JOIN LATERAL EXPLODE(a.ids) AS t(id) "
+            "JOIN b ON b.id = t.id",
+            read={
+                "trino": "SELECT b.name, t.id FROM a CROSS JOIN UNNEST(a.ids) AS t(id) "
+                "JOIN b ON b.id = t.id",
+            },
+        )
+        self.validate_all(
+            "SELECT a.k, t.x FROM a LEFT JOIN LATERAL EXPLODE(a.arr) AS t(x) ON TRUE",
+            read={"trino": "SELECT a.k, t.x FROM a LEFT JOIN UNNEST(a.arr) AS t(x) ON TRUE"},
+        )
+        self.validate_all(
+            "SELECT s.x FROM a CROSS JOIN LATERAL EXPLODE(a.arrays) AS t(arr) "
+            "CROSS JOIN LATERAL EXPLODE(t.arr) AS s(x)",
+            read={
+                "trino": "SELECT s.x FROM a CROSS JOIN UNNEST(a.arrays) AS t(arr) "
+                "CROSS JOIN UNNEST(t.arr) AS s(x)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM INLINE(ARRAYS_ZIP(ARRAY(1, 2), ARRAY(3))) AS t(x, y)",
+            read={"trino": "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY[3]) AS t(x, y)"},
+        )
+
+    def test_unnest_with_ordinality(self):
+        for join in ("CROSS JOIN", "LEFT JOIN"):
+            on = " ON TRUE" if join == "LEFT JOIN" else ""
+            with self.subTest(join=join):
+                sql = f"SELECT t.* FROM a {join} UNNEST(a.arr) WITH ORDINALITY AS t(x, n){on}"
+                self.validate_all(
+                    f"SELECT t.* FROM a {join} LATERAL (SELECT * EXCEPT (pos), "
+                    f"CAST(pos AS BIGINT) + 1 AS n FROM POSEXPLODE(a.arr)) AS t(x, n){on}",
+                    read={"trino": sql, "presto": sql},
+                )
+
+        self.validate_all(
+            "SELECT t.n, COUNT(*) FROM a CROSS JOIN LATERAL (SELECT * EXCEPT (pos), "
+            "CAST(pos AS BIGINT) + 1 AS n FROM POSEXPLODE(a.arr)) AS t(x, n) "
+            "JOIN b ON b.id = t.n WHERE t.n = 1 GROUP BY t.n HAVING t.n > 0 ORDER BY t.n NULLS LAST",
+            read={
+                "trino": "SELECT t.n, COUNT(*) FROM a CROSS JOIN UNNEST(a.arr) "
+                "WITH ORDINALITY AS t(x, n) JOIN b ON b.id = t.n "
+                "WHERE t.n = 1 GROUP BY t.n HAVING t.n > 0 ORDER BY t.n",
+            },
+        )
+        self.validate_all(
+            "SELECT n, (SELECT n FROM b) AS other_n FROM a CROSS JOIN LATERAL "
+            "(SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS n FROM POSEXPLODE(a.arr)) AS t(x, n)",
+            read={
+                "trino": "SELECT n, (SELECT n FROM b) AS other_n FROM a "
+                "CROSS JOIN UNNEST(a.arr) WITH ORDINALITY AS t(x, n)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM a CROSS JOIN LATERAL (SELECT * EXCEPT (pos), "
+            "CAST(pos AS BIGINT) + 1 AS n FROM POSEXPLODE(a.arr)) AS t(x, n)",
+            read={
+                "postgres": "SELECT * FROM a CROSS JOIN LATERAL UNNEST(a.arr) "
+                "WITH ORDINALITY AS t(x, n)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS n "
+            "FROM POSEXPLODE(ARRAY(10, 20))) AS t(x, n)",
+            read={"trino": "SELECT * FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS t(x, n)"},
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT col.*, CAST(pos AS BIGINT) + 1 AS n "
+            "FROM POSEXPLODE(ARRAYS_ZIP(ARRAY(1, 2), ARRAY(3)))) AS t(x, y, n)",
+            read={
+                "trino": "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY[3]) "
+                "WITH ORDINALITY AS t(x, y, n)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS n "
+            "FROM POSEXPLODE(MAP_FROM_ARRAYS(ARRAY(1), ARRAY(10)))) AS t(k, v, n)",
+            read={
+                "trino": "SELECT * FROM UNNEST(MAP(ARRAY[1], ARRAY[10])) "
+                "WITH ORDINALITY AS t(k, v, n)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS ordinality "
+            "FROM POSEXPLODE(ARRAY(10, 20)))",
+            read={"trino": "SELECT * FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY"},
+        )
+        self.validate_all(
+            "SELECT `t`.`n` FROM a CROSS JOIN LATERAL (SELECT * EXCEPT (pos), "
+            "CAST(pos AS BIGINT) + 1 AS `n` FROM POSEXPLODE(a.arr)) AS `t`(`x`, `n`)",
+            read={
+                "trino": 'SELECT "t"."n" FROM a CROSS JOIN UNNEST(a.arr) '
+                'WITH ORDINALITY AS "t"("x", "n")',
+            },
+        )
+
     def test_timestamp_without_time_zone(self):
         expression = self.parse_one("TIMESTAMP WITHOUT TIME ZONE", into=exp.DataType)
         self.assertEqual(expression.this, exp.DType.TIMESTAMPNTZ)

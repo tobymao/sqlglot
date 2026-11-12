@@ -108,6 +108,10 @@ class TeradataGenerator(generator.Generator):
         arguments = f"({self.expressions(expression, flat=True)})" if expression.expressions else ""
         return f"EXECUTE {this}{arguments}"
 
+    def currenttime_sql(self, expression: exp.CurrentTime) -> str:
+        prefix, suffix = ("(", ")") if expression.this else ("", "")
+        return self.func("CURRENT_TIME", expression.this, prefix=prefix, suffix=suffix)
+
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         prefix, suffix = ("(", ")") if expression.this else ("", "")
         return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)

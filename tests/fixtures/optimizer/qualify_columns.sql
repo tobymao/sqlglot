@@ -1521,6 +1521,26 @@ SELECT x.a AS a, x.b AS b FROM x AS x SEMI JOIN y AS y ON x.b = y.b;
 SELECT * FROM x ANTI JOIN y USING (b);
 SELECT x.a AS a, x.b AS b FROM x AS x ANTI JOIN y AS y ON x.b = y.b;
 
+# title: SEMI JOIN alias shadows a struct column only in its own ON clause
+# dialect: duckdb
+SELECT s.k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k WHERE s.k > 0;
+SELECT t.s.k AS k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k WHERE t.s.k > 0;
+
+# title: ANTI JOIN alias does not shadow a struct column in a later join
+# dialect: duckdb
+SELECT s.k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) ANTI JOIN (VALUES (20)) AS s(k) ON t.k = s.k JOIN (VALUES (10)) AS u(k) ON s.k = u.k;
+SELECT t.s.k AS k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) ANTI JOIN (VALUES (20)) AS s(k) ON t.k = s.k JOIN (VALUES (10)) AS u(k) ON t.s.k = u.k;
+
+# title: SEMI JOIN alias does not shadow a struct column in an earlier join
+# dialect: duckdb
+SELECT s.k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) JOIN (VALUES (99)) AS u(k) ON s.k = u.k SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k;
+SELECT t.s.k AS k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, k, s) JOIN (VALUES (99)) AS u(k) ON t.s.k = u.k SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k;
+
+# title: SEMI JOIN struct field matches another source alias
+# dialect: duckdb
+SELECT t.k FROM (VALUES (20, {'k': 99})) AS t(k, s) SEMI JOIN (VALUES ({'k': 20})) AS s(payload) ON t.k = s.payload.k CROSS JOIN (VALUES (1)) AS payload(v);
+SELECT t.k AS k FROM (VALUES (20, {'k': 99})) AS t(k, s) SEMI JOIN (VALUES ({'k': 20})) AS s(payload) ON t.k = s.payload.k CROSS JOIN (VALUES (1)) AS payload(v);
+
 # title: bare USING column after SEMI JOIN resolves to the left table
 # dialect: duckdb
 SELECT b FROM x SEMI JOIN y USING (b);

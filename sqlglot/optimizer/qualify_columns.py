@@ -760,25 +760,35 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         if isinstance(column, exp.Dot):
             continue
 
+        selected_sources: t.Collection[str] = scope.selected_sources
+        if (
+            scope.semi_or_anti_join_tables
+            and isinstance(join := column.find_ancestor(exp.Join, exp.Select), exp.Join)
+            and join.is_semi_or_anti_join
+        ):
+            # A SEMI/ANTI join's source is visible within its own ON clause.
+            selected_sources = {*selected_sources, join.alias_or_name}
+
         is_star = isinstance(column.this, exp.Star)
         column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         root_resolver: Resolver | None = None
-        if not is_star and column.db and column_table in scope.selected_sources:
+        if not is_star and column.db and column_table in selected_sources:
             root, field = column.parts[:2]
             for candidate_resolver in itertools.chain((resolver,), resolver.outer_resolvers()):
-                if root.name not in candidate_resolver.scope.selected_sources:
+                candidate_sources = (
+                    selected_sources
+                    if candidate_resolver is resolver
+                    else candidate_resolver.scope.selected_sources
+                )
+                if root.name not in candidate_sources:
                     continue
                 if field.name in candidate_resolver.get_source_columns(root.name):
                     root_resolver = candidate_resolver
                 break
         if (
             column_table
-            and (
-                column_table not in scope.selected_sources
-                or (is_star and column.db)
-                or root_resolver
-            )
+            and (column_table not in selected_sources or (is_star and column.db) or root_resolver)
             and (
                 root_resolver
                 or is_star
@@ -797,13 +807,17 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
                 else (root_resolver or resolver,)
             )
             for source_resolver in resolvers:
-                selected_sources = source_resolver.scope.selected_sources
-                if not column.db and column.table in selected_sources:
+                source_names = (
+                    selected_sources
+                    if source_resolver is resolver
+                    else source_resolver.scope.selected_sources
+                )
+                if not column.db and column.table in source_names:
                     # The star is over a table, so it's expanded as is
                     column_table = None
                     break
 
-                if isinstance(root, exp.Identifier) and root.name in selected_sources:
+                if isinstance(root, exp.Identifier) and root.name in source_names:
                     # The struct is already qualified, but we still need to change the AST
                     column_table = root
                     root, *parts = parts

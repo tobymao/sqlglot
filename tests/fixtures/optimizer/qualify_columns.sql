@@ -1541,6 +1541,11 @@ SELECT t.s.k AS k FROM (VALUES (1, 10, {'k': 10}), (2, 20, {'k': 99})) AS t(id, 
 SELECT t.k FROM (VALUES (20, {'k': 99})) AS t(k, s) SEMI JOIN (VALUES ({'k': 20})) AS s(payload) ON t.k = s.payload.k CROSS JOIN (VALUES (1)) AS payload(v);
 SELECT t.k AS k FROM (VALUES (20, {'k': 99})) AS t(k, s) SEMI JOIN (VALUES ({'k': 20})) AS s(payload) ON t.k = s.payload.k CROSS JOIN (VALUES (1)) AS payload(v);
 
+# title: Consecutive SEMI and ANTI JOIN aliases are visible only in their own ON clauses
+# dialect: duckdb
+SELECT s.k, u.k FROM (VALUES (20, {'k': 99}, {'k': 88})) AS t(k, s, u) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k AND s.k = 20 ANTI JOIN (VALUES (20)) AS u(k) ON t.k = u.k AND s.k = 20;
+SELECT t.s.k AS k, t.u.k AS k FROM (VALUES (20, {'k': 99}, {'k': 88})) AS t(k, s, u) SEMI JOIN (VALUES (20)) AS s(k) ON t.k = s.k AND s.k = 20 ANTI JOIN (VALUES (20)) AS u(k) ON t.k = u.k AND t.s.k = 20;
+
 # title: bare USING column after SEMI JOIN resolves to the left table
 # dialect: duckdb
 SELECT b FROM x SEMI JOIN y USING (b);

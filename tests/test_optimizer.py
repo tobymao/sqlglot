@@ -521,13 +521,15 @@ class TestOptimizer(unittest.TestCase):
         ):
             schema = {
                 "t1": {"id": "INT", "k": "INT", "s": column_type},
-                "t2": {"k": "INT", "payload": "STRUCT(k INT)"},
+                "t2": {"k": "INT", "payload": "STRUCT(k INT, nested STRUCT(k INT))"},
             }
             with duckdb.connect() as connection:
                 connection.execute(f"CREATE TABLE t1 (id INT, k INT, s {column_type})")
                 connection.execute(f"INSERT INTO t1 VALUES {values}")
-                connection.execute("CREATE TABLE t2 (k INT, payload STRUCT(k INT))")
-                connection.execute("INSERT INTO t2 VALUES (20, {'k': 20})")
+                connection.execute(
+                    "CREATE TABLE t2 (k INT, payload STRUCT(k INT, nested STRUCT(k INT)))"
+                )
+                connection.execute("INSERT INTO t2 VALUES (20, {'k': 20, 'nested': {'k': 20}})")
 
                 for kind, expected in (("SEMI", [(2,)]), ("ANTI", [(1,), (3,)])):
                     for prefix, source in (
@@ -535,7 +537,7 @@ class TestOptimizer(unittest.TestCase):
                         ("", "(SELECT DISTINCT * FROM t2) AS s"),
                         ("WITH s AS (SELECT * FROM t2) ", "s"),
                     ):
-                        for column in ("s.k", "s.payload.k"):
+                        for column in ("s.k", "s.payload.k", "s.payload.nested.k"):
                             sql = (
                                 f"{prefix}SELECT t1.id FROM t1 {kind} JOIN {source} "
                                 f"ON t1.k = {column}"

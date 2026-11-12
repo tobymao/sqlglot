@@ -756,21 +756,30 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
     converted = False
+    scope_sources = scope.selected_sources
+    semi_or_anti_join_tables = scope.semi_or_anti_join_tables
+    join_sources: dict[str, set[str]] = {}
     for column in itertools.chain(scope.columns, scope.stars):
         if isinstance(column, exp.Dot):
             continue
 
-        selected_sources: t.Collection[str] = scope.selected_sources
-        if (
-            scope.semi_or_anti_join_tables
-            and isinstance(join := column.find_ancestor(exp.Join, exp.Select), exp.Join)
-            and join.is_semi_or_anti_join
-        ):
-            # A SEMI/ANTI join's source is visible within its own ON clause.
-            selected_sources = {*selected_sources, join.alias_or_name}
+        column_table: str | exp.Identifier | None = column.table
+        selected_sources: t.Collection[str] = scope_sources
+        if semi_or_anti_join_tables and column_table:
+            root = column.args.get("catalog") or column.args.get("db")
+            root_name = root.name if root else column_table
+            if (
+                root_name in semi_or_anti_join_tables
+                and isinstance(join := column.find_ancestor(exp.Join, exp.Select), exp.Join)
+                and join.is_semi_or_anti_join
+                and (join_name := join.alias_or_name) == root_name
+            ):
+                # A SEMI/ANTI join's source is visible within its own ON clause.
+                if join_name not in join_sources:
+                    join_sources[join_name] = {*scope_sources, join_name}
+                selected_sources = join_sources[join_name]
 
         is_star = isinstance(column.this, exp.Star)
-        column_table: str | exp.Identifier | None = column.table
         dot_parts = column.meta.pop("dot_parts", [])
         root_resolver: Resolver | None = None
         if not is_star and column.db and column_table in selected_sources:

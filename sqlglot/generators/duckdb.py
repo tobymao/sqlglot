@@ -47,15 +47,6 @@ from builtins import type as Type
 
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
-_TIMESTAMP_DIFF_US_FACTORS: dict[str, int] = {
-    "MICROSECOND": 1,
-    "MILLISECOND": 1000,
-    "SECOND": 1000000,
-    "MINUTE": 60000000,
-    "HOUR": 3600000000,
-    "DAY": 86400000000,
-}
-
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
 # The pattern matches timezone offsets that appear after the time portion
 TIMEZONE_PATTERN = re.compile(r":\d{2}.*?[+\-]\d{2}(?::\d{2})?")
@@ -4737,34 +4728,43 @@ class DuckDBGenerator(generator.Generator):
             return _handle_nanosecond_diff(self, expression.this, expression.expression)
 
         unit_str = unit.name.upper() if isinstance(unit, (exp.Var, exp.Literal)) else ""
-        divisor = _TIMESTAMP_DIFF_US_FACTORS.get(unit_str)
 
-        if divisor is not None:
-            # EPOCH_US gives absolute UTC microseconds, avoiding DATE_DIFF's boundary-crossing semantics
-            # Cast bare NULLs to TIMESTAMPTZ so DuckDB can resolve the EPOCH_US overload
-            this = (
-                exp.cast(expression.this, exp.DType.TIMESTAMPTZ)
-                if isinstance(expression.this, exp.Null)
-                else expression.this
+        # BigQuery DATETIME (DType.TIMESTAMP) uses boundary-crossing like DATE_DIFF
+        if expression.this.is_type(exp.DType.TIMESTAMP) and expression.expression.is_type(
+            exp.DType.TIMESTAMP
+        ):
+            return self.func(
+                "DATE_DIFF",
+                exp.Literal.string(unit_str or "DAY"),
+                expression.expression,
+                expression.this,
             )
-            expr = (
-                exp.cast(expression.expression, exp.DType.TIMESTAMPTZ)
-                if isinstance(expression.expression, exp.Null)
-                else expression.expression
-            )
-            diff: exp.Expr = exp.func("EPOCH_US", this) - exp.func("EPOCH_US", expr)
-            if divisor > 1:
-                # IntDiv (//) truncates toward zero; regular / returns DOUBLE and CAST rounds
-                return self.sql(
-                    exp.IntDiv(this=exp.paren(diff), expression=exp.Literal.number(divisor))
-                )
-            return self.sql(exp.cast(diff, exp.DType.BIGINT))
 
-        return self.func(
-            "DATE_DIFF",
-            exp.Literal.string(unit_str or "DAY"),
-            expression.expression,
-            expression.this,
+        # Cast untyped args (bare NULLs, string literals) so DuckDB can resolve the overload
+        this = (
+            exp.cast(expression.this, exp.DType.TIMESTAMPTZ)
+            if isinstance(expression.this, (exp.Null, exp.Literal))
+            else expression.this
+        )
+        expr = (
+            exp.cast(expression.expression, exp.DType.TIMESTAMPTZ)
+            if isinstance(expression.expression, (exp.Null, exp.Literal))
+            else expression.expression
+        )
+
+        if unit_str == "DAY":
+            # We need Anonymous for DATE_SUB because exp.DateSub transforms into an interval subtraction
+            date_sub = exp.Anonymous(
+                this="DATE_SUB",
+                expressions=[exp.Literal.string("HOUR"), expr, this],
+            )
+            return self.sql(exp.IntDiv(this=date_sub, expression=exp.Literal.number(24)))
+
+        return self.sql(
+            exp.Anonymous(
+                this="DATE_SUB",
+                expressions=[exp.Literal.string(unit_str or "DAY"), expr, this],
+            )
         )
 
     def trim_sql(self, expression: exp.Trim) -> str:

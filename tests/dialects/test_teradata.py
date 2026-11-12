@@ -17,6 +17,20 @@ class TestTeradata(Validator):
                 },
             )
 
+    def test_curdate(self):
+        for sql in ("CURDATE()", "curdate()"):
+            self.validate_identity(sql, "CURRENT_DATE").assert_is(exp.CurrentDate)
+            self.validate_all(
+                f"SELECT {sql}",
+                write={
+                    "teradata": "SELECT CURRENT_DATE",
+                    "databricks": "SELECT CURRENT_DATE",
+                    "postgres": "SELECT CURRENT_DATE",
+                },
+            )
+        self.validate_identity('SELECT curdate, "curdate", t.curdate FROM t')
+        self.validate_identity("CREATE TABLE t (curdate DATE)")
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

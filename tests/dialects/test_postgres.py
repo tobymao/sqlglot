@@ -1867,6 +1867,27 @@ FROM json_data, field_ids""",
                 read="postgres",
             )
 
+    def test_function_parameter_mode_without_copy(self):
+        for sql in (
+            "CREATE FUNCTION foo(IN a INT) RETURNS INT LANGUAGE SQL AS 'SELECT a'",
+            "CREATE FUNCTION foo(OUT a INT) LANGUAGE SQL AS 'SELECT 7'",
+            "CREATE FUNCTION foo(INOUT a INT) LANGUAGE SQL AS 'SELECT a'",
+            "CREATE FUNCTION foo(VARIADIC a INT[]) RETURNS INT LANGUAGE SQL AS 'SELECT CARDINALITY(a)'",
+            "CREATE FUNCTION foo(a INT, OUT b INT, INOUT c VARCHAR, VARIADIC d INT[]) LANGUAGE SQL AS 'SELECT a + CARDINALITY(d), c'",
+            "CREATE FUNCTION foo(IN a INT DEFAULT 0, OUT b INT) LANGUAGE SQL AS 'SELECT a'",
+            "CREATE OR REPLACE FUNCTION foo(INOUT y VARCHAR DEFAULT 'test') LANGUAGE SQL AS 'SELECT y'",
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(transpile(sql, read="postgres", write="postgres")[0], sql)
+
+                expression = self.validate_identity(sql)
+                for column in expression.find_all(exp.ColumnDef):
+                    for i, constraint in enumerate(column.constraints):
+                        self.assertIs(constraint.parent, column)
+                        self.assertEqual(constraint.arg_key, "constraints")
+                        self.assertEqual(constraint.index, i)
+                self.assertEqual(expression.sql(dialect="postgres", copy=False), sql)
+
     def test_alter_mixed_actions(self):
         for sql in (
             "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, ADD COLUMN c INT, DROP COLUMN d",

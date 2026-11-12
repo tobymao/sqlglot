@@ -345,9 +345,7 @@ class PostgresParser(parser.Parser):
         # Attach mode as constraint
         if param_mode and column_def:
             constraint = self._create_mode_constraint(param_mode)
-            if not column_def.args.get("constraints"):
-                column_def.set("constraints", [])
-            column_def.args["constraints"].insert(0, constraint)
+            column_def.set("constraints", [constraint] + column_def.args.get("constraints", []))
 
         return column_def
 

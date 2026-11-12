@@ -339,6 +339,39 @@ class TestTeradata(Validator):
 
         self.validate_identity("CREATE TABLE z (a SYSUDTLIB.INT)")
 
+    def test_byteint(self):
+        from sqlglot.optimizer.annotate_types import annotate_types
+
+        self.validate_all(
+            "CAST(x AS BYTEINT)",
+            read={
+                "databricks": "CAST(x AS TINYINT)",
+            },
+            write={
+                "teradata": "CAST(x AS BYTEINT)",
+                "databricks": "CAST(x AS TINYINT)",
+                "postgres": "CAST(x AS SMALLINT)",
+                "tsql": "CAST(x AS SMALLINT)",
+            },
+        )
+        expression = self.validate_identity("CAST(127 AS BYTEINT)").assert_is(exp.Cast)
+        self.assertTrue(expression.to.is_type(exp.DType.TINYINT))
+        self.assertTrue(annotate_types(expression, dialect=self.dialect).is_type(exp.DType.TINYINT))
+        self.validate_all(
+            "CAST(-128 AS BYTEINT)",
+            write={
+                "teradata": "CAST(-128 AS BYTEINT)",
+                "tsql": "CAST(-128 AS SMALLINT)",
+            },
+        )
+        self.validate_identity("CAST(x AS byteint)", "CAST(x AS BYTEINT)")
+        table = self.validate_identity("CREATE TABLE z (a BYTEINT, b SMALLINT)")
+        self.assertEqual(
+            [datatype.this for datatype in table.find_all(exp.DataType)],
+            [exp.DType.TINYINT, exp.DType.SMALLINT],
+        )
+        self.validate_identity("CAST(x AS SMALLINT)")
+
     def test_cast(self):
         self.validate_all(
             "CAST('1992-01' AS DATE FORMAT 'YYYY-DD')",

@@ -1163,6 +1163,8 @@ class TypeAnnotator:
             self._set_type(expression, exp.DType.TIME)
         elif part == "DATE":
             self._set_type(expression, exp.DType.DATE)
+        elif part == "DATETIME":
+            self._set_type(expression, exp.DType.DATETIME)
         elif part in BIGINT_EXTRACT_DATE_PARTS:
             self._set_type(expression, exp.DType.BIGINT)
         else:

@@ -2405,6 +2405,100 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_comma_outer_joins(self):
+        cases = (
+            (
+                "SELECT * FROM x, y RIGHT JOIN z ON y.a = z.a",
+                "SELECT * FROM x, y RIGHT JOIN z ON y.a = z.a",
+            ),
+            (
+                "SELECT * FROM x, y FULL JOIN z ON y.a = z.a",
+                "SELECT * FROM x, y FULL JOIN z ON y.a = z.a",
+            ),
+            (
+                "SELECT * FROM x, y JOIN z ON y.a = z.a RIGHT JOIN w ON z.a = w.a",
+                "SELECT * FROM x, y JOIN z ON y.a = z.a RIGHT JOIN w ON z.a = w.a",
+            ),
+            (
+                "SELECT * FROM x, y JOIN z ON y.a = z.a",
+                "SELECT * FROM x CROSS JOIN y JOIN z ON y.a = z.a",
+            ),
+            (
+                "SELECT * FROM x, y LEFT JOIN z ON y.a = z.a",
+                "SELECT * FROM x CROSS JOIN y LEFT JOIN z ON y.a = z.a",
+            ),
+            (
+                "SELECT * FROM x, y, z RIGHT JOIN w ON z.a = w.a",
+                "SELECT * FROM x CROSS JOIN y, z RIGHT JOIN w ON z.a = w.a",
+            ),
+            (
+                "SELECT * FROM x RIGHT JOIN y ON x.a = y.a, z",
+                "SELECT * FROM x RIGHT JOIN y ON x.a = y.a CROSS JOIN z",
+            ),
+            (
+                "SELECT * FROM x, y RIGHT JOIN z ON y.a = z.a, w",
+                "SELECT * FROM x, y RIGHT JOIN z ON y.a = z.a CROSS JOIN w",
+            ),
+            (
+                "SELECT * FROM x, y JOIN z USING (a) RIGHT JOIN w USING (a)",
+                "SELECT * FROM x, y JOIN z USING (a) RIGHT JOIN w USING (a)",
+            ),
+            (
+                "SELECT * FROM x, (y JOIN z ON y.a = z.a) RIGHT JOIN w ON z.a = w.a",
+                "SELECT * FROM x, (y JOIN z ON y.a = z.a) RIGHT JOIN w ON z.a = w.a",
+            ),
+        )
+        for sql, expected in cases:
+            with self.subTest(sql=sql):
+                optimized = optimizer.optimize_joins.optimize_joins(parse_one(sql).copy()).sql()
+                self.assertEqual(optimized, expected)
+                self.assertEqual(
+                    optimizer.optimize_joins.optimize_joins(parse_one(optimized).copy()).sql(),
+                    expected,
+                )
+
+    def test_comma_outer_joins_rows(self):
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (10)) t(y)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+            sql = "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z"
+            optimized = optimizer.optimize_joins.optimize_joins(parse_one(sql).copy()).sql()
+            self.assertEqual(
+                sorted(connection.execute(sql).fetchall(), key=str),
+                sorted(connection.execute(optimized).fetchall(), key=str),
+            )
+
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(v)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (1)) t(id) WHERE FALSE")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (1)) t(id) WHERE FALSE")
+            connection.execute("CREATE TABLE d AS SELECT * FROM (VALUES (3)) t(id)")
+            sql = (
+                "SELECT a.v,b.id,c.id,d.id FROM a, b JOIN c ON b.id=c.id RIGHT JOIN d ON c.id=d.id"
+            )
+            optimized = optimizer.optimize_joins.optimize_joins(parse_one(sql).copy()).sql()
+            self.assertEqual(
+                sorted(connection.execute(sql).fetchall(), key=str),
+                sorted(connection.execute(optimized).fetchall(), key=str),
+            )
+
+    def test_comma_nearest_join(self):
+        sql = "SELECT * FROM x, y JOIN z NEAREST 1 BY DISTANCE ABS(y.a - z.a)"
+        expression = parse_one(sql, dialect="duckdb")
+        self.assertEqual(
+            optimizer.optimize_joins.optimize_joins(expression.copy()).sql(dialect="duckdb"),
+            sql,
+        )
+
+    def test_comma_asof_join(self):
+        sql = "SELECT * FROM x, y ASOF JOIN z ON y.a = z.a"
+        expression = parse_one(sql, dialect="duckdb")
+        self.assertEqual(
+            optimizer.optimize_joins.optimize_joins(expression.copy()).sql(dialect="duckdb"),
+            sql,
+        )
+
     def test_optimize_paste_joins(self):
         for sql in (
             "SELECT * FROM x PASTE JOIN y",

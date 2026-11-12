@@ -99,6 +99,24 @@ def normalize(expression: E) -> E:
             continue
 
         if not any(join.args.get(k) for k in JOIN_ATTRS):
+            joins = join.parent.args.get("joins", []) if join.parent else []
+            preserve = False
+            for j in range((join.index or 0) + 1, len(joins)):
+                next_join = joins[j]
+                if not any(next_join.args.get(k) for k in JOIN_ATTRS) and not next_join.args.get(
+                    "nearest"
+                ):
+                    break
+                if (
+                    next_join.side in ("RIGHT", "FULL")
+                    or next_join.kind == "PASTE"
+                    or next_join.args.get("nearest")
+                    or next_join.args.get("method")
+                ):
+                    preserve = True
+                    break
+            if preserve:
+                continue
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":

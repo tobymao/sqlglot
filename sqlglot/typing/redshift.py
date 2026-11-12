@@ -31,4 +31,6 @@ EXPRESSION_METADATA = {
     # Postgres NTILE is INT, but Redshift's is BIGINT — restore the base default.
     # https://docs.aws.amazon.com/redshift/latest/dg/r_WF_NTILE.html
     exp.Ntile: {"returns": exp.DType.BIGINT},
+    exp.FromBase: {"returns": exp.DType.BIGINT},
+    exp.LowerHex: {"returns": exp.DType.VARCHAR},
 }

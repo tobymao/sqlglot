@@ -558,6 +558,37 @@ class TestOptimizer(unittest.TestCase):
                                             expected,
                                         )
 
+    def test_qualify_semi_anti_join_column_aliases(self):
+        schema = {
+            "t1": {"id": "INT", "k": "INT", "s": "STRUCT(v INT)"},
+            "t2": {"k": "INT"},
+        }
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE t1 (id INT, k INT, s STRUCT(v INT))")
+            connection.execute(
+                "INSERT INTO t1 VALUES (1, 10, {'v': 10}), (2, 20, {'v': 99}), (3, 30, {'v': 30})"
+            )
+            connection.execute("CREATE TABLE t2 (k INT)")
+            connection.execute("INSERT INTO t2 VALUES (20)")
+
+            for kind, expected in (("SEMI", [(2,)]), ("ANTI", [(1,), (3,)])):
+                for prefix, source in (
+                    ("", "t2 AS s(v)"),
+                    ("WITH cte AS (SELECT * FROM t2) ", "cte AS s(v)"),
+                ):
+                    sql = f"{prefix}SELECT t1.id FROM t1 {kind} JOIN {source} ON t1.k = s.v"
+                    with self.subTest(sql=sql):
+                        self.assertCountEqual(connection.execute(sql).fetchall(), expected)
+                        for transform in (qualify, optimizer.optimize):
+                            with self.subTest(transform=transform.__name__):
+                                transformed = transform(
+                                    parse_one(sql, read="duckdb"), schema=schema, dialect="duckdb"
+                                )
+                                self.assertCountEqual(
+                                    connection.execute(transformed.sql("duckdb")).fetchall(),
+                                    expected,
+                                )
+
     def test_qualify_correlated_shadowed_struct_path(self):
         schema = {
             "customer": {"address": "STRUCT<state TEXT>"},

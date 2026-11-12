@@ -344,7 +344,7 @@ def parse_identifier(name: str | Identifier, dialect: DialectType = None) -> Ide
     return expression
 
 
-INTERVAL_STRING_RE = re.compile(r"\s*(-?[0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)\s*")
+INTERVAL_STRING_RE = re.compile(r"\s*([+-]?[0-9]+(?:\.[0-9]+)?)\s*([a-zA-Z]+)\s*")
 
 
 INTERVAL_DAY_TIME_RE = re.compile(

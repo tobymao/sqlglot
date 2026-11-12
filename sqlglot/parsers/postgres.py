@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -16,6 +17,9 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
+
+
+SIMPLE_INTERVAL_RE = re.compile(r"\s*(?:[+-]?\s*[0-9]+(?:\.[0-9]*)?|\.[0-9]+)\s*[a-zA-Z]+\s*")
 
 
 MAKE_INTERVAL_KWARGS = {
@@ -41,14 +45,12 @@ def _build_make_interval(args: list) -> exp.MakeInterval:
 
 
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
-    # The goal is to convert step values like '1 day' or INTERVAL '1 day' into INTERVAL '1' day
-    # Note: postgres allows calls with just two arguments -- the "step" argument defaults to 1
+    # Normalize simple interval strings for transpilation, preserving other step expressions.
     step = seq_get(args, 2)
-    if step is not None:
-        if step.is_string:
-            args[2] = exp.to_interval(step.this)
-        elif isinstance(step, exp.Interval) and not step.args.get("unit"):
-            args[2] = exp.to_interval(step.this.this)
+    if step is not None and step.is_string and SIMPLE_INTERVAL_RE.fullmatch(step.this):
+        interval = exp.to_interval(step.this)
+        interval.set("fraction_in_string", "." in interval.this.name or None)
+        args[2] = interval
 
     return exp.ExplodingGenerateSeries.from_arg_list(args)
 

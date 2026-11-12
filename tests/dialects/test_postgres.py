@@ -25,6 +25,107 @@ class TestPostgres(Validator):
             annotate_types(expression, dialect="postgres").type, exp.DataType.build("VARBINARY")
         )
 
+    def test_generate_series_steps(self):
+        for sql in (
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1, 3, '1')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1, 3, '+1')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '0.5')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '.5')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '1.')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '1e0')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(3, 1, '-1')",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql)
+
+        for step in ("'1 month 2 days'", "'P1M2D'"):
+            for prefix in ("", "INTERVAL "):
+                with self.subTest(step=step, prefix=prefix):
+                    self.validate_identity(
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(DATE '2024-01-01', DATE '2024-03-05', {prefix}{step})",
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-03-05' AS DATE), {prefix}{step})",
+                    )
+
+        for step in ("'1'", "'+1'", "'00:00:01'"):
+            for prefix in ("", "INTERVAL "):
+                with self.subTest(step=step, prefix=prefix):
+                    self.validate_identity(
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), {prefix}{step})"
+                    )
+
+        for step in ("+1 day", "  +1 day  ", "+ 1 day"):
+            with self.subTest(step=step):
+                self.validate_all(
+                    f"SELECT * FROM GENERATE_SERIES(DATE '2024-01-01', DATE '2024-01-05', '{step}')",
+                    write={
+                        "postgres": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-05' AS DATE), INTERVAL '1 DAY')",
+                        "duckdb": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-05' AS DATE), INTERVAL '1' DAY)",
+                        "spark": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01' AS DATE), CAST('2024-01-05' AS DATE), INTERVAL '1' DAY))",
+                        "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01' AS DATE), CAST('2024-01-05' AS DATE), INTERVAL '1' DAY))",
+                        "trino": "SELECT * FROM UNNEST(SEQUENCE(CAST('2024-01-01' AS DATE), CAST('2024-01-05' AS DATE), INTERVAL '1' DAY))",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT * FROM GENERATE_SERIES(TIMESTAMP '2024-01-01', TIMESTAMP '2024-01-03', '+12 hours')",
+            write={
+                "postgres": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-03' AS TIMESTAMP), INTERVAL '12 HOURS')",
+                "duckdb": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-03' AS TIMESTAMP), INTERVAL '12' HOURS)",
+                "spark": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-03' AS TIMESTAMP), INTERVAL '12' HOURS))",
+                "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-03' AS TIMESTAMP), INTERVAL '12' HOURS))",
+                "trino": "SELECT * FROM UNNEST(SEQUENCE(CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-03' AS TIMESTAMP), INTERVAL '12' HOUR))",
+            },
+        )
+
+    def test_generate_series_decimal_steps(self):
+        for step in (".5 seconds", "0.5 seconds", "+0.5 seconds"):
+            with self.subTest(step=step):
+                self.validate_all(
+                    f"SELECT * FROM GENERATE_SERIES(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-01-01 00:00:02', '{step}')",
+                    write={
+                        "postgres": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), INTERVAL '0.5 SECONDS')",
+                        "duckdb": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), INTERVAL '0.5 SECONDS')",
+                        "spark": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), INTERVAL '0.5' SECONDS))",
+                        "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), INTERVAL '0.5' SECONDS))",
+                        "trino": "SELECT * FROM UNNEST(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), INTERVAL '0.5' SECOND))",
+                    },
+                )
+
+        for step in ("1. hours", "+1. hours"):
+            with self.subTest(step=step):
+                self.validate_all(
+                    f"SELECT * FROM GENERATE_SERIES(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-01-01 02:00:00', '{step}')",
+                    write={
+                        "postgres": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 02:00:00' AS TIMESTAMP), INTERVAL '1 HOURS')",
+                        "duckdb": "SELECT * FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 02:00:00' AS TIMESTAMP), INTERVAL '1' HOURS)",
+                        "spark": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 02:00:00' AS TIMESTAMP), INTERVAL '1' HOURS))",
+                        "databricks": "SELECT * FROM EXPLODE(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 02:00:00' AS TIMESTAMP), INTERVAL '1' HOURS))",
+                        "trino": "SELECT * FROM UNNEST(SEQUENCE(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 02:00:00' AS TIMESTAMP), INTERVAL '1' HOUR))",
+                    },
+                )
+
+        for step in (".5 hours", "+0.5 hours", "-0.5 hours"):
+            with self.subTest(step=step):
+                value = "-0.5" if step.startswith("-") else "0.5"
+                start, end = (
+                    ("01:00:00", "00:00:00") if value.startswith("-") else ("00:00:00", "01:00:00")
+                )
+                self.validate_all(
+                    f"SELECT * FROM GENERATE_SERIES(TIMESTAMP '2024-01-01 {start}', TIMESTAMP '2024-01-01 {end}', '{step}')",
+                    write={
+                        "duckdb": f"SELECT * FROM GENERATE_SERIES(CAST('2024-01-01 {start}' AS TIMESTAMP), CAST('2024-01-01 {end}' AS TIMESTAMP), INTERVAL '{value} HOURS')",
+                    },
+                )
+
+    def test_interval_positive_fraction(self):
+        self.validate_all(
+            "SELECT TIMESTAMP '2024-01-01 00:00:00' - INTERVAL '+1.5 hours' AS r",
+            write={
+                "postgres": "SELECT CAST('2024-01-01 00:00:00' AS TIMESTAMP) - INTERVAL '1.5 HOURS' AS r",
+                "duckdb": "SELECT CAST('2024-01-01 00:00:00' AS TIMESTAMP) - INTERVAL '1.5 HOURS' AS r",
+            },
+        )
+
     def test_regexp_replace_omitted_replacement(self):
         for sql, expected in (
             ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '', 'g')"),

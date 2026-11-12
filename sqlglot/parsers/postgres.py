@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import exp, parser
@@ -16,6 +17,9 @@ from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
+
+
+SIMPLE_INTERVAL_RE = re.compile(r"\s*(?:[+-]?\s*[0-9]+(?:\.[0-9]*)?|\.[0-9]+)\s*[a-zA-Z]+\s*")
 
 
 MAKE_INTERVAL_KWARGS = {
@@ -43,8 +47,10 @@ def _build_make_interval(args: list) -> exp.MakeInterval:
 def _build_generate_series(args: list) -> exp.ExplodingGenerateSeries:
     # Normalize simple interval strings for transpilation, preserving other step expressions.
     step = seq_get(args, 2)
-    if step is not None and step.is_string and exp.INTERVAL_STRING_RE.fullmatch(step.this):
-        args[2] = exp.to_interval(step.this)
+    if step is not None and step.is_string and SIMPLE_INTERVAL_RE.fullmatch(step.this):
+        interval = exp.to_interval(step.this)
+        interval.set("fraction_in_string", "." in interval.this.name or None)
+        args[2] = interval
 
     return exp.ExplodingGenerateSeries.from_arg_list(args)
 

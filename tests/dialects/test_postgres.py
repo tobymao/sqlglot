@@ -2092,6 +2092,18 @@ FROM json_data, field_ids""",
         drop_b.assert_is(exp.Drop)
 
     def test_unnest(self):
+        self.validate_all(
+            "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+            "(UNNEST(ARRAY[10, 30]) AS u(y) RIGHT JOIN c ON u.y = c.z)",
+            write={
+                "spark": "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+                "((SELECT EXPLODE(ARRAY(10, 30)) AS (y)) AS u RIGHT JOIN c ON u.y = c.z)",
+                "spark2": "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+                "((SELECT EXPLODE(ARRAY(10, 30)) AS (y)) AS u RIGHT JOIN c ON u.y = c.z)",
+                "hive": UnsupportedError,
+            },
+        )
+
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
         )

@@ -248,6 +248,7 @@ class HiveGenerator(generator.Generator):
     SUPPORTS_MEDIAN = False
     SUPPORTS_TEMPORAL_PRECISION = False
     ARRAY_SIZE_NAME = "SIZE"
+    SUPPORTS_JOINED_UNNEST = False
     ALTER_SET_TYPE = ""
 
     EXPRESSIONS_WITHOUT_NESTED_CTES = {
@@ -378,7 +379,6 @@ class HiveGenerator(generator.Generator):
         ),
         exp.UnixToTime: _unix_to_time_sql,
         exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
-        exp.Unnest: rename_func("EXPLODE"),
         exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
         exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         exp.National: lambda self, e: self.national_sql(e, prefix=""),
@@ -443,10 +443,24 @@ class HiveGenerator(generator.Generator):
 
         return super().ignorenulls_sql(expression)
 
+    @unsupported_args("offset")
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        return rename_func("EXPLODE")(self, expression) + self.expressions(
-            expression, key="joins", sep="", flat=True
-        )
+        if joins := expression.args.get("joins"):
+            if not self.SUPPORTS_JOINED_UNNEST:
+                self.unsupported("Joined UNNEST operands are not supported")
+
+            projection: exp.Expr = exp.Explode.from_arg_list(expression.expressions)
+            alias = expression.args.get("alias")
+            if alias and alias.columns:
+                projection = exp.Aliases(this=projection, expressions=alias.columns)
+            subquery = exp.select(projection).subquery(alias and alias.this)
+            subquery.set("joins", joins)
+            return self.sql(subquery)
+
+        explode = self.func("EXPLODE", *expression.expressions)
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        return f"{explode}{alias}"
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
         if isinstance(expression.this, exp.JSONPathWildcard):

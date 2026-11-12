@@ -1182,6 +1182,7 @@ class Values(Expression, UDTF):
         "limit": False,
         "offset": False,
         "pivots": False,
+        "joins": False,
     }
 
 

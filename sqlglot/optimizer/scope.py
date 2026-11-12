@@ -1122,6 +1122,12 @@ def walk_in_scope(
 
         for vs in reversed(node.args.values()):
             if isinstance(vs, list):
+                if (
+                    node is expression
+                    and isinstance(node, exp.UDTF)
+                    and vs is node.args.get("joins")
+                ):
+                    continue
                 for v in reversed(vs):
                     if isinstance(v, exp.Expr):
                         stack.append(v)

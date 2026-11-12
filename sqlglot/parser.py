@@ -5548,7 +5548,16 @@ class Parser:
     def _parse_joins(
         self, alias_tokens: t.Collection[TokenType] | None = None
     ) -> t.Iterator[exp.Join]:
-        return iter(lambda: self._parse_join(alias_tokens=alias_tokens), None)
+        while True:
+            is_join = self._curr.token_type == TokenType.JOIN
+            join = self._parse_join(alias_tokens=alias_tokens)
+            if not join:
+                break
+            if is_join and not any(
+                join.args.get(k) for k in ("on", "using", "side", "kind", "method", "nearest")
+            ):
+                join.set("kind", "CROSS")
+            yield join
 
     def _parse_unpivot_columns(self) -> exp.UnpivotColumns | None:
         if not self._match(TokenType.INTO):

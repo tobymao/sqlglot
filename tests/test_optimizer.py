@@ -2622,10 +2622,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "WITH ORDINALITY AS u(y, ord) RIGHT JOIN c ON u.y = c.z",
                 "SELECT a.x, u.y, c.z FROM a, LATERAL (SELECT 10 AS y) AS u "
                 "RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, v.y, c.z FROM a, (VALUES (10), (30)) AS v(y) "
+                "RIGHT JOIN c ON v.y = c.z",
+                "SELECT a.x, g.v, g.n, c.z FROM a, GENERATE_SERIES(10, 30, 20) "
+                "WITH ORDINALITY AS g(v, n) RIGHT JOIN c ON g.v = c.z",
             ):
                 expected = connection.execute(sql).fetchall()
                 for dialect in ("duckdb", "postgres"):
                     for rule in (
+                        qualify,
                         optimizer.optimize_joins.optimize_joins,
                         optimizer.pushdown_predicates.pushdown_predicates,
                         optimizer.optimize,
@@ -2634,7 +2639,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                             expression = parse_one(sql, dialect=dialect)
                             result = (
                                 rule(expression, schema=schema, dialect=dialect)
-                                if rule is optimizer.optimize
+                                if rule in (qualify, optimizer.optimize)
                                 else rule(expression)
                             )
                             output = result.sql(dialect)
@@ -2643,8 +2648,38 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                                 parse_one(output, dialect=dialect).sql(dialect), output
                             )
 
+    def test_grouped_udtf_scope(self):
+        schema = {"a": {"x": "INT"}, "c": {"z": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+            for operand in (
+                "UNNEST(ARRAY[10, 30]) AS u(y)",
+                "LATERAL (SELECT 10 AS y) AS u",
+                "(VALUES (10), (30)) AS u(y)",
+            ):
+                with self.subTest(operand=operand):
+                    sql = (
+                        f"SELECT a.x, u.y, q.z FROM a, {operand} "
+                        "RIGHT JOIN (SELECT z FROM c) AS q ON u.y = q.z"
+                    )
+                    expected = connection.execute(sql).fetchall()
+                    grouped = optimizer.optimize_joins.optimize_joins(parse_one(sql))
+                    for result in (
+                        qualify(grouped.copy(), schema=schema, dialect="postgres"),
+                        optimizer.merge_subqueries.merge_subqueries(grouped.copy()),
+                        optimizer.optimize(grouped.copy(), schema=schema, dialect="postgres"),
+                    ):
+                        self.assertCountEqual(
+                            connection.execute(result.sql("postgres")).fetchall(), expected
+                        )
+
     def test_normalize_join_groups(self):
         for sql, expected in (
+            (
+                "SELECT * FROM a JOIN b RIGHT JOIN c ON b.y = c.z",
+                "SELECT * FROM a CROSS JOIN b RIGHT JOIN c ON b.y = c.z",
+            ),
             (
                 "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z, d FULL JOIN e ON d.w = e.v",
                 "SELECT * FROM a CROSS JOIN (b RIGHT JOIN c ON b.y = c.z) "
@@ -3410,10 +3445,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):
             self.assertEqual(len(scopes), 4)
 
-            self.assertEqual(scopes[0].expression.sql(), "t1, t2")
+            self.assertEqual(scopes[0].expression.sql(), "t1 CROSS JOIN t2")
             self.assertEqual(set(scopes[0].sources), {"t1", "t2"})
 
-            self.assertEqual(scopes[1].expression.sql(), "SELECT * FROM (t1, t2) AS t3")
+            self.assertEqual(scopes[1].expression.sql(), "SELECT * FROM (t1 CROSS JOIN t2) AS t3")
             self.assertEqual(set(scopes[1].sources), {"t3"})
 
             self.assertEqual(scopes[2].expression.sql(), "SELECT * FROM t4")
@@ -3421,7 +3456,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
             self.assertEqual(
                 scopes[3].expression.sql(),
-                "SELECT * FROM (((SELECT * FROM (t1, t2) AS t3), (SELECT * FROM t4)))",
+                "SELECT * FROM (((SELECT * FROM (t1 CROSS JOIN t2) AS t3) CROSS JOIN (SELECT * FROM t4)))",
             )
             self.assertEqual(set(scopes[3].sources), {""})
 

@@ -1710,3 +1710,27 @@ LEFT JOIN "y" AS "y"
   ON "x"."a" = CAST("y"."b" AS INT)
 ORDER BY
   "x"."a";
+
+# title: Preserve parenthesized joins
+SELECT x.a, y.b, z.b, w.c FROM (x LEFT JOIN y ON x.b = y.b) INNER JOIN (y AS z LEFT JOIN y AS w ON z.c = w.c) ON y.c = z.b ORDER BY x.a, y.b, z.b, w.c;
+SELECT
+  "x"."a" AS "a",
+  "y"."b" AS "b",
+  "z"."b" AS "b",
+  "w"."c" AS "c"
+FROM (
+  "x" AS "x"
+    LEFT JOIN "y" AS "y"
+      ON "x"."b" = "y"."b"
+)
+JOIN (
+  "y" AS "z"
+    LEFT JOIN "y" AS "w"
+      ON "w"."c" = "z"."c"
+)
+  ON "y"."c" = "z"."b"
+ORDER BY
+  "x"."a",
+  "y"."b",
+  "z"."b",
+  "w"."c";

@@ -6617,8 +6617,7 @@ class Parser:
         # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
         if (
             self._match_set((TokenType.STRING, TokenType.NUMBER), advance=False)
-            and self._next
-            and self._next.token_type not in (TokenType.STRING, TokenType.IDENTIFIER)
+            and self._next.token_type not in self.TEXT_MATCH_EXCLUDED_TOKENS
             and self._next.text.upper() in self.dialect.VALID_INTERVAL_UNITS
         ):
             return self.expression(

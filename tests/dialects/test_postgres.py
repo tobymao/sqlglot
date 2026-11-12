@@ -343,12 +343,12 @@ class TestPostgres(Validator):
             "SELECT INTERVAL '1 DAY' + CAST('2 hours' AS INTERVAL)",
         )
         self.validate_identity(
-            "SELECT INTERVAL '1 day' + 1 * 2",
-            "SELECT INTERVAL '1 DAY' + 1 * 2",
+            "SELECT INTERVAL '1 day' + 2 * INTERVAL '1 hour'",
+            "SELECT INTERVAL '1 DAY' + 2 * INTERVAL '1 HOUR'",
         )
         self.validate_identity(
-            "SELECT INTERVAL '1 day' + '2024-01-01' dt",
-            "SELECT INTERVAL '1 DAY' + '2024-01-01' AS dt",
+            "SELECT INTERVAL '1 day' + '2' dt",
+            "SELECT INTERVAL '1 DAY' + '2' AS dt",
         )
         self.validate_identity(
             "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"

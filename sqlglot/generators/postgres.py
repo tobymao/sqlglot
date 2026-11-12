@@ -353,6 +353,9 @@ class PostgresGenerator(generator.Generator):
         exp.BitwiseXor: lambda self, e: self.binary(e, "#"),
         exp.BitwiseXorAgg: rename_func("BIT_XOR"),
         exp.ColumnDef: transforms.preprocess([_auto_increment_to_serial, _serial_to_generated]),
+        exp.ConvertToCharset: lambda self, e: self.func(
+            "CONVERT", e.this, e.args.get("source"), e.args["dest"]
+        ),
         exp.CurrentDate: no_paren_current_date_sql,
         exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
         exp.CurrentUser: lambda *_: "CURRENT_USER",

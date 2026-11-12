@@ -9,6 +9,22 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_convert(self):
+        self.validate_identity(
+            "SELECT ENCODE(CONVERT(DECODE('6162', 'hex'), 'UTF8', 'UTF8'), 'hex')"
+        )
+        self.validate_identity(
+            "SELECT CONVERT(bytes, src_encoding, dest_encoding) FROM (VALUES (DECODE('e9', 'hex'), 'LATIN1', 'UTF8')) AS t(bytes, src_encoding, dest_encoding)"
+        )
+        expression = self.validate_identity(
+            "CONVERT(DECODE('e9', 'hex'), 'LATIN1', 'UTF8')"
+        ).assert_is(exp.ConvertToCharset)
+        self.assertEqual(expression.args["source"], exp.Literal.string("LATIN1"))
+        self.assertEqual(expression.args["dest"], exp.Literal.string("UTF8"))
+        self.assertEqual(
+            annotate_types(expression, dialect="postgres").type, exp.DataType.build("VARBINARY")
+        )
+
     def test_regexp_replace_omitted_replacement(self):
         for sql, expected in (
             ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '', 'g')"),

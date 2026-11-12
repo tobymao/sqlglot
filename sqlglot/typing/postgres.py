@@ -44,6 +44,7 @@ EXPRESSION_METADATA = {
     **{
         expr_type: {"returns": exp.DType.VARBINARY}
         for expr_type in {
+            exp.ConvertToCharset,
             exp.Decode,
         }
     },

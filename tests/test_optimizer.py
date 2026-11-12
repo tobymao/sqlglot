@@ -2614,6 +2614,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "JOIN d ON c.z = d.w WHERE (d.w > 0 AND d.w < 20) OR (d.w = 40 AND a.x > 0)",
                 "SELECT a.x, c.z FROM a, b RIGHT JOIN (SELECT z FROM c) AS c ON b.y = c.z "
                 "RIGHT JOIN d ON c.z = d.w WHERE c.z = 10",
+                "SELECT a.x, b.y, s.z, d.w FROM a, b JOIN "
+                "(SELECT c.z FROM c WHERE c.z = 10) AS s ON b.y = s.z "
+                "RIGHT JOIN d ON s.z = d.w",
+                "WITH s AS (SELECT c.z FROM c WHERE c.z = 10) "
+                "SELECT a.x, b.y, s.z, d.w FROM a, b JOIN s ON b.y = s.z "
+                "RIGHT JOIN d ON s.z = d.w",
                 "SELECT a.x, b.y, d.w FROM a, b RIGHT JOIN c ON b.y = c.z, "
                 "d RIGHT JOIN e ON d.w = e.v WHERE b.y = d.w",
                 "SELECT a.x, u.y, c.z FROM a, UNNEST(ARRAY[10, 30]) AS u(y) "
@@ -2710,6 +2716,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 self.assertEqual(
                     optimizer.optimize_joins.normalize_join_groups(expression.copy()), expression
                 )
+
+    def test_optimize_apply_joins(self):
+        schema = {"a": {"x": "INT"}, "c": {"z": "INT"}}
+        for apply in ("CROSS", "OUTER"):
+            sql = (
+                f"SELECT a.x, b.y, c.z FROM a {apply} APPLY "
+                "(SELECT a.x AS y WHERE a.x = 1) AS b RIGHT JOIN c ON a.x = c.z"
+            )
+            with self.subTest(apply=apply):
+                expression = parse_one(sql, dialect="tsql")
+                self.assertEqual(
+                    optimizer.optimize_joins.optimize_joins(expression.copy()), expression
+                )
+                for rule in (qualify, optimizer.optimize):
+                    self.assertEqual(
+                        rule(expression.copy(), schema=schema, dialect="tsql").sql("tsql"),
+                        "SELECT [a].[x] AS [x], [b].[y] AS [y], [c].[z] AS [z] "
+                        f"FROM [a] AS [a] {apply} APPLY "
+                        "(SELECT [a].[x] AS [y] WHERE [a].[x] = 1) AS [b] "
+                        "RIGHT JOIN [c] AS [c] ON [a].[x] = [c].[z]",
+                    )
 
     def test_optimize_positional_joins(self):
         for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):

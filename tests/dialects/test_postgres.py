@@ -2093,6 +2093,34 @@ FROM json_data, field_ids""",
 
     def test_unnest(self):
         self.validate_all(
+            "SELECT u.d FROM LATERAL (SELECT CAST(value AS DATE) FROM "
+            "GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE), "
+            "INTERVAL '1 DAY') AS _t(value)) AS u(d)",
+            read={
+                "": "SELECT u.d FROM LATERAL UNNEST(GENERATE_DATE_ARRAY("
+                "DATE '2024-01-01', DATE '2024-01-02', INTERVAL 1 DAY)) AS u(d)",
+            },
+        )
+
+        for first, second, spark_first, spark_second in (
+            ("ARRAY[1]", "ARRAY[2, 3]", "ARRAY(1)", "ARRAY(2, 3)"),
+            ("CAST(NULL AS INT[])", "ARRAY[2, 3]", "CAST(NULL AS ARRAY<INT>)", "ARRAY(2, 3)"),
+        ):
+            with self.subTest(first=first, second=second):
+                spark_sql = (
+                    "SELECT a.x AS ax, u.x, u.y, c.z FROM a CROSS JOIN "
+                    f"((SELECT INLINE(ARRAYS_ZIP(COALESCE({spark_first}, ARRAY()), "
+                    f"COALESCE({spark_second}, ARRAY()))) AS (x, y)) AS u "
+                    "RIGHT JOIN c ON COALESCE(u.x, u.y) = c.z)"
+                )
+                self.validate_all(
+                    "SELECT a.x AS ax, u.x, u.y, c.z FROM a CROSS JOIN "
+                    f"(UNNEST({first}, {second}) AS u(x, y) "
+                    "RIGHT JOIN c ON COALESCE(u.x, u.y) = c.z)",
+                    write={"spark": spark_sql, "spark2": spark_sql},
+                )
+
+        self.validate_all(
             "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
             "(UNNEST(ARRAY[10, 30]) AS u(y) RIGHT JOIN c ON u.y = c.z)",
             write={

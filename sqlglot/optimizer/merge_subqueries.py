@@ -434,7 +434,7 @@ def _mergeable(
         or inner_select.args.get("from_") is None
         # Merging through a parenthesized operand can move filters or joins outside its group.
         or (
-            source is not from_or_join.this
+            (source is not from_or_join.this or from_or_join.parent is not outer)
             and (inner_select.args.get("where") or inner_select.args.get("joins"))
         )
         or outer_scope.pivots

@@ -295,7 +295,9 @@ def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
         unnest_aliases = {
             unnest.alias
             for unnest in find_all_in_scope(expression, exp.Unnest)
-            if isinstance(unnest.parent, (exp.From, exp.Join))
+            if isinstance(
+                unnest.find_ancestor(exp.From, exp.Join, exp.Select), (exp.From, exp.Join)
+            )
         }
         if unnest_aliases:
             for column in expression.find_all(exp.Column):

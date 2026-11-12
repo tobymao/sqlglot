@@ -50,7 +50,9 @@ def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Val
 
     structs = []
     alias = expression.args.get("alias")
-    for tup in expression.find_all(exp.Tuple):
+    if not alias and isinstance(expression.parent, exp.Table):
+        alias = expression.parent.args.pop("alias", None)
+    for tup in expression.expressions:
         field_aliases = (
             alias.columns
             if alias and alias.columns
@@ -65,7 +67,11 @@ def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Val
     # Due to `UNNEST_COLUMN_ONLY`, it is expected that the table alias be contained in the columns expression
     alias_name_only = exp.TableAlias(columns=[alias.this]) if alias else None
     return self.unnest_sql(
-        exp.Unnest(expressions=[exp.array(*structs, copy=False)], alias=alias_name_only)
+        exp.Unnest(
+            expressions=[exp.array(*structs, copy=False)],
+            alias=alias_name_only,
+            joins=expression.args.get("joins"),
+        )
     )
 
 

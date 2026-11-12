@@ -449,7 +449,18 @@ class HiveGenerator(generator.Generator):
             if not self.SUPPORTS_JOINED_UNNEST:
                 self.unsupported("Joined UNNEST operands are not supported")
 
-            projection: exp.Expr = exp.Explode.from_arg_list(expression.expressions)
+            projection: exp.Expr = (
+                exp.Inline(
+                    this=exp.ArraysZip(
+                        expressions=[
+                            exp.Coalesce(this=arg, expressions=[exp.Array()])
+                            for arg in expression.expressions
+                        ]
+                    )
+                )
+                if len(expression.expressions) > 1
+                else exp.Explode.from_arg_list(expression.expressions)
+            )
             alias = expression.args.get("alias")
             if alias and alias.columns:
                 projection = exp.Aliases(this=projection, expressions=alias.columns)

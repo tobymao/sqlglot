@@ -16,6 +16,7 @@ from sqlglot.helper import logger as helper_logger
 from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.qualify import qualify
 
 
@@ -3073,6 +3074,35 @@ OPTIONS (
         ]:
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(dialect=self.dialect), expected)
+
+    def test_grouped_join_operands(self):
+        for sql, expected in (
+            (
+                "SELECT a.x, u.y, c.z FROM a, UNNEST(ARRAY[10, 30]) AS u(y) "
+                "RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, y, c.z FROM a CROSS JOIN "
+                "(UNNEST([10, 30]) AS y RIGHT JOIN c ON y = c.z)",
+            ),
+            (
+                "SELECT a.x, v.y, c.z FROM a, (VALUES (10), (30)) AS v(y) "
+                "RIGHT JOIN c ON v.y = c.z",
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN "
+                "(UNNEST([STRUCT(10 AS y), STRUCT(30 AS y)]) AS v RIGHT JOIN c ON v.y = c.z)",
+            ),
+            (
+                "SELECT a.x, v.y, c.z FROM a, (VALUES (10), (30)) AS v(y) "
+                "LEFT JOIN (VALUES (10), (20)) AS w(z) ON v.y = w.z "
+                "RIGHT JOIN c ON w.z = c.z",
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN "
+                "(UNNEST([STRUCT(10 AS y), STRUCT(30 AS y)]) AS v "
+                "LEFT JOIN UNNEST([STRUCT(10 AS z), STRUCT(20 AS z)]) AS w ON v.y = w.z "
+                "RIGHT JOIN c ON w.z = c.z)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = optimize_joins(parse_one(sql, read="postgres"))
+                self.assertEqual(expression.sql("bigquery"), expected)
+                self.validate_all(expected, read={"postgres": expression.sql("postgres")})
 
     def test_unnest(self):
         self.validate_all(

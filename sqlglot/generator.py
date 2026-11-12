@@ -372,6 +372,12 @@ class Generator:
     # Whether top-k distance/similarity joins are supported
     SUPPORTS_NEAREST_JOIN = False
 
+    # Whether MATCH_CONDITION in ASOF joins is supported
+    SUPPORTS_MATCH_CONDITION = False
+
+    # Whether ASOF JOIN MATCH_CONDITION should be folded into the ON clause
+    MATCH_CONDITION_IN_ON = False
+
     # Whether table hints should be generated
     TABLE_HINTS = True
 
@@ -3025,6 +3031,17 @@ class Generator:
         return f"PRIOR {self.sql(expression, 'this')}"
 
     def join_sql(self, expression: exp.Join, join_op: str | None = None) -> str:
+        if (
+            match_condition := expression.args.get("match_condition")
+        ) and not self.SUPPORTS_MATCH_CONDITION:
+            if self.MATCH_CONDITION_IN_ON and not expression.args.get("using"):
+                expression = expression.on(match_condition)
+                expression.set("match_condition", None)
+                # Snowflake ASOF joins preserve unmatched left rows.
+                expression.set("side", "LEFT")
+            else:
+                self.unsupported("MATCH_CONDITION is not supported")
+
         if not self.SEMI_ANTI_JOIN_WITH_SIDE and expression.kind in ("SEMI", "ANTI"):
             side = None
         else:

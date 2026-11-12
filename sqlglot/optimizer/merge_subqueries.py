@@ -498,6 +498,7 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
     """
     inner_taken = set(inner_scope.selected_sources)
     outer_taken = {name for name, _ in outer_scope.references if name != alias}
+    outer_taken.update(column.table for column in outer_scope.external_columns)
     replacement_columns = {id(column) for column in outer_scope.source_columns(alias)}
     for scope in outer_scope.traverse():
         if scope is not outer_scope and any(
@@ -510,7 +511,6 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
         return
 
     taken = outer_taken.union(inner_taken)
-    taken.update(column.table for column in outer_scope.external_columns)
     taken.update(column.table for column in inner_scope.external_columns)
     inner_columns = {id(column) for column in inner_scope.columns if column.table in inner_taken}
     for scope in inner_scope.traverse():

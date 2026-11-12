@@ -9,6 +9,10 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_trunc_unknown_format(self):
+        sql = "TRUNC(CAST('2024-05-15' AS DATE), 'WW')"
+        self.assertEqual(self.parse_one(sql).sql("spark", unsupported_level=ErrorLevel.RAISE), sql)
+
     def test_create_table_options(self):
         sql = "CREATE TABLE t (a INT) USING PARQUET OPTIONS ('path'='s3://b/t')"
         dialects = ("spark2", "spark", "databricks")

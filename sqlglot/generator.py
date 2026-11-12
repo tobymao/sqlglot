@@ -6669,7 +6669,7 @@ class Generator:
 
     def datetrunc_sql(self, expression: exp.DateTrunc) -> str:
         unit = expression.unit
-        if unit.is_string and unit.name.upper() in ("W", "WW"):
+        if unit.is_string and unit.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
             self.unsupported(f"Unexpected interval unit: {unit.name}")
 
         return self.function_fallback_sql(expression)

@@ -7,7 +7,7 @@ from sqlglot.dialects.dialect import (
     build_date_delta,
     build_formatted_time,
     build_timetostr_or_tochar,
-    build_trunc,
+    build_formatted_trunc,
 )
 from sqlglot.helper import seq_get
 from sqlglot.tokens import TokenType
@@ -83,8 +83,8 @@ class ExasolParser(parser.Parser):
             position=seq_get(args, 3),
             occurrence=seq_get(args, 4),
         ),
-        "TRUNC": build_trunc,
-        "TRUNCATE": build_trunc,
+        "TRUNC": build_formatted_trunc,
+        "TRUNCATE": build_formatted_trunc,
         "TO_CHAR": build_timetostr_or_tochar,
         "TO_DATE": build_formatted_time(exp.TsOrDsToDate),
         "USER": exp.CurrentUser.from_arg_list,

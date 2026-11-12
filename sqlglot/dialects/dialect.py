@@ -2239,6 +2239,96 @@ def build_trunc(
     return exp.Anonymous(this="TRUNC", expressions=args)
 
 
+# https://docs.teradata.com/r/Lake-Working-with-SQL/SQL-Functions/SQL-Date-and-Time-Functions-and-Expressions/DateTime-and-Interval-Functions-and-Expressions/TRUNC-Date/TRUNC-Date-Syntax/ROUND-Date-and-TRUNC-Date-Argument-Types-and-Rules/TRUNC-and-ROUND-Date-Formats
+TRUNC_FORMAT_TO_UNIT = {
+    "CC": "CENTURY",
+    "SCC": "CENTURY",
+    "SYYYY": "YEAR",
+    "SYYY": "YEAR",
+    "YYYY": "YEAR",
+    "YEAR": "YEAR",
+    "SYEAR": "YEAR",
+    "YYY": "YEAR",
+    "YY": "YEAR",
+    "Y": "YEAR",
+    "IYYY": "ISOYEAR",
+    "IYY": "ISOYEAR",
+    "IY": "ISOYEAR",
+    "I": "ISOYEAR",
+    "Q": "QUARTER",
+    "MONTH": "MONTH",
+    "MON": "MONTH",
+    "MM": "MONTH",
+    "RM": "MONTH",
+    "DAY": "WEEK",
+    "DY": "WEEK",
+    "D": "WEEK",
+    "IW": "ISOWEEK",
+    # These weeks are anchored to the first day of the month/year, not a fixed weekday.
+    "W": "WEEK_OF_MONTH",
+    "WW": "WEEK_OF_YEAR",
+    "DDD": "DAY",
+    "DD": "DAY",
+    "J": "DAY",
+    "HH": "HOUR",
+    "HH12": "HOUR",
+    "HH24": "HOUR",
+    "MI": "MINUTE",
+    "SS": "SECOND",
+}
+
+
+def build_formatted_trunc(
+    args: BuilderArgs, dialect: Dialect
+) -> exp.DateTrunc | exp.Trunc | exp.Anonymous:
+    trunc = build_trunc(args, dialect, date_trunc_unabbreviate=False, default_date_trunc_unit="DD")
+    if isinstance(trunc, exp.DateTrunc) and trunc.unit.is_string:
+        unit = TRUNC_FORMAT_TO_UNIT.get(trunc.unit.name.upper())
+        if unit in ("WEEK", "ISOWEEK"):
+            start = 1 if unit == "ISOWEEK" else week_offset_to_dow(dialect.WEEK_OFFSET)
+            day = next(day for day, dow in WEEK_START_DAY_TO_DOW.items() if dow == start)
+            trunc.set("unit", exp.WeekStart(this=exp.var(day)))
+        elif unit:
+            trunc.set("unit", exp.Literal.string(unit))
+    return trunc
+
+
+UNIT_TO_TRUNC_FORMAT = {
+    "CENTURY": "CC",
+    "YEAR": "YEAR",
+    "ISOYEAR": "IYYY",
+    "QUARTER": "Q",
+    "MONTH": "MONTH",
+    "WEEK": "IW",
+    "WEEK_OF_MONTH": "W",
+    "WEEK_OF_YEAR": "WW",
+    "ISOWEEK": "IW",
+    "DAY": "DD",
+    "HOUR": "HH",
+    "MINUTE": "MI",
+}
+
+
+@unsupported_args("zone")
+def date_trunc_to_trunc_sql(self: Generator, expression: exp.DateTrunc) -> str:
+    unit = expression.unit
+    if isinstance(unit, exp.WeekStart):
+        if unit.name.upper() == "MONDAY":
+            unit = exp.Literal.string("IW")
+        else:
+            self.weekstart_name(unit)
+            unit = exp.Literal.string("DAY")
+    elif isinstance(unit, (exp.Literal, exp.Var)):
+        unit_name = unit.name.upper()
+        mapped = UNIT_TO_TRUNC_FORMAT.get(unit_name)
+        if mapped:
+            unit = exp.Literal.string(mapped)
+        else:
+            self.unsupported(f"Unexpected interval unit: {unit_name}")
+
+    return self.func("TRUNC", expression.this, unit)
+
+
 def any_value_to_max_sql(self: Generator, expression: exp.AnyValue) -> str:
     return self.func("MAX", expression.this)
 
@@ -2398,7 +2488,7 @@ def weekstart_unit_to_str(
     unit = expression.args.get("unit")
     if isinstance(unit, exp.WeekStart):
         return exp.Literal.string(self.weekstart_name(unit))
-    if isinstance(unit, exp.Literal) and unit.name.upper() in ("W", "WW"):
+    if isinstance(unit, exp.Literal) and unit.name.upper() in ("WEEK_OF_MONTH", "WEEK_OF_YEAR"):
         self.unsupported(f"Unexpected interval unit: {unit.name}")
 
     return unit_to_str(expression, default)

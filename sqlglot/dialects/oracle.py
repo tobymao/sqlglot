@@ -14,6 +14,8 @@ from sqlglot.tokens import TokenType
 
 
 class Oracle(Dialect):
+    # Assume NLS_TERRITORY = 'AMERICA' for the DAY, DY and D truncation formats.
+    WEEK_OFFSET = -1
     ALIAS_POST_TABLESAMPLE = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True

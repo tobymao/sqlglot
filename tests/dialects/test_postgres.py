@@ -25,6 +25,31 @@ class TestPostgres(Validator):
             annotate_types(expression, dialect="postgres").type, exp.DataType.build("VARBINARY")
         )
 
+    def test_generate_series_steps(self):
+        for sql in (
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1, 3, '1')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '0.5')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(1.0, 3.0, '1e0')",
+            "SELECT COUNT(*) FROM GENERATE_SERIES(3, 1, '-1')",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql)
+
+        for step in ("'1 month 2 days'", "'P1M2D'"):
+            for prefix in ("", "INTERVAL "):
+                with self.subTest(step=step, prefix=prefix):
+                    self.validate_identity(
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(DATE '2024-01-01', DATE '2024-03-05', {prefix}{step})",
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-03-05' AS DATE), {prefix}{step})",
+                    )
+
+        for step in ("'1'", "'00:00:01'"):
+            for prefix in ("", "INTERVAL "):
+                with self.subTest(step=step, prefix=prefix):
+                    self.validate_identity(
+                        f"SELECT COUNT(*) FROM GENERATE_SERIES(CAST('2024-01-01 00:00:00' AS TIMESTAMP), CAST('2024-01-01 00:00:02' AS TIMESTAMP), {prefix}{step})"
+                    )
+
     def test_regexp_replace_omitted_replacement(self):
         for sql, expected in (
             ("REGEXP_REPLACE('abcb', 'b')", "REGEXP_REPLACE('abcb', 'b', '', 'g')"),

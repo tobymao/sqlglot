@@ -5,6 +5,22 @@ class TestRisingWave(Validator):
     dialect = "risingwave"
     maxDiff = None
 
+    def test_postgres_functions(self):
+        self.validate_all(
+            "CASE WHEN x IS NULL OR delimiter IS NULL THEN NULL WHEN x = '' THEN ARRAY[x] ELSE STRING_TO_ARRAY(x, delimiter) END",
+            read={"snowflake": "SPLIT(x, delimiter)"},
+        )
+        self.validate_all(
+            "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+            read={"spark": "SPLIT('a1b22c', '[0-9]+')"},
+            write={"spark": "SPLIT('a1b22c', '[0-9]+')"},
+        )
+        self.validate_all(
+            "MAKE_DATE(2020, 1, 2)",
+            read={"bigquery": "DATE(2020, 1, 2)"},
+            write={"snowflake": "DATE_FROM_PARTS(2020, 1, 2)"},
+        )
+
     def test_risingwave(self):
         self.validate_all(
             "SELECT a FROM tbl",

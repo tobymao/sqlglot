@@ -11,6 +11,87 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_split(self):
+        self.validate_all(
+            "CASE WHEN x IS NULL THEN NULL WHEN x = '' OR delimiter IS NULL THEN ARRAY[x] ELSE STRING_TO_ARRAY(x, NULLIF(delimiter, '')) END",
+            read={"duckdb": "STRING_SPLIT(x, delimiter)"},
+        )
+        self.validate_all(
+            "CASE WHEN x IS NULL OR delimiter IS NULL THEN NULL WHEN x = '' THEN ARRAY[x] ELSE STRING_TO_ARRAY(x, delimiter) END",
+            read={"snowflake": "SPLIT(x, delimiter)"},
+        )
+        for sql in (
+            "STRING_TO_ARRAY('', ',')",
+            "STRING_TO_ARRAY('abc', NULL)",
+            "STRING_TO_ARRAY('abc', '')",
+            "STRING_TO_ARRAY('a,b', ',', 'b')",
+        ):
+            self.validate_identity(sql).assert_is(exp.StringToArray)
+
+    def test_regexp_split(self):
+        self.validate_all(
+            "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+            read={
+                "duckdb": "STRING_SPLIT_REGEX('a1b22c', '[0-9]+')",
+                "spark": "SPLIT('a1b22c', '[0-9]+')",
+            },
+            write={
+                "duckdb": "STR_SPLIT_REGEX('a1b22c', '[0-9]+')",
+                "spark": "SPLIT('a1b22c', '[0-9]+')",
+                "postgres": "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+                "redshift": UnsupportedError,
+            },
+        )
+        self.validate_identity("REGEXP_SPLIT_TO_ARRAY(x, pattern)").assert_is(exp.RegexpSplit)
+        self.validate_identity("REGEXP_SPLIT_TO_ARRAY('aXbxc', 'x', 'i')").assert_is(exp.Anonymous)
+        self.validate_identity("REGEXP_SPLIT_TO_ARRAY(x, pattern, flags)")
+
+    def test_split_limit(self):
+        for dialect, sql, expected in (
+            (
+                "clickhouse",
+                "splitByString(',', 'a,b,c', 2)",
+                "CASE WHEN 'a,b,c' IS NULL THEN NULL WHEN 'a,b,c' = '' OR ',' IS NULL THEN ARRAY['a,b,c'] ELSE STRING_TO_ARRAY('a,b,c', NULLIF(',', '')) END",
+            ),
+            (
+                "spark",
+                "SPLIT('a1b22c', '[0-9]+', 2)",
+                "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+            ),
+            (
+                "dremio",
+                "REGEXP_SPLIT('a1b22c', '[0-9]+', 'ALL', 2)",
+                "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+            ),
+        ):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(sql, read=dialect)
+                with self.assertRaisesRegex(UnsupportedError, "Argument 'limit'"):
+                    expression.sql(self.dialect, unsupported_level=ErrorLevel.RAISE)
+                self.assertEqual(
+                    expression.sql(self.dialect, unsupported_level=ErrorLevel.IGNORE), expected
+                )
+
+    def test_date_from_parts(self):
+        self.validate_all(
+            "MAKE_DATE(2020, 1, 2)",
+            read={"bigquery": "DATE(2020, 1, 2)", "duckdb": "MAKE_DATE(2020, 1, 2)"},
+            write={
+                "snowflake": "DATE_FROM_PARTS(2020, 1, 2)",
+                "duckdb": "MAKE_DATE(2020, 1, 2)",
+                "postgres": "MAKE_DATE(2020, 1, 2)",
+                "materialize": UnsupportedError,
+                "redshift": UnsupportedError,
+            },
+        )
+        self.validate_identity("MAKE_DATE(y, m, d)").assert_is(exp.DateFromParts)
+        for year, month, day in (("y", "m", "d"), ("2020", "13", "0"), ("2020", "1", "2")):
+            with self.subTest(year=year, month=month, day=day):
+                self.validate_all(
+                    f"CAST(MAKE_DATE({year}, 1, 1) + (({month} - 1) * INTERVAL '1 MONTH') + ({day} - 1) * INTERVAL '1 DAY' AS DATE)",
+                    read={"snowflake": f"DATE_FROM_PARTS({year}, {month}, {day})"},
+                )
+
     def test_convert(self):
         self.validate_identity(
             "SELECT ENCODE(CONVERT(DECODE('6162', 'hex'), 'UTF8', 'UTF8'), 'hex')"

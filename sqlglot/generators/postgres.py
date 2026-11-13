@@ -639,6 +639,52 @@ class PostgresGenerator(generator.Generator):
     def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
         return "CURRENT_SCHEMA"
 
+    def datefromparts_sql(self, expression: exp.DateFromParts) -> str:
+        year = expression.args.get("year")
+        month = expression.args.get("month")
+        day = expression.args.get("day")
+
+        if expression.args.get("allow_overflow"):
+            # Apply month/day overflow from January 1, as Snowflake does.
+            date: exp.Expr = exp.DateFromParts(
+                year=year, month=exp.Literal.number(1), day=exp.Literal.number(1)
+            )
+            for value, unit in ((month, "MONTH"), (day, "DAY")):
+                if value is not None:
+                    date = date + (value - 1) * exp.Interval(
+                        this=exp.Literal.string("1"), unit=exp.var(unit)
+                    )
+            return self.sql(exp.cast(date, exp.DType.DATE))
+
+        return self.func("MAKE_DATE", year, month, day)
+
+    @unsupported_args("limit", "mode")
+    def regexpsplit_sql(self, expression: exp.RegexpSplit) -> str:
+        return self.func("REGEXP_SPLIT_TO_ARRAY", expression.this, expression.expression)
+
+    @unsupported_args("limit")
+    def split_sql(self, expression: exp.Split) -> str:
+        this = expression.this
+        delimiter = expression.expression
+        null_input: exp.Expr = this.is_(exp.null())
+        singleton: exp.Expr = this.eq(exp.Literal.string(""))
+
+        if expression.args.get("null_returns_null"):
+            null_input = exp.or_(null_input, delimiter.is_(exp.null()))
+        else:
+            singleton = exp.or_(singleton, delimiter.is_(exp.null()))
+
+        # PostgreSQL splits into characters for NULL delimiters, not empty delimiters.
+        if not expression.args.get("empty_delimiter_returns_whole"):
+            delimiter = exp.Nullif(this=delimiter, expression=exp.Literal.string(""))
+
+        return self.sql(
+            exp.case()
+            .when(null_input, exp.null())
+            .when(singleton, exp.array(this))
+            .else_(exp.StringToArray(this=this, expression=delimiter))
+        )
+
     def interval_sql(self, expression: exp.Interval) -> str:
         unit = expression.text("unit").lower()
 

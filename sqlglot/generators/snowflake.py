@@ -129,33 +129,49 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
     unnest.set("expressions", [number_sequence])
 
     unnest_parent = unnest.parent
-    if isinstance(unnest_parent, exp.Join):
+    joins = unnest.args.pop("joins", None)
+    if (
+        isinstance(unnest_parent, exp.Join)
+        and isinstance(unnest_parent.parent, exp.Select)
+        and not joins
+    ):
         select = unnest_parent.parent
-        if isinstance(select, exp.Select):
-            replace_column_name = (
-                sequence_value_name
-                if isinstance(sequence_value_name, str)
-                else sequence_value_name.name
-            )
-
-            scope = build_scope(select)
-            if scope:
-                for column in scope.columns:
-                    if column.name.lower() == replace_column_name.lower():
-                        column.replace(
-                            date_add.as_(replace_column_name)
-                            if isinstance(column.parent, exp.Select)
-                            else date_add
-                        )
-
-            lateral = exp.Lateral(this=unnest_parent.this.pop())
-            unnest_parent.replace(exp.Join(this=lateral))
-    else:
-        unnest.replace(
-            exp.select(date_add.as_(sequence_value_name))
-            .from_(unnest.copy())
-            .subquery(unnest_alias)
+        replace_column_name = (
+            sequence_value_name
+            if isinstance(sequence_value_name, str)
+            else sequence_value_name.name
         )
+
+        scope = build_scope(select)
+        if scope:
+            for column in scope.columns:
+                if column.name.lower() == replace_column_name.lower():
+                    column.replace(
+                        date_add.as_(replace_column_name)
+                        if isinstance(column.parent, exp.Select)
+                        else date_add
+                    )
+
+        lateral = exp.Lateral(this=unnest_parent.this.pop())
+        unnest_parent.replace(exp.Join(this=lateral))
+    else:
+        select = exp.select(date_add.as_(sequence_value_name)).from_(unnest.copy())
+        if offset := unnest.args.get("offset"):
+            offset_name = (
+                offset if isinstance(offset, exp.Identifier) else exp.to_identifier("ordinality")
+            )
+            position: exp.Expr = (
+                offset.copy() if isinstance(offset, exp.Identifier) else exp.to_identifier("index")
+            )
+            if unnest.args.get("offset_base") != 0:
+                position = position + 1
+            select.select(position.as_(offset_name), copy=False)
+            if unnest_alias and unnest_alias.columns:
+                unnest_alias.append("columns", offset_name.copy())
+
+        subquery = select.subquery(unnest_alias)
+        subquery.set("joins", joins)
+        unnest.replace(subquery)
 
 
 def _transform_generate_date_array(expression: exp.Expr) -> exp.Expr:
@@ -174,7 +190,7 @@ def _transform_generate_date_array(expression: exp.Expr) -> exp.Expr:
 
             if (
                 isinstance(parent, exp.Unnest)
-                and isinstance(parent.parent, (exp.From, exp.Join))
+                and isinstance(parent.parent, (exp.From, exp.Join, exp.Subquery))
                 and len(parent.expressions) == 1
             ):
                 _unnest_generate_date_array(parent)

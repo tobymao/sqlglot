@@ -23,6 +23,24 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_variance(self):
+        for name in ("var_samp", "VAR_SAMP", "variance", "VARIANCE"):
+            with self.subTest(name=name):
+                self.validate_identity(f"SELECT {name}(x) FROM t")
+                self.validate_identity(
+                    f"SELECT {name}(x) OVER (PARTITION BY device_id ORDER BY time_represented ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) FROM t"
+                )
+
+        self.validate_all(
+            "SELECT var_samp(x) FROM t",
+            write={
+                "clickhouse": "SELECT varSamp(x) FROM t",
+                "mysql": "SELECT VAR_SAMP(x) FROM t",
+                "oracle": "SELECT VAR_SAMP(x) FROM t",
+                "postgres": "SELECT VAR_SAMP(x) FROM t",
+            },
+        )
+
     def test_pivot_output_column_names(self):
         for sql, expected in (
             (

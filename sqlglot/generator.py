@@ -628,8 +628,8 @@ class Generator:
     # The function name of the exp.ArraySize expression
     ARRAY_SIZE_NAME: str = "ARRAY_LENGTH"
 
-    # The function name of the exp.Variance (sample variance) expression
-    VARIANCE_NAME: str = "VARIANCE"
+    # Override for sample variance; otherwise use the expression's function name.
+    VARIANCE_NAME: str = ""
 
     # Whether VARIANCE natively returns zero for a single non-NULL value.
     VARIANCE_RETURNS_ZERO_ON_SINGLE_VALUE = False
@@ -6300,15 +6300,16 @@ class Generator:
 
     def variance_sql(self, expression: exp.Variance, window: exp.Window | None = None) -> str:
         this = expression.this
+        name = self.VARIANCE_NAME or self.function_name(expression)
         if not expression.args.get("single_value_returns_zero"):
-            return self.func(self.VARIANCE_NAME, this)
+            return self.func(name, this)
 
         node: exp.Expr = expression
         while node.parent and not isinstance(node.parent, (exp.Window, exp.AggFunc, exp.Select)):
             node = node.parent
         if window is None and isinstance(node.parent, exp.Window) and node.arg_key == "this":
             self.unsupported("VARIANCE returning 0 for a single value is not supported in a window")
-            return self.func(self.VARIANCE_NAME, this)
+            return self.func(name, this)
 
         expression.set("single_value_returns_zero", None)
         count: exp.Expr

@@ -13,6 +13,76 @@ class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
 
+    def test_grouped_generate_date_array(self):
+        sql = (
+            "SELECT a.x, u.d, c.z FROM a CROSS JOIN ("
+            "UNNEST(GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-02')) AS u(d) "
+            "RIGHT JOIN c ON u.d = c.z)"
+        )
+        expression = parse_one(sql)
+        self.assertEqual(
+            expression.sql("snowflake"),
+            "SELECT a.x, u.d, c.z FROM a CROSS JOIN "
+            "((SELECT DATEADD(DAY, CAST(d AS INT), CAST('2024-01-01' AS DATE)) AS d "
+            "FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, "
+            "DATEDIFF(DAY, CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE)) + 1))) "
+            "AS u(seq, key, path, index, d, this)) AS u(d) RIGHT JOIN c ON u.d = c.z)",
+        )
+
+    def test_grouped_generate_date_array_ordinality(self):
+        expression = parse_one(
+            "SELECT u.* FROM ("
+            "UNNEST(GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-02')) "
+            "WITH ORDINALITY AS u RIGHT JOIN (SELECT 1 AS z) AS c ON u.ordinality = c.z)"
+        )
+        self.assertEqual(
+            expression.sql("snowflake"),
+            "SELECT u.* FROM ((SELECT DATEADD(DAY, CAST(u.value AS INT), "
+            "CAST('2024-01-01' AS DATE)) AS value, index + 1 AS ordinality "
+            "FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, "
+            "DATEDIFF(DAY, CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE)) + 1))) "
+            "AS u(seq, key, path, index, value, this)) AS u "
+            "RIGHT JOIN (SELECT 1 AS z) AS c ON u.ordinality = c.z)",
+        )
+
+        for offset, position, index in (
+            ("n", "n + 1", "n"),
+            ('"N"', '"N" + 1', '"N"'),
+            (None, "index + 1", "index"),
+        ):
+            with self.subTest(offset=offset):
+                offset_name = offset or "ordinality"
+                sql = (
+                    f"SELECT u.d, u.{offset_name}, c.z FROM a CROSS JOIN ("
+                    "UNNEST(GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-02')) "
+                    f"WITH ORDINALITY AS u(d{', ' + offset if offset else ''}) "
+                    f"RIGHT JOIN c ON u.{offset_name} = c.z)"
+                )
+                expression = parse_one(sql)
+                self.assertEqual(
+                    expression.sql("snowflake"),
+                    f"SELECT u.d, u.{offset_name}, c.z FROM a CROSS JOIN "
+                    "((SELECT DATEADD(DAY, CAST(d AS INT), CAST('2024-01-01' AS DATE)) AS d, "
+                    f"{position} AS {offset_name} FROM TABLE(FLATTEN(INPUT => "
+                    "ARRAY_GENERATE_RANGE(0, DATEDIFF(DAY, CAST('2024-01-01' AS DATE), "
+                    "CAST('2024-01-02' AS DATE)) + 1))) "
+                    f"AS u(seq, key, path, {index}, d, this)) AS u(d, {offset_name}) "
+                    f"RIGHT JOIN c ON u.{offset_name} = c.z)",
+                )
+
+        self.validate_all(
+            "SELECT d, n, c.z FROM a CROSS JOIN "
+            "((SELECT DATEADD(DAY, CAST(d AS INT), CAST('2024-01-01' AS DATE)) AS d, "
+            "n AS n FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, "
+            "DATEDIFF(DAY, CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE)) + 1))) "
+            "AS _t1(seq, key, path, n, d, this)) AS _t0(d, n) RIGHT JOIN c ON n = c.z)",
+            read={
+                "bigquery": "SELECT d, n, c.z FROM a CROSS JOIN "
+                "(UNNEST(GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-02')) "
+                "AS d WITH OFFSET AS n RIGHT JOIN c ON n = c.z)",
+            },
+        )
+
     def test_asof_join(self):
         for op in (">", ">=", "<", "<="):
             with self.subTest(op=op):

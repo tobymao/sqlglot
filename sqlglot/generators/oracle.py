@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlglot import exp, generator, transforms
 from sqlglot.dialects.dialect import (
+    approx_count_distinct_sql,
     date_trunc_to_trunc_sql,
     groupconcat_sql,
     mod_func_sql,
@@ -69,6 +70,7 @@ class OracleGenerator(generator.Generator):
 
     TRANSFORMS = {
         **generator.Generator.TRANSFORMS,
+        exp.ApproxDistinct: approx_count_distinct_sql,
         exp.Pivot: transforms.preprocess([transforms.unqualify_pivot_fields]),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         exp.DateStrToDate: lambda self, e: self.func(
@@ -86,6 +88,7 @@ class OracleGenerator(generator.Generator):
             [
                 transforms.eliminate_distinct_on,
                 transforms.eliminate_qualify,
+                transforms.eliminate_semi_and_anti_joins,
             ]
         ),
         exp.StrPosition: lambda self, e: strposition_sql(
@@ -111,6 +114,7 @@ class OracleGenerator(generator.Generator):
         ),
         exp.UtcTimestamp: rename_func("UTC_TIMESTAMP"),
         exp.UtcTime: rename_func("UTC_TIME"),
+        exp.VariancePop: rename_func("VAR_POP"),
         exp.Systimestamp: lambda self, e: "SYSTIMESTAMP",
         exp.TableSpaceProperty: lambda self, e: f"TABLESPACE {self.sql(e, 'this')}",
     }

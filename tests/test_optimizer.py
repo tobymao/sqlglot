@@ -2202,6 +2202,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_positional_join_predicates(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for predicate in (
+                "y.b IN (SELECT z.b AS b FROM z)",
+                "y.b = ANY (SELECT z.b AS b FROM z)",
+            ):
+                sql = f"SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND {predicate} {kind} JOIN w"
+                with self.subTest(sql=sql, dialect=dialect):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.unnest_subqueries.unnest_subqueries(expression.copy()), expression
+                    )
+
+            expression = parse_one(
+                f"SELECT x.a, w.d FROM x {kind} JOIN w "
+                "JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM z)",
+                dialect=dialect,
+            )
+            self.assertIsNone(
+                optimizer.unnest_subqueries.unnest_subqueries(expression).find(exp.In)
+            )
+
     def test_optimize_uncorrelated_in_nulls(self):
         for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
             for predicate in (
@@ -2375,6 +2397,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "WHERE (x.a = 2 AND y.b = 3) OR (x.a = 3 AND y.b = 4)",
             "SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) "
             "JOIN y AS z ON x.a = z.b WHERE y.b = 2",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b IN (SELECT z.b FROM y AS z WHERE z.b = 3) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b IN (SELECT z.b FROM y AS z WHERE z.b > 100) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b = ANY (SELECT z.b FROM y AS z WHERE z.b = 3) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b = ANY (SELECT z.b FROM y AS z WHERE z.b > 100) POSITIONAL JOIN w",
         ):
             with self.subTest(sql=sql):
                 optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
@@ -2668,6 +2698,24 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     self.assertEqual(
                         optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
                     )
+
+    def test_merge_any_join_inputs(self):
+        schema = {"x": {"id": "INT", "val": "INT"}, "y": {"id": "INT", "val": "INT"}}
+        for sql in (
+            "SELECT x.id, s.v FROM x LEFT ANY JOIN (SELECT id, val + 1 AS v FROM y) AS s "
+            "ON x.id = s.id",
+            "WITH s AS (SELECT id, val + 1 AS v FROM y) "
+            "SELECT x.id, s.v FROM x LEFT ANY JOIN s ON x.id = s.id",
+            "SELECT s.v, y.id FROM (SELECT id, val + 1 AS v FROM x) AS s "
+            "RIGHT ANY JOIN y ON s.id = y.id",
+        ):
+            with self.subTest(sql=sql):
+                expression = qualify(
+                    parse_one(sql, dialect="clickhouse"), schema=schema, dialect="clickhouse"
+                )
+                self.assertEqual(
+                    optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
+                )
 
     def test_merge_asof_join_inputs(self):
         schema = {"x": {"id": "INT", "ts": "INT"}, "y": {"id": "INT", "ts": "INT", "val": "INT"}}

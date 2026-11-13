@@ -500,6 +500,9 @@ class TestClickhouse(Validator):
                 "postgres": "SELECT UNNEST(ARRAY[1, 2, 3])",
             },
         )
+        self.validate_identity("SELECT 2 = ANY(SELECT 2)")
+        self.validate_identity("SELECT 2 <> ANY(SELECT 1)")
+        self.validate_identity("SELECT 2 = ANY(SELECT 1 UNION ALL SELECT 2)")
         self.validate_all(
             "has([1], x)",
             read={

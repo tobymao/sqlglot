@@ -2277,6 +2277,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_positional_join_predicates(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for predicate in (
+                "y.b IN (SELECT z.b AS b FROM z)",
+                "y.b = ANY (SELECT z.b AS b FROM z)",
+            ):
+                sql = f"SELECT x.a, w.d FROM x JOIN y ON x.a = y.b AND {predicate} {kind} JOIN w"
+                with self.subTest(sql=sql, dialect=dialect):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.unnest_subqueries.unnest_subqueries(expression.copy()), expression
+                    )
+
+            expression = parse_one(
+                f"SELECT x.a, w.d FROM x {kind} JOIN w "
+                "JOIN y ON x.a = y.b AND y.b IN (SELECT z.b AS b FROM z)",
+                dialect=dialect,
+            )
+            self.assertIsNone(
+                optimizer.unnest_subqueries.unnest_subqueries(expression).find(exp.In)
+            )
+
     def test_optimize_uncorrelated_in_nulls(self):
         for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
             for predicate in (
@@ -2422,6 +2444,50 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.conn.execute(optimized.sql("duckdb")).fetchall(),
                     )
 
+    def test_optimize_special_joins(self):
+        for sql in (
+            "SELECT x.a, y.b FROM x ASOF JOIN y ON x.a >= y.b WHERE y.b = 2",
+            "SELECT x.a, y.b FROM x ASOF JOIN (SELECT b FROM y) AS y ON x.a >= y.b WHERE y.b = 2",
+            "SELECT x.a, y.b FROM x ASOF LEFT JOIN y ON x.a >= y.b "
+            "WHERE (x.a = 2 AND y.b = 2) OR (x.a = 3 AND y.b = 2)",
+            "SELECT x.a, y.b FROM x CROSS JOIN y AS z ASOF JOIN y ON x.a >= y.b AND z.c = y.c",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN y WHERE y.b = 3",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y) AS y WHERE y.b = 3",
+            "SELECT x.a, y.b FROM (SELECT a FROM x) AS x POSITIONAL JOIN y WHERE x.a = 3",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN y "
+            "WHERE (x.a = 2 AND y.b = 2) OR (x.a = 3 AND y.b = 4)",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y WHERE b = 3) AS y",
+            "SELECT x.a, y.b FROM (SELECT a FROM x WHERE a = 2) AS x POSITIONAL JOIN y",
+            "WITH s AS (SELECT b FROM y WHERE b = 3) SELECT x.a, s.b FROM x POSITIONAL JOIN s",
+            "WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM s POSITIONAL JOIN y",
+            "SELECT y.b, x.v FROM y POSITIONAL JOIN (SELECT COALESCE(a, 0) AS v FROM x) AS x",
+            "SELECT x.v, y.b FROM (SELECT COALESCE(a, 0) AS v FROM x) AS x POSITIONAL JOIN y",
+            "SELECT x.a, y.b FROM x POSITIONAL JOIN (SELECT b FROM y ORDER BY b DESC) AS y",
+            "SELECT z.b FROM z POSITIONAL JOIN (SELECT 1 AS a) AS x",
+            "SELECT x.a, y.b FROM ((SELECT a FROM x WHERE a = 2) AS x POSITIONAL JOIN y)",
+            "SELECT x.a, y.b FROM (x POSITIONAL JOIN (SELECT b FROM y WHERE b = 3) AS y)",
+            "WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM (s POSITIONAL JOIN y)",
+            "SELECT x.a, y.b FROM (x POSITIONAL JOIN y) JOIN y AS z ON x.a = z.b WHERE y.b = 3",
+            "SELECT x.a, y.b FROM (x POSITIONAL JOIN y) JOIN y AS z ON x.a = z.b "
+            "WHERE (x.a = 2 AND y.b = 3) OR (x.a = 3 AND y.b = 4)",
+            "SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) "
+            "JOIN y AS z ON x.a = z.b WHERE y.b = 2",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b IN (SELECT z.b FROM y AS z WHERE z.b = 3) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b IN (SELECT z.b FROM y AS z WHERE z.b > 100) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b = ANY (SELECT z.b FROM y AS z WHERE z.b = 3) POSITIONAL JOIN w",
+            "SELECT x.a, w.d FROM x JOIN y ON x.a = y.b "
+            "AND y.b = ANY (SELECT z.b FROM y AS z WHERE z.b > 100) POSITIONAL JOIN w",
+        ):
+            with self.subTest(sql=sql):
+                optimized = optimizer.optimize(sql, schema=self.schema, dialect="duckdb")
+                self.assertCountEqual(
+                    self.conn.execute(sql).fetchall(),
+                    self.conn.execute(optimized.sql("duckdb")).fetchall(),
+                )
+
     def test_pushdown_dnf_many_predicates(self):
         n = 50
         condition = " OR ".join(f"(x.a = {i:03d} AND x.b = {i:03d})" for i in range(n))
@@ -2519,6 +2585,37 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         expression = parse_one(sql, dialect=dialect)
                         self.assertEqual(rule(expression.copy()), expression)
 
+    def test_optimize_match_selecting_joins(self):
+        for dialect, kind, condition in (
+            ("duckdb", "ASOF", "x.a >= y.b"),
+            ("clickhouse", "ASOF", "x.a >= y.b AND x.b = y.c"),
+            ("clickhouse", "ANY", "x.a = y.b"),
+        ):
+            for sql in (
+                f"SELECT x.a, y.b FROM x CROSS JOIN z {kind} JOIN y ON {condition} AND z.c = y.c",
+                f"SELECT x.a, y.b FROM x JOIN z ON x.a = z.b {kind} JOIN y ON {condition}",
+            ):
+                for rule in (
+                    optimizer.optimize_joins.optimize_joins,
+                    optimizer.optimize_joins.reorder_joins,
+                ):
+                    with self.subTest(sql=sql, dialect=dialect, rule=rule.__name__):
+                        expression = parse_one(sql, dialect=dialect)
+                        self.assertEqual(rule(expression.copy()), expression)
+
+    def test_optimize_snowflake_asof_without_on(self):
+        expression = parse_one(
+            "SELECT x.a, y.b FROM x ASOF JOIN y MATCH_CONDITION (x.a >= y.b)",
+            dialect="snowflake",
+        )
+        self.assertEqual(optimizer.optimize_joins.optimize_joins(expression.copy()), expression)
+        optimized = optimizer.optimize(expression, schema=self.schema, dialect="snowflake")
+        self.assertIsNone(optimized.find(exp.Join).args.get("on"))
+        self.assertCountEqual(
+            self.conn.execute(expression.sql("duckdb")).fetchall(),
+            self.conn.execute(optimized.sql("duckdb")).fetchall(),
+        )
+
     def test_nearest_joins(self):
         for sql in (
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
@@ -2547,6 +2644,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.eliminate_joins.eliminate_joins,
             pretty=True,
         )
+
+    def test_eliminate_positional_joins(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for source in ("SELECT 1 AS b", "SELECT COUNT(*) AS b FROM y"):
+                sql = f"SELECT x.a FROM x {kind} JOIN ({source}) AS y"
+                with self.subTest(sql=sql):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.eliminate_joins.eliminate_joins(expression.copy()), expression
+                    )
 
     def test_eliminate_ctes(self):
         self.check_file(
@@ -2649,6 +2756,79 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
         self.check_file("merge_subqueries", optimize, execute=True, schema=self.schema)
+
+    def test_merge_positional_join_inputs(self):
+        for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
+            for sql in (
+                f"SELECT x.a, y.b FROM x {kind} JOIN (SELECT b FROM y WHERE b = 3) AS y",
+                f"SELECT x.a, y.b FROM (SELECT a FROM x WHERE a = 2) AS x {kind} JOIN y",
+                f"WITH s AS (SELECT b FROM y WHERE b = 3) SELECT x.a, s.b FROM x {kind} JOIN s",
+                f"WITH s AS (SELECT a FROM x WHERE a = 2) SELECT s.a, y.b FROM s {kind} JOIN y",
+                f"SELECT x.a, y.v FROM x {kind} JOIN (SELECT COALESCE(b, 0) AS v FROM y) AS y",
+                f"SELECT x.v, y.b FROM (SELECT COALESCE(a, 0) AS v FROM x) AS x {kind} JOIN y",
+                f"SELECT x.a, y.b FROM x {kind} JOIN (SELECT b FROM y ORDER BY b DESC) AS y",
+            ):
+                with self.subTest(sql=sql):
+                    expression = parse_one(sql, dialect=dialect)
+                    self.assertEqual(
+                        optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
+                    )
+
+    def test_merge_any_join_inputs(self):
+        schema = {"x": {"id": "INT", "val": "INT"}, "y": {"id": "INT", "val": "INT"}}
+        for sql in (
+            "SELECT x.id, s.v FROM x LEFT ANY JOIN (SELECT id, val + 1 AS v FROM y) AS s "
+            "ON x.id = s.id",
+            "WITH s AS (SELECT id, val + 1 AS v FROM y) "
+            "SELECT x.id, s.v FROM x LEFT ANY JOIN s ON x.id = s.id",
+            "SELECT s.v, y.id FROM (SELECT id, val + 1 AS v FROM x) AS s "
+            "RIGHT ANY JOIN y ON s.id = y.id",
+        ):
+            with self.subTest(sql=sql):
+                expression = qualify(
+                    parse_one(sql, dialect="clickhouse"), schema=schema, dialect="clickhouse"
+                )
+                self.assertEqual(
+                    optimizer.merge_subqueries.merge_subqueries(expression.copy()), expression
+                )
+
+    def test_merge_asof_join_inputs(self):
+        schema = {"x": {"id": "INT", "ts": "INT"}, "y": {"id": "INT", "ts": "INT", "val": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute(
+                "CREATE TABLE x (id INT, ts INT); INSERT INTO x VALUES (1, 20), (2, 20); "
+                "CREATE TABLE y (id INT, ts INT, val INT); "
+                "INSERT INTO y VALUES (1, 10, 100), (1, 15, 5)"
+            )
+            for dialect in ("duckdb", "clickhouse", "snowflake"):
+                condition = (
+                    "MATCH_CONDITION (x.ts >= s.ts) ON x.id = s.id"
+                    if dialect == "snowflake"
+                    else "ON x.id = s.id AND x.ts >= s.ts"
+                )
+                for subquery in (
+                    "SELECT id, ts, val FROM y WHERE val > 10",
+                    "SELECT id, ts, COALESCE(val, 0) AS val FROM y",
+                ):
+                    for sql in (
+                        f"SELECT x.id, s.val FROM x ASOF JOIN ({subquery}) AS s {condition}",
+                        f"WITH s AS ({subquery}) SELECT x.id, s.val FROM x ASOF JOIN s {condition}",
+                    ):
+                        with self.subTest(sql=sql, dialect=dialect):
+                            expression = qualify(
+                                parse_one(sql, dialect=dialect), schema=schema, dialect=dialect
+                            )
+                            self.assertEqual(
+                                optimizer.merge_subqueries.merge_subqueries(expression.copy()),
+                                expression,
+                            )
+                            optimized = optimizer.optimize(
+                                expression, schema=schema, dialect=dialect
+                            )
+                            self.assertCountEqual(
+                                connection.execute(expression.sql("duckdb")).fetchall(),
+                                connection.execute(optimized.sql("duckdb")).fetchall(),
+                            )
 
     def test_merge_subqueries_match(self):
         sql = (

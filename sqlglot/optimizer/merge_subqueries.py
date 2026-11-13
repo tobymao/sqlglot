@@ -433,8 +433,14 @@ def _mergeable(
         or any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS)
         or inner_select.args.get("from_") is None
         or outer_scope.pivots
-        or any(j.args.get("nearest") for j in outer_args.get("joins", []))
-        or any(j.args.get("nearest") for j in inner_select.args.get("joins", []))
+        # Merging can move filters and projections across row pairing and padding.
+        or any(
+            join.method in ("ASOF", "POSITIONAL")
+            or join.kind in ("ASOF", "ANY", "PASTE")
+            or join.args.get("nearest")
+            for scope in (outer_scope, inner_scope)
+            for join in scope.find_all(exp.Join)
+        )
         or (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         or (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
         or (

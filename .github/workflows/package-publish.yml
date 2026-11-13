@@ -25,6 +25,8 @@ jobs:
             archs: universal2
           - os: windows-latest
             archs: AMD64
+          - os: windows-11-arm
+            archs: ARM64
     steps:
       - uses: actions/checkout@v5
         with:

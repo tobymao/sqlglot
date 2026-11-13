@@ -1206,6 +1206,13 @@ class TestParser(unittest.TestCase):
         add_expr.this.assert_is(exp.Interval)
         add_expr.expression.assert_is(exp.Cast)
 
+        alias_ast = parse_one("SELECT INTERVAL '1 day' + '2' days", read="postgres")
+        alias_expr = alias_ast.expressions[0].assert_is(exp.Alias)
+        self.assertEqual(alias_expr.alias, "days")
+        alias_add = alias_expr.this.assert_is(exp.Add)
+        alias_add.this.assert_is(exp.Interval)
+        alias_add.expression.assert_is(exp.Literal)
+
     def test_parse_concat_ws(self):
         ast = parse_one("CONCAT_WS(' ', 'John', 'Doe')")
 

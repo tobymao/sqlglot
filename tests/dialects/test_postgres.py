@@ -468,6 +468,14 @@ class TestPostgres(Validator):
             "SELECT INTERVAL '1 DAY' + '2' AS dt",
         )
         self.validate_identity(
+            "SELECT INTERVAL '1 day' + '2' days",
+            "SELECT INTERVAL '1 DAY' + '2' AS days",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL '1 day' + '2' hours",
+            "SELECT INTERVAL '1 DAY' + '2' AS hours",
+        )
+        self.validate_identity(
             "SELECT SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - SUM(x) OVER (PARTITION BY y ORDER BY interval ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total"
         )
         self.validate_identity(

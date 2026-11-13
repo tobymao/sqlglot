@@ -11,10 +11,12 @@ if t.TYPE_CHECKING:
 
 def _annotate_at_time_zone(self: TypeAnnotator, expression: exp.AtTimeZone) -> exp.Expr:
     this = expression.this
-    if this.is_type(exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ):
+    if this.is_type(exp.DType.DATE, exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ):
         return self._set_type(expression, exp.DType.TIMESTAMPTZ)
     if this.is_type(exp.DType.TIMESTAMPTZ):
         return self._set_type(expression, exp.DType.TIMESTAMP)
+    if this.is_type(exp.DType.TIMETZ):
+        return self._set_type(expression, exp.DType.TIMETZ)
     return self._set_type(expression, exp.DType.UNKNOWN)
 
 

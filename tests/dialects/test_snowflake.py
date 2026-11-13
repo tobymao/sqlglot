@@ -3,6 +3,7 @@ from unittest import mock
 from sqlglot import ParseError, UnsupportedError, exp, parse_one
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+from sqlglot.optimizer.optimize_joins import optimize_joins
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from sqlglot.parser import logger as parser_logger
@@ -12,6 +13,22 @@ from tests.dialects.test_dialect import Validator
 class TestSnowflake(Validator):
     maxDiff = None
     dialect = "snowflake"
+
+    def test_grouped_generate_date_array(self):
+        sql = (
+            "SELECT a.x, u.d, c.z FROM a, "
+            "UNNEST(GENERATE_DATE_ARRAY(DATE '2024-01-01', DATE '2024-01-02')) AS u(d) "
+            "RIGHT JOIN c ON u.d = c.z"
+        )
+        expression = optimize_joins(parse_one(sql))
+        self.assertEqual(
+            expression.sql("snowflake"),
+            "SELECT a.x, u.d, c.z FROM a CROSS JOIN "
+            "((SELECT DATEADD(DAY, CAST(d AS INT), CAST('2024-01-01' AS DATE)) AS d "
+            "FROM TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, "
+            "DATEDIFF(DAY, CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE)) + 1))) "
+            "AS u(seq, key, path, index, d, this)) AS u(d) RIGHT JOIN c ON u.d = c.z)",
+        )
 
     def test_asof_join(self):
         for op in (">", ">=", "<", "<="):

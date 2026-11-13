@@ -132,7 +132,7 @@ def unnest_generate_series(expression: exp.Expr) -> exp.Expr:
     """Unnests GENERATE_SERIES or SEQUENCE table references."""
     this = expression.this
     if isinstance(expression, exp.Table) and isinstance(this, exp.GenerateSeries):
-        unnest = exp.Unnest(expressions=[this])
+        unnest = exp.Unnest(expressions=[this], joins=expression.args.get("joins"))
         if expression.alias:
             return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
 

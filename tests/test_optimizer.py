@@ -2592,6 +2592,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                                 connection.execute(optimized.sql(dialect)).fetchall(), expected
                             )
 
+    def test_qualify_udtf_join_groups(self):
+        for source in (
+            "UNNEST(ARRAY[10]) AS u(y)",
+            "LATERAL (SELECT 10 AS y) AS u",
+            "(VALUES (10)) AS u(y)",
+        ):
+            for projection in ("g.z", "g.*"):
+                with self.subTest(source=source, projection=projection):
+                    sql = (
+                        "WITH c(z) AS (VALUES (10), (20)) "
+                        f"SELECT {projection} FROM ({source} RIGHT JOIN c ON u.y = c.z) AS g"
+                    )
+                    expected = [(10,), (20,)] if projection == "g.z" else [(10, 10), (None, 20)]
+                    for expression in (
+                        parse_one(sql, dialect="duckdb"),
+                        qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb"),
+                        optimizer.optimize(sql, dialect="duckdb"),
+                    ):
+                        self.assertCountEqual(
+                            self.conn.execute(expression.sql("duckdb")).fetchall(), expected
+                        )
+
     def test_optimize_comma_join_predicates(self):
         schema = {
             "a": {"x": "INT"},

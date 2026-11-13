@@ -262,12 +262,12 @@ def _expand_join_construct(derived_table: exp.Subquery) -> bool:
     # unaliased wrapper
     source = derived_table.this
     joins: list[exp.Expr] = []
-    while isinstance(source, (exp.Subquery, exp.Table)):
+    while isinstance(source, (exp.Subquery, exp.Table, exp.UDTF)):
         joins[:0] = source.args.get("joins") or []
         if (
-            isinstance(source, exp.Table)
+            not isinstance(source, exp.Subquery)
             or source.alias
-            or not isinstance(source.this, (exp.Subquery, exp.Table))
+            or not isinstance(source.this, (exp.Subquery, exp.Table, exp.UDTF))
         ):
             break
         source = source.this

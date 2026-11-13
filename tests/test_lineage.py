@@ -281,6 +281,23 @@ class TestLineage(unittest.TestCase):
         )
         assert len(node.downstream) == 3
 
+    def test_lineage_lateral_join_group(self) -> None:
+        for source in (
+            "b RIGHT JOIN c ON b.y = c.z",
+            "((b RIGHT JOIN c ON b.y = c.z))",
+            "UNNEST(ARRAY[10]) AS u(y) RIGHT JOIN c ON u.y = c.z",
+            "(VALUES (10)) AS u(y) RIGHT JOIN c ON u.y = c.z",
+        ):
+            with self.subTest(source=source):
+                node = lineage(
+                    "z",
+                    f"SELECT l.z FROM a, {source}, LATERAL (SELECT c.z AS z) AS l",
+                    schema={"a": {"x": "INT"}, "b": {"y": "INT"}, "c": {"z": "INT"}},
+                )
+                downstream = node.downstream[0].downstream[0]
+                self.assertEqual(downstream.name, "c.z")
+                self.assertEqual(downstream.expression.sql(), "c AS c")
+
     def test_lineage_lateral_flatten(self) -> None:
         node = lineage(
             "VALUE",

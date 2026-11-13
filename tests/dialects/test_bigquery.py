@@ -3078,6 +3078,11 @@ OPTIONS (
     def test_grouped_join_operands(self):
         for sql, expected in (
             (
+                "SELECT a.x, c.z FROM a, GENERATE_SERIES(1, 2) RIGHT JOIN c ON TRUE",
+                "SELECT a.x, c.z FROM a CROSS JOIN "
+                "(UNNEST(GENERATE_ARRAY(1, 2)) RIGHT JOIN c ON TRUE)",
+            ),
+            (
                 "SELECT a.x, u.y, c.z FROM a, UNNEST(ARRAY[10, 30]) AS u(y) "
                 "RIGHT JOIN c ON u.y = c.z",
                 "SELECT a.x, y, c.z FROM a CROSS JOIN "

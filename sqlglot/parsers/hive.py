@@ -60,6 +60,7 @@ class HiveParser(parser.Parser):
     JOINS_HAVE_EQUAL_PRECEDENCE = True
     ADD_JOIN_ON_TRUE = True
     ALTER_TABLE_PARTITIONS = True
+    SUPPORTS_MULTI_PART_INTERVAL_ADD = True
 
     # Strip trailing fractional zeros and normalize zero when inferring BD literal types.
     NORMALIZE_DECIMAL_LITERALS = True

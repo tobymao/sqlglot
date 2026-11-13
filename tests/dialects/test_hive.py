@@ -441,6 +441,16 @@ class TestHive(Validator):
             },
         )
 
+    def test_interval(self):
+        self.validate_identity(
+            "SELECT INTERVAL 23 HOUR + 59 MINUTE AS result",
+            "SELECT INTERVAL '23' HOUR + INTERVAL '59' MINUTE AS result",
+        )
+        self.validate_identity(
+            "SELECT INTERVAL '23' HOUR + '59' MINUTE AS result",
+            "SELECT INTERVAL '23' HOUR + INTERVAL '59' MINUTE AS result",
+        )
+
     def test_time(self):
         # A missing parse format falls back to plain CAST, instead of UNIX_TIMESTAMP(x, None)
         self.validate_all("STR_TO_DATE(x)", write={"hive": "CAST(x AS DATE)"})

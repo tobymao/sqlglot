@@ -2570,6 +2570,70 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_qualify_correlated_udtf_join_groups(self):
+        for source, expected in (
+            ("LATERAL (SELECT a.x AS y) AS u", [(1,)]),
+            ("UNNEST(a.arr) AS u(y)", [(1,), (2,)]),
+        ):
+            sql = (
+                "WITH a AS (SELECT 1 AS x, ARRAY[1, 2] AS arr), c AS (SELECT 2 AS z) "
+                f"SELECT g.y FROM a CROSS JOIN ({source} CROSS JOIN c) AS g"
+            )
+            for rule in (qualify, optimizer.optimize):
+                with self.subTest(source=source, rule=rule.__name__):
+                    expression = rule(parse_one(sql, dialect="postgres"), dialect="postgres")
+                    self.assertCountEqual(
+                        self.conn.execute(expression.sql("duckdb")).fetchall(), expected
+                    )
+
+    def test_qualify_udtf_join_groups(self):
+        for source in (
+            "UNNEST(ARRAY[10]) AS u(y)",
+            "LATERAL (SELECT 10 AS y) AS u",
+            "(VALUES (10)) AS u(y)",
+        ):
+            for projection in ("g.z", "g.*"):
+                with self.subTest(source=source, projection=projection):
+                    sql = (
+                        "WITH c(z) AS (VALUES (10), (20)) "
+                        f"SELECT {projection} FROM ({source} RIGHT JOIN c ON u.y = c.z) AS g"
+                    )
+                    expected = [(10,), (20,)] if projection == "g.z" else [(10, 10), (None, 20)]
+                    for expression in (
+                        parse_one(sql, dialect="duckdb"),
+                        qualify(parse_one(sql, dialect="duckdb"), dialect="duckdb"),
+                        optimizer.optimize(sql, dialect="duckdb"),
+                    ):
+                        self.assertCountEqual(
+                            self.conn.execute(expression.sql("duckdb")).fetchall(), expected
+                        )
+
+    def test_grouped_udtf_scope(self):
+        schema = {"a": {"x": "INT"}, "c": {"z": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+            for operand in (
+                "UNNEST(ARRAY[10, 30]) AS u(y)",
+                "LATERAL (SELECT 10 AS y) AS u",
+                "(VALUES (10), (30)) AS u(y)",
+            ):
+                with self.subTest(operand=operand):
+                    sql = (
+                        f"SELECT a.x, u.y, q.z FROM a CROSS JOIN ({operand} "
+                        "RIGHT JOIN (SELECT z FROM c) AS q ON u.y = q.z)"
+                    )
+                    expected = connection.execute(sql).fetchall()
+                    grouped = parse_one(sql)
+                    for result in (
+                        qualify(grouped.copy(), schema=schema, dialect="postgres"),
+                        optimizer.merge_subqueries.merge_subqueries(grouped.copy()),
+                        optimizer.optimize(grouped.copy(), schema=schema, dialect="postgres"),
+                    ):
+                        self.assertCountEqual(
+                            connection.execute(result.sql("postgres")).fetchall(), expected
+                        )
+
     def test_optimize_positional_joins(self):
         for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):
             for sql in (

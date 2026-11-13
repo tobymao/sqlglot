@@ -111,7 +111,7 @@ def qualify_tables(
     # become derived tables afterwards, so the scopes are rebuilt until nothing else is expanded
     # (a list is used so that every construct in a pass expands before the rebuild)
     scopes = traverse_scope(expression)
-    while any([_expand_join_construct(d) for scope in scopes for d in scope.derived_tables]):
+    while any([_expand_join_construct(d, scope) for scope in scopes for d in scope.derived_tables]):
         scopes = traverse_scope(expression)
 
     for scope in scopes:
@@ -257,17 +257,17 @@ def qualify_tables(
     return expression
 
 
-def _expand_join_construct(derived_table: exp.Subquery) -> bool:
+def _expand_join_construct(derived_table: exp.Subquery, scope: Scope) -> bool:
     # Expands e.g. ((a JOIN b) JOIN c) AS j into a SELECT *, collecting the joins of every
     # unaliased wrapper
     source = derived_table.this
     joins: list[exp.Expr] = []
-    while isinstance(source, (exp.Subquery, exp.Table)):
+    while isinstance(source, (exp.Subquery, exp.Table, exp.UDTF)):
         joins[:0] = source.args.get("joins") or []
         if (
-            isinstance(source, exp.Table)
+            not isinstance(source, exp.Subquery)
             or source.alias
-            or not isinstance(source.this, (exp.Subquery, exp.Table))
+            or not isinstance(source.this, (exp.Subquery, exp.Table, exp.UDTF))
         ):
             break
         source = source.this
@@ -276,6 +276,18 @@ def _expand_join_construct(derived_table: exp.Subquery) -> bool:
         source.set("joins", None)
         derived_table.this.replace(exp.select("*").from_(source.copy(), copy=False))
         derived_table.this.set("joins", joins or None)
+
+        source_scope = scope.sources.get(derived_table.alias)
+        if (
+            isinstance(source, exp.UDTF)
+            and isinstance(source_scope, Scope)
+            and source_scope.external_columns
+        ):
+            alias = derived_table.args.pop("alias", None)
+            outer_joins = derived_table.args.pop("joins", None)
+            derived_table.replace(
+                exp.Lateral(this=derived_table.copy(), alias=alias, joins=outer_joins)
+            )
         return True
 
     return False

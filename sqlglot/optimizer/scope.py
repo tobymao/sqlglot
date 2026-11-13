@@ -226,7 +226,7 @@ class Scope:
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
             elif type(node) is exp.Lateral or (
-                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
+                isinstance(node, exp.UDTF) and _is_from_or_join(node)
             ):
                 if _is_semi_or_anti_join_rhs(node):
                     self._semi_anti_join_tables.add(node.alias_or_name)
@@ -948,18 +948,20 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
     if from_:
         expressions.append(from_.this)
 
-    for join in scope.expression.args.get("joins") or []:
-        expressions.append(join.this)
-
     if isinstance(scope.expression, (exp.Table, exp.Subquery)):
         # A Subquery-rooted scope, e.g., the FROM clause of a DML statement, a DDL source or
         # a parenthesized query like (SELECT ...) LIMIT 1, scopes its own inner query as a
         # derived table
         expressions.append(scope.expression)
 
-    expressions.extend(scope.expression.args.get("laterals") or [])
+    for join in scope.expression.args.get("joins") or []:
+        expressions.append(join.this)
 
-    for expression in expressions:
+    expressions.extend(scope.expression.args.get("laterals") or [])
+    expressions.reverse()
+
+    while expressions:
+        expression = expressions.pop()
         if isinstance(expression, exp.Final):
             expression = expression.this
         if isinstance(expression, exp.Table):
@@ -980,7 +982,9 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
 
             # Make sure to not include the joins twice
             if expression is not scope.expression:
-                expressions.extend(join.this for join in expression.args.get("joins") or [])
+                expressions.extend(
+                    join.this for join in reversed(expression.args.get("joins") or [])
+                )
 
             continue
 
@@ -990,6 +994,9 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
         # TODO (mypyc): rebind to exp.Expr to avoid DerivedTable/UDTF trait vtable dispatch
         node: exp.Expr = expression
 
+        if node is not scope.expression:
+            expressions.extend(join.this for join in reversed(node.args.get("joins") or []))
+
         if isinstance(expression, exp.UDTF):
             lateral_sources = sources
             scope_type = ScopeType.UDTF
@@ -998,14 +1005,9 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             lateral_sources = None
             scope_type = ScopeType.DERIVED_TABLE
             scopes = scope.derived_table_scopes
-            if node is not scope.expression:
-                # The scope expression's own joins were already added above
-                expressions.extend(join.this for join in node.args.get("joins") or [])
         else:
             # Makes sure we check for possible sources in nested table constructs
             expressions.append(node.this)
-            if node is not scope.expression:
-                expressions.extend(join.this for join in node.args.get("joins") or [])
             continue
 
         child_scope: Scope | None = None
@@ -1120,6 +1122,12 @@ def walk_in_scope(
 
         for vs in reversed(node.args.values()):
             if isinstance(vs, list):
+                if (
+                    node is expression
+                    and isinstance(node, exp.UDTF)
+                    and vs is node.args.get("joins")
+                ):
+                    continue
                 for v in reversed(vs):
                     if isinstance(v, exp.Expr):
                         stack.append(v)

@@ -31,6 +31,17 @@ class TestTeradata(Validator):
         self.validate_identity('SELECT curdate, "curdate", t.curdate FROM t')
         self.validate_identity("CREATE TABLE t (curdate DATE)")
 
+    def test_curtime(self):
+        for sql in ("CURTIME()", "curtime()"):
+            self.validate_identity(sql, "CURRENT_TIME").assert_is(exp.CurrentTime)
+            self.validate_identity(
+                f"SELECT {sql} AS request_time", "SELECT CURRENT_TIME AS request_time"
+            )
+        self.validate_identity('SELECT curtime, "curtime", t.curtime FROM t')
+        self.validate_identity("CREATE TABLE t (curtime TIME)")
+        self.validate_identity("SELECT t.CURTIME() FROM t")
+        self.assertIsInstance(parse_one("CURTIME()"), exp.Anonymous)
+
     def test_current_time(self):
         self.validate_identity("current_time", "CURRENT_TIME").assert_is(exp.CurrentTime)
         for precision in (0, 3, 6):

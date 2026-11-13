@@ -139,6 +139,7 @@ class TeradataParser(parser.Parser):
         "CARDINALITY": exp.ArraySize.from_arg_list,
         "CHARACTERS": exp.Length.from_arg_list,
         "CURDATE": exp.CurrentDate.from_arg_list,
+        "CURTIME": exp.CurrentTime.from_arg_list,
         "RANDOM": lambda args: exp.Rand(lower=seq_get(args, 0), upper=seq_get(args, 1)),
         "TRUNC": build_formatted_trunc,
     }

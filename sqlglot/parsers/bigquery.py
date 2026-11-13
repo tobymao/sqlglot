@@ -303,6 +303,14 @@ class BigQueryParser(parser.Parser):
         "TIME_SUB": build_date_delta_with_interval(exp.TimeSub),
         "TIMESTAMP": _build_timestamp,
         "TIMESTAMP_ADD": build_date_delta_with_interval(exp.TimestampAdd),
+        "TIMESTAMP_DIFF": lambda args: _normalize_bare_week(
+            exp.TimestampDiff(
+                this=seq_get(args, 0),
+                expression=seq_get(args, 1),
+                unit=seq_get(args, 2),
+                boundary_for_date=True,
+            )
+        ),
         "TIMESTAMP_SUB": build_date_delta_with_interval(exp.TimestampSub),
         "TIMESTAMP_MICROS": lambda args: exp.UnixToTime(
             this=seq_get(args, 0), scale=exp.UnixToTime.MICROS

@@ -519,7 +519,9 @@ class BigQueryGenerator(generator.Generator):
         exp.TimestampFromParts: rename_func("DATETIME"),
         exp.TimeSub: date_add_interval_sql("TIME", "SUB"),
         exp.TimestampAdd: date_add_interval_sql("TIMESTAMP", "ADD"),
-        exp.TimestampDiff: rename_func("TIMESTAMP_DIFF"),
+        exp.TimestampDiff: lambda self, e: self.func(
+            "TIMESTAMP_DIFF", e.this, e.expression, e.unit
+        ),
         exp.TimestampSub: date_add_interval_sql("TIMESTAMP", "SUB"),
         exp.TimeStrToTime: timestrtotime_sql,
         exp.Transaction: lambda *_: "BEGIN TRANSACTION",

@@ -3,6 +3,7 @@ import sys
 
 from sqlglot import UnsupportedError, expressions as exp
 from sqlglot.dialects.mysql import MySQL
+from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
 
 
@@ -17,6 +18,13 @@ class TestMySQL(Validator):
         self.validate_identity(
             "INSERT INTO t (`table`) TABLE u", "INSERT INTO t (`table`) SELECT * FROM u"
         )
+
+    def test_timestampdiff(self):
+        sql = "SELECT TIMESTAMPDIFF(MINUTE, TIMESTAMP('2024-01-01 00:00:45'), TIMESTAMP('2024-01-01 01:00:15'))"
+        expected = "SELECT DATE_SUB('MINUTE', CAST('2024-01-01 00:00:45' AS TIMESTAMP), CAST('2024-01-01 01:00:15' AS TIMESTAMP))"
+        self.validate_all(sql, write={"duckdb": expected})
+        expression = annotate_types(self.parse_one(sql), dialect="mysql")
+        self.assertEqual(expression.sql("duckdb"), expected)
 
     def test_timestampadd(self):
         for unit in ("SECOND", "MINUTE", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR"):

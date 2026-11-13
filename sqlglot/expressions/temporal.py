@@ -135,7 +135,7 @@ class TimestampAdd(Expression, Func, TimeUnit):
 
 class TimestampDiff(Expression, Func, TimeUnit):
     _sql_names = ["TIMESTAMPDIFF", "TIMESTAMP_DIFF"]
-    arg_types = {"this": True, "expression": True, "unit": False}
+    arg_types = {"this": True, "expression": True, "unit": False, "boundary_for_date": False}
 
 
 class TimestampSub(Expression, Func, TimeUnit):

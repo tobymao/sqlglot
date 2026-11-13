@@ -66,8 +66,13 @@ def _annotate_datetime_or_timestamp_add(
     return self._set_type(expression, exp.DType.DATETIME)
 
 
-def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
+def _annotate_int_pair_as_double(
+    self: TypeAnnotator, expression: exp.SafeDivide | exp.Pow
+) -> exp.Expr:
     """
+    Shared by SAFE_DIVIDE and POW/POWER: both promote INT64/INT64 to FLOAT64,
+    otherwise follow normal numeric coercion.
+
     +------------+------------+------------+-------------+---------+
     | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
     +------------+------------+------------+-------------+---------+
@@ -431,7 +436,8 @@ EXPRESSION_METADATA = {
     },
     exp.ParseBignumeric: {"returns": exp.DType.BIGDECIMAL},
     exp.ParseNumeric: {"returns": exp.DType.DECIMAL},
-    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
+    exp.Pow: {"annotator": lambda self, e: _annotate_int_pair_as_double(self, e)},
+    exp.SafeDivide: {"annotator": lambda self, e: _annotate_int_pair_as_double(self, e)},
     exp.ToCodePoints: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.from_str("ARRAY<BIGINT>", dialect="bigquery")

@@ -826,3 +826,8 @@ SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS
 # title: CTE merge leaves an uncorrelated locally shadowed alias unchanged
 WITH source_z AS (SELECT b FROM z), d AS (SELECT z.b FROM x AS y1 JOIN source_z AS z ON EXISTS (SELECT 1 FROM x AS z WHERE z.a > z.b)) SELECT d.b FROM d CROSS JOIN z AS z;
 SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS z WHERE z.a > z.b) CROSS JOIN z AS z;
+
+# title: A positional join in a separate CTE does not block ordinary derived-table merging
+# dialect: duckdb
+WITH p AS (SELECT x.a FROM x POSITIONAL JOIN y) SELECT s.a FROM (SELECT x.a FROM x) AS s CROSS JOIN p;
+WITH p AS (SELECT x.a AS a FROM x AS x POSITIONAL JOIN y AS y) SELECT x.a AS a FROM x AS x CROSS JOIN p AS p;

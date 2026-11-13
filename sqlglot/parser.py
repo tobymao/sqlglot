@@ -10395,8 +10395,8 @@ class Parser:
                 # Snowflake FILE_FORMAT case, Databricks COPY & FORMAT options
                 param.set("expressions", self._parse_wrapped_options())
             elif prev == "FILE_FORMAT":
-                # T-SQL's external file format case
-                param.set("expression", self._parse_field())
+                # T-SQL's external file format case, Snowflake's possibly qualified format name
+                param.set("expression", self._parse_string() or self._parse_table_parts())
             elif (
                 prev == "FORMAT"
                 and self._prev.token_type == TokenType.ALIAS

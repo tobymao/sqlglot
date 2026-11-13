@@ -42,7 +42,12 @@ def eliminate_joins(expression: E) -> E:
 
         # Reverse the joins so we can remove chains of unused joins
         for join in reversed(joins):
-            if join.is_semi_or_anti_join or join.args.get("nearest"):
+            if (
+                join.is_semi_or_anti_join
+                or join.method == "POSITIONAL"
+                or join.kind == "PASTE"
+                or join.args.get("nearest")
+            ):
                 continue
 
             alias = join.alias_or_name
@@ -60,7 +65,14 @@ def _should_eliminate_join(scope: Scope, join: exp.Join, alias: str) -> bool:
         and not _join_is_used(scope, join, alias)
         and (
             (join.side == "LEFT" and _is_joined_on_all_unique_outputs(inner_source, join))
-            or (not join.args.get("on") and _has_single_output_row(inner_source))
+            or (
+                not join.side
+                and not join.method
+                and not join.args.get("on")
+                and not join.args.get("using")
+                and not join.args.get("match_condition")
+                and _has_single_output_row(inner_source)
+            )
         )
     )
 

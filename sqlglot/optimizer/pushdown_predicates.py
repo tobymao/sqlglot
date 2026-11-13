@@ -49,7 +49,13 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
             where: exp.Expr | None = select.args.get("where")
             joins: list[exp.Join] = select.args.get("joins") or []
 
-            if any(join.args.get("nearest") for join in joins):
+            # Filtering join inputs can change which rows these joins pair or select.
+            if any(
+                join.method in ("ASOF", "POSITIONAL")
+                or join.kind in ("ASOF", "ANY", "PASTE")
+                or join.args.get("nearest")
+                for join in scope.find_all(exp.Join)
+            ):
                 continue
 
             if where:

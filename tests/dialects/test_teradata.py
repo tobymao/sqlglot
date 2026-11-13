@@ -31,6 +31,44 @@ class TestTeradata(Validator):
         self.validate_identity('SELECT curdate, "curdate", t.curdate FROM t')
         self.validate_identity("CREATE TABLE t (curdate DATE)")
 
+    def test_curtime(self):
+        for sql in ("CURTIME()", "curtime()"):
+            self.validate_identity(sql, "CURRENT_TIME").assert_is(exp.CurrentTime)
+            self.validate_identity(
+                f"SELECT {sql} AS request_time", "SELECT CURRENT_TIME AS request_time"
+            )
+        self.validate_identity('SELECT curtime, "curtime", t.curtime FROM t')
+        self.validate_identity("CREATE TABLE t (curtime TIME)")
+        self.validate_identity("SELECT t.CURTIME() FROM t")
+        self.assertIsInstance(parse_one("CURTIME()"), exp.Anonymous)
+
+    def test_current_time(self):
+        self.validate_identity("current_time", "CURRENT_TIME").assert_is(exp.CurrentTime)
+        for precision in (0, 3, 6):
+            self.validate_identity(f"CURRENT_TIME({precision})").assert_is(exp.CurrentTime)
+        self.validate_identity("SELECT CURRENT_TIME AS request_time")
+        self.validate_identity("CURRENT_TIME AT TIME ZONE 'America Pacific'")
+        self.validate_identity('SELECT t.current_time, "CURRENT_TIME" FROM t')
+
+    def test_dayofweek(self):
+        self.validate_identity("dayofweek(d)", "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
+        for value in (
+            "d",
+            "CURRENT_DATE",
+            "CAST('2026-11-15' AS DATE)",
+            "CAST('2026-11-15 12:00:00' AS TIMESTAMP)",
+            "NULL",
+        ):
+            expression = self.validate_identity(f"DAYOFWEEK({value})").assert_is(exp.DayOfWeek)
+            self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+        self.validate_all(
+            "DAYOFWEEK(d)",
+            read={"": "DAY_OF_WEEK(d)", "hive": "DAYOFWEEK(d)"},
+            write={"": "DAY_OF_WEEK(d)", "teradata": "DAYOFWEEK(d)", "hive": "DAYOFWEEK(d)"},
+        )
+        self.validate_identity('SELECT dayofweek, "dayofweek", t.dayofweek FROM t')
+        self.validate_identity("SELECT t.DAYOFWEEK(d) FROM t")
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

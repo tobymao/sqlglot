@@ -173,9 +173,12 @@ def unnest(select, parent_select, next_alias_name):
         return
 
     if isinstance(clause, exp.Join):
-        # A later RIGHT/FULL join can preserve rows that the hoisted WHERE would discard.
+        # Later joins can pad or pair rows before the hoisted WHERE filters them.
         joins = parent_select.args.get("joins") or []
-        if any(join.side in ("RIGHT", "FULL") for join in joins[joins.index(clause) + 1 :]):
+        if any(
+            join.side in ("RIGHT", "FULL") or join.method == "POSITIONAL" or join.kind == "PASTE"
+            for join in joins[joins.index(clause) + 1 :]
+        ):
             return
 
     column = _other_operand(predicate)

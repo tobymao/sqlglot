@@ -544,6 +544,9 @@ class ClickHouseGenerator(generator.Generator):
         else:
             return default(expression)
 
+        if isinstance(arr.this, exp.Query):
+            return default(expression)
+
         return prefix + self.func("has", arr.this.unnest(), this)
 
     def eq_sql(self, expression: exp.EQ) -> str:

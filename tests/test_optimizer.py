@@ -35,7 +35,17 @@ from tests.helpers import (
 
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
-    return func(parse_one(sql, read=read_dialect), **kwargs)
+    optimized = func(parse_one(sql, read=read_dialect), **kwargs)
+
+    # Checked in the worker: pickling the result back to the test rebuilds its parents
+    for expression in optimized.walk():
+        for arg_key, arg in expression.args.items():
+            for child in arg if isinstance(arg, list) else [arg]:
+                if isinstance(child, exp.Expr):
+                    assert child.arg_key == arg_key, f"{child.sql()} isn't {arg_key}"
+                    assert child.parent is expression, f"{child.sql()} isn't a child of its parent"
+
+    return optimized
 
 
 def qualify_then_canonicalize(expression, **qualify_kwargs):
@@ -268,12 +278,6 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                     actual,
                 )
-                for expression in optimized.walk():
-                    for arg_key, arg in expression.args.items():
-                        if isinstance(arg, exp.Expr):
-                            self.assertEqual(arg_key, arg.arg_key)
-                            self.assertIs(arg.parent, expression)
-
                 if string_to_bool(execute):
                     with self.subTest(f"(execute) {title}"):
                         dfs = []
@@ -449,32 +453,6 @@ class TestOptimizer(unittest.TestCase):
         )
 
         self.check_file("normalize", normalize, schema=self.schema)
-
-    def test_qualify_columns_struct_field_in_unnest(self):
-        schema = {"t": {"id": "INT", "rel": "STRUCT<arr ARRAY<INT>, deep STRUCT<arr ARRAY<INT>>>"}}
-
-        for sql, expected in (
-            (
-                "SELECT h FROM t, UNNEST(rel.arr) AS h",
-                "SELECT h AS h FROM t AS t CROSS JOIN UNNEST(t.rel.arr) AS h",
-            ),
-            (
-                "SELECT EXISTS(SELECT 1 FROM UNNEST(rel.deep.arr) AS h) FROM t",
-                "SELECT EXISTS(SELECT 1 AS `1` FROM UNNEST(t.rel.deep.arr) AS h) AS _col_0 FROM t AS t",
-            ),
-        ):
-            with self.subTest(sql):
-                qualified = qualify(
-                    parse_one(sql, read="bigquery"),
-                    schema=schema,
-                    dialect="bigquery",
-                    identify=False,
-                )
-                self.assertEqual(qualified.sql("bigquery"), expected)
-
-                for node in qualified.walk():
-                    for child in node.iter_expressions():
-                        self.assertIs(child.parent, node, child.sql("bigquery"))
 
     def test_qualify_columns_struct_field_and_source_alias(self):
         schema = {

@@ -2612,7 +2612,8 @@ class Parser:
         def extend_props(temp_props: exp.Properties | None) -> None:
             nonlocal properties
             if properties and temp_props:
-                properties.expressions.extend(temp_props.expressions)
+                for prop in temp_props.expressions:
+                    properties.append("expressions", prop)
             elif temp_props:
                 properties = temp_props
 

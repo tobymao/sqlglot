@@ -760,9 +760,6 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     join_columns: dict[str, set[str]] = {}
     for column in itertools.chain(scope.columns, scope.stars):
-        # A column in a UDTF, e.g. `UNNEST(col.field)`, is also its parent scope's, so it may
-        # have been replaced already; converting the detached column again would steal the
-        # fields of the Dot that replaced it
         if isinstance(column, exp.Dot) or not column.parent:
             continue
 

@@ -450,6 +450,32 @@ class TestOptimizer(unittest.TestCase):
 
         self.check_file("normalize", normalize, schema=self.schema)
 
+    def test_qualify_columns_struct_field_in_unnest(self):
+        schema = {"t": {"id": "INT", "rel": "STRUCT<arr ARRAY<INT>, deep STRUCT<arr ARRAY<INT>>>"}}
+
+        for sql, expected in (
+            (
+                "SELECT h FROM t, UNNEST(rel.arr) AS h",
+                "SELECT h AS h FROM t AS t CROSS JOIN UNNEST(t.rel.arr) AS h",
+            ),
+            (
+                "SELECT EXISTS(SELECT 1 FROM UNNEST(rel.deep.arr) AS h) FROM t",
+                "SELECT EXISTS(SELECT 1 AS `1` FROM UNNEST(t.rel.deep.arr) AS h) AS _col_0 FROM t AS t",
+            ),
+        ):
+            with self.subTest(sql):
+                qualified = qualify(
+                    parse_one(sql, read="bigquery"),
+                    schema=schema,
+                    dialect="bigquery",
+                    identify=False,
+                )
+                self.assertEqual(qualified.sql("bigquery"), expected)
+
+                for node in qualified.walk():
+                    for child in node.iter_expressions():
+                        self.assertIs(child.parent, node, child.sql("bigquery"))
+
     def test_qualify_columns_struct_field_and_source_alias(self):
         schema = {
             "customer": {

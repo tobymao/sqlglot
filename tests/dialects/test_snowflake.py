@@ -3953,6 +3953,64 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_subday_dateadd(self):
+        for unit in ("HOUR", "MINUTE", "SECOND"):
+            for amount in ("2", "-2", "0"):
+                self.validate_all(
+                    f"SELECT DATEADD({unit}, {amount}, ts) FROM t",
+                    read={
+                        "snowflake": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                    write={
+                        "hive": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
+                        "spark2": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
+                        "spark": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                )
+
+            for amount, wrapped in (("n", "n"), ("n + 1", "(n + 1)"), ("NULL", "NULL")):
+                self.validate_all(
+                    f"SELECT DATEADD({unit}, {amount}, ts) FROM t",
+                    write={
+                        "hive": f"SELECT IF({wrapped} IS NULL, NULL, CAST(ts AS TIMESTAMP)) "
+                        f"+ INTERVAL (COALESCE({amount}, 0)) {unit} FROM t",
+                        "spark2": UnsupportedError,
+                        "spark": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT DATEADD(HOUR, 2, '2024-01-01 10:00:00.123456')",
+            write={
+                "hive": "SELECT CAST('2024-01-01 10:00:00.123456' AS TIMESTAMP) + INTERVAL '2' HOUR",
+                "spark2": "SELECT CAST('2024-01-01 10:00:00.123456' AS TIMESTAMP) + INTERVAL '2' HOUR",
+                "spark": "SELECT TIMESTAMPADD(HOUR, 2, '2024-01-01 10:00:00.123456')",
+            },
+        )
+        self.validate_all(
+            "SELECT ts < DATEADD(HOUR, 2, ts) FROM t",
+            write={
+                "hive": "SELECT ts < (CAST(ts AS TIMESTAMP) + INTERVAL '2' HOUR) FROM t",
+                "spark2": "SELECT ts < (CAST(ts AS TIMESTAMP) + INTERVAL '2' HOUR) FROM t",
+                "spark": "SELECT ts < TIMESTAMPADD(HOUR, 2, ts) FROM t",
+            },
+        )
+
+        self.validate_all(
+            "SELECT DATEADD(HOUR, 2, CAST('2024-01-01' AS DATE))",
+            write={
+                "hive": "SELECT CAST(CAST('2024-01-01' AS DATE) AS TIMESTAMP) + INTERVAL '2' HOUR",
+                "spark2": "SELECT CAST(CAST('2024-01-01' AS DATE) AS TIMESTAMP) + INTERVAL '2' HOUR",
+                "spark": "SELECT TIMESTAMPADD(HOUR, 2, CAST('2024-01-01' AS DATE))",
+            },
+        )
+        self.validate_all(
+            "SELECT DATEADD(HOUR, 2, CAST('2024-01-01 10:00:00' AS TIMESTAMP_NTZ))",
+            write={
+                "spark": "SELECT TIMESTAMPADD(HOUR, 2, CAST('2024-01-01 10:00:00' AS TIMESTAMP_NTZ))",
+            },
+        )
+
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")

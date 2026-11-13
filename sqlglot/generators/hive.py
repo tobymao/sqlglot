@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     DATE_ADD_OR_SUB,
     approx_count_distinct_sql,
     arg_max_or_min_no_count,
+    date_delta_to_binary_sql,
     datestrtodate_sql,
     if_sql,
     left_to_substring_sql,
@@ -290,7 +291,6 @@ class HiveGenerator(generator.Generator):
         exp.ArrayToString: lambda self, e: self.func("CONCAT_WS", e.expression, e.this),
         exp.ArraySort: _array_sort_sql,
         exp.With: no_recursive_cte_sql,
-        exp.DateAdd: _add_date_sql,
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _add_date_sql,
@@ -412,6 +412,22 @@ class HiveGenerator(generator.Generator):
     TS_OR_DS_EXPRESSIONS: t.ClassVar = HIVE_TS_OR_DS_EXPRESSIONS
 
     IGNORE_NULLS_FUNCS: t.ClassVar = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
+
+    def dateadd_sql(self, expression: exp.DateAdd) -> str:
+        if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
+            this: exp.Expr = exp.cast(expression.this, exp.DType.TIMESTAMP, dialect=self.dialect)
+            amount = expression.expression
+            if amount.is_number:
+                amount = exp.Literal.string(str(amount.to_py()))
+            elif not amount.is_string:
+                # Hive's interval constructor does not accept NULL amounts.
+                this = exp.If(this=amount.is_(exp.null()), true=exp.null(), false=this)
+                amount = exp.paren(exp.func("COALESCE", amount, 0))
+
+            interval = exp.Interval(this=amount, unit=expression.unit)
+            return date_delta_to_binary_sql(self, expression, this + interval)
+
+        return _add_date_sql(self, expression)
 
     def format_time(
         self,

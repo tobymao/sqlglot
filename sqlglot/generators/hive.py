@@ -464,8 +464,10 @@ class HiveGenerator(generator.Generator):
                 else exp.Explode.from_arg_list(expression.expressions)
             )
             alias = expression.args.get("alias")
-            if alias and alias.columns:
+            if alias and len(alias.columns) == len(expression.expressions):
                 projection = exp.Aliases(this=projection, expressions=alias.columns)
+            else:
+                self.unsupported("Joined UNNEST operands require explicit column aliases")
             subquery = exp.select(projection).subquery(alias and alias.this)
             subquery.set("joins", joins)
             return self.sql(subquery)

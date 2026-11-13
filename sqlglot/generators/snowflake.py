@@ -155,11 +155,21 @@ def _unnest_generate_date_array(unnest: exp.Unnest) -> None:
         lateral = exp.Lateral(this=unnest_parent.this.pop())
         unnest_parent.replace(exp.Join(this=lateral))
     else:
-        subquery = (
-            exp.select(date_add.as_(sequence_value_name))
-            .from_(unnest.copy())
-            .subquery(unnest_alias)
-        )
+        select = exp.select(date_add.as_(sequence_value_name)).from_(unnest.copy())
+        if offset := unnest.args.get("offset"):
+            offset_name = (
+                offset if isinstance(offset, exp.Identifier) else exp.to_identifier("ordinality")
+            )
+            position: exp.Expr = (
+                offset.copy() if isinstance(offset, exp.Identifier) else exp.to_identifier("index")
+            )
+            if unnest.args.get("offset_base") != 0:
+                position = position + 1
+            select.select(position.as_(offset_name), copy=False)
+            if unnest_alias:
+                unnest_alias.append("columns", offset_name.copy())
+
+        subquery = select.subquery(unnest_alias)
         subquery.set("joins", joins)
         unnest.replace(subquery)
 

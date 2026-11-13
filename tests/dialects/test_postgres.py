@@ -2092,6 +2092,17 @@ FROM json_data, field_ids""",
         drop_b.assert_is(exp.Drop)
 
     def test_unnest(self):
+        for unnest in (
+            "UNNEST(ARRAY[10, 30])",
+            "UNNEST(ARRAY[10, 30]) AS u",
+            "UNNEST(ARRAY[10, 30], ARRAY[20]) AS u(x)",
+        ):
+            with self.subTest(unnest=unnest):
+                self.validate_all(
+                    f"SELECT * FROM a CROSS JOIN ({unnest} RIGHT JOIN c ON TRUE)",
+                    write={"spark": UnsupportedError, "spark2": UnsupportedError},
+                )
+
         self.validate_all(
             "SELECT u.d FROM LATERAL (SELECT CAST(value AS DATE) FROM "
             "GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE), "

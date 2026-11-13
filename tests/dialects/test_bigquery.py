@@ -3074,6 +3074,28 @@ OPTIONS (
             with self.subTest(value):
                 self.assertEqual(exp.convert(value).sql(dialect=self.dialect), expected)
 
+    def test_grouped_join_operands(self):
+        for sql, expected in (
+            (
+                "SELECT a.x, c.z FROM a CROSS JOIN (GENERATE_SERIES(1, 2) RIGHT JOIN c ON TRUE)",
+                "SELECT a.x, c.z FROM a CROSS JOIN (UNNEST(GENERATE_ARRAY(1, 2)) RIGHT JOIN c ON TRUE)",
+            ),
+            (
+                "SELECT a.x, u.y, c.z FROM a CROSS JOIN (UNNEST(ARRAY[10, 30]) AS u(y) RIGHT JOIN c ON u.y = c.z)",
+                "SELECT a.x, y, c.z FROM a CROSS JOIN (UNNEST([10, 30]) AS y RIGHT JOIN c ON y = c.z)",
+            ),
+            (
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN ((VALUES (10), (30)) AS v(y) RIGHT JOIN c ON v.y = c.z)",
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN (UNNEST([STRUCT(10 AS y), STRUCT(30 AS y)]) AS v RIGHT JOIN c ON v.y = c.z)",
+            ),
+            (
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN ((VALUES (10), (30)) AS v(y) LEFT JOIN (VALUES (10), (20)) AS w(z) ON v.y = w.z RIGHT JOIN c ON w.z = c.z)",
+                "SELECT a.x, v.y, c.z FROM a CROSS JOIN (UNNEST([STRUCT(10 AS y), STRUCT(30 AS y)]) AS v LEFT JOIN UNNEST([STRUCT(10 AS z), STRUCT(20 AS z)]) AS w ON v.y = w.z RIGHT JOIN c ON w.z = c.z)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(expected, read={"postgres": sql})
+
     def test_unnest(self):
         self.validate_all(
             "SELECT name, laps FROM UNNEST([STRUCT('Rudisha' AS name, [23.4, 26.3, 26.4, 26.1] AS laps), STRUCT('Makhloufi' AS name, [24.5, 25.4, 26.6, 26.1] AS laps)])",

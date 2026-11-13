@@ -132,7 +132,7 @@ def unnest_generate_series(expression: exp.Expr) -> exp.Expr:
     """Unnests GENERATE_SERIES or SEQUENCE table references."""
     this = expression.this
     if isinstance(expression, exp.Table) and isinstance(this, exp.GenerateSeries):
-        unnest = exp.Unnest(expressions=[this])
+        unnest = exp.Unnest(expressions=[this], joins=expression.args.get("joins"))
         if expression.alias:
             return exp.alias_(unnest, alias="_u", table=[expression.alias], copy=False)
 
@@ -295,7 +295,9 @@ def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
         unnest_aliases = {
             unnest.alias
             for unnest in find_all_in_scope(expression, exp.Unnest)
-            if isinstance(unnest.parent, (exp.From, exp.Join))
+            if isinstance(
+                unnest.find_ancestor(exp.From, exp.Join, exp.Select), (exp.From, exp.Join)
+            )
         }
         if unnest_aliases:
             for column in expression.find_all(exp.Column):

@@ -44,6 +44,7 @@ class OracleGenerator(generator.Generator):
     SUPPORTS_DECODE_CASE = True
     UNPIVOT_ALIASES_ARE_IDENTIFIERS = False
     PIVOT_ALIAS_WITH_AS = False
+    VARIANCE_RETURNS_ZERO_ON_SINGLE_VALUE = True
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -127,7 +128,7 @@ class OracleGenerator(generator.Generator):
         exp.StorageProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
-    def variance_sql(self, expression: exp.Variance) -> str:
+    def variance_sql(self, expression: exp.Variance, window: exp.Window | None = None) -> str:
         if expression.args.get("single_value_returns_zero"):
             return self.func("VARIANCE", expression.this)
         if isinstance(expression.this, exp.Distinct):

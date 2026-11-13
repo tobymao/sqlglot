@@ -1482,16 +1482,16 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
         self.validate_all(
             "SELECT VARIANCE(x) FROM t",
             write={
-                "duckdb": "SELECT CASE WHEN COUNT(x) = 1 THEN 0 ELSE VARIANCE(x) END FROM t",
+                "duckdb": "SELECT CASE COUNT(x) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VARIANCE(x) END FROM t",
                 "oracle": "SELECT VARIANCE(x) FROM t",
-                "postgres": "SELECT CASE WHEN COUNT(x) = 1 THEN 0 ELSE VAR_SAMP(x) END FROM t",
+                "postgres": "SELECT CASE COUNT(x) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VAR_SAMP(x) END FROM t",
             },
         )
         self.validate_all(
             "SELECT VARIANCE(DISTINCT x) FROM t",
             write={
                 "oracle": "SELECT VARIANCE(DISTINCT x) FROM t",
-                "postgres": "SELECT CASE WHEN COUNT(DISTINCT x) = 1 THEN 0 ELSE VAR_SAMP(DISTINCT x) END FROM t",
+                "postgres": "SELECT CASE COUNT(DISTINCT x) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VAR_SAMP(DISTINCT x) END FROM t",
             },
         )
         self.validate_all(
@@ -1507,9 +1507,40 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             },
         )
 
-        for sql, read, write in (
-            ("SELECT VARIANCE(x) OVER (PARTITION BY y) FROM t", "oracle", "postgres"),
-            ("SELECT VAR_SAMP(DISTINCT x) FROM t", "postgres", "oracle"),
+        for over in (
+            "OVER ()",
+            "OVER (PARTITION BY y)",
+            "OVER (PARTITION BY y ORDER BY x ROWS BETWEEN 1 PRECEDING AND CURRENT ROW)",
+            "OVER (ORDER BY x ROWS BETWEEN 1 PRECEDING AND 1 PRECEDING)",
         ):
-            with self.subTest(sql), self.assertRaises(UnsupportedError):
-                parse_one(sql, read=read).sql(write, unsupported_level=ErrorLevel.RAISE)
+            with self.subTest(over=over):
+                self.validate_all(
+                    f"SELECT VARIANCE(x) {over} FROM t",
+                    write={
+                        "oracle": f"SELECT VARIANCE(x) {over} FROM t",
+                        "postgres": f"SELECT CASE COUNT(x) {over} WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VAR_SAMP(x) {over} END FROM t",
+                        "duckdb": f"SELECT CASE COUNT(x) {over} WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VARIANCE(x) {over} END FROM t",
+                    },
+                )
+        self.validate_all(
+            "SELECT VARIANCE(DISTINCT x) OVER (PARTITION BY y) FROM t",
+            write={
+                "duckdb": "SELECT CASE COUNT(DISTINCT x) OVER (PARTITION BY y) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VARIANCE(DISTINCT x) OVER (PARTITION BY y) END FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT SUM(VARIANCE(x)) OVER () FROM t GROUP BY y",
+            write={
+                "postgres": "SELECT SUM(CASE COUNT(x) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE VAR_SAMP(x) END) OVER () FROM t GROUP BY y",
+            },
+        )
+        self.validate_all(
+            "SELECT VARIANCE(x) FROM (SELECT 1 AS x) t WHERE 1 = 0",
+            write={
+                "clickhouse": "SELECT CASE COUNT(x) WHEN 0 THEN NULL WHEN 1 THEN 0 ELSE varSamp(x) END FROM (SELECT 1 AS x) AS t WHERE 1 = 0",
+            },
+        )
+        with self.assertRaises(UnsupportedError):
+            parse_one("SELECT VAR_SAMP(DISTINCT x) FROM t", read="postgres").sql(
+                "oracle", unsupported_level=ErrorLevel.RAISE
+            )

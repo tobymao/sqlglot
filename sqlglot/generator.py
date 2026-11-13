@@ -631,6 +631,9 @@ class Generator:
     # The function name of the exp.Variance (sample variance) expression
     VARIANCE_NAME: str = "VARIANCE"
 
+    # Whether VARIANCE natively returns zero for a single non-NULL value.
+    VARIANCE_RETURNS_ZERO_ON_SINGLE_VALUE = False
+
     # The syntax to use when altering the type of a column
     ALTER_SET_TYPE = "SET DATA TYPE"
 
@@ -3756,6 +3759,14 @@ class Generator:
         return f"{self.seg('WHERE')}{self.sep()}{this}"
 
     def window_sql(self, expression: exp.Window) -> str:
+        if (
+            isinstance(expression.this, exp.Variance)
+            and expression.this.args.get("single_value_returns_zero")
+            and expression.text("over") != "KEEP"
+            and not self.VARIANCE_RETURNS_ZERO_ON_SINGLE_VALUE
+        ):
+            return self.variance_sql(expression.this, window=expression)
+
         this = self.sql(expression, "this")
         partition = self.partition_by_sql(expression)
         order = expression.args.get("order")
@@ -6287,7 +6298,7 @@ class Generator:
             self.unsupported("ARRAY_SORT only sorts ascending with NULLs last")
         return self.func("ARRAY_SORT", expression.this, expression.expression)
 
-    def variance_sql(self, expression: exp.Variance) -> str:
+    def variance_sql(self, expression: exp.Variance, window: exp.Window | None = None) -> str:
         this = expression.this
         if not expression.args.get("single_value_returns_zero"):
             return self.func(self.VARIANCE_NAME, this)
@@ -6295,14 +6306,25 @@ class Generator:
         node: exp.Expr = expression
         while node.parent and not isinstance(node.parent, (exp.Window, exp.AggFunc, exp.Select)):
             node = node.parent
-        if isinstance(node.parent, exp.Window) and node.arg_key == "this":
+        if window is None and isinstance(node.parent, exp.Window) and node.arg_key == "this":
             self.unsupported("VARIANCE returning 0 for a single value is not supported in a window")
             return self.func(self.VARIANCE_NAME, this)
 
+        expression.set("single_value_returns_zero", None)
+        count: exp.Expr
+        variance: exp.Expr = expression
+        if window:
+            count = window.copy()
+            count.set("this", exp.Count(this=count.this.this))
+            variance = window
+        else:
+            count = exp.Count(this=this.copy())
+
         return self.sql(
-            exp.case()
-            .when(exp.Count(this=this.copy()).eq(1), exp.Literal.number(0))
-            .else_(exp.Variance(this=this.copy()))
+            exp.case(count, copy=False)
+            .when(0, exp.null(), copy=False)
+            .when(1, 0, copy=False)
+            .else_(variance, copy=False)
         )
 
     def arraysize_sql(self, expression: exp.ArraySize) -> str:

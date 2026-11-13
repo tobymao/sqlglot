@@ -2300,7 +2300,7 @@ LIFETIME(MIN 0 MAX 0)""",
 
     def test_logical_and_or(self):
         self.validate_all(
-            "SELECT min(x), max(x) FROM t",
+            "SELECT minOrNull(x <> 0), maxOrNull(x <> 0) FROM t",
             read={
                 "duckdb": "SELECT BOOL_AND(x), BOOL_OR(x) FROM t",
                 "postgres": "SELECT BOOL_AND(x), BOOL_OR(x) FROM t",

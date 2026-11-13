@@ -510,7 +510,7 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
     if not conflicts:
         return
 
-    taken = outer_taken.union(inner_taken)
+    taken = outer_taken.union(name for name, _ in inner_scope.references)
     taken.update(column.table for column in inner_scope.external_columns)
     inner_columns = {id(column) for column in inner_scope.columns if column.table in inner_taken}
     for scope in inner_scope.traverse():

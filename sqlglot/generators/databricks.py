@@ -137,6 +137,7 @@ class DatabricksGenerator(SparkGenerator):
         if isinstance(expression.parent, exp.Join):
             table = exp.Lateral(this=table)
 
+        table.set("joins", expression.args.get("joins"))
         return self.sql(table)
 
     def lateral_sql(self, expression: exp.Lateral) -> str:

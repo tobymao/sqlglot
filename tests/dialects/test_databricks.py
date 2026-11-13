@@ -1,5 +1,6 @@
 from sqlglot import exp, transpile, parse_one
 from sqlglot.errors import ParseError
+from sqlglot.optimizer import optimize
 from tests.dialects.test_dialect import Validator
 
 
@@ -31,6 +32,34 @@ class TestDatabricks(Validator):
             "SELECT * FROM INLINE(ARRAYS_ZIP(ARRAY(1, 2), ARRAY(3))) AS t(x, y)",
             read={"trino": "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY[3]) AS t(x, y)"},
         )
+
+    def test_optimized_grouped_unnest(self):
+        for unnest, projection, generated in (
+            (
+                "UNNEST(ARRAY[10, 30]) AS u(y)",
+                "u.y AS y",
+                "EXPLODE(ARRAY(10, 30)) AS u(y)",
+            ),
+            (
+                "UNNEST(ARRAY[10, 30]) WITH ORDINALITY AS u(y, n)",
+                "u.y AS y, u.n AS n",
+                "(SELECT * EXCEPT (pos), CAST(pos AS BIGINT) + 1 AS n "
+                "FROM POSEXPLODE(ARRAY(10, 30))) AS u(y, n)",
+            ),
+        ):
+            with self.subTest(unnest=unnest):
+                expression = optimize(
+                    f"SELECT a.x, {projection}, c.z FROM a, {unnest} RIGHT JOIN c ON u.y = c.z",
+                    schema={"a": {"x": "INT"}, "c": {"z": "INT"}},
+                    dialect="postgres",
+                    identify=False,
+                )
+                expected = (
+                    f"SELECT a.x AS x, {projection}, c.z AS z FROM a AS a "
+                    f"CROSS JOIN ({generated} RIGHT JOIN c AS c ON u.y = c.z)"
+                )
+                self.assertEqual(expression.sql("databricks"), expected)
+                self.validate_all(expected, read={"postgres": expression.sql("postgres")})
 
     def test_unnest_with_ordinality(self):
         for join in ("CROSS JOIN", "LEFT JOIN"):

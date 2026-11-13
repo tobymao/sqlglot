@@ -26,6 +26,7 @@ class Resolver:
         self.schema: Schema = schema
         self.dialect: Dialect = schema.dialect or Dialect()
         self._source_columns: dict[str, Sequence[str]] | None = None
+        self._source_nodes: dict[str, exp.Selectable] | None = None
         self._unambiguous_columns: Mapping[str, str] | None = None
         self._all_columns: set[str] | None = None
         self._get_source_columns_cache: dict[tuple[str, bool], Sequence[str]] = {}
@@ -279,6 +280,12 @@ class Resolver:
                     columns = selectable.named_selects
 
             node, _ = self.scope.selected_sources.get(name) or (None, None)
+            if node is None and name in self.scope.semi_or_anti_join_tables:
+                # SEMI/ANTI sources are not selected, but their column alias lists still apply.
+                if self._source_nodes is None:
+                    self._source_nodes = dict(self.scope.references)
+                node = self._source_nodes.get(name)
+
             if isinstance(node, Scope):
                 column_aliases = node.expression.alias_column_names
             elif isinstance(node, exp.Expr):

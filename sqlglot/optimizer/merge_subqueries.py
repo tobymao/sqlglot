@@ -432,6 +432,11 @@ def _mergeable(
         or not isinstance(inner_select, exp.Select)
         or any(v for k, v in inner_select.args.items() if k in UNMERGABLE_ARGS)
         or inner_select.args.get("from_") is None
+        # Merging through a parenthesized operand can move filters or joins outside its group.
+        or (
+            (source is not from_or_join.this or from_or_join.parent is not outer)
+            and (inner_select.args.get("where") or inner_select.args.get("joins"))
+        )
         or outer_scope.pivots
         # Merging can move filters and projections across row pairing and padding.
         or any(
@@ -441,6 +446,7 @@ def _mergeable(
             for scope in (outer_scope, inner_scope)
             for join in scope.find_all(exp.Join)
         )
+        or any(not j.alias_or_name for j in inner_select.args.get("joins", []))
         or (leave_tables_isolated and len(outer_scope.selected_sources) > 1)
         or (isinstance(from_or_join, exp.Join) and inner_select.args.get("joins"))
         or (

@@ -69,6 +69,55 @@ class TestTeradata(Validator):
         self.validate_identity('SELECT dayofweek, "dayofweek", t.dayofweek FROM t')
         self.validate_identity("SELECT t.DAYOFWEEK(d) FROM t")
 
+    def test_hex_character_string(self):
+        for digits in ("", "0", "0A", "aBcD", "7B31327D"):
+            for suffix in ("XC", "xc"):
+                expression = self.validate_identity(
+                    f"SELECT '{digits}'{suffix} AS s", f"SELECT '{digits}'XC AS s"
+                )
+                literal = expression.expressions[0].this.assert_is(exp.HexCharacterString)
+                self.assertEqual(literal.this, digits)
+                self.assertIsNone(expression.find(exp.Column))
+                self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+        for sql in (
+            "'0A'XC",
+            "('0A'XC)",
+            "VALUES ('0A'XC)",
+        ):
+            self.validate_identity(sql)
+        for sql in (
+            "'0G'XC",
+            "'0 A'XC",
+            "'0''A'XC",
+            "SELECT '41' '42'XC",
+            "SELECT '41'XC '42'",
+            "SELECT value LIKE 'a' ESCAPE '21'XC",
+            "CAST('2026' AS DATE FORMAT '59595959'XC)",
+            "TS_OR_DS_TO_DATE('2020-01-01', '59595959'XC)",
+            "LENGTH('0A'XC)",
+            "COALESCE('0A'XC, NULL)",
+            "TRUNC(CURRENT_DATE, '4D4D'XC)",
+            "INTERVAL '31'XC DAY",
+            "CAST('0A'XC AS VARCHAR(10))",
+            "CONVERT('41'XC, VARCHAR(10))",
+            "CAST('2026' AS DATE DEFAULT '31'XC ON CONVERSION ERROR FORMAT 'YYYY')",
+        ):
+            with self.assertRaises(ParseError):
+                self.parse_one(sql)
+        self.validate_identity("SELECT 'not hex' XC", "SELECT 'not hex' AS XC")
+        self.validate_identity("SELECT '0A' AS XC")
+        self.validate_identity("SELECT '41'\"XC\"", "SELECT '41' AS \"XC\"")
+        self.validate_identity('SELECT xc, "XC", t.xc FROM t')
+        self.validate_identity("X'0A'").assert_is(exp.HexString)
+        self.validate_all(
+            "'0A'XC",
+            write={"teradata": "'0A'XC", "": UnsupportedError, "hive": UnsupportedError},
+        )
+        self.assertEqual(
+            "'0A'XC", self.parse_one("'0A'XC").sql("dax", unsupported_level=ErrorLevel.IGNORE)
+        )
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

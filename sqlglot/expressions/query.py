@@ -497,6 +497,13 @@ class HexString(Expression, Condition):
     is_primitive = True
 
 
+class HexCharacterString(Expression, Condition):
+    """Hex-encoded character data, not decoded text or a binary hex literal."""
+
+    is_primitive = True
+    _hash_raw_args = True
+
+
 class ByteString(Expression, Condition):
     arg_types = {"this": True, "is_bytes": False}
     is_primitive = True

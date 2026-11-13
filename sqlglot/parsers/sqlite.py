@@ -241,10 +241,10 @@ class SQLiteParser(parser.Parser):
         return self.expression(exp.ModuleProperty(this=name, expressions=expressions))
 
     def _parse_pragma(self) -> exp.Pragma:
-        name = self._parse_var(any_token=True)
+        name = self._parse_id_var()
 
         if self._match(TokenType.DOT):
-            name = exp.Dot(this=name, expression=self._parse_var(any_token=True))
+            name = exp.Dot(this=name, expression=self._parse_id_var())
 
         self._match(TokenType.EQ)
 

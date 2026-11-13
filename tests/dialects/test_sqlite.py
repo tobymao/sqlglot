@@ -8,6 +8,39 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_pragma_quoted_names(self):
+        for source, expected in (
+            ('PRAGMA "a b"', 'PRAGMA "a b"'),
+            ('PRAGMA "a.b"', 'PRAGMA "a.b"'),
+            ('PRAGMA "select"', 'PRAGMA "select"'),
+            ('PRAGMA "a""b"', 'PRAGMA "a""b"'),
+            ("PRAGMA [a b]", 'PRAGMA "a b"'),
+            ("PRAGMA `a b`", 'PRAGMA "a b"'),
+            ("PRAGMA 'a b'", 'PRAGMA "a b"'),
+            ('PRAGMA "x; SELECT 123"', 'PRAGMA "x; SELECT 123"'),
+            ('PRAGMA "x--comment"', 'PRAGMA "x--comment"'),
+            ('PRAGMA main."table_info"(items)', 'PRAGMA main."table_info" = items'),
+        ):
+            with self.subTest(source=source):
+                self.validate_identity(source, expected)
+
+    def test_pragma_quoted_schemas(self):
+        for source, expected in (
+            ('"aux db"', '"aux db"'),
+            ('"aux.db"', '"aux.db"'),
+            ('"aux""db"', '"aux""db"'),
+            ("[aux db]", '"aux db"'),
+            ("`aux db`", '"aux db"'),
+            ("'aux db'", '"aux db"'),
+        ):
+            with self.subTest(schema=source):
+                self.validate_identity(
+                    f"PRAGMA {source}.table_info(items)",
+                    f"PRAGMA {expected}.table_info = items",
+                )
+
+        self.validate_identity("""PRAGMA "aux db".table_info = 'items'""")
+
     def test_safe_div(self):
         self.validate_all(
             "SELECT CAST(a AS INTEGER) / CAST(b AS INTEGER) FROM t",

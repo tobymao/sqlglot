@@ -362,6 +362,7 @@ class PostgresGenerator(generator.Generator):
         exp.CurrentVersion: rename_func("VERSION"),
         exp.DateAdd: _date_add_sql("+"),
         exp.DateDiff: _date_diff_sql,
+        exp.DateFromParts: rename_func("MAKE_DATE"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
         exp.DatetimeAdd: _date_add_sql("+"),
@@ -411,6 +412,9 @@ class PostgresGenerator(generator.Generator):
             e.args.get("occurrence"),
             regexp_replace_global_modifier(e),
         ),
+        exp.RegexpSplit: unsupported_args("limit", "mode")(
+            lambda self, e: self.func("REGEXP_SPLIT_TO_ARRAY", e.this, e.expression)
+        ),
         exp.Round: _round_sql,
         exp.Select: transforms.preprocess(
             [
@@ -422,6 +426,9 @@ class PostgresGenerator(generator.Generator):
             "ENCODE", sha256_sql(self, e), exp.Literal.string("hex")
         ),
         exp.SHA2Digest: sha2_digest_sql,
+        exp.Split: unsupported_args("limit")(
+            lambda self, e: self.func("STRING_TO_ARRAY", e.this, e.expression)
+        ),
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="POSITION"),
         exp.StrToDate: lambda self, e: self.func("TO_DATE", e.this, self.format_time(e)),
         exp.StrToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this, self.format_time(e)),

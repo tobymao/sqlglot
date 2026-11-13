@@ -378,7 +378,7 @@ class TestStarrocks(Validator):
         self.validate_all(
             r"""SELECT id, t.type, t.scores FROM example_table, unnest(split(type, ";"), scores) AS t(type,scores)""",
             write={
-                "postgres": "SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)",
+                "postgres": "SELECT id, t.type, t.scores FROM example_table, UNNEST(STRING_TO_ARRAY(type, ';'), scores) AS t(type, scores)",
                 "spark": r"""SELECT id, t.type, t.scores FROM example_table LATERAL VIEW INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';', '\\E')), scores)) t AS type, scores""",
                 "databricks": r"""SELECT id, t.type, t.scores FROM example_table, LATERAL INLINE(ARRAYS_ZIP(SPLIT(type, CONCAT('\\Q', ';', '\\E')), scores)) AS t(type, scores)""",
                 "starrocks": r"""SELECT id, t.type, t.scores FROM example_table, UNNEST(SPLIT(type, ';'), scores) AS t(type, scores)""",

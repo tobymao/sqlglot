@@ -20,7 +20,7 @@ class MaterializeGenerator(PostgresGenerator):
         **{
             k: v
             for k, v in PostgresGenerator.TRANSFORMS.items()
-            if k not in (exp.ToMap, exp.IntDiv)
+            if k not in (exp.DateFromParts, exp.ToMap, exp.IntDiv)
         },
         exp.AutoIncrementColumnConstraint: lambda self, e: "",
         exp.Create: preprocess(

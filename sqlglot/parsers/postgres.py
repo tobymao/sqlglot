@@ -154,11 +154,17 @@ class PostgresParser(parser.Parser):
         "JSON_EXTRACT_PATH": build_json_extract_path(exp.JSONExtract),
         "JSON_EXTRACT_PATH_TEXT": build_json_extract_path(exp.JSONExtractScalar),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), encoding=seq_get(args, 1)),
+        "MAKE_DATE": exp.DateFromParts.from_arg_list,
         "MAKE_INTERVAL": _build_make_interval,
         "MAKE_TIME": exp.TimeFromParts.from_arg_list,
         "MAKE_TIMESTAMP": exp.TimestampFromParts.from_arg_list,
         "NOW": exp.CurrentTimestamp.from_arg_list,
         "REGEXP_REPLACE": _build_regexp_replace,
+        "REGEXP_SPLIT_TO_ARRAY": lambda args: (
+            exp.RegexpSplit(this=seq_get(args, 0), expression=seq_get(args, 1))
+            if len(args) == 2
+            else exp.Anonymous(this="REGEXP_SPLIT_TO_ARRAY", expressions=args)
+        ),
         "TO_CHAR": build_formatted_time(exp.TimeToStr),
         "TO_DATE": build_formatted_time(exp.StrToDate),
         "TO_TIMESTAMP": _build_to_timestamp,

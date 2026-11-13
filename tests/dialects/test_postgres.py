@@ -2258,6 +2258,66 @@ FROM json_data, field_ids""",
             },
         )
 
+    def test_string_to_array(self):
+        self.validate_all(
+            "SELECT STRING_TO_ARRAY(x, ',')",
+            read={
+                "bigquery": "SELECT SPLIT(x, ',')",
+                "duckdb": "SELECT STRING_SPLIT(x, ',')",
+                "snowflake": "SELECT SPLIT(x, ',')",
+            },
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT splitByString(',', x, 2)",
+                read="clickhouse",
+                write="postgres",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+    def test_regexp_split_to_array(self):
+        self.validate_identity("SELECT REGEXP_SPLIT_TO_ARRAY(x, 'a', 'i')")
+        self.validate_all(
+            "SELECT REGEXP_SPLIT_TO_ARRAY(x, '[0-9]+')",
+            read={
+                "duckdb": "SELECT STRING_SPLIT_REGEX(x, '[0-9]+')",
+                "spark": "SELECT SPLIT(x, '[0-9]+')",
+            },
+            write={
+                "duckdb": "SELECT STR_SPLIT_REGEX(x, '[0-9]+')",
+                "postgres": "SELECT REGEXP_SPLIT_TO_ARRAY(x, '[0-9]+')",
+                "spark": "SELECT SPLIT(x, '[0-9]+')",
+            },
+        )
+
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT SPLIT(x, '[0-9]+', 2)",
+                read="spark",
+                write="postgres",
+                unsupported_level=ErrorLevel.RAISE,
+            )
+
+    def test_make_date(self):
+        self.validate_all(
+            "SELECT MAKE_DATE(2020, 1, 2)",
+            read={
+                "bigquery": "SELECT DATE(2020, 1, 2)",
+                "duckdb": "SELECT MAKE_DATE(2020, 1, 2)",
+                "snowflake": "SELECT DATE_FROM_PARTS(2020, 1, 2)",
+                "tsql": "SELECT DATEFROMPARTS(2020, 1, 2)",
+            },
+            write={
+                "bigquery": "SELECT DATE(2020, 1, 2)",
+                "duckdb": "SELECT MAKE_DATE(2020, 1, 2)",
+                "postgres": "SELECT MAKE_DATE(2020, 1, 2)",
+                "risingwave": "SELECT MAKE_DATE(2020, 1, 2)",
+                "snowflake": "SELECT DATE_FROM_PARTS(2020, 1, 2)",
+                "tsql": "SELECT DATEFROMPARTS(2020, 1, 2)",
+            },
+        )
+
     def test_corr(self):
         self.validate_all(
             "SELECT CORR(a, b)",

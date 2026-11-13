@@ -1,7 +1,9 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
+from sqlglot.optimizer import optimize
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.simplify import simplify
 from tests.dialects.test_dialect import Validator
 
 
@@ -2715,3 +2717,60 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         is_not_null = self.parse_one("r IS NOT NULL")
         is_not_null.assert_is(exp.Is)
         self.assertTrue(is_not_null.args.get("negate"))
+
+    def test_date_interval_timestamp(self):
+        for sql in (
+            "DATE '2024-01-01' + INTERVAL '1 day'",
+            "INTERVAL '1 day' + DATE '2024-01-01'",
+            "DATE '2024-01-01' - INTERVAL '1 day'",
+            "DATE '2024-01-01' + INTERVAL '1 hour'",
+            "INTERVAL '1 hour' + (DATE '2024-01-01' + INTERVAL '1 day')",
+        ):
+            with self.subTest(sql):
+                expression = annotate_types(self.parse_one(sql), dialect="postgres")
+                self.assertEqual(expression.type, exp.DataType.build("TIMESTAMP"))
+
+        for sql, expected in (
+            (
+                "SELECT DATE '2024-01-01' + INTERVAL '1 day' AS value",
+                "SELECT CAST('2024-01-02' AS TIMESTAMP) AS \"value\"",
+            ),
+            (
+                "SELECT INTERVAL '1 day' + DATE '2024-01-01' AS value",
+                "SELECT CAST('2024-01-02' AS TIMESTAMP) AS \"value\"",
+            ),
+            (
+                "SELECT DATE '2024-01-02' - INTERVAL '1 day' AS value",
+                "SELECT CAST('2024-01-01' AS TIMESTAMP) AS \"value\"",
+            ),
+            (
+                "SELECT DATE '2024-01-01' + INTERVAL '1 hour' AS value",
+                "SELECT CAST('2024-01-01 01:00:00' AS TIMESTAMP) AS \"value\"",
+            ),
+            (
+                "SELECT INTERVAL '1 hour' + (DATE '2024-01-01' + INTERVAL '1 day') AS value",
+                "SELECT CAST('2024-01-02 01:00:00' AS TIMESTAMP) AS \"value\"",
+            ),
+        ):
+            with self.subTest(sql):
+                self.assertEqual(
+                    optimize(self.parse_one(sql), dialect="postgres").sql("postgres"),
+                    expected,
+                )
+                self.assertEqual(
+                    simplify(
+                        annotate_types(self.parse_one(sql), dialect="postgres"),
+                        dialect="postgres",
+                    ).sql("postgres", identify=True),
+                    expected,
+                )
+
+        expression = annotate_types(
+            self.parse_one("SELECT t.i + DATE '2024-01-01' + INTERVAL '1 day' FROM t AS t"),
+            schema={"t": {"i": "INTERVAL"}},
+            dialect="postgres",
+        )
+        self.assertEqual(
+            simplify(expression, dialect="postgres").sql("postgres"),
+            "SELECT t.i + CAST('2024-01-02' AS TIMESTAMP) FROM t AS t",
+        )

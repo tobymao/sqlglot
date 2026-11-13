@@ -15,6 +15,22 @@ def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Ex
     return annotate_int_as_double(self, expression)
 
 
+def _annotate_add_sub(self: TypeAnnotator, expression: exp.Add | exp.Sub) -> exp.Expr:
+    self._annotate_binary(expression)
+    left, right = expression.left, expression.right
+
+    if isinstance(expression, exp.Add) and left.is_type(exp.DType.INTERVAL):
+        left, right = right, left
+
+    if right.is_type(exp.DType.INTERVAL):
+        if left.is_type(exp.DType.DATE):
+            self._set_type(expression, exp.DType.TIMESTAMP)
+        elif left.is_type(*exp.DataType.TEMPORAL_TYPES):
+            self._set_type(expression, left.type)
+
+    return expression
+
+
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     **{
@@ -78,4 +94,6 @@ EXPRESSION_METADATA = {
         }
     },
     exp.ToNumber: {"returns": exp.DType.DECIMAL},
+    exp.Add: {"annotator": _annotate_add_sub},
+    exp.Sub: {"annotator": _annotate_add_sub},
 }

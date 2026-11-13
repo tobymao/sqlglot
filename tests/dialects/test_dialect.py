@@ -3747,6 +3747,49 @@ SELECT
             },
         )
 
+    def test_window_funcs_requiring_order(self):
+        for func, without_order in (
+            ("ROW_NUMBER()", {"bigquery"}),
+            ("RANK()", set()),
+            ("DENSE_RANK()", set()),
+            ("PERCENT_RANK()", set()),
+            ("CUME_DIST()", set()),
+            ("NTILE(2)", set()),
+            ("NTH_VALUE(x, 2)", set()),
+            ("FIRST_VALUE(x)", {"databricks"}),
+            ("LAST_VALUE(x)", {"databricks"}),
+            ("SUM(x)", {"bigquery", "databricks", "snowflake"}),
+        ):
+            with self.subTest(func):
+                unordered = f"SELECT {func} OVER (PARTITION BY a, b) FROM t"
+                ordered = f"SELECT {func} OVER (PARTITION BY a, b ORDER BY a, b) FROM t"
+
+                self.validate_all(
+                    unordered,
+                    write={
+                        "trino": unordered,
+                        **{
+                            dialect: unordered if dialect in without_order else ordered
+                            for dialect in ("bigquery", "databricks", "snowflake")
+                        },
+                    },
+                )
+
+        self.validate_all(
+            "SELECT ROW_NUMBER() OVER () FROM t",
+            write={
+                "bigquery": "SELECT ROW_NUMBER() OVER () FROM t",
+                "databricks": "SELECT ROW_NUMBER() OVER (ORDER BY NULL) FROM t",
+                "snowflake": "SELECT ROW_NUMBER() OVER (ORDER BY NULL) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t",
+            write={
+                "databricks": "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t",
+            },
+        )
+
     def test_window_exclude(self):
         for option in ("CURRENT ROW", "TIES", "GROUP"):
             self.validate_all(

@@ -370,6 +370,17 @@ class BigQueryGenerator(generator.Generator):
 
     SAFE_JSON_PATH_KEY_RE = re.compile(r"^[\-\w]*$")
 
+    WINDOW_FUNCS_REQUIRING_ORDER = (
+        exp.CumeDist,
+        exp.DenseRank,
+        exp.FirstValue,
+        exp.LastValue,
+        exp.NthValue,
+        exp.Ntile,
+        exp.PercentRank,
+        exp.Rank,
+    )
+
     WINDOW_FUNCS_WITH_NULL_ORDERING = (
         exp.CumeDist,
         exp.DenseRank,

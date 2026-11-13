@@ -31,6 +31,16 @@ class DatabricksGenerator(SparkGenerator):
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     SUPPORTS_TEMPORAL_PRECISION = True
 
+    WINDOW_FUNCS_REQUIRING_ORDER = (
+        exp.CumeDist,
+        exp.DenseRank,
+        exp.NthValue,
+        exp.Ntile,
+        exp.PercentRank,
+        exp.Rank,
+        exp.RowNumber,
+    )
+
     TRANSFORMS = {
         k: v
         for k, v in {

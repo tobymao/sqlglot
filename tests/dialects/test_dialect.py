@@ -3783,6 +3783,13 @@ SELECT
                 "snowflake": "SELECT ROW_NUMBER() OVER (ORDER BY NULL) FROM t",
             },
         )
+        # Known limitation: Databricks still rejects this, there are no partition keys to order by
+        self.validate_all(
+            "SELECT CUME_DIST() OVER () FROM t",
+            write={
+                "databricks": "SELECT CUME_DIST() OVER (ORDER BY NULL) FROM t",
+            },
+        )
         self.validate_all(
             "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t",
             write={

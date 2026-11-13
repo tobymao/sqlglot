@@ -4729,15 +4729,18 @@ class DuckDBGenerator(generator.Generator):
 
         unit_str = unit.name.upper() if isinstance(unit, (exp.Var, exp.Literal)) else ""
 
-        # BigQuery DATETIME (DType.TIMESTAMP) uses boundary-crossing like DATE_DIFF
-        if expression.this.is_type(exp.DType.TIMESTAMP) and expression.expression.is_type(
-            exp.DType.TIMESTAMP
+        if expression.args.get("boundary_for_date") and all(
+            arg.is_type(exp.DType.DATE, exp.DType.DATETIME, exp.DType.TIMESTAMP)
+            for arg in (expression.this, expression.expression)
         ):
-            return self.func(
-                "DATE_DIFF",
-                exp.Literal.string(unit_str or "DAY"),
-                expression.expression,
-                expression.this,
+            return _date_diff_sql(
+                self,
+                exp.DateDiff(
+                    this=expression.this,
+                    expression=expression.expression,
+                    unit=unit,
+                    date_part_boundary=True,
+                ),
             )
 
         # Cast untyped args (bare NULLs, string literals) so DuckDB can resolve the overload
@@ -4753,19 +4756,12 @@ class DuckDBGenerator(generator.Generator):
         )
 
         if unit_str == "DAY":
-            # We need Anonymous for DATE_SUB because exp.DateSub transforms into an interval subtraction
-            date_sub = exp.Anonymous(
-                this="DATE_SUB",
-                expressions=[exp.Literal.string("HOUR"), expr, this],
+            date_sub = exp.func(
+                "DATE_SUB", exp.Literal.string("HOUR"), expr, this, dialect="duckdb"
             )
             return self.sql(exp.IntDiv(this=date_sub, expression=exp.Literal.number(24)))
 
-        return self.sql(
-            exp.Anonymous(
-                this="DATE_SUB",
-                expressions=[exp.Literal.string(unit_str or "DAY"), expr, this],
-            )
-        )
+        return self.func("DATE_SUB", unit_to_str(expression), expr, this)
 
     def trim_sql(self, expression: exp.Trim) -> str:
         expression.this.replace(_cast_to_varchar(expression.this))

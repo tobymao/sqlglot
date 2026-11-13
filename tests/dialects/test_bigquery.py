@@ -155,6 +155,42 @@ class TestBigQuery(Validator):
                     },
                 )
 
+    def test_timestamp_diff_date_overloads(self):
+        for sql, expected in (
+            (
+                "SELECT TIMESTAMP_DIFF(DATE '2024-02-01', DATE '2024-01-31', MONTH)",
+                "SELECT DATE_DIFF('MONTH', CAST('2024-01-31' AS DATE), CAST('2024-02-01' AS DATE))",
+            ),
+            (
+                "SELECT TIMESTAMP_DIFF(DATE(2024, 2, 1), DATE(2024, 1, 31), MONTH)",
+                "SELECT DATE_DIFF('MONTH', MAKE_DATE(2024, 1, 31), MAKE_DATE(2024, 2, 1))",
+            ),
+            (
+                "SELECT TIMESTAMP_DIFF(DATETIME(2024, 1, 1, 1, 0, 15), DATETIME(2024, 1, 1, 0, 0, 45), MINUTE)",
+                "SELECT DATE_DIFF('MINUTE', MAKE_TIMESTAMP(2024, 1, 1, 0, 0, 45), MAKE_TIMESTAMP(2024, 1, 1, 1, 0, 15))",
+            ),
+            (
+                "SELECT TIMESTAMP_DIFF(DATE '2024-01-07', DATE '2024-01-06', WEEK)",
+                "SELECT DATE_DIFF('WEEK', DATE_TRUNC('WEEK', CAST('2024-01-06' AS DATE) + INTERVAL '1' DAY), DATE_TRUNC('WEEK', CAST('2024-01-07' AS DATE) + INTERVAL '1' DAY))",
+            ),
+        ):
+            with self.subTest(sql):
+                expression = annotate_types(self.parse_one(sql), dialect="bigquery")
+                self.assertEqual(expression.sql("duckdb"), expected)
+
+        for dtype, expected in (
+            ("DATE", "SELECT DATE_DIFF('DAY', t.s, t.e) FROM t"),
+            ("DATETIME", "SELECT DATE_DIFF('DAY', t.s, t.e) FROM t"),
+            ("TIMESTAMP", "SELECT DATE_SUB('HOUR', t.s, t.e) // 24 FROM t"),
+        ):
+            with self.subTest(dtype):
+                expression = annotate_types(
+                    self.parse_one("SELECT TIMESTAMP_DIFF(t.e, t.s, DAY) FROM t"),
+                    schema={"t": {"e": dtype, "s": dtype}},
+                    dialect="bigquery",
+                )
+                self.assertEqual(expression.sql("duckdb"), expected)
+
     def test_bigquery(self):
         # Presto's SHA512 takes VARBINARY, so annotated string args are wrapped in TO_UTF8
         expr = self.parse_one("SELECT SHA512('foo')")

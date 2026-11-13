@@ -2307,6 +2307,15 @@ class TestDuckDB(Validator):
                     read={"spark2": source, "spark": source, "databricks": source},
                 )
 
+    def test_presto_array_slice(self):
+        self.validate_all(
+            "SELECT ARRAY_SLICE([10, 20, 30, 40, 50], 3, 5)",
+            read={
+                "presto": "SELECT SLICE(ARRAY[10, 20, 30, 40, 50], 3, 3)",
+                "trino": "SELECT SLICE(ARRAY[10, 20, 30, 40, 50], 3, 3)",
+            },
+        )
+
     def test_array_slice_to_length(self):
         self.validate_all(
             "SELECT ARRAY_SLICE([1, 2, 3, 4], 2, 3)",

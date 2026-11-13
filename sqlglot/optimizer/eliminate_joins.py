@@ -107,7 +107,8 @@ def _is_joined_on_all_unique_outputs(scope: Scope, join: exp.Join) -> bool:
 def _unique_outputs(scope: Scope) -> set[str]:
     """Determine output columns of `scope` that must have a unique combination per row"""
     expr = t.cast(exp.Query, scope.expression)
-    if (distinct := expr.args.get("distinct")) is not None and not (
+    # Set operations store a bool here, which is False for UNION ALL, INTERSECT ALL and EXCEPT ALL
+    if (distinct := expr.args.get("distinct")) and not (
         isinstance(distinct, exp.Distinct) and distinct.args.get("on")
     ):
         return set(expr.named_selects)

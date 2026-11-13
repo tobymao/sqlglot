@@ -322,6 +322,8 @@ class Sum(Expression, AggFunc):
 
 
 class Variance(Expression, AggFunc):
+    # single_value_returns_zero: Oracle's VARIANCE returns 0 instead of NULL for a single value
+    arg_types = {"this": True, "single_value_returns_zero": False}
     _sql_names = ["VARIANCE", "VARIANCE_SAMP", "VAR_SAMP"]
 
 

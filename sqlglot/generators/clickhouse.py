@@ -205,6 +205,7 @@ class ClickHouseGenerator(generator.Generator):
     SET_OP_MODIFIERS = False
     SET_OP_LIMITS = True
     ARRAY_SIZE_NAME = "LENGTH"
+    VARIANCE_NAME = "varSamp"
     WRAP_DERIVED_VALUES = False
     AUTO_REFRESH_BARE_INTERVALS = True
 
@@ -396,7 +397,6 @@ class ClickHouseGenerator(generator.Generator):
         ),
         exp.UnixToTime: _unix_to_time_sql,
         exp.Trim: lambda self, e: trim_sql(self, e, default_trim_type="BOTH"),
-        exp.Variance: rename_func("varSamp"),
         exp.VariancePop: rename_func("varPop"),
         exp.WeekOfYear: rename_func("toISOWeek"),
         exp.YearOfWeekIso: rename_func("toISOYear"),

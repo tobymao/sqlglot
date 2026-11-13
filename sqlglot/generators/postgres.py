@@ -274,6 +274,7 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
 
 class PostgresGenerator(generator.Generator):
     SELECT_KINDS = ()
+    VARIANCE_NAME = "VAR_SAMP"
     TRY_SUPPORTED = False
     SUPPORTS_DECODE_CASE = False
 
@@ -445,7 +446,6 @@ class PostgresGenerator(generator.Generator):
         exp.Uuid: lambda *_: "GEN_RANDOM_UUID()",
         exp.TimeToUnix: lambda self, e: self.func("DATE_PART", exp.Literal.string("epoch"), e.this),
         exp.VariancePop: rename_func("VAR_POP"),
-        exp.Variance: rename_func("VAR_SAMP"),
         exp.Xor: bool_xor_sql,
         exp.Year: _day_month_year_sql,
         exp.Unicode: rename_func("ASCII"),

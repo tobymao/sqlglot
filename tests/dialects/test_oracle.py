@@ -1476,3 +1476,40 @@ CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 4"""
             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view FOR EACH ROW BEGIN INSERT INTO employees (id, name, dept_id) VALUES (:NEW.id, :NEW.name, :NEW.dept_id) END",
             check_command_warning=True,
         )
+
+    def test_variance(self):
+        self.validate_identity("SELECT VARIANCE(x) OVER (PARTITION BY y) FROM t")
+        self.validate_all(
+            "SELECT VARIANCE(x) FROM t",
+            write={
+                "duckdb": "SELECT CASE WHEN COUNT(x) = 1 THEN 0 ELSE VARIANCE(x) END FROM t",
+                "oracle": "SELECT VARIANCE(x) FROM t",
+                "postgres": "SELECT CASE WHEN COUNT(x) = 1 THEN 0 ELSE VAR_SAMP(x) END FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT VARIANCE(DISTINCT x) FROM t",
+            write={
+                "oracle": "SELECT VARIANCE(DISTINCT x) FROM t",
+                "postgres": "SELECT CASE WHEN COUNT(DISTINCT x) = 1 THEN 0 ELSE VAR_SAMP(DISTINCT x) END FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT VAR_SAMP(x) FROM t",
+            read={
+                "duckdb": "SELECT VARIANCE(x) FROM t",
+                "postgres": "SELECT VARIANCE(x) FROM t",
+            },
+            write={
+                "duckdb": "SELECT VARIANCE(x) FROM t",
+                "oracle": "SELECT VAR_SAMP(x) FROM t",
+                "postgres": "SELECT VAR_SAMP(x) FROM t",
+            },
+        )
+
+        for sql, read, write in (
+            ("SELECT VARIANCE(x) OVER (PARTITION BY y) FROM t", "oracle", "postgres"),
+            ("SELECT VAR_SAMP(DISTINCT x) FROM t", "postgres", "oracle"),
+        ):
+            with self.subTest(sql), self.assertRaises(UnsupportedError):
+                parse_one(sql, read=read).sql(write, unsupported_level=ErrorLevel.RAISE)

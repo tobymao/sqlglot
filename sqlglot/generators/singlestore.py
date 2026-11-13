@@ -193,7 +193,6 @@ class SingleStoreGenerator(MySQLGenerator):
                 e.args.get("error_tolerance"),
             )
         ),
-        exp.Variance: rename_func("VAR_SAMP"),
         exp.VariancePop: rename_func("VAR_POP"),
         exp.Xor: bool_xor_sql,
         exp.Cbrt: lambda self, e: self.sql(

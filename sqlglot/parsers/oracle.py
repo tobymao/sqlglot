@@ -74,6 +74,9 @@ class OracleParser(parser.Parser):
         "TO_TIMESTAMP": _build_to_timestamp,
         "TO_DATE": _build_str_to_time(exp.StrToDate),
         "TRUNC": build_formatted_trunc,
+        "VARIANCE": lambda args: exp.Variance(
+            this=seq_get(args, 0), single_value_returns_zero=True
+        ),
     }
 
     NO_PAREN_FUNCTION_PARSERS = {

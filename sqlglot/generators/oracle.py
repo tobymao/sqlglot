@@ -127,6 +127,13 @@ class OracleGenerator(generator.Generator):
         exp.StorageProperty: exp.Properties.Location.POST_SCHEMA,
     }
 
+    def variance_sql(self, expression: exp.Variance) -> str:
+        if expression.args.get("single_value_returns_zero"):
+            return self.func("VARIANCE", expression.this)
+        if isinstance(expression.this, exp.Distinct):
+            self.unsupported("Oracle's VAR_SAMP does not support DISTINCT")
+        return self.func("VAR_SAMP", expression.this)
+
     def physicalproperty_sql(self, expression: exp.PhysicalProperty) -> str:
         value = self.sql(expression, "value")
         return f"{expression.name}{f' {value}' if value else ''}"

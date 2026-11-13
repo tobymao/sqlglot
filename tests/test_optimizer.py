@@ -2473,6 +2473,13 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
+        positional_sql = "SELECT empty_x.a FROM (SELECT x.a FROM x WHERE FALSE) AS empty_x POSITIONAL JOIN (SELECT 1 AS b) AS y"
+        optimized_positional = optimizer.eliminate_joins.eliminate_joins(
+            parse_one(positional_sql, read="duckdb")
+        ).sql("duckdb")
+        self.assertEqual(optimized_positional, positional_sql)
+        self.assertEqual(self.conn.execute(optimized_positional).fetchall(), [(None,)])
+
     def test_eliminate_ctes(self):
         self.check_file(
             "eliminate_ctes",

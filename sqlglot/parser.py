@@ -2007,6 +2007,10 @@ class Parser:
     # can omit the span unit `DAY TO MINUTE` or `DAY TO SECOND`
     SUPPORTS_OMITTED_INTERVAL_SPAN_UNIT: t.ClassVar = False
 
+    # Whether multi-part intervals support addition without repeating the INTERVAL keyword,
+    # e.g. INTERVAL 23 HOUR + 59 MINUTE (Spark, Databricks)
+    SUPPORTS_MULTI_PART_INTERVAL_ADD: t.ClassVar = False
+
     # Whether adjacent string literals like 'foo' 'bar' require a whitespace or comment between them
     # to be considered valid syntactically. Such expressions evaluate to the strings' concatenation.
     ADJACENT_STRINGS_CANNOT_BE_CONNECTED: t.ClassVar = False
@@ -6616,7 +6620,8 @@ class Parser:
         interval = self._parse_interval_span(this, parse_function_unit=parse_function_unit)
 
         index = self._index
-        self._match(TokenType.PLUS)
+        if self.SUPPORTS_MULTI_PART_INTERVAL_ADD:
+            self._match(TokenType.PLUS)
 
         # Convert INTERVAL 'val_1' unit_1 [+] ... [+] 'val_n' unit_n into a sum of intervals
         if (

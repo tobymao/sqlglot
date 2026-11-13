@@ -39,6 +39,7 @@ class Spark2Parser(HiveParser):
     TRIM_PATTERN_FIRST = True
     CHANGE_COLUMN_ALTER_SYNTAX = True
     PIVOT_COLUMN_NAMING = "agg_name_if_multiple"
+    SUPPORTS_MULTI_PART_INTERVAL_ADD = True
 
     FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR, TokenType.DIV}
 

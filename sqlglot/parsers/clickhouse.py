@@ -57,6 +57,15 @@ def _build_timestamp_trunc(unit: str) -> t.Callable[[list], exp.TimestampTrunc]:
     )
 
 
+def _build_array_sort(name: str, asc: bool) -> t.Callable[[list], exp.Func]:
+    # Both sorts put NULLs last; the lambda form sorts by a key, which ArraySort can't represent
+    return lambda args: (
+        exp.ArraySort(this=args[0], asc=None if asc else exp.false(), nulls_first=exp.false())
+        if len(args) == 1
+        else exp.Anonymous(this=name, expressions=args)
+    )
+
+
 def _build_without_extra_args(expr_type: type[exp.Func], name: str) -> t.Callable[[list], exp.Func]:
     # The optional mode / timezone arguments have no counterpart in expr_type
     return lambda args: (
@@ -291,7 +300,9 @@ class ClickHouseParser(parser.Parser):
         "ARRAYMAX": exp.ArrayMax.from_arg_list,
         "ARRAYMIN": exp.ArrayMin.from_arg_list,
         "ARRAYREVERSE": exp.ArrayReverse.from_arg_list,
+        "ARRAYREVERSESORT": _build_array_sort("arrayReverseSort", asc=False),
         "ARRAYSLICE": exp.ArraySlice.from_arg_list,
+        "ARRAYSORT": _build_array_sort("arraySort", asc=True),
         "ARRAYFILTER": _build_array_lambda_func(exp.ArrayFilter, "arrayFilter"),
         "ARRAYMAP": _build_array_lambda_func(exp.Transform, "arrayMap"),
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,

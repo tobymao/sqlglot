@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
+    array_sort_order,
     inline_array_sql,
     jarowinkler_similarity,
     json_extract_segments,
@@ -333,6 +334,8 @@ class ClickHouseGenerator(generator.Generator):
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",
         exp.Length: length_or_char_length_sql,
+        exp.LogicalAnd: rename_func("min"),
+        exp.LogicalOr: rename_func("max"),
         exp.Map: _map_sql,
         exp.Median: rename_func("median"),
         exp.Nullif: rename_func("nullIf"),
@@ -432,6 +435,18 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.POLYGON,
         exp.DType.MULTIPOLYGON,
     }
+
+    @unsupported_args(("expression", "ClickHouse's arraySort does not support a comparator."))
+    def arraysort_sql(self, expression: exp.ArraySort) -> str:
+        order = array_sort_order(expression)
+        if order is None:
+            self.unsupported("arraySort only takes literal orders")
+            return self.func("arraySort", expression.this)
+
+        asc, nulls_first = order
+        if nulls_first:
+            self.unsupported("arraySort and arrayReverseSort put NULLs last")
+        return self.func("arraySort" if asc else "arrayReverseSort", expression.this)
 
     @unsupported_args("json_scope")
     def contains_sql(self, expression: exp.Contains) -> str:

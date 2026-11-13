@@ -2295,6 +2295,19 @@ LIFETIME(MIN 0 MAX 0)""",
             },
         )
 
+    def test_array_sort(self):
+        self.validate_identity("SELECT arraySort(y -> -y, x), arrayReverseSort(y -> -y, x)")
+
+    def test_logical_and_or(self):
+        self.validate_all(
+            "SELECT min(x), max(x) FROM t",
+            read={
+                "duckdb": "SELECT BOOL_AND(x), BOOL_OR(x) FROM t",
+                "postgres": "SELECT BOOL_AND(x), BOOL_OR(x) FROM t",
+                "snowflake": "SELECT BOOLAND_AGG(x), BOOLOR_AGG(x) FROM t",
+            },
+        )
+
     def test_string_split(self):
         self.validate_all(
             "splitByString('s', x)",

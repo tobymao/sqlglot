@@ -79,6 +79,7 @@ class TeradataGenerator(generator.Generator):
         **generator.Generator.TRANSFORMS,
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
+        exp.HexCharacterString: lambda self, e: f"{self.sql(exp.Literal.string(e.this))}XC",
         exp.Max: max_or_greatest,
         exp.Min: min_or_least,
         exp.Pow: lambda self, e: self.binary(e, "**"),

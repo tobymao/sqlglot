@@ -10,6 +10,13 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_conditionless_join_precedence(self):
+        self.validate_identity(
+            "SELECT * FROM a JOIN b RIGHT JOIN c ON b.y = c.z",
+            "SELECT * FROM a CROSS JOIN b RIGHT JOIN c ON b.y = c.z",
+        )
+        self.validate_identity("SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z")
+
     def test_table_query_identifier(self):
         self.validate_identity(
             "SELECT (table.x) FROM (SELECT 1 AS x) AS `table`",

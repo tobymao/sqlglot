@@ -2091,7 +2091,26 @@ FROM json_data, field_ids""",
         drop_if.assert_is(exp.Drop)
         drop_b.assert_is(exp.Drop)
 
+    def test_grouped_sources(self):
+        for source in (
+            "UNNEST(ARRAY[10]) AS u(y)",
+            "LATERAL (SELECT 10 AS y) AS u",
+            "(VALUES (10)) AS u(y)",
+        ):
+            with self.subTest(source=source):
+                self.validate_identity(f"SELECT u.y, c.z FROM ({source} RIGHT JOIN c ON u.y = c.z)")
+
     def test_unnest(self):
+        self.validate_all(
+            "SELECT u.d FROM LATERAL (SELECT CAST(value AS DATE) FROM "
+            "GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE), "
+            "INTERVAL '1 DAY') AS _t(value)) AS u(d)",
+            read={
+                "": "SELECT u.d FROM LATERAL UNNEST(GENERATE_DATE_ARRAY("
+                "DATE '2024-01-01', DATE '2024-01-02', INTERVAL 1 DAY)) AS u(d)",
+            },
+        )
+
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"
         )

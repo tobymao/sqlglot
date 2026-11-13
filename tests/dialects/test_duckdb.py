@@ -424,6 +424,16 @@ class TestDuckDB(Validator):
             with self.subTest(keyword=keyword):
                 self.assertEqual(exp.column(keyword).sql("duckdb"), f'"{keyword}"')
 
+    def test_grouped_unnest(self):
+        self.validate_all(
+            "SELECT * FROM ((SELECT UNNEST([{'x': 1}], max_depth => 2)) AS u "
+            "RIGHT JOIN (SELECT 2 AS y) AS c ON TRUE)",
+            read={
+                "bigquery": "SELECT * FROM (UNNEST([STRUCT(1 AS x)]) AS u "
+                "RIGHT JOIN (SELECT 2 AS y) AS c ON TRUE)",
+            },
+        )
+
     def test_duckdb(self):
         self.validate_identity("TRUNC(3.14)").assert_is(exp.Trunc)
         self.validate_all(

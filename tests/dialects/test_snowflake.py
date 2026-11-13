@@ -1375,6 +1375,16 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
+            "SELECT value['x'] AS x FROM "
+            "(TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 1)])) "
+            "AS _t0(seq, key, path, index, value, this) "
+            "RIGHT JOIN (SELECT 2 AS y) AS c ON TRUE)",
+            read={
+                "bigquery": "SELECT x FROM (UNNEST([STRUCT(1 AS x)]) "
+                "RIGHT JOIN (SELECT 2 AS y) AS c ON TRUE)",
+            },
+        )
+        self.validate_all(
             "SELECT value['x'] AS x FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('x', 'x')])) AS _t0(seq, key, path, index, value, this)",
             read={
                 "bigquery": "SELECT x FROM UNNEST([STRUCT('x' AS x)])",

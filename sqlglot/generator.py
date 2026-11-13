@@ -2648,7 +2648,7 @@ class Generator:
         else:
             indexed = ""
 
-        return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{joins}{laterals}{ordinality}"
+        return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{ordinality}{joins}{laterals}"
 
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)
@@ -2884,6 +2884,7 @@ class Generator:
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
         values_as_table = values_as_table and self.VALUES_AS_TABLE
+        joins = self.expressions(sqls=expression.args.pop("joins", None), sep="", flat=True)
 
         # The VALUES clause is still valid in an `INSERT INTO ..` statement, for example
         if values_as_table or not expression.find_ancestor(exp.From, exp.Join):
@@ -2893,12 +2894,12 @@ class Generator:
             values = (
                 f"({values})"
                 if self.WRAP_DERIVED_VALUES
-                and (alias or isinstance(expression.parent, (exp.From, exp.Table)))
+                and (alias or joins or isinstance(expression.parent, (exp.From, exp.Table)))
                 else values
             )
             values = self.query_modifiers(expression, values)
             pivots = self.expressions(expression, key="pivots", sep="", flat=True)
-            return f"{values} AS {alias}{pivots}" if alias else f"{values}{pivots}"
+            return f"{values} AS {alias}{pivots}{joins}" if alias else f"{values}{pivots}{joins}"
 
         # Converts `VALUES...` expression into a series of select unions.
         alias_node = expression.args.get("alias")
@@ -2926,12 +2927,12 @@ class Generator:
                     query.set(key, value.pop())
             subquery = query.subquery(alias_node and alias_node.this, copy=False)
             subquery.set("pivots", expression.args.pop("pivots", None))
-            return self.subquery_sql(subquery)
+            return self.subquery_sql(subquery) + joins
 
         alias = f" AS {self.sql(alias_node, 'this')}" if alias_node else ""
         unions = " UNION ALL ".join(self.sql(select) for select in selects)
         pivots = self.expressions(expression, key="pivots", sep="", flat=True)
-        return f"({self.query_modifiers(expression, unions)}){alias}{pivots}"
+        return f"({self.query_modifiers(expression, unions)}){alias}{pivots}{joins}"
 
     def var_sql(self, expression: exp.Var) -> str:
         return self.sql(expression, "this")
@@ -3164,7 +3165,8 @@ class Generator:
             ordinality = f" WITH ORDINALITY{alias}"
             alias = ""
 
-        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}"
+        joins = self.expressions(expression, key="joins", sep="", flat=True)
+        return f"{self.lateral_op(expression)} {this}{alias}{ordinality}{joins}"
 
     def limit_sql(self, expression: exp.Limit, top: bool = False) -> str:
         this = self.sql(expression, "this")
@@ -3749,7 +3751,8 @@ class Generator:
             else:
                 suffix = alias
 
-        return f"UNNEST({args}){suffix}"
+        joins = self.expressions(expression, key="joins", sep="", flat=True)
+        return f"UNNEST({args}){suffix}{joins}"
 
     def prewhere_sql(self, expression: exp.PreWhere) -> str:
         return ""

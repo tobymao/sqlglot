@@ -517,13 +517,20 @@ class PostgresGenerator(generator.Generator):
             arg = expression.expressions[0]
             if isinstance(arg, exp.GenerateDateArray):
                 generate_series: exp.Expr = exp.GenerateSeries(**arg.args)
-                if isinstance(expression.parent, (exp.From, exp.Join)):
+                if isinstance(
+                    expression.find_ancestor(exp.From, exp.Join, exp.Select), (exp.From, exp.Join)
+                ):
+                    alias = expression.args.get("alias") or "_unnested_generate_series"
+                    if isinstance(expression.parent, exp.Lateral) and expression.parent.alias:
+                        alias = None
                     generate_series = (
                         exp.select("value::date")
                         .from_(exp.Table(this=generate_series).as_("_t", table=["value"]))
-                        .subquery(expression.args.get("alias") or "_unnested_generate_series")
+                        .subquery(alias)
                     )
-                return self.sql(generate_series)
+                return self.sql(generate_series) + self.expressions(
+                    expression, key="joins", sep="", flat=True
+                )
 
             from sqlglot.optimizer.annotate_types import annotate_types
 
@@ -539,7 +546,8 @@ class PostgresGenerator(generator.Generator):
                 if expression.args.get("offset"):
                     self.unsupported("Unsupported JSON_ARRAY_ELEMENTS with offset")
 
-                return f"JSON_ARRAY_ELEMENTS({arg_as_json}){alias}"
+                joins = self.expressions(expression, key="joins", sep="", flat=True)
+                return f"JSON_ARRAY_ELEMENTS({arg_as_json}){alias}{joins}"
 
         return super().unnest_sql(expression)
 

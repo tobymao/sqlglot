@@ -338,7 +338,9 @@ class RedshiftGenerator(PostgresGenerator):
         arg = self.sql(seq_get(args, 0))
 
         alias = self.expressions(expression.args.get("alias"), key="columns", flat=True)
-        return f"{arg} AS {alias}" if alias else arg
+        return (f"{arg} AS {alias}" if alias else arg) + self.expressions(
+            expression, key="joins", sep="", flat=True
+        )
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type(exp.DType.JSON):

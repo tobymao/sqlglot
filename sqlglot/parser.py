@@ -1890,7 +1890,14 @@ class Parser:
 
     SECURITY_PROPERTY_KEYWORDS: t.ClassVar = {"DEFINER", "INVOKER", "NONE"}
 
-    MODIFIABLES: t.ClassVar = (exp.Query, exp.Table, exp.TableFromRows, exp.Values)
+    MODIFIABLES: t.ClassVar = (
+        exp.Query,
+        exp.Table,
+        exp.TableFromRows,
+        exp.Values,
+        exp.Unnest,
+        exp.Lateral,
+    )
 
     STRICT_CAST: t.ClassVar = True
 

@@ -378,7 +378,6 @@ class HiveGenerator(generator.Generator):
         ),
         exp.UnixToTime: _unix_to_time_sql,
         exp.UnixToTimeStr: rename_func("FROM_UNIXTIME"),
-        exp.Unnest: rename_func("EXPLODE"),
         exp.PartitionedByProperty: lambda self, e: f"PARTITIONED BY {self.sql(e, 'this')}",
         exp.NumberToStr: rename_func("FORMAT_NUMBER"),
         exp.National: lambda self, e: self.national_sql(e, prefix=""),
@@ -444,6 +443,7 @@ class HiveGenerator(generator.Generator):
         return super().ignorenulls_sql(expression)
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
+        self._warn_unsupported_arg(expression, "joins")
         return rename_func("EXPLODE")(self, expression)
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:

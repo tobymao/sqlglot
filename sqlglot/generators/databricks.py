@@ -94,6 +94,7 @@ class DatabricksGenerator(SparkGenerator):
     }
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
+        self._warn_unsupported_arg(expression, "joins")
         alias = expression.args.get("alias")
         offset = expression.args.get("offset")
         multiple = len(expression.expressions) > 1

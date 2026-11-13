@@ -288,6 +288,7 @@ class Unnest(Expression, Func, UDTF):
     arg_types = {
         "expressions": True,
         "alias": False,
+        "joins": False,
         "offset": False,
         "offset_base": False,
         "explode_array": False,

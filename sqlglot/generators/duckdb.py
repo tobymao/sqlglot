@@ -4134,8 +4134,11 @@ class DuckDBGenerator(generator.Generator):
                 if alias.columns:
                     alias = exp.TableAlias(this=seq_get(alias.columns, 0))
 
+            joins = expression.args.get("joins")
+            expression.set("joins", None)
             unnest_sql = super().unnest_sql(expression)
             select = exp.Select(expressions=[unnest_sql]).subquery(alias)
+            select.set("joins", joins)
             return self.sql(select)
 
         return super().unnest_sql(expression)

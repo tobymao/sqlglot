@@ -9,6 +9,45 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_grouped_unnest(self):
+        for dialect in ("spark", "spark2", "databricks"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(
+                    "SELECT u.y, c.z FROM a CROSS JOIN "
+                    "(UNNEST(a.arr) AS u(y) RIGHT JOIN c ON u.y = c.z)",
+                    read="postgres",
+                )
+                with self.assertRaisesRegex(UnsupportedError, "column references"):
+                    expression.sql(dialect, unsupported_level=ErrorLevel.RAISE)
+
+        for input_, generated in (
+            ("MAP(ARRAY[1], ARRAY[10])", "MAP_FROM_ARRAYS(ARRAY(1), ARRAY(10))"),
+            (
+                "MAP_FROM_ENTRIES(ARRAY[ROW(1, 10)])",
+                "MAP_FROM_ENTRIES(ARRAY(STRUCT(1, 10)))",
+            ),
+            (
+                "(MAP_FROM_ENTRIES(ARRAY[ROW(1, 10)]))",
+                "(MAP_FROM_ENTRIES(ARRAY(STRUCT(1, 10))))",
+            ),
+        ):
+            with self.subTest(input_=input_):
+                expected = (
+                    "SELECT u.k, u.v, c.z FROM a CROSS JOIN "
+                    f"((SELECT EXPLODE({generated}) AS (k, v)) AS u "
+                    "RIGHT JOIN c ON u.k = c.z)"
+                )
+                self.validate_all(
+                    expected,
+                    read={
+                        "trino": "SELECT u.k, u.v, c.z FROM a CROSS JOIN "
+                        f"(UNNEST({input_}) AS u(k, v) RIGHT JOIN c ON u.k = c.z)",
+                    },
+                    write={
+                        "spark2": expected.replace("STRUCT(1, 10)", "STRUCT(1 AS col1, 10 AS col2)")
+                    },
+                )
+
     def test_trunc_unknown_format(self):
         sql = "TRUNC(CAST('2024-05-15' AS DATE), 'WW')"
         self.assertEqual(self.parse_one(sql).sql("spark", unsupported_level=ErrorLevel.RAISE), sql)

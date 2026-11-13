@@ -2101,6 +2101,17 @@ FROM json_data, field_ids""",
                 self.validate_identity(f"SELECT u.y, c.z FROM ({source} RIGHT JOIN c ON u.y = c.z)")
 
     def test_unnest(self):
+        for unnest in (
+            "UNNEST(ARRAY[10, 30])",
+            "UNNEST(ARRAY[10, 30]) AS u",
+            "UNNEST(ARRAY[10, 30], ARRAY[20]) AS u(x)",
+        ):
+            with self.subTest(unnest=unnest):
+                self.validate_all(
+                    f"SELECT * FROM a CROSS JOIN ({unnest} RIGHT JOIN c ON TRUE)",
+                    write={"spark": UnsupportedError, "spark2": UnsupportedError},
+                )
+
         self.validate_all(
             "SELECT u.d FROM LATERAL (SELECT CAST(value AS DATE) FROM "
             "GENERATE_SERIES(CAST('2024-01-01' AS DATE), CAST('2024-01-02' AS DATE), "
@@ -2108,6 +2119,36 @@ FROM json_data, field_ids""",
             read={
                 "": "SELECT u.d FROM LATERAL UNNEST(GENERATE_DATE_ARRAY("
                 "DATE '2024-01-01', DATE '2024-01-02', INTERVAL 1 DAY)) AS u(d)",
+            },
+        )
+
+        for first, second, spark_first, spark_second in (
+            ("ARRAY[1]", "ARRAY[2, 3]", "ARRAY(1)", "ARRAY(2, 3)"),
+            ("CAST(NULL AS INT[])", "ARRAY[2, 3]", "CAST(NULL AS ARRAY<INT>)", "ARRAY(2, 3)"),
+        ):
+            with self.subTest(first=first, second=second):
+                spark_sql = (
+                    "SELECT a.x AS ax, u.x, u.y, c.z FROM a CROSS JOIN "
+                    f"((SELECT INLINE(ARRAYS_ZIP(COALESCE({spark_first}, ARRAY()), "
+                    f"COALESCE({spark_second}, ARRAY()))) AS (x, y)) AS u "
+                    "RIGHT JOIN c ON COALESCE(u.x, u.y) = c.z)"
+                )
+                self.validate_all(
+                    "SELECT a.x AS ax, u.x, u.y, c.z FROM a CROSS JOIN "
+                    f"(UNNEST({first}, {second}) AS u(x, y) "
+                    "RIGHT JOIN c ON COALESCE(u.x, u.y) = c.z)",
+                    write={"spark": spark_sql, "spark2": spark_sql},
+                )
+
+        self.validate_all(
+            "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+            "(UNNEST(ARRAY[10, 30]) AS u(y) RIGHT JOIN c ON u.y = c.z)",
+            write={
+                "spark": "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+                "((SELECT EXPLODE(ARRAY(10, 30)) AS (y)) AS u RIGHT JOIN c ON u.y = c.z)",
+                "spark2": "SELECT a.x, u.y, c.z FROM a CROSS JOIN "
+                "((SELECT EXPLODE(ARRAY(10, 30)) AS (y)) AS u RIGHT JOIN c ON u.y = c.z)",
+                "hive": UnsupportedError,
             },
         )
 

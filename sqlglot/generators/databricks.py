@@ -94,7 +94,11 @@ class DatabricksGenerator(SparkGenerator):
     }
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        self._warn_unsupported_arg(expression, "joins")
+        if expression.args.get("joins") and any(
+            arg.find(exp.Column) for arg in expression.expressions
+        ):
+            self.unsupported("Joined UNNEST operands with column references are not supported")
+
         alias = expression.args.get("alias")
         offset = expression.args.get("offset")
         multiple = len(expression.expressions) > 1
@@ -138,6 +142,7 @@ class DatabricksGenerator(SparkGenerator):
         if isinstance(expression.parent, exp.Join):
             table = exp.Lateral(this=table)
 
+        table.set("joins", expression.args.get("joins"))
         return self.sql(table)
 
     def lateral_sql(self, expression: exp.Lateral) -> str:

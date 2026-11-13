@@ -248,6 +248,7 @@ class HiveGenerator(generator.Generator):
     SUPPORTS_MEDIAN = False
     SUPPORTS_TEMPORAL_PRECISION = False
     ARRAY_SIZE_NAME = "SIZE"
+    SUPPORTS_JOINED_UNNEST = False
     ALTER_SET_TYPE = ""
 
     EXPRESSIONS_WITHOUT_NESTED_CTES = {
@@ -442,9 +443,54 @@ class HiveGenerator(generator.Generator):
 
         return super().ignorenulls_sql(expression)
 
+    # Inline unsupported check: mypyc cannot compile @unsupported_args on an
+    # override of an undecorated base-class method.
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        self._warn_unsupported_arg(expression, "joins")
-        return rename_func("EXPLODE")(self, expression)
+        self._warn_unsupported_arg(expression, "offset")
+        if joins := expression.args.get("joins"):
+            if not self.SUPPORTS_JOINED_UNNEST:
+                self.unsupported("Joined UNNEST operands are not supported")
+
+            if any(arg.find(exp.Column) for arg in expression.expressions):
+                self.unsupported("Joined UNNEST operands with column references are not supported")
+
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            column_count = sum(
+                2
+                if isinstance(arg.unnest(), exp.MapFromEntries)
+                or annotate_types(arg, dialect=self.dialect).is_type(exp.DType.MAP)
+                else 1
+                for arg in expression.expressions
+            )
+            if len(expression.expressions) > 1 and column_count != len(expression.expressions):
+                self.unsupported("UNNEST with multiple inputs including maps is not supported")
+
+            projection: exp.Expr = (
+                exp.Inline(
+                    this=exp.ArraysZip(
+                        expressions=[
+                            exp.Coalesce(this=arg, expressions=[exp.Array()])
+                            for arg in expression.expressions
+                        ]
+                    )
+                )
+                if len(expression.expressions) > 1
+                else exp.Explode.from_arg_list(expression.expressions)
+            )
+            alias = expression.args.get("alias")
+            if alias and len(alias.columns) == column_count:
+                projection = exp.Aliases(this=projection, expressions=alias.columns)
+            else:
+                self.unsupported("Joined UNNEST operands require explicit column aliases")
+            subquery = exp.select(projection).subquery(alias and alias.this)
+            subquery.set("joins", joins)
+            return self.sql(subquery)
+
+        explode = self.func("EXPLODE", *expression.expressions)
+        alias = self.sql(expression, "alias")
+        alias = f" AS {alias}" if alias else ""
+        return f"{explode}{alias}"
 
     def _jsonpathkey_sql(self, expression: exp.JSONPathKey) -> str:
         if isinstance(expression.this, exp.JSONPathWildcard):

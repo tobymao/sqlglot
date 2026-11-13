@@ -50,6 +50,25 @@ class TestTeradata(Validator):
         self.validate_identity("CURRENT_TIME AT TIME ZONE 'America Pacific'")
         self.validate_identity('SELECT t.current_time, "CURRENT_TIME" FROM t')
 
+    def test_dayofweek(self):
+        self.validate_identity("dayofweek(d)", "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
+        for value in (
+            "d",
+            "CURRENT_DATE",
+            "CAST('2026-11-15' AS DATE)",
+            "CAST('2026-11-15 12:00:00' AS TIMESTAMP)",
+            "NULL",
+        ):
+            expression = self.validate_identity(f"DAYOFWEEK({value})").assert_is(exp.DayOfWeek)
+            self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+        self.validate_all(
+            "DAYOFWEEK(d)",
+            read={"": "DAY_OF_WEEK(d)", "hive": "DAYOFWEEK(d)"},
+            write={"": "DAY_OF_WEEK(d)", "teradata": "DAYOFWEEK(d)", "hive": "DAYOFWEEK(d)"},
+        )
+        self.validate_identity('SELECT dayofweek, "dayofweek", t.dayofweek FROM t')
+        self.validate_identity("SELECT t.DAYOFWEEK(d) FROM t")
+
     def test_execute(self):
         for sql, expected in (
             ("EXEC example_macro", "EXECUTE example_macro"),

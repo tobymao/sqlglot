@@ -98,6 +98,7 @@ class TeradataGenerator(generator.Generator):
         exp.DateTrunc: date_trunc_to_trunc_sql,
         exp.DateAdd: _date_add_sql("+"),
         exp.DateSub: _date_add_sql("-"),
+        exp.DayOfWeek: rename_func("DAYOFWEEK"),
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 

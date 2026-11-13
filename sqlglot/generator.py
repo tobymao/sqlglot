@@ -628,6 +628,9 @@ class Generator:
     # The function name of the exp.ArraySize expression
     ARRAY_SIZE_NAME: str = "ARRAY_LENGTH"
 
+    # The function name of the exp.Variance (sample variance) expression
+    VARIANCE_NAME: str = "VARIANCE"
+
     # The syntax to use when altering the type of a column
     ALTER_SET_TYPE = "SET DATA TYPE"
 
@@ -6283,6 +6286,24 @@ class Generator:
         if (asc and asc != exp.true()) or (nulls_first and nulls_first != exp.false()):
             self.unsupported("ARRAY_SORT only sorts ascending with NULLs last")
         return self.func("ARRAY_SORT", expression.this, expression.expression)
+
+    def variance_sql(self, expression: exp.Variance) -> str:
+        this = expression.this
+        if not expression.args.get("single_value_returns_zero"):
+            return self.func(self.VARIANCE_NAME, this)
+
+        node: exp.Expr = expression
+        while node.parent and not isinstance(node.parent, (exp.Window, exp.AggFunc, exp.Select)):
+            node = node.parent
+        if isinstance(node.parent, exp.Window) and node.arg_key == "this":
+            self.unsupported("VARIANCE returning 0 for a single value is not supported in a window")
+            return self.func(self.VARIANCE_NAME, this)
+
+        return self.sql(
+            exp.case()
+            .when(exp.Count(this=this.copy()).eq(1), exp.Literal.number(0))
+            .else_(exp.Variance(this=this.copy()))
+        )
 
     def arraysize_sql(self, expression: exp.ArraySize) -> str:
         dim = expression.expression

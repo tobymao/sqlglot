@@ -1079,6 +1079,12 @@ class Dialect(metaclass=_Dialect):
     # Specifies what types a given type can be coerced into
     COERCES_TO: dict[exp.DType, set[exp.DType]] = {}
 
+    # Coercion functions for binary operations
+    BINARY_COERCIONS: dict[
+        tuple[exp.DType, exp.DType],
+        t.Callable[[exp.Expr, exp.Expr], exp.DataType | exp.DType | None],
+    ] = {}
+
     # Specifies type inference & validation rules for expressions
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

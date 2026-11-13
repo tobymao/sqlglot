@@ -481,6 +481,8 @@ def extract_type(*expressions: exp.Expr):
 def date_literal(date: object, target_type=None) -> exp.Expr:
     if not target_type or not target_type.is_type(*exp.DataType.TEMPORAL_TYPES):
         target_type = exp.DType.DATETIME if isinstance(date, datetime) else exp.DType.DATE
+    elif isinstance(date, datetime) and target_type.is_type(exp.DType.DATE):
+        target_type = exp.DType.DATETIME
 
     return exp.cast(exp.Literal.string(date), target_type)
 
@@ -1345,15 +1347,25 @@ class Simplifier:
         elif _is_date_literal(a) and isinstance(b, exp.Interval):
             date, b = extract_date(a), extract_interval(b)
             if date and b:
+                target_type = (
+                    expression.type
+                    if expression.type and expression.type.is_type(*exp.DataType.TEMPORAL_TYPES)
+                    else extract_type(a)
+                )
                 if isinstance(expression, (exp.Add, exp.DateAdd, exp.DatetimeAdd)):
-                    return date_literal(date + b, extract_type(a))
+                    return date_literal(date + b, target_type)
                 if isinstance(expression, (exp.Sub, exp.DateSub, exp.DatetimeSub)):
-                    return date_literal(date - b, extract_type(a))
+                    return date_literal(date - b, target_type)
         elif isinstance(a, exp.Interval) and _is_date_literal(b):
             a, date = extract_interval(a), extract_date(b)
             # you cannot subtract a date from an interval
             if a and b and isinstance(expression, exp.Add):
-                return date_literal(a + date, extract_type(b))
+                target_type = (
+                    expression.type
+                    if expression.type and expression.type.is_type(*exp.DataType.TEMPORAL_TYPES)
+                    else extract_type(b)
+                )
+                return date_literal(a + date, target_type)
         elif _is_date_literal(a) and _is_date_literal(b):
             if isinstance(expression, exp.Predicate):
                 a, b = extract_date(a), extract_date(b)

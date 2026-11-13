@@ -191,6 +191,15 @@ class TypeAnnotator:
                 ),
             }
         ),
+        **swap_all(
+            {
+                (temporal, exp.DType.INTERVAL): lambda l, r: (
+                    l.type if l.is_type(*exp.DataType.TEMPORAL_TYPES) else r.type
+                )
+                for temporal in exp.DataType.TEMPORAL_TYPES
+                if temporal != exp.DType.DATE
+            }
+        ),
     }
 
     def __init__(
@@ -206,7 +215,11 @@ class TypeAnnotator:
         self.dialect = dialect
         self.expression_metadata = expression_metadata or dialect.EXPRESSION_METADATA
         self.coerces_to = coerces_to or dialect.COERCES_TO or self.COERCES_TO
-        self.binary_coercions = binary_coercions or self.BINARY_COERCIONS
+        self.binary_coercions = binary_coercions or (
+            {**self.BINARY_COERCIONS, **dialect.BINARY_COERCIONS}
+            if dialect.BINARY_COERCIONS
+            else self.BINARY_COERCIONS
+        )
 
         # Keep annotated nodes alive so their ids cannot be reused while cached
         self._visited: dict[int, exp.Expr] = {}

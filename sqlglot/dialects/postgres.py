@@ -18,6 +18,10 @@ class Postgres(Dialect):
     TYPED_DIVISION = True
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True
+    BINARY_COERCIONS = {
+        (exp.DType.DATE, exp.DType.INTERVAL): lambda l, r: exp.DType.TIMESTAMP,
+        (exp.DType.INTERVAL, exp.DType.DATE): lambda l, r: exp.DType.TIMESTAMP,
+    }
     NULL_ORDERING = "nulls_are_large"
     SUPPORTS_LIMIT_ALL = True
     COLUMN_ALIAS_PRECEDENCE = {

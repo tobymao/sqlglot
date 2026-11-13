@@ -650,7 +650,7 @@ class TestDuckDB(Validator):
                     "duckdb": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "hive": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
                     "mysql": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
-                    "oracle": f"SELECT * FROM t1 {join_type} JOIN t2 ON t1.x = t2.x",
+                    "oracle": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "postgres": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "presto": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
                     "redshift": f"SELECT * FROM t1 WHERE {exists}(SELECT 1 FROM t2 WHERE t1.x = t2.x)",

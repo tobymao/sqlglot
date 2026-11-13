@@ -652,6 +652,32 @@ class TestOracle(Validator):
         )
         self.validate_identity("L2_DISTANCE(x, y)")
         self.validate_identity("BITMAP_OR_AGG(x)")
+        self.validate_identity("SELECT VAR_POP(a) FROM t")
+        self.validate_identity("SELECT APPROX_COUNT_DISTINCT(a) FROM t")
+        self.validate_all(
+            "SELECT VARIANCE_POP(a) FROM t",
+            write={
+                "oracle": "SELECT VAR_POP(a) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT APPROX_DISTINCT(a) FROM t",
+            write={
+                "oracle": "SELECT APPROX_COUNT_DISTINCT(a) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t1 SEMI JOIN t2 ON t1.x = t2.x",
+            write={
+                "oracle": "SELECT * FROM t1 WHERE EXISTS(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM t1 ANTI JOIN t2 ON t1.x = t2.x",
+            write={
+                "oracle": "SELECT * FROM t1 WHERE NOT EXISTS(SELECT 1 FROM t2 WHERE t1.x = t2.x)",
+            },
+        )
 
     def test_pivot_syntax_restrictions(self):
         """Oracle only accepts simple column names in a (UN)PIVOT's FOR clause and IN-list

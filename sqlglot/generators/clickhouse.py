@@ -31,6 +31,19 @@ from collections import defaultdict
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
 
 
+@unsupported_args(("expression", "ClickHouse's arraySort does not support a comparator."))
+def _array_sort_sql(self: ClickHouseGenerator, expression: exp.ArraySort) -> str:
+    order = array_sort_order(expression)
+    if order is None:
+        self.unsupported("arraySort only takes literal orders")
+        return self.func("arraySort", expression.this)
+
+    asc, nulls_first = order
+    if nulls_first:
+        self.unsupported("arraySort and arrayReverseSort put NULLs last")
+    return self.func("arraySort" if asc else "arrayReverseSort", expression.this)
+
+
 def _unix_to_time_sql(self: ClickHouseGenerator, expression: exp.UnixToTime) -> str:
     scale = expression.args.get("scale")
     timestamp = expression.this
@@ -291,6 +304,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.Transform: lambda self, e: self.func("arrayMap", e.expression, e.this),
         exp.ArrayRemove: remove_from_array_using_filter,
         exp.ArrayReverse: rename_func("arrayReverse"),
+        exp.ArraySort: _array_sort_sql,
         exp.ArraySlice: rename_func("arraySlice"),
         exp.ArraySum: rename_func("arraySum"),
         exp.ArrayMax: rename_func("arrayMax"),
@@ -435,18 +449,6 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.POLYGON,
         exp.DType.MULTIPOLYGON,
     }
-
-    @unsupported_args(("expression", "ClickHouse's arraySort does not support a comparator."))
-    def arraysort_sql(self, expression: exp.ArraySort) -> str:
-        order = array_sort_order(expression)
-        if order is None:
-            self.unsupported("arraySort only takes literal orders")
-            return self.func("arraySort", expression.this)
-
-        asc, nulls_first = order
-        if nulls_first:
-            self.unsupported("arraySort and arrayReverseSort put NULLs last")
-        return self.func("arraySort" if asc else "arrayReverseSort", expression.this)
 
     @unsupported_args("json_scope")
     def contains_sql(self, expression: exp.Contains) -> str:

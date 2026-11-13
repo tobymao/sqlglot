@@ -9,6 +9,15 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
+def _annotate_at_time_zone(self: TypeAnnotator, expression: exp.AtTimeZone) -> exp.Expr:
+    this = expression.this
+    if this.is_type(exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ):
+        return self._set_type(expression, exp.DType.TIMESTAMPTZ)
+    if this.is_type(exp.DType.TIMESTAMPTZ):
+        return self._set_type(expression, exp.DType.TIMESTAMP)
+    return self._set_type(expression, exp.DType.UNKNOWN)
+
+
 def _annotate_sha2(self: TypeAnnotator, expression: exp.SHA2) -> exp.Expr:
     size = 128
     length = expression.args.get("length")
@@ -21,6 +30,7 @@ def _annotate_sha2(self: TypeAnnotator, expression: exp.SHA2) -> exp.Expr:
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
+    exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.SHA2: {"annotator": _annotate_sha2},
     # Redshift's TO_TIMESTAMP returns TIMESTAMPTZ, not TIMESTAMP
     # https://docs.aws.amazon.com/redshift/latest/dg/r_TO_TIMESTAMP.html

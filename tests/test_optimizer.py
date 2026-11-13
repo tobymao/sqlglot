@@ -2570,6 +2570,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             optimizer.optimize_joins.optimize_joins,
         )
 
+    def test_optimize_comma_joins(self):
+        schema = {"a": {"x": "INT"}, "b": {"y": "INT"}, "c": {"z": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (10), (30)) t(y)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+
+            for dialect in ("duckdb", "postgres"):
+                for side in ("RIGHT", "FULL"):
+                    with self.subTest(dialect=dialect, side=side):
+                        sql = f"SELECT * FROM a, b {side} JOIN c ON b.y = c.z"
+                        expected = connection.execute(sql).fetchall()
+                        for optimized in (
+                            optimizer.optimize_joins.optimize_joins(
+                                parse_one(sql, dialect=dialect)
+                            ),
+                            optimizer.optimize(sql, schema=schema, dialect=dialect),
+                        ):
+                            self.assertCountEqual(
+                                connection.execute(optimized.sql(dialect)).fetchall(), expected
+                            )
+
     def test_qualify_correlated_udtf_join_groups(self):
         for source, expected in (
             ("LATERAL (SELECT a.x AS y) AS u", [(1,)]),
@@ -2608,6 +2630,68 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                             self.conn.execute(expression.sql("duckdb")).fetchall(), expected
                         )
 
+    def test_optimize_comma_join_predicates(self):
+        schema = {
+            "a": {"x": "INT"},
+            "b": {"y": "INT"},
+            "c": {"z": "INT"},
+            "d": {"w": "INT"},
+            "e": {"v": "INT"},
+        }
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE a AS SELECT * FROM (VALUES (1), (2)) t(x)")
+            connection.execute("CREATE TABLE b AS SELECT * FROM (VALUES (10), (30)) t(y)")
+            connection.execute("CREATE TABLE c AS SELECT * FROM (VALUES (10), (20)) t(z)")
+            connection.execute("CREATE TABLE d AS SELECT * FROM (VALUES (10), (40)) t(w)")
+            connection.execute("CREATE TABLE e AS SELECT * FROM (VALUES (10), (50)) t(v)")
+
+            for sql in (
+                "SELECT a.x, b.y, c.z, d.w FROM a, b RIGHT JOIN c ON b.y = c.z "
+                "JOIN d ON c.z = d.w WHERE d.w > 0",
+                "SELECT a.x, b.y, c.z, d.w FROM a, b RIGHT JOIN c ON b.y = c.z "
+                "JOIN d ON c.z = d.w WHERE (d.w > 0 AND d.w < 20) OR (d.w = 40 AND a.x > 0)",
+                "SELECT a.x, c.z FROM a, b RIGHT JOIN (SELECT z FROM c) AS c ON b.y = c.z "
+                "RIGHT JOIN d ON c.z = d.w WHERE c.z = 10",
+                "SELECT a.x, b.y, s.z, d.w FROM a, b JOIN "
+                "(SELECT c.z FROM c WHERE c.z = 10) AS s ON b.y = s.z "
+                "RIGHT JOIN d ON s.z = d.w",
+                "WITH s AS (SELECT c.z FROM c WHERE c.z = 10) "
+                "SELECT a.x, b.y, s.z, d.w FROM a, b JOIN s ON b.y = s.z "
+                "RIGHT JOIN d ON s.z = d.w",
+                "SELECT a.x, b.y, d.w FROM a, b RIGHT JOIN c ON b.y = c.z, "
+                "d RIGHT JOIN e ON d.w = e.v WHERE b.y = d.w",
+                "SELECT a.x, u.y, c.z FROM a, UNNEST(ARRAY[10, 30]) AS u(y) "
+                "RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, u.y, u.ord, c.z FROM a, UNNEST(ARRAY[10, 30]) "
+                "WITH ORDINALITY AS u(y, ord) RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, u.y, c.z FROM a, LATERAL (SELECT 10 AS y) AS u "
+                "RIGHT JOIN c ON u.y = c.z",
+                "SELECT a.x, v.y, c.z FROM a, (VALUES (10), (30)) AS v(y) "
+                "RIGHT JOIN c ON v.y = c.z",
+                "SELECT a.x, g.v, g.n, c.z FROM a, GENERATE_SERIES(10, 30, 20) "
+                "WITH ORDINALITY AS g(v, n) RIGHT JOIN c ON g.v = c.z",
+            ):
+                expected = connection.execute(sql).fetchall()
+                for dialect in ("duckdb", "postgres"):
+                    for rule in (
+                        qualify,
+                        optimizer.optimize_joins.optimize_joins,
+                        optimizer.pushdown_predicates.pushdown_predicates,
+                        optimizer.optimize,
+                    ):
+                        with self.subTest(sql=sql, dialect=dialect, rule=rule.__name__):
+                            expression = parse_one(sql, dialect=dialect)
+                            result = (
+                                rule(expression, schema=schema, dialect=dialect)
+                                if rule in (qualify, optimizer.optimize)
+                                else rule(expression)
+                            )
+                            output = result.sql(dialect)
+                            self.assertCountEqual(connection.execute(output).fetchall(), expected)
+                            self.assertEqual(
+                                parse_one(output, dialect=dialect).sql(dialect), output
+                            )
+
     def test_grouped_udtf_scope(self):
         schema = {"a": {"x": "INT"}, "c": {"z": "INT"}}
         with duckdb.connect() as connection:
@@ -2633,6 +2717,64 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         self.assertCountEqual(
                             connection.execute(result.sql("postgres")).fetchall(), expected
                         )
+
+    def test_normalize_join_groups(self):
+        for sql, expected in (
+            (
+                "SELECT * FROM a JOIN b RIGHT JOIN c ON b.y = c.z",
+                "SELECT * FROM a CROSS JOIN b RIGHT JOIN c ON b.y = c.z",
+            ),
+            (
+                "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z, d FULL JOIN e ON d.w = e.v",
+                "SELECT * FROM a CROSS JOIN (b RIGHT JOIN c ON b.y = c.z) "
+                "CROSS JOIN (d FULL JOIN e ON d.w = e.v)",
+            ),
+            (
+                "SELECT * FROM a, (b LEFT JOIN c ON b.y = c.z) RIGHT JOIN d ON c.z = d.w",
+                "SELECT * FROM a CROSS JOIN ((b LEFT JOIN c ON b.y = c.z) "
+                "RIGHT JOIN d ON c.z = d.w)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                result = optimizer.optimize_joins.normalize_join_groups(parse_one(sql))
+                self.assertEqual(result, parse_one(expected))
+                self.assertEqual(
+                    optimizer.optimize_joins.normalize_join_groups(result.copy()), result
+                )
+                for node in result.walk():
+                    if node.index is not None:
+                        assert node.parent is not None and node.arg_key is not None
+                        self.assertIs(node.parent.args[node.arg_key][node.index], node)
+
+        for dialect in ("sqlite", "hive", "clickhouse", "bigquery"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one(
+                    "SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z", dialect=dialect
+                )
+                self.assertEqual(
+                    optimizer.optimize_joins.normalize_join_groups(expression.copy()), expression
+                )
+
+    def test_optimize_apply_joins(self):
+        schema = {"a": {"x": "INT"}, "c": {"z": "INT"}}
+        for apply in ("CROSS", "OUTER"):
+            sql = (
+                f"SELECT a.x, b.y, c.z FROM a {apply} APPLY "
+                "(SELECT a.x AS y WHERE a.x = 1) AS b RIGHT JOIN c ON a.x = c.z"
+            )
+            with self.subTest(apply=apply):
+                expression = parse_one(sql, dialect="tsql")
+                self.assertEqual(
+                    optimizer.optimize_joins.optimize_joins(expression.copy()), expression
+                )
+                for rule in (qualify, optimizer.optimize):
+                    self.assertEqual(
+                        rule(expression.copy(), schema=schema, dialect="tsql").sql("tsql"),
+                        "SELECT [a].[x] AS [x], [b].[y] AS [y], [c].[z] AS [z] "
+                        f"FROM [a] AS [a] {apply} APPLY "
+                        "(SELECT [a].[x] AS [y] WHERE [a].[x] = 1) AS [b] "
+                        "RIGHT JOIN [c] AS [c] ON [a].[x] = [c].[z]",
+                    )
 
     def test_optimize_positional_joins(self):
         for dialect, kind in (("clickhouse", "PASTE"), ("duckdb", "POSITIONAL")):
@@ -2681,6 +2823,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
     def test_nearest_joins(self):
+        self.assertEqual(
+            optimizer.optimize_joins.optimize_joins(
+                parse_one(
+                    "SELECT a.id, b.id, c.id, d.id FROM a, b JOIN c NEAREST 1 BY DISTANCE "
+                    "ABS(b.id - c.id) RIGHT JOIN d ON c.id = d.id",
+                    dialect="duckdb",
+                )
+            ).sql("duckdb"),
+            "SELECT a.id, b.id, c.id, d.id FROM a CROSS JOIN (b JOIN c NEAREST 1 BY DISTANCE "
+            "ABS(b.id - c.id) RIGHT JOIN d ON c.id = d.id)",
+        )
         for sql in (
             "SELECT a.id, b.id FROM a JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",
             "SELECT a.id, b.id FROM a LEFT JOIN b NEAREST 1 BY DISTANCE ABS(a.id - b.id)",

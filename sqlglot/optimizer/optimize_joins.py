@@ -6,7 +6,7 @@ from sqlglot.errors import OptimizeError
 from sqlglot._typing import E
 from sqlglot.helper import tsort
 
-JOIN_ATTRS = ("on", "side", "kind", "using", "method")
+JOIN_ATTRS = ("on", "side", "kind", "using", "method", "nearest")
 
 
 def optimize_joins(expression: E) -> E:
@@ -19,7 +19,11 @@ def optimize_joins(expression: E) -> E:
         'SELECT * FROM x JOIN z ON x.a = z.a AND TRUE JOIN y ON y.a = z.a'
     """
 
-    for select in expression.find_all(exp.Select):
+    for select in expression.find_all(exp.Select, exp.Table, exp.Subquery, exp.UDTF):
+        normalize_join_groups(select)
+        if not isinstance(select, exp.Select):
+            continue
+
         joins: list[exp.Join] = select.args.get("joins", [])
 
         if not _is_reorderable(joins):
@@ -99,6 +103,7 @@ def normalize(expression: E) -> E:
             join.kind in ("ASOF", "PASTE")
             or join.method in ("ASOF", "POSITIONAL")
             or join.args.get("nearest")
+            or join.this.args.get("cross_apply") is not None
         ):
             continue
 
@@ -113,6 +118,38 @@ def normalize(expression: E) -> E:
 
             if not join.args.get("on") and not join.args.get("using"):
                 join.set("on", exp.true())
+    return expression
+
+
+def normalize_join_groups(expression: E) -> E:
+    """Parenthesize comma join groups in this expression's immediate join list."""
+    joins: list[exp.Join] = expression.args.get("joins") or []
+    if not any(join.side in ("RIGHT", "FULL") for join in joins):
+        return expression
+
+    grouped = joins.copy()
+    end = len(joins)
+    outer = False
+    for i in range(len(joins) - 1, -1, -1):
+        join = joins[i]
+        if (
+            not any(join.args.get(k) for k in JOIN_ATTRS)
+            and join.this.args.get("cross_apply") is None
+        ):
+            if outer:
+                # JOIN binds more tightly than comma, so its left operand excludes preceding groups.
+                operand = join.this
+                operand.set("joins", [*(operand.args.get("joins") or []), *grouped[i + 1 : end]])
+                join.set("this", exp.Subquery(this=operand))
+                join.set("kind", "CROSS")
+                del grouped[i + 1 : end]
+            end = i
+            outer = False
+        elif join.side in ("RIGHT", "FULL"):
+            outer = True
+
+    if len(grouped) != len(joins):
+        expression.set("joins", grouped)
     return expression
 
 
@@ -147,6 +184,7 @@ def _is_reorderable(joins: Iterable[exp.Join]) -> bool:
         or join.kind in ("ASOF", "ANY", "PASTE")
         or join.method in ("ASOF", "POSITIONAL")
         or join.args.get("nearest")
+        or join.this.args.get("cross_apply") is not None
         or not join.alias_or_name
         for join in joins
     )

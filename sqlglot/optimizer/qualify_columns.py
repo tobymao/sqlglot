@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, Usin
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.resolver import Resolver
+from sqlglot.optimizer.optimize_joins import normalize_join_groups
 from sqlglot.optimizer.scope import (
     Scope,
     build_scope,
@@ -137,6 +138,8 @@ def qualify_columns(
             annotator.annotate_scope(scope)
         elif dialect.SUPPORTS_STRUCT_STAR_EXPANSION:
             unannotated_scopes.append(scope)
+
+        normalize_join_groups(scope_expression)
 
     return expression
 

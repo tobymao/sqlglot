@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import exp
 from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.optimizer.normalize import normalized
+from sqlglot.optimizer.optimize_joins import normalize_join_groups
 from sqlglot.optimizer.scope import build_scope, find_in_scope, Scope
 from sqlglot.optimizer.simplify import simplify
 from sqlglot import Dialect
@@ -45,12 +46,12 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
         scope_ref_count = root.ref_count()
 
         for scope in reversed(list(root.traverse())):
-            select = scope.expression
+            select = normalize_join_groups(scope.expression)
             where: exp.Expr | None = select.args.get("where")
             joins: list[exp.Join] = select.args.get("joins") or []
 
-            # Filtering join inputs can change which rows these joins pair or select.
-            if any(
+            # Filtering can cross join-group boundaries or change which rows special joins select.
+            if any(not join.alias_or_name for join in joins) or any(
                 join.method in ("ASOF", "POSITIONAL")
                 or join.kind in ("ASOF", "ANY", "PASTE")
                 or join.args.get("nearest")

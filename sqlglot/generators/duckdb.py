@@ -1807,9 +1807,6 @@ class DuckDBGenerator(generator.Generator):
         exp.TimeDiff: _timediff_sql,
         exp.Timestamp: no_timestamp_sql,
         exp.TimestampAdd: _date_delta_to_binary_interval_op(),
-        exp.TimestampDiff: lambda self, e: self.func(
-            "DATE_DIFF", exp.Literal.string(e.unit), e.expression, e.this
-        ),
         exp.TimestampSub: _date_delta_to_binary_interval_op(),
         exp.TimeStrToDate: lambda self, e: self.sql(exp.cast(e.this, exp.DType.DATE)),
         exp.TimeStrToTime: timestrtotime_sql,
@@ -4723,6 +4720,52 @@ class DuckDBGenerator(generator.Generator):
                 return self.sql(exp.Cast(this=result, to=timestamp.type))
 
         return result
+
+    def timestampdiff_sql(self, expression: exp.TimestampDiff) -> str:
+        unit = expression.unit
+
+        if _is_nanosecond_unit(unit):
+            return _handle_nanosecond_diff(self, expression.this, expression.expression)
+
+        unit_str = unit.name.upper() if isinstance(unit, (exp.Var, exp.Literal)) else ""
+
+        # BigQuery DATETIME (DType.TIMESTAMP) uses boundary-crossing like DATE_DIFF
+        if expression.this.is_type(exp.DType.TIMESTAMP) and expression.expression.is_type(
+            exp.DType.TIMESTAMP
+        ):
+            return self.func(
+                "DATE_DIFF",
+                exp.Literal.string(unit_str or "DAY"),
+                expression.expression,
+                expression.this,
+            )
+
+        # Cast untyped args (bare NULLs, string literals) so DuckDB can resolve the overload
+        this = (
+            exp.cast(expression.this, exp.DType.TIMESTAMPTZ)
+            if isinstance(expression.this, (exp.Null, exp.Literal))
+            else expression.this
+        )
+        expr = (
+            exp.cast(expression.expression, exp.DType.TIMESTAMPTZ)
+            if isinstance(expression.expression, (exp.Null, exp.Literal))
+            else expression.expression
+        )
+
+        if unit_str == "DAY":
+            # We need Anonymous for DATE_SUB because exp.DateSub transforms into an interval subtraction
+            date_sub = exp.Anonymous(
+                this="DATE_SUB",
+                expressions=[exp.Literal.string("HOUR"), expr, this],
+            )
+            return self.sql(exp.IntDiv(this=date_sub, expression=exp.Literal.number(24)))
+
+        return self.sql(
+            exp.Anonymous(
+                this="DATE_SUB",
+                expressions=[exp.Literal.string(unit_str or "DAY"), expr, this],
+            )
+        )
 
     def trim_sql(self, expression: exp.Trim) -> str:
         expression.this.replace(_cast_to_varchar(expression.this))

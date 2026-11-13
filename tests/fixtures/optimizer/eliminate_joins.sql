@@ -670,3 +670,52 @@ LEFT JOIN (
   ON TRY_CAST(y.b AS INT) = x.a
 ORDER BY
   x.a;
+
+# title: Preserve inner join with USING on single-row aggregate
+# execute: true
+SELECT x.a FROM x JOIN (SELECT MIN(y.b) AS b FROM y) AS y USING (b) ORDER BY x.a;
+SELECT
+  x.a
+FROM x
+JOIN (
+  SELECT
+    MIN(y.b) AS b
+  FROM y
+) AS y
+  USING (b)
+ORDER BY
+  x.a;
+
+# title: Preserve NATURAL JOIN on single-row aggregate
+# execute: true
+SELECT x.a FROM x NATURAL JOIN (SELECT MIN(y.b) AS b FROM y) AS y ORDER BY x.a;
+SELECT
+  x.a
+FROM x
+NATURAL JOIN (
+  SELECT
+    MIN(y.b) AS b
+  FROM y
+) AS y
+ORDER BY
+  x.a;
+
+# title: Preserve RIGHT JOIN with USING on single-row aggregate when left is empty
+# execute: true
+SELECT empty_x.a FROM (SELECT x.a, x.b FROM x WHERE FALSE) AS empty_x RIGHT JOIN (SELECT MIN(y.b) AS b FROM y) AS y USING (b);
+SELECT
+  empty_x.a
+FROM (
+  SELECT
+    x.a,
+    x.b
+  FROM x
+  WHERE
+    FALSE
+) AS empty_x
+RIGHT JOIN (
+  SELECT
+    MIN(y.b) AS b
+  FROM y
+) AS y
+  USING (b);

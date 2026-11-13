@@ -2942,6 +2942,8 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
         )
 
     if cross_join_expr:
+        if expression.args.get("outer") or isinstance(this, exp.ExplodeOuter):
+            return self.sql(exp.Join(this=cross_join_expr, side="LEFT", on=exp.true()))
         return self.sql(exp.Join(this=cross_join_expr, kind="cross"))
 
     return self.lateral_sql(expression)

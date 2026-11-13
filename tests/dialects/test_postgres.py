@@ -2750,8 +2750,19 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                     expected,
                 )
                 self.assertEqual(
-                    simplify(self.parse_one(sql), dialect="postgres").sql(
-                        "postgres", identify=True
-                    ),
+                    simplify(
+                        annotate_types(self.parse_one(sql), dialect="postgres"),
+                        dialect="postgres",
+                    ).sql("postgres", identify=True),
                     expected,
                 )
+
+        expression = annotate_types(
+            self.parse_one("SELECT t.i + DATE '2024-01-01' + INTERVAL '1 day' FROM t AS t"),
+            schema={"t": {"i": "INTERVAL"}},
+            dialect="postgres",
+        )
+        self.assertEqual(
+            simplify(expression, dialect="postgres").sql("postgres"),
+            "SELECT t.i + CAST('2024-01-02' AS TIMESTAMP) FROM t AS t",
+        )

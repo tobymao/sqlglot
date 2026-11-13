@@ -1345,8 +1345,6 @@ class Simplifier:
         elif _is_date_literal(a) and isinstance(b, exp.Interval):
             date, b = extract_date(a), extract_interval(b)
             if date and b:
-                if expression.type is None:
-                    self._annotator.annotate(expression, annotate_scope=False)
                 target_type = (
                     expression.type
                     if expression.is_type(*exp.DataType.TEMPORAL_TYPES)
@@ -1360,8 +1358,6 @@ class Simplifier:
             a, date = extract_interval(a), extract_date(b)
             # you cannot subtract a date from an interval
             if a and b and isinstance(expression, exp.Add):
-                if expression.type is None:
-                    self._annotator.annotate(expression, annotate_scope=False)
                 target_type = (
                     expression.type
                     if expression.is_type(*exp.DataType.TEMPORAL_TYPES)

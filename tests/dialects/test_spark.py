@@ -902,6 +902,21 @@ TBLPROPERTIES (
         )
         self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')")
         self.validate_all(
+            "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(x AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%g')",
+                "snowflake": "SELECT TO_CHAR(CAST(x AS TIMESTAMP), 'yyyy-mm-DD hh24:mi:ss.ff3')",
+                "spark": "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "duckdb": "SELECT STRPTIME(x, '%Y-%m-%d %H:%M:%S.%g')",
+                "spark": "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={
                 "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",

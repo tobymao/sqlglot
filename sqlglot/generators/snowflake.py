@@ -670,6 +670,18 @@ class SnowflakeGenerator(generator.Generator):
 
     RESPECT_IGNORE_NULLS_UNSUPPORTED_EXPRESSIONS = (exp.ArrayAgg,)
 
+    WINDOW_FUNCS_REQUIRING_ORDER = (
+        exp.CumeDist,
+        exp.DenseRank,
+        exp.FirstValue,
+        exp.LastValue,
+        exp.NthValue,
+        exp.Ntile,
+        exp.PercentRank,
+        exp.Rank,
+        exp.RowNumber,
+    )
+
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 

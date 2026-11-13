@@ -31,6 +31,19 @@ class DatabricksGenerator(SparkGenerator):
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     SUPPORTS_TEMPORAL_PRECISION = True
 
+    # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
+    # CUME_DIST() OVER (ORDER BY NULL), which Databricks still rejects with
+    # "EvalBatch not supported for window function"
+    WINDOW_FUNCS_REQUIRING_ORDER = (
+        exp.CumeDist,
+        exp.DenseRank,
+        exp.NthValue,
+        exp.Ntile,
+        exp.PercentRank,
+        exp.Rank,
+        exp.RowNumber,
+    )
+
     TRANSFORMS = {
         k: v
         for k, v in {

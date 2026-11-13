@@ -303,6 +303,9 @@ class Generator:
     # Window functions that support NULLS FIRST/LAST
     WINDOW_FUNCS_WITH_NULL_ORDERING: t.ClassVar[tuple[type[exp.Expression], ...]] = ()
 
+    # Window functions that require an ORDER BY in their window specification
+    WINDOW_FUNCS_REQUIRING_ORDER: t.ClassVar[tuple[type[exp.Expression], ...]] = ()
+
     # Whether ignore nulls is inside the agg or outside.
     # FIRST(x IGNORE NULLS) OVER vs FIRST (x) IGNORE NULLS OVER
     IGNORE_NULLS_IN_FUNC = False
@@ -3753,6 +3756,17 @@ class Generator:
         this = self.sql(expression, "this")
         partition = self.partition_by_sql(expression)
         order = expression.args.get("order")
+        if not order and self.WINDOW_FUNCS_REQUIRING_ORDER and not expression.args.get("alias"):
+            func = expression.this
+            if isinstance(func, (exp.IgnoreNulls, exp.RespectNulls)):
+                func = func.this
+            if isinstance(func, self.WINDOW_FUNCS_REQUIRING_ORDER):
+                # Without an ordering all rows of a partition are peers, which is
+                # also the case when ordering by the partition keys themselves
+                partition_by = expression.args.get("partition_by")
+                order = exp.Order(
+                    expressions=[e.copy() for e in partition_by] if partition_by else [exp.null()]
+                )
         order = self.order_sql(order, flat=True) if order else ""
         spec = self.sql(expression, "spec")
         alias = self.sql(expression, "alias")

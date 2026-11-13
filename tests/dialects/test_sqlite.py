@@ -1,3 +1,6 @@
+import sqlite3
+from contextlib import closing
+
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -7,6 +10,50 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_pragma_quoted_names(self):
+        for source, expected in (
+            ('PRAGMA "a b"', 'PRAGMA "a b"'),
+            ('PRAGMA "a.b"', 'PRAGMA "a.b"'),
+            ('PRAGMA "select"', 'PRAGMA "select"'),
+            ('PRAGMA "a""b"', 'PRAGMA "a""b"'),
+            ("PRAGMA [a b]", 'PRAGMA "a b"'),
+            ("PRAGMA `a b`", 'PRAGMA "a b"'),
+            ("PRAGMA 'a b'", 'PRAGMA "a b"'),
+            ('PRAGMA "x; SELECT 123"', 'PRAGMA "x; SELECT 123"'),
+            ('PRAGMA "x--comment"', 'PRAGMA "x--comment"'),
+            ('PRAGMA main."table_info"(items)', 'PRAGMA main."table_info" = items'),
+        ):
+            with self.subTest(source=source):
+                self.validate_identity(source, expected)
+                with closing(sqlite3.connect(":memory:")) as connection:
+                    self.assertEqual(
+                        connection.execute(source).fetchall(),
+                        connection.execute(expected).fetchall(),
+                    )
+
+    def test_pragma_quoted_schema_execution(self):
+        for schema, quoted in (
+            ("aux db", '"aux db"'),
+            ("aux.db", '"aux.db"'),
+            ('aux"db', '"aux""db"'),
+            ("aux db", "[aux db]"),
+            ("aux db", "`aux db`"),
+            ("aux db", "'aux db'"),
+        ):
+            with self.subTest(quoted=quoted), closing(sqlite3.connect(":memory:")) as connection:
+                connection.execute(
+                    'ATTACH DATABASE ? AS "' + schema.replace('"', '""') + '"', (":memory:",)
+                )
+                connection.execute(f"CREATE TABLE {quoted}.items (value INTEGER)")
+                for query in (
+                    f"PRAGMA {quoted}.table_info(items)",
+                    f"PRAGMA {quoted}.table_info = 'items'",
+                ):
+                    generated = self.parse_one(query).sql("sqlite")
+                    original_rows = connection.execute(query).fetchall()
+                    self.assertTrue(original_rows)
+                    self.assertEqual(connection.execute(generated).fetchall(), original_rows)
 
     def test_safe_div(self):
         self.validate_all(

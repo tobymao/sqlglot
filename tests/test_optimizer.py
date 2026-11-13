@@ -37,7 +37,6 @@ from tests.helpers import (
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
     optimized = func(parse_one(sql, read=read_dialect), **kwargs)
 
-    # Checked in the worker: pickling the result back to the test rebuilds its parents
     for expression in optimized.walk():
         for arg_key, arg in expression.args.items():
             for child in arg if isinstance(arg, list) else [arg]:

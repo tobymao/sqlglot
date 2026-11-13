@@ -760,7 +760,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     join_columns: dict[str, set[str]] = {}
     for column in itertools.chain(scope.columns, scope.stars):
-        if isinstance(column, exp.Dot):
+        if isinstance(column, exp.Dot) or not column.parent:
             continue
 
         column_table: str | exp.Identifier | None = column.table

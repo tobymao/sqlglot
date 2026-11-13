@@ -1207,6 +1207,36 @@ SELECT aa AS aa FROM x AS x CROSS JOIN UNNEST(x.a) AS aa;
 
 # dialect: bigquery
 # execute: false
+# schema: {"t": {"rel": "STRUCT<arr ARRAY<INT>>"}}
+SELECT h FROM t, UNNEST(rel.arr) AS h;
+SELECT h AS h FROM t AS t CROSS JOIN UNNEST(t.rel.arr) AS h;
+
+# dialect: bigquery
+# execute: false
+# schema: {"t": {"rel": "STRUCT<deep STRUCT<arr ARRAY<INT>>>"}}
+SELECT EXISTS(SELECT 1 FROM UNNEST(rel.deep.arr) AS h) FROM t;
+SELECT EXISTS(SELECT 1 AS `1` FROM UNNEST(t.rel.deep.arr) AS h) AS _col_0 FROM t AS t;
+
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"rel": "STRUCT(a INT)"}}
+SELECT v FROM t, LATERAL (SELECT rel.a AS v) AS l;
+SELECT l.v AS v FROM t AS t, LATERAL (SELECT t.rel.a AS v) AS l;
+
+# dialect: duckdb
+# execute: false
+# schema: {"t": {"rel": "STRUCT(arr INT[])"}}
+SELECT v FROM t, UNNEST(rel.arr) AS l(v);
+SELECT l.v AS v FROM t AS t JOIN UNNEST(t.rel.arr) AS l(v) ON TRUE;
+
+# dialect: spark
+# execute: false
+# schema: {"t": {"rel": "STRUCT<arr: ARRAY<INT>>"}}
+SELECT c FROM t LATERAL VIEW EXPLODE(rel.arr) l AS c;
+SELECT l.c AS c FROM t AS t LATERAL VIEW EXPLODE(t.rel.arr) l AS c;
+
+# dialect: bigquery
+# execute: false
 select * from unnest ([1, 2]) as x with offset;
 SELECT x AS x, offset AS offset FROM UNNEST([1, 2]) AS x WITH OFFSET AS offset;
 

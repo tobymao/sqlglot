@@ -1639,7 +1639,9 @@ class TestDialect(Validator):
             "ARRAY_SORT can't sort ascending with NULLs first or descending with NULLs last"
         )
         risingwave = ("ARRAY_SORT(x)", "ARRAY_SORT only sorts ascending with NULLs last")
+        clickhouse_nulls = "arraySort and arrayReverseSort put NULLs last"
         asc_nulls_last = {
+            "clickhouse": "arraySort(x)",
             "duckdb": "LIST_SORT(x)",
             "hive": hive,
             "risingwave": "ARRAY_SORT(x)",
@@ -1648,6 +1650,7 @@ class TestDialect(Validator):
             "trino": "ARRAY_SORT(x)",
         }
         asc_nulls_first = {
+            "clickhouse": ("arraySort(x)", clickhouse_nulls),
             "duckdb": "LIST_SORT(x, 'ASC', 'NULLS FIRST')",
             "hive": "SORT_ARRAY(x)",
             "risingwave": risingwave,
@@ -1656,6 +1659,7 @@ class TestDialect(Validator):
             "trino": ("ARRAY_SORT(x)", trino_order),
         }
         desc_nulls_last = {
+            "clickhouse": "arrayReverseSort(x)",
             "duckdb": "ARRAY_REVERSE_SORT(x)",
             "hive": hive,
             "risingwave": risingwave,
@@ -1664,6 +1668,7 @@ class TestDialect(Validator):
             "trino": ("REVERSE(ARRAY_SORT(x))", trino_order),
         }
         desc_nulls_first = {
+            "clickhouse": ("arrayReverseSort(x)", clickhouse_nulls),
             "duckdb": "LIST_SORT(x, 'DESC', 'NULLS FIRST')",
             "hive": hive,
             "risingwave": risingwave,
@@ -1676,12 +1681,14 @@ class TestDialect(Validator):
             ("spark", "ARRAY_SORT(x)", asc_nulls_last),
             ("snowflake", "ARRAY_SORT(x)", asc_nulls_last),
             ("duckdb", "LIST_SORT(x)", asc_nulls_last),
+            ("clickhouse", "arraySort(x)", asc_nulls_last),
             ("spark", "SORT_ARRAY(x)", asc_nulls_first),
             ("hive", "SORT_ARRAY(x)", asc_nulls_first),
             ("duckdb", "LIST_SORT(x, 'ASC', 'NULLS FIRST')", asc_nulls_first),
             ("spark", "SORT_ARRAY(x, FALSE)", desc_nulls_last),
             ("duckdb", "LIST_SORT(x, 'DESC')", desc_nulls_last),
             ("duckdb", "ARRAY_REVERSE_SORT(x)", desc_nulls_last),
+            ("clickhouse", "arrayReverseSort(x)", desc_nulls_last),
             ("snowflake", "ARRAY_SORT(x, FALSE)", desc_nulls_first),
             ("duckdb", "LIST_SORT(x, 'DESC', 'NULLS FIRST')", desc_nulls_first),
         ):
@@ -1689,6 +1696,7 @@ class TestDialect(Validator):
 
         # A non-literal order is only kept where the target reads it the same way
         unsupported = {
+            "clickhouse": ("arraySort(x)", "arraySort only takes literal orders"),
             "duckdb": ("LIST_SORT(x)", "LIST_SORT only takes literal orders"),
             "hive": hive,
             "risingwave": risingwave,
@@ -1731,6 +1739,10 @@ class TestDialect(Validator):
             "trino",
             "ARRAY_SORT(x, (a, b) -> a - b)",
             {
+                "clickhouse": (
+                    "arraySort(x)",
+                    "ClickHouse's arraySort does not support a comparator.",
+                ),
                 "duckdb": ("LIST_SORT(x)", "DuckDB's LIST_SORT does not support a comparator."),
                 "hive": ("SORT_ARRAY(x)", "Hive's SORT_ARRAY does not support a comparator."),
                 "snowflake": (

@@ -6,6 +6,7 @@ import typing as t
 from sqlglot import exp, generator
 from sqlglot.dialects.dialect import (
     arg_max_or_min_no_count,
+    array_sort_order,
     inline_array_sql,
     jarowinkler_similarity,
     json_extract_segments,
@@ -28,6 +29,19 @@ from sqlglot.optimizer.simplify import simplify_parens
 from collections import defaultdict
 
 DATETIME_DELTA = t.Union[exp.DateAdd, exp.DateDiff, exp.DateSub, exp.TimestampSub, exp.TimestampAdd]
+
+
+@unsupported_args(("expression", "ClickHouse's arraySort does not support a comparator."))
+def _array_sort_sql(self: ClickHouseGenerator, expression: exp.ArraySort) -> str:
+    order = array_sort_order(expression)
+    if order is None:
+        self.unsupported("arraySort only takes literal orders")
+        return self.func("arraySort", expression.this)
+
+    asc, nulls_first = order
+    if nulls_first:
+        self.unsupported("arraySort and arrayReverseSort put NULLs last")
+    return self.func("arraySort" if asc else "arrayReverseSort", expression.this)
 
 
 def _unix_to_time_sql(self: ClickHouseGenerator, expression: exp.UnixToTime) -> str:
@@ -290,6 +304,7 @@ class ClickHouseGenerator(generator.Generator):
         exp.Transform: lambda self, e: self.func("arrayMap", e.expression, e.this),
         exp.ArrayRemove: remove_from_array_using_filter,
         exp.ArrayReverse: rename_func("arrayReverse"),
+        exp.ArraySort: _array_sort_sql,
         exp.ArraySlice: rename_func("arraySlice"),
         exp.ArraySum: rename_func("arraySum"),
         exp.ArrayMax: rename_func("arrayMax"),
@@ -333,6 +348,8 @@ class ClickHouseGenerator(generator.Generator):
         exp.JSONPathKey: json_path_key_only_name,
         exp.JSONPathRoot: lambda *_: "",
         exp.Length: length_or_char_length_sql,
+        exp.LogicalAnd: rename_func("min"),
+        exp.LogicalOr: rename_func("max"),
         exp.Map: _map_sql,
         exp.Median: rename_func("median"),
         exp.Nullif: rename_func("nullIf"),

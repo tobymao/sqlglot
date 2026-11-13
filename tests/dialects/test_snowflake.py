@@ -6172,6 +6172,30 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
         self.validate_identity(
             """COPY INTO MY_DATABASE.MY_SCHEMA.MY_TABLE FROM @MY_DATABASE.MY_SCHEMA.MY_STAGE/my_path FILE_FORMAT = (FORMAT_NAME=MY_DATABASE.MY_SCHEMA.MY_FILE_FORMAT)"""
         )
+        for sql in (
+            "COPY INTO my_table FROM @my_stage/path/ FILE_FORMAT = my_format",
+            "COPY INTO my_table FROM @db.sch.my_stage/path/ FILE_FORMAT = db.sch.my_format",
+            'COPY INTO my_table FROM @"db"."sch"."my_stage"/path/ FILE_FORMAT = "db"."sch"."my_format"',
+            'COPY INTO my_table FROM (SELECT t.$1 FROM @"db"."sch"."my_stage"/path/ AS t) FILE_FORMAT = "db"."sch"."my_format"',
+            "COPY INTO my_table FROM @my_stage/path/ FILE_FORMAT = sch.my_format ON_ERROR = CONTINUE PURGE = TRUE",
+            "COPY INTO @my_stage/path/ FROM my_table FILE_FORMAT = sch.my_format",
+            "COPY INTO my_table FROM @my_stage/path/$FILENAME FILE_FORMAT = sch.my_format",
+            "COPY INTO my_table FROM @my_stage/path/ FILE_FORMAT = $FORMAT",
+            "COPY INTO my_table FROM @my_stage/path/ FILE_FORMAT = 'db.sch.my_format'",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql).assert_is(exp.Copy)
+
+        file_format = (
+            self.validate_identity(
+                "COPY INTO my_table FROM @my_stage/path/ FILE_FORMAT = db.sch.my_format"
+            )
+            .args["params"][0]
+            .args["expression"]
+        )
+        self.assertEqual(
+            (file_format.catalog, file_format.db, file_format.name), ("db", "sch", "my_format")
+        )
         self.validate_all(
             """COPY INTO 's3://example/data.csv'
     FROM EXTRA.EXAMPLE.TABLE

@@ -793,6 +793,21 @@ class TokenizerCore:
             self.tokens[-1].comments.extend(self._comments)
             self._comments = []
 
+        tokens = self.tokens
+        if tokens and (self._comments or tokens[-1].comments):
+            prev = tokens[-1]
+            if prev.token_type not in self.commands:
+                sql = self.sql
+                keyword = (
+                    f"{sql[prev.start : prev.end + 1]} {sql[self._start : self._current]}".upper()
+                )
+                if keyword in self.keywords:
+                    tokens.pop()
+                    prev.comments.extend(self._comments)
+                    self._comments = prev.comments
+                    self._start = prev.start
+                    token_type, text = self.keywords[keyword], keyword
+
         if text is None:
             text = self.sql[self._start : self._current]
 
@@ -817,9 +832,9 @@ class TokenizerCore:
             and (len(self.tokens) == 1 or self.tokens[-2].token_type in self.command_prefix_tokens)
         ):
             start = self._current
-            tokens = len(self.tokens)
+            count = len(self.tokens)
             self._scan(check_semicolon=True)
-            self.tokens = self.tokens[:tokens]
+            self.tokens = self.tokens[:count]
             text = self.sql[start : self._current].strip()
             if text:
                 self._add(TokenType.STRING, text)

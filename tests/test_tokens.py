@@ -36,6 +36,27 @@ class TestTokens(unittest.TestCase):
         for sql, comment in sql_comment:
             self.assertEqual(tokenizer.tokenize(sql)[0].comments, comment)
 
+    def test_comment_inside_space_keywords(self):
+        for sql, token_type, comments in (
+            ("GROUP /* c */ BY a", TokenType.GROUP_BY, [" c "]),
+            ("GROUP/*c*/BY a", TokenType.GROUP_BY, ["c"]),
+            ("GROUP -- c\nBY a", TokenType.GROUP_BY, [" c"]),
+            ("GROUP\n-- c\nBY a", TokenType.GROUP_BY, [" c"]),
+            ("GROUP /* c1 */ /* c2 */ BY a", TokenType.GROUP_BY, [" c1 ", " c2 "]),
+            ("ORDER /* c */ BY a", TokenType.ORDER_BY, [" c "]),
+            ("PARTITION /* c */ BY a", TokenType.PARTITION_BY, [" c "]),
+        ):
+            with self.subTest(sql):
+                tokens = Tokenizer().tokenize(sql)
+                self.assertEqual(
+                    [token.token_type for token in tokens], [token_type, TokenType.VAR]
+                )
+                self.assertEqual(tokens[0].comments, comments)
+
+        tokens = Tokenizer().tokenize("GROUP /* c */ x")
+        self.assertEqual([token.text for token in tokens], ["GROUP", "x"])
+        self.assertEqual(tokens[0].comments, [" c "])
+
     def test_token_line_col(self):
         tokens = Tokenizer().tokenize(
             """SELECT /*

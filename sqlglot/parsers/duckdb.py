@@ -464,6 +464,8 @@ class DuckDBParser(parser.Parser):
 
         approximate = self._match_text_seq("APPROX", "NEAREST")
         if approximate or self._match_text_seq("NEAREST"):
+            if join.kind == "CROSS":
+                join.set("kind", None)
             count = self._parse_number()
 
             if not self._match_text_seq("BY"):

@@ -64,7 +64,7 @@ WITH x AS (SELECT JSON_EXTRACT(j, '$..Key') AS v FROM t), y AS (SELECT JSON_EXTR
 
 -- Doubly duplicate CTE
 SELECT * FROM (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS z JOIN (SELECT * FROM x JOIN (SELECT * FROM x) AS y) AS q;
-WITH y AS (SELECT * FROM x), z AS (SELECT * FROM x, y AS y) SELECT * FROM z AS z, z AS q;
+WITH y AS (SELECT * FROM x), z AS (SELECT * FROM x CROSS JOIN y AS y) SELECT * FROM z AS z CROSS JOIN z AS q;
 
 -- Another duplicate...
 SELECT x.id FROM (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) AS x JOIN (SELECT * FROM x AS x JOIN y AS y ON x.id = y.id) AS y ON x.id = y.id;
@@ -92,7 +92,7 @@ WITH cte1 AS (SELECT a FROM x), cte2 AS (SELECT a FROM cte1 AS cte3) SELECT a FR
 
 -- Wrapped subquery joined with table
 SELECT * FROM ((SELECT c FROM t1) JOIN t2);
-WITH cte AS (SELECT c FROM t1) SELECT * FROM (cte AS cte, t2);
+WITH cte AS (SELECT c FROM t1) SELECT * FROM (cte AS cte CROSS JOIN t2);
 
 -- Wrapped subquery with redundant parentheses
 SELECT * FROM (((SELECT * FROM tbl)));

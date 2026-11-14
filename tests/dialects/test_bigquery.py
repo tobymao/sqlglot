@@ -3513,6 +3513,17 @@ OPTIONS (
             },
         )
 
+        # FORMAT_DATETIME as transpiled from Trino's Joda formats reads back unchanged, up to %F
+        self.validate_identity(
+            "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(t AS DATETIME))",
+            "FORMAT_DATETIME('%F %H:%M:%E3S', CAST(t AS DATETIME))",
+        )
+        self.validate_identity(
+            "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(TIMESTAMP(DATETIME(t, 'America/Los_Angeles')) AS DATETIME))",
+            "FORMAT_DATETIME('%F %H:%M:%E3S', CAST(TIMESTAMP(DATETIME(t, 'America/Los_Angeles')) AS DATETIME))",
+        )
+        self.validate_identity("FORMAT_DATETIME('%Y%m%d', CAST(t AS DATETIME))")
+
     def test_cast_format_with_parentheses(self):
         self.validate_identity(
             "SELECT CAST('2026-03-24' AS STRING FORMAT ('YYYY'))",

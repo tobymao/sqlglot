@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.errors import ErrorLevel
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
+from sqlglot.typing.bigquery import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -42,6 +43,31 @@ logger = logging.getLogger("sqlglot")
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
+
+# Expressions that always return a date/time type, e.g. CURRENT_TIMESTAMP or PARSE_DATETIME
+TEMPORAL_EXPRESSIONS = {
+    expr_type
+    for expr_type, spec in EXPRESSION_METADATA.items()
+    if spec.get("returns") in exp.DataType.TEMPORAL_TYPES
+}
+
+# The types BigQuery writes as DATETIME and as TIMESTAMP
+ZONELESS_TYPES = (exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ, exp.DType.DATETIME)
+ZONED_TYPES = (exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ)
+
+
+def _may_be_time(expression: t.Any) -> bool:
+    # Annotation is costly, so only do it if a node can carry a date/time type: a typed node such
+    # as a CAST, or a function that returns one. Untyped columns are unknown, so skip their parts.
+    if isinstance(expression, exp.Expr):
+        for node in expression.dfs(prune=lambda n: isinstance(n, exp.Column)):
+            node_type = node.type
+            if type(node) in TEMPORAL_EXPRESSIONS or (
+                node_type is not None and node_type.this in exp.DataType.TEMPORAL_TYPES
+            ):
+                return True
+
+    return False
 
 
 def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Values) -> str:
@@ -852,6 +878,28 @@ class BigQueryGenerator(generator.Generator):
                 return "NULL"
 
         return self.binary(expression, "=")
+
+    def binary(self, expression: exp.Binary, op: str) -> str:
+        # BigQuery can't compare DATETIME with TIMESTAMP, but other dialects (e.g. Trino) read the
+        # zoneless side in the session time zone. Casting it to TIMESTAMP reads it as UTC instead.
+        if (
+            isinstance(expression, (exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE))
+            and _may_be_time(expression.this)
+            and _may_be_time(expression.expression)
+        ):
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            # Each operand on its own: an already typed comparison would stop annotation above them
+            operands = [
+                annotate_types(arg.copy(), dialect=self.dialect, overwrite_types=False)
+                for arg in (expression.this, expression.expression)
+            ]
+            for i, arg in enumerate(("this", "expression")):
+                if operands[i].is_type(*ZONELESS_TYPES) and operands[1 - i].is_type(*ZONED_TYPES):
+                    expression = expression.copy()
+                    expression.set(arg, exp.cast(expression.args[arg], exp.DType.TIMESTAMPTZ))
+
+        return super().binary(expression, op)
 
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         parent = expression.parent

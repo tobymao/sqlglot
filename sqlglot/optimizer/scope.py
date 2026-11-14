@@ -1115,6 +1115,13 @@ def walk_in_scope(
                         yield from walk_in_scope(arg)
             continue
 
+        if (
+            node is not expression
+            and isinstance(node, exp.UDTF)
+            and (type(node) is exp.Lateral or isinstance(node.parent, (exp.From, exp.Join)))
+        ):
+            continue
+
         if prune and prune(node):
             continue
 

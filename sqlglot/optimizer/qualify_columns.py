@@ -755,12 +755,15 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     These lookups may be parsed as columns (e.g. "col"."field"."field2"), but they need to be
     normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
+    if scope.is_udtf:
+        return
+
     converted = False
     scope_sources = scope.selected_sources
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     join_columns: dict[str, set[str]] = {}
     for column in itertools.chain(scope.columns, scope.stars):
-        if isinstance(column, exp.Dot) or not column.parent:
+        if isinstance(column, exp.Dot):
             continue
 
         column_table: str | exp.Identifier | None = column.table

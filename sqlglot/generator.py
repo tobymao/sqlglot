@@ -6558,6 +6558,9 @@ class Generator:
     def combinedaggfunc_sql(self, expression: exp.CombinedAggFunc) -> str:
         return self.anonymousaggfunc_sql(expression)
 
+    def jodaformatdatetime_sql(self, expression: exp.JodaFormatDatetime) -> str:
+        return self.anonymous_sql(expression)
+
     def combinedparameterizedagg_sql(self, expression: exp.CombinedParameterizedAgg) -> str:
         return self.parameterizedagg_sql(expression)
 

@@ -154,4 +154,18 @@ class PrestoParser(parser.Parser):
         "WEEK": exp.WeekOfYear.from_arg_list,
     }
 
-    FUNCTION_PARSERS = {k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "TRIM"}
+    FUNCTION_PARSERS = {
+        **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "TRIM"},
+        "FORMAT_DATETIME": lambda self: self._parse_format_datetime(),
+    }
+
+    def _parse_format_datetime(self) -> exp.JodaFormatDatetime:
+        # Built like an anonymous function, so the name and arguments are kept exactly as written
+        token = self._tokens[self._index - 2]
+        this: str | exp.Identifier = token.text
+        if token.token_type == TokenType.IDENTIFIER:
+            this = exp.Identifier(this=this, quoted=True).update_positions(token)
+
+        return self.expression(
+            exp.JodaFormatDatetime(this=this, expressions=self._parse_function_args(alias=True))
+        ).update_positions(token)

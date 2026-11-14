@@ -46,7 +46,8 @@ from sqlglot.expressions.array import _ExplodeOuter  # noqa: F401,E402
 
 from sqlglot.helper import subclasses
 
-ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func})
+# JodaFormatDatetime is only built by Presto's parser for FORMAT_DATETIME, so it's not registered by name
+ALL_FUNCTIONS = subclasses(__name__, Func, {AggFunc, Anonymous, Func, JodaFormatDatetime})
 FUNCTION_BY_NAME = {name: func for func in ALL_FUNCTIONS for name in func.sql_names()}
 EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name__, Expr)}
 

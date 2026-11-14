@@ -2022,6 +2022,14 @@ class Anonymous(Expression, Func):
         return self.this if isinstance(self.this, str) else self.this.name
 
 
+class JodaFormatDatetime(Anonymous):
+    """Presto/Trino's FORMAT_DATETIME(timestamp, format), whose format uses Joda pattern fields.
+
+    It keeps the call exactly as written, so it's generated like an anonymous function unless a
+    dialect knows how to translate it.
+    """
+
+
 class AnonymousAggFunc(Expression, AggFunc):
     arg_types = {"this": True, "expressions": False}
     is_var_len_args = True

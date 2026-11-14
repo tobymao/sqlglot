@@ -853,6 +853,48 @@ class BigQueryGenerator(generator.Generator):
 
         return self.binary(expression, "=")
 
+    def escape_sql(self, expression: exp.Escape) -> str:
+        # BigQuery's LIKE has no ESCAPE clause and always escapes with a backslash, so a literal
+        # pattern is rewritten to use backslash escapes instead
+        like = expression.this
+        escape = expression.expression
+        if not isinstance(like, (exp.Like, exp.ILike)) or not escape.is_string:
+            return super().escape_sql(expression)
+
+        char = escape.name
+        pattern = like.expression
+        literal = pattern.this if isinstance(pattern, (exp.Upper, exp.Lower)) else pattern
+
+        # A case change applied before the escape is processed (UPPER/LOWER around the pattern,
+        # or the LOWER that ILIKE becomes) could turn a letter into or out of the escape character
+        case_changed = literal is not pattern or isinstance(like, exp.ILike)
+        if (
+            len(char) != 1
+            or not isinstance(literal, exp.Literal)
+            or not literal.is_string
+            or (case_changed and not char.upper() == char == char.lower())
+        ):
+            return super().escape_sql(expression)
+
+        chars = iter(literal.name)
+        rewritten = []
+        for c in chars:
+            if c == char:
+                escaped = next(chars, "")
+                if escaped not in ("%", "_", char):
+                    return super().escape_sql(expression)
+                rewritten.append(f"\\{escaped}" if escaped in ("%", "_", "\\") else escaped)
+            else:
+                rewritten.append("\\\\" if c == "\\" else c)
+
+        new_pattern = exp.Literal.string("".join(rewritten))
+        if literal is not pattern:
+            new_pattern = pattern.__class__(this=new_pattern)
+
+        new_like = like.copy()
+        new_like.set("expression", new_pattern)
+        return self.sql(new_like)
+
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         parent = expression.parent
 

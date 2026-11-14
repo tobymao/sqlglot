@@ -1990,6 +1990,9 @@ class Parser:
     # Whether TIMESTAMP <literal> can produce a zone-aware timestamp
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR: t.ClassVar = False
 
+    # Whether a zoneless operand of AT TIME ZONE is read in the session time zone
+    AT_TIME_ZONE_READS_SESSION_ZONE: t.ClassVar = False
+
     # Whether map literals support arbitrary expressions as keys.
     # When True, allows complex keys like arrays or literals: {[1, 2]: 3}, {1: 2} (e.g. DuckDB).
     # When False, keys are typically restricted to identifiers.
@@ -7169,9 +7172,10 @@ class Parser:
     def _parse_at_time_zone(self, this: exp.Expr | None) -> exp.Expr | None:
         if not self._match_text_seq("AT", "TIME", "ZONE"):
             return this
-        return self._parse_at_time_zone(
-            self.expression(exp.AtTimeZone(this=this, zone=self._parse_unary()))
-        )
+        at_time_zone = self.expression(exp.AtTimeZone(this=this, zone=self._parse_unary()))
+        if self.AT_TIME_ZONE_READS_SESSION_ZONE:
+            at_time_zone.set("session_zone", True)
+        return self._parse_at_time_zone(at_time_zone)
 
     def _parse_atom(self) -> exp.Expr | None:
         if (

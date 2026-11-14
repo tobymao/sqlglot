@@ -4579,3 +4579,76 @@ OPTIONS (
                         "duckdb": "SELECT CAST(1 AS DECIMAL(38, 5))",
                     },
                 )
+
+    def test_compare_datetime_timestamp(self):
+        # BigQuery rejects DATETIME vs TIMESTAMP comparisons, so the zoneless side is cast
+        for op in ("=", "<>", "<", "<=", ">", ">="):
+            with self.subTest(f"Zoneless vs zoned with {op}"):
+                self.validate_all(
+                    f"SELECT CAST(CAST(t AS DATETIME) AS TIMESTAMP) {op} CAST('2026-11-14 00:00:00 America/Los_Angeles' AS TIMESTAMP)",
+                    read={
+                        "trino": f"SELECT CAST(t AS TIMESTAMP) {op} TIMESTAMP '2026-11-14 00:00:00 America/Los_Angeles'",
+                    },
+                )
+                self.validate_all(
+                    f"SELECT CAST('2026-11-14 00:00:00 America/Los_Angeles' AS TIMESTAMP) {op} CAST(CAST(t AS DATETIME) AS TIMESTAMP)",
+                    read={
+                        "trino": f"SELECT TIMESTAMP '2026-11-14 00:00:00 America/Los_Angeles' {op} CAST(t AS TIMESTAMP)",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT CAST(CAST('2026-11-14 05:00:00' AS DATETIME) AS TIMESTAMP) < CAST('2026-11-14 00:00:00 America/Los_Angeles' AS TIMESTAMP)",
+            read={
+                "trino": "SELECT TIMESTAMP '2026-11-14 05:00:00' < TIMESTAMP '2026-11-14 00:00:00 America/Los_Angeles'",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(TIMESTAMP_TRUNC(CAST(t AS DATETIME), DAY) AS TIMESTAMP) < TIMESTAMP_TRUNC(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 DAY), DAY)",
+            read={
+                "trino": "SELECT DATE_TRUNC('DAY', CAST(t AS TIMESTAMP)) < DATE_TRUNC('DAY', DATE_ADD('day', -1, NOW()))",
+            },
+        )
+        self.validate_all(
+            "SELECT CURRENT_TIMESTAMP() >= CAST(CAST(t AS DATETIME) AS TIMESTAMP)",
+            read={
+                "trino": "SELECT NOW() >= CAST(t AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(CAST(t AS DATETIME) AS TIMESTAMP) < CAST(CURRENT_TIMESTAMP() AS TIMESTAMP)",
+            read={
+                "snowflake": "SELECT CAST(t AS TIMESTAMP_NTZ) < CAST(CURRENT_TIMESTAMP() AS TIMESTAMP_TZ)"
+            },
+        )
+
+        # Unknown or matching types are left as they are
+        self.validate_all(
+            "SELECT t < CURRENT_TIMESTAMP()",
+            read={
+                "trino": "SELECT t < CURRENT_TIMESTAMP",
+            },
+        )
+        self.validate_all(
+            "SELECT t < CAST('2026-11-14 00:00:00 America/Los_Angeles' AS TIMESTAMP)",
+            read={
+                "trino": "SELECT t < TIMESTAMP '2026-11-14 00:00:00 America/Los_Angeles'",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(a AS DATETIME) < CAST(b AS DATETIME)",
+            read={
+                "trino": "SELECT CAST(a AS TIMESTAMP) < CAST(b AS TIMESTAMP)",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST(a AS TIMESTAMP) < CAST(b AS TIMESTAMP)",
+            read={
+                "trino": "SELECT CAST(a AS TIMESTAMP WITH TIME ZONE) < CAST(b AS TIMESTAMP WITH TIME ZONE)",
+            },
+        )
+        self.validate_identity("SELECT CAST(a AS DATETIME) < CURRENT_DATETIME()")
+        self.validate_identity("SELECT CAST(a AS TIMESTAMP) < CURRENT_TIMESTAMP()")
+        self.validate_identity(
+            "SELECT CAST(CAST(a AS DATETIME) AS TIMESTAMP) < CURRENT_TIMESTAMP()"
+        )

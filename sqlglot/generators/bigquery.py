@@ -33,6 +33,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.errors import ErrorLevel
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import seq_get
+from sqlglot.typing.bigquery import EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import DialectType
@@ -42,6 +43,13 @@ logger = logging.getLogger("sqlglot")
 JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtractArray]
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
+
+# Expressions that always return a date/time type, e.g. CURRENT_TIMESTAMP or PARSE_DATETIME
+TEMPORAL_EXPRESSIONS = {
+    expr_type
+    for expr_type, spec in EXPRESSION_METADATA.items()
+    if spec.get("returns") in exp.DataType.TEMPORAL_TYPES
+}
 
 
 def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Values) -> str:
@@ -394,6 +402,10 @@ class BigQueryGenerator(generator.Generator):
         exp.Rank,
         exp.RowNumber,
     )
+
+    # The types BigQuery writes as DATETIME and as TIMESTAMP
+    ZONELESS_TYPES: t.ClassVar = {exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ, exp.DType.DATETIME}
+    ZONED_TYPES: t.ClassVar = {exp.DType.TIMESTAMPTZ, exp.DType.TIMESTAMPLTZ}
 
     TS_OR_DS_TYPES: t.ClassVar = (
         exp.TsOrDsToDatetime,
@@ -851,7 +863,65 @@ class BigQueryGenerator(generator.Generator):
             if not isinstance(expression.parent, exp.Update):
                 return "NULL"
 
-        return self.binary(expression, "=")
+        return self._comparison_sql(expression, "=")
+
+    def neq_sql(self, expression: exp.NEQ) -> str:
+        return self._comparison_sql(expression, "<>")
+
+    def lt_sql(self, expression: exp.LT) -> str:
+        return self._comparison_sql(expression, "<")
+
+    def lte_sql(self, expression: exp.LTE) -> str:
+        return self._comparison_sql(expression, "<=")
+
+    def gt_sql(self, expression: exp.GT) -> str:
+        return self._comparison_sql(expression, ">")
+
+    def gte_sql(self, expression: exp.GTE) -> str:
+        return self._comparison_sql(expression, ">=")
+
+    def _comparison_sql(self, expression: exp.Binary, op: str) -> str:
+        # BigQuery can't compare DATETIME with TIMESTAMP, but other dialects (e.g. Trino) read the
+        # zoneless side in the session time zone. Casting it to TIMESTAMP reads it as UTC instead.
+        this, other = expression.this, expression.expression
+        if self._may_be_time(this) and self._may_be_time(other):
+            this_type = self._time_type(this)
+            other_type = this_type and self._time_type(other)
+            if other_type and (this_type in self.ZONELESS_TYPES) != (
+                other_type in self.ZONELESS_TYPES
+            ):
+                expression = expression.copy()
+                arg = "this" if this_type in self.ZONELESS_TYPES else "expression"
+                expression.set(
+                    arg, exp.cast(expression.args[arg], exp.DType.TIMESTAMPTZ, copy=False)
+                )
+
+        return self.binary(expression, op)
+
+    def _may_be_time(self, expression: t.Any) -> bool:
+        # Annotation is costly, so only do it if a date/time type can come from somewhere in the
+        # expression: a typed node such as a CAST or a function that returns a date/time type.
+        # Untyped columns are unknown, so there's no need to look at their identifiers.
+        if not isinstance(expression, exp.Expr):
+            return False
+
+        for node in expression.dfs(prune=lambda n: isinstance(n, exp.Column)):
+            node_type = node.type
+            if (node_type is not None and node_type.this in exp.DataType.TEMPORAL_TYPES) or type(
+                node
+            ) in TEMPORAL_EXPRESSIONS:
+                return True
+
+        return False
+
+    def _time_type(self, expression: exp.Expr) -> exp.DType | None:
+        if expression.type is None:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            expression = annotate_types(expression.copy(), dialect=self.dialect)
+
+        dtype = expression.type.this if expression.type else None
+        return dtype if dtype in self.ZONELESS_TYPES or dtype in self.ZONED_TYPES else None
 
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         parent = expression.parent

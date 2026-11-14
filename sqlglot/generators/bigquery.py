@@ -859,9 +859,19 @@ class BigQueryGenerator(generator.Generator):
         # BigQuery allows CAST(.. AS {STRING|TIMESTAMP} [FORMAT <fmt> [AT TIME ZONE <tz>]]).
         # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
         if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
-            return self.func(
-                "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
-            )
+            this = expression.this
+            if expression.args.get("session_zone"):
+                if not this.type:
+                    from sqlglot.optimizer.annotate_types import annotate_types
+
+                    this = annotate_types(this.copy(), dialect=self.dialect)
+
+                # DATETIME(<ts>, <zone>) only accepts a TIMESTAMP and BigQuery reads a DATETIME
+                # cast to TIMESTAMP as UTC, so this assumes the source session time zone is UTC
+                if this.is_type(exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ, exp.DType.DATETIME):
+                    this = exp.cast(this, exp.DType.TIMESTAMPTZ)
+
+            return self.func("TIMESTAMP", self.func("DATETIME", this, expression.args.get("zone")))
 
         return super().attimezone_sql(expression)
 

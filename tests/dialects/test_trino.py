@@ -142,6 +142,38 @@ class TestTrino(Validator):
             write={"bigquery": "CAST(x AS BIGNUMERIC)"},
         )
 
+    def test_at_time_zone_bigquery(self):
+        # BigQuery's DATETIME(<ts>, <zone>) only accepts a TIMESTAMP, so a zoneless value is cast first
+        self.validate_all(
+            "CAST(CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles' AS TIMESTAMP)",
+            write={
+                "bigquery": "CAST(TIMESTAMP(DATETIME(CAST(CAST(t AS DATETIME) AS TIMESTAMP), 'America/Los_Angeles')) AS DATETIME)",
+            },
+        )
+        self.validate_all(
+            "TIMESTAMP '2026-11-14 03:00:00' AT TIME ZONE 'America/Los_Angeles'",
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(CAST('2026-11-14 03:00:00' AS DATETIME) AS TIMESTAMP), 'America/Los_Angeles'))",
+            },
+        )
+        self.validate_all(
+            "CAST(t AS TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'America/Los_Angeles'",
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(t AS TIMESTAMP), 'America/Los_Angeles'))",
+            },
+        )
+        self.validate_all(
+            "t AT TIME ZONE 'America/Los_Angeles'",
+            write={"bigquery": "TIMESTAMP(DATETIME(t, 'America/Los_Angeles'))"},
+        )
+        self.validate_all(
+            "CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+            write={
+                "trino": "AT_TIMEZONE(CAST(t AS TIMESTAMP), 'America/Los_Angeles')",
+                "presto": "AT_TIMEZONE(CAST(t AS TIMESTAMP), 'America/Los_Angeles')",
+            },
+        )
+
     def test_fetch(self):
         self.validate_identity(
             "SELECT * FROM t ORDER BY x FETCH FIRST 1 ROW ONLY",

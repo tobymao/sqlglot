@@ -27,6 +27,16 @@ class TestPostgres(Validator):
             annotate_types(expression, dialect="postgres").type, exp.DataType.build("VARBINARY")
         )
 
+    def test_at_time_zone_bigquery(self):
+        # Postgres reads a zoneless operand as wall-clock time in the target zone, unlike Trino
+        self.validate_all(
+            "CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(t AS DATETIME), 'America/Los_Angeles'))",
+                "postgres": "CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+            },
+        )
+
     def test_generate_series_steps(self):
         for sql in (
             "SELECT COUNT(*) FROM GENERATE_SERIES(1, 3, '1')",

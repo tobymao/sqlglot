@@ -43,6 +43,18 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtr
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
 
+# Joda pattern fields of Presto/Trino's FORMAT_DATETIME that have an exact BigQuery equivalent
+JODA_TO_BIGQUERY_FORMAT = {
+    "yyyy": "%Y",
+    "MM": "%m",
+    "dd": "%d",
+    "HH": "%H",
+    "mm": "%M",
+    "ss.SSS": "%E3S",
+    "ss": "%S",
+}
+JODA_FORMAT_PART_RE = re.compile(r"ss\.SSS|([A-Za-z])\1*|[^A-Za-z]")
+
 
 def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
@@ -828,6 +840,27 @@ class BigQueryGenerator(generator.Generator):
             return self.sql(exp.Identifier(this=table_parts, quoted=True))
 
         return super().table_parts(expression)
+
+    def jodaformatdatetime_sql(self, expression: exp.JodaFormatDatetime) -> str:
+        # Only formats made up entirely of known fields and unquoted literals are translated
+        args = expression.expressions
+        if len(args) == 2 and args[1].is_string:
+            parts = [match.group(0) for match in JODA_FORMAT_PART_RE.finditer(args[1].name)]
+            if parts and all(
+                part in JODA_TO_BIGQUERY_FORMAT if part[0].isalpha() else part not in ("'", "%")
+                for part in parts
+            ):
+                fmt = "".join(JODA_TO_BIGQUERY_FORMAT.get(part, part) for part in parts)
+
+                # FORMAT_DATETIME prints the wall-clock time of its input, which BigQuery only
+                # formats for DATETIME values, e.g. not for the TIMESTAMP of AT TIME ZONE
+                return self.func(
+                    "FORMAT_DATETIME",
+                    exp.Literal.string(fmt),
+                    exp.cast(args[0], exp.DType.DATETIME),
+                )
+
+        return super().jodaformatdatetime_sql(expression)
 
     def timetostr_sql(self, expression: exp.TimeToStr) -> str:
         this = expression.this

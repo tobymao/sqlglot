@@ -334,6 +334,12 @@ class TestPresto(Validator):
         self.validate_identity("FROM_UNIXTIME(a, b, c)")
         self.validate_identity("TRIM(a, b)")
         self.validate_identity("VAR_POP(a)")
+        self.validate_identity("FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')")
+        self.validate_identity("FORMAT_DATETIME(t, 'EEE')")
+        self.validate_all(
+            "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={"bigquery": "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(t AS DATETIME))"},
+        )
 
         self.validate_all(
             "SELECT FROM_UNIXTIME(col) FROM tbl",

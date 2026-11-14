@@ -120,6 +120,63 @@ class TestTrino(Validator):
                     self.assertEqual(expression.args["quantile"], self.parse_one(quantile))
                     self.assertIsNone(expression.args.get("accuracy"))
 
+    def test_format_datetime(self):
+        for sql in (
+            "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            "FORMAT_DATETIME(t, 'EEE')",
+            "FORMAT_DATETIME(t, f)",
+            "FORMAT_DATETIME(t, 'yyyy', 'x')",
+        ):
+            with self.subTest(sql=sql):
+                self.assertIsInstance(self.validate_identity(sql), exp.JodaFormatDatetime)
+
+        self.validate_identity("format_datetime(t, 'yyyy')", "FORMAT_DATETIME(t, 'yyyy')")
+
+        # The class isn't registered by name, so its default SQL name stays an anonymous function
+        for dialect in ("trino", "duckdb", "bigquery"):
+            with self.subTest(dialect=dialect):
+                expression = parse_one("JODA_FORMAT_DATETIME(a, b)", read=dialect)
+                self.assertIs(type(expression), exp.Anonymous)
+                self.assertEqual(expression.sql(dialect), "JODA_FORMAT_DATETIME(a, b)")
+
+        self.validate_all(
+            "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "trino": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+                "presto": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+                "bigquery": "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(t AS DATETIME))",
+                "duckdb": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+                "spark": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "FORMAT_DATETIME(t AT TIME ZONE 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "bigquery": "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(TIMESTAMP(DATETIME(t, 'America/Los_Angeles')) AS DATETIME))",
+            },
+        )
+        self.validate_all(
+            "format_datetime(t, 'yyyyMMdd')",
+            write={
+                "bigquery": "FORMAT_DATETIME('%Y%m%d', CAST(t AS DATETIME))",
+                "clickhouse": "format_datetime(t, 'yyyyMMdd')",
+            },
+        )
+
+        # Formats with unmapped fields, quoted literals or strftime directives are kept as-is
+        for sql, bigquery in (
+            ("FORMAT_DATETIME(t, 'EEE')", "FORMAT_DATETIME(t, 'EEE')"),
+            ("FORMAT_DATETIME(t, 'SSS')", "FORMAT_DATETIME(t, 'SSS')"),
+            ("FORMAT_DATETIME(t, 'yyyyy')", "FORMAT_DATETIME(t, 'yyyyy')"),
+            ("FORMAT_DATETIME(t, '%Y')", "FORMAT_DATETIME(t, '%Y')"),
+            ("FORMAT_DATETIME(t, '')", "FORMAT_DATETIME(t, '')"),
+            ("FORMAT_DATETIME(t, 'yyyy''T''HH')", "FORMAT_DATETIME(t, 'yyyy\\'T\\'HH')"),
+            ("FORMAT_DATETIME(t, f)", "FORMAT_DATETIME(t, f)"),
+            ("FORMAT_DATETIME(t, 'yyyy', 'x')", "FORMAT_DATETIME(t, 'yyyy', 'x')"),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(sql, write={"bigquery": bigquery})
+
     def test_decimal_beyond_numeric_range(self):
         # BigQuery's NUMERIC holds at most 29 integer digits and 9 fractional digits
         self.validate_all(

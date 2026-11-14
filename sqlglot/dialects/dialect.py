@@ -2909,7 +2909,9 @@ def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[BuilderArgs, Dialect
     return _builder
 
 
-def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
+def explode_to_unnest_sql(
+    self: Generator, expression: exp.Lateral, supports_left_join_unnest: bool = True
+) -> str:
     this = expression.this
     alias = expression.args.get("alias")
 
@@ -2943,7 +2945,9 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
 
     if cross_join_expr:
         if expression.args.get("outer") or isinstance(this, exp.ExplodeOuter):
-            return self.sql(exp.Join(this=cross_join_expr, side="LEFT", on=exp.true()))
+            if supports_left_join_unnest:
+                return self.sql(exp.Join(this=cross_join_expr, side="LEFT", on=exp.true()))
+            self.unsupported("LEFT JOIN UNNEST is not supported, NULL or empty arrays are dropped")
         return self.sql(exp.Join(this=cross_join_expr, kind="cross"))
 
     return self.lateral_sql(expression)

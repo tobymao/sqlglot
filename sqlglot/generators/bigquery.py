@@ -853,6 +853,31 @@ class BigQueryGenerator(generator.Generator):
 
         return self.binary(expression, "=")
 
+    def escape_sql(self, expression: exp.Escape) -> str:
+        # BigQuery's LIKE has no ESCAPE clause and always escapes with a backslash, so a literal
+        # pattern is rewritten to backslash escapes. UPPER/LOWER around it can't change a
+        # caseless escape character, e.g. ^, so those patterns are rewritten too.
+        like, char = expression.this.copy(), expression.expression.name
+        pattern = like.expression
+        if isinstance(pattern, (exp.Upper, exp.Lower)) and char.upper() == char.lower():
+            pattern = pattern.this
+        e = re.escape(char)
+        if not (
+            isinstance(like, exp.Like)
+            and expression.expression.is_string
+            and len(char) == 1
+            and pattern.is_string
+            and re.fullmatch(f"(?:[^{e}]|{e}[%_{e}])*", pattern.name)
+        ):
+            return super().escape_sql(expression)
+
+        # Escaped %, _ and backslash, and unescaped backslash, get a backslash
+        pattern.set(
+            "this",
+            re.sub(f"{e}.|\\\\", lambda m: "\\" * (m[0][-1] in "%_\\") + m[0][-1], pattern.name),
+        )
+        return self.sql(like)
+
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         parent = expression.parent
 

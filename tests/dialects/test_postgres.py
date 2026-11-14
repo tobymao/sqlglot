@@ -27,6 +27,16 @@ class TestPostgres(Validator):
             annotate_types(expression, dialect="postgres").type, exp.DataType.build("VARBINARY")
         )
 
+    def test_at_time_zone_bigquery(self):
+        # Unlike Presto, Postgres reads a zoneless operand in the target zone, so it's not cast
+        self.validate_all(
+            "CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(t AS DATETIME), 'America/Los_Angeles'))",
+                "postgres": "CAST(t AS TIMESTAMP) AT TIME ZONE 'America/Los_Angeles'",
+            },
+        )
+
     def test_generate_series_steps(self):
         for sql in (
             "SELECT COUNT(*) FROM GENERATE_SERIES(1, 3, '1')",

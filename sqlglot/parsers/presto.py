@@ -69,6 +69,7 @@ class PrestoParser(parser.Parser):
 
     VALUES_FOLLOWED_BY_PAREN = False
     ZONE_AWARE_TIMESTAMP_CONSTRUCTOR = True
+    AT_TIME_ZONE_READS_SESSION_ZONE = True
 
     NO_PAREN_FUNCTIONS = {
         **parser.Parser.NO_PAREN_FUNCTIONS,

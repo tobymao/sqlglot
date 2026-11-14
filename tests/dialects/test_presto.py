@@ -489,8 +489,16 @@ class TestPresto(Validator):
         self.validate_all(
             "SELECT CAST('2012-10-31 00:00' AS TIMESTAMP) AT TIME ZONE 'America/Sao_Paulo'",
             write={
+                "bigquery": "SELECT TIMESTAMP(DATETIME(CAST(CAST('2012-10-31 00:00' AS DATETIME) AS TIMESTAMP), 'America/Sao_Paulo'))",
                 "spark": "SELECT FROM_UTC_TIMESTAMP(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
                 "presto": "SELECT AT_TIMEZONE(CAST('2012-10-31 00:00' AS TIMESTAMP), 'America/Sao_Paulo')",
+            },
+        )
+        self.validate_all(
+            "CAST(x AS TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'America/Sao_Paulo'",
+            write={
+                "bigquery": "TIMESTAMP(DATETIME(CAST(x AS TIMESTAMP), 'America/Sao_Paulo'))",
+                "presto": "AT_TIMEZONE(CAST(x AS TIMESTAMP WITH TIME ZONE), 'America/Sao_Paulo')",
             },
         )
         self.validate_all(

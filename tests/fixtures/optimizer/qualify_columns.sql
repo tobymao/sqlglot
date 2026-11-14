@@ -1237,6 +1237,18 @@ SELECT l.c AS c FROM t AS t LATERAL VIEW EXPLODE(t.rel.arr) l AS c;
 
 # dialect: bigquery
 # execute: false
+# schema: {"t": {"d": "DATE"}}
+SELECT day FROM UNNEST(GENERATE_DATE_ARRAY((SELECT MIN(d) FROM t), CURRENT_DATE)) AS day;
+SELECT day AS day FROM UNNEST(GENERATE_DATE_ARRAY((SELECT MIN(t.d) AS _col_0 FROM t AS t), CURRENT_DATE, INTERVAL '1' DAY)) AS day;
+
+# dialect: bigquery
+# execute: false
+# schema: {"t": {"doc": "STRUCT<arr ARRAY<STRUCT<a INT64, b STRING>>>"}}
+SELECT r.* FROM t, UNNEST(doc.arr) AS r;
+SELECT r.a AS a, r.b AS b FROM t AS t CROSS JOIN UNNEST(t.doc.arr) AS r;
+
+# dialect: bigquery
+# execute: false
 select * from unnest ([1, 2]) as x with offset;
 SELECT x AS x, offset AS offset FROM UNNEST([1, 2]) AS x WITH OFFSET AS offset;
 

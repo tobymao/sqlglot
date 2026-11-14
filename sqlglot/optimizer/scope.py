@@ -1070,6 +1070,8 @@ def _traverse_udtfs(scope: Scope) -> Iterator[Scope]:
             if top is not None:
                 scope.subquery_scopes.append(top)
 
+    yield from _traverse_subqueries(scope)
+
     scope.sources.update(sources)
 
 

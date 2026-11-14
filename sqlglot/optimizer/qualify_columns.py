@@ -755,9 +755,6 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     These lookups may be parsed as columns (e.g. "col"."field"."field2"), but they need to be
     normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
-    if scope.is_udtf:
-        return
-
     converted = False
     scope_sources = scope.selected_sources
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
@@ -865,8 +862,11 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
 
     if converted:
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in
-        # a `for column in scope.columns` iteration, even though they shouldn't be
-        scope.clear_cache()
+        # a `for column in scope.columns` iteration, even though they shouldn't be. A
+        # converted column may be in a child scope, e.g. a LATERAL's subquery, whose
+        # cached columns it also invalidates
+        for converted_scope in scope.traverse():
+            converted_scope.clear_cache()
 
 
 def _qualify_positional_column(

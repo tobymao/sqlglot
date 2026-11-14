@@ -512,6 +512,8 @@ class TestBigQuery(Validator):
             check_command_warning=True,
         )
         self.validate_identity("BEGIN TRANSACTION")
+        with self.assertLogs(parser_logger):
+            self.assertIsInstance(self.parse_one("BEGIN /* c */ TRANSACTION"), exp.Command)
         self.validate_identity("COMMIT TRANSACTION")
         self.validate_identity("ROLLBACK TRANSACTION")
         for load_data_sql in (

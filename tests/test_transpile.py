@@ -129,6 +129,38 @@ class TestTranspile(unittest.TestCase):
             "SELECT c AS (a, b, c) /* foo */ FROM t",
         )
         self.validate(
+            "SELECT a FROM t GROUP /* c */ BY a ORDER -- d\nBY a",
+            "SELECT a FROM t /* c */ GROUP BY a /* d */ ORDER BY a",
+        )
+        self.validate(
+            "SELECT ROW_NUMBER() OVER (PARTITION /* c */ BY a) FROM t",
+            "SELECT ROW_NUMBER() OVER (PARTITION BY a /* c */) FROM t",
+        )
+        self.validate(
+            "SELECT ROW_NUMBER() OVER (PARTITION BY /* c */ a) FROM t",
+            "SELECT ROW_NUMBER() OVER (PARTITION BY a /* c */) FROM t",
+        )
+        self.validate(
+            "SELECT CAST(x AS TIMESTAMP WITH /* c */ LOCAL TIME ZONE)",
+            "SELECT CAST(x AS TIMESTAMPLTZ) /* c */",
+        )
+        self.validate(
+            "SELECT CAST(x AS TIMESTAMP WITH /* a */ LOCAL /* b */ TIME ZONE)",
+            "SELECT CAST(x AS TIMESTAMPLTZ) /* a */ /* b */",
+        )
+        self.validate(
+            "SELECT CAST(x AS TIMESTAMP WITH TIME /* c */ ZONE)",
+            "SELECT CAST(x AS TIMESTAMPTZ) /* c */",
+        )
+        self.validate(
+            "SELECT CAST(x AS TIMESTAMP WITH TIME ZONE /* c */)",
+            "SELECT CAST(x AS TIMESTAMPTZ) /* c */",
+        )
+        self.validate(
+            "SELECT * FROM t ORDER BY a /* c */ NULLS LAST",
+            "SELECT * FROM t ORDER BY a /* c */ NULLS LAST",
+        )
+        self.validate(
             "SELECT * FROM t1\n/*x*/\nUNION ALL SELECT * FROM t2",
             "SELECT * FROM t1 /* x */ UNION ALL SELECT * FROM t2",
         )

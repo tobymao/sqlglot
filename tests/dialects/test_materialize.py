@@ -4,6 +4,17 @@ from tests.dialects.test_dialect import Validator
 class TestMaterialize(Validator):
     dialect = "materialize"
 
+    def test_split(self):
+        self.validate_all(
+            "CASE WHEN x IS NULL OR delimiter IS NULL THEN NULL WHEN x = '' THEN ARRAY[x] ELSE STRING_TO_ARRAY(x, delimiter) END",
+            read={"snowflake": "SPLIT(x, delimiter)"},
+        )
+        self.validate_all(
+            "REGEXP_SPLIT_TO_ARRAY('a1b22c', '[0-9]+')",
+            read={"spark": "SPLIT('a1b22c', '[0-9]+')"},
+            write={"spark": "SPLIT('a1b22c', '[0-9]+')"},
+        )
+
     def test_materialize(self):
         self.validate_all(
             "CREATE TABLE example (id INT PRIMARY KEY, name TEXT)",

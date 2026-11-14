@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, exp, ParseError, parse_one, transpile
+from sqlglot import ErrorLevel, exp, ParseError, UnsupportedError, parse_one, transpile
 from sqlglot.optimizer.annotate_types import annotate_types, TypeAnnotator
 from sqlglot.schema import MappingSchema
 from tests.dialects.test_dialect import Validator
@@ -6,6 +6,17 @@ from tests.dialects.test_dialect import Validator
 
 class TestRedshift(Validator):
     dialect = "redshift"
+
+    def test_unsupported_postgres_functions(self):
+        for sql in (
+            "STRING_SPLIT('a,b', ',')",
+            "STRING_SPLIT_REGEX('a1b', '[0-9]+')",
+            "MAKE_DATE(2020, 1, 2)",
+        ):
+            with self.subTest(sql=sql):
+                expression = parse_one(sql, read="duckdb")
+                with self.assertRaises(UnsupportedError):
+                    expression.sql(self.dialect, unsupported_level=ErrorLevel.RAISE)
 
     def test_star_except(self):
         expression = parse_one("SELECT * EXCEPT (a) FROM t", read="bigquery")

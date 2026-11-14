@@ -17,6 +17,11 @@ from sqlglot.generators.postgres import PostgresGenerator
 from sqlglot.helper import seq_get
 
 
+def _unsupported_function_sql(self: RedshiftGenerator, expression: exp.Func) -> str:
+    self.unsupported(f"{expression.sql_name()} is not supported")
+    return self.function_fallback_sql(expression)
+
+
 class RedshiftGenerator(PostgresGenerator):
     LOCKING_READS_SUPPORTED = False
     QUERY_HINTS = False
@@ -87,6 +92,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.CurrentUserId: lambda *_: "CURRENT_USER_ID",
         exp.DateAdd: date_delta_sql("DATEADD"),
         exp.DateDiff: date_delta_sql("DATEDIFF"),
+        exp.DateFromParts: _unsupported_function_sql,
         exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),
         exp.DistStyleProperty: lambda self, e: self.naked_property(e),
         exp.Explode: lambda self, e: self.explode_sql(e),
@@ -98,6 +104,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.GroupConcat: rename_func("LISTAGG"),
         exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
         exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
+        exp.RegexpSplit: _unsupported_function_sql,
         exp.Select: transforms.preprocess(
             [
                 transforms.eliminate_window_clause,
@@ -110,6 +117,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.SortKeyProperty: lambda self, e: (
             f"{'COMPOUND ' if e.args['compound'] else ''}SORTKEY({self.format_args(*e.this)})"
         ),
+        exp.Split: _unsupported_function_sql,
         exp.StartsWith: lambda self, e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
         exp.StringToArray: rename_func("SPLIT_TO_ARRAY"),
         exp.TableSample: no_tablesample_sql,

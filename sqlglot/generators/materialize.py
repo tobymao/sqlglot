@@ -37,6 +37,10 @@ class MaterializeGenerator(PostgresGenerator):
     def propertyeq_sql(self, expression: exp.PropertyEQ) -> str:
         return self.binary(expression, "=>")
 
+    def datefromparts_sql(self, expression: exp.DateFromParts) -> str:
+        self.unsupported("Constructing a date from parts is not supported")
+        return self.function_fallback_sql(expression)
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         if expression.is_type(exp.DType.LIST):
             if expression.expressions:

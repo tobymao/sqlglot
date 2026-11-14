@@ -133,7 +133,19 @@ def remove_redundant_casts(expression: exp.Expr) -> exp.Expr:
         and expression.this.type
         and expression.to == expression.this.type
     ):
-        return exp.paren(expression.this, copy=False)
+        unwrapped = expression.this
+        while isinstance(unwrapped, (exp.Paren, exp.Neg)):
+            unwrapped = unwrapped.this
+
+        # TypeAnnotator types all non-int numeric literals (e.g. 0.5, -0.0) as DOUBLE,
+        # whereas many dialects (Postgres, DuckDB, Snowflake, Spark, T-SQL, MySQL, etc.)
+        # parse decimal literals as exact DECIMAL/NUMERIC unless explicitly cast to DOUBLE.
+        if not (
+            unwrapped.is_number
+            and not unwrapped.is_int
+            and expression.to.is_type(*exp.DataType.FLOAT_TYPES)
+        ):
+            return exp.paren(expression.this, copy=False)
 
     if (
         isinstance(expression, (exp.Date, exp.TsOrDsToDate))

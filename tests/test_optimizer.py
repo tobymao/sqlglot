@@ -3193,6 +3193,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT DATEDIFF(CAST(a AS DATETIME), CAST(b AS DATETIME)) FROM t",
         )
 
+        float_lit_sql = "SELECT CAST(-0.0::DOUBLE AS VARCHAR), typeof(0.5::DOUBLE)"
+        optimized_float_lit = optimizer.optimize(
+            parse_one(float_lit_sql, read="duckdb"), dialect="duckdb"
+        ).sql("duckdb")
+        self.assertEqual(
+            self.conn.execute(optimized_float_lit).fetchall(),
+            [("-0.0", "DOUBLE")],
+        )
+
     def test_tpch(self):
         self.check_file("tpc-h/tpc-h", optimizer.optimize, schema=TPCH_SCHEMA, pretty=True)
 

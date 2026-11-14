@@ -167,3 +167,7 @@ SELECT ("x"."a" BETWEEN 1 AND 3) = ("x"."b" > 0) AS "c" FROM "x" AS "x";
 # title: redundant cast preserves NOT operand grouping
 SELECT CAST(NOT x.a > 0 AS BOOLEAN) = (x.b > 0) AS c FROM x AS x;
 SELECT (NOT "x"."a" > 0) = ("x"."b" > 0) AS "c" FROM "x" AS "x";
+
+# title: preserve explicit float casts on decimal and negative-zero literals
+SELECT CAST(0.5 AS DOUBLE) AS a, CAST(-0.0 AS DOUBLE) AS b, CAST(CAST(0.5 AS DOUBLE) AS DOUBLE) AS c;
+SELECT CAST(0.5 AS DOUBLE) AS "a", CAST(-0.0 AS DOUBLE) AS "b", (CAST(0.5 AS DOUBLE)) AS "c";

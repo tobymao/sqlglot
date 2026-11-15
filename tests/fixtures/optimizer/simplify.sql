@@ -1541,6 +1541,16 @@ x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
 NOT DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
 
+-- same as above, but the comparison is reversed and only gets simplified after being sorted
+NOT (CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x));
+x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
+
+NOT (CAST('2021-01-01' AS DATE) <> DATE_TRUNC('year', x));
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+NOT (CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x)) AND y = 1;
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND y = 1;
+
 # dialect: bigquery
 DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE) AND y = 1;
 (x < CAST('2008-11-09' AS DATE) OR x >= CAST('2008-11-16' AS DATE)) AND y = 1;

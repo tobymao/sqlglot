@@ -8,11 +8,17 @@ from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ErrorLevel
+from sqlglot.errors import ErrorLevel, ParseError
 
 
 class TestClickhouse(Validator):
     dialect = "clickhouse"
+
+    def test_xor_missing_arguments(self):
+        for sql in ("SELECT xor()", "SELECT xor(;)", "SELECT xor(,)", "SELECT xor(0, xor())"):
+            for error_level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+                with self.subTest(sql=sql, error_level=error_level), self.assertRaises(ParseError):
+                    self.parse_one(sql, error_level=error_level)
 
     def test_clickhouse(self):
         self.validate_identity(

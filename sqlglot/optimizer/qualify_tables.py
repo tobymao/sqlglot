@@ -179,10 +179,14 @@ def qualify_tables(
                         source.set("alias", None)
                         name = ""
 
+                target_alias = name or source.name or None
+                if target_alias and "." in target_alias:
+                    target_alias = target_alias.split(".")[-1]
+
                 _set_alias(
                     source,
                     canonical_aliases,
-                    target_alias=name or source.name or None,
+                    target_alias=target_alias,
                     normalize=True,
                     columns=function_columns,
                 )

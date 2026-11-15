@@ -295,16 +295,14 @@ class TestBigQuery(Validator):
         self.validate_identity("SELECT * FROM `domain.com:project-id.mydataset.mytable`")
         self.validate_identity(
             "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA`.JOBS",
-            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS JOBS",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
         )
         self.validate_identity(
-            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
-            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `domain.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`"
         )
         self.validate_identity("SELECT * FROM `a.b.com:project-id.mydataset.mytable`")
         self.validate_identity(
-            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
-            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS` AS `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`",
+            "SELECT * FROM `a.b.com:project-id.region-us.INFORMATION_SCHEMA.JOBS`"
         )
 
         self.validate_identity("SAFE.SOME_RANDOM_FUNC(a, b, c)").assert_is(exp.SafeFunc)
@@ -606,22 +604,12 @@ class TestBigQuery(Validator):
             "ARRAY(SELECT AS STRUCT e.x AS y, e.z AS bla FROM UNNEST(bob))::ARRAY<STRUCT<y STRING, bro NUMERIC>>",
             "CAST(ARRAY(SELECT AS STRUCT e.x AS y, e.z AS bla FROM UNNEST(bob)) AS ARRAY<STRUCT<y STRING, bro NUMERIC>>)",
         )
+        self.validate_identity("SELECT * FROM `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW`")
+        self.validate_identity("SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES")
         self.validate_identity(
-            "SELECT * FROM `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW`",
-            "SELECT * FROM `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW` AS `proj.dataset.INFORMATION_SCHEMA.SOME_VIEW`",
+            "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES AS some_name"
         )
-        self.validate_identity(
-            "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
-        )
-        self.validate_identity(
-            "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES AS some_name",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS some_name",
-        )
-        self.validate_identity(
-            "SELECT * FROM proj.region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM proj.region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
-        )
+        self.validate_identity("SELECT * FROM proj.region_or_dataset.INFORMATION_SCHEMA.TABLES")
         self.validate_identity(
             "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",
             "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=CAST('2020-01-02T04:05:06.007Z' AS TIMESTAMP)) AS SELECT 1 AS c",

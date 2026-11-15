@@ -485,8 +485,11 @@ class BigQueryParser(parser.Parser):
                     table.set("db", exp.Identifier(this=parts[0]).update_positions(previous_this))
                     table.set("this", exp.Identifier(this=parts[1]).update_positions(previous_this))
 
-        if isinstance(table.this, exp.Identifier) and any("." in p.name for p in table.parts):
-            alias = table.this
+        if (
+            isinstance(table.this, exp.Identifier)
+            and any("." in p.name for p in table.parts)
+            and not (table.this.name.upper().startswith("INFORMATION_SCHEMA.") and table.db)
+        ):
             catalog, db, this_id, *rest = (
                 exp.to_identifier(p, quoted=True)
                 for p in _split_qualified_name(".".join(p.name for p in table.parts), 3)
@@ -502,8 +505,6 @@ class BigQueryParser(parser.Parser):
 
             table = exp.Table(this=this, db=db, catalog=catalog, pivots=table.args.get("pivots"))
             table.meta["quoted_table"] = True
-        else:
-            alias = None
 
         # The `INFORMATION_SCHEMA` views in BigQuery need to be qualified by a region or
         # dataset, so if the project identifier is omitted we need to fix the ast so that
@@ -517,19 +518,13 @@ class BigQueryParser(parser.Parser):
         # See: https://cloud.google.com/bigquery/docs/information-schema-intro#syntax
         table_parts = table.parts
         if len(table_parts) > 1 and table_parts[-2].name.upper() == "INFORMATION_SCHEMA":
-            # We need to alias the table here to avoid breaking existing qualified columns.
-            # This is expected to be safe, because if there's an actual alias coming up in
-            # the token stream, it will overwrite this one. If there isn't one, we are only
-            # exposing the name that can be used to reference the view explicitly (a no-op).
-            exp.alias_(
-                table,
-                t.cast(exp.Identifier, alias or table_parts[-1]),
-                table=True,
-                copy=False,
-            )
-
             info_schema_view = f"{table_parts[-2].name}.{table_parts[-1].name}"
-            new_this = exp.Identifier(this=info_schema_view, quoted=True).update_positions(
+            quoted = bool(
+                table.meta.get("quoted_table")
+                or (table_parts[-2].quoted and table_parts[-1].quoted)
+                or (table_parts[-1].quoted and not table.db)
+            )
+            new_this = exp.Identifier(this=info_schema_view, quoted=quoted).update_positions(
                 line=table_parts[-2].meta_get("line"),
                 col=table_parts[-1].meta_get("col"),
                 start=table_parts[-2].meta_get("start"),

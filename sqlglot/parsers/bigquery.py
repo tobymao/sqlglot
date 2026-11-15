@@ -519,10 +519,14 @@ class BigQueryParser(parser.Parser):
         table_parts = table.parts
         if len(table_parts) > 1 and table_parts[-2].name.upper() == "INFORMATION_SCHEMA":
             info_schema_view = f"{table_parts[-2].name}.{table_parts[-1].name}"
+            view_part = table_parts[-1]
+            schema_part = table_parts[-2]
+            view_quoted = isinstance(view_part, exp.Identifier) and view_part.quoted
+            schema_quoted = isinstance(schema_part, exp.Identifier) and schema_part.quoted
             quoted = bool(
                 table.meta.get("quoted_table")
-                or (table_parts[-2].quoted and table_parts[-1].quoted)
-                or (table_parts[-1].quoted and not table.db)
+                or (schema_quoted and view_quoted)
+                or (view_quoted and not table.db)
             )
             new_this = exp.Identifier(this=info_schema_view, quoted=quoted).update_positions(
                 line=table_parts[-2].meta_get("line"),

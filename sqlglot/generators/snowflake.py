@@ -374,6 +374,7 @@ class SnowflakeGenerator(generator.Generator):
     SELECT_KINDS = ()
     PARAMETER_TOKEN = "$"
     MATCHED_BY_SOURCE = False
+    SUPPORTS_MULTI_ARG_CHR = False
     MERGE_ALL_BY_NAME = True
     SINGLE_STRING_INTERVAL = True
     CAST_TO_INT_ROUNDS = True

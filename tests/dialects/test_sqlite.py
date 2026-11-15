@@ -227,6 +227,22 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT x NOT IN (1) IS TRUE", "SELECT (NOT x IN (1)) IS TRUE")
         self.validate_identity("SELECT 0 NOT IN (1) NOT IN (2)", "SELECT NOT (NOT 0 IN (1)) IN (2)")
         self.validate_identity("WITH xyz(x) AS (SELECT 1) SELECT x FROM xyz")
+        self.validate_all(
+            "SELECT CHAR(72, 105, x)",
+            write={
+                "sqlite": "SELECT CHAR(72, 105, x)",
+                "mysql": "SELECT CHAR(72, 105, x)",
+                "clickhouse": "SELECT CHAR(72, 105, x)",
+                "duckdb": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "postgres": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "snowflake": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "bigquery": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "oracle": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "spark": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "trino": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "tsql": "SELECT CHAR(72) + CHAR(105) + CHAR(x)",
+            },
+        )
         self.validate_identity("SELECT * FROM t AS t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY i")

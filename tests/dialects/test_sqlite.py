@@ -63,9 +63,21 @@ class TestSQLite(Validator):
             "SELECT ((a | b) & ~(a & b)) /* z */",
             read={"mysql": "SELECT a ^ /* z */ b"},
         )
+        self.validate_all(
+            "SELECT ((-5 | 3) & ~(-5 & 3))",
+            read={"mysql": "SELECT -5 ^ 3"},
+        )
+        self.validate_all(
+            "SELECT ((NULL | 3) & ~(NULL & 3))",
+            read={"mysql": "SELECT NULL ^ 3"},
+        )
         nested = parse_one("SELECT c0 ^ c1 ^ c2", read="mysql")
         with self.assertRaises(UnsupportedError):
             nested.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            nested.sql("sqlite", unsupported_level=ErrorLevel.IGNORE),
+            "SELECT c0 ^ c1 ^ c2",
+        )
 
     def test_safe_div(self):
         self.validate_all(

@@ -1,7 +1,7 @@
 import unittest
 import sys
 
-from sqlglot import UnsupportedError, expressions as exp
+from sqlglot import ErrorLevel, UnsupportedError, expressions as exp, transpile
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -1363,6 +1363,36 @@ class TestMySQL(Validator):
                 "redshift": "SELECT DATEDIFF(DAY, y, x)",
             },
         )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(MONTH, y, x)",
+            read={
+                "bigquery": "SELECT DATE_DIFF(x, y, MONTH)",
+                "snowflake": "SELECT DATEDIFF(MONTH, y, x)",
+                "redshift": "SELECT DATEDIFF(MONTH, y, x)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(HOUR, y, x)",
+            read={
+                "redshift": "SELECT DATEDIFF(HOUR, y, x)",
+                "snowflake": "SELECT DATEDIFF(HOUR, y, x)",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(WEEK, y, x)",
+            read={"duckdb": "SELECT DATE_DIFF('week', y, x)"},
+        )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(QUARTER, y, x)",
+            read={"duckdb": "SELECT DATE_DIFF('quarter', y, x)"},
+        )
+        with self.assertRaises(UnsupportedError):
+            transpile(
+                "SELECT DATEDIFF(NANOSECOND, y, x)",
+                read="snowflake",
+                write="mysql",
+                unsupported_level=ErrorLevel.RAISE,
+            )
         self.validate_all(
             "DAYOFYEAR(x)",
             write={

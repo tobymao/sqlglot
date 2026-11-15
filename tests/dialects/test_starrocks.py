@@ -639,6 +639,10 @@ class TestStarrocks(Validator):
         self.validate_identity(
             "SELECT DATE_DIFF('DAY', CAST('2026-03-11 01:00:00' AS DATETIME), CAST('2026-03-10 23:00:00' AS DATETIME))"
         )
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(HOUR, y, x)",
+            read={"redshift": "SELECT DATEDIFF(HOUR, y, x)"},
+        )
 
     def test_comments(self):
         # Reject bare hashes instead of emulating StarRocks' lexer error recovery.

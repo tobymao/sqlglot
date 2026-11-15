@@ -104,6 +104,32 @@ _MAKE_INTERVAL_UNIT_ALIASES = {
 }
 
 
+# https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_timestampdiff
+_TIMESTAMPDIFF_UNITS = {
+    "MICROSECOND",
+    "SECOND",
+    "MINUTE",
+    "HOUR",
+    "DAY",
+    "WEEK",
+    "MONTH",
+    "QUARTER",
+    "YEAR",
+}
+
+
+def _date_diff_sql(self: generator.Generator, expression: exp.Expr) -> str:
+    # DATEDIFF only counts days, so other units go through TIMESTAMPDIFF
+    unit = expression.args.get("unit")
+    if not unit or expression.text("unit").upper() == "DAY":
+        return self.func("DATEDIFF", expression.this, expression.expression)
+
+    if isinstance(unit, exp.Var) and unit.name.upper() not in _TIMESTAMPDIFF_UNITS:
+        self.unsupported(f"Unsupported TIMESTAMPDIFF unit: {unit.name}")
+
+    return self.func("TIMESTAMPDIFF", unit, expression.expression, expression.this)
+
+
 def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) -> str:
     time_format = expression.args.get("format")
     return _str_to_date_sql(self, expression) if time_format else self.func("DATE", expression.this)
@@ -165,9 +191,7 @@ class MySQLGenerator(generator.Generator):
         exp.Chr: lambda self, e: self.chr_sql(e, "CHAR"),
         exp.CurrentDate: no_paren_current_date_sql,
         exp.CurrentVersion: rename_func("VERSION"),
-        exp.DateDiff: remove_ts_or_ds_to_date(
-            lambda self, e: self.func("DATEDIFF", e.this, e.expression), ("this", "expression")
-        ),
+        exp.DateDiff: remove_ts_or_ds_to_date(_date_diff_sql, ("this", "expression")),
         exp.DateAdd: date_add_sql("ADD"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: date_add_sql("SUB"),
@@ -232,7 +256,7 @@ class MySQLGenerator(generator.Generator):
         ),
         exp.TryCast: no_trycast_sql,
         exp.TsOrDsAdd: date_add_sql("ADD"),
-        exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
+        exp.TsOrDsDiff: _date_diff_sql,
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,
         exp.Unicode: lambda self, e: f"ORD(CONVERT({self.sql(e.this)} USING utf32))",
         exp.UnixToTime: _unix_to_time_sql,

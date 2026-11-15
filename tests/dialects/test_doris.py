@@ -136,6 +136,10 @@ class TestDoris(Validator):
         self.validate_identity("DATE_TRUNC(event_date, 'DAY')")
         self.validate_identity("DATE_TRUNC('2010-12-02 19:28:30', 'HOUR')")
         self.validate_identity("CURRENT_DATE()")
+        self.validate_all(
+            "SELECT TIMESTAMPDIFF(MONTH, y, x)",
+            read={"snowflake": "SELECT DATEDIFF(MONTH, y, x)"},
+        )
 
     def test_date_add_sub(self):
         # Standard INTERVAL form

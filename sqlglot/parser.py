@@ -3052,7 +3052,7 @@ class Parser:
 
         # Transform the key to exp.Dot if it's dotted identifiers wrapped in exp.Column or to exp.Var otherwise
         if isinstance(key, exp.Column):
-            key = key.to_dot() if len(key.parts) > 1 else exp.var(key.name)
+            key = key.to_dot() if len(key.parts) > 1 else exp.var(key, copy_comments=True)
 
         value = (
             parse_value()
@@ -3062,7 +3062,7 @@ class Parser:
 
         # Transform the value to exp.Var if it was parsed as exp.Column(exp.Identifier())
         if isinstance(value, exp.Column):
-            value = exp.var(value.name)
+            value = exp.var(value, copy_comments=True)
 
         return self.expression(exp.Property(this=key, value=value))
 
@@ -3092,7 +3092,7 @@ class Parser:
     def _parse_unquoted_field(self) -> exp.Expr | None:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
-            field = exp.var(field)
+            field = exp.var(field, copy_comments=True)
 
         return field
 

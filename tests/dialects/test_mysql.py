@@ -535,6 +535,9 @@ class TestMySQL(Validator):
             "CREATE TABLE t (a INT) ENGINE=InnoDB /* c */ ROW_FORMAT=DYNAMIC",
         )
         self.validate_identity(
+            "CREATE TABLE t (a INT) ENGINE=InnoDB /* c */ ROW_FORMAT=DYNAMIC",
+        )
+        self.validate_identity(
             "CREATE TABLE `foo` (a VARCHAR(10), KEY idx_a (a DESC))",
             "CREATE TABLE `foo` (a VARCHAR(10), INDEX idx_a (a DESC))",
         )

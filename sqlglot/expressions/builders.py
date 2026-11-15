@@ -587,7 +587,7 @@ def values(
     )
 
 
-def var(name: ExpOrStr | None) -> Var:
+def var(name: ExpOrStr | None, copy_comments: bool = False) -> Var:
     """Build a SQL variable.
 
     Example:
@@ -599,6 +599,7 @@ def var(name: ExpOrStr | None) -> Var:
 
     Args:
         name: The name of the var or an expression who's name will become the var.
+        copy_comments: Whether to copy comments from `name` if it's an expression.
 
     Returns:
         The new variable node.
@@ -606,9 +607,16 @@ def var(name: ExpOrStr | None) -> Var:
     if not name:
         raise ValueError("Cannot convert empty name into var.")
 
+    comments = None
     if isinstance(name, Expr):
+        comments = name.comments
         name = name.name
-    return Var(this=name)
+
+    expression = Var(this=name)
+    if copy_comments and comments:
+        expression.add_comments(comments)
+
+    return expression
 
 
 def rename_table(

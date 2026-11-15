@@ -242,6 +242,11 @@ class SQLiteGenerator(generator.Generator):
         return super().insert_sql(expression)
 
     def bitwisexor_sql(self, expression: exp.BitwiseXor) -> str:
+        # Nesting would expand exponentially, since each operand appears twice.
+        if expression.this.find(exp.BitwiseXor) or expression.expression.find(exp.BitwiseXor):
+            self.unsupported("Nested bitwise XOR is not supported in SQLite")
+            return self.binary(expression, "^")
+
         # SQLite has no XOR operator. Expand to the supported operators; the outer
         # parentheses keep the lower-precedence & intact when the XOR is nested.
         return self.sql(

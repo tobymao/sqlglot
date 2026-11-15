@@ -59,6 +59,9 @@ class TestSQLite(Validator):
             "SELECT a + ((b | c) & ~(b & c))",
             read={"mysql": "SELECT a + b ^ c"},
         )
+        nested = parse_one("SELECT c0 ^ c1 ^ c2", read="mysql")
+        with self.assertRaises(UnsupportedError):
+            nested.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
 
     def test_safe_div(self):
         self.validate_all(

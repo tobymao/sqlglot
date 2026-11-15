@@ -249,21 +249,26 @@ class SQLiteGenerator(generator.Generator):
 
         # SQLite has no XOR operator. Expand to the supported operators; the outer
         # parentheses keep the lower-precedence & intact when the XOR is nested.
-        return self.sql(
-            exp.Paren(
-                this=exp.BitwiseAnd(
-                    this=exp.Paren(
-                        this=exp.BitwiseOr(this=expression.this, expression=expression.expression)
-                    ),
-                    expression=exp.BitwiseNot(
+        return self.maybe_comment(
+            self.sql(
+                exp.Paren(
+                    this=exp.BitwiseAnd(
                         this=exp.Paren(
-                            this=exp.BitwiseAnd(
+                            this=exp.BitwiseOr(
                                 this=expression.this, expression=expression.expression
                             )
-                        )
-                    ),
+                        ),
+                        expression=exp.BitwiseNot(
+                            this=exp.Paren(
+                                this=exp.BitwiseAnd(
+                                    this=expression.this, expression=expression.expression
+                                )
+                            )
+                        ),
+                    )
                 )
-            )
+            ),
+            comments=expression.comments,
         )
 
     def bitwiseandagg_sql(self, expression: exp.BitwiseAndAgg) -> str:

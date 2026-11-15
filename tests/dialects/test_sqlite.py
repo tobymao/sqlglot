@@ -41,6 +41,25 @@ class TestSQLite(Validator):
 
         self.validate_identity("""PRAGMA "aux db".table_info = 'items'""")
 
+    def test_bitwise_xor(self):
+        self.validate_all(
+            "SELECT ((5 | 3) & ~(5 & 3))",
+            read={
+                "duckdb": "SELECT XOR(5, 3)",
+                "mysql": "SELECT 5 ^ 3",
+                "postgres": "SELECT 5 # 3",
+                "snowflake": "SELECT BITXOR(5, 3)",
+            },
+        )
+        self.validate_all(
+            "SELECT ((a | b) & ~(a & b)) + 1",
+            read={"mysql": "SELECT a ^ b + 1"},
+        )
+        self.validate_all(
+            "SELECT a + ((b | c) & ~(b & c))",
+            read={"mysql": "SELECT a + b ^ c"},
+        )
+
     def test_safe_div(self):
         self.validate_all(
             "SELECT CAST(a AS INTEGER) / CAST(b AS INTEGER) FROM t",

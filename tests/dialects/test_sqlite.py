@@ -169,6 +169,8 @@ class TestSQLite(Validator):
             ("TIMESTAMP", "DATETIME"),
             ("TIMESTAMPNTZ", "DATETIME"),
             ("TIME", "TIME"),
+            ("JSON", "JSON"),
+            ("JSONB", "JSON"),
         ):
             for value in ("'2014-09-01 12:34:56'", "x", "NULL"):
                 with self.subTest(dtype=dtype, value=value):
@@ -176,6 +178,26 @@ class TestSQLite(Validator):
                         f"SELECT {func}({value})",
                         read={"": f"SELECT CAST({value} AS {dtype})"},
                     )
+
+        self.validate_all(
+            "SELECT JSON('{\"a\": 1}')",
+            read={
+                "postgres": "SELECT CAST('{\"a\": 1}' AS JSON)",
+                "duckdb": "SELECT CAST('{\"a\": 1}' AS JSON)",
+            },
+            write={
+                "sqlite": "SELECT JSON('{\"a\": 1}')",
+            },
+        )
+        self.validate_all(
+            "SELECT JSON('{\"a\": 1}')",
+            read={
+                "postgres": "SELECT CAST('{\"a\": 1}' AS JSONB)",
+            },
+            write={
+                "sqlite": "SELECT JSON('{\"a\": 1}')",
+            },
+        )
 
     def test_is_precedence(self):
         self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")

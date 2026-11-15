@@ -79,7 +79,6 @@ class TeradataGenerator(generator.Generator):
         **generator.Generator.TRANSFORMS,
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
-        exp.HexCharacterString: lambda self, e: f"{self.sql(exp.Literal.string(e.this))}XC",
         exp.Max: max_or_greatest,
         exp.Min: min_or_least,
         exp.Pow: lambda self, e: self.binary(e, "**"),
@@ -102,6 +101,13 @@ class TeradataGenerator(generator.Generator):
         exp.DayOfWeek: rename_func("DAYOFWEEK"),
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
+
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: str | None = None
+    ) -> str:
+        if expression.args.get("is_character"):
+            return f"{self.sql(exp.Literal.string(expression.this))}XC"
+        return super().hexstring_sql(expression, binary_function_repr)
 
     def execute_sql(self, expression: exp.Execute) -> str:
         if expression.args.get("return_status"):

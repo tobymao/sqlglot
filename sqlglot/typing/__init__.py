@@ -412,7 +412,9 @@ EXPRESSION_METADATA: ExprMetadataType = {
     exp.HexString: {
         "annotator": lambda self, e: self._set_type(
             e,
-            exp.DType.BIGINT if e.args.get("is_integer") else exp.DType.BINARY,
+            exp.DType.VARCHAR
+            if e.args.get("is_character")
+            else (exp.DType.BIGINT if e.args.get("is_integer") else exp.DType.BINARY),
         )
     },
     exp.GenerateSeries: {

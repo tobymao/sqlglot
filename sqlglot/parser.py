@@ -8552,6 +8552,10 @@ class Parser:
             if not to:
                 to = exp.DType.UNKNOWN.into_expr()
             if to.this in exp.DataType.TEMPORAL_TYPES:
+                if default and any(
+                    e.args.get("is_character") for e in default.find_all(exp.HexString)
+                ):
+                    self.raise_error("Hexadecimal character defaults are not supported with FORMAT")
                 this = self.expression(
                     (exp.StrToDate if to.this == exp.DType.DATE else exp.StrToTime)(
                         this=this,

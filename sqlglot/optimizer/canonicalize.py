@@ -216,6 +216,8 @@ def _coerce_date(
 
 
 def _coerce_timeunit_arg(arg: exp.Expr, unit: exp.Expr | None) -> exp.Expr:
+    if isinstance(arg, exp.HexString) and arg.args.get("is_character"):
+        return arg
     if not arg.type:
         return arg
 

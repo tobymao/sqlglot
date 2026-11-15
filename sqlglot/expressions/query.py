@@ -493,15 +493,10 @@ class BitString(Expression, Condition):
 
 
 class HexString(Expression, Condition):
-    arg_types = {"this": True, "is_integer": False}
+    """Encoded hexadecimal data, binary by default or integer/character when flagged."""
+
+    arg_types = {"this": True, "is_integer": False, "is_character": False}
     is_primitive = True
-
-
-class HexCharacterString(Expression, Condition):
-    """Hex-encoded character data, not decoded text or a binary hex literal."""
-
-    is_primitive = True
-    _hash_raw_args = True
 
 
 class ByteString(Expression, Condition):

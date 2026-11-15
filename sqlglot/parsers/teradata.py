@@ -30,7 +30,6 @@ def is_window_aggregate(window: exp.Window) -> bool:
 
 
 class TeradataParser(parser.Parser):
-    _in_hex_character_function: bool = False
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
@@ -108,14 +107,10 @@ class TeradataParser(parser.Parser):
     def _parse_primary(self) -> exp.Expr | None:
         if self._is_hex_character_string():
             token = self._curr
-            if self._in_hex_character_function:
-                self.raise_error(
-                    "Hexadecimal character literals are not supported in function arguments"
-                )
             if any(char not in "0123456789abcdefABCDEF" for char in token.text):
                 self.raise_error("Invalid hexadecimal character literal", token)
             self._advance()
-            expression = self.expression(exp.HexCharacterString(this=token.text), token)
+            expression = self.expression(exp.HexString(this=token.text, is_character=True), token)
             expression.meta["end"] = self._curr.end
             expression.meta["col"] = self._curr.col
             self._advance()
@@ -138,18 +133,23 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        previous = self._in_hex_character_function
-        self._in_hex_character_function = True
-        try:
-            return super()._parse_function_call(functions, anonymous, optional_parens, any_token)
-        finally:
-            self._in_hex_character_function = previous
+        expression = super()._parse_function_call(functions, anonymous, optional_parens, any_token)
+        conversion = expression.this if isinstance(expression, exp.Window) else expression
+        if isinstance(conversion, (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)):
+            fmt = conversion.args.get("format")
+            if isinstance(fmt, exp.Expr) and any(
+                e.args.get("is_character") for e in fmt.find_all(exp.HexString)
+            ):
+                self.raise_error(
+                    "Hexadecimal character literals are not supported in conversion formats"
+                )
+        return expression
 
     def _parse_interval(
         self, require_interval: bool = True, parse_function_unit: bool = True
     ) -> exp.Add | exp.Interval | None:
         interval = super()._parse_interval(require_interval, parse_function_unit)
-        if interval and interval.find(exp.HexCharacterString):
+        if interval and any(e.args.get("is_character") for e in interval.find_all(exp.HexString)):
             self.raise_error("Hexadecimal character literals are not supported in intervals")
         return interval
 

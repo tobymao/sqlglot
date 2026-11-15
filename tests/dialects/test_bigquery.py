@@ -2554,6 +2554,12 @@ WHERE
         with self.assertRaises(ParseError):
             transpile("DATE_ADD(x, day)", read="bigquery")
 
+        with self.assertRaises(ParseError):
+            transpile("SELECT DATE_ADD(x)", read="bigquery")
+
+        with self.assertRaises(ParseError):
+            transpile("SELECT DATE_SUB(x)", read="bigquery")
+
     def test_warnings(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_identity(

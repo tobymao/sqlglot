@@ -1948,7 +1948,7 @@ def build_date_delta_with_interval(
 ) -> t.Callable[[BuilderArgs], E | None]:
     def _builder(args: BuilderArgs) -> E | None:
         if len(args) < 2:
-            return None
+            raise ParseError("INTERVAL expression expected")
 
         interval = args[1]
 

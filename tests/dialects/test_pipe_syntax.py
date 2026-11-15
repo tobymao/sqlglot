@@ -452,6 +452,20 @@ WHERE
             "WITH __tmp1 AS (SELECT x1, x2 FROM x) SELECT DISTINCT * FROM __tmp1",
         )
 
+    def test_drop(self):
+        self.validate_identity(
+            "SELECT 'apples' AS item, 2 AS sales |> DROP sales",
+            "WITH __tmp1 AS (SELECT * FROM (SELECT 'apples' AS item, 2 AS sales)) SELECT * EXCEPT (sales) FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> DROP a, b",
+            "WITH __tmp1 AS (SELECT * FROM x) SELECT * EXCEPT (a, b) FROM __tmp1",
+        )
+        self.validate_identity(
+            "FROM x |> DROP a |> WHERE b > 1",
+            "WITH __tmp1 AS (SELECT * FROM x) SELECT * EXCEPT (a) FROM __tmp1 WHERE b > 1",
+        )
+
     def test_extend(self):
         self.validate_identity(
             "FROM x |> EXTEND id IN (1, 2) AS is_1_2, id + 1 as a_id",

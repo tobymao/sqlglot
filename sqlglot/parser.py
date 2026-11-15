@@ -1325,6 +1325,7 @@ class Parser:
             query, [exp.Star()], self._parse_table_alias()
         ),
         "DISTINCT": lambda self, query: self._advance() or query.distinct(copy=False),
+        "DROP": lambda self, query: self._parse_pipe_syntax_drop(query),
         "EXTEND": lambda self, query: self._parse_pipe_syntax_extend(query),
         "LIMIT": lambda self, query: self._parse_pipe_syntax_limit(query),
         "ORDER BY": lambda self, query: query.order_by(
@@ -10841,6 +10842,11 @@ class Parser:
             from_.this.set("pivots", pivots)
 
         return self._build_pipe_cte(query=query, expressions=[exp.Star()])
+
+    def _parse_pipe_syntax_drop(self, query: exp.Select) -> exp.Select:
+        self._match_text_seq("DROP")
+        columns = self._parse_csv(self._parse_column)
+        return self._build_pipe_cte(query=query, expressions=[exp.Star(except_=columns)])
 
     def _parse_pipe_syntax_extend(self, query: exp.Select) -> exp.Select:
         self._match_text_seq("EXTEND")

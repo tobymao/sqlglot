@@ -320,6 +320,13 @@ class PostgresGenerator(generator.Generator):
 
         return sql
 
+    def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        # ARRAY_LENGTH(arr, 1) returns NULL for an empty array, whereas CARDINALITY returns 0
+        if not expression.expression:
+            return self.func("CARDINALITY", expression.this)
+
+        return super().arraysize_sql(expression)
+
     def star_sql(self, expression: exp.Star) -> str:
         if self.STAR_EXCEPT == "EXCEPT" and expression.args.get("except_"):
             self.unsupported("PostgreSQL does not support EXCEPT in the SELECT projection")

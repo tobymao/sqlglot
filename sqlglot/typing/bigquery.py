@@ -47,6 +47,25 @@ def _annotate_date_func(self: TypeAnnotator, expression: _DateFunc) -> exp.Expr:
     return self._annotate_by_args(expression, "this")
 
 
+def _annotate_datetime_or_timestamp_add(
+    self: TypeAnnotator,
+    expression: exp.DatetimeAdd | exp.DatetimeSub | exp.TimestampAdd | exp.TimestampSub,
+) -> exp.Expr:
+    """Annotate DATETIME_ADD / DATETIME_SUB / TIMESTAMP_ADD / TIMESTAMP_SUB.
+
+    Whichever of them is called, BigQuery returns a TIMESTAMP for a TIMESTAMP and a DATETIME
+    for a DATE or DATETIME. Any other argument, e.g. a string literal, gets the function's own type.
+    """
+    this = expression.this
+    if this.is_type(exp.DType.TIMESTAMPTZ):
+        return self._set_type(expression, exp.DType.TIMESTAMPTZ)
+    if this.is_type(exp.DType.DATE, exp.DType.DATETIME, exp.DType.TIMESTAMP):
+        return self._set_type(expression, exp.DType.DATETIME)
+    if isinstance(expression, (exp.TimestampAdd, exp.TimestampSub)):
+        return self._set_type(expression, exp.DType.TIMESTAMPTZ)
+    return self._set_type(expression, exp.DType.DATETIME)
+
+
 def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
     """
     +------------+------------+------------+-------------+---------+
@@ -381,6 +400,10 @@ EXPRESSION_METADATA = {
         }
     },
     **{expr_type: {"returns": exp.DType.TIMESTAMPTZ} for expr_type in TIMESTAMP_EXPRESSIONS},
+    **{
+        expr_type: {"annotator": _annotate_datetime_or_timestamp_add}
+        for expr_type in (exp.DatetimeAdd, exp.DatetimeSub, exp.TimestampAdd, exp.TimestampSub)
+    },
     exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ApproxTopSum: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.Array: {"annotator": _annotate_array},

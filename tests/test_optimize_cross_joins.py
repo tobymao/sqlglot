@@ -27,11 +27,16 @@ class TestOptimizeCrossJoins(unittest.TestCase):
             "ON TRUE",
             "USING(a)",
         ):
-            for sql in (
+            queries = [
                 f"SELECT x.a, y.a FROM x CROSS JOIN y {criteria}",
                 f"SELECT x.a, y.a, z.a FROM x CROSS JOIN y {criteria} LEFT JOIN z ON y.a = z.a",
-                f"SELECT x.a, y.a, z.a FROM x CROSS JOIN y {criteria} RIGHT JOIN z ON y.a = z.a",
-            ):
+            ]
+            # RIGHT JOIN was added in SQLite 3.39; older CI runtimes still cover INNER/LEFT joins.
+            if sqlite3.sqlite_version_info >= (3, 39, 0):
+                queries.append(
+                    f"SELECT x.a, y.a, z.a FROM x CROSS JOIN y {criteria} RIGHT JOIN z ON y.a = z.a"
+                )
+            for sql in queries:
                 expected = connection.execute(sql).fetchall()
                 for dialect in ("sqlite", "mysql"):
                     for rules in ((qualify, optimize_joins), RULES):

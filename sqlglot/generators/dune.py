@@ -8,7 +8,9 @@ class DuneGenerator(TrinoGenerator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
 
-    TRANSFORMS = {
-        **TrinoGenerator.TRANSFORMS,
-        exp.HexString: lambda self, e: f"0x{e.this}",
-    }
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: str | None = None
+    ) -> str:
+        if expression.args.get("is_character"):
+            return super().hexstring_sql(expression, binary_function_repr)
+        return f"0x{expression.this}"

@@ -23,6 +23,29 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_information_schema_roundtrip(self):
+        for sql, expected in (
+            (
+                "SELECT SCHEMATA.schema_name FROM region-us.INFORMATION_SCHEMA.SCHEMATA",
+                "SELECT SCHEMATA.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS SCHEMATA",
+            ),
+            (
+                "SELECT SCHEMATA.schema_name FROM `region-us`.`INFORMATION_SCHEMA`.`SCHEMATA`",
+                "SELECT SCHEMATA.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS `SCHEMATA`",
+            ),
+            (
+                "SELECT s.schema_name FROM region-us.INFORMATION_SCHEMA.SCHEMATA AS s",
+                "SELECT s.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS s",
+            ),
+            (
+                "SELECT schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA`",
+                "SELECT schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS `region-us.INFORMATION_SCHEMA.SCHEMATA`",
+            ),
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, expected)
+                self.validate_identity(expected)
+
     def test_variance(self):
         for name in ("var_samp", "VAR_SAMP", "variance", "VARIANCE"):
             with self.subTest(name=name):
@@ -612,15 +635,15 @@ class TestBigQuery(Validator):
         )
         self.validate_identity(
             "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
+            "SELECT * FROM `region_or_dataset.INFORMATION_SCHEMA.TABLES` AS TABLES",
         )
         self.validate_identity(
             "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES AS some_name",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS some_name",
+            "SELECT * FROM `region_or_dataset.INFORMATION_SCHEMA.TABLES` AS some_name",
         )
         self.validate_identity(
             "SELECT * FROM proj.region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM proj.region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
+            "SELECT * FROM `proj.region_or_dataset.INFORMATION_SCHEMA.TABLES` AS TABLES",
         )
         self.validate_identity(
             "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",
@@ -3022,6 +3045,53 @@ OPTIONS (
         self.validate_identity(
             "SELECT TIMESTAMP(DATETIME(CAST(CAST('2012-10-31 00:00:00' AS DATETIME) AS TIMESTAMP), 'America/Sao_Paulo'))"
         )
+
+    def test_like_escape(self):
+        # BigQuery's LIKE has no ESCAPE clause, literal patterns are rewritten to backslash escapes
+        self.validate_all(
+            r"SELECT x LIKE '%s3\\_data\\_lake%'",
+            read={
+                "trino": "SELECT x LIKE '%s3^_data^_lake%' ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT x LIKE 'a\\_b\\\\c'",
+            read={
+                "trino": r"SELECT x LIKE 'a\_b\\c' ESCAPE '\'",
+            },
+        )
+        self.validate_all(
+            r"SELECT x NOT LIKE 'a^b\\%'",
+            read={
+                "trino": "SELECT x NOT LIKE 'a^^b^%' ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT LOWER(x) LIKE LOWER('a\\\\b\\_')",
+            read={
+                "trino": r"SELECT LOWER(x) LIKE LOWER('a\b^_') ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT UPPER(x) LIKE UPPER('%s3\\_data\\_lake%')",
+            read={
+                "trino": "SELECT UPPER(x) LIKE UPPER('%s3^_data^_lake%') ESCAPE '^'",
+            },
+        )
+        # Any escape character, including a newline
+        self.validate_all(
+            "SELECT x LIKE '\\n'",
+            read={
+                "trino": "SELECT x LIKE '\n\n' ESCAPE '\n'",
+            },
+        )
+
+        # The rewritten patterns read back unchanged
+        self.validate_identity(r"SELECT x LIKE '%s3\\_data\\_lake%'")
+        self.validate_identity(r"SELECT x LIKE 'a\\_b\\\\c'")
+        self.validate_identity(r"SELECT x NOT LIKE 'a^b\\%'")
+        self.validate_identity(r"SELECT LOWER(x) LIKE LOWER('a\\\\b\\_')")
+        self.validate_identity(r"SELECT UPPER(x) LIKE UPPER('%s3\\_data\\_lake%')")
 
     def test_inline_constructor(self):
         self.validate_identity(

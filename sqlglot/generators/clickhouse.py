@@ -409,7 +409,7 @@ class ClickHouseGenerator(generator.Generator):
             rename_func("editDistance")
         ),
         exp.ParseDatetime: lambda self, e: self.func(
-            "parseDateTime", e.this, e.args.get("format"), e.args.get("zone")
+            "parseDateTime", e.this, self.format_time(e), e.args.get("zone")
         ),
     }
 

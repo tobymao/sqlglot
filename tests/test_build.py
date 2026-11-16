@@ -180,6 +180,20 @@ class TestBuild(unittest.TestCase):
                 "SELECT x FROM tbl LATERAL VIEW OUTER EXPLODE(y) tbl2 AS z",
             ),
             (
+                lambda: select("*").from_("a").join("b"),
+                "SELECT * FROM a CROSS JOIN b",
+            ),
+            (
+                lambda: select("*").from_("a").join(exp.to_table("b")),
+                "SELECT * FROM a CROSS JOIN b",
+            ),
+            (
+                lambda: (
+                    select("*").from_("a").join("b").join("c", on="b.y = c.z", join_type="right")
+                ),
+                "SELECT * FROM a CROSS JOIN b RIGHT JOIN c ON b.y = c.z",
+            ),
+            (
                 lambda: select("x").from_("tbl").join("tbl2 ON tbl.y = tbl2.y"),
                 "SELECT x FROM tbl JOIN tbl2 ON tbl.y = tbl2.y",
             ),
@@ -478,7 +492,7 @@ class TestBuild(unittest.TestCase):
                     .from_("tbl")
                     .join("tbl3")
                 ),
-                "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl, tbl3",
+                "WITH tbl AS (SELECT x FROM tbl2) SELECT x FROM tbl CROSS JOIN tbl3",
             ),
             (
                 lambda: (

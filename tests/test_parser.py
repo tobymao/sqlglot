@@ -10,6 +10,13 @@ from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
+    def test_conditionless_join(self):
+        self.assertEqual(parse_one("JOIN b", into=exp.Join).sql(), "CROSS JOIN b")
+        self.assertEqual(
+            parse_one("FROM a |> JOIN b", dialect="bigquery").sql(),
+            "SELECT * FROM a CROSS JOIN b",
+        )
+
     def test_ref_type(self) -> None:
         for dialect, target_sql in (
             ("", "customer"),

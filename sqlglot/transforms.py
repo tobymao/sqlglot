@@ -766,12 +766,13 @@ def move_ctes_to_top_level(expression: E) -> E:
 
 
 def ensure_bools(expression: exp.Expr) -> exp.Expr:
-    """Converts numeric values used in conditions into explicit boolean expressions."""
+    """Converts numeric values and boolean casts in conditions into explicit comparisons."""
     from sqlglot.optimizer.canonicalize import ensure_bools
 
     def _ensure_bool(node: exp.Expr) -> None:
         if (
             node.is_number
+            or (isinstance(node, exp.Cast) and node.is_type(exp.DType.BOOLEAN))
             or (
                 not isinstance(node, exp.SubqueryPredicate)
                 and node.is_type(exp.DType.UNKNOWN, *exp.DataType.NUMERIC_TYPES)

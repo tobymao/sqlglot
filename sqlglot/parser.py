@@ -3095,7 +3095,7 @@ class Parser:
     def _parse_unquoted_field(self) -> exp.Expr | None:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
-            field = exp.var(field)
+            field = self.expression(exp.var(field), comments=field.comments)
 
         return field
 
@@ -4950,6 +4950,9 @@ class Parser:
 
         if directed:
             kwargs["directed"] = directed
+
+        if join and not any(kwargs.get(k) for k in exp.Join.QUALIFIERS):
+            kwargs["kind"] = "CROSS"
 
         return self.expression(exp.Join(**kwargs), comments=comments)
 
@@ -8573,6 +8576,10 @@ class Parser:
             if not to:
                 to = exp.DType.UNKNOWN.into_expr()
             if to.this in exp.DataType.TEMPORAL_TYPES:
+                if default and any(
+                    e.args.get("is_character") for e in default.find_all(exp.HexString)
+                ):
+                    self.raise_error("Hexadecimal character defaults are not supported with FORMAT")
                 this = self.expression(
                     (exp.StrToDate if to.this == exp.DType.DATE else exp.StrToTime)(
                         this=this,

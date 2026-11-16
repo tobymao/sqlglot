@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_sql,
     count_if_to_sum,
+    generate_series_sql,
     groupconcat_sql,
     no_ilike_sql,
     no_pivot_sql,
@@ -323,6 +324,8 @@ class SQLiteGenerator(generator.Generator):
             return self.func("DATETIME", expression.this)
         if expression.is_type("time"):
             return self.func("TIME", expression.this)
+        if expression.is_type("json", "jsonb"):
+            return self.func("JSON", expression.this)
 
         return super().cast_sql(expression)
 
@@ -358,7 +361,7 @@ class SQLiteGenerator(generator.Generator):
                 exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
             )
         else:
-            sql = self.function_fallback_sql(expression)
+            sql = generate_series_sql("GENERATE_SERIES")(self, expression)
 
         return sql
 

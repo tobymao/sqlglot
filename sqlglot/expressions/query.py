@@ -493,7 +493,9 @@ class BitString(Expression, Condition):
 
 
 class HexString(Expression, Condition):
-    arg_types = {"this": True, "is_integer": False}
+    """Encoded hexadecimal data, binary by default or integer/character when flagged."""
+
+    arg_types = {"this": True, "is_integer": False, "is_character": False}
     is_primitive = True
 
 
@@ -705,6 +707,8 @@ class Join(Expression):
         "expressions": False,
         "pivots": False,
     }
+
+    QUALIFIERS: t.ClassVar[tuple[str, ...]] = ("on", "using", "side", "kind", "method", "nearest")
 
     @property
     def method(self) -> str:
@@ -1489,7 +1493,10 @@ class Select(Expression, Query):
         except ParseError:
             expression = maybe_parse(expression, into=(Join, Expr), **parse_args)
 
-        join = expression if isinstance(expression, Join) else Join(this=expression)
+        join = expression if isinstance(expression, Join) else Join(this=expression, kind="CROSS")
+
+        if join.kind == "CROSS" and (on or using or join_type):
+            join.set("kind", None)
 
         if isinstance(join.this, Select):
             join.this.replace(join.this.subquery())

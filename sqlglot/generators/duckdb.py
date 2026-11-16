@@ -1555,6 +1555,9 @@ def _explode_to_unnest_sql(self: DuckDBGenerator, expression: exp.Lateral) -> st
             alias_expr.set("this", exp.to_identifier(f"_u_{expression.index}"))
 
         transformed_lateral_expr = exp.Lateral(this=select_expr, alias=alias_expr)
+        if expression.args.get("outer"):
+            return self.sql(exp.Join(this=transformed_lateral_expr, side="LEFT", on=exp.true()))
+
         cross_join_lateral_expr = exp.Join(this=transformed_lateral_expr, kind="CROSS")
 
         return self.sql(cross_join_lateral_expr)
@@ -1594,6 +1597,7 @@ class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
     JOIN_HINTS = False
+    SUPPORTS_MULTI_ARG_CHR = False
     TABLE_HINTS = False
     QUERY_HINTS = False
     LIMIT_FETCH = "LIMIT"
@@ -2814,15 +2818,16 @@ class DuckDBGenerator(generator.Generator):
         position = expression.args.get("position")
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
-        # Convert to HEX strings, use STRPOS, then convert hex position to byte position
         if _is_binary(this):
-            # Build expression: STRPOS(HEX(haystack), HEX(needle))
-            hex_strpos = exp.StrPosition(
-                this=exp.Hex(this=this),
-                substr=exp.Hex(this=substr),
+            # Match whole bytes, counting a two-character sentinel as the first byte.
+            prefix = exp.RegexpExtract(
+                this=exp.DPipe(this=exp.Literal.string("xx"), expression=exp.Hex(this=this)),
+                expression=exp.DPipe(
+                    this=exp.Literal.string("^(xx(?:..)*?)"), expression=exp.Hex(this=substr)
+                ),
+                group=exp.Literal.number(1),
             )
-
-            return self.sql(exp.cast((hex_strpos + 1) / 2, exp.DType.INT))
+            return self.sql(exp.paren(exp.Length(this=prefix) // 2))
 
         # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:
@@ -3405,6 +3410,9 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(exp.ByteLength(this=blob) * exp.Literal.number(8))
 
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
+        if len(expression.expressions) > 1:
+            return super().chr_sql(expression, name)
+
         arg = expression.expressions[0]
         if arg.is_type(*exp.DataType.REAL_TYPES):
             arg = exp.cast(arg, exp.DType.INT)

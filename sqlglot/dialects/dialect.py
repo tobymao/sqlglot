@@ -1945,10 +1945,10 @@ def build_date_delta(
 def build_date_delta_with_interval(
     expression_class: Type[E],
     default_unit: str | None = None,
-) -> t.Callable[[BuilderArgs], E | None]:
-    def _builder(args: BuilderArgs) -> E | None:
+) -> t.Callable[[BuilderArgs], E]:
+    def _builder(args: BuilderArgs) -> E:
         if len(args) < 2:
-            return None
+            return expression_class(this=seq_get(args, 0))
 
         interval = args[1]
 
@@ -2511,7 +2511,7 @@ def weekstart_unit_to_str(
 def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
+    if unit and not isinstance(unit, exp.Literal):
         return unit
 
     value = unit.name if unit else default
@@ -2909,7 +2909,9 @@ def build_regexp_extract(expr_type: Type[E]) -> t.Callable[[BuilderArgs, Dialect
     return _builder
 
 
-def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
+def explode_to_unnest_sql(
+    self: Generator, expression: exp.Lateral, supports_left_join_unnest: bool = True
+) -> str:
     this = expression.this
     alias = expression.args.get("alias")
 
@@ -2942,6 +2944,10 @@ def explode_to_unnest_sql(self: Generator, expression: exp.Lateral) -> str:
         )
 
     if cross_join_expr:
+        if expression.args.get("outer") or isinstance(this, exp.ExplodeOuter):
+            if supports_left_join_unnest:
+                return self.sql(exp.Join(this=cross_join_expr, side="LEFT", on=exp.true()))
+            self.unsupported("LEFT JOIN UNNEST is not supported, NULL or empty arrays are dropped")
         return self.sql(exp.Join(this=cross_join_expr, kind="cross"))
 
     return self.lateral_sql(expression)

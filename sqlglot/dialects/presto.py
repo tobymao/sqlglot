@@ -12,6 +12,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.presto import PrestoGenerator
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
+from sqlglot.trie import new_trie
 from sqlglot.typing.presto import EXPRESSION_METADATA
 
 
@@ -33,6 +34,39 @@ class Presto(Dialect):
     UUID_IS_STRING_TYPE = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
+
+    # FORMAT_DATETIME's Joda patterns, which DATE_FORMAT's MySQL codes can't always express, e.g. SSS
+    # https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+    JODA_TIME_MAPPING = {
+        "yyyy": "%Y",
+        "yy": "%y",
+        "MMMM": "%B",
+        "MMM": "%b",
+        "MM": "%m",
+        "M": "%-m",
+        "dd": "%d",
+        "d": "%-d",
+        "DDD": "%j",
+        "D": "%-j",
+        "EEEE": "%A",
+        "EEE": "%a",
+        "a": "%p",
+        "HH": "%H",
+        "H": "%-H",
+        "hh": "%I",
+        "h": "%-I",
+        "mm": "%M",
+        "m": "%-M",
+        "ss": "%S",
+        "s": "%-S",
+        "SSS": "%f_three",
+        "SSSSSS": "%f",
+        "z": "%Z",
+        "Z": "%z",
+    }
+    JODA_TIME_TRIE = new_trie(JODA_TIME_MAPPING)
+    INVERSE_JODA_TIME_MAPPING = {v: k for k, v in JODA_TIME_MAPPING.items()}
+    INVERSE_JODA_TIME_TRIE = new_trie(INVERSE_JODA_TIME_MAPPING)
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

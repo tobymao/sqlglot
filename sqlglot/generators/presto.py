@@ -32,7 +32,6 @@ from sqlglot.dialects.hive import Hive
 from sqlglot.generator import unsupported_args
 from sqlglot.helper import is_float
 from sqlglot.optimizer.scope import find_all_in_scope
-from sqlglot.parsers.presto import JODA_INVERSE_TIME_MAPPING, JODA_INVERSE_TIME_TRIE
 from sqlglot.transforms import unqualify_columns
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
@@ -587,10 +586,14 @@ class PrestoGenerator(generator.Generator):
 
     def timetostr_sql(self, expression: exp.TimeToStr) -> str:
         if expression.args.get("joda"):
+            from sqlglot.dialects.presto import Presto
+
             return self.func(
                 "FORMAT_DATETIME",
                 expression.this,
-                self.format_time(expression, JODA_INVERSE_TIME_MAPPING, JODA_INVERSE_TIME_TRIE),
+                self.format_time(
+                    expression, Presto.INVERSE_JODA_TIME_MAPPING, Presto.INVERSE_JODA_TIME_TRIE
+                ),
             )
 
         return self.func("DATE_FORMAT", expression.this, self.format_time(expression))

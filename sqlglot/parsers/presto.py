@@ -11,13 +11,10 @@ from sqlglot.dialects.dialect import (
     build_regexp_extract,
     build_replace_with_optional_replacement,
     date_trunc_to_time,
-    STRICT_TIME_FORMATS,
 )
-from sqlglot.dialects.hive import Hive
 from sqlglot.helper import seq_get
 from sqlglot.time import format_time
 from sqlglot.tokens import TokenType
-from sqlglot.trie import new_trie
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
@@ -58,26 +55,13 @@ def _build_from_unixtime(args: list) -> exp.Expr:
     return exp.UnixToTime.from_arg_list(args)
 
 
-# Joda fields of FORMAT_DATETIME, as in Hive. It only formats, so the padded fields map to the
-# lax codes, which also lets ss.SSS map to a single seconds code such as BigQuery's %E3S.
-# https://trino.io/docs/current/functions/datetime.html#joda-date-functions
-_JODA_FIELDS = {
-    **{k: STRICT_TIME_FORMATS.get(v, v) for k, v in Hive.TIME_MAPPING.items()},
-    "DDD": "%j",
-    "SSS": "%f_three",
-}
-JODA_INVERSE_TIME_MAPPING = {v: k for k, v in _JODA_FIELDS.items()}
-JODA_INVERSE_TIME_TRIE = new_trie(JODA_INVERSE_TIME_MAPPING)
-
-# Only the fields written back the same way, e.g. yyyy but not y or YYYY, and DDD but not DD
-JODA_TIME_MAPPING = {k: v for k, v in _JODA_FIELDS.items() if JODA_INVERSE_TIME_MAPPING[v] == k}
-JODA_TIME_TRIE = new_trie(JODA_TIME_MAPPING)
-
 # A Joda field is a run of one letter, e.g. yyyy or SSS
 JODA_FIELD_RE = re.compile(r"([A-Za-z])\1*")
 
 
 def _build_format_datetime(args: list) -> exp.Expr:
+    from sqlglot.dialects.presto import Presto
+
     fmt = seq_get(args, 1)
 
     # Formats with quoted text, a literal % or a field without a mapping are left as is
@@ -86,13 +70,15 @@ def _build_format_datetime(args: list) -> exp.Expr:
         or not (fmt and fmt.is_string and fmt.name)
         or "'" in fmt.name
         or "%" in fmt.name
-        or any(f.group(0) not in JODA_TIME_MAPPING for f in JODA_FIELD_RE.finditer(fmt.name))
+        or any(f.group(0) not in Presto.JODA_TIME_MAPPING for f in JODA_FIELD_RE.finditer(fmt.name))
     ):
         return exp.Anonymous(this="FORMAT_DATETIME", expressions=args)
 
     return exp.TimeToStr(
         this=seq_get(args, 0),
-        format=exp.Literal.string(format_time(fmt.name, JODA_TIME_MAPPING, JODA_TIME_TRIE)),
+        format=exp.Literal.string(
+            format_time(fmt.name, Presto.JODA_TIME_MAPPING, Presto.JODA_TIME_TRIE)
+        ),
         joda=True,
     )
 

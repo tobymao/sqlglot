@@ -35,6 +35,15 @@ def _build_min(args: list) -> exp.Min | exp.Least:
     return exp.Min.from_arg_list(args)
 
 
+def _build_round(args: list) -> exp.Round:
+    if len(args) > 1:
+        # SQLite treats negative precision as zero, including runtime values.
+        args[1] = exp.Greatest(
+            this=args[1], expressions=[exp.Literal.number(0)], ignore_nulls=False
+        )
+    return exp.Round.from_arg_list(args)
+
+
 def _build_dpipe(
     self: parser.Parser, this: exp.Expr | None, expression: exp.Expr | None
 ) -> exp.DPipe:
@@ -110,6 +119,7 @@ class SQLiteParser(parser.Parser):
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "MAX": _build_max,
         "MIN": _build_min,
+        "ROUND": _build_round,
         "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),

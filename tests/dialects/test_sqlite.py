@@ -10,6 +10,17 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_round_negative_precision(self):
+        self.validate_identity("SELECT ROUND(x)")
+        for precision in ("n", "-2", "0", "2", "NULL"):
+            self.validate_all(
+                f"SELECT ROUND(x, {precision}) FROM t",
+                write={
+                    "sqlite": f"SELECT ROUND(x, MAX({precision}, 0)) FROM t",
+                    "duckdb": f"SELECT ROUND(x, CASE WHEN {precision} IS NULL OR 0 IS NULL THEN NULL ELSE GREATEST({precision}, 0) END) FROM t",
+                },
+            )
+
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
             ("NULL", "NULL"),

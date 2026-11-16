@@ -874,7 +874,11 @@ class BigQueryGenerator(generator.Generator):
         # Escaped %, _ and backslash, and unescaped backslash, get a backslash
         pattern.set(
             "this",
-            re.sub(f"{e}.|\\\\", lambda m: "\\" * (m[0][-1] in "%_\\") + m[0][-1], pattern.name),
+            re.sub(
+                f"{e}[%_{e}]|\\\\",
+                lambda m: "\\" * (m[0][-1] in "%_\\") + m[0][-1],
+                pattern.name,
+            ),
         )
         return self.sql(like)
 

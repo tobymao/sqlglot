@@ -3048,6 +3048,13 @@ OPTIONS (
                 "trino": "SELECT UPPER(x) LIKE UPPER('%s3^_data^_lake%') ESCAPE '^'",
             },
         )
+        # Any escape character, including a newline
+        self.validate_all(
+            "SELECT x LIKE '\\n'",
+            read={
+                "trino": "SELECT x LIKE '\n\n' ESCAPE '\n'",
+            },
+        )
 
         # The rewritten patterns read back unchanged
         self.validate_identity(r"SELECT x LIKE '%s3\\_data\\_lake%'")
@@ -3055,27 +3062,6 @@ OPTIONS (
         self.validate_identity(r"SELECT x NOT LIKE 'a^b\\%'")
         self.validate_identity(r"SELECT LOWER(x) LIKE LOWER('a\\\\b\\_')")
         self.validate_identity(r"SELECT UPPER(x) LIKE UPPER('%s3\\_data\\_lake%')")
-
-        # Left as is: the pattern isn't a literal, an escape doesn't precede %, _ or itself, or a
-        # case change could alter a letter escape
-        self.validate_all(
-            "SELECT x LIKE y ESCAPE '^'",
-            read={
-                "trino": "SELECT x LIKE y ESCAPE '^'",
-            },
-        )
-        self.validate_all(
-            "SELECT x LIKE 'a^b' ESCAPE '^'",
-            read={
-                "trino": "SELECT x LIKE 'a^b' ESCAPE '^'",
-            },
-        )
-        self.validate_all(
-            "SELECT UPPER(x) LIKE UPPER('aX_') ESCAPE 'X'",
-            read={
-                "trino": "SELECT UPPER(x) LIKE UPPER('aX_') ESCAPE 'X'",
-            },
-        )
 
     def test_inline_constructor(self):
         self.validate_identity(

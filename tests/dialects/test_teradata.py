@@ -1,4 +1,6 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse, parse_one
+from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.canonicalize import canonicalize
 from tests.dialects.test_dialect import Validator
 
 
@@ -68,6 +70,107 @@ class TestTeradata(Validator):
         )
         self.validate_identity('SELECT dayofweek, "dayofweek", t.dayofweek FROM t')
         self.validate_identity("SELECT t.DAYOFWEEK(d) FROM t")
+
+    def test_hex_character_string(self):
+        for digits in ("", "0", "0A", "aBcD", "7B31327D"):
+            for suffix in ("XC", "xc"):
+                expression = self.validate_identity(
+                    f"SELECT '{digits}'{suffix} AS s", f"SELECT '{digits}'XC AS s"
+                )
+                literal = expression.expressions[0].this.assert_is(exp.HexString)
+                self.assertEqual(literal.this, digits)
+                self.assertTrue(literal.args.get("is_character"))
+                self.assertNotEqual(literal, exp.HexString(this=digits))
+                self.assertFalse(literal.is_string)
+                for dialect in ("", "teradata", "snowflake"):
+                    self.assertTrue(
+                        annotate_types(literal.copy(), dialect=dialect).is_type(exp.DType.VARCHAR)
+                    )
+                self.assertIsNone(expression.find(exp.Column))
+                self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+                self.assertEqual(expression, exp.Expr.load(expression.dump()))
+        for sql in (
+            "'0A'XC",
+            "('0A'XC)",
+            "VALUES ('0A'XC)",
+            "SELECT CASE WHEN a = 1 THEN '41'XC ELSE '42'XC END FROM t",
+            "SELECT EXISTS(SELECT '0A'XC)",
+            "SELECT EXISTS(SELECT '41'XC FROM u)",
+            "SELECT SUM(a) OVER (PARTITION BY '41'XC) FROM t",
+            "LENGTH('0A'XC)",
+            "COALESCE('0A'XC, NULL)",
+            "CAST('0A'XC AS VARCHAR(10))",
+            "TRUNC(CURRENT_DATE, '4D4D'XC)",
+            "TO_CHAR(CURRENT_DATE, '59595959'XC)",
+            "CAST('20240101'XC AS DATE FORMAT 'YYYY')",
+        ):
+            expression = self.validate_identity(sql)
+            self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+        for sql, expected in (
+            ("SELECT '41'XC::VARCHAR(10)", "SELECT CAST('41'XC AS VARCHAR(10))"),
+            ("SELECT ('41'XC)::VARCHAR(10)", "SELECT CAST(('41'XC) AS VARCHAR(10))"),
+        ):
+            expression = self.validate_identity(sql, expected)
+            self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+        for sql in (
+            "'0G'XC",
+            "'0 A'XC",
+            "'0''A'XC",
+            "SELECT '41' '42'XC",
+            "SELECT '41'XC '42'",
+            "SELECT value LIKE 'a' ESCAPE '21'XC",
+            "CAST('2026' AS DATE FORMAT '59595959'XC)",
+            "TS_OR_DS_TO_DATE('2020-01-01', '59595959'XC)",
+            "STR_TO_DATE('2020-01-01', '59595959'XC)",
+            "INTERVAL '31'XC DAY",
+            "CAST('2026' AS DATE DEFAULT '31'XC ON CONVERSION ERROR FORMAT 'YYYY')",
+        ):
+            with self.assertRaises(ParseError):
+                self.parse_one(sql)
+        self.validate_identity("SELECT 'not hex' XC", "SELECT 'not hex' AS XC")
+        self.validate_identity("SELECT '0A' AS XC")
+        self.validate_identity("SELECT '41'\"XC\"", "SELECT '41' AS \"XC\"")
+        self.validate_identity('SELECT xc, "XC", t.xc FROM t')
+        binary = self.validate_identity("X'0A'").assert_is(exp.HexString)
+        self.assertFalse(binary.args.get("is_character"))
+        self.assertTrue(annotate_types(binary.copy()).is_type(exp.DType.BINARY))
+        self.assertTrue(
+            annotate_types(binary.copy(), dialect="snowflake").is_type(exp.DType.BINARY)
+        )
+        self.assertEqual(binary.sql("dune"), "0x0A")
+        integer = exp.HexString(this="0A", is_integer=True)
+        self.assertTrue(annotate_types(integer.copy()).is_type(exp.DType.BIGINT))
+        self.assertTrue(
+            annotate_types(integer.copy(), dialect="snowflake").is_type(exp.DType.BINARY)
+        )
+        self.assertEqual(integer.sql("dune"), "0x0A")
+        character = exp.HexString(this="20240101", is_character=True)
+        date_add = annotate_types(
+            exp.DateAdd(
+                this=character.copy(), expression=exp.Literal.number(1), unit=exp.var("DAY")
+            ),
+            dialect=self.dialect,
+        )
+        self.assertTrue(date_add.is_type(exp.DType.UNKNOWN))
+        self.assertIsInstance(canonicalize(date_add.copy()).this, exp.HexString)
+        character.type = exp.DType.BINARY.into_expr()
+        with self.assertRaises(UnsupportedError):
+            exp.BitwiseAnd(this=character, expression=exp.Literal.number(1)).sql(
+                "duckdb", unsupported_level=ErrorLevel.RAISE
+            )
+        self.validate_all(
+            "'0A'XC",
+            write={
+                "teradata": "'0A'XC",
+                **{
+                    dialect: UnsupportedError
+                    for dialect in ("", "hive", "duckdb", "dune", "snowflake", "sqlite", "dax")
+                },
+            },
+        )
+        self.assertEqual(
+            "'0A'XC", self.parse_one("'0A'XC").sql("dax", unsupported_level=ErrorLevel.IGNORE)
+        )
 
     def test_execute(self):
         for sql, expected in (

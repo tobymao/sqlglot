@@ -85,6 +85,74 @@ class TeradataParser(parser.Parser):
         TokenType.LOCK: lambda self: self._parse_locking_statement(),
     }
 
+    def _is_hex_character_string(self) -> bool:
+        return (
+            self._curr.token_type == TokenType.STRING
+            and self._next.token_type == TokenType.VAR
+            and self._next.text.upper() == "XC"
+            and self._curr.end + 1 == self._next.start
+        )
+
+    def _parse_atom(self) -> exp.Expr | None:
+        if self._is_hex_character_string():
+            return None
+        return super()._parse_atom()
+
+    def _parse_string(self) -> exp.Expr | None:
+        if self._is_hex_character_string():
+            self.raise_error("Hexadecimal character literals are not supported in this context")
+            return None
+        return super()._parse_string()
+
+    def _parse_primary(self) -> exp.Expr | None:
+        if self._is_hex_character_string():
+            token = self._curr
+            if any(char not in "0123456789abcdefABCDEF" for char in token.text):
+                self.raise_error("Invalid hexadecimal character literal", token)
+            self._advance()
+            expression = self.expression(exp.HexString(this=token.text, is_character=True), token)
+            expression.meta["end"] = self._curr.end
+            expression.meta["col"] = self._curr.col
+            self._advance()
+            self._add_comments(expression)
+            return expression
+        primary = super()._parse_primary()
+        if (
+            self._prev.token_type == TokenType.STRING
+            and self._curr.token_type == TokenType.VAR
+            and self._curr.text.upper() == "XC"
+            and self._is_connected()
+        ):
+            self.raise_error("Adjacent hexadecimal character literals are not supported")
+        return primary
+
+    def _parse_function_call(
+        self,
+        functions: dict[str, t.Callable] | None = None,
+        anonymous: bool = False,
+        optional_parens: bool = True,
+        any_token: bool = False,
+    ) -> exp.Expr | None:
+        expression = super()._parse_function_call(functions, anonymous, optional_parens, any_token)
+        conversion = expression.this if isinstance(expression, exp.Window) else expression
+        if isinstance(conversion, (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)):
+            fmt = conversion.args.get("format")
+            if isinstance(fmt, exp.Expr) and any(
+                e.args.get("is_character") for e in fmt.find_all(exp.HexString)
+            ):
+                self.raise_error(
+                    "Hexadecimal character literals are not supported in conversion formats"
+                )
+        return expression
+
+    def _parse_interval(
+        self, require_interval: bool = True, parse_function_unit: bool = True
+    ) -> exp.Add | exp.Interval | None:
+        interval = super()._parse_interval(require_interval, parse_function_unit)
+        if interval and any(e.args.get("is_character") for e in interval.find_all(exp.HexString)):
+            self.raise_error("Hexadecimal character literals are not supported in intervals")
+        return interval
+
     def _parse_execute(self) -> exp.Execute | exp.Command:
         start = self._prev
         this = self._parse_table_parts(schema=True)

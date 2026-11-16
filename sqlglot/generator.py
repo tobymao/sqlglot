@@ -1679,6 +1679,11 @@ class Generator:
     def hexstring_sql(
         self, expression: exp.HexString, binary_function_repr: str | None = None
     ) -> str:
+        if expression.args.get("is_character"):
+            self.unsupported("Hexadecimal character literals are only supported in Teradata")
+            this = expression.this.replace("'", "''")
+            return f"'{this}'XC"
+
         this = self.sql(expression, "this")
         is_integer_type = expression.args.get("is_integer")
 

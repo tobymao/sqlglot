@@ -1077,7 +1077,7 @@ def _cast_to_bit(arg: exp.Expr) -> exp.Expr:
     if not _is_binary(arg):
         return arg
 
-    if isinstance(arg, exp.HexString):
+    if isinstance(arg, exp.HexString) and not arg.args.get("is_character"):
         arg = exp.Unhex(this=exp.Literal.string(arg.this))
 
     return exp.cast(arg, exp.DType.BIT)

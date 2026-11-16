@@ -734,7 +734,9 @@ LEFT JOIN (
     y.b AS b
   FROM y
 ) AS y
-  ON x.a = y.b;
+  ON x.a = y.b
+ORDER BY
+  x.a;
 SELECT
   x.a
 FROM x
@@ -747,7 +749,9 @@ LEFT JOIN (
     y.b AS b
   FROM y
 ) AS y
-  ON x.a = y.b;
+  ON x.a = y.b
+ORDER BY
+  x.a;
 
 # title: Remove left join on UNION derived table
 # execute: true
@@ -763,7 +767,11 @@ LEFT JOIN (
     y.b AS b
   FROM y
 ) AS y
-  ON x.a = y.b;
+  ON x.a = y.b
+ORDER BY
+  x.a;
 SELECT
   x.a
-FROM x;
+FROM x
+ORDER BY
+  x.a;

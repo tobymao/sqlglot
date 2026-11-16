@@ -418,6 +418,14 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT UNIXEPOCH('now', 'subsec')")
         self.validate_identity("SELECT TIMEDIFF('now', '1809-02-12')")
         self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
+        self.validate_all(
+            "SELECT * FROM GENERATE_SERIES(1, 5 - 1)",
+            read={"duckdb": "SELECT * FROM RANGE(1, 5)"},
+        )
+        self.validate_all(
+            "SELECT * FROM GENERATE_SERIES(5, 1 + 1, -1)",
+            read={"duckdb": "SELECT * FROM RANGE(5, 1, -1)"},
+        )
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
             "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"

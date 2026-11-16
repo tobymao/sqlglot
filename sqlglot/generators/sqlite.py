@@ -7,6 +7,7 @@ from sqlglot.dialects.dialect import (
     any_value_to_max_sql,
     arrow_json_extract_sql,
     count_if_to_sum,
+    generate_series_sql,
     groupconcat_sql,
     no_ilike_sql,
     no_pivot_sql,
@@ -358,7 +359,7 @@ class SQLiteGenerator(generator.Generator):
                 exp.select(exp.alias_("value", column_alias)).from_(expression).subquery()
             )
         else:
-            sql = self.function_fallback_sql(expression)
+            sql = generate_series_sql("GENERATE_SERIES")(self, expression)
 
         return sql
 

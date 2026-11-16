@@ -6,8 +6,6 @@ from sqlglot.errors import OptimizeError
 from sqlglot._typing import E
 from sqlglot.helper import tsort
 
-JOIN_ATTRS = ("on", "side", "kind", "using", "method")
-
 
 def optimize_joins(expression: E) -> E:
     """
@@ -102,7 +100,7 @@ def normalize(expression: E) -> E:
         ):
             continue
 
-        if not any(join.args.get(k) for k in JOIN_ATTRS):
+        if not any(join.args.get(k) for k in exp.Join.QUALIFIERS):
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":

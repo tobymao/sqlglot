@@ -4948,6 +4948,9 @@ class Parser:
         if directed:
             kwargs["directed"] = directed
 
+        if join and not any(kwargs.get(k) for k in exp.Join.QUALIFIERS):
+            kwargs["kind"] = "CROSS"
+
         return self.expression(exp.Join(**kwargs), comments=comments)
 
     def _parse_opclass(self) -> exp.Expr | None:

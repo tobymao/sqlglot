@@ -708,6 +708,8 @@ class Join(Expression):
         "pivots": False,
     }
 
+    QUALIFIERS: t.ClassVar[tuple[str, ...]] = ("on", "using", "side", "kind", "method", "nearest")
+
     @property
     def method(self) -> str:
         return self.text("method").upper()
@@ -1491,7 +1493,10 @@ class Select(Expression, Query):
         except ParseError:
             expression = maybe_parse(expression, into=(Join, Expr), **parse_args)
 
-        join = expression if isinstance(expression, Join) else Join(this=expression)
+        join = expression if isinstance(expression, Join) else Join(this=expression, kind="CROSS")
+
+        if join.kind == "CROSS" and (on or using or join_type):
+            join.set("kind", None)
 
         if isinstance(join.this, Select):
             join.this.replace(join.this.subquery())

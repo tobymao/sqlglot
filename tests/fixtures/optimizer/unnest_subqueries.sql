@@ -64,6 +64,16 @@ SELECT * FROM x WHERE NOT (x.a IN (SELECT y.a AS a FROM y WHERE y.a = x.a));
 SELECT * FROM x WHERE x.a IN (SELECT y.a AS a FROM y WHERE y.b = x.a);
 SELECT * FROM x LEFT JOIN (SELECT ARRAY_AGG(y.a) AS a, y.b AS _u_1 FROM y WHERE TRUE GROUP BY y.b) AS _u_0 ON _u_0._u_1 = x.a WHERE ARRAY_ANY(_u_0.a, _x -> _x = x.a);
 
+# title: correlated IN in an inner JOIN ON is unnested
+# execute: true
+SELECT x.a FROM x JOIN x AS x2 ON x.b = x2.b AND x.a IN (SELECT y.b AS b FROM y WHERE y.c = x.a) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT ARRAY_AGG(y.b) AS b, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.a JOIN x AS x2 ON x.b = x2.b AND ARRAY_ANY(_u_0.b, _x -> _x = x.a) ORDER BY x.a;
+
+# title: correlated IN in QUALIFY is unnested
+# execute: true
+SELECT x.a FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY x.a) > 0 AND x.a IN (SELECT y.b AS b FROM y WHERE y.c = x.a) ORDER BY x.a;
+SELECT x.a FROM x LEFT JOIN (SELECT ARRAY_AGG(y.b) AS b, y.c AS _u_1 FROM y WHERE TRUE GROUP BY y.c) AS _u_0 ON _u_0._u_1 = x.a QUALIFY ROW_NUMBER() OVER (ORDER BY x.a) > 0 AND ARRAY_ANY(_u_0.b, _x -> _x = x.a) ORDER BY x.a;
+
 SELECT * FROM x WHERE x.a < (SELECT SUM(y.a) AS a FROM y WHERE y.a = x.a and y.a = x.b and y.b <> x.d);
 SELECT * FROM x WHERE x.a < (SELECT SUM(y.a) AS a FROM y WHERE y.a = x.a AND y.a = x.b AND y.b <> x.d);
 

@@ -236,6 +236,16 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     ):
         return
 
+    # A missing join match makes IN / ANY NULL instead of FALSE, which is only safe in AND/OR filters
+    if isinstance(parent_predicate, (exp.In, exp.Any)):
+        ancestor = parent_predicate.parent
+        if isinstance(parent_predicate, exp.Any):
+            ancestor = ancestor.parent
+        while isinstance(ancestor, (exp.And, exp.Or, exp.Paren)):
+            ancestor = ancestor.parent
+        if not isinstance(ancestor, (exp.Where, exp.Having, exp.Qualify, exp.Join)):
+            return
+
     # determine location of join that owns the ON clause whose subquery we will decorrelate
     on_clause_join_index = None
     on_clause_ancestor = (
@@ -393,9 +403,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
     if parent_predicate is None and not is_subquery_projection:
         return
 
-    if isinstance(parent_predicate, exp.In) and _is_negated(parent_predicate):
-        return
-
     # if the value of the subquery is not an agg or a key, we need to collect it into an array
     # so that it can be grouped. For subquery projections, we use a MAX aggregation instead.
     agg_func = exp.Max if is_subquery_projection else exp.ArrayAgg
@@ -538,13 +545,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         # Move the generated LEFT JOIN before the join that owns the ON clause
         joins = parent_select.args["joins"]
         parent_select.set("joins", joins.pop(), index=on_clause_join_index, overwrite=False)
-
-
-def _is_negated(expression: exp.Expression) -> bool:
-    parent = expression.parent
-    while isinstance(parent, exp.Paren):
-        parent = parent.parent
-    return isinstance(parent, exp.Not)
 
 
 def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:

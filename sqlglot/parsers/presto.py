@@ -55,8 +55,8 @@ def _build_from_unixtime(args: list) -> exp.Expr:
     return exp.UnixToTime.from_arg_list(args)
 
 
-# A Joda field is a run of one letter, e.g. yyyy or SSS
-JODA_FIELD_RE = re.compile(r"([A-Za-z])\1*")
+# A Joda field is a run of one letter, e.g. yyyy, or seconds with milliseconds
+JODA_FIELD_RE = re.compile(r"ss\.SSS|([A-Za-z])\1*")
 
 
 def _build_format_datetime(args: list) -> exp.Expr:

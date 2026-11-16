@@ -151,7 +151,19 @@ class TestTrino(Validator):
 
         # Empty formats, and formats with quoted text, a literal % or a field without a mapping,
         # are left as is
-        for fmt in ("", "yyyy-MM-dd''T''HH", "%Y", "y", "DD", "yyyyy", "G"):
+        for fmt in (
+            "",
+            "yyyy-MM-dd''T''HH",
+            "%Y",
+            "y",
+            "DD",
+            "yyyyy",
+            "G",
+            "d MMM yyyy",
+            "SSS",
+            "ss.SSSSSS",
+            "HH:mm z",
+        ):
             with self.subTest(fmt=fmt):
                 self.validate_identity(f"FORMAT_DATETIME(t, '{fmt}')")
 

@@ -35,7 +35,10 @@ class Presto(Dialect):
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 
-    # FORMAT_DATETIME's Joda patterns, which DATE_FORMAT's MySQL codes can't always express, e.g. SSS
+    # FORMAT_DATETIME's Joda patterns, which DATE_FORMAT's MySQL codes can't always express, e.g. SSS.
+    # Fields that would format differently elsewhere are left out: fractions of a second other than
+    # ss.SSS (Joda keeps only milliseconds, and BigQuery writes them only with seconds), z and Z
+    # (other dialects don't keep the zone) and d (BigQuery pads it with a space).
     # https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
     JODA_TIME_MAPPING = {
         "yyyy": "%Y",
@@ -45,7 +48,6 @@ class Presto(Dialect):
         "MM": "%m",
         "M": "%-m",
         "dd": "%d",
-        "d": "%-d",
         "DDD": "%j",
         "D": "%-j",
         "EEEE": "%A",
@@ -59,10 +61,7 @@ class Presto(Dialect):
         "m": "%-M",
         "ss": "%S",
         "s": "%-S",
-        "SSS": "%f_three",
-        "SSSSSS": "%f",
-        "z": "%Z",
-        "Z": "%z",
+        "ss.SSS": "%S.%f_three",
     }
     JODA_TIME_TRIE = new_trie(JODA_TIME_MAPPING)
     INVERSE_JODA_TIME_MAPPING = {v: k for k, v in JODA_TIME_MAPPING.items()}

@@ -2814,15 +2814,20 @@ class DuckDBGenerator(generator.Generator):
         position = expression.args.get("position")
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
-        # Convert to HEX strings, use STRPOS, then convert hex position to byte position
         if _is_binary(this):
-            # Build expression: STRPOS(HEX(haystack), HEX(needle))
-            hex_strpos = exp.StrPosition(
-                this=exp.Hex(this=this),
-                substr=exp.Hex(this=substr),
+            # Match whole bytes. The captured sentinel distinguishes an empty needle from no match.
+            prefix = exp.RegexpExtract(
+                this=exp.DPipe(this=exp.Literal.string("x"), expression=exp.Hex(this=this)),
+                expression=exp.DPipe(
+                    this=exp.Literal.string("^(x(?:..)*?)"), expression=exp.Hex(this=substr)
+                ),
+                group=exp.Literal.number(1),
             )
-
-            return self.sql(exp.cast((hex_strpos + 1) / 2, exp.DType.INT))
+            return self.sql(
+                exp.IntDiv(
+                    this=exp.paren(exp.Length(this=prefix) + 1), expression=exp.Literal.number(2)
+                )
+            )
 
         # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:

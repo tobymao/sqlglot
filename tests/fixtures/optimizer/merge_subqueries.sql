@@ -50,6 +50,7 @@ SELECT TRUE IN (x.a > 1, FALSE) AS d FROM x AS x;
 
 # title: Don't wrap the list operand of DuckDB's IN
 # dialect: duckdb
+# execute_min_python: 3.11
 SELECT 1 IN f AS d FROM (SELECT [a, b][1:1] AS f FROM x);
 SELECT 1 IN [x.a, x.b][1:1] AS d FROM x AS x;
 

@@ -43,18 +43,6 @@ JSON_EXTRACT_TYPE = t.Union[exp.JSONExtract, exp.JSONExtractScalar, exp.JSONExtr
 
 DQUOTES_ESCAPING_JSON_FUNCTIONS = ("JSON_QUERY", "JSON_VALUE", "JSON_QUERY_ARRAY")
 
-# Joda fields of Presto/Trino's FORMAT_DATETIME that have an exact BigQuery equivalent
-JODA_TO_BIGQUERY_FORMAT = {
-    "yyyy": "%Y",
-    "MM": "%m",
-    "dd": "%d",
-    "HH": "%H",
-    "mm": "%M",
-    "ss.SSS": "%E3S",
-    "ss": "%S",
-}
-JODA_FORMAT_FIELD_RE = re.compile(r"ss\.SSS|([A-Za-z'%])\1*")
-
 
 def _derived_table_values_to_unnest(self: BigQueryGenerator, expression: exp.Values) -> str:
     if not expression.find_ancestor(exp.From, exp.Join):
@@ -841,30 +829,6 @@ class BigQueryGenerator(generator.Generator):
             return self.sql(exp.Identifier(this=table_parts, quoted=True))
 
         return super().table_parts(expression)
-
-    def anonymous_sql(self, expression: exp.Anonymous) -> str:
-        # Presto/Trino's FORMAT_DATETIME(<value>, <Joda format>) isn't parsed into a known
-        # function, so a format made only of fields with an exact BigQuery equivalent is
-        # translated here. BigQuery formats a value's wall-clock time only for a DATETIME.
-        args = expression.expressions
-        if (
-            expression.name.upper() == "FORMAT_DATETIME"
-            and not isinstance(expression.parent, exp.Dot)
-            and len(args) == 2
-            and args[1].is_string
-        ):
-            # Unmapped fields, quotes and % become "'", which can't otherwise remain
-            fmt = JODA_FORMAT_FIELD_RE.sub(
-                lambda m: JODA_TO_BIGQUERY_FORMAT.get(m.group(0), "'"), args[1].name
-            )
-            if fmt and "'" not in fmt:
-                return self.func(
-                    "FORMAT_DATETIME",
-                    exp.Literal.string(fmt),
-                    exp.cast(args[0], exp.DType.DATETIME),
-                )
-
-        return super().anonymous_sql(expression)
 
     def timetostr_sql(self, expression: exp.TimeToStr) -> str:
         this = expression.this

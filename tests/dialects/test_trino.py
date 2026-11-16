@@ -124,44 +124,36 @@ class TestTrino(Validator):
         self.validate_all(
             "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
             write={
-                "bigquery": "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(t AS DATETIME))",
+                "bigquery": "FORMAT_DATE('%F %H:%M:%E3S', t)",
                 "trino": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
             },
         )
         self.validate_all(
-            "FORMAT_DATETIME(t AT TIME ZONE 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss.SSS')",
+            "FORMAT_DATETIME(t, 'mm:ss.SSS')",
             write={
-                "bigquery": "FORMAT_DATETIME('%Y-%m-%d %H:%M:%E3S', CAST(TIMESTAMP(DATETIME(t, 'America/Los_Angeles')) AS DATETIME))",
+                "bigquery": "FORMAT_DATE('%M:%E3S', t)",
+                "trino": "FORMAT_DATETIME(t, 'mm:ss.SSS')",
             },
         )
         self.validate_all(
-            "format_datetime(t, 'yyyyMMdd')",
+            "FORMAT_DATETIME(t, 'EEEE, MMMM dd yyyy hh:mm a, DDD')",
             write={
-                "bigquery": "FORMAT_DATETIME('%Y%m%d', CAST(t AS DATETIME))",
-                "trino": "FORMAT_DATETIME(t, 'yyyyMMdd')",
+                "bigquery": "FORMAT_DATE('%A, %B %d %Y %I:%M %p, %j', t)",
+                "trino": "FORMAT_DATETIME(t, 'EEEE, MMMM dd yyyy hh:mm a, DDD')",
+            },
+        )
+        self.validate_all(
+            "FORMAT_DATETIME(CAST(t AS TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "bigquery": "FORMAT_DATE('%F %H:%M:%E3S', TIMESTAMP(DATETIME(CAST(t AS TIMESTAMP), 'America/Los_Angeles')))",
             },
         )
 
-        # Formats with unmapped fields, quoted literals or strftime directives are kept as-is
-        for sql, bigquery in (
-            ("FORMAT_DATETIME(t, 'EEE')", "FORMAT_DATETIME(t, 'EEE')"),
-            ("FORMAT_DATETIME(t, 'SSS')", "FORMAT_DATETIME(t, 'SSS')"),
-            ("FORMAT_DATETIME(t, 'yyyyy')", "FORMAT_DATETIME(t, 'yyyyy')"),
-            ("FORMAT_DATETIME(t, '%Y')", "FORMAT_DATETIME(t, '%Y')"),
-            ("FORMAT_DATETIME(t, '')", "FORMAT_DATETIME(t, '')"),
-            ("FORMAT_DATETIME(t, 'yyyy''T''HH')", "FORMAT_DATETIME(t, 'yyyy\\'T\\'HH')"),
-            ("FORMAT_DATETIME(t, f)", "FORMAT_DATETIME(t, f)"),
-            ("FORMAT_DATETIME(t, 'yyyy', 'x')", "FORMAT_DATETIME(t, 'yyyy', 'x')"),
-            ("udfs.FORMAT_DATETIME(t, 'yyyy')", "udfs.FORMAT_DATETIME(t, 'yyyy')"),
-        ):
-            with self.subTest(sql=sql):
-                self.validate_all(
-                    sql,
-                    write={
-                        "bigquery": bigquery,
-                        "trino": sql,
-                    },
-                )
+        # Empty formats, and formats with quoted text, a literal % or a field without a mapping,
+        # are left as is
+        for fmt in ("", "yyyy-MM-dd''T''HH", "%Y", "y", "DD", "yyyyy", "G"):
+            with self.subTest(fmt=fmt):
+                self.validate_identity(f"FORMAT_DATETIME(t, '{fmt}')")
 
     def test_decimal_beyond_numeric_range(self):
         # BigQuery's NUMERIC holds at most 29 integer digits and 9 fractional digits

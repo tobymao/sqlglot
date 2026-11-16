@@ -1945,10 +1945,10 @@ def build_date_delta(
 def build_date_delta_with_interval(
     expression_class: Type[E],
     default_unit: str | None = None,
-) -> t.Callable[[BuilderArgs], E | None]:
-    def _builder(args: BuilderArgs) -> E | None:
+) -> t.Callable[[BuilderArgs], E]:
+    def _builder(args: BuilderArgs) -> E:
         if len(args) < 2:
-            return None
+            return expression_class(this=seq_get(args, 0))
 
         interval = args[1]
 

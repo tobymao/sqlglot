@@ -677,6 +677,14 @@ class TestPresto(Validator):
                 "presto": "CREATE OR REPLACE VIEW x AS SELECT 1 AS cola",
             },
         )
+        self.validate_all(
+            "CREATE VIEW v AS SELECT a AS x, b + 1 AS y FROM t",
+            read={"spark": "CREATE VIEW v (x, y) AS SELECT a, b + 1 AS z FROM t"},
+        )
+        self.validate_all(
+            "CREATE VIEW v AS SELECT * FROM (SELECT a FROM t UNION ALL SELECT b FROM s) AS _q(x)",
+            read={"spark": "CREATE VIEW v (x) AS SELECT a FROM t UNION ALL SELECT b FROM s"},
+        )
 
         self.validate_all(
             """CREATE TABLE IF NOT EXISTS x ("cola" INTEGER, "ds" TEXT) COMMENT 'comment' WITH (PARTITIONED BY=("ds"))""",

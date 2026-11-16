@@ -28,7 +28,12 @@ class TrinoGenerator(PrestoGenerator):
         exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
         exp.CurrentVersion: rename_func("VERSION"),
         exp.FromISO8601TimestampNanos: rename_func("FROM_ISO8601_TIMESTAMP_NANOS"),
-        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
+        exp.GroupConcat: lambda self, e: (
+            groupconcat_sql(self, e, on_overflow=True)
+            if e.this.find(exp.Order)
+            # LISTAGG requires a WITHIN GROUP clause
+            else PrestoGenerator.groupconcat_sql(self, e)
+        ),
         exp.LocationProperty: lambda self, e: self.property_sql(e),
         exp.Merge: merge_without_target_sql,
         exp.Select: transforms.preprocess(
@@ -45,6 +50,12 @@ class TrinoGenerator(PrestoGenerator):
         ),
         exp.TimeStrToTime: lambda self, e: timestrtotime_sql(self, e, include_precision=True),
         exp.Trim: trim_sql,
+        exp.UtcTimestamp: lambda self, e: self.sql(
+            exp.cast(
+                exp.AtTimeZone(this=exp.CurrentTimestamp(), zone=exp.Literal.string("UTC")),
+                exp.DType.TIMESTAMP,
+            )
+        ),
     }
 
     SUPPORTED_JSON_PATH_PARTS = {
@@ -52,6 +63,23 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathRoot,
         exp.JSONPathSubscript,
     }
+
+    def converttimezone_sql(self, expression: exp.ConvertTimezone) -> str:
+        source_tz = expression.args.get("source_tz")
+        timestamp = expression.args.get("timestamp")
+
+        if not (source_tz and timestamp):
+            return super().converttimezone_sql(expression)
+
+        if timestamp.is_string:
+            timestamp = exp.cast(timestamp, exp.DType.TIMESTAMP)
+
+        # AT_TIMEZONE would interpret a TIMESTAMP in the session time zone, so the source time
+        # zone is attached explicitly. The result is converted back to a TIMESTAMP, without
+        # truncating it to the default millisecond precision
+        with_tz = exp.FromTimeZone(this=timestamp, zone=source_tz)
+        converted = exp.AtTimeZone(this=with_tz, zone=expression.args.get("target_tz"))
+        return self.sql(exp.cast(converted, "TIMESTAMP(9)", dialect=self.dialect))
 
     def concatws_sql(self, expression: exp.ConcatWs) -> str:
         if expression.args.get("flatten"):

@@ -36,6 +36,19 @@ from sqlglot.transforms import unqualify_columns
 
 DATE_ADD_OR_SUB = t.Union[exp.DateAdd, exp.TimestampAdd, exp.DateSub]
 
+# https://trino.io/docs/current/functions/url.html
+URL_EXTRACT_FUNCTIONS = {
+    "HOST": "URL_EXTRACT_HOST",
+    "PATH": "URL_EXTRACT_PATH",
+    "PROTOCOL": "URL_EXTRACT_PROTOCOL",
+    "QUERY": "URL_EXTRACT_QUERY",
+    "REF": "URL_EXTRACT_FRAGMENT",
+}
+
+# Maps REGEXP_LIKE match flags to the corresponding (Java / Joni) inline regex flags. The `c` flag
+# (case-sensitive matching) is the default, so it only cancels a preceding `i`
+REGEXP_INLINE_FLAGS = {"c": "", "i": "i", "m": "m", "n": "s", "s": "s", "x": "x"}
+
 
 def _sha2_digest_sql(self: PrestoGenerator, expression: exp.SHA2Digest) -> str:
     length = expression.text("length") or "256"
@@ -357,6 +370,9 @@ class PrestoGenerator(generator.Generator):
         exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
         exp.DayOfWeek: lambda self, e: f"(({self.func('DAY_OF_WEEK', e.this)} % 7) + 1)",
         exp.DayOfWeekIso: rename_func("DAY_OF_WEEK"),
+        exp.Dayname: lambda self, e: self.func(
+            "DATE_FORMAT", e.this, exp.Literal.string("%a" if e.args.get("abbreviated") else "%W")
+        ),
         exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
         exp.DiToDate: lambda self, e: (
             f"CAST(DATE_PARSE(CAST({self.sql(e, 'this')} AS VARCHAR), {type(self.dialect).DATEINT_FORMAT}) AS DATE)"
@@ -374,6 +390,7 @@ class PrestoGenerator(generator.Generator):
         exp.If: if_sql(),
         exp.ILike: no_ilike_sql,
         exp.Initcap: _initcap_sql,
+        exp.IsInf: rename_func("IS_INFINITE"),
         exp.Last: _first_last_sql,
         exp.LastDay: lambda self, e: self.func("LAST_DAY_OF_MONTH", e.this),
         exp.Lateral: _explode_to_unnest_sql,
@@ -383,6 +400,9 @@ class PrestoGenerator(generator.Generator):
         ),
         exp.LogicalAnd: rename_func("BOOL_AND"),
         exp.LogicalOr: rename_func("BOOL_OR"),
+        exp.Monthname: lambda self, e: self.func(
+            "DATE_FORMAT", e.this, exp.Literal.string("%b" if e.args.get("abbreviated") else "%M")
+        ),
         exp.Pivot: no_pivot_sql,
         exp.Quantile: _quantile_sql,
         exp.RegexpExtract: regexp_extract_sql,
@@ -541,6 +561,77 @@ class PrestoGenerator(generator.Generator):
 
         return self.sql(to_unix)
 
+    def addmonths_sql(self, expression: exp.AddMonths) -> str:
+        this = expression.this
+        added = exp.DateAdd(this=this, expression=expression.expression, unit=exp.var("MONTH"))
+
+        if not expression.args.get("preserve_end_of_month"):
+            return self.sql(added)
+
+        # The last day of a month maps to the last day of the target month. The day numbers are
+        # compared instead of the values themselves, so that the time part of timestamps is kept
+        eom_shift = exp.Day(this=exp.LastDay(this=added.copy())) - exp.Day(this=added.copy())
+        to_eom = exp.DateAdd(this=added.copy(), expression=eom_shift, unit=exp.var("DAY"))
+        is_eom = exp.Day(this=this.copy()).eq(exp.Day(this=exp.LastDay(this=this.copy())))
+
+        return self.sql(exp.case().when(is_eom, to_eom).else_(added))
+
+    def parseurl_sql(self, expression: exp.ParseUrl) -> str:
+        part = expression.args.get("part_to_extract")
+        key = expression.args.get("key")
+        name = part.name.upper() if part and part.is_string else ""
+
+        if name == "QUERY" and key:
+            return self.func("URL_EXTRACT_PARAMETER", expression.this, key)
+
+        func = URL_EXTRACT_FUNCTIONS.get(name)
+        if not func:
+            self.unsupported(f"Unsupported PARSE_URL part {name or self.sql(part)}")
+            return self.function_fallback_sql(expression)
+
+        return self.func(func, expression.this)
+
+    def regexplike_sql(self, expression: exp.RegexpLike | exp.RegexpILike) -> str:
+        flag = expression.args.get("flag")
+        pattern = expression.expression
+
+        flags = "i" if isinstance(expression, exp.RegexpILike) else ""
+        if flag:
+            if not flag.is_string:
+                self.unsupported("REGEXP_LIKE only supports constant flags")
+            else:
+                for char in flag.name:
+                    if char in REGEXP_INLINE_FLAGS:
+                        flags = (
+                            flags.replace("i", "")
+                            if char == "c"
+                            else flags + REGEXP_INLINE_FLAGS[char]
+                        )
+                    else:
+                        self.unsupported(f"Unsupported REGEXP_LIKE flag {char}")
+
+        if flags:
+            prefix = f"(?{''.join(dict.fromkeys(flags))})"
+            pattern = (
+                exp.Literal.string(prefix + pattern.name)
+                if pattern.is_string
+                else exp.DPipe(this=exp.Literal.string(prefix), expression=pattern)
+            )
+
+        return self.func("REGEXP_LIKE", expression.this, pattern)
+
+    def regexpilike_sql(self, expression: exp.RegexpILike) -> str:
+        return self.regexplike_sql(expression)
+
+    def tablesample_sql(
+        self, expression: exp.TableSample, tablesample_keyword: str | None = None
+    ) -> str:
+        if expression.args.get("seed"):
+            self.unsupported("TABLESAMPLE doesn't support seeds")
+            expression.set("seed", None)
+
+        return super().tablesample_sql(expression, tablesample_keyword=tablesample_keyword)
+
     def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
         this = expression.this
         is_json = expression.args.get("is_json")
@@ -660,13 +751,43 @@ class PrestoGenerator(generator.Generator):
 
     def create_sql(self, expression: exp.Create) -> str:
         """
-        Presto doesn't support CREATE VIEW with expressions (ex: `CREATE VIEW x (cola)` then `(cola)` is the expression),
-        so we need to remove them
+        Presto doesn't support CREATE VIEW with a column list (ex: `CREATE VIEW x (cola)`), so the
+        names are moved into the view's query instead
         """
         kind = expression.args["kind"]
         schema = expression.this
-        if kind == "VIEW" and schema.expressions:
-            expression.this.set("expressions", None)
+        query = expression.expression
+
+        if kind == "VIEW" and isinstance(schema, exp.Schema) and schema.expressions:
+            columns = [
+                col.this if isinstance(col, exp.ColumnDef) else col for col in schema.expressions
+            ]
+            if any(
+                isinstance(col, exp.ColumnDef) and col.constraints for col in schema.expressions
+            ):
+                self.unsupported("Column constraints and comments are not supported in views")
+
+            if isinstance(query, exp.Query):
+                if (
+                    isinstance(query, exp.Select)
+                    and not query.is_star
+                    and len(query.selects) == len(columns)
+                ):
+                    query.set(
+                        "expressions",
+                        [
+                            exp.alias_(projection.unalias(), column)
+                            for projection, column in zip(query.selects, columns)
+                        ],
+                    )
+                else:
+                    query = exp.select("*").from_(
+                        exp.alias_(query.subquery(), "_q", table=[c.copy() for c in columns])
+                    )
+                expression.set("expression", query)
+
+            expression.set("this", schema.this)
+
         return super().create_sql(expression)
 
     def delete_sql(self, expression: exp.Delete) -> str:

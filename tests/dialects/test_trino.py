@@ -406,6 +406,64 @@ class TestTrino(Validator):
             "SELECT LISTAGG(col, ',') WITHIN GROUP (ORDER BY col DESC) FROM tbl",
         )
 
+        # LISTAGG requires a WITHIN GROUP clause
+        self.validate_all(
+            "SELECT ARRAY_JOIN(ARRAY_AGG(x), '|') FROM t",
+            read={"mysql": "SELECT GROUP_CONCAT(x SEPARATOR '|') FROM t"},
+        )
+
+    def test_temporal_functions(self):
+        self.validate_all(
+            "SELECT CASE WHEN DAY(d) = DAY(LAST_DAY_OF_MONTH(d)) THEN DATE_ADD('DAY', DAY(LAST_DAY_OF_MONTH(DATE_ADD('MONTH', 1, d))) - DAY(DATE_ADD('MONTH', 1, d)), DATE_ADD('MONTH', 1, d)) ELSE DATE_ADD('MONTH', 1, d) END",
+            read={"snowflake": "SELECT ADD_MONTHS(d, 1)"},
+        )
+        self.validate_all(
+            "SELECT CAST(AT_TIMEZONE(WITH_TIMEZONE(ts, 'UTC') AT TIME ZONE 'UTC', 'Asia/Tokyo') AS TIMESTAMP(9))",
+            read={"snowflake": "SELECT CONVERT_TIMEZONE('UTC', 'Asia/Tokyo', ts)"},
+        )
+        self.validate_all(
+            "SELECT CAST(AT_TIMEZONE(CURRENT_TIMESTAMP, 'UTC') AS TIMESTAMP)",
+            read={"mysql": "SELECT UTC_TIMESTAMP()"},
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT(d, '%a'), DATE_FORMAT(d, '%b')",
+            read={"snowflake": "SELECT DAYNAME(d), MONTHNAME(d)"},
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT(d, '%W'), DATE_FORMAT(d, '%M')",
+            read={"duckdb": "SELECT DAYNAME(d), MONTHNAME(d)"},
+        )
+
+    def test_regexp_like_flags(self):
+        self.validate_all(
+            "SELECT REGEXP_LIKE(s, '(?i)a'), REGEXP_LIKE(s, 'a'), REGEXP_LIKE(s, '(?ix)a')",
+            read={
+                "oracle": "SELECT REGEXP_LIKE(s, 'a', 'i'), REGEXP_LIKE(s, 'a', 'ic'), REGEXP_LIKE(s, 'a', 'ix')",
+            },
+        )
+        self.validate_all(
+            "SELECT REGEXP_LIKE(s, '(?i)' || p)",
+            read={"oracle": "SELECT REGEXP_LIKE(s, p, 'i')"},
+        )
+
+    def test_misc_functions(self):
+        self.validate_all(
+            "SELECT URL_EXTRACT_HOST(u), URL_EXTRACT_PARAMETER(u, 'k'), URL_EXTRACT_FRAGMENT(u)",
+            read={
+                "spark": "SELECT PARSE_URL(u, 'HOST'), PARSE_URL(u, 'QUERY', 'k'), PARSE_URL(u, 'REF')"
+            },
+        )
+        self.validate_all("SELECT IS_INFINITE(x)", read={"duckdb": "SELECT ISINF(x)"})
+
+        with self.assertLogs(generator_logger, level="WARNING") as cm:
+            self.assertEqual(
+                parse_one(
+                    "SELECT * FROM t TABLESAMPLE SYSTEM (10) REPEATABLE (1)", read="postgres"
+                ).sql("trino"),
+                "SELECT * FROM t TABLESAMPLE SYSTEM (10)",
+            )
+        self.assertIn("seeds", cm.output[0])
+
     def test_trim(self):
         self.validate_identity("SELECT TRIM('!' FROM '!foo!')")
         self.validate_identity("SELECT TRIM(BOTH '$' FROM '$var$')")

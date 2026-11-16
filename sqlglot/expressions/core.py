@@ -2310,7 +2310,8 @@ class AtIndex(Expression):
 
 
 class AtTimeZone(Expression):
-    arg_types = {"this": True, "zone": True}
+    # session_zone: a zoneless operand is read in the session time zone (e.g. Presto, Trino)
+    arg_types = {"this": True, "zone": True, "session_zone": False}
 
 
 class FromTimeZone(Expression):

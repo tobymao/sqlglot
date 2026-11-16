@@ -7500,6 +7500,15 @@ FROM SEMANTIC_VIEW(
 
     def test_charindex(self):
         self.validate_all(
+            "SELECT CHARINDEX('sub', 'testsubstring', p)",
+            write={
+                "bigquery": "SELECT INSTR('testsubstring', 'sub', IF(p <= 0, 1, p))",
+                "oracle": "SELECT INSTR('testsubstring', 'sub', CASE WHEN p <= 0 THEN 1 ELSE p END)",
+                "mysql": "SELECT LOCATE('sub', 'testsubstring', IF(p <= 0, 1, p))",
+                "tsql": "SELECT CHARINDEX('sub', 'testsubstring', p)",
+            },
+        )
+        self.validate_all(
             "SELECT CHARINDEX('sub', 'testsubstring', -1)",
             write={
                 "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', -1)",

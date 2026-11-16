@@ -247,7 +247,7 @@ class TSQLGenerator(generator.Generator):
         ),
         exp.Stddev: rename_func("STDEV"),
         exp.StrPosition: lambda self, e: strposition_sql(
-            self, e, func_name="CHARINDEX", supports_position=True
+            self, e, func_name="CHARINDEX", supports_position=True, clamps_position=True
         ),
         exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
         exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),

@@ -1612,6 +1612,7 @@ def strposition_sql(
     supports_position: bool = False,
     supports_occurrence: bool = False,
     use_ansi_position: bool = True,
+    clamps_position: bool = False,
 ) -> str:
     string = expression.this
     substr = expression.args.get("substr")
@@ -1632,6 +1633,8 @@ def strposition_sql(
     else:
         args = [substr, string] if func_name in ("LOCATE", "CHARINDEX") else [string, substr]
         if supports_position:
+            if position and expression.args.get("clamp_position") and not clamps_position:
+                position = exp.If(this=position <= zero, true=one, false=position.copy())
             args.append(position)
         if occurrence:
             if supports_occurrence:

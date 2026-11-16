@@ -131,6 +131,7 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 
 # Projections in the outer query that are instances of these types can be replaced
 # without getting wrapped in parentheses, because the precedence won't be altered.
+# AND / OR are Funcs too, but they need parentheses, see _must_wrap.
 SAFE_TO_REPLACE_UNWRAPPED = (
     exp.Column,
     exp.Func,
@@ -647,12 +648,10 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
 
 def _must_wrap(expression: exp.Expr, column: exp.Column) -> bool:
     parent = column.parent
-    key = column.arg_key
 
     if isinstance(parent, exp.Paren) or not (
-        isinstance(parent, (exp.Unary, exp.Binary))
-        or (isinstance(parent, exp.In) and key == "this")
-        or (isinstance(parent, exp.Between) and key in ("this", "low", "high"))
+        isinstance(parent, (exp.Unary, exp.Binary, exp.Between))
+        or (isinstance(parent, exp.In) and column.arg_key == "this")
     ):
         return False
 

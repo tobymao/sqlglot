@@ -44,6 +44,10 @@ SELECT (x.a = 1) IN (FALSE) AS d FROM x AS x;
 SELECT c AND b = 1 AS d FROM (SELECT a = 1 AS c, b FROM x);
 SELECT x.a = 1 AND x.b = 1 AS d FROM x AS x;
 
+# title: Wrap OR in AND
+SELECT c AND b > 0 AS d FROM (SELECT a > 1 OR b > 1 AS c, b FROM x);
+SELECT (x.a > 1 OR x.b > 1) AND x.b > 0 AS d FROM x AS x;
+
 # title: Don't wrap an IN list element
 SELECT TRUE IN (c, FALSE) AS d FROM (SELECT a > 1 AS c FROM x);
 SELECT TRUE IN (x.a > 1, FALSE) AS d FROM x AS x;

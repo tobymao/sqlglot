@@ -854,15 +854,48 @@ class BigQueryGenerator(generator.Generator):
 
         return self.binary(expression, "=")
 
+    def escape_sql(self, expression: exp.Escape) -> str:
+        # BigQuery's LIKE has no ESCAPE clause and always escapes with a backslash, so a literal
+        # pattern is rewritten to backslash escapes. UPPER/LOWER around it can't change a
+        # caseless escape character, e.g. ^, so those patterns are rewritten too.
+        like, char = expression.this.copy(), expression.expression.name
+        pattern = like.expression
+        if isinstance(pattern, (exp.Upper, exp.Lower)) and char.upper() == char.lower():
+            pattern = pattern.this
+        e = re.escape(char)
+        if not (
+            isinstance(like, exp.Like)
+            and expression.expression.is_string
+            and len(char) == 1
+            and pattern.is_string
+            and re.fullmatch(f"(?:[^{e}]|{e}[%_{e}])*", pattern.name)
+        ):
+            return super().escape_sql(expression)
+
+        # Escaped %, _ and backslash, and unescaped backslash, get a backslash
+        pattern.set(
+            "this",
+            re.sub(
+                f"{e}[%_{e}]|\\\\",
+                lambda m: "\\" * (m[0][-1] in "%_\\") + m[0][-1],
+                pattern.name,
+            ),
+        )
+        return self.sql(like)
+
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
         parent = expression.parent
 
         # BigQuery allows CAST(.. AS {STRING|TIMESTAMP} [FORMAT <fmt> [AT TIME ZONE <tz>]]).
         # Only the TIMESTAMP one should use the below conversion, when AT TIME ZONE is included.
         if not isinstance(parent, exp.Cast) or not parent.to.is_type("text"):
-            return self.func(
-                "TIMESTAMP", self.func("DATETIME", expression.this, expression.args.get("zone"))
-            )
+            this = expression.this
+            if expression.args.get("session_zone"):
+                # DATETIME(<ts>, <zone>) only accepts a TIMESTAMP and BigQuery reads a DATETIME
+                # cast to TIMESTAMP as UTC, so this assumes the source session time zone is UTC
+                this = exp.cast(this, exp.DType.TIMESTAMPTZ)
+
+            return self.func("TIMESTAMP", self.func("DATETIME", this, expression.args.get("zone")))
 
         return super().attimezone_sql(expression)
 

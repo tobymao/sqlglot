@@ -2324,6 +2324,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     f"SELECT x.a FROM x WHERE ({predicate}) = FALSE",
                     f"SELECT x.a FROM x WHERE ({predicate}) AND x.a > 1",
                     f"SELECT x.a FROM x WHERE ({predicate}) OR x.a > 1",
+                    f"SELECT x.a FROM x JOIN x AS x2 ON x.b = x2.b AND ({predicate}) = FALSE",
+                    "SELECT x.a FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY x.a) > 0 "
+                    f"AND ({predicate}) = FALSE",
                     f"SELECT x.a FROM x GROUP BY x.a HAVING ({predicate}) IS NULL",
                     f"SELECT x.a FROM x ORDER BY ({predicate}), x.a",
                 ):

@@ -809,6 +809,9 @@ class Simplifier:
             node = self.simplify_literals(node, root)
             node = self.simplify_equality(node)
             node = simplify_parens(node, dialect=self.dialect)
+            # simplify_parens may have unwrapped a Paren, so make sure the following
+            # rules see the real parent and not the Paren that is about to be replaced
+            node.parent = parent
             node = self.simplify_datetrunc(node)
             node = self.sort_comparison(node)
             node = self.simplify_startswith(node)

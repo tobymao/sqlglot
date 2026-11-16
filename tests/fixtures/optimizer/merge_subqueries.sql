@@ -28,9 +28,30 @@ SELECT (x.a > 1) IN (FALSE) AS d FROM x AS x;
 SELECT c BETWEEN FALSE AND TRUE AS d FROM (SELECT a IS NULL AS c FROM x);
 SELECT (x.a IS NULL) BETWEEN FALSE AND TRUE AS d FROM x AS x;
 
+# title: Wrap comparison used as a BETWEEN bound
+SELECT FALSE BETWEEN FALSE AND c AS d FROM (SELECT a > 1 AS c FROM x);
+SELECT FALSE BETWEEN FALSE AND (x.a > 1) AS d FROM x AS x;
+
+# title: Wrap AND in IN
+SELECT c IN (FALSE) AS d FROM (SELECT a > 1 AND b > 1 AS c FROM x);
+SELECT (x.a > 1 AND x.b > 1) IN (FALSE) AS d FROM x AS x;
+
+# title: Wrap equality in IN
+SELECT c IN (FALSE) AS d FROM (SELECT a = 1 AS c FROM x);
+SELECT (x.a = 1) IN (FALSE) AS d FROM x AS x;
+
+# title: Don't wrap equality in AND
+SELECT c AND b = 1 AS d FROM (SELECT a = 1 AS c, b FROM x);
+SELECT x.a = 1 AND x.b = 1 AS d FROM x AS x;
+
 # title: Don't wrap an IN list element
 SELECT TRUE IN (c, FALSE) AS d FROM (SELECT a > 1 AS c FROM x);
 SELECT TRUE IN (x.a > 1, FALSE) AS d FROM x AS x;
+
+# title: Don't wrap the list operand of DuckDB's IN
+# dialect: duckdb
+SELECT 1 IN f AS d FROM (SELECT [a] || [b] AS f FROM x);
+SELECT 1 IN [x.a] || [x.b] AS d FROM x AS x;
 
 # title: Don't wrap a wrapped expression
 SELECT foo * 2 AS bar FROM (SELECT (1 + 2 + 3) AS foo FROM x);

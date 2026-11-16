@@ -133,9 +133,7 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 # without getting wrapped in parentheses, because the precedence won't be altered.
 SAFE_TO_REPLACE_UNWRAPPED = (
     exp.Column,
-    exp.EQ,
     exp.Func,
-    exp.NEQ,
     exp.Paren,
 )
 
@@ -598,7 +596,6 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
             continue
 
         expression = expression.unalias()
-        must_wrap_expression = not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
 
         is_number = expression.is_number
         last = len(columns_to_replace) - 1
@@ -634,7 +631,7 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
 
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).
-            if isinstance(parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
+            if _must_wrap(expression, column):
                 replacement = exp.paren(replacement, copy=False)
 
             # make sure we do not accidentally change the name of the column
@@ -646,6 +643,28 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
     if outer_columns:
         for scope in outer_scope.traverse():
             scope.clear_cache()
+
+
+def _must_wrap(expression: exp.Expr, column: exp.Column) -> bool:
+    parent = column.parent
+    key = column.arg_key
+
+    if isinstance(parent, exp.Paren) or not (
+        isinstance(parent, (exp.Unary, exp.Binary))
+        or (isinstance(parent, exp.In) and key == "this")
+        or (isinstance(parent, exp.Between) and key in ("this", "low", "high"))
+    ):
+        return False
+
+    # AND / OR are Funcs, but they bind looser than any operator they can be nested in
+    if isinstance(expression, exp.Connector):
+        return True
+
+    # = and <> are safe under AND / OR, but e.g. Postgres binds IN and BETWEEN tighter than them
+    if isinstance(expression, (exp.EQ, exp.NEQ)):
+        return not isinstance(parent, exp.Connector)
+
+    return not isinstance(expression, SAFE_TO_REPLACE_UNWRAPPED)
 
 
 def _merge_where(outer_scope: Scope, inner_scope: Scope, from_or_join: FromOrJoin) -> None:

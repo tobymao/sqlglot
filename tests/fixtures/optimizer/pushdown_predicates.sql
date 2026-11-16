@@ -217,3 +217,10 @@ SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) JOIN z ON x.a = z.b WHERE y.b
 # dialect: duckdb
 SELECT s.a, p.b FROM (SELECT a FROM x) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON s.a = p.b WHERE s.a = 2;
 SELECT s.a, p.b FROM (SELECT a FROM x WHERE a = 2) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON p.b = s.a WHERE TRUE;
+
+# title: WHERE on a table inside a parenthesized join is not pushed into it
+SELECT x.a FROM x JOIN (y JOIN z ON y.b = z.b) ON x.b = y.b WHERE z.c = 1;
+SELECT x.a FROM x JOIN (y JOIN z ON y.b = z.b) ON x.b = y.b WHERE z.c = 1;
+
+SELECT x.a FROM x JOIN (y JOIN z ON y.b = z.b) ON x.b = y.b WHERE (z.c = 1 AND x.a = 1) OR (z.c = 2 AND x.a = 2);
+SELECT x.a FROM x JOIN (y JOIN z ON y.b = z.b) ON x.b = y.b WHERE (x.a = 1 AND z.c = 1) OR (x.a = 2 AND z.c = 2);

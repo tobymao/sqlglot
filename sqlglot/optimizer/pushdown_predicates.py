@@ -151,8 +151,11 @@ def pushdown_cnf(
 
                 if join_index:
                     # Don't push the predicate if it references tables that appear in later joins
-                    this_index = join_index[name]
-                    if all(join_index.get(table, -1) < this_index for table in predicate_tables):
+                    # A join nested in a parenthesized join isn't in join_index; leave it alone
+                    this_index = join_index.get(name)
+                    if this_index is not None and all(
+                        join_index.get(table, -1) < this_index for table in predicate_tables
+                    ):
                         predicate.replace(exp.true())
                         node.on(predicate, copy=False)
                         break
@@ -219,9 +222,11 @@ def pushdown_dnf(
 
         if isinstance(table_node, exp.Join):
             if join_index:
-                this_index = join_index[table]
+                this_index = join_index.get(table)
                 predicate_tables = exp.column_table_names(predicate, table)
-                if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
+                if this_index is None or not all(
+                    join_index.get(t, -1) < this_index for t in predicate_tables
+                ):
                     continue
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):

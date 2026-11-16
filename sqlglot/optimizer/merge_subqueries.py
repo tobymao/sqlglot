@@ -131,7 +131,6 @@ UNMERGABLE_ARGS = set(exp.Select.arg_types) - {
 
 # Projections in the outer query that are instances of these types can be replaced
 # without getting wrapped in parentheses, because the precedence won't be altered.
-# AND / OR are Funcs too, but they need parentheses, see _must_wrap.
 SAFE_TO_REPLACE_UNWRAPPED = (
     exp.Column,
     exp.Func,

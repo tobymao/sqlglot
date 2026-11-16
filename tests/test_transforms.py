@@ -170,6 +170,14 @@ class TestTransforms(unittest.TestCase):
                 "SELECT DISTINCT g FROM t QUALIFY RANK() OVER (ORDER BY v) <= 4 ORDER BY g DESC",
                 [(4,), (3,), (2,), (1,)],
             ),
+            (
+                "SELECT DISTINCT g FROM t QUALIFY RANK() OVER (ORDER BY g) <= 3 ORDER BY t.g",
+                [(1,), (2,)],
+            ),
+            (
+                "SELECT g, v AS w FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) = 1 ORDER BY w * -1",
+                [(2, 20), (1, 10), (3, 5), (4, 1)],
+            ),
         ):
             with self.subTest(sql):
                 transpiled = parse_one(sql, read="duckdb").sql("sqlite")
@@ -292,6 +300,30 @@ class TestTransforms(unittest.TestCase):
             eliminate_qualify,
             "SELECT * FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY c LIMIT 1",
             "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY c LIMIT 1",
+        )
+
+        # DISTINCT ON picks the first row of each group by the ORDER BY, so both stay in the subquery
+        self.validate(
+            eliminate_qualify,
+            "SELECT DISTINCT ON (a) a, b FROM x QUALIFY COUNT(*) OVER (PARTITION BY a) > 1 ORDER BY a, b DESC",
+            "SELECT a, b FROM (SELECT DISTINCT ON (a) a, b, COUNT(*) OVER (PARTITION BY a) AS _w FROM x ORDER BY a, b DESC) AS _t WHERE _w > 1",
+        )
+        # Sort keys that only use projections are written over the columns of the subquery
+        self.validate(
+            eliminate_qualify,
+            "SELECT DISTINCT a FROM x QUALIFY RANK() OVER (ORDER BY a) <= 3 ORDER BY x.a",
+            "SELECT DISTINCT a FROM (SELECT a, RANK() OVER (ORDER BY a) AS _w FROM x) AS _t WHERE _w <= 3 ORDER BY a",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, b AS w FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY w * -1",
+            "SELECT a, w FROM (SELECT a, b AS w, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY w * -1",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY ALL DESC",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY ALL DESC",
+            dialect="duckdb",
         )
 
     def test_remove_precision_parameterized_types(self):

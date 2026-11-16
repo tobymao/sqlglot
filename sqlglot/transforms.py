@@ -165,37 +165,87 @@ def _resolve_projection(key: exp.Expr, selects: list[exp.Expr]) -> exp.Expr:
     return key
 
 
+def _find_projection(expression: exp.Expr, selects: list[exp.Expr]) -> exp.Expr | None:
+    """Returns the projection that computes `expression`, if there is one."""
+    for select in selects:
+        projected = select.unalias()
+        if projected == expression:
+            return select
+        if (
+            isinstance(expression, exp.Column)
+            and isinstance(projected, exp.Column)
+            and projected.name == expression.name
+            and (not projected.table or not expression.table or projected.table == expression.table)
+        ):
+            return select
+
+    return None
+
+
+def _order_key_over_outputs(key: exp.Expr, inner: exp.Select) -> exp.Expr | None:
+    """
+    Rewrites an ORDER BY key of `inner` in terms of its output columns, so that it can be used in a
+    query that selects from it. Returns None if the key uses a column that is not projected.
+    """
+    selects = inner.selects
+    select = _find_projection(key, selects)
+    if select is not None:
+        return _output_column(select)
+
+    has_star = any(select.is_star for select in selects)
+    missing = False
+
+    def _replace(node: exp.Expr) -> exp.Expr:
+        nonlocal missing
+        if not isinstance(node, exp.Column):
+            return node
+        if not node.table and node.name in inner.named_selects:
+            # A reference to a projection alias
+            return exp.column(node.this.copy())
+
+        select = _find_projection(node, selects)
+        if select is not None:
+            return _output_column(select)
+        if has_star:
+            # The column is exposed by the star, so it can be referenced directly
+            return exp.column(node.this.copy())
+
+        missing = True
+        return node
+
+    rewritten = key.transform(_replace)
+    return None if missing else rewritten
+
+
 def _hoist_order_and_limit(inner: exp.Select, outer: exp.Select) -> None:
     """
     Moves the ORDER BY, LIMIT and OFFSET clauses of `inner` to `outer`, which filters the rows of
     `inner` after they have been projected, so these clauses must be applied on top of that filter.
 
-    The ordering is expressed in terms of the projections of `inner`. If a sort key is not one of
-    them, it is projected in `inner` under a new name.
+    The ordering is expressed in terms of the projections of `inner`. Only a sort key that uses a
+    column which is not projected is itself projected in `inner`, under a new name.
     """
+    distinct = inner.args.get("distinct")
+    if distinct and distinct.args.get("on"):
+        # DISTINCT ON keeps the first row of each group according to the ORDER BY of the same query
+        return
+
     order = inner.args.pop("order", None)
     if order:
-        outputs = {select.unalias(): select for select in inner.selects}
-        has_star = any(select.is_star for select in inner.selects)
         for ordered in order.expressions:
             key = ordered.this
-            if key.is_int or (
-                isinstance(key, exp.Column) and not key.table and key.name in inner.named_selects
-            ):
+            if not key.find(exp.Column):
+                # e.g. a position or ORDER BY ALL, which refer to the outer projections as well
                 continue
 
-            select = outputs.get(key)
-            if not select and has_star and isinstance(key, exp.Column):
-                # The column is exposed by the star, so it can be referenced directly
-                key.replace(exp.column(key.this.copy()))
-                continue
-
-            if not select:
+            outer_key = _order_key_over_outputs(key, inner)
+            if outer_key is None:
                 alias = find_new_name(inner.named_selects, "_o")
                 select = exp.alias_(key.copy(), alias)
                 inner.select(select, copy=False)
+                outer_key = _output_column(select)
 
-            key.replace(_output_column(select))
+            key.replace(outer_key)
 
         outer.set("order", order)
 

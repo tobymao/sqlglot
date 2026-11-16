@@ -634,7 +634,10 @@ def _merge_expressions(outer_scope: Scope, inner_scope: Scope, alias: str) -> No
 
             # Ensures we don't alter the intended operator precedence if there's additional
             # context surrounding the outer expression (i.e. it's not a simple projection).
-            if isinstance(parent, (exp.Unary, exp.Binary)) and must_wrap_expression:
+            if must_wrap_expression and (
+                isinstance(parent, (exp.Unary, exp.Binary))
+                or (isinstance(parent, exp.Predicate) and column.arg_key != "expressions")
+            ):
                 replacement = exp.paren(replacement, copy=False)
 
             # make sure we do not accidentally change the name of the column

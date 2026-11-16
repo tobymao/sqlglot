@@ -20,6 +20,18 @@ SELECT (x.a * x.b) + x.a AS e FROM x AS x;
 SELECT 2 * foo AS bar FROM (SELECT CAST(b AS DOUBLE) AS foo FROM x);
 SELECT 2 * CAST(x.b AS DOUBLE) AS bar FROM x AS x;
 
+# title: Wrap comparison in IN
+SELECT c IN (FALSE) AS d FROM (SELECT a > 1 AS c FROM x);
+SELECT (x.a > 1) IN (FALSE) AS d FROM x AS x;
+
+# title: Wrap IS NULL in BETWEEN
+SELECT c BETWEEN FALSE AND TRUE AS d FROM (SELECT a IS NULL AS c FROM x);
+SELECT (x.a IS NULL) BETWEEN FALSE AND TRUE AS d FROM x AS x;
+
+# title: Don't wrap an IN list element
+SELECT TRUE IN (c, FALSE) AS d FROM (SELECT a > 1 AS c FROM x);
+SELECT TRUE IN (x.a > 1, FALSE) AS d FROM x AS x;
+
 # title: Don't wrap a wrapped expression
 SELECT foo * 2 AS bar FROM (SELECT (1 + 2 + 3) AS foo FROM x);
 SELECT (1 + 2 + 3) * 2 AS bar FROM x AS x;

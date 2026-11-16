@@ -13,13 +13,26 @@ class TestSQLite(Validator):
     def test_round_negative_precision(self):
         self.validate_identity("SELECT ROUND(x)")
         for precision in ("n", "-2", "0", "2", "NULL"):
+            normalized = f"SELECT ROUND(x, MAX({precision}, 0)) FROM t"
             self.validate_all(
                 f"SELECT ROUND(x, {precision}) FROM t",
                 write={
-                    "sqlite": f"SELECT ROUND(x, MAX({precision}, 0)) FROM t",
+                    "sqlite": normalized,
                     "duckdb": f"SELECT ROUND(x, CASE WHEN {precision} IS NULL OR 0 IS NULL THEN NULL ELSE GREATEST({precision}, 0) END) FROM t",
                 },
             )
+            for _ in range(3):
+                normalized_again = parse_one(normalized, dialect="sqlite").sql(dialect="sqlite")
+                self.assertEqual(normalized_again, normalized)
+                normalized = normalized_again
+
+        self.validate_identity("SELECT ROUND(x, MAX(0, n))")
+        self.validate_identity("SELECT ROUND(x, MAX(n, 0, m))")
+        precision = parse_one("ROUND(x, GREATEST(n, 0))", dialect="sqlite").args["decimals"]
+        self.assertIsInstance(precision, exp.Greatest)
+        self.assertIs(precision.args["ignore_nulls"], False)
+        self.assertIsInstance(precision.this, exp.Greatest)
+        self.assertIs(precision.this.args["ignore_nulls"], True)
 
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (

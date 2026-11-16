@@ -37,10 +37,16 @@ def _build_min(args: list) -> exp.Min | exp.Least:
 
 def _build_round(args: list) -> exp.Round:
     if len(args) > 1:
-        # SQLite treats negative precision as zero, including runtime values.
-        args[1] = exp.Greatest(
-            this=args[1], expressions=[exp.Literal.number(0)], ignore_nulls=False
+        precision = args[1]
+        zero = exp.Literal.number(0)
+        already_clamped = (
+            isinstance(precision, exp.Greatest)
+            and precision.args.get("ignore_nulls") is False
+            and (precision.this == zero or zero in precision.expressions)
         )
+        if not already_clamped:
+            # SQLite treats negative precision as zero, including runtime values.
+            args[1] = exp.Greatest(this=precision, expressions=[zero], ignore_nulls=False)
     return exp.Round.from_arg_list(args)
 
 

@@ -81,13 +81,16 @@ def _annotate_int_pair_as_double(
     | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
     | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
     +------------+------------+------------+-------------+---------+
-    """
-    if expression.this.is_type(*exp.DataType.INTEGER_TYPES) and expression.expression.is_type(
-        *exp.DataType.INTEGER_TYPES
-    ):
-        return self._set_type(expression, exp.DType.DOUBLE)
 
-    return _annotate_by_args_with_coerce(self, expression)
+    NULL operands coerce the same way INT64 does, since BigQuery treats a bare NULL
+    argument as an unresolved integer-family type for this promotion.
+    """
+    _annotate_by_args_with_coerce(self, expression)
+
+    if expression.is_type(exp.DType.NULL, *exp.DataType.INTEGER_TYPES):
+        self._set_type(expression, exp.DType.DOUBLE)
+
+    return expression
 
 
 def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:

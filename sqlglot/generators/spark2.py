@@ -237,9 +237,13 @@ class Spark2Generator(HiveGenerator):
     CREATE_FUNCTION_RETURN_AS = False
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
-        if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND") and not (
-            expression.expression.is_number or expression.expression.is_string
-        ):
+        if expression.text("unit").upper() in (
+            "HOUR",
+            "MINUTE",
+            "SECOND",
+            "MILLISECOND",
+            "MICROSECOND",
+        ) and not (expression.expression.is_number or expression.expression.is_string):
             self.unsupported("Spark 2 does not support non-literal sub-day date arithmetic")
 
         return super().dateadd_sql(expression)

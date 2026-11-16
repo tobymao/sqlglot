@@ -2213,6 +2213,24 @@ WHERE
             },
         )
 
+        for unit in ("MILLISECOND", "MICROSECOND"):
+            self.validate_all(
+                f"SELECT DATEADD({unit}, 500, ts) FROM t",
+                write={
+                    "hive": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '500' {unit} FROM t",
+                    "spark2": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '500' {unit} FROM t",
+                    "spark": f"SELECT TIMESTAMPADD({unit}, 500, ts) FROM t",
+                },
+            )
+            self.validate_all(
+                f"SELECT DATEADD({unit}, -500, ts) FROM t",
+                write={
+                    "hive": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '-500' {unit} FROM t",
+                    "spark2": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '-500' {unit} FROM t",
+                    "spark": f"SELECT TIMESTAMPADD({unit}, -500, ts) FROM t",
+                },
+            )
+
     def test_date_diff(self):
         self.validate_identity("SELECT DATEDIFF(HOUR, 1.5, '2021-01-01')")
         self.validate_identity("SELECT DATEDIFF_BIG(HOUR, 1.5, '2021-01-01')")

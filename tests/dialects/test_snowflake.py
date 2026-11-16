@@ -4011,6 +4011,20 @@ class TestSnowflake(Validator):
             },
         )
 
+        for unit in ("MILLISECOND", "MICROSECOND"):
+            for amount in ("500", "-500", "0"):
+                self.validate_all(
+                    f"SELECT DATEADD({unit}, {amount}, ts) FROM t",
+                    read={
+                        "snowflake": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                    write={
+                        "hive": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
+                        "spark2": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
+                        "spark": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                )
+
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
         self.validate_identity("SELECT DATE_PART(month, a)")

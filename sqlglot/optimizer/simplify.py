@@ -1868,6 +1868,9 @@ class Gen:
     def mul_sql(self, e: exp.Mul) -> None:
         self._binary(e, " * ")
 
+    def pos_sql(self, e: exp.Pos) -> None:
+        self._unary(e, "+")
+
     def neg_sql(self, e: exp.Neg) -> None:
         self._unary(e, "-")
 

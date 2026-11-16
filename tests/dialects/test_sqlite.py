@@ -1,3 +1,5 @@
+import sqlite3
+
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -7,6 +9,41 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_unary_plus(self):
+        for sql in (
+            "SELECT +x FROM t",
+            "SELECT +t.x FROM t",
+            "SELECT +(x + 1) FROM t",
+            "SELECT ++x, +-x, -+x FROM t",
+            "SELECT +x COLLATE NOCASE FROM t",
+            "SELECT 5 IS +TRUE, 5 IS NOT +TRUE, 0 IS +FALSE",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql)
+
+    def test_unary_plus_preserves_affinity(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            connection.executescript(
+                "CREATE TABLE t (x TEXT); INSERT INTO t VALUES ('1'), ('2'), ('01'), (NULL);"
+            )
+            for sql in (
+                "SELECT x FROM t WHERE +x = 1",
+                "SELECT x FROM t WHERE +x IN (1, 2)",
+                "SELECT x FROM t WHERE +x < 2 ORDER BY x",
+                "SELECT x FROM t WHERE +x IS 1",
+                "SELECT x FROM t WHERE +x = '1'",
+                "SELECT 5 IS +TRUE, 5 IS TRUE, 0 IS +FALSE",
+            ):
+                with self.subTest(sql=sql):
+                    generated = self.parse_one(sql).sql("sqlite")
+                    self.assertEqual(
+                        connection.execute(sql).fetchall(),
+                        connection.execute(generated).fetchall(),
+                    )
+        finally:
+            connection.close()
 
     def test_pragma_quoted_names(self):
         for source, expected in (

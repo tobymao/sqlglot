@@ -521,6 +521,12 @@ class PrestoGenerator(generator.Generator):
             expression.set("expressions", None)
         return super().datatype_sql(expression)
 
+    def exists_sql(self, expression: exp.Exists) -> str:
+        if expression.expression:
+            return self.func("ANY_MATCH", expression.this, expression.expression)
+
+        return super().exists_sql(expression)
+
     def extract_sql(self, expression: exp.Extract) -> str:
         date_part = expression.name
 

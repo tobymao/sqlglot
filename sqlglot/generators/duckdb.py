@@ -1745,7 +1745,6 @@ class DuckDBGenerator(generator.Generator):
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES", "RANGE"),
         exp.GenerateTimestampArray: _generate_datetime_array_sql,
         exp.Getbit: getbit_sql,
-        exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, within_group=False),
         exp.Explode: rename_func("UNNEST"),
         exp.IcebergProperty: lambda *_: "",
         exp.IntDiv: lambda self, e: self.binary(e, "//"),
@@ -3715,6 +3714,18 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(
             exp.replace_placeholders(self.ARRAY_EXCEPT_SET_TEMPLATE, arr1=arr1, arr2=arr2)
         )
+
+    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+        separator = expression.args.get("separator")
+        if (
+            expression.args.get("null_separator_is_empty")
+            and separator is not None
+            and not separator.is_string
+        ):
+            expression.set(
+                "separator", exp.Coalesce(this=separator, expressions=[exp.Literal.string("")])
+            )
+        return groupconcat_sql(self, expression, within_group=False)
 
     def arrayslice_sql(self, expression: exp.ArraySlice) -> str:
         """

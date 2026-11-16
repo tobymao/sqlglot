@@ -169,8 +169,7 @@ class SQLiteParser(parser.Parser):
     def _parse_string_agg(self) -> exp.GroupConcat:
         expression = super()._parse_string_agg()
         separator = expression.args.get("separator")
-        if separator is not None and not separator.is_string:
-            expression.set("null_separator_is_empty", True)
+        expression.set("null_separator_is_empty", True)
         return expression
 
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:

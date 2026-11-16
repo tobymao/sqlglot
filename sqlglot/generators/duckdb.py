@@ -2816,15 +2816,14 @@ class DuckDBGenerator(generator.Generator):
         this = expression.this
         substr = expression.args["substr"]
         position = expression.args.get("position")
+        clamp_position = expression.args.get("clamp_position")
 
-        if expression.args.get("clamp_position") and position:
+        if clamp_position and position:
             position = exp.If(
                 this=exp.LTE(this=position, expression=exp.Literal.number(0)),
                 true=exp.Literal.number(1),
                 false=position.copy(),
             )
-            expression = expression.copy()
-            expression.set("position", position)
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
         if _is_binary(this):
@@ -2854,17 +2853,17 @@ class DuckDBGenerator(generator.Generator):
                         ),
                         exp.null(),
                     )
-                    .when(exp.ByteLength(this=substr).eq(0), exp.Literal.number(1))
-                    .when(position > exp.ByteLength(this=this), exp.Literal.number(0))
-                    .else_(
-                        exp.If(
-                            this=result.eq(0),
-                            true=exp.Literal.number(0),
-                            false=result + offset,
-                        )
+                    .when(
+                        position > exp.func("GREATEST", exp.ByteLength(this=this), 1),
+                        exp.Literal.number(0),
                     )
+                    .else_(exp.func("COALESCE", exp.func("NULLIF", result, 0) + offset, 0))
                 )
             return self.sql(result)
+
+        if clamp_position and position:
+            expression = expression.copy()
+            expression.set("position", position)
 
         return strposition_sql(self, expression)
 

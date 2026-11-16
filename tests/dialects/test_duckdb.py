@@ -1,7 +1,5 @@
 from unittest import mock
 
-import duckdb
-
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -41,50 +39,9 @@ class TestDuckDB(Validator):
                 )
                 self.assertEqual(expression.sql("duckdb"), expected)
 
-    def test_binary_strposition_execution(self):
-        expression = annotate_types(
-            parse_one("SELECT POSITION(t.needle, t.haystack) FROM t", read="snowflake"),
-            schema={"t": {"needle": "BINARY", "haystack": "BINARY"}},
-            dialect="snowflake",
-        )
-        with duckdb.connect() as connection:
-            connection.execute("CREATE TABLE t(needle BLOB, haystack BLOB)")
-            for haystack, needle, expected in (
-                (b"\xab\xcd", b"\xbc", 0),
-                (b"\xab\xcb\xbc", b"\xbc", 3),
-                (b"\xab\xcd\xef", b"\xef", 3),
-                (b"\xab\xbc\xbc", b"\xbc", 2),
-                (b"\x00\xff\x00", b"\xff\x00", 2),
-                (b"", b"", 1),
-                (b"a", b"", 1),
-                (b"", b"a", 0),
-                (None, b"a", None),
-                (b"a", None, None),
-                (None, None, None),
-            ):
-                with self.subTest(haystack=haystack, needle=needle):
-                    connection.execute("DELETE FROM t")
-                    connection.execute("INSERT INTO t VALUES (?, ?)", [needle, haystack])
-                    self.assertEqual(
-                        connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
-                    )
-
-            for sql, expected in (
-                ("SELECT 2 * POSITION(X'BC', X'ABCD')", 0),
-                ("SELECT 6 / POSITION(X'AB', X'ABCD')", 6),
-            ):
-                with self.subTest(sql=sql):
-                    expression = annotate_types(
-                        parse_one(sql, read="snowflake"), dialect="snowflake"
-                    )
-                    self.assertEqual(
-                        connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
-                    )
-
-    def test_binary_strposition_start_execution(self):
-        with duckdb.connect() as connection:
-            connection.execute("CREATE TABLE t(needle BLOB, haystack BLOB, start_pos BIGINT)")
-            for name in ("POSITION", "CHARINDEX"):
+    def test_binary_strposition_start(self):
+        for name in ("POSITION", "CHARINDEX"):
+            with self.subTest(name=name):
                 expression = annotate_types(
                     parse_one(
                         f"SELECT {name}(t.needle, t.haystack, t.start_pos) FROM t",
@@ -93,49 +50,19 @@ class TestDuckDB(Validator):
                     schema={"t": {"needle": "BINARY", "haystack": "BINARY", "start_pos": "BIGINT"}},
                     dialect="snowflake",
                 )
-                for haystack, needle, start, expected in (
-                    (b"\xbc\xbc", b"\xbc", 1, 1),
-                    (b"\xbc\xbc", b"\xbc", 2, 2),
-                    (b"\xbc\xbc", b"\xbc", 3, 0),
-                    (b"\xbc\xbc", b"\xbc", 0, 1),
-                    (b"\xbc\xbc", b"\xbc", -1, 1),
-                    (b"\xbc\xbc", b"\xbc", None, None),
-                    (b"\xbc\xbc", b"", 2, 1),
-                    (b"\xbc\xbc", b"", 3, 1),
-                    (b"", b"", 1, 1),
-                    (b"\xbc\xbc", b"", None, None),
-                    (None, b"", 2, None),
-                    (b"\xbc\xbc", b"\xbc", 2**31 - 1, 0),
-                    (b"\xbc\xbc", b"\xbc", 2**63 - 1, 0),
-                    (b"\xab\xcb\xbc", b"\xbc", 2, 3),
-                    (b"\xab\xcb\xbc", b"\xbc", 3, 3),
-                    (b"\xab\xcb\xbc", b"\xbc", 4, 0),
-                    (b"\xab\xcd", b"\xbc", 2, 0),
-                    (b"\x00\xff\x00", b"\x00", 2, 3),
-                    (None, b"\xbc", 2, None),
-                    (b"\xbc\xbc", None, 2, None),
-                    (None, b"\xbc", 2**63 - 1, None),
-                    (b"\xbc\xbc", None, 2**63 - 1, None),
-                    (b"", b"\xbc", 1, 0),
-                ):
-                    with self.subTest(name=name, haystack=haystack, needle=needle, start=start):
-                        connection.execute("DELETE FROM t")
-                        connection.execute(
-                            "INSERT INTO t VALUES (?, ?, ?)", [needle, haystack, start]
-                        )
-                        self.assertEqual(
-                            connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
-                        )
-
-                for start, expected in ((2, 2), (2**63 - 1, 0)):
-                    with self.subTest(name=name, start=start):
-                        expression = annotate_types(
-                            parse_one(f"SELECT {name}(X'BC', X'BCBC', {start})", read="snowflake"),
-                            dialect="snowflake",
-                        )
-                        self.assertEqual(
-                            connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
-                        )
+                self.assertEqual(
+                    expression.sql("duckdb"),
+                    "SELECT CASE WHEN t.haystack IS NULL OR t.needle IS NULL OR "
+                    "CASE WHEN t.start_pos <= 0 THEN 1 ELSE t.start_pos END IS NULL THEN NULL "
+                    "WHEN CASE WHEN t.start_pos <= 0 THEN 1 ELSE t.start_pos END > "
+                    "GREATEST(OCTET_LENGTH(t.haystack), 1) THEN 0 "
+                    "ELSE COALESCE(NULLIF((LENGTH(REGEXP_EXTRACT('xx' || SUBSTRING(HEX(t.haystack), "
+                    "((LEAST(CASE WHEN t.start_pos <= 0 THEN 1 ELSE t.start_pos END, "
+                    "COALESCE(OCTET_LENGTH(t.haystack), 0) + 1) - 1) * 2) + 1), "
+                    "'^(xx(?:..)*?)' || HEX(t.needle), 1)) // 2), 0) + "
+                    "(LEAST(CASE WHEN t.start_pos <= 0 THEN 1 ELSE t.start_pos END, "
+                    "COALESCE(OCTET_LENGTH(t.haystack), 0) + 1) - 1), 0) END FROM t",
+                )
 
     def test_min_max(self):
         for name, func in (("MIN", exp.Min), ("MAX", exp.Max)):

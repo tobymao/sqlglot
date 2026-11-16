@@ -990,6 +990,20 @@ class TestHive(Validator):
                 "databricks": "SELECT EXISTS(ARRAY(2, 3), x -> x % NULLIF(2, 0) = 0)",
             },
         )
+        self.validate_all(
+            "SELECT EXISTS(arr, x -> x > 2)",
+            write={
+                "hive": "SELECT EXISTS(arr, x -> x > 2)",
+                "spark": "SELECT EXISTS(arr, x -> x > 2)",
+                "duckdb": "SELECT (ARRAY_LENGTH(LIST_FILTER(arr, LAMBDA x : x > 2)) <> 0)",
+                "postgres": "SELECT (ARRAY_LENGTH(ARRAY(SELECT x FROM UNNEST(arr) AS _t0(x) WHERE x > 2), 1) <> 0)",
+                "bigquery": "SELECT (ARRAY_LENGTH(ARRAY(SELECT x FROM UNNEST(arr) AS x WHERE x > 2)) <> 0)",
+                "presto": "SELECT ANY_MATCH(arr, x -> x > 2)",
+                "trino": "SELECT ANY_MATCH(arr, x -> x > 2)",
+                "snowflake": UnsupportedError,
+                "mysql": UnsupportedError,
+            },
+        )
 
         self.validate_identity("SELECT 1_2")
 

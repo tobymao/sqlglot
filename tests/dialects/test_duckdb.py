@@ -17,12 +17,22 @@ class TestDuckDB(Validator):
             (
                 "SELECT POSITION(X'BC', X'ABCD')",
                 None,
-                "SELECT (LENGTH(REGEXP_EXTRACT('x' || HEX(UNHEX('ABCD')), '^(x(?:..)*?)' || HEX(UNHEX('BC')), 1)) + 1) // 2",
+                "SELECT (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('BC')), 1)) // 2)",
             ),
             (
                 "SELECT POSITION(t.needle, t.haystack) FROM t",
                 {"t": {"needle": "BINARY", "haystack": "BINARY"}},
-                "SELECT (LENGTH(REGEXP_EXTRACT('x' || HEX(t.haystack), '^(x(?:..)*?)' || HEX(t.needle), 1)) + 1) // 2 FROM t",
+                "SELECT (LENGTH(REGEXP_EXTRACT('xx' || HEX(t.haystack), '^(xx(?:..)*?)' || HEX(t.needle), 1)) // 2) FROM t",
+            ),
+            (
+                "SELECT 2 * POSITION(X'BC', X'ABCD')",
+                None,
+                "SELECT 2 * (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('BC')), 1)) // 2)",
+            ),
+            (
+                "SELECT 6 / POSITION(X'AB', X'ABCD')",
+                None,
+                "SELECT 6 / (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('AB')), 1)) // 2)",
             ),
         ):
             with self.subTest(sql=sql):
@@ -55,6 +65,18 @@ class TestDuckDB(Validator):
                 with self.subTest(haystack=haystack, needle=needle):
                     connection.execute("DELETE FROM t")
                     connection.execute("INSERT INTO t VALUES (?, ?)", [needle, haystack])
+                    self.assertEqual(
+                        connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
+                    )
+
+            for sql, expected in (
+                ("SELECT 2 * POSITION(X'BC', X'ABCD')", 0),
+                ("SELECT 6 / POSITION(X'AB', X'ABCD')", 6),
+            ):
+                with self.subTest(sql=sql):
+                    expression = annotate_types(
+                        parse_one(sql, read="snowflake"), dialect="snowflake"
+                    )
                     self.assertEqual(
                         connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
                     )

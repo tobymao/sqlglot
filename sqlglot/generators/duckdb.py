@@ -2815,19 +2815,15 @@ class DuckDBGenerator(generator.Generator):
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
         if _is_binary(this):
-            # Match whole bytes. The captured sentinel distinguishes an empty needle from no match.
+            # Match whole bytes, counting a two-character sentinel as the first byte.
             prefix = exp.RegexpExtract(
-                this=exp.DPipe(this=exp.Literal.string("x"), expression=exp.Hex(this=this)),
+                this=exp.DPipe(this=exp.Literal.string("xx"), expression=exp.Hex(this=this)),
                 expression=exp.DPipe(
-                    this=exp.Literal.string("^(x(?:..)*?)"), expression=exp.Hex(this=substr)
+                    this=exp.Literal.string("^(xx(?:..)*?)"), expression=exp.Hex(this=substr)
                 ),
                 group=exp.Literal.number(1),
             )
-            return self.sql(
-                exp.IntDiv(
-                    this=exp.paren(exp.Length(this=prefix) + 1), expression=exp.Literal.number(2)
-                )
-            )
+            return self.sql(exp.paren(exp.Length(this=prefix) // 2))
 
         # For VARCHAR: handle clamp_position
         if expression.args.get("clamp_position") and position:

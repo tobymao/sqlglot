@@ -1033,6 +1033,25 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT []")
 
+    def test_time_format_escaped_percent(self):
+        self.validate_all(
+            "SELECT formatDateTime(x, '%%M %%B %%A %%i %%W %H:%i %M %W')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%%M %%B %%A %%i %%W %H:%M %B %A')",
+            },
+            write={
+                "clickhouse": "SELECT formatDateTime(x, '%%M %%B %%A %%i %%W %H:%i %M %W')",
+                "duckdb": "SELECT STRFTIME(x, '%%M %%B %%A %%i %%W %H:%M %B %A')",
+            },
+        )
+        self.validate_all(
+            "SELECT parseDateTime('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+            write={
+                "clickhouse": "SELECT parseDateTime('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+                "duckdb": "SELECT STRPTIME('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+            },
+        )
+
     def test_json_extract(self):
         for name in ("JSONExtractRaw", "JSONExtractString"):
             for path in ("'1'", "'01'", "'0'", "'-1'", "1", "-1"):

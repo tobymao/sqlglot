@@ -26,6 +26,7 @@ class ClickHouse(Dialect):
 
     # https://clickhouse.com/docs/sql-reference/functions/date-time-functions#formatDateTime
     TIME_MAPPING = {
+        "%%": "%%",
         "%M": "%B",
         "%i": "%M",
         "%W": "%A",

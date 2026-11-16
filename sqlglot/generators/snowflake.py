@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import typing as t
 from collections import defaultdict
 
@@ -345,8 +344,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
         # Additionally, at the time of writing this, BigQuery is the only dialect that produces a
         # `TableAlias` node that only fills `columns` and not `this`, due to `UNNEST_COLUMN_ONLY`.
         unnest_aliases = set()
-        unnests = list(find_all_in_scope(expression, exp.Unnest))
-        for unnest in unnests:
+        for unnest in find_all_in_scope(expression, exp.Unnest):
             unnest_alias = unnest.args.get("alias")
             if (
                 isinstance(unnest_alias, exp.TableAlias)
@@ -356,11 +354,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
                 unnest_aliases.add(unnest_alias.columns[0].name)
 
         if unnest_aliases:
-            columns = itertools.chain(
-                find_all_in_scope(expression, exp.Column),
-                *(find_all_in_scope(unnest, exp.Column) for unnest in unnests),
-            )
-            for c in list(columns):
+            for c in find_all_in_scope(expression, exp.Column, include_udtfs=True):
                 if c.table in unnest_aliases:
                     bracket_lhs = c.args["table"]
                     bracket_rhs = exp.Literal.string(c.name)

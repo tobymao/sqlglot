@@ -843,7 +843,7 @@ def connect_by_to_recursive_cte(expression: exp.Expr) -> exp.Expr:
 
     # Strip stale source table qualifiers in one pass; CTEs are child scopes so
     # find_all_in_scope stays within the outer query only.
-    for col in find_all_in_scope(outer_query, exp.Column):
+    for col in find_all_in_scope(outer_query, exp.Column, include_udtfs=True):
         col.set("table", None)
 
     return outer_query

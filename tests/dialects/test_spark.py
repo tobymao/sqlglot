@@ -1672,6 +1672,18 @@ TBLPROPERTIES (
                     """WITH "test_table" AS (SELECT 12345 AS "id_column", ARRAY[CAST(ROW('John', 30) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mary', 20) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Mike', 80) AS ROW("name" VARCHAR, "age" INTEGER)), CAST(ROW('Dan', 50) AS ROW("name" VARCHAR, "age" INTEGER))] AS "struct_column") SELECT "test_table"."id_column" AS "id_column", "explode_view"."name" AS "name", "explode_view"."age" AS "age" FROM "test_table" AS "test_table" CROSS JOIN UNNEST("test_table"."struct_column") AS "explode_view"("name", "age")""",
                 )
 
+        with self.subTest("Annotated exploded column of a previous exploded column"):
+            expr = self.parse_one(
+                "WITH t AS (SELECT ARRAY(STRUCT(ARRAY(1, 2) AS a)) AS arr) "
+                "SELECT x FROM t LATERAL VIEW EXPLODE(arr) t1 AS s LATERAL VIEW EXPLODE(s.a) t2 AS x"
+            )
+            annotated = annotate_types(qualify(expr, dialect="spark"), dialect="spark")
+
+            self.assertEqual(
+                annotated.sql("presto"),
+                """WITH "t" AS (SELECT ARRAY[CAST(ROW(ARRAY[1, 2]) AS ROW("a" ARRAY(INTEGER)))] AS "arr") SELECT "t2"."x" AS "x" FROM "t" AS "t" CROSS JOIN UNNEST("t"."arr") AS "t1"("a") CROSS JOIN UNNEST("t1"."a") AS "t2"("x")""",
+            )
+
     def test_approx_percentile(self):
         self.validate_all(
             "PERCENTILE_APPROX(DISTINCT col, 0.3)",

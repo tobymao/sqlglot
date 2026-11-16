@@ -756,8 +756,6 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     normalized to `Dot(Dot(...(<table>.<column>, field1), field2, ...))` to be qualified properly.
     """
     converted = False
-    column_index = scope.column_index
-    inner_column_ids: set[int] = set()
     scope_sources = scope.selected_sources
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     join_columns: dict[str, set[str]] = {}
@@ -854,28 +852,23 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
 
             if column_table:
                 converted = True
-                new_column = exp.column(root, table=column_table)
+
+                # The column becomes the root of the Dots, so other scopes' references to it,
+                # e.g. a correlated subquery's, stay in the tree
+                placeholder = exp.Null()
+                column.replace(exp.Dot.build([placeholder, *parts]))
+                column.set("catalog", None)
+                column.set("db", None)
+                column.set("this", root)
+                column.set("table", exp.to_identifier(column_table))
 
                 if dot_parts:
                     # Remove the actual column parts from the rest of dot parts
-                    new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
+                    column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
 
-                if id(column) not in column_index:
-                    inner_column_ids.add(id(column))
-
-                column.replace(exp.Dot.build([new_column, *parts]))
+                placeholder.replace(column)
 
     if converted:
-        # A converted column may belong to an inner scope, e.g. a LATERAL's subquery, whose
-        # cached columns it also invalidates, as it does those of the scopes in between
-        if inner_column_ids:
-            for inner in scope.traverse():
-                if inner is not scope and not inner.column_index.isdisjoint(inner_column_ids):
-                    stale: Scope | None = inner
-                    while stale and stale is not scope:
-                        stale.clear_cache()
-                        stale = stale.parent
-
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in
         # a `for column in scope.columns` iteration, even though they shouldn't be
         scope.clear_cache()

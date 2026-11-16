@@ -2299,8 +2299,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 optimizer.unnest_subqueries.unnest_subqueries(expression).find(exp.In)
             )
 
-    def test_optimize_uncorrelated_in_nulls(self):
-        for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
+    def test_optimize_in_nulls(self):
+        for where in (
+            "",
+            " WHERE y.b IS NOT NULL",
+            " WHERE y.b IS NULL",
+            " WHERE FALSE",
+            " WHERE y.c = x.a",
+            " WHERE y.b = x.a",
+        ):
             for predicate in (
                 f"x.a IN (SELECT y.b FROM y{where})",
                 f"x.a = ANY (SELECT y.b FROM y{where})",

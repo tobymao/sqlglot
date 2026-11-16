@@ -1035,6 +1035,16 @@ SELECT COALESCE(x.a, x.b) AS new_b FROM x AS x;
 SELECT * REPLACE(1 AS a, a AS b) RENAME(b AS new_b) FROM x;
 SELECT 1 AS a, x.a AS new_b FROM x AS x;
 
+# title: REPLACE of a USING column
+# execute: false
+SELECT * REPLACE(b * 2 AS b) FROM x JOIN y USING (b);
+SELECT COALESCE(x.b, y.b) * 2 AS b, x.a AS a, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: RENAME of a USING column
+# execute: false
+SELECT * RENAME(b AS new_b) FROM x FULL JOIN y USING (b);
+SELECT COALESCE(x.b, y.b) AS new_b, x.a AS a, y.c AS c FROM x AS x FULL JOIN y AS y ON x.b = y.b;
+
 --------------------------------------
 -- Using
 --------------------------------------

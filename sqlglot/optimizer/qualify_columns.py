@@ -347,6 +347,10 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
     if column_tables:
         for column in scope.columns:
+            # The source name of a star's RENAME is resolved when the star is expanded
+            if isinstance(column.parent, exp.Alias) and column.parent.arg_key == "rename":
+                continue
+
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
                 coalesce_args = [exp.column(column.name, table=table) for table in tables]
@@ -1354,7 +1358,14 @@ def _expand_stars(
                     using_tables = using_column_tables[name]
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
-                    selection = alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
+                    replaced_column = replaced_columns.get(name)
+                    selection = alias(
+                        replaced_column.this
+                        if replaced_column
+                        else exp.func("coalesce", *coalesce_args),
+                        alias=renamed_columns.get(name, name),
+                        copy=False,
+                    )
                 else:
                     alias_ = renamed_columns.get(name, name)
                     quoted = name in quoted_columns or (

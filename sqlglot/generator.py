@@ -4299,6 +4299,9 @@ class Generator:
         sql = self.seg(self.indent(self.sql(expression, "this")), sep="")
         return f"({sql}{self.seg(')', sep='')}"
 
+    def pos_sql(self, expression: exp.Pos) -> str:
+        return f"+{self.sql(expression, 'this')}"
+
     def neg_sql(self, expression: exp.Neg) -> str:
         # This makes sure we don't convert "- - 5" to "--5", which is a comment
         this_sql = self.sql(expression, "this")

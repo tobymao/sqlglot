@@ -57,6 +57,13 @@ def _build_json_extract(args: list, dialect: t.Any) -> exp.JSONExtract | exp.JSO
 class SQLiteParser(parser.Parser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.EQUALITY
 
+    # Unary + removes SQLite column affinity and must survive SQL generation.
+    # https://www.sqlite.org/datatype3.html#affinity_of_expressions
+    UNARY_PARSERS = {
+        **parser.Parser.UNARY_PARSERS,
+        TokenType.PLUS: lambda self: self.expression(exp.Pos(this=self._parse_unary())),
+    }
+
     PRIMARY_PARSERS = {
         **parser.Parser.PRIMARY_PARSERS,
         TokenType.HEX_STRING: lambda self, token: self._parse_hex_string(token),

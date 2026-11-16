@@ -2294,6 +2294,10 @@ class Paren(Unary):
         return self.this.name
 
 
+class Pos(Unary):
+    pass
+
+
 class Neg(Unary):
     def to_py(self) -> int | Decimal:
         if self.is_number:

@@ -277,11 +277,7 @@ class SQLiteGenerator(generator.Generator):
 
         # SQLite DATE deliberately returns only a date, so sub-day units would
         # silently drop the time; DATETIME retains it.
-        func = (
-            "DATETIME"
-            if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND")
-            else "DATE"
-        )
+        func = "DATETIME" if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND") else "DATE"
 
         modifier = modifier.unnest()
         if (

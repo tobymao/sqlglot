@@ -522,3 +522,8 @@ SELECT 1 + _u_0.n AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 O
 # execute: true
 SELECT 1 + (SELECT COUNT(*) AS n FROM y) AS n FROM x WHERE EVEN(x.a) > 0;
 SELECT 1 + _u_0.n AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 WHERE EVEN(x.a) > 0;
+
+# title: Correlated IS NULL predicate in EXISTS is not rewritten
+# execute: true
+SELECT * FROM x WHERE EXISTS (SELECT y.b AS b FROM y WHERE y.b = x.a AND x.b IS NULL);
+SELECT * FROM x WHERE EXISTS(SELECT y.b AS b FROM y WHERE y.b = x.a AND x.b IS NULL);

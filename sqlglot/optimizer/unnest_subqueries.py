@@ -336,7 +336,8 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         if ancestor is not where:
             return
 
-        if isinstance(predicate, exp.Binary):
+        # IS only accepts NULL, TRUE or FALSE on its right side, so that side can't be used as a key
+        if isinstance(predicate, exp.Binary) and not isinstance(predicate, exp.Is):
             key = (
                 predicate.right
                 if any(node is column for node in predicate.left.walk())

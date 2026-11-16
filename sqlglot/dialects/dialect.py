@@ -2511,7 +2511,7 @@ def weekstart_unit_to_str(
 def unit_to_var(expression: exp.Expr, default: str = "DAY") -> exp.Expr | None:
     unit = expression.args.get("unit")
 
-    if isinstance(unit, (exp.Var, exp.Placeholder, exp.WeekStart, exp.Column)):
+    if unit and not isinstance(unit, exp.Literal):
         return unit
 
     value = unit.name if unit else default

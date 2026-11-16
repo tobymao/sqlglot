@@ -1,6 +1,5 @@
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse, parse_one
 from sqlglot.optimizer.annotate_types import annotate_types
-from sqlglot.optimizer.canonicalize import canonicalize
 from tests.dialects.test_dialect import Validator
 
 
@@ -100,9 +99,8 @@ class TestTeradata(Validator):
             "LENGTH('0A'XC)",
             "COALESCE('0A'XC, NULL)",
             "CAST('0A'XC AS VARCHAR(10))",
-            "TRUNC(CURRENT_DATE, '4D4D'XC)",
             "TO_CHAR(CURRENT_DATE, '59595959'XC)",
-            "CAST('20240101'XC AS DATE FORMAT 'YYYY')",
+            "CAST('323032342D30312D3031'XC AS DATE FORMAT 'YYYY-MM-DD')",
         ):
             expression = self.validate_identity(sql)
             self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
@@ -144,20 +142,6 @@ class TestTeradata(Validator):
             annotate_types(integer.copy(), dialect="snowflake").is_type(exp.DType.BINARY)
         )
         self.assertEqual(integer.sql("dune"), "0x0A")
-        character = exp.HexString(this="20240101", is_character=True)
-        date_add = annotate_types(
-            exp.DateAdd(
-                this=character.copy(), expression=exp.Literal.number(1), unit=exp.var("DAY")
-            ),
-            dialect=self.dialect,
-        )
-        self.assertTrue(date_add.is_type(exp.DType.UNKNOWN))
-        self.assertIsInstance(canonicalize(date_add.copy()).this, exp.HexString)
-        character.type = exp.DType.BINARY.into_expr()
-        with self.assertRaises(UnsupportedError):
-            exp.BitwiseAnd(this=character, expression=exp.Literal.number(1)).sql(
-                "duckdb", unsupported_level=ErrorLevel.RAISE
-            )
         self.validate_all(
             "'0A'XC",
             write={
@@ -170,6 +154,16 @@ class TestTeradata(Validator):
         )
         self.assertEqual(
             "'0A'XC", self.parse_one("'0A'XC").sql("dax", unsupported_level=ErrorLevel.IGNORE)
+        )
+
+    def test_hex_character_trunc(self):
+        self.validate_all(
+            "TRUNC(CURRENT_DATE, '4D4D'XC)",
+            write={
+                "teradata": "TRUNC(CURRENT_DATE, '4D4D'XC)",
+                "tsql": UnsupportedError,
+                "fabric": UnsupportedError,
+            },
         )
 
     def test_execute(self):

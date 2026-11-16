@@ -206,8 +206,6 @@ class TestSQLite(Validator):
             ("TIMESTAMP", "DATETIME"),
             ("TIMESTAMPNTZ", "DATETIME"),
             ("TIME", "TIME"),
-            ("JSON", "JSON"),
-            ("JSONB", "JSON"),
         ):
             for value in ("'2014-09-01 12:34:56'", "x", "NULL"):
                 with self.subTest(dtype=dtype, value=value):
@@ -216,25 +214,26 @@ class TestSQLite(Validator):
                         read={"": f"SELECT CAST({value} AS {dtype})"},
                     )
 
-        self.validate_all(
-            "SELECT JSON('{\"a\": 1}')",
-            read={
-                "postgres": "SELECT CAST('{\"a\": 1}' AS JSON)",
-                "duckdb": "SELECT CAST('{\"a\": 1}' AS JSON)",
-            },
-            write={
-                "sqlite": "SELECT JSON('{\"a\": 1}')",
-            },
-        )
-        self.validate_all(
-            "SELECT JSON('{\"a\": 1}')",
-            read={
-                "postgres": "SELECT CAST('{\"a\": 1}' AS JSONB)",
-            },
-            write={
-                "sqlite": "SELECT JSON('{\"a\": 1}')",
-            },
-        )
+    def test_json_cast(self):
+        for dtype, dialects in (
+            ("JSON", ("", "postgres", "duckdb")),
+            ("JSONB", ("", "postgres")),
+        ):
+            for value in ("'{\"a\": 1}'", "x", "NULL"):
+                with self.subTest(dtype=dtype, value=value):
+                    from_ = " FROM (SELECT '{\"a\": 1}' AS x) AS t" if value == "x" else ""
+                    self.validate_all(
+                        f"SELECT JSON({value}){from_}",
+                        read={
+                            dialect: f"SELECT CAST({value} AS {dtype}){from_}"
+                            for dialect in dialects
+                        },
+                    )
+
+            self.validate_all(
+                "SELECT JSON('{\"a\": 1}') ->> '$.a'",
+                read={"postgres": f"SELECT '{{\"a\": 1}}'::{dtype} ->> 'a'"},
+            )
 
     def test_is_precedence(self):
         self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")

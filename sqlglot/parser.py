@@ -3092,7 +3092,7 @@ class Parser:
     def _parse_unquoted_field(self) -> exp.Expr | None:
         field = self._parse_field()
         if isinstance(field, exp.Identifier) and not field.quoted:
-            field = exp.var(field)
+            field = self.expression(exp.var(field), comments=field.comments)
 
         return field
 

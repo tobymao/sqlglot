@@ -178,6 +178,14 @@ class TestTransforms(unittest.TestCase):
                 "SELECT g, v AS w FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) = 1 ORDER BY w * -1",
                 [(2, 20), (1, 10), (3, 5), (4, 1)],
             ),
+            (
+                "SELECT g, COUNT(*) AS c FROM t GROUP BY g QUALIFY RANK() OVER (ORDER BY g) <= 3 ORDER BY COUNT(*) DESC, g",
+                [(1, 2), (2, 2), (3, 2)],
+            ),
+            (
+                "SELECT -v AS v, v AS raw FROM t QUALIFY COUNT(*) OVER (PARTITION BY g) >= 2 ORDER BY v",
+                [(-40, 40), (-30, 30), (-20, 20), (-20, 20), (-10, 10), (-5, 5)],
+            ),
         ):
             with self.subTest(sql):
                 transpiled = parse_one(sql, read="duckdb").sql("sqlite")
@@ -324,6 +332,24 @@ class TestTransforms(unittest.TestCase):
             "SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY ALL DESC",
             "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY ALL DESC",
             dialect="duckdb",
+        )
+        # Aggregates are computed in the subquery, or referenced through their projection
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, COUNT(*) AS c FROM x GROUP BY a QUALIFY RANK() OVER (ORDER BY a) <= 3 ORDER BY COUNT(*) DESC, MAX(b)",
+            "SELECT a, c FROM (SELECT a, COUNT(*) AS c, RANK() OVER (ORDER BY a) AS _w, MAX(b) AS _o FROM x GROUP BY a) AS _t WHERE _w <= 3 ORDER BY c DESC, _o",
+        )
+        # A bare name refers to the projection alias, a name inside an expression to the column
+        self.validate(
+            eliminate_qualify,
+            "SELECT -b AS b, b AS raw FROM x QUALIFY COUNT(*) OVER (PARTITION BY a) >= 2 ORDER BY b, b + 1",
+            "SELECT b, raw FROM (SELECT -b AS b, b AS raw, COUNT(*) OVER (PARTITION BY a) AS _w FROM x) AS _t WHERE _w >= 2 ORDER BY b, raw + 1",
+        )
+        # Ambiguous output names can't be referenced from the outer query, so nothing is moved
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, b AS a FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY b * -1 LIMIT 1",
+            "SELECT a, a FROM (SELECT a, b AS a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY b) AS _w FROM x ORDER BY b * -1 LIMIT 1) AS _t WHERE _w = 1",
         )
 
     def test_remove_precision_parameterized_types(self):

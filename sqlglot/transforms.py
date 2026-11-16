@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from collections import Counter
 
 from sqlglot import expressions as exp
 from sqlglot.errors import UnsupportedError
@@ -166,55 +167,109 @@ def _resolve_projection(key: exp.Expr, selects: list[exp.Expr]) -> exp.Expr:
 
 
 def _find_projection(expression: exp.Expr, selects: list[exp.Expr]) -> exp.Expr | None:
-    """Returns the projection that computes `expression`, if there is one."""
+    """Returns the single named projection that computes `expression`, if there is one."""
+    matches = []
     for select in selects:
         projected = select.unalias()
-        if projected == expression:
-            return select
-        if (
+        if projected == expression or (
             isinstance(expression, exp.Column)
             and isinstance(projected, exp.Column)
             and projected.name == expression.name
             and (not projected.table or not expression.table or projected.table == expression.table)
         ):
-            return select
+            matches.append(select)
 
+    # Only a projection with an output name can be referenced from an enclosing query
+    if len(matches) == 1 and isinstance(matches[0], (exp.Alias, exp.Column)):
+        return matches[0]
     return None
+
+
+class _Unresolvable(Exception):
+    """Raised when a sort key can't be resolved without knowing the schema."""
 
 
 def _order_key_over_outputs(key: exp.Expr, inner: exp.Select) -> exp.Expr | None:
     """
     Rewrites an ORDER BY key of `inner` in terms of its output columns, so that it can be used in a
-    query that selects from it. Returns None if the key uses a column that is not projected.
+    query that selects from it. Returns None if the key has to be computed in `inner` instead.
+
+    As in the ORDER BY clause itself, a bare name refers to a projection alias first. Inside an
+    expression, a name refers to a source column if the query uses one with that name, else to the
+    projection alias.
     """
     selects = inner.selects
-    select = _find_projection(key, selects)
-    if select is not None:
+    output_counts: t.Counter[str] = Counter(select.alias_or_name for select in selects)
+
+    def output(name: str) -> exp.Column:
+        select = next(select for select in selects if select.alias_or_name == name)
+        if output_counts[name] != 1 or not isinstance(select, (exp.Alias, exp.Column)):
+            raise _Unresolvable
         return _output_column(select)
 
+    if isinstance(key, exp.Column) and not key.table and key.name in output_counts:
+        return output(key.name)
+
+    select = _find_projection(key, selects)
+    if select is not None:
+        return output(select.alias_or_name)
+
+    if key.find(exp.AggFunc, exp.Window):
+        # Aggregates and window functions can only be computed in the scope of `inner`
+        return None
+
     has_star = any(select.is_star for select in selects)
-    missing = False
+    if isinstance(key, exp.Column):
+        # Not a projection, but the star may expose it
+        return exp.column(key.this.copy()) if has_star and not key.table else None
 
-    def _replace(node: exp.Expr) -> exp.Expr:
-        nonlocal missing
-        if not isinstance(node, exp.Column):
-            return node
-        if not node.table and node.name in inner.named_selects:
-            # A reference to a projection alias
-            return exp.column(node.this.copy())
+    alias_names = _alias_only_names(inner)
+    for column in list(key.find_all(exp.Column)):
+        if not column.table and column.name in alias_names:
+            column.replace(output(column.name))
+            continue
 
-        select = _find_projection(node, selects)
+        select = _find_projection(column, selects)
         if select is not None:
-            return _output_column(select)
-        if has_star:
+            column.replace(output(select.alias_or_name))
+        elif has_star and column.name not in output_counts:
             # The column is exposed by the star, so it can be referenced directly
-            return exp.column(node.this.copy())
+            column.replace(exp.column(column.this.copy()))
+        else:
+            return None
 
-        missing = True
-        return node
+    return key
 
-    rewritten = key.transform(_replace)
-    return None if missing else rewritten
+
+def _alias_only_names(select: exp.Select) -> set[str]:
+    """Returns the projection aliases of `select` that it doesn't also use as source column names."""
+    source_names = {
+        column.name
+        for arg, value in select.args.items()
+        if arg != "order"
+        for node in (value if isinstance(value, list) else [value])
+        if isinstance(node, exp.Expr)
+        for column in node.find_all(exp.Column)
+    }
+    return {
+        projection.alias
+        for projection in select.selects
+        if isinstance(projection, exp.Alias) and projection.alias not in source_names
+    }
+
+
+def _expand_alias_refs(key: exp.Expr, inner: exp.Select) -> exp.Expr:
+    """Replaces references to projection aliases in a sort key with the aliased expressions."""
+    aliases = {
+        projection.alias: projection.this
+        for projection in inner.selects
+        if isinstance(projection, exp.Alias)
+    }
+    alias_names = _alias_only_names(inner)
+    for column in list(key.find_all(exp.Column)):
+        if not column.table and column.name in alias_names:
+            column.replace(exp.paren(aliases[column.name].copy(), copy=False))
+    return key
 
 
 def _hoist_order_and_limit(inner: exp.Select, outer: exp.Select) -> None:
@@ -222,30 +277,38 @@ def _hoist_order_and_limit(inner: exp.Select, outer: exp.Select) -> None:
     Moves the ORDER BY, LIMIT and OFFSET clauses of `inner` to `outer`, which filters the rows of
     `inner` after they have been projected, so these clauses must be applied on top of that filter.
 
-    The ordering is expressed in terms of the projections of `inner`. Only a sort key that uses a
-    column which is not projected is itself projected in `inner`, under a new name.
+    The ordering is expressed in terms of the projections of `inner`. Sort keys that can't be
+    written over them, such as aggregates or columns that aren't projected, are computed in `inner`
+    under a new name. If a key can't be resolved without a schema, nothing is moved.
     """
     distinct = inner.args.get("distinct")
     if distinct and distinct.args.get("on"):
         # DISTINCT ON keeps the first row of each group according to the ORDER BY of the same query
         return
 
-    order = inner.args.pop("order", None)
+    order = inner.args.get("order")
     if order:
+        resolved: list[exp.Expr | None] = []
         for ordered in order.expressions:
             key = ordered.this
-            if not key.find(exp.Column):
-                # e.g. a position or ORDER BY ALL, which refer to the outer projections as well
+            if key.is_int or (isinstance(key, exp.Var) and key.name.upper() == "ALL"):
+                # Positions and ORDER BY ALL refer to the outer projections in the same way
+                resolved.append(key)
                 continue
+            try:
+                resolved.append(_order_key_over_outputs(key.copy(), inner))
+            except _Unresolvable:
+                return
 
-            outer_key = _order_key_over_outputs(key, inner)
+        inner.args.pop("order")
+        for ordered, outer_key in zip(order.expressions, resolved):
             if outer_key is None:
                 alias = find_new_name(inner.named_selects, "_o")
-                select = exp.alias_(key.copy(), alias)
+                select = exp.alias_(_expand_alias_refs(ordered.this.copy(), inner), alias)
                 inner.select(select, copy=False)
                 outer_key = _output_column(select)
-
-            key.replace(outer_key)
+            if outer_key is not ordered.this:
+                ordered.this.replace(outer_key)
 
         outer.set("order", order)
 

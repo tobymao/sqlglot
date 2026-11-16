@@ -27,6 +27,7 @@ class OracleGenerator(generator.Generator):
     SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
+    SUPPORTS_MULTI_ARG_CHR = False
     LOCKING_READS_SUPPORTED = True
     SUPPORTS_MERGE_WHERE = True
     CAST_TO_INT_ROUNDS = True

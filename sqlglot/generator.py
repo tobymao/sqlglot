@@ -646,6 +646,9 @@ class Generator:
     # Whether a multi-argument DECODE(...) function is supported. If not, a CASE expression is generated
     SUPPORTS_DECODE_CASE = True
 
+    # Whether CHR / CHAR accepts multiple code points, e.g. CHAR(72, 105). If not, the calls are concatenated
+    SUPPORTS_MULTI_ARG_CHR = True
+
     # Whether SYMMETRIC and ASYMMETRIC flags are supported with BETWEEN expression
     SUPPORTS_BETWEEN_FLAGS = False
 
@@ -6763,6 +6766,12 @@ class Generator:
         return self.function_fallback_sql(expression)
 
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
+        args = expression.expressions
+        if len(args) > 1 and not self.SUPPORTS_MULTI_ARG_CHR:
+            # CHAR(72, 105) -> CHR(72) || CHR(105)
+            chars: list[exp.Expr] = [exp.Chr(expressions=[arg.copy()]) for arg in args]
+            return self.sql(reduce(lambda x, y: exp.DPipe(this=x, expression=y), chars))
+
         this = self.expressions(expression)
         charset = self.sql(expression, "charset")
         using = f" USING {charset}" if charset else ""

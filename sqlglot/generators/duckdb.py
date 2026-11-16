@@ -1594,6 +1594,7 @@ class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
     JOIN_HINTS = False
+    SUPPORTS_MULTI_ARG_CHR = False
     TABLE_HINTS = False
     QUERY_HINTS = False
     LIMIT_FETCH = "LIMIT"
@@ -3405,6 +3406,9 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(exp.ByteLength(this=blob) * exp.Literal.number(8))
 
     def chr_sql(self, expression: exp.Chr, name: str = "CHR") -> str:
+        if len(expression.expressions) > 1:
+            return super().chr_sql(expression, name)
+
         arg = expression.expressions[0]
         if arg.is_type(*exp.DataType.REAL_TYPES):
             arg = exp.cast(arg, exp.DType.INT)

@@ -340,6 +340,7 @@ class BigQueryGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_MULTI_ARG_CHR = False
     INTERVAL_ALLOWS_PLURAL_FORM = False
     JOIN_HINTS = False
     QUERY_HINTS = False

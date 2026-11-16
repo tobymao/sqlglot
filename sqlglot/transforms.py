@@ -141,6 +141,70 @@ def unnest_generate_series(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _output_column(select: exp.Expr) -> exp.Column:
+    """Returns a column that references the given projection from an enclosing query."""
+    identifier = select.args.get("alias") or select.this
+    quoted = identifier.args.get("quoted") if isinstance(identifier, exp.Identifier) else None
+    return exp.column(select.alias_or_name, quoted=quoted)
+
+
+def _resolve_projection(key: exp.Expr, selects: list[exp.Expr]) -> exp.Expr:
+    """
+    Replaces an ORDER BY / DISTINCT ON key that refers to a projection, either by its position or
+    by its alias, with the projected expression, so that it can be used outside of the projection.
+    """
+    if key.is_int:
+        position = key.to_py()
+        if 1 <= position <= len(selects) and not any(s.is_star for s in selects[:position]):
+            return selects[position - 1].unalias().copy()
+    elif isinstance(key, exp.Column) and not key.table:
+        for select in selects:
+            if isinstance(select, exp.Alias) and select.alias == key.name:
+                return select.this.copy()
+
+    return key
+
+
+def _hoist_order_and_limit(inner: exp.Select, outer: exp.Select) -> None:
+    """
+    Moves the ORDER BY, LIMIT and OFFSET clauses of `inner` to `outer`, which filters the rows of
+    `inner` after they have been projected, so these clauses must be applied on top of that filter.
+
+    The ordering is expressed in terms of the projections of `inner`. If a sort key is not one of
+    them, it is projected in `inner` under a new name.
+    """
+    order = inner.args.pop("order", None)
+    if order:
+        outputs = {select.unalias(): select for select in inner.selects}
+        has_star = any(select.is_star for select in inner.selects)
+        for ordered in order.expressions:
+            key = ordered.this
+            if key.is_int or (
+                isinstance(key, exp.Column) and not key.table and key.name in inner.named_selects
+            ):
+                continue
+
+            select = outputs.get(key)
+            if not select and has_star and isinstance(key, exp.Column):
+                # The column is exposed by the star, so it can be referenced directly
+                key.replace(exp.column(key.this.copy()))
+                continue
+
+            if not select:
+                alias = find_new_name(inner.named_selects, "_o")
+                select = exp.alias_(key.copy(), alias)
+                inner.select(select, copy=False)
+
+            key.replace(_output_column(select))
+
+        outer.set("order", order)
+
+    for arg in ("limit", "offset"):
+        modifier = inner.args.pop(arg, None)
+        if modifier:
+            outer.set(arg, modifier)
+
+
 def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
     """
     Convert SELECT DISTINCT ON statements to a subquery with a window function.
@@ -160,12 +224,19 @@ def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
     ):
         row_number_window_alias = find_new_name(expression.named_selects, "_row_number")
 
-        distinct_cols = expression.args["distinct"].pop().args["on"].expressions
+        selects = expression.selects
+        distinct_cols = [
+            _resolve_projection(c, selects)
+            for c in expression.args["distinct"].pop().args["on"].expressions
+        ]
         window = exp.Window(this=exp.RowNumber(), partition_by=distinct_cols)
 
         order: exp.Order | None = expression.args.get("order")
         if order:
-            window.set("order", order.pop())
+            window_order = order.copy()
+            for ordered in window_order.expressions:
+                ordered.set("this", _resolve_projection(ordered.this, selects))
+            window.set("order", window_order)
         else:
             window.set("order", exp.Order(expressions=[c.copy() for c in distinct_cols]))
 
@@ -189,11 +260,13 @@ def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
             taken_names.add(select.output_name)
             new_selects.append(select.args["alias"])
 
-        return (
+        outer = (
             exp.select(*new_selects, copy=False)
             .from_(expression.subquery("_t", copy=False), copy=False)
             .where(exp.column(row_number_window_alias).eq(1), copy=False)
         )
+        _hoist_order_and_limit(expression, outer)
+        return outer
 
     return expression
 
@@ -267,9 +340,17 @@ def eliminate_qualify(expression: exp.Expr) -> exp.Expr:
                 # invalid SQL, e.g. when the query is grouped
                 expression.select(select_candidate.copy(), copy=False)
 
-        return outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
+        # DISTINCT, ORDER BY and LIMIT / OFFSET are evaluated after QUALIFY, so they can't be
+        # applied in the subquery that computes the window functions
+        distinct = expression.args.get("distinct")
+        if distinct and not distinct.args.get("on"):
+            outer_selects.set("distinct", distinct.pop())
+
+        outer = outer_selects.from_(expression.subquery(alias="_t", copy=False), copy=False).where(
             qualify_filters, copy=False
         )
+        _hoist_order_and_limit(expression, outer)
+        return outer
 
     return expression
 

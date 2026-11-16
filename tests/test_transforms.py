@@ -1,3 +1,4 @@
+import sqlite3
 import unittest
 
 from sqlglot import parse_one, expressions as exp
@@ -27,7 +28,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
@@ -37,7 +38,7 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a, b) a, b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a, b ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a, b ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
@@ -47,38 +48,132 @@ class TestTransforms(unittest.TestCase):
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (_row_number) _row_number FROM x ORDER BY c DESC",
-            "SELECT _row_number FROM (SELECT _row_number AS _row_number, ROW_NUMBER() OVER (PARTITION BY _row_number ORDER BY c DESC) AS _row_number_2 FROM x) AS _t WHERE _row_number_2 = 1",
+            "SELECT _row_number FROM (SELECT _row_number AS _row_number, ROW_NUMBER() OVER (PARTITION BY _row_number ORDER BY c DESC) AS _row_number_2, c AS _o FROM x) AS _t WHERE _row_number_2 = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (x.a, x.b) x.a, x.b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a, x.b ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a, x.b ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) x.a, y.a FROM x CROSS JOIN y ORDER BY c DESC",
-            "SELECT a, a_2 FROM (SELECT x.a AS a, y.a AS a_2, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x CROSS JOIN y) AS _t WHERE _row_number = 1",
+            "SELECT a, a_2 FROM (SELECT x.a AS a, y.a AS a_2, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x CROSS JOIN y) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) a, a + b FROM x ORDER BY c DESC",
-            "SELECT a, _col FROM (SELECT a AS a, a + b AS _col, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT a, _col FROM (SELECT a AS a, a + b AS _col, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
         self.validate(
             eliminate_distinct_on,
             "SELECT DISTINCT ON (a) * FROM x ORDER BY c DESC",
-            "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY c DESC",
         )
         self.validate(
             eliminate_distinct_on,
             'SELECT DISTINCT ON (a) a AS "A", b FROM x ORDER BY c DESC',
-            'SELECT "A", b FROM (SELECT a AS "A", b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1',
+            'SELECT "A", b FROM (SELECT a AS "A", b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC',
         )
         self.validate(
             eliminate_distinct_on,
             'SELECT DISTINCT ON (a) "A", b FROM x ORDER BY c DESC',
-            'SELECT "A", b FROM (SELECT "A" AS "A", b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1',
+            'SELECT "A", b FROM (SELECT "A" AS "A", b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC',
         )
+
+    def test_eliminate_distinct_on_order_and_limit(self):
+        # ORDER BY, LIMIT and OFFSET apply to the rows that DISTINCT ON keeps
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (a) a, b FROM x ORDER BY a, b DESC",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, b DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY a, b DESC",
+        )
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (a) a, b FROM x ORDER BY a, b DESC LIMIT 3 OFFSET 1",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, b DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY a, b DESC LIMIT 3 OFFSET 1",
+        )
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (a) x.a, x.b FROM x ORDER BY x.a, x.b DESC",
+            "SELECT a, b FROM (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY x.a, x.b DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY a, b DESC",
+        )
+        # A sort key that isn't projected is exposed by the subquery under a new name
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (a) a, b FROM x ORDER BY a, b + c",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, b + c) AS _row_number, b + c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY a, _o",
+        )
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (a) * FROM x ORDER BY a, c DESC LIMIT 2",
+            "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY a, c DESC LIMIT 2",
+        )
+        # Aliases and positions refer to projections, which the window function can't see
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (k) a AS k, b AS v FROM x ORDER BY k, v DESC",
+            "SELECT k, v FROM (SELECT a AS k, b AS v, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, b DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY k, v DESC",
+        )
+        self.validate(
+            eliminate_distinct_on,
+            "SELECT DISTINCT ON (1) a, b FROM x ORDER BY 1, 2 DESC",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY a, b DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1 ORDER BY 1, 2 DESC",
+        )
+
+    def test_eliminate_distinct_on_and_qualify_execution(self):
+        conn = sqlite3.connect(":memory:")
+        conn.execute("CREATE TABLE t (g INTEGER, v INTEGER)")
+        conn.executemany(
+            "INSERT INTO t VALUES (?, ?)",
+            [(1, 10), (1, 30), (2, 20), (2, 20), (3, 5), (3, 40), (4, 1)],
+        )
+
+        for sql, expected in (
+            (
+                "SELECT DISTINCT ON (g) g, v FROM t ORDER BY g, v DESC",
+                [(1, 30), (2, 20), (3, 40), (4, 1)],
+            ),
+            (
+                "SELECT DISTINCT ON (g) g, v FROM t ORDER BY g DESC, v LIMIT 2",
+                [(4, 1), (3, 5)],
+            ),
+            (
+                "SELECT DISTINCT ON (g) g, v FROM t ORDER BY g, v LIMIT 2 OFFSET 1",
+                [(2, 20), (3, 5)],
+            ),
+            (
+                "SELECT DISTINCT ON (g) g AS k, v FROM t ORDER BY k DESC, v DESC",
+                [(4, 1), (3, 40), (2, 20), (1, 30)],
+            ),
+            (
+                "SELECT DISTINCT ON (g) g FROM t ORDER BY g, v DESC LIMIT 3",
+                [(1,), (2,), (3,)],
+            ),
+            (
+                "SELECT g, v FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) = 1 ORDER BY v DESC LIMIT 2",
+                [(2, 20), (1, 10)],
+            ),
+            (
+                "SELECT g, v FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) = 1 ORDER BY g DESC OFFSET 3",
+                [(1, 10)],
+            ),
+            (
+                "SELECT g FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) = 1 ORDER BY v DESC",
+                [(2,), (1,), (3,), (4,)],
+            ),
+            (
+                "SELECT DISTINCT g FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY g ORDER BY v) <= 2 ORDER BY g",
+                [(1,), (2,), (3,), (4,)],
+            ),
+            (
+                "SELECT DISTINCT g FROM t QUALIFY RANK() OVER (ORDER BY v) <= 4 ORDER BY g DESC",
+                [(4,), (3,), (2,), (1,)],
+            ),
+        ):
+            with self.subTest(sql):
+                transpiled = parse_one(sql, read="duckdb").sql("sqlite")
+                self.assertEqual(conn.execute(transpiled).fetchall(), expected)
 
     def test_eliminate_qualify(self):
         self.validate(
@@ -159,6 +254,44 @@ class TestTransforms(unittest.TestCase):
             eliminate_qualify,
             "SELECT a, b FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY d ORDER BY e) = 1 AND f > 0",
             "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY d ORDER BY e) AS _w, f FROM t) AS _t WHERE _w = 1 AND f > 0",
+        )
+
+    def test_eliminate_qualify_distinct_order_and_limit(self):
+        # DISTINCT, ORDER BY, LIMIT and OFFSET are evaluated after QUALIFY
+        self.validate(
+            eliminate_qualify,
+            "SELECT DISTINCT a FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) <= 2",
+            "SELECT DISTINCT a FROM (SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w <= 2",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, b FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY b DESC LIMIT 5 OFFSET 2",
+            "SELECT a, b FROM (SELECT a, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY b DESC LIMIT 5 OFFSET 2",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 FETCH FIRST 2 ROWS ONLY",
+            "SELECT a FROM (SELECT a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 FETCH FIRST 2 ROWS ONLY",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a AS k, b FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY k, b",
+            "SELECT k, b FROM (SELECT a AS k, b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY k, b",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT x.a FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY x.a, c",
+            "SELECT a FROM (SELECT x.a, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w, c AS _o FROM x) AS _t WHERE _w = 1 ORDER BY a, _o",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT a, SUM(b) AS s FROM x GROUP BY a QUALIFY RANK() OVER (ORDER BY SUM(b)) = 1 ORDER BY SUM(b) DESC",
+            "SELECT a, s FROM (SELECT a, SUM(b) AS s, RANK() OVER (ORDER BY SUM(b)) AS _w FROM x GROUP BY a) AS _t WHERE _w = 1 ORDER BY s DESC",
+        )
+        self.validate(
+            eliminate_qualify,
+            "SELECT * FROM x QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1 ORDER BY c LIMIT 1",
+            "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) AS _w FROM x) AS _t WHERE _w = 1 ORDER BY c LIMIT 1",
         )
 
     def test_remove_precision_parameterized_types(self):

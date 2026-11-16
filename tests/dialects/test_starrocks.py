@@ -132,7 +132,7 @@ class TestStarrocks(Validator):
     def test_distinct_on(self):
         self.validate_identity(
             "SELECT DISTINCT ON (a) a, b FROM x ORDER BY c DESC",
-            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number FROM x) AS _t WHERE _row_number = 1",
+            "SELECT a, b FROM (SELECT a AS a, b AS b, ROW_NUMBER() OVER (PARTITION BY a ORDER BY c DESC) AS _row_number, c AS _o FROM x) AS _t WHERE _row_number = 1 ORDER BY _o DESC",
         )
 
     def test_generate_date_array(self):

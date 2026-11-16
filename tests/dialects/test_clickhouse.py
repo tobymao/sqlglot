@@ -866,6 +866,17 @@ class TestClickhouse(Validator):
                 "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
             },
         )
+        self.validate_all(
+            "SELECT formatDateTime(x, '%H:%i %M %W')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%H:%M %B %A')",
+                "mysql": "SELECT DATE_FORMAT(x, '%H:%i %M %W')",
+            },
+            write={
+                "duckdb": "SELECT STRFTIME(x, '%H:%M %B %A')",
+                "mysql": "SELECT DATE_FORMAT(x, '%H:%i %M %W')",
+            },
+        )
 
         self.validate_identity("ALTER TABLE visits DROP PARTITION 201901")
         self.validate_identity("ALTER TABLE visits DROP PARTITION ALL")

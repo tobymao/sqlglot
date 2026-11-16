@@ -100,7 +100,7 @@ def normalize(expression: E) -> E:
         ):
             continue
 
-        if not any(join.args.get(k) for k in exp.Join.JOIN_ATTRS):
+        if not any(join.args.get(k) for k in exp.Join.QUALIFIERS):
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":

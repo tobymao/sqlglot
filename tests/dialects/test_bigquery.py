@@ -3039,6 +3039,53 @@ OPTIONS (
             "MOD(a + 1, b)",
         )
 
+    def test_like_escape(self):
+        # BigQuery's LIKE has no ESCAPE clause, literal patterns are rewritten to backslash escapes
+        self.validate_all(
+            r"SELECT x LIKE '%s3\\_data\\_lake%'",
+            read={
+                "trino": "SELECT x LIKE '%s3^_data^_lake%' ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT x LIKE 'a\\_b\\\\c'",
+            read={
+                "trino": r"SELECT x LIKE 'a\_b\\c' ESCAPE '\'",
+            },
+        )
+        self.validate_all(
+            r"SELECT x NOT LIKE 'a^b\\%'",
+            read={
+                "trino": "SELECT x NOT LIKE 'a^^b^%' ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT LOWER(x) LIKE LOWER('a\\\\b\\_')",
+            read={
+                "trino": r"SELECT LOWER(x) LIKE LOWER('a\b^_') ESCAPE '^'",
+            },
+        )
+        self.validate_all(
+            r"SELECT UPPER(x) LIKE UPPER('%s3\\_data\\_lake%')",
+            read={
+                "trino": "SELECT UPPER(x) LIKE UPPER('%s3^_data^_lake%') ESCAPE '^'",
+            },
+        )
+        # Any escape character, including a newline
+        self.validate_all(
+            "SELECT x LIKE '\\n'",
+            read={
+                "trino": "SELECT x LIKE '\n\n' ESCAPE '\n'",
+            },
+        )
+
+        # The rewritten patterns read back unchanged
+        self.validate_identity(r"SELECT x LIKE '%s3\\_data\\_lake%'")
+        self.validate_identity(r"SELECT x LIKE 'a\\_b\\\\c'")
+        self.validate_identity(r"SELECT x NOT LIKE 'a^b\\%'")
+        self.validate_identity(r"SELECT LOWER(x) LIKE LOWER('a\\\\b\\_')")
+        self.validate_identity(r"SELECT UPPER(x) LIKE UPPER('%s3\\_data\\_lake%')")
+
     def test_inline_constructor(self):
         self.validate_identity(
             """SELECT STRUCT<ARRAY<STRING>>(["2023-01-17"])""",

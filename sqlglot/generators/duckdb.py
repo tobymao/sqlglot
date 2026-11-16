@@ -1555,6 +1555,9 @@ def _explode_to_unnest_sql(self: DuckDBGenerator, expression: exp.Lateral) -> st
             alias_expr.set("this", exp.to_identifier(f"_u_{expression.index}"))
 
         transformed_lateral_expr = exp.Lateral(this=select_expr, alias=alias_expr)
+        if expression.args.get("outer"):
+            return self.sql(exp.Join(this=transformed_lateral_expr, side="LEFT", on=exp.true()))
+
         cross_join_lateral_expr = exp.Join(this=transformed_lateral_expr, kind="CROSS")
 
         return self.sql(cross_join_lateral_expr)

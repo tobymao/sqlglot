@@ -7504,6 +7504,16 @@ FROM SEMANTIC_VIEW(
             write={
                 "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', -1)",
                 "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN -1 <= 0 THEN 1 ELSE -1 END), 'sub') + CASE WHEN -1 <= 0 THEN 1 ELSE -1 END - 1 END",
+                "sqlite": "SELECT IIF(INSTR(SUBSTRING('testsubstring', IIF(-1 <= 0, 1, -1)), 'sub') = 0, 0, INSTR(SUBSTRING('testsubstring', IIF(-1 <= 0, 1, -1)), 'sub') + IIF(-1 <= 0, 1, -1) - 1)",
+                "postgres": "SELECT CASE WHEN POSITION('sub' IN SUBSTRING('testsubstring' FROM CASE WHEN -1 <= 0 THEN 1 ELSE -1 END)) = 0 THEN 0 ELSE POSITION('sub' IN SUBSTRING('testsubstring' FROM CASE WHEN -1 <= 0 THEN 1 ELSE -1 END)) + CASE WHEN -1 <= 0 THEN 1 ELSE -1 END - 1 END",
+                "tsql": "SELECT CHARINDEX('sub', 'testsubstring', -1)",
+            },
+        )
+        self.validate_all(
+            "SELECT POSITION('sub', 'testsubstring', p)",
+            write={
+                "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', p)",
+                "sqlite": "SELECT IIF(INSTR(SUBSTRING('testsubstring', IIF(p <= 0, 1, p)), 'sub') = 0, 0, INSTR(SUBSTRING('testsubstring', IIF(p <= 0, 1, p)), 'sub') + IIF(p <= 0, 1, p) - 1)",
             },
         )
         self.validate_all(

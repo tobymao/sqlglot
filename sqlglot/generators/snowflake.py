@@ -573,7 +573,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.EndsWith: rename_func("ENDSWITH"),
         exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.StrPosition: lambda self, e: strposition_sql(
-            self, e, func_name="CHARINDEX", supports_position=True
+            self, e, func_name="CHARINDEX", supports_position=True, clamps_position=True
         ),
         exp.StrToDate: lambda self, e: self.func("DATE", e.this, self.format_time(e)),
         exp.StringToArray: rename_func("STRTOK_TO_ARRAY"),

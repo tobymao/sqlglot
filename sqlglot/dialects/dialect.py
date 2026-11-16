@@ -1612,6 +1612,7 @@ def strposition_sql(
     supports_position: bool = False,
     supports_occurrence: bool = False,
     use_ansi_position: bool = True,
+    clamps_position: bool = False,
 ) -> str:
     string = expression.this
     substr = expression.args.get("substr")
@@ -1619,6 +1620,10 @@ def strposition_sql(
     occurrence = expression.args.get("occurrence")
     zero = exp.Literal.number(0)
     one = exp.Literal.number(1)
+
+    # e.g. Snowflake's POSITION / CHARINDEX treat a nonpositive start as 1
+    if position and expression.args.get("clamp_position") and not clamps_position:
+        position = exp.If(this=position <= zero, true=one, false=position.copy())
 
     if supports_occurrence and occurrence and supports_position and not position:
         position = one

@@ -324,6 +324,8 @@ class SQLiteGenerator(generator.Generator):
             return self.func("DATETIME", expression.this)
         if expression.is_type("time"):
             return self.func("TIME", expression.this)
+        if expression.is_type("json", "jsonb"):
+            return self.func("JSON", expression.this)
 
         return super().cast_sql(expression)
 

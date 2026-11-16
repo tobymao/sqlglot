@@ -294,7 +294,6 @@ class HiveGenerator(generator.Generator):
         exp.With: no_recursive_cte_sql,
         exp.DateDiff: _date_diff_sql,
         exp.DateStrToDate: datestrtodate_sql,
-        exp.DateSub: _add_date_sql,
         exp.DateToDi: lambda self, e: (
             f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {HIVE_DATEINT_FORMAT}) AS INT)"
         ),
@@ -414,7 +413,7 @@ class HiveGenerator(generator.Generator):
 
     IGNORE_NULLS_FUNCS: t.ClassVar = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
 
-    def dateadd_sql(self, expression: exp.DateAdd) -> str:
+    def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
         if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
             this: exp.Expr = exp.cast(expression.this, exp.DType.TIMESTAMP, dialect=self.dialect)
             amount = expression.expression
@@ -423,12 +422,19 @@ class HiveGenerator(generator.Generator):
             elif not amount.is_string:
                 # Hive's interval constructor does not accept NULL amounts.
                 this = exp.If(this=amount.is_(exp.null()), true=exp.null(), false=this)
-                amount = exp.paren(exp.func("COALESCE", amount, 0))
+                amount = exp.func("COALESCE", amount, 0)
 
             interval = exp.Interval(this=amount, unit=expression.unit)
-            return date_delta_to_binary_sql(self, expression, this + interval)
+            return date_delta_to_binary_sql(
+                self,
+                expression,
+                this - interval if isinstance(expression, exp.DateSub) else this + interval,
+            )
 
         return _add_date_sql(self, expression)
+
+    def datesub_sql(self, expression: exp.DateSub) -> str:
+        return self.dateadd_sql(expression)
 
     def format_time(
         self,

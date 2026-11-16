@@ -146,10 +146,14 @@ class SparkGenerator(Spark2Generator):
         if v is not None
     }
 
-    def dateadd_sql(self, expression: exp.DateAdd) -> str:
+    def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
         if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
+            amount = expression.expression
             return self.func(
-                "TIMESTAMPADD", unit_to_var(expression), expression.expression, expression.this
+                "TIMESTAMPADD",
+                unit_to_var(expression),
+                -amount if isinstance(expression, exp.DateSub) else amount,
+                expression.this,
             )
 
         return super().dateadd_sql(expression)

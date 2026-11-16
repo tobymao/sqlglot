@@ -50,8 +50,8 @@ SELECT TRUE IN (x.a > 1, FALSE) AS d FROM x AS x;
 
 # title: Don't wrap the list operand of DuckDB's IN
 # dialect: duckdb
-SELECT 1 IN f AS d FROM (SELECT [a] || [b] AS f FROM x);
-SELECT 1 IN [x.a] || [x.b] AS d FROM x AS x;
+SELECT 1 IN f AS d FROM (SELECT [a, b][1:1] AS f FROM x);
+SELECT 1 IN [x.a, x.b][1:1] AS d FROM x AS x;
 
 # title: Don't wrap a wrapped expression
 SELECT foo * 2 AS bar FROM (SELECT (1 + 2 + 3) AS foo FROM x);

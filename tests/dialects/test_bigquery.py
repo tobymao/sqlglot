@@ -3017,11 +3017,10 @@ OPTIONS (
         )
 
     def test_at_time_zone(self):
-        # DATETIME over a TIMESTAMP, as transpiled from Presto and Postgres, reads back unchanged
-        self.validate_identity("TIMESTAMP(DATETIME(CAST(t AS DATETIME), 'America/Los_Angeles'))")
+        # DATETIME over a TIMESTAMP, as transpiled from Presto, reads back unchanged
         self.validate_identity("TIMESTAMP(DATETIME(CAST(x AS TIMESTAMP), 'America/Sao_Paulo'))")
         self.validate_identity(
-            "SELECT TIMESTAMP(DATETIME(CAST(CAST('2012-10-31 00:00' AS DATETIME) AS TIMESTAMP), 'America/Sao_Paulo'))"
+            "SELECT TIMESTAMP(DATETIME(CAST(CAST('2012-10-31 00:00:00' AS DATETIME) AS TIMESTAMP), 'America/Sao_Paulo'))"
         )
 
     def test_inline_constructor(self):

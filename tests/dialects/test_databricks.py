@@ -1,5 +1,5 @@
-from sqlglot import exp, transpile, parse_one
-from sqlglot.errors import ParseError
+from sqlglot import exp, transpile, parse_one, parse
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -668,6 +668,78 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "REVOKE SELECT ON TABLE t FROM `fab9e00e-ca35-11ec-9d64-0242ac120002`"
         )
+
+    def test_optimize(self):
+        for sql in (
+            "OPTIMIZE t",
+            "OPTIMIZE db.t",
+            "OPTIMIZE catalog.db.t",
+            "OPTIMIZE `cat.name`.`some schema`.`a``b`",
+            "OPTIMIZE 123t",
+            "OPTIMIZE vacuum.t",
+            "OPTIMIZE optimize.t",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql)
+                self.assertNotIsInstance(tree, exp.Command)
+                self.assertIsInstance(tree, exp.Optimize)
+                self.assertIsInstance(tree.this, exp.Table)
+                for part in tree.this.parts:
+                    self.assertEqual(
+                        sql[part.meta["start"] : part.meta["end"] + 1],
+                        part.sql(dialect="databricks"),
+                    )
+
+        tree = self.validate_identity("optimize db.t", "OPTIMIZE db.t")
+        self.assertEqual([part.name for part in tree.this.parts], ["db", "t"])
+        self.assertEqual(list(tree.find_all(exp.Table)), [tree.this])
+        self.assertEqual(exp.Expr.load(tree.dump()), tree)
+        self.assertEqual(tree, self.parse_one(tree.sql(dialect="databricks")))
+        self.validate_identity("SELECT optimize FROM optimize")
+
+        for newline in ("\n", "\r\n", "\r"):
+            with self.subTest(newline=newline):
+                sql = f"OPTIMIZE{newline}t"
+                table = self.parse_one(sql).this
+                self.assertEqual(table.this.meta["line"], 2)
+                self.assertEqual(table.this.meta["col"], 1)
+                self.assertEqual(sql[table.this.meta["start"] : table.this.meta["end"] + 1], "t")
+
+        table = self.parse_one("OPTIMIZE `a\rb`.c").this
+        self.assertEqual(
+            [(part.meta["line"], part.meta["col"]) for part in table.parts], [(2, 2), (2, 4)]
+        )
+
+        for dialect in ("hive", "spark", "snowflake"):
+            with self.subTest(dialect=dialect):
+                self.assertIsInstance(parse_one("OPTIMIZE t", read=dialect), exp.Command)
+                with self.assertRaises(UnsupportedError):
+                    tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
+        statements = parse("OPTIMIZE db.t; SELECT 1", read="databricks")
+        self.assertEqual(len(statements), 2)
+        self.assertIsInstance(statements[0], exp.Optimize)
+        self.assertIsInstance(statements[1], exp.Select)
+
+    def test_optimize_command_fallback(self):
+        for sql in (
+            "OPTIMIZE t FULL",
+            "OPTIMIZE t WHERE partition_id = 1",
+            "OPTIMIZE t ZORDER BY (id)",
+            "OPTIMIZE t WHERE partition_id = 1 ZORDER BY (id)",
+            "OPTIMIZE t /* comment */",
+            "OPTIMIZE 'not_a_table'",
+            "OPTIMIZE 1e3",
+            "OPTIMIZE f(" + "(" * 80 + "1" + ")" * 80 + ")",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql, check_command_warning=True)
+                self.assertIsInstance(tree, exp.Command)
+
+    def test_optimize_parser_limits(self):
+        with self.assertRaises(ParseError):
+            self.parse_one("OPTIMIZE t", max_nodes=1)
+        self.assertIsInstance(self.parse_one("OPTIMIZE t", max_nodes=2), exp.Optimize)
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")

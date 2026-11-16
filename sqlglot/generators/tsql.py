@@ -137,6 +137,7 @@ class TSQLGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_MULTI_ARG_CHR = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -213,7 +214,7 @@ class TSQLGenerator(generator.Generator):
         exp.ArrayToString: rename_func("STRING_AGG"),
         exp.AutoIncrementColumnConstraint: lambda *_: "IDENTITY",
         exp.Ceil: rename_func("CEILING"),
-        exp.Chr: rename_func("CHAR"),
+        exp.Chr: lambda self, e: self.chr_sql(e, "CHAR"),
         exp.DateAdd: date_delta_sql("DATEADD"),
         exp.CTE: transforms.preprocess([qualify_derived_table_outputs]),
         exp.CurrentDate: rename_func("GETDATE"),

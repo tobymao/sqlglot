@@ -228,6 +228,7 @@ class HiveGenerator(generator.Generator):
     SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
+    SUPPORTS_MULTI_ARG_CHR = False
     SUPPORTS_GROUPING_SETS_AS_SUFFIX = True
     SUPPORTS_DECODE_CASE = False
     LIMIT_FETCH = "LIMIT"

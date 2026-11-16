@@ -1,5 +1,7 @@
 from unittest import mock
 
+import duckdb
+
 from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -9,6 +11,75 @@ from tests.dialects.test_dialect import Validator
 
 class TestDuckDB(Validator):
     dialect = "duckdb"
+
+    def test_binary_strposition(self):
+        for sql, schema, expected in (
+            (
+                "SELECT POSITION(X'BC', X'ABCD')",
+                None,
+                "SELECT (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('BC')), 1)) // 2)",
+            ),
+            (
+                "SELECT POSITION(t.needle, t.haystack) FROM t",
+                {"t": {"needle": "BINARY", "haystack": "BINARY"}},
+                "SELECT (LENGTH(REGEXP_EXTRACT('xx' || HEX(t.haystack), '^(xx(?:..)*?)' || HEX(t.needle), 1)) // 2) FROM t",
+            ),
+            (
+                "SELECT 2 * POSITION(X'BC', X'ABCD')",
+                None,
+                "SELECT 2 * (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('BC')), 1)) // 2)",
+            ),
+            (
+                "SELECT 6 / POSITION(X'AB', X'ABCD')",
+                None,
+                "SELECT 6 / (LENGTH(REGEXP_EXTRACT('xx' || HEX(UNHEX('ABCD')), '^(xx(?:..)*?)' || HEX(UNHEX('AB')), 1)) // 2)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                expression = annotate_types(
+                    parse_one(sql, read="snowflake"), schema=schema, dialect="snowflake"
+                )
+                self.assertEqual(expression.sql("duckdb"), expected)
+
+    def test_binary_strposition_execution(self):
+        expression = annotate_types(
+            parse_one("SELECT POSITION(t.needle, t.haystack) FROM t", read="snowflake"),
+            schema={"t": {"needle": "BINARY", "haystack": "BINARY"}},
+            dialect="snowflake",
+        )
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE t(needle BLOB, haystack BLOB)")
+            for haystack, needle, expected in (
+                (b"\xab\xcd", b"\xbc", 0),
+                (b"\xab\xcb\xbc", b"\xbc", 3),
+                (b"\xab\xcd\xef", b"\xef", 3),
+                (b"\xab\xbc\xbc", b"\xbc", 2),
+                (b"\x00\xff\x00", b"\xff\x00", 2),
+                (b"", b"", 1),
+                (b"a", b"", 1),
+                (b"", b"a", 0),
+                (None, b"a", None),
+                (b"a", None, None),
+                (None, None, None),
+            ):
+                with self.subTest(haystack=haystack, needle=needle):
+                    connection.execute("DELETE FROM t")
+                    connection.execute("INSERT INTO t VALUES (?, ?)", [needle, haystack])
+                    self.assertEqual(
+                        connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
+                    )
+
+            for sql, expected in (
+                ("SELECT 2 * POSITION(X'BC', X'ABCD')", 0),
+                ("SELECT 6 / POSITION(X'AB', X'ABCD')", 6),
+            ):
+                with self.subTest(sql=sql):
+                    expression = annotate_types(
+                        parse_one(sql, read="snowflake"), dialect="snowflake"
+                    )
+                    self.assertEqual(
+                        connection.execute(expression.sql("duckdb")).fetchall(), [(expected,)]
+                    )
 
     def test_min_max(self):
         for name, func in (("MIN", exp.Min), ("MAX", exp.Max)):
@@ -1846,7 +1917,7 @@ class TestDuckDB(Validator):
             "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM RANGE(1, 5) t(i)) SELECT * FROM t",
             write={
                 "duckdb": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM RANGE(1, 5) AS t(i)) SELECT * FROM t",
-                "sqlite": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM (SELECT value AS i FROM GENERATE_SERIES(1, 5)) AS t) SELECT * FROM t",
+                "sqlite": "WITH t AS (SELECT i, i * i * i * i * i AS i5 FROM (SELECT value AS i FROM GENERATE_SERIES(1, 5 - 1)) AS t) SELECT * FROM t",
             },
         )
 

@@ -259,6 +259,11 @@ EXPRESSION_METADATA = {
             e, exp.DType.DOUBLE if e.this.is_type(*exp.DataType.FLOAT_TYPES) else exp.DType.INT
         )
     },
+    exp.HexString: {
+        "annotator": lambda self, e: self._set_type(
+            e, exp.DType.VARCHAR if e.args.get("is_character") else exp.DType.BINARY
+        )
+    },
     **{
         expr_type: {"annotator": lambda self, e: self._annotate_by_args(e, "this")}
         for expr_type in {
@@ -327,7 +332,6 @@ EXPRESSION_METADATA = {
             exp.DecryptRaw,
             exp.Encrypt,
             exp.EncryptRaw,
-            exp.HexString,
             exp.MD5Digest,
             exp.SHA1Digest,
             exp.SHA2Digest,

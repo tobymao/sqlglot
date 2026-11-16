@@ -23,6 +23,29 @@ class TestBigQuery(Validator):
     dialect = "bigquery"
     maxDiff = None
 
+    def test_information_schema_roundtrip(self):
+        for sql, expected in (
+            (
+                "SELECT SCHEMATA.schema_name FROM region-us.INFORMATION_SCHEMA.SCHEMATA",
+                "SELECT SCHEMATA.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS SCHEMATA",
+            ),
+            (
+                "SELECT SCHEMATA.schema_name FROM `region-us`.`INFORMATION_SCHEMA`.`SCHEMATA`",
+                "SELECT SCHEMATA.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS `SCHEMATA`",
+            ),
+            (
+                "SELECT s.schema_name FROM region-us.INFORMATION_SCHEMA.SCHEMATA AS s",
+                "SELECT s.schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS s",
+            ),
+            (
+                "SELECT schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA`",
+                "SELECT schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` AS `region-us.INFORMATION_SCHEMA.SCHEMATA`",
+            ),
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql, expected)
+                self.validate_identity(expected)
+
     def test_variance(self):
         for name in ("var_samp", "VAR_SAMP", "variance", "VARIANCE"):
             with self.subTest(name=name):
@@ -612,15 +635,15 @@ class TestBigQuery(Validator):
         )
         self.validate_identity(
             "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
+            "SELECT * FROM `region_or_dataset.INFORMATION_SCHEMA.TABLES` AS TABLES",
         )
         self.validate_identity(
             "SELECT * FROM region_or_dataset.INFORMATION_SCHEMA.TABLES AS some_name",
-            "SELECT * FROM region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS some_name",
+            "SELECT * FROM `region_or_dataset.INFORMATION_SCHEMA.TABLES` AS some_name",
         )
         self.validate_identity(
             "SELECT * FROM proj.region_or_dataset.INFORMATION_SCHEMA.TABLES",
-            "SELECT * FROM proj.region_or_dataset.`INFORMATION_SCHEMA.TABLES` AS TABLES",
+            "SELECT * FROM `proj.region_or_dataset.INFORMATION_SCHEMA.TABLES` AS TABLES",
         )
         self.validate_identity(
             "CREATE VIEW `d.v` OPTIONS (expiration_timestamp=TIMESTAMP '2020-01-02T04:05:06.007Z') AS SELECT 1 AS c",

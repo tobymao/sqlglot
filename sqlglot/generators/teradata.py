@@ -102,6 +102,13 @@ class TeradataGenerator(generator.Generator):
         exp.Quarter: lambda self, e: self.sql(exp.Extract(this="QUARTER", expression=e.this)),
     }
 
+    def hexstring_sql(
+        self, expression: exp.HexString, binary_function_repr: str | None = None
+    ) -> str:
+        if expression.args.get("is_character"):
+            return f"{self.sql(exp.Literal.string(expression.this))}XC"
+        return super().hexstring_sql(expression, binary_function_repr)
+
     def execute_sql(self, expression: exp.Execute) -> str:
         if expression.args.get("return_status"):
             self.unsupported("Teradata EXECUTE does not support a return status")

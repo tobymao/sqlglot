@@ -167,7 +167,7 @@ def simplify_parens(expression: exp.Expr, dialect: DialectType) -> exp.Expr:
         if (
             parent_is_predicate
             # unary operators that bind tighter than the predicate, unlike NOT
-            or isinstance(parent, (exp.Neg, exp.BitwiseNot))
+            or isinstance(parent, (exp.Pos, exp.Neg, exp.BitwiseNot))
             or (isinstance(parent, exp.Binary) and not isinstance(parent, exp.Connector))
         ):
             return expression
@@ -809,6 +809,9 @@ class Simplifier:
             node = self.simplify_literals(node, root)
             node = self.simplify_equality(node)
             node = simplify_parens(node, dialect=self.dialect)
+            # simplify_parens may have unwrapped a Paren, so make sure the following
+            # rules see the real parent and not the Paren that is about to be replaced
+            node.parent = parent
             node = self.simplify_datetrunc(node)
             node = self.sort_comparison(node)
             node = self.simplify_startswith(node)
@@ -1867,6 +1870,9 @@ class Gen:
 
     def mul_sql(self, e: exp.Mul) -> None:
         self._binary(e, " * ")
+
+    def pos_sql(self, e: exp.Pos) -> None:
+        self._unary(e, "+")
 
     def neg_sql(self, e: exp.Neg) -> None:
         self._unary(e, "-")

@@ -574,6 +574,22 @@ SELECT -(x.a > x.b) FROM x;
 SELECT (-((x.a) IS NULL)) FROM x;
 SELECT -(x.a IS NULL) FROM x;
 
+# dialect: sqlite
+SELECT +(x = 1) FROM t;
+SELECT +(x = 1) FROM t;
+
+# dialect: sqlite
+SELECT +(x IN (1, 2)) FROM t;
+SELECT +(x IN (1, 2)) FROM t;
+
+# dialect: sqlite
+SELECT +(x IS 1) FROM t;
+SELECT +(x IS 1) FROM t;
+
+# dialect: sqlite
+SELECT +(NOT x) FROM t;
+SELECT +(NOT x) FROM t;
+
 -- like unary minus, `~` binds tighter than a predicate, so its parens must be kept
 # dialect: postgres
 ~(a = b);
@@ -1540,6 +1556,16 @@ x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
 
 NOT DATE_TRUNC('year', x) <> CAST('2021-01-01' AS DATE);
 x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+-- same as above, but the comparison is reversed and only gets simplified after being sorted
+NOT (CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x));
+x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE);
+
+NOT (CAST('2021-01-01' AS DATE) <> DATE_TRUNC('year', x));
+x < CAST('2022-01-01' AS DATE) AND x >= CAST('2021-01-01' AS DATE);
+
+NOT (CAST('2021-01-01' AS DATE) = DATE_TRUNC('year', x)) AND y = 1;
+(x < CAST('2021-01-01' AS DATE) OR x >= CAST('2022-01-01' AS DATE)) AND y = 1;
 
 # dialect: bigquery
 DATE_TRUNC(x, WEEK) <> CAST('2008-11-09' AS DATE) AND y = 1;

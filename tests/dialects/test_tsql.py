@@ -8,6 +8,35 @@ from tests.dialects.test_dialect import Validator
 class TestTSQL(Validator):
     dialect = "tsql"
 
+    def test_boolean_cast_predicates(self):
+        for cast in ("CAST", "TRY_CAST"):
+            for template in (
+                "SELECT x FROM t WHERE {condition}",
+                "SELECT x FROM t GROUP BY x, y HAVING {condition}",
+                "SELECT CASE WHEN {condition} THEN 1 ELSE 0 END FROM t",
+                "SELECT x FROM t WHERE NOT {condition}",
+                "SELECT x FROM t WHERE {condition} AND z = 1",
+                "SELECT x FROM t WHERE z = 1 OR {condition}",
+            ):
+                sql = template.format(condition=f"{cast}(y AS BOOLEAN)")
+                expected = template.format(condition=f"{cast}(y AS BIT) <> 0")
+                with self.subTest(sql=sql):
+                    self.validate_identity(sql, expected)
+                    self.validate_identity(expected)
+
+    def test_boolean_cast_values(self):
+        for cast in ("CAST", "TRY_CAST"):
+            for template in (
+                "SELECT {value} FROM t",
+                "SELECT x FROM t WHERE {value} = 1",
+                "SELECT CASE {value} WHEN 1 THEN 2 ELSE 3 END FROM t",
+            ):
+                with self.subTest(cast=cast, template=template):
+                    self.validate_identity(
+                        template.format(value=f"{cast}(y AS BOOLEAN)"),
+                        template.format(value=f"{cast}(y AS BIT)"),
+                    )
+
     def test_set_operation_order(self):
         self.validate_identity(
             "SELECT t.x FROM (VALUES (1)) AS t(x) UNION ALL SELECT 2 ORDER BY (t.x)"

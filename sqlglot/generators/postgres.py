@@ -277,6 +277,7 @@ class PostgresGenerator(generator.Generator):
     VARIANCE_NAME = "VAR_SAMP"
     TRY_SUPPORTED = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_MULTI_ARG_CHR = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 

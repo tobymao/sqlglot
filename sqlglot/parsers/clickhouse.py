@@ -430,7 +430,7 @@ class ClickHouseParser(parser.Parser):
         "TUPLE": lambda self: exp.Struct.from_arg_list(self._parse_function_args(alias=True)),
         "AND": lambda self: self._parse_connector_function(exp.and_),
         "OR": lambda self: self._parse_connector_function(exp.or_),
-        "XOR": lambda self: exp.xor(*self._parse_function_args(alias=False)),
+        "XOR": lambda self: self._parse_xor(),
         "VIEW": lambda self: self.expression(
             exp.Anonymous(this="view", expressions=[self._parse_select()])
         ),
@@ -754,6 +754,10 @@ class ClickHouseParser(parser.Parser):
                     table.replace(table.to_column())
 
         return join
+
+    def _parse_xor(self) -> exp.Expr:
+        args = self._parse_function_args(alias=False)
+        return exp.xor(*args) if args else self.expression(exp.Xor())
 
     def _parse_function(
         self,

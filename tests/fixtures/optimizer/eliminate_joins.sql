@@ -719,3 +719,59 @@ RIGHT JOIN (
   FROM y
 ) AS y
   USING (b);
+
+# title: Noop - UNION ALL derived table can repeat join keys
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  UNION ALL
+  SELECT
+    y.b AS b
+  FROM y
+) AS y
+  ON x.a = y.b
+ORDER BY
+  x.a;
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  UNION ALL
+  SELECT
+    y.b AS b
+  FROM y
+) AS y
+  ON x.a = y.b
+ORDER BY
+  x.a;
+
+# title: Remove left join on UNION derived table
+# execute: true
+SELECT
+  x.a
+FROM x
+LEFT JOIN (
+  SELECT
+    y.b AS b
+  FROM y
+  UNION
+  SELECT
+    y.b AS b
+  FROM y
+) AS y
+  ON x.a = y.b
+ORDER BY
+  x.a;
+SELECT
+  x.a
+FROM x
+ORDER BY
+  x.a;

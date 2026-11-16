@@ -8,11 +8,17 @@ from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ErrorLevel
+from sqlglot.errors import ErrorLevel, ParseError
 
 
 class TestClickhouse(Validator):
     dialect = "clickhouse"
+
+    def test_xor_missing_arguments(self):
+        for sql in ("SELECT xor()", "SELECT xor(;)", "SELECT xor(,)", "SELECT xor(0, xor())"):
+            for error_level in (ErrorLevel.RAISE, ErrorLevel.IMMEDIATE):
+                with self.subTest(sql=sql, error_level=error_level), self.assertRaises(ParseError):
+                    self.parse_one(sql, error_level=error_level)
 
     def test_clickhouse(self):
         self.validate_identity(
@@ -860,6 +866,17 @@ class TestClickhouse(Validator):
                 "mysql": "SELECT DATE_FORMAT(NOW(), '%Y-%m-%d')",
             },
         )
+        self.validate_all(
+            "SELECT formatDateTime(x, '%H:%i %M %W')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%H:%M %B %A')",
+                "mysql": "SELECT DATE_FORMAT(x, '%H:%i %M %W')",
+            },
+            write={
+                "duckdb": "SELECT STRFTIME(x, '%H:%M %B %A')",
+                "mysql": "SELECT DATE_FORMAT(x, '%H:%i %M %W')",
+            },
+        )
 
         self.validate_identity("ALTER TABLE visits DROP PARTITION 201901")
         self.validate_identity("ALTER TABLE visits DROP PARTITION ALL")
@@ -1015,6 +1032,25 @@ class TestClickhouse(Validator):
                         self.validate_identity(sql)
 
         self.validate_identity("SELECT []")
+
+    def test_time_format_escaped_percent(self):
+        self.validate_all(
+            "SELECT formatDateTime(x, '%%M %%B %%A %%i %%W %H:%i %M %W')",
+            read={
+                "duckdb": "SELECT STRFTIME(x, '%%M %%B %%A %%i %%W %H:%M %B %A')",
+            },
+            write={
+                "clickhouse": "SELECT formatDateTime(x, '%%M %%B %%A %%i %%W %H:%i %M %W')",
+                "duckdb": "SELECT STRFTIME(x, '%%M %%B %%A %%i %%W %H:%M %B %A')",
+            },
+        )
+        self.validate_all(
+            "SELECT parseDateTime('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+            write={
+                "clickhouse": "SELECT parseDateTime('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+                "duckdb": "SELECT STRPTIME('2024-03-04 %M %B %A', '%Y-%m-%d %%M %%B %%A')",
+            },
+        )
 
     def test_json_extract(self):
         for name in ("JSONExtractRaw", "JSONExtractString"):

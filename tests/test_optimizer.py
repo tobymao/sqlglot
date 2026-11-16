@@ -3293,10 +3293,10 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         for scopes in traverse_scope(expression), list(build_scope(expression).traverse()):
             self.assertEqual(len(scopes), 4)
 
-            self.assertEqual(scopes[0].expression.sql(), "t1, t2")
+            self.assertEqual(scopes[0].expression.sql(), "t1 CROSS JOIN t2")
             self.assertEqual(set(scopes[0].sources), {"t1", "t2"})
 
-            self.assertEqual(scopes[1].expression.sql(), "SELECT * FROM (t1, t2) AS t3")
+            self.assertEqual(scopes[1].expression.sql(), "SELECT * FROM (t1 CROSS JOIN t2) AS t3")
             self.assertEqual(set(scopes[1].sources), {"t3"})
 
             self.assertEqual(scopes[2].expression.sql(), "SELECT * FROM t4")
@@ -3304,7 +3304,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
             self.assertEqual(
                 scopes[3].expression.sql(),
-                "SELECT * FROM (((SELECT * FROM (t1, t2) AS t3), (SELECT * FROM t4)))",
+                "SELECT * FROM (((SELECT * FROM (t1 CROSS JOIN t2) AS t3) CROSS JOIN (SELECT * FROM t4)))",
             )
             self.assertEqual(set(scopes[3].sources), {""})
 

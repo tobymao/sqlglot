@@ -1,3 +1,5 @@
+import sqlite3
+
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
@@ -7,6 +9,41 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_unary_plus(self):
+        for sql in (
+            "SELECT +x FROM t",
+            "SELECT +t.x FROM t",
+            "SELECT +(x + 1) FROM t",
+            "SELECT ++x, +-x, -+x FROM t",
+            "SELECT +x COLLATE NOCASE FROM t",
+            "SELECT 5 IS +TRUE, 5 IS NOT +TRUE, 0 IS +FALSE",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql)
+
+    def test_unary_plus_preserves_affinity(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            connection.executescript(
+                "CREATE TABLE t (x TEXT); INSERT INTO t VALUES ('1'), ('2'), ('01'), (NULL);"
+            )
+            for sql in (
+                "SELECT x FROM t WHERE +x = 1",
+                "SELECT x FROM t WHERE +x IN (1, 2)",
+                "SELECT x FROM t WHERE +x < 2 ORDER BY x",
+                "SELECT x FROM t WHERE +x IS 1",
+                "SELECT x FROM t WHERE +x = '1'",
+                "SELECT 5 IS +TRUE, 5 IS TRUE, 0 IS +FALSE",
+            ):
+                with self.subTest(sql=sql):
+                    generated = self.parse_one(sql).sql("sqlite")
+                    self.assertEqual(
+                        connection.execute(sql).fetchall(),
+                        connection.execute(generated).fetchall(),
+                    )
+        finally:
+            connection.close()
 
     def test_pragma_quoted_names(self):
         for source, expected in (
@@ -177,6 +214,27 @@ class TestSQLite(Validator):
                         read={"": f"SELECT CAST({value} AS {dtype})"},
                     )
 
+    def test_json_cast(self):
+        for dtype, dialects in (
+            ("JSON", ("", "postgres", "duckdb")),
+            ("JSONB", ("", "postgres")),
+        ):
+            for value in ("'{\"a\": 1}'", "x", "NULL"):
+                with self.subTest(dtype=dtype, value=value):
+                    from_ = " FROM (SELECT '{\"a\": 1}' AS x) AS t" if value == "x" else ""
+                    self.validate_all(
+                        f"SELECT JSON({value}){from_}",
+                        read={
+                            dialect: f"SELECT CAST({value} AS {dtype}){from_}"
+                            for dialect in dialects
+                        },
+                    )
+
+            self.validate_all(
+                "SELECT JSON('{\"a\": 1}') ->> '$.a'",
+                read={"postgres": f"SELECT '{{\"a\": 1}}'::{dtype} ->> 'a'"},
+            )
+
     def test_is_precedence(self):
         self.validate_identity("SELECT 'x' LIKE 'x' NOT LIKE '1'")
         for suffix in ("IN (0)", "BETWEEN 0 AND 0", "LIKE '0'", "GLOB '0'"):
@@ -227,6 +285,22 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT x NOT IN (1) IS TRUE", "SELECT (NOT x IN (1)) IS TRUE")
         self.validate_identity("SELECT 0 NOT IN (1) NOT IN (2)", "SELECT NOT (NOT 0 IN (1)) IN (2)")
         self.validate_identity("WITH xyz(x) AS (SELECT 1) SELECT x FROM xyz")
+        self.validate_all(
+            "SELECT CHAR(72, 105, x)",
+            write={
+                "sqlite": "SELECT CHAR(72, 105, x)",
+                "mysql": "SELECT CHAR(72, 105, x)",
+                "clickhouse": "SELECT CHAR(72, 105, x)",
+                "duckdb": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "postgres": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "snowflake": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "bigquery": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "oracle": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "spark": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "trino": "SELECT CHR(72) || CHR(105) || CHR(x)",
+                "tsql": "SELECT CHAR(72) + CHAR(105) + CHAR(x)",
+            },
+        )
         self.validate_identity("SELECT * FROM t AS t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY s.i")
         self.validate_identity("SELECT * FROM t INDEXED BY i")
@@ -381,6 +455,14 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT UNIXEPOCH('now', 'subsec')")
         self.validate_identity("SELECT TIMEDIFF('now', '1809-02-12')")
         self.validate_identity("SELECT * FROM GENERATE_SERIES(1, 5)")
+        self.validate_all(
+            "SELECT * FROM GENERATE_SERIES(1, 5 - 1)",
+            read={"duckdb": "SELECT * FROM RANGE(1, 5)"},
+        )
+        self.validate_all(
+            "SELECT * FROM GENERATE_SERIES(5, 1 + 1, -1)",
+            read={"duckdb": "SELECT * FROM RANGE(5, 1, -1)"},
+        )
         self.validate_identity("SELECT INSTR(haystack, needle)")
         self.validate_identity(
             "SELECT a, SUM(b) OVER (ORDER BY a ROWS BETWEEN -1 PRECEDING AND 1 FOLLOWING) FROM t1 ORDER BY 1"

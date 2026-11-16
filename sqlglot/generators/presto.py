@@ -244,7 +244,9 @@ def _explode_to_unnest_sql(self: PrestoGenerator, expression: exp.Lateral) -> st
     elif isinstance(explode, exp.Inline):
         explode.replace(exp.Explode(this=explode.this.copy()))
 
-    return explode_to_unnest_sql(self, expression)
+    return explode_to_unnest_sql(
+        self, expression, supports_left_join_unnest=self.SUPPORTS_LEFT_JOIN_UNNEST
+    )
 
 
 def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
@@ -278,7 +280,10 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 class PrestoGenerator(generator.Generator):
     SELECT_KINDS = ()
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_MULTI_ARG_CHR = False
     SUPPORTS_TEMPORAL_PRECISION = False
+    # https://github.com/prestodb/presto/issues/8200
+    SUPPORTS_LEFT_JOIN_UNNEST = False
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 

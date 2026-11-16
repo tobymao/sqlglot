@@ -119,6 +119,29 @@ class Validator(unittest.TestCase):
 class TestDialect(Validator):
     maxDiff = None
 
+    def test_date_delta_missing_arguments(self):
+        for dialect, functions in {
+            "bigquery": (
+                "DATE_ADD",
+                "DATE_SUB",
+                "DATETIME_ADD",
+                "DATETIME_SUB",
+                "TIME_ADD",
+                "TIME_SUB",
+                "TIMESTAMP_ADD",
+                "TIMESTAMP_SUB",
+            ),
+            "mysql": ("DATE_ADD", "DATE_SUB"),
+            "doris": ("DATE_ADD", "DATE_SUB", "ADDDATE", "SUBDATE"),
+            "starrocks": ("DATE_ADD", "DATE_SUB", "ADDDATE", "SUBDATE"),
+        }.items():
+            for function in functions:
+                for args in ("", "x"):
+                    sql = f"SELECT {function}({args})"
+                    with self.subTest(dialect=dialect, sql=sql):
+                        with self.assertRaisesRegex(ParseError, "Required keyword:"):
+                            parse_one(sql, read=dialect)
+
     def test_table_query(self):
         dialects = ("", "duckdb", "postgres", "mysql", "presto", "trino")
         for sql, expected in (

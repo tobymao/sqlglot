@@ -1539,6 +1539,50 @@ TBLPROPERTIES (
             },
         )
 
+    def test_lateral_view_outer(self):
+        for sql in (
+            "SELECT a FROM x LATERAL VIEW OUTER EXPLODE(y) t AS a",
+            "SELECT a FROM x LATERAL VIEW EXPLODE_OUTER(y) t AS a",
+        ):
+            with self.subTest(sql):
+                self.validate_all(
+                    sql,
+                    write={
+                        "athena": "SELECT a FROM x LEFT JOIN UNNEST(y) AS t(a) ON TRUE",
+                        "duckdb": "SELECT a FROM x LEFT JOIN UNNEST(y) AS t(a) ON TRUE",
+                        "presto": "SELECT a FROM x CROSS JOIN UNNEST(y) AS t(a)",
+                        "trino": "SELECT a FROM x LEFT JOIN UNNEST(y) AS t(a) ON TRUE",
+                        "spark": sql,
+                    },
+                )
+                with self.assertRaises(UnsupportedError):
+                    self.parse_one(sql).sql("presto", unsupported_level=ErrorLevel.RAISE)
+
+        for sql in (
+            "SELECT a FROM x LATERAL VIEW OUTER POSEXPLODE(y) t AS pos, col",
+            "SELECT a FROM x LATERAL VIEW POSEXPLODE_OUTER(y) t AS pos, col",
+        ):
+            with self.subTest(sql):
+                self.validate_all(
+                    sql,
+                    write={
+                        "duckdb": "SELECT a FROM x LEFT JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos)) ON TRUE",
+                        "presto": "SELECT a FROM x CROSS JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos))",
+                        "trino": "SELECT a FROM x LEFT JOIN LATERAL (SELECT pos - 1 AS pos, col FROM UNNEST(y) WITH ORDINALITY AS t(col, pos)) ON TRUE",
+                        "spark": sql,
+                    },
+                )
+
+        self.validate_all(
+            "SELECT a, b FROM x LATERAL VIEW OUTER INLINE(y) t AS a, b",
+            write={
+                "duckdb": "SELECT a, b FROM x LEFT JOIN LATERAL (SELECT UNNEST(y, max_depth => 2)) AS t(a, b) ON TRUE",
+                "presto": "SELECT a, b FROM x CROSS JOIN UNNEST(y) AS t(a, b)",
+                "trino": "SELECT a, b FROM x LEFT JOIN UNNEST(y) AS t(a, b) ON TRUE",
+                "spark": "SELECT a, b FROM x LATERAL VIEW OUTER INLINE(y) t AS a, b",
+            },
+        )
+
     def test_explode_map(self):
         from sqlglot.optimizer.annotate_types import annotate_types
         from sqlglot.optimizer.qualify import qualify

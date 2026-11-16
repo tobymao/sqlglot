@@ -10,6 +10,13 @@ from tests.dialects.test_dialect import Validator
 class TestMySQL(Validator):
     dialect = "mysql"
 
+    def test_conditionless_join_precedence(self):
+        self.validate_identity(
+            "SELECT * FROM a JOIN b RIGHT JOIN c ON b.y = c.z",
+            "SELECT * FROM a CROSS JOIN b RIGHT JOIN c ON b.y = c.z",
+        )
+        self.validate_identity("SELECT * FROM a, b RIGHT JOIN c ON b.y = c.z")
+
     def test_table_query_identifier(self):
         self.validate_identity(
             "SELECT (table.x) FROM (SELECT 1 AS x) AS `table`",
@@ -55,6 +62,53 @@ class TestMySQL(Validator):
             write={
                 "mysql": "SELECT DATE_ADD('2024-01-01', INTERVAL 1 DAY) - DATE_ADD('2024-01-01', INTERVAL 1 DAY)",
                 "duckdb": "SELECT CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY - (CAST('2024-01-01' AS TIMESTAMP) + INTERVAL 1 DAY)",
+            },
+        )
+
+    def test_subday_datesub(self):
+        for unit in ("HOUR", "MINUTE", "SECOND"):
+            for amount in ("2", "-2", "0"):
+                self.validate_all(
+                    f"SELECT DATE_SUB(ts, INTERVAL '{amount}' {unit}) FROM t",
+                    read={
+                        "bigquery": f"SELECT DATE_SUB(ts, INTERVAL {amount} {unit}) FROM t",
+                    },
+                    write={
+                        "hive": f"SELECT CAST(ts AS TIMESTAMP) - INTERVAL '{amount}' {unit} FROM t",
+                        "spark2": f"SELECT CAST(ts AS TIMESTAMP) - INTERVAL '{amount}' {unit} FROM t",
+                        "spark": f"SELECT TIMESTAMPADD({unit}, -'{amount}', ts) FROM t",
+                    },
+                )
+
+            for amount, wrapped, negated in (
+                ("n", "n", "-n"),
+                ("n + 1", "(n + 1)", "-(n + 1)"),
+                ("NULL", "NULL", "-NULL"),
+            ):
+                self.validate_all(
+                    f"SELECT DATE_SUB(ts, INTERVAL {amount} {unit}) FROM t",
+                    write={
+                        "hive": f"SELECT IF({wrapped} IS NULL, NULL, CAST(ts AS TIMESTAMP)) "
+                        f"- INTERVAL (COALESCE({amount}, 0)) {unit} FROM t",
+                        "spark2": UnsupportedError,
+                        "spark": f"SELECT TIMESTAMPADD({unit}, {negated}, ts) FROM t",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT DATE_SUB('2024-01-01 10:00:00.123456', INTERVAL 2 HOUR)",
+            write={
+                "hive": "SELECT CAST('2024-01-01 10:00:00.123456' AS TIMESTAMP) - INTERVAL '2' HOUR",
+                "spark2": "SELECT CAST('2024-01-01 10:00:00.123456' AS TIMESTAMP) - INTERVAL '2' HOUR",
+                "spark": "SELECT TIMESTAMPADD(HOUR, -'2', '2024-01-01 10:00:00.123456')",
+            },
+        )
+        self.validate_all(
+            "SELECT ts < DATE_SUB(ts, INTERVAL 2 HOUR) FROM t",
+            write={
+                "hive": "SELECT ts < (CAST(ts AS TIMESTAMP) - INTERVAL '2' HOUR) FROM t",
+                "spark2": "SELECT ts < (CAST(ts AS TIMESTAMP) - INTERVAL '2' HOUR) FROM t",
+                "spark": "SELECT ts < TIMESTAMPADD(HOUR, -'2', ts) FROM t",
             },
         )
 
@@ -532,6 +586,9 @@ class TestMySQL(Validator):
         )
         self.validate_identity(
             "CREATE TABLE t (a INT) ENGINE=InnoDB, /* c */ ROW_FORMAT=DYNAMIC",
+            "CREATE TABLE t (a INT) ENGINE=InnoDB /* c */ ROW_FORMAT=DYNAMIC",
+        )
+        self.validate_identity(
             "CREATE TABLE t (a INT) ENGINE=InnoDB /* c */ ROW_FORMAT=DYNAMIC",
         )
         self.validate_identity(

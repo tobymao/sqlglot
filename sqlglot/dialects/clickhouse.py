@@ -24,6 +24,14 @@ class ClickHouse(Dialect):
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     HEX_STRING_IS_INTEGER_TYPE = True
 
+    # https://clickhouse.com/docs/sql-reference/functions/date-time-functions#formatDateTime
+    TIME_MAPPING = {
+        "%%": "%%",
+        "%M": "%B",
+        "%i": "%M",
+        "%W": "%A",
+    }
+
     # https://github.com/ClickHouse/ClickHouse/issues/33935#issue-1112165779
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_SENSITIVE
 

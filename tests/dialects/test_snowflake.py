@@ -7511,6 +7511,8 @@ FROM SEMANTIC_VIEW(
             write={
                 "snowflake": "SELECT CHARINDEX('sub', 'testsubstring', p)",
                 "duckdb": "SELECT CASE WHEN STRPOS(SUBSTRING('testsubstring', CASE WHEN p <= 0 THEN 1 ELSE p END), 'sub') = 0 THEN 0 ELSE STRPOS(SUBSTRING('testsubstring', CASE WHEN p <= 0 THEN 1 ELSE p END), 'sub') + CASE WHEN p <= 0 THEN 1 ELSE p END - 1 END",
+                "sqlite": "SELECT IIF(INSTR(SUBSTRING('testsubstring', IIF(p <= 0, 1, p)), 'sub') = 0, 0, INSTR(SUBSTRING('testsubstring', IIF(p <= 0, 1, p)), 'sub') + IIF(p <= 0, 1, p) - 1)",
+                "postgres": "SELECT CASE WHEN POSITION('sub' IN SUBSTRING('testsubstring' FROM CASE WHEN p <= 0 THEN 1 ELSE p END)) = 0 THEN 0 ELSE POSITION('sub' IN SUBSTRING('testsubstring' FROM CASE WHEN p <= 0 THEN 1 ELSE p END)) + CASE WHEN p <= 0 THEN 1 ELSE p END - 1 END",
             },
         )
 

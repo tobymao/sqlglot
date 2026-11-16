@@ -2811,7 +2811,6 @@ class DuckDBGenerator(generator.Generator):
     def strposition_sql(self, expression: exp.StrPosition) -> str:
         this = expression.this
         substr = expression.args.get("substr")
-        position = expression.args.get("position")
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
         # Convert to HEX strings, use STRPOS, then convert hex position to byte position
@@ -2823,18 +2822,6 @@ class DuckDBGenerator(generator.Generator):
             )
 
             return self.sql(exp.cast((hex_strpos + 1) / 2, exp.DType.INT))
-
-        # For VARCHAR: handle clamp_position
-        if expression.args.get("clamp_position") and position:
-            expression = expression.copy()
-            expression.set(
-                "position",
-                exp.If(
-                    this=exp.LTE(this=position, expression=exp.Literal.number(0)),
-                    true=exp.Literal.number(1),
-                    false=position.copy(),
-                ),
-            )
 
         return strposition_sql(self, expression)
 

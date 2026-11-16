@@ -10,6 +10,30 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_snowflake_position_start(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            connection.execute("CREATE TABLE t (id INT, p INT)")
+            connection.executemany(
+                "INSERT INTO t VALUES (?, ?)",
+                enumerate((-2, 0, 1, 2, 3, 6, 7, None)),
+            )
+            for function in ("POSITION", "CHARINDEX"):
+                for needle, expected in (
+                    ("a", [(2,), (2,), (2,), (2,), (4,), (6,), (0,), (None,)]),
+                    ("z", [(0,)] * 7 + [(None,)]),
+                ):
+                    with self.subTest(function=function, needle=needle):
+                        expression = parse_one(
+                            f"SELECT {function}('{needle}', 'banana', p) FROM t ORDER BY id",
+                            dialect="snowflake",
+                        )
+                        self.assertEqual(
+                            connection.execute(expression.sql("sqlite")).fetchall(), expected
+                        )
+        finally:
+            connection.close()
+
     def test_unary_plus(self):
         for sql in (
             "SELECT +x FROM t",

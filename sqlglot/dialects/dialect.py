@@ -1625,6 +1625,8 @@ def strposition_sql(
 
     transpile_position = position and not supports_position
     if transpile_position:
+        if position and expression.args.get("clamp_position"):
+            position = exp.If(this=position <= zero, true=one, false=position.copy())
         string = exp.Substring(this=string, start=position)
 
     if func_name == "POSITION" and use_ansi_position:

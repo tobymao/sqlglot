@@ -166,6 +166,12 @@ class SQLiteParser(parser.Parser):
 
         return this
 
+    def _parse_string_agg(self) -> exp.GroupConcat:
+        expression = super()._parse_string_agg()
+        separator = expression.args.get("separator")
+        expression.set("null_separator_is_empty", True)
+        return expression
+
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
         # Ordering comparisons bind above IS, but range predicates bind below it.
         this = self._parse_bitwise()

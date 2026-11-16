@@ -10,6 +10,46 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_group_concat_null_separator(self):
+        for separator, duckdb_separator in (
+            ("NULL", "NULL"),
+            (":separator", "$separator"),
+            ("CAST(NULL AS TEXT)", "CAST(NULL AS TEXT)"),
+        ):
+            sql = f"SELECT GROUP_CONCAT(x, {separator}) FROM t"
+            self.validate_all(
+                sql,
+                write={
+                    "sqlite": sql,
+                    "duckdb": f"SELECT LISTAGG(x, COALESCE({duckdb_separator}, '')) FROM t",
+                },
+            )
+
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x, NULL ORDER BY y) FILTER(WHERE z > 0) FROM t",
+            write={
+                "sqlite": "SELECT GROUP_CONCAT(x, NULL ORDER BY y) FILTER(WHERE z > 0) FROM t",
+                "duckdb": "SELECT LISTAGG(x, COALESCE(NULL, '') ORDER BY y NULLS FIRST) FILTER(WHERE z > 0) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT STRING_AGG(x, NULL) FROM t",
+            write={
+                "sqlite": "SELECT GROUP_CONCAT(x, NULL) FROM t",
+                "duckdb": "SELECT LISTAGG(x, COALESCE(NULL, '')) FROM t",
+            },
+        )
+        for sql, expected in (
+            ("GROUP_CONCAT(x)", "LISTAGG(x, ',')"),
+            ("GROUP_CONCAT(x, '')", "LISTAGG(x, '')"),
+            ("GROUP_CONCAT(x, ',')", "LISTAGG(x, ',')"),
+            ("GROUP_CONCAT(x, 'NULL')", "LISTAGG(x, 'NULL')"),
+        ):
+            self.validate_all(
+                sql,
+                write={"duckdb": expected},
+            )
+
     def test_group_concat_distinct_separator(self):
         self.validate_all(
             "SELECT GROUP_CONCAT(DISTINCT x) FROM t",

@@ -574,6 +574,22 @@ SELECT -(x.a > x.b) FROM x;
 SELECT (-((x.a) IS NULL)) FROM x;
 SELECT -(x.a IS NULL) FROM x;
 
+# dialect: sqlite
+SELECT +(x = 1) FROM t;
+SELECT +(x = 1) FROM t;
+
+# dialect: sqlite
+SELECT +(x IN (1, 2)) FROM t;
+SELECT +(x IN (1, 2)) FROM t;
+
+# dialect: sqlite
+SELECT +(x IS 1) FROM t;
+SELECT +(x IS 1) FROM t;
+
+# dialect: sqlite
+SELECT +(NOT x) FROM t;
+SELECT +(NOT x) FROM t;
+
 -- like unary minus, `~` binds tighter than a predicate, so its parens must be kept
 # dialect: postgres
 ~(a = b);

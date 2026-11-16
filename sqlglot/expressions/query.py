@@ -706,6 +706,8 @@ class Join(Expression):
         "pivots": False,
     }
 
+    JOIN_ATTRS: t.ClassVar[tuple[str, ...]] = ("on", "using", "side", "kind", "method", "nearest")
+
     @property
     def method(self) -> str:
         return self.text("method").upper()

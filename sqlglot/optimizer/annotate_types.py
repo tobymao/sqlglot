@@ -85,8 +85,6 @@ def annotate_types(
 
 
 def _coerce_date_literal(l: exp.Expr, unit: exp.Expr | None) -> exp.DType:
-    if isinstance(l, exp.HexString) and l.args.get("is_character"):
-        return exp.DType.UNKNOWN
     date_text = l.name
     is_iso_date_ = is_iso_date(date_text)
 

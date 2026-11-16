@@ -538,6 +538,7 @@ class BigQueryParser(parser.Parser):
             table.set("this", new_this)
             table.set("db", seq_get(table_parts, -3))
             table.set("catalog", seq_get(table_parts, -4))
+            table.meta["quoted_table"] = True
 
         return table
 

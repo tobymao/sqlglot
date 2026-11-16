@@ -72,12 +72,14 @@ class TestTeradata(Validator):
 
     def test_hex_character_string(self):
         for digits in ("", "0", "0A", "aBcD", "7B31327D"):
-            for suffix in ("XC", "xc"):
-                expression = self.validate_identity(
-                    f"SELECT '{digits}'{suffix} AS s", f"SELECT '{digits}'XC AS s"
-                )
+            for suffix in ("XC", "xc", "XCV", "xcv"):
+                sql = f"SELECT '{digits}'{suffix} AS s"
+                expression = self.validate_identity(sql, f"SELECT '{digits}'XC AS s")
                 literal = expression.expressions[0].this.assert_is(exp.HexString)
                 self.assertEqual(literal.this, digits)
+                self.assertEqual(
+                    sql[literal.meta["start"] : literal.meta["end"] + 1], f"'{digits}'{suffix}"
+                )
                 self.assertTrue(literal.args.get("is_character"))
                 self.assertNotEqual(literal, exp.HexString(this=digits))
                 self.assertFalse(literal.is_string)
@@ -104,12 +106,14 @@ class TestTeradata(Validator):
         ):
             expression = self.validate_identity(sql)
             self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+            self.validate_identity(sql.replace("XC", "XCV"), sql)
         for sql, expected in (
             ("SELECT '41'XC::VARCHAR(10)", "SELECT CAST('41'XC AS VARCHAR(10))"),
             ("SELECT ('41'XC)::VARCHAR(10)", "SELECT CAST(('41'XC) AS VARCHAR(10))"),
         ):
             expression = self.validate_identity(sql, expected)
             self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+            self.validate_identity(sql.replace("XC", "XCV"), expected)
         for sql in (
             "'0G'XC",
             "'0 A'XC",
@@ -125,10 +129,17 @@ class TestTeradata(Validator):
         ):
             with self.assertRaises(ParseError):
                 self.parse_one(sql)
+            with self.assertRaises(ParseError):
+                self.parse_one(sql.replace("XC", "XCV"))
+        self.validate_identity("SELECT '41'XCV", "SELECT '41'XC")
         self.validate_identity("SELECT 'not hex' XC", "SELECT 'not hex' AS XC")
+        self.validate_identity("SELECT 'not hex' XCV", "SELECT 'not hex' AS XCV")
         self.validate_identity("SELECT '0A' AS XC")
+        self.validate_identity("SELECT '0A' AS XCV")
         self.validate_identity("SELECT '41'\"XC\"", "SELECT '41' AS \"XC\"")
+        self.validate_identity("SELECT '41'\"XCV\"", "SELECT '41' AS \"XCV\"")
         self.validate_identity('SELECT xc, "XC", t.xc FROM t')
+        self.validate_identity('SELECT xcv, "XCV", t.xcv FROM t')
         binary = self.validate_identity("X'0A'").assert_is(exp.HexString)
         self.assertFalse(binary.args.get("is_character"))
         self.assertTrue(annotate_types(binary.copy()).is_type(exp.DType.BINARY))
@@ -144,6 +155,7 @@ class TestTeradata(Validator):
         self.assertEqual(integer.sql("dune"), "0x0A")
         self.validate_all(
             "'0A'XC",
+            read={"teradata": "'0A'XCV"},
             write={
                 "teradata": "'0A'XC",
                 **{

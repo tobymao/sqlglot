@@ -407,6 +407,26 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT VERSION()")
         self.validate_identity("SELECT TEXTLEN('hello world')", "SELECT LENGTH('hello world')")
 
+    def test_date_delta_unit_expressions(self):
+        self.validate_identity(
+            "SELECT DATE_DIFF('second'::TEXT, TIMESTAMP '2024-01-01', TIMESTAMP '2024-01-01 00:01:00')",
+            "SELECT DATE_DIFF(CAST('second' AS VARCHAR(MAX)), CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-01 00:01:00' AS TIMESTAMP))",
+        )
+        self.validate_identity(
+            "SELECT DATE_DIFF('weeks'::VARCHAR::TEXT, TIMESTAMP '2024-01-01', TIMESTAMP '2024-01-15')",
+            "SELECT DATE_DIFF(CAST(CAST('weeks' AS VARCHAR) AS VARCHAR(MAX)), CAST('2024-01-01' AS TIMESTAMP), CAST('2024-01-15' AS TIMESTAMP))",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD('month'::VARCHAR::TEXT, 1, DATE '2024-01-01')",
+            "SELECT DATE_ADD(CAST(CAST('month' AS VARCHAR) AS VARCHAR(MAX)), 1, CAST('2024-01-01' AS DATE))",
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD(CAST('month' AS VARCHAR(1)), 1, CAST('2024-01-01' AS TIMESTAMP))"
+        )
+        self.validate_identity(
+            "SELECT DATE_DIFF(COALESCE(t.unit, 'day'), t.start_date, t.end_date) FROM t"
+        )
+
     def test_identity(self):
         self.validate_identity("SELECT GETBIT(FROM_HEX('4d'), 2)")
         self.validate_identity("SELECT EXP(1)")

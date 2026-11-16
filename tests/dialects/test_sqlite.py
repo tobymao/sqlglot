@@ -10,6 +10,35 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_group_concat_distinct_separator(self):
+        self.validate_all(
+            "SELECT GROUP_CONCAT(DISTINCT x) FROM t",
+            read={
+                "postgres": "SELECT STRING_AGG(DISTINCT x, ',') FROM t",
+                "duckdb": "SELECT STRING_AGG(DISTINCT x, ',') FROM t",
+                "mysql": "SELECT GROUP_CONCAT(DISTINCT x SEPARATOR ',') FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT GROUP_CONCAT(DISTINCT x ORDER BY x NULLS LAST) FROM t",
+            read={"postgres": "SELECT STRING_AGG(DISTINCT x, ',' ORDER BY x) FROM t"},
+        )
+        connection = sqlite3.connect(":memory:")
+        try:
+            connection.executescript(
+                "CREATE TABLE t(x TEXT); INSERT INTO t VALUES ('a'), ('a'), ('b'), (NULL);"
+            )
+            for where in ("", " WHERE x IS NULL", " WHERE FALSE"):
+                generated = parse_one(
+                    f"SELECT STRING_AGG(DISTINCT x, ',') FROM t{where}", dialect="postgres"
+                ).sql("sqlite")
+                self.assertEqual(
+                    connection.execute(generated).fetchall(),
+                    connection.execute(f"SELECT GROUP_CONCAT(DISTINCT x) FROM t{where}").fetchall(),
+                )
+        finally:
+            connection.close()
+
     def test_unary_plus(self):
         for sql in (
             "SELECT +x FROM t",

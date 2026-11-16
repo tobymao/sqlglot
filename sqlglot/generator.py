@@ -4474,6 +4474,10 @@ class Generator:
     def command_sql(self, expression: exp.Command) -> str:
         return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
 
+    def optimize_sql(self, expression: exp.Optimize) -> str:
+        self.unsupported("OPTIMIZE is only supported in Databricks")
+        return f"OPTIMIZE {self.sql(expression, 'this')}"
+
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")
         kind = expression.args["kind"]

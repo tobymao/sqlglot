@@ -37,6 +37,32 @@ class TestTSQL(Validator):
                         template.format(value=f"{cast}(y AS BIT)"),
                     )
 
+    def test_comparison_operators(self):
+        for sql, expected, expression_type in (
+            ("a < = b", "a <= b", exp.LTE),
+            ("a <\n\t= b", "a <= b", exp.LTE),
+            ("a < /* c */ = b", "a <= /* c */ b", exp.LTE),
+            ("a > = b", "a >= b", exp.GTE),
+            ("a < > b", "a <> b", exp.NEQ),
+            ("a ! = b", "a <> b", exp.NEQ),
+            ("a !< b", "a >= b", exp.GTE),
+            ("a ! < b", "a >= b", exp.GTE),
+            ("a !> b", "a <= b", exp.LTE),
+            ("a ! > b", "a <= b", exp.LTE),
+        ):
+            with self.subTest(sql):
+                self.validate_identity(
+                    f"SELECT x FROM t WHERE {sql}", f"SELECT x FROM t WHERE {expected}"
+                ).args["where"].this.assert_is(expression_type)
+
+        self.validate_all(
+            "SELECT CASE WHEN a !< 1 THEN 1 END",
+            write={
+                "duckdb": "SELECT CASE WHEN a >= 1 THEN 1 END",
+                "tsql": "SELECT CASE WHEN a >= 1 THEN 1 END",
+            },
+        )
+
     def test_set_operation_order(self):
         self.validate_identity(
             "SELECT t.x FROM (VALUES (1)) AS t(x) UNION ALL SELECT 2 ORDER BY (t.x)"

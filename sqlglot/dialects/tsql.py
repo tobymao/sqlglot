@@ -165,6 +165,16 @@ class TSQL(Dialect):
 
         KEYWORDS = {
             **tokens.Tokenizer.KEYWORDS,
+            # SQL Server allows whitespace inside comparison operators (e.g. "x < = 1") and has
+            # "not less than" (!<) and "not greater than" (!>) operators
+            "< =": TokenType.LTE,
+            "> =": TokenType.GTE,
+            "< >": TokenType.NEQ,
+            "! =": TokenType.NEQ,
+            "!<": TokenType.GTE,
+            "! <": TokenType.GTE,
+            "!>": TokenType.LTE,
+            "! >": TokenType.LTE,
             "CLUSTERED INDEX": TokenType.INDEX,
             "DATETIME2": TokenType.DATETIME2,
             "DATETIMEOFFSET": TokenType.TIMESTAMPTZ,

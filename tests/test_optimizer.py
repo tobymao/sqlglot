@@ -2292,6 +2292,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     ("IS NULL", [(1,), (3,), (4,)]),
                     ("> 1", [(2,)]),
                     ("IN (5, 6)", [(2,)]),
+                    ("= ANY (SELECT 5 UNION ALL SELECT 6)", [(2,)]),
+                    ("< ANY (SELECT y2.id FROM y AS y2 WHERE y2.id = x.ref)", [(2,)]),
+                    ("> ANY (SELECT y2.val - 1 FROM y AS y2 WHERE y2.id = x.ref)", [(2,)]),
+                    (
+                        "< ALL (SELECT y2.id FROM y AS y2 WHERE y2.id = x.ref)",
+                        [(2,), (3,), (4,)],
+                    ),
+                    (
+                        "< ALL (SELECT y2.val + 2 FROM y AS y2 WHERE y2.id = x.ref)",
+                        [(2,), (3,), (4,)],
+                    ),
                 ):
                     for group in ("", " GROUP BY y.id, y.val"):
                         sql = (
@@ -2312,7 +2323,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             connection.execute("INSERT INTO x VALUES (1)")
             connection.execute("CREATE TABLE y (id INT, val INT)")
             connection.execute("INSERT INTO y VALUES (1, NULL), (1, 5)")
-            for predicate in ("IS NULL", "> 1", "IN (5, 6)"):
+            for predicate in (
+                "IS NULL",
+                "> 1",
+                "IN (5, 6)",
+                "= ANY (SELECT 5)",
+                "< ANY (SELECT y2.id FROM y AS y2 WHERE y2.id = x.id)",
+                "< ALL (SELECT y2.id FROM y AS y2 WHERE y2.id = x.id)",
+            ):
                 sql = (
                     f"SELECT x.id FROM x WHERE (SELECT y.val FROM y WHERE y.id = x.id) {predicate}"
                 )

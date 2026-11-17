@@ -147,6 +147,33 @@ class TestSQLite(Validator):
         finally:
             connection.close()
 
+    def test_date_add_sub_day_units_retain_time(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            for sql, expected in (
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 2 HOUR)",
+                    "2024-01-01 12:00:00",
+                ),
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 30 MINUTE)",
+                    "2024-01-01 10:30:00",
+                ),
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 45 SECOND)",
+                    "2024-01-01 10:00:45",
+                ),
+                (
+                    "SELECT DATE_SUB('2024-01-01 10:00:00', INTERVAL 2 HOUR)",
+                    "2024-01-01 08:00:00",
+                ),
+            ):
+                with self.subTest(sql=sql):
+                    generated = parse_one(sql, read="mysql").sql("sqlite")
+                    self.assertEqual([(expected,)], connection.execute(generated).fetchall())
+        finally:
+            connection.close()
+
     def test_pragma_quoted_names(self):
         for source, expected in (
             ('PRAGMA "a b"', 'PRAGMA "a b"'),
@@ -536,6 +563,38 @@ class TestSQLite(Validator):
             "SELECT DATE(d, (n) || ' DAY') FROM t",
             read={
                 "mysql": "SELECT DATE_SUB(d, INTERVAL -n DAY) FROM t",
+            },
+        )
+        # DATE drops the time component, so sub-day units use DATETIME instead
+        self.validate_all(
+            "SELECT DATETIME(d, '2 HOUR') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 2 HOUR) FROM t",
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL 2 HOUR) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '30 MINUTE') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 30 MINUTE) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '45 SECOND') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 45 SECOND) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '-2 HOUR') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL 2 HOUR) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, (n) || ' HOUR') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n) HOUR) FROM t",
             },
         )
         self.validate_all(

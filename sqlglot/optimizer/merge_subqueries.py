@@ -161,11 +161,13 @@ def merge_ctes(
     copy_budget: CopyBudget | None = None,
 ) -> tuple[E, bool]:
     copy_budget = copy_budget or CopyBudget(expression)
+    scopes = traverse_scope(expression) if scopes is None else scopes
+    scope_lookup = {id(scope.expression): scope for scope in scopes}
 
     # All places where we select from CTEs.
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
     cte_selections = defaultdict(list)
-    for outer_scope in traverse_scope(expression) if scopes is None else scopes:
+    for outer_scope in scopes:
         for table, inner_scope in outer_scope.selected_sources.values():
             if isinstance(inner_scope, Scope) and inner_scope.is_cte:
                 cte_selections[id(inner_scope)].append(
@@ -186,7 +188,7 @@ def merge_ctes(
         if _mergeable(
             outer_scope, inner_scope, leave_tables_isolated, from_or_join, table
         ) and copy_budget.consume(outer_scope, inner_scope, alias):
-            _rename_inner_sources(outer_scope, inner_scope, alias)
+            _rename_inner_sources(outer_scope, inner_scope, alias, scope_lookup)
             _merge_from(outer_scope, inner_scope, table, alias)
             _merge_expressions(outer_scope, inner_scope, alias)
             _merge_order(outer_scope, inner_scope)
@@ -206,8 +208,10 @@ def merge_derived_tables(
     copy_budget: CopyBudget | None = None,
 ) -> E:
     copy_budget = copy_budget or CopyBudget(expression)
+    scopes = traverse_scope(expression) if scopes is None else scopes
+    scope_lookup = {id(scope.expression): scope for scope in scopes}
 
-    for outer_scope in traverse_scope(expression) if scopes is None else scopes:
+    for outer_scope in scopes:
         for subquery in outer_scope.derived_tables:
             from_or_join = subquery.find_ancestor(exp.From, exp.Join)
             if not isinstance(from_or_join, (exp.From, exp.Join)):
@@ -219,7 +223,7 @@ def merge_derived_tables(
             if _mergeable(
                 outer_scope, inner_scope, leave_tables_isolated, from_or_join, subquery
             ) and copy_budget.consume(outer_scope, inner_scope, alias):
-                _rename_inner_sources(outer_scope, inner_scope, alias)
+                _rename_inner_sources(outer_scope, inner_scope, alias, scope_lookup)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
                 _merge_expressions(outer_scope, inner_scope, alias)
                 _merge_order(outer_scope, inner_scope)
@@ -490,20 +494,38 @@ def _mergeable(
     )
 
 
-def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) -> None:
+def _nested_source_names(
+    scope: Scope, columns: t.Iterable[exp.Column], scope_lookup: dict[int, Scope]
+) -> set[str]:
+    names: set[str] = set()
+    seen = {id(scope.expression)}
+    for column in columns:
+        if id(column) in scope.column_index:
+            continue
+
+        # Only scopes on a reference's path can capture it. Shared paths are visited once.
+        node = column.parent
+        while node is not None and id(node) not in seen:
+            seen.add(id(node))
+            if nested_scope := scope_lookup.get(id(node)):
+                names.update(name for name, _ in nested_scope.references)
+            node = node.parent
+
+    return names
+
+
+def _rename_inner_sources(
+    outer_scope: Scope, inner_scope: Scope, alias: str, scope_lookup: dict[int, Scope]
+) -> None:
     """
     Renames any sources in the inner query that conflict with names in the outer query.
     """
     inner_taken = set(inner_scope.selected_sources)
     outer_taken = {name for name, _ in outer_scope.references if name != alias}
     outer_taken.update(column.table for column in outer_scope.external_columns)
-    replacement_columns = {id(column) for column in outer_scope.source_columns(alias)}
-    if not replacement_columns.issubset(outer_scope.column_index):
-        for scope in outer_scope.traverse():
-            if scope is not outer_scope and any(
-                id(column) in replacement_columns for column in scope.external_columns
-            ):
-                outer_taken.update(name for name, _ in scope.references)
+    outer_taken.update(
+        _nested_source_names(outer_scope, outer_scope.source_columns(alias), scope_lookup)
+    )
 
     conflicts = outer_taken.intersection(inner_taken)
     if not conflicts:
@@ -511,13 +533,13 @@ def _rename_inner_sources(outer_scope: Scope, inner_scope: Scope, alias: str) ->
 
     taken = outer_taken.union(name for name, _ in inner_scope.references)
     taken.update(column.table for column in inner_scope.external_columns)
-    inner_columns = {id(column) for column in inner_scope.columns if column.table in inner_taken}
-    if not inner_columns.issubset(inner_scope.column_index):
-        for scope in inner_scope.traverse():
-            if scope is not inner_scope and any(
-                id(column) in inner_columns for column in scope.external_columns
-            ):
-                taken.update(name for name, _ in scope.references)
+    taken.update(
+        _nested_source_names(
+            inner_scope,
+            (column for column in inner_scope.columns if column.table in conflicts),
+            scope_lookup,
+        )
+    )
 
     for conflict in conflicts:
         new_name = find_new_name(taken, conflict)

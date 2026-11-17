@@ -712,6 +712,36 @@ class TestParser(unittest.TestCase):
         self.assertEqual(expression.expressions[1].comments, ["# Comment 2"])
         self.assertEqual(expression.expressions[2].comments, ["# Comment 3"])
 
+    def test_comments_table_parts(self):
+        for prefix, suffix in (("SELECT * FROM", ""), ("CREATE TABLE", " (x INT)")):
+            for target, comments in (
+                ("db. /* comment */ t", ["comment"]),
+                ("db. -- comment\nt", ["comment"]),
+                (
+                    "cat /* first */ . /* second */ db. /* third */ t /* fourth */",
+                    ["first", "second", "third", "fourth"],
+                ),
+            ):
+                sql = f"{prefix} {target}{suffix}"
+                with self.subTest(sql=sql):
+                    expression = parse_one(sql)
+                    table = expression.find(exp.Table)
+                    self.assertEqual([comment.strip() for comment in table.comments], comments)
+                    self.assertTrue(all(not part.comments for part in table.parts))
+                    self.assertEqual(
+                        [
+                            comment.strip()
+                            for comment in parse_one(expression.sql()).find(exp.Table).comments
+                        ],
+                        comments,
+                    )
+
+            expression = parse_one(
+                f"{prefix} CaT. /* sqlglot.meta case_sensitive=true */ "
+                f"Db /* sqlglot.meta case_sensitive=false */{suffix}"
+            )
+            self.assertFalse(expression.find(exp.Table).meta["case_sensitive"])
+
     def test_comments_select_cte(self):
         expression = parse_one(
             """

@@ -5098,6 +5098,9 @@ class Parser:
             if parts is None:
                 parts = []
 
+            if has_dot and self._prev_comments:
+                comments = comments + self._prev_comments
+
             if comments:
                 if all_comments is None:
                     all_comments = []
@@ -5152,7 +5155,7 @@ class Parser:
         db: exp.Expr | str | None = None
         table: exp.Expr | str | None = self._parse_table_part(schema=schema)
 
-        while self._match(TokenType.DOT):
+        while self._match(TokenType.DOT, expression=table if isinstance(table, exp.Expr) else None):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
                 table = self.expression(

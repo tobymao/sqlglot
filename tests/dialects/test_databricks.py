@@ -717,6 +717,8 @@ class TestDatabricks(Validator):
             "/* comment */ OPTIMIZE db.t",
             "OPTIMIZE /* comment */ db.t",
             "OPTIMIZE db /* comment */ .t",
+            "OPTIMIZE db. /* comment */ t",
+            "OPTIMIZE db. -- comment\nt",
             "OPTIMIZE db.t /* comment */",
             "OPTIMIZE db.t -- comment\n",
         ):
@@ -724,6 +726,24 @@ class TestDatabricks(Validator):
                 tree = self.validate_identity(sql, "OPTIMIZE db.t /* comment */")
                 self.assertIsInstance(tree, exp.Optimize)
                 self.assertIsInstance(tree.this, exp.Table)
+        tree = self.validate_identity(
+            "OPTIMIZE catalog. /* first */ db. /* second */ t",
+            "OPTIMIZE catalog.db.t /* first */ /* second */",
+        )
+        self.assertEqual([comment.strip() for comment in tree.this.comments], ["first", "second"])
+
+    def test_optimize_comment_order(self):
+        self.validate_identity(
+            "/* first */ OPTIMIZE db. /* second */ t /* third */",
+            "OPTIMIZE db.t /* second */ /* third */ /* first */",
+        )
+        tree = self.validate_identity(
+            "OPTIMIZE CaT. /* sqlglot.meta case_sensitive=true */ "
+            "Db /* sqlglot.meta case_sensitive=false */",
+            "OPTIMIZE CaT.Db /* sqlglot.meta case_sensitive=true */ "
+            "/* sqlglot.meta case_sensitive=false */",
+        )
+        self.assertFalse(tree.this.meta["case_sensitive"])
 
     def test_optimize_fallback(self):
         for sql in (

@@ -60,7 +60,6 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
             if where:
                 selected_sources: Sources = scope.selected_sources
-                join_index = {id(join): i for i, join in enumerate(joins)}
                 source_positions: dict[str, int] = {}
 
                 # A RIGHT or FULL join null-extends everything joined before it, and an outer WHERE filter
@@ -79,13 +78,13 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                         if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
-                        position = join_index.get(id(parent))
+                        position = parent.index if parent.parent is select else None
                     elif isinstance(parent, exp.From) and parent.parent is select:
                         position = -1
                     else:
                         continue
 
-                    # Joins inside parenthesized operands are not in the direct-join index.
+                    # Only direct joins have a position in this select.
                     if position is None:
                         continue
 

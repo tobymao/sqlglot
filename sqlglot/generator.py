@@ -4808,20 +4808,15 @@ class Generator:
         ):
             # SQLite-style integer literals fit within its signed 64-bit range; larger
             # literals become REAL. Some target engines overflow at their integer minima.
-            try:
-                left_value, right_value = l.to_py(), r.to_py()
-                if (
-                    -(2**63) <= left_value < 2**63
-                    and -(2**63) <= right_value < 2**63
-                    and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
-                ):
-                    divisor = r.copy()
-                    if not self.dialect.SAFE_DIVISION:
-                        divisor = exp.Nullif(this=divisor, expression=exp.Literal.number(0))
-                    return self.sql(exp.IntDiv(this=l.copy(), expression=divisor))
-            except ValueError:
-                # Extremely long integer literals can exceed Python's conversion limit.
-                pass
+            left_value, right_value = l.to_py(), r.to_py()
+            if (
+                -(2**63) <= left_value < 2**63
+                and -(2**63) <= right_value < 2**63
+                and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
+            ):
+                expression = expression.copy()
+                self.nullif_zero_divisor(expression)
+                return self.sql(exp.IntDiv(this=expression.left, expression=expression.right))
 
         self.nullif_zero_divisor(expression)
 

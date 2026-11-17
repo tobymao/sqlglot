@@ -411,6 +411,15 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         and not find_in_scope(value, exp.AggFunc)
         and value.this not in group_by
     ):
+        # Scalar predicates cannot consume an array or discard multiple-row errors.
+        if not is_subquery_projection and (
+            not isinstance(parent_predicate, (exp.Exists, exp.All, exp.Any, exp.In))
+            or (
+                isinstance(parent_predicate, exp.In)
+                and parent_predicate.args.get("query") is not select.parent
+            )
+        ):
+            return
         select.select(
             exp.alias_(agg_func(this=value.this), value.alias, quoted=False),
             append=False,

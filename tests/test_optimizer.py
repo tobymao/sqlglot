@@ -2280,6 +2280,50 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_optimize_scalar_subquery_predicates(self):
+        schema = {"x": {"id": "INT", "ref": "INT"}, "y": {"id": "INT", "val": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE x (id INT, ref INT)")
+            connection.execute("INSERT INTO x VALUES (1, 10), (2, 20), (3, NULL), (4, 30)")
+            connection.execute("CREATE TABLE y (id INT, val INT)")
+            connection.execute("INSERT INTO y VALUES (10, NULL), (20, 5)")
+            for value in ("y.val", "y.val + 1"):
+                for predicate, expected in (
+                    ("IS NULL", [(1,), (3,), (4,)]),
+                    ("> 1", [(2,)]),
+                    ("IN (5, 6)", [(2,)]),
+                ):
+                    for group in ("", " GROUP BY y.id, y.val"):
+                        sql = (
+                            "SELECT x.id FROM x WHERE "
+                            f"(SELECT {value} FROM y WHERE y.id = x.ref{group}) {predicate}"
+                        )
+                        with self.subTest(sql=sql):
+                            self.assertCountEqual(connection.execute(sql).fetchall(), expected)
+                            optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb")
+                            self.assertCountEqual(
+                                connection.execute(optimized.sql("duckdb")).fetchall(), expected
+                            )
+
+    def test_optimize_scalar_subquery_predicate_multiple_rows(self):
+        schema = {"x": {"id": "INT"}, "y": {"id": "INT", "val": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE x (id INT)")
+            connection.execute("INSERT INTO x VALUES (1)")
+            connection.execute("CREATE TABLE y (id INT, val INT)")
+            connection.execute("INSERT INTO y VALUES (1, NULL), (1, 5)")
+            for predicate in ("IS NULL", "> 1", "IN (5, 6)"):
+                sql = (
+                    f"SELECT x.id FROM x WHERE (SELECT y.val FROM y WHERE y.id = x.id) {predicate}"
+                )
+                optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb").sql("duckdb")
+                for query in (sql, optimized):
+                    with self.subTest(query=query):
+                        with self.assertRaisesRegex(
+                            duckdb.InvalidInputException, "More than one row"
+                        ):
+                            connection.execute(query).fetchall()
+
     def test_unnest_positional_join_predicates(self):
         for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
             for predicate in (

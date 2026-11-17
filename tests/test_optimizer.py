@@ -2342,6 +2342,28 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                         ):
                             connection.execute(query).fetchall()
 
+    def test_optimize_scalar_subquery_key_predicates(self):
+        schema = {"x": {"id": "INT", "ref": "INT"}, "y": {"id": "INT"}}
+        with duckdb.connect() as connection:
+            connection.execute("CREATE TABLE x (id INT, ref INT)")
+            connection.execute("INSERT INTO x VALUES (2, 10)")
+            connection.execute("CREATE TABLE y (id INT)")
+            connection.execute("INSERT INTO y VALUES (10)")
+
+            sql = "SELECT x.id FROM x WHERE x.id IN ((SELECT y.id FROM y WHERE y.id = x.ref), 2)"
+            optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb").sql("duckdb")
+            for query in (sql, optimized):
+                with self.subTest(query=query):
+                    self.assertEqual(connection.execute(query).fetchall(), [(2,)])
+
+            connection.execute("INSERT INTO y VALUES (10)")
+            sql = "SELECT x.id FROM x WHERE (SELECT y.id FROM y WHERE y.id = x.ref) > 1"
+            optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb").sql("duckdb")
+            for query in (sql, optimized):
+                with self.subTest(query=query):
+                    with self.assertRaisesRegex(duckdb.InvalidInputException, "More than one row"):
+                        connection.execute(query).fetchall()
+
     def test_unnest_positional_join_predicates(self):
         for dialect, kind in (("duckdb", "POSITIONAL"), ("clickhouse", "PASTE")):
             for predicate in (

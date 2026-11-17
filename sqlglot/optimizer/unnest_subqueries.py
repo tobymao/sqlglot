@@ -15,9 +15,9 @@ def unnest_subqueries(expression: E) -> E:
 
     Example:
         >>> import sqlglot
-        >>> expression = sqlglot.parse_one("SELECT * FROM x AS x WHERE (SELECT y.a AS a FROM y AS y WHERE x.a = y.a) = 1 ")
+        >>> expression = sqlglot.parse_one("SELECT * FROM x AS x WHERE (SELECT SUM(y.a) AS a FROM y AS y WHERE x.a = y.a) = 1 ")
         >>> unnest_subqueries(expression).sql()
-        'SELECT * FROM x AS x LEFT JOIN (SELECT y.a AS a FROM y AS y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0.a WHERE _u_0.a = 1'
+        'SELECT * FROM x AS x LEFT JOIN (SELECT SUM(y.a) AS a, y.a AS _u_1 FROM y AS y WHERE TRUE GROUP BY y.a) AS _u_0 ON x.a = _u_0._u_1 WHERE _u_0.a = 1'
 
     Args:
         expression (sqlglot.Expr): expression to unnest
@@ -237,6 +237,10 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         select.args.get("group")
         or select.args.get("having")
         or find_in_scope(select, exp.AggFunc, exp.Anonymous)
+        or (
+            isinstance(parent_predicate, exp.In)
+            and parent_predicate.args.get("query") is not select.parent
+        )
         # Hoisting the other operand can suppress scalar errors or put subqueries in array lambdas.
         or (other and other.find(exp.Subquery))
     ):
@@ -325,6 +329,9 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
             # Key-grouped COUNT returns scalar NULL when no group matches.
             zero_fill = not group and isinstance(projection, exp.Count)
+        elif parent_predicate is not None:
+            # Grouping non-aggregate scalar values can suppress multiple-row errors.
+            return
 
     # Joined columns may not be grouped, so keep post-group subqueries correlated.
     parent_group = parent_select.args.get("group")
@@ -417,15 +424,6 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         and not find_in_scope(value, exp.AggFunc)
         and value.this not in group_by
     ):
-        # Scalar predicates cannot consume an array or discard multiple-row errors.
-        if not is_subquery_projection and (
-            not isinstance(parent_predicate, (exp.SubqueryPredicate, exp.In))
-            or (
-                isinstance(parent_predicate, exp.In)
-                and parent_predicate.args.get("query") is not select.parent
-            )
-        ):
-            return
         select.select(
             exp.alias_(agg_func(this=value.this), value.alias, quoted=False),
             append=False,

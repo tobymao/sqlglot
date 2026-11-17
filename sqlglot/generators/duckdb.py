@@ -3413,9 +3413,12 @@ class DuckDBGenerator(generator.Generator):
                 )
             return value
 
-        # Dialects like BQ and Snowflake also accept binary values as args, so
+        # SQLite, BQ and Snowflake also accept binary values as args, so
         # DDB will attempt to infer the type or resort to case/when resolution
-        if not expression.args.get("binary") or arg.is_string:
+        if (
+            not (expression.args.get("binary") or expression.args.get("null_terminated"))
+            or arg.is_string
+        ):
             return self.func("LENGTH", text_arg(arg))
 
         if not arg.type:
@@ -3431,9 +3434,9 @@ class DuckDBGenerator(generator.Generator):
         varchar = exp.cast(arg, exp.DType.VARCHAR)
 
         case = (
-            exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg.copy()]))
+            exp.case(exp.Typeof(this=arg.copy()))
             .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
-            .else_(exp.Anonymous(this="LENGTH", expressions=[text_arg(varchar)]))
+            .else_(exp.Length(this=text_arg(varchar)))
         )
         return self.sql(case)
 

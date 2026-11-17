@@ -10,6 +10,75 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_group_concat_null_separator(self):
+        for separator, duckdb_separator in (
+            ("NULL", "NULL"),
+            (":separator", "$separator"),
+            ("CAST(NULL AS TEXT)", "CAST(NULL AS TEXT)"),
+        ):
+            sql = f"SELECT GROUP_CONCAT(x, {separator}) FROM t"
+            self.validate_all(
+                sql,
+                write={
+                    "sqlite": sql,
+                    "duckdb": f"SELECT LISTAGG(x, COALESCE({duckdb_separator}, '')) FROM t",
+                },
+            )
+
+        self.validate_all(
+            "SELECT GROUP_CONCAT(x, NULL ORDER BY y) FILTER(WHERE z > 0) FROM t",
+            write={
+                "sqlite": "SELECT GROUP_CONCAT(x, NULL ORDER BY y) FILTER(WHERE z > 0) FROM t",
+                "duckdb": "SELECT LISTAGG(x, COALESCE(NULL, '') ORDER BY y NULLS FIRST) FILTER(WHERE z > 0) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT STRING_AGG(x, NULL) FROM t",
+            write={
+                "sqlite": "SELECT GROUP_CONCAT(x, NULL) FROM t",
+                "duckdb": "SELECT LISTAGG(x, COALESCE(NULL, '')) FROM t",
+            },
+        )
+        for sql, expected in (
+            ("GROUP_CONCAT(x)", "LISTAGG(x, ',')"),
+            ("GROUP_CONCAT(x, '')", "LISTAGG(x, '')"),
+            ("GROUP_CONCAT(x, ',')", "LISTAGG(x, ',')"),
+            ("GROUP_CONCAT(x, 'NULL')", "LISTAGG(x, 'NULL')"),
+        ):
+            self.validate_all(
+                sql,
+                write={"duckdb": expected},
+            )
+
+    def test_group_concat_distinct_separator(self):
+        self.validate_all(
+            "SELECT GROUP_CONCAT(DISTINCT x) FROM t",
+            read={
+                "postgres": "SELECT STRING_AGG(DISTINCT x, ',') FROM t",
+                "duckdb": "SELECT STRING_AGG(DISTINCT x, ',') FROM t",
+                "mysql": "SELECT GROUP_CONCAT(DISTINCT x SEPARATOR ',') FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT GROUP_CONCAT(DISTINCT x ORDER BY x NULLS LAST) FROM t",
+            read={"postgres": "SELECT STRING_AGG(DISTINCT x, ',' ORDER BY x) FROM t"},
+        )
+        connection = sqlite3.connect(":memory:")
+        try:
+            connection.executescript(
+                "CREATE TABLE t(x TEXT); INSERT INTO t VALUES ('a'), ('a'), ('b'), (NULL);"
+            )
+            for where in ("", " WHERE x IS NULL", " WHERE FALSE"):
+                generated = parse_one(
+                    f"SELECT STRING_AGG(DISTINCT x, ',') FROM t{where}", dialect="postgres"
+                ).sql("sqlite")
+                self.assertEqual(
+                    connection.execute(generated).fetchall(),
+                    connection.execute(f"SELECT GROUP_CONCAT(DISTINCT x) FROM t{where}").fetchall(),
+                )
+        finally:
+            connection.close()
+
     def test_unary_plus(self):
         for sql in (
             "SELECT +x FROM t",

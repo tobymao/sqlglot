@@ -35,7 +35,16 @@ from tests.helpers import (
 
 
 def parse_and_optimize(func, sql, read_dialect, **kwargs):
-    return func(parse_one(sql, read=read_dialect), **kwargs)
+    optimized = func(parse_one(sql, read=read_dialect), **kwargs)
+
+    for expression in optimized.walk():
+        for arg_key, arg in expression.args.items():
+            for child in arg if isinstance(arg, list) else [arg]:
+                if isinstance(child, exp.Expr):
+                    assert child.arg_key == arg_key, f"{child.sql()} isn't {arg_key}"
+                    assert child.parent is expression, f"{child.sql()} isn't a child of its parent"
+
+    return optimized
 
 
 def qualify_then_canonicalize(expression, **qualify_kwargs):
@@ -268,12 +277,6 @@ class TestOptimizer(unittest.TestCase):
                     expected,
                     actual,
                 )
-                for expression in optimized.walk():
-                    for arg_key, arg in expression.args.items():
-                        if isinstance(arg, exp.Expr):
-                            self.assertEqual(arg_key, arg.arg_key)
-                            self.assertIs(arg.parent, expression)
-
                 if string_to_bool(execute):
                     with self.subTest(f"(execute) {title}"):
                         dfs = []
@@ -2299,8 +2302,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 optimizer.unnest_subqueries.unnest_subqueries(expression).find(exp.In)
             )
 
-    def test_optimize_uncorrelated_in_nulls(self):
-        for where in ("", " WHERE y.b IS NOT NULL", " WHERE y.b IS NULL", " WHERE FALSE"):
+    def test_optimize_in_nulls(self):
+        for where in (
+            "",
+            " WHERE y.b IS NOT NULL",
+            " WHERE y.b IS NULL",
+            " WHERE FALSE",
+            " WHERE y.c = x.a",
+            " WHERE y.b = x.a",
+        ):
             for predicate in (
                 f"x.a IN (SELECT y.b FROM y{where})",
                 f"x.a = ANY (SELECT y.b FROM y{where})",
@@ -2317,6 +2327,9 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                     f"SELECT x.a FROM x WHERE ({predicate}) = FALSE",
                     f"SELECT x.a FROM x WHERE ({predicate}) AND x.a > 1",
                     f"SELECT x.a FROM x WHERE ({predicate}) OR x.a > 1",
+                    f"SELECT x.a FROM x JOIN x AS x2 ON x.b = x2.b AND ({predicate}) = FALSE",
+                    "SELECT x.a FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY x.a) > 0 "
+                    f"AND ({predicate}) = FALSE",
                     f"SELECT x.a FROM x GROUP BY x.a HAVING ({predicate}) IS NULL",
                     f"SELECT x.a FROM x ORDER BY ({predicate}), x.a",
                 ):

@@ -253,7 +253,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
             # When transpiling a LATERAL VIEW EXPLODE Spark query, the exploded fields may be qualified
             # with the struct column, resulting in invalid Presto references that need to be amended
-            for column in find_all_in_scope(expression, exp.Column):
+            for column in find_all_in_scope(expression, exp.Column, include_udtfs=True):
                 if column.db.lower() == old_table:
                     column.set("table", column.args["db"].pop())
                 elif column.table.lower() == old_table:
@@ -520,6 +520,12 @@ class PrestoGenerator(generator.Generator):
                 self.unsupported("Presto only supports millisecond precision for temporal types")
             expression.set("expressions", None)
         return super().datatype_sql(expression)
+
+    def exists_sql(self, expression: exp.Exists) -> str:
+        if expression.expression:
+            return self.func("ANY_MATCH", expression.this, expression.expression)
+
+        return super().exists_sql(expression)
 
     def extract_sql(self, expression: exp.Extract) -> str:
         date_part = expression.name

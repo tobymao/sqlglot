@@ -3,14 +3,15 @@ from __future__ import annotations
 
 from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
+    DATE_ADD_OR_DIFF,
     array_concat_sql,
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
-    date_delta_sql,
     generatedasidentitycolumnconstraint_sql,
     json_extract_segments,
     no_tablesample_sql,
     rename_func,
+    unit_to_var,
 )
 from sqlglot.generator import Generator
 from sqlglot.generators.postgres import PostgresGenerator
@@ -85,8 +86,8 @@ class RedshiftGenerator(PostgresGenerator):
         exp.ApproxDistinct: lambda self, e: f"APPROXIMATE COUNT(DISTINCT {self.sql(e, 'this')})",
         exp.CurrentTimestamp: lambda self, e: "SYSDATE" if e.args.get("sysdate") else "GETDATE()",
         exp.CurrentUserId: lambda *_: "CURRENT_USER_ID",
-        exp.DateAdd: date_delta_sql("DATEADD"),
-        exp.DateDiff: date_delta_sql("DATEDIFF"),
+        exp.DateAdd: lambda self, e: self._date_delta_sql(e, "DATEADD"),
+        exp.DateDiff: lambda self, e: self._date_delta_sql(e, "DATEDIFF"),
         exp.DistKeyProperty: lambda self, e: self.func("DISTKEY", e.this),
         exp.DistStyleProperty: lambda self, e: self.naked_property(e),
         exp.Explode: lambda self, e: self.explode_sql(e),
@@ -113,8 +114,8 @@ class RedshiftGenerator(PostgresGenerator):
         exp.StartsWith: lambda self, e: f"{self.sql(e.this)} LIKE {self.sql(e.expression)} || '%'",
         exp.StringToArray: rename_func("SPLIT_TO_ARRAY"),
         exp.TableSample: no_tablesample_sql,
-        exp.TsOrDsAdd: date_delta_sql("DATEADD"),
-        exp.TsOrDsDiff: date_delta_sql("DATEDIFF"),
+        exp.TsOrDsAdd: lambda self, e: self._date_delta_sql(e, "DATEADD"),
+        exp.TsOrDsDiff: lambda self, e: self._date_delta_sql(e, "DATEDIFF"),
         exp.UnixToTime: lambda self, e: self._unix_to_time_sql(e),
         exp.SHA2Digest: lambda self, e: self.func(
             "SHA2", e.this, e.args.get("length") or exp.Literal.number(256)
@@ -281,6 +282,13 @@ class RedshiftGenerator(PostgresGenerator):
         "without",
     }
 
+    def _date_delta_sql(self, expression: DATE_ADD_OR_DIFF, name: str) -> str:
+        unit = unit_to_var(expression)
+        if unit and not isinstance(unit, exp.Var):
+            # The underscored functions accept date-part expressions instead of keywords.
+            name = name.replace("DATE", "DATE_")
+        return self.func(name, unit, expression.expression, expression.this)
+
     def bytestring_sql(self, expression: exp.ByteString) -> str:
         if not expression.args.get("is_bytes"):
             return self.sql(exp.Literal.string(expression.this))
@@ -372,6 +380,9 @@ class RedshiftGenerator(PostgresGenerator):
         file_format = f" FILE FORMAT {file_format}" if file_format else ""
 
         return f"SET{exprs}{location}{file_format}"
+
+    def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        return Generator.arraysize_sql(self, expression)
 
     def array_sql(self, expression: exp.Array) -> str:
         if expression.args.get("bracket_notation"):

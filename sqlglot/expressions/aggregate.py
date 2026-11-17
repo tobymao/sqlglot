@@ -138,7 +138,12 @@ class FirstValue(Expression, AggFunc):
 
 
 class GroupConcat(Expression, AggFunc):
-    arg_types = {"this": True, "separator": False, "on_overflow": False}
+    arg_types = {
+        "this": True,
+        "separator": False,
+        "on_overflow": False,
+        "null_separator_is_empty": False,
+    }
 
 
 class Grouping(Expression, AggFunc):

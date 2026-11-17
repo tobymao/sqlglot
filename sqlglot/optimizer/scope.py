@@ -1070,12 +1070,15 @@ def _traverse_udtfs(scope: Scope) -> Iterator[Scope]:
             if top is not None:
                 scope.subquery_scopes.append(top)
 
+    yield from _traverse_subqueries(scope)
+
     scope.sources.update(sources)
 
 
 def walk_in_scope(
     expression: exp.Expr,
     prune: t.Callable[[exp.Expr], bool] | None = None,
+    include_udtfs: bool = False,
 ) -> Iterator[exp.Expr]:
     """
     Returns a generator object which visits all nodes in the syntrax tree, stopping at
@@ -1086,6 +1089,8 @@ def walk_in_scope(
         expression:
         prune: callable that returns True if
             the generator should stop traversing this branch of the tree.
+        include_udtfs: whether to also visit the nodes of the UDTFs in the FROM, e.g.
+            `UNNEST(x.y)`, which start child scopes of their own.
 
     Yields:
         exp.Expr: each node in scope
@@ -1112,7 +1117,15 @@ def walk_in_scope(
             if isinstance(node, (exp.Subquery, exp.UDTF)):
                 for key in ("joins", "laterals", "pivots"):
                     for arg in node.args.get(key) or []:
-                        yield from walk_in_scope(arg)
+                        yield from walk_in_scope(arg, include_udtfs=include_udtfs)
+            continue
+
+        if (
+            not include_udtfs
+            and node is not expression
+            and isinstance(node, exp.UDTF)
+            and (type(node) is exp.Lateral or isinstance(node.parent, (exp.From, exp.Join)))
+        ):
             continue
 
         if prune and prune(node):
@@ -1130,6 +1143,7 @@ def walk_in_scope(
 def find_all_in_scope(
     expression: exp.Expr,
     *expression_types: Type[E],
+    include_udtfs: bool = False,
 ) -> Iterator[E]:
     """
     Returns a generator object which visits all nodes in this scope and only yields those that
@@ -1140,11 +1154,12 @@ def find_all_in_scope(
     Args:
         expression: the expression to search.
         expression_types: the expression type(s) to match.
+        include_udtfs: whether to also search the UDTFs in the FROM, e.g. `UNNEST(x.y)`.
 
     Yields:
         The matching nodes.
     """
-    for node in walk_in_scope(expression):
+    for node in walk_in_scope(expression, include_udtfs=include_udtfs):
         if isinstance(node, expression_types):
             yield node
 

@@ -406,6 +406,15 @@ class SQLiteGenerator(generator.Generator):
             )
             expression.set("this", expression.this.this)
 
+        this = expression.this
+        if isinstance(this, exp.Order):
+            this = this.this
+        if isinstance(this, exp.Distinct) and expression.args.get(
+            "separator"
+        ) == exp.Literal.string(","):
+            # DISTINCT aggregates accept one argument; SQLite already defaults to a comma separator.
+            expression.set("separator", None)
+
         return groupconcat_sql(
             self, expression, func_name="GROUP_CONCAT", sep=None, within_group=False
         )

@@ -3039,6 +3039,13 @@ OPTIONS (
             "MOD(a + 1, b)",
         )
 
+    def test_at_time_zone(self):
+        # DATETIME over a TIMESTAMP, as transpiled from Presto, reads back unchanged
+        self.validate_identity("TIMESTAMP(DATETIME(CAST(x AS TIMESTAMP), 'America/Sao_Paulo'))")
+        self.validate_identity(
+            "SELECT TIMESTAMP(DATETIME(CAST(CAST('2012-10-31 00:00:00' AS DATETIME) AS TIMESTAMP), 'America/Sao_Paulo'))"
+        )
+
     def test_like_escape(self):
         # BigQuery's LIKE has no ESCAPE clause, literal patterns are rewritten to backslash escapes
         self.validate_all(

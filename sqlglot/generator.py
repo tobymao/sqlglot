@@ -3895,7 +3895,17 @@ class Generator:
         return f"ANY {this}"
 
     def exists_sql(self, expression: exp.Exists) -> str:
-        return f"EXISTS{self.wrap(expression)}"
+        predicate = expression.expression
+        if not predicate:
+            return f"EXISTS{self.wrap(expression)}"
+
+        # Spark's EXISTS(array, lambda)
+        if self.CAN_IMPLEMENT_ARRAY_ANY:
+            filtered = exp.ArrayFilter(this=expression.this, expression=predicate)
+            return self.sql(exp.paren(exp.ArraySize(this=filtered).neq(0)))
+
+        self.unsupported("EXISTS with a lambda predicate is unsupported")
+        return self.function_fallback_sql(expression)
 
     def case_sql(self, expression: exp.Case) -> str:
         this = self.sql(expression, "this")

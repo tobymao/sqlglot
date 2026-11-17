@@ -89,7 +89,7 @@ class TeradataParser(parser.Parser):
         return (
             self._curr.token_type == TokenType.STRING
             and self._next.token_type == TokenType.VAR
-            and self._next.text.upper() == "XC"
+            and self._next.text.upper() in {"XC", "XCV"}
             and self._curr.end + 1 == self._next.start
         )
 
@@ -120,7 +120,7 @@ class TeradataParser(parser.Parser):
         if (
             self._prev.token_type == TokenType.STRING
             and self._curr.token_type == TokenType.VAR
-            and self._curr.text.upper() == "XC"
+            and self._curr.text.upper() in {"XC", "XCV"}
             and self._is_connected()
         ):
             self.raise_error("Adjacent hexadecimal character literals are not supported")

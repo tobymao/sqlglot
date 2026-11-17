@@ -852,13 +852,21 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
 
             if column_table:
                 converted = True
-                new_column = exp.column(root, table=column_table)
+
+                # The column becomes the root of the Dots, so other scopes' references to it,
+                # e.g. a correlated subquery's, stay in the tree
+                placeholder = exp.Null()
+                column.replace(exp.Dot.build([placeholder, *parts]))
+                column.set("catalog", None)
+                column.set("db", None)
+                column.set("this", root)
+                column.set("table", exp.to_identifier(column_table))
 
                 if dot_parts:
                     # Remove the actual column parts from the rest of dot parts
-                    new_column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
+                    column.meta["dot_parts"] = dot_parts[2 if was_qualified else 1 :]
 
-                column.replace(exp.Dot.build([new_column, *parts]))
+                placeholder.replace(column)
 
     if converted:
         # We want to re-aggregate the converted columns, otherwise they'd be skipped in

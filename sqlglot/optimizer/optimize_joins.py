@@ -104,7 +104,12 @@ def normalize(expression: E) -> E:
             join.set("kind", "CROSS")
 
         if join.kind == "CROSS":
-            join.set("on", None)
+            # SQLite and MySQL allow CROSS JOIN predicates, which must keep filtering rows.
+            on = join.args.get("on")
+            if join.args.get("using") or (on and on != exp.true()):
+                join.set("kind", None)
+            else:
+                join.set("on", None)
         else:
             if join.kind in ("INNER", "OUTER"):
                 join.set("kind", None)

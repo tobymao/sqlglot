@@ -4,6 +4,12 @@ from tests.dialects.test_dialect import Validator
 class TestMaterialize(Validator):
     dialect = "materialize"
 
+    def test_array_length(self):
+        self.validate_all(
+            "SELECT ARRAY_LENGTH(ARRAY[1, 2], 1)",
+            read={"spark": "SELECT SIZE(ARRAY(1, 2))"},
+        )
+
     def test_materialize(self):
         self.validate_all(
             "CREATE TABLE example (id INT PRIMARY KEY, name TEXT)",

@@ -354,7 +354,7 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
                 unnest_aliases.add(unnest_alias.columns[0].name)
 
         if unnest_aliases:
-            for c in find_all_in_scope(expression, exp.Column):
+            for c in find_all_in_scope(expression, exp.Column, include_udtfs=True):
                 if c.table in unnest_aliases:
                     bracket_lhs = c.args["table"]
                     bracket_rhs = exp.Literal.string(c.name)

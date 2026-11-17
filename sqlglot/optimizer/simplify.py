@@ -829,14 +829,29 @@ class Simplifier:
         """
         if isinstance(expression, exp.Between):
             negate = isinstance(expression.parent, exp.Not)
+            symmetric = expression.args.get("symmetric")
+            this = expression.this
+            low = expression.args["low"]
+            high = expression.args["high"]
 
             expression = exp.and_(
-                exp.GTE(this=expression.this.copy(), expression=expression.args["low"]),
-                exp.LTE(this=expression.this.copy(), expression=expression.args["high"]),
+                exp.GTE(this=this.copy(), expression=low),
+                exp.LTE(this=this.copy(), expression=high),
                 copy=False,
             )
 
-            if negate:
+            if symmetric:
+                expression = exp.or_(
+                    expression,
+                    exp.and_(
+                        exp.GTE(this=this.copy(), expression=high.copy()),
+                        exp.LTE(this=this.copy(), expression=low.copy()),
+                        copy=False,
+                    ),
+                    copy=False,
+                )
+
+            if negate or symmetric:
                 expression = exp.paren(expression, copy=False)
 
         return expression
@@ -1776,7 +1791,7 @@ class Gen:
                 e.args.get("high"),
                 " AND ",
                 e.args.get("low"),
-                " BETWEEN ",
+                " BETWEEN SYMMETRIC " if e.args.get("symmetric") else " BETWEEN ",
                 e.this,
             )
         )

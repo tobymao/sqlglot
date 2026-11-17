@@ -2333,8 +2333,9 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
     def test_array_length(self):
         self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2, 3], 1)")
 
+        # ARRAY_LENGTH(arr, 1) returns NULL for an empty array, whereas CARDINALITY returns 0
         self.validate_all(
-            "ARRAY_LENGTH(arr, 1)",
+            "CARDINALITY(arr)",
             read={
                 "bigquery": "ARRAY_LENGTH(arr)",
                 "duckdb": "ARRAY_LENGTH(arr)",
@@ -2346,6 +2347,9 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "spark": "SIZE(arr)",
                 "databricks": "SIZE(arr)",
             },
+        )
+        self.validate_all(
+            "ARRAY_LENGTH(arr, 1)",
             write={
                 "duckdb": "ARRAY_LENGTH(arr, 1)",
                 "presto": "CARDINALITY(arr)",

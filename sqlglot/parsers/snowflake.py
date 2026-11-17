@@ -182,7 +182,7 @@ def _build_if_from_div0null(args: list) -> exp.If:
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _build_if_from_zeroifnull(args: list) -> exp.If:
     cond = exp.Is(this=seq_get(args, 0), expression=exp.Null())
-    return exp.If(this=cond, true=exp.Literal.number(0), false=seq_get(args, 0))
+    return exp.If(this=cond, true=exp.Literal.number(0), false=exp.maybe_copy(seq_get(args, 0)))
 
 
 def _build_search(args: list) -> exp.Search:
@@ -197,7 +197,7 @@ def _build_search(args: list) -> exp.Search:
 # https://docs.snowflake.com/en/sql-reference/functions/zeroifnull
 def _build_if_from_nullifzero(args: list) -> exp.If:
     cond = exp.EQ(this=seq_get(args, 0), expression=exp.Literal.number(0))
-    return exp.If(this=cond, true=exp.Null(), false=seq_get(args, 0))
+    return exp.If(this=cond, true=exp.Null(), false=exp.maybe_copy(seq_get(args, 0)))
 
 
 def _build_regexp_replace(args: list) -> exp.RegexpReplace:

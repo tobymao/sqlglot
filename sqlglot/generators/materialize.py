@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlglot import exp
+from sqlglot.generator import Generator
 from sqlglot.helper import seq_get
 from sqlglot.generators.postgres import PostgresGenerator
 
@@ -33,6 +34,9 @@ class MaterializeGenerator(PostgresGenerator):
         exp.OnConflict: lambda self, e: "",
         exp.PrimaryKeyColumnConstraint: lambda self, e: "",
     }
+
+    def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        return Generator.arraysize_sql(self, expression)
 
     def propertyeq_sql(self, expression: exp.PropertyEQ) -> str:
         return self.binary(expression, "=>")

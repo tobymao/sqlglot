@@ -894,6 +894,7 @@ class TestSQLite(Validator):
             "UNICODE(x)",
             write={
                 "": "UNICODE(x)",
+                "duckdb": "NULLIF(UNICODE(x), -1)",
                 "mysql": "ORD(CONVERT(x USING utf32))",
                 "oracle": "ASCII(UNISTR(x))",
                 "postgres": "ASCII(x)",
@@ -927,6 +928,18 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT * FROM t WHERE NULL IS y")
         self.validate_identity("SELECT * FROM t WHERE NULL IS NOT y")
         self.validate_identity("SELECT SQLITE_VERSION()")
+
+    def test_unicode(self):
+        for arg in ("''", "NULL", "'A'", "'Ω'", "'😀'", "LOWER('')"):
+            with self.subTest(arg=arg):
+                sql = f"SELECT UNICODE({arg})"
+                self.validate_all(
+                    sql,
+                    write={
+                        "sqlite": sql,
+                        "duckdb": f"SELECT NULLIF(UNICODE({arg}), -1)",
+                    },
+                )
 
     def test_json_arrow_precedence(self):
         # ||, -> and ->> form a single left-associative precedence tier that binds

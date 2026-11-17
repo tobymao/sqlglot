@@ -2988,6 +2988,9 @@ class DuckDBGenerator(generator.Generator):
         return self.func("JSON", arg)
 
     def unicode_sql(self, expression: exp.Unicode) -> str:
+        if expression.args.get("empty_is_null"):
+            return self.func("NULLIF", self.func("UNICODE", expression.this), "-1")
+
         if expression.args.get("empty_is_zero"):
             return self.sql(
                 exp.case()

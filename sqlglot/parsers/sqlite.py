@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.helper import seq_get
 from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import Token, TokenType
 
@@ -113,6 +114,7 @@ class SQLiteParser(parser.Parser):
         "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
+        "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_null=True),
     }
 
     FUNCTION_PARSERS = {

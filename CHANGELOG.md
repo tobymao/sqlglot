@@ -1,6 +1,55 @@
 Changelog
 =========
 
+## [v30.33.0] - 2026-11-17
+### :boom: BREAKING CHANGES
+- due to [`fe09eb5`](https://github.com/tobymao/sqlglot/commit/fe09eb5c2c7269acb908af083539d0aaeca25b93) - treat SHA1/SHA256/SHA512 as binary digests [CLAUDE] *(PR [#9156](https://github.com/tobymao/sqlglot/pull/9156) by [@DeepBuha06](https://github.com/DeepBuha06))*:
+
+  treat SHA1/SHA256/SHA512 as binary digests [CLAUDE] (#9156)
+
+
+### :sparkles: New Features
+- [`80c7137`](https://github.com/tobymao/sqlglot/commit/80c71376aebf4bdd3fd0c271d54204482df217f0) - **bigquery**: infer POWER results from numeric operand types *(PR [#9089](https://github.com/tobymao/sqlglot/pull/9089) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`3ac233c`](https://github.com/tobymao/sqlglot/commit/3ac233c54cb8db46480f4778b4c7b6fcaab43d40) - **presto**: parse FORMAT_DATETIME Joda formats into TimeToStr *(PR [#9096](https://github.com/tobymao/sqlglot/pull/9096) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`c86e605`](https://github.com/tobymao/sqlglot/commit/c86e6050891096ea0dde094acdf19e2051fc3d90) - **Databricks**: Infer type for Databricks Date_TRUNC, SEQUENCE-to-EXPLODE propagation *(PR [#9158](https://github.com/tobymao/sqlglot/pull/9158) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`b8b7e82`](https://github.com/tobymao/sqlglot/commit/b8b7e827cdc8e547497718b10fceee4ea4fa5dcc) - **databricks**: parse OPTIMIZE with table parser *(PR [#9164](https://github.com/tobymao/sqlglot/pull/9164) by [@Walkeer](https://github.com/Walkeer))*
+
+### :bug: Bug Fixes
+- [`1d064df`](https://github.com/tobymao/sqlglot/commit/1d064dfb3fcb3cbc84106def136b6743340d5d1e) - **optimizer**: wrap merged projections used as the operand of IN / BETWEEN [CLAUDE] *(PR [#9139](https://github.com/tobymao/sqlglot/pull/9139) by [@arpangupta1805](https://github.com/arpangupta1805))*
+  - :arrow_lower_right: *fixes issue [#9138](https://github.com/tobymao/sqlglot/issues/9138) opened by [@arpangupta1805](https://github.com/arpangupta1805)*
+- [`3194cf8`](https://github.com/tobymao/sqlglot/commit/3194cf84505461c5e5e0b80f089f9ddb504e772f) - **duckdb**: honor binary POSITION start offsets [CODEX] *(PR [#9145](https://github.com/tobymao/sqlglot/pull/9145) by [@krish-goradia](https://github.com/krish-goradia))*
+- [`3159964`](https://github.com/tobymao/sqlglot/commit/315996469760c7034d37d1ca74e3facecef89896) - **postgres**: generate CARDINALITY for ArraySize without a dimension [CLAUDE] *(PR [#9157](https://github.com/tobymao/sqlglot/pull/9157) by [@EnesSoydan](https://github.com/EnesSoydan))*
+- [`fe09eb5`](https://github.com/tobymao/sqlglot/commit/fe09eb5c2c7269acb908af083539d0aaeca25b93) - **clickhouse**: treat SHA1/SHA256/SHA512 as binary digests [CLAUDE] *(PR [#9156](https://github.com/tobymao/sqlglot/pull/9156) by [@DeepBuha06](https://github.com/DeepBuha06))*
+- [`2359d11`](https://github.com/tobymao/sqlglot/commit/2359d11a233680ae9e9b7f8162377fe90ff99af6) - **hive**: handle MILLISECOND and MICROSECOND in DATEADD *(PR [#9161](https://github.com/tobymao/sqlglot/pull/9161) by [@saanvimundra](https://github.com/saanvimundra))*
+  - :arrow_lower_right: *fixes issue [#9160](https://github.com/tobymao/sqlglot/issues/9160) opened by [@saanvimundra](https://github.com/saanvimundra)*
+- [`9ffdd7b`](https://github.com/tobymao/sqlglot/commit/9ffdd7bef97bcf59af1743fc72e28571c2d2ff08) - **sqlite**: translate week date arithmetic to days [CODEX] *(PR [#9168](https://github.com/tobymao/sqlglot/pull/9168) by [@prathamchoksi](https://github.com/prathamchoksi))*
+  - :arrow_lower_right: *fixes issue [#9167](https://github.com/tobymao/sqlglot/issues/9167) opened by [@prathamchoksi](https://github.com/prathamchoksi)*
+- [`4d1409c`](https://github.com/tobymao/sqlglot/commit/4d1409c334d51ce508c5969c93ae8881301ddbbd) - **sqlite**: use DATETIME for sub-day DATE_ADD/DATE_SUB units *(PR [#9155](https://github.com/tobymao/sqlglot/pull/9155) by [@akchhayasharma](https://github.com/akchhayasharma))*
+  - :arrow_lower_right: *fixes issue [#9150](https://github.com/tobymao/sqlglot/issues/9150) opened by [@prathamchoksi](https://github.com/prathamchoksi)*
+- [`2a2d341`](https://github.com/tobymao/sqlglot/commit/2a2d341d3eb8dcbc07f312a49821ff96f44ba346) - **sqlite**: preserve empty UNICODE results in DuckDB *(PR [#9175](https://github.com/tobymao/sqlglot/pull/9175) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9172](https://github.com/tobymao/sqlglot/issues/9172) opened by [@vanshbarfiwala-lgtm](https://github.com/vanshbarfiwala-lgtm)*
+- [`0142578`](https://github.com/tobymao/sqlglot/commit/0142578dc440257299a36706167d890fe83b9d13) - **hive**: map SSS to milliseconds in Hive/Spark time formats *(PR [#9173](https://github.com/tobymao/sqlglot/pull/9173) by [@dayan02dev](https://github.com/dayan02dev))*
+- [`c521a7c`](https://github.com/tobymao/sqlglot/commit/c521a7cc2b63c845fe3232b0fafddcb17bfbc360) - **optimizer**: respect join ordering during predicate pushdown *(commit by [@treysp](https://github.com/treysp))*
+- [`307245f`](https://github.com/tobymao/sqlglot/commit/307245faf60c0b00c03368558a5482502635e750) - **sqlite**: preserve negative ROUND precision in DuckDB *(PR [#9174](https://github.com/tobymao/sqlglot/pull/9174) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9159](https://github.com/tobymao/sqlglot/issues/9159) opened by [@vanshbarfiwala-lgtm](https://github.com/vanshbarfiwala-lgtm)*
+- [`30e99f7`](https://github.com/tobymao/sqlglot/commit/30e99f7b6b97dfc4c6da83d40655413f001c7aeb) - **optimizer**: preserve correlated column references when merging subqueries *(PR [#9051](https://github.com/tobymao/sqlglot/pull/9051) by [@treysp](https://github.com/treysp))*
+- [`8ceabf8`](https://github.com/tobymao/sqlglot/commit/8ceabf87854bb55297f01c51864c8fbc1e8f7795) - **sqlite**: preserve integer RANDOM semantics in DuckDB *(PR [#9177](https://github.com/tobymao/sqlglot/pull/9177) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9163](https://github.com/tobymao/sqlglot/issues/9163) opened by [@vanshbarfiwala-lgtm](https://github.com/vanshbarfiwala-lgtm)*
+- [`b9688a1`](https://github.com/tobymao/sqlglot/commit/b9688a13d249fd95edf83b7c7862b6846c088abf) - **duckdb**: distinguish printf and brace formatting [CODEX] *(PR [#9176](https://github.com/tobymao/sqlglot/pull/9176) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9112](https://github.com/tobymao/sqlglot/issues/9112) opened by [@bardrop](https://github.com/bardrop)*
+- [`8897257`](https://github.com/tobymao/sqlglot/commit/88972576a2d84ccdd9dcff25279a016d4e08071c) - **optimizer**: apply star REPLACE / RENAME to USING join columns [CLAUDE] *(PR [#9170](https://github.com/tobymao/sqlglot/pull/9170) by [@arpangupta1805](https://github.com/arpangupta1805))*
+  - :arrow_lower_right: *fixes issue [#9169](https://github.com/tobymao/sqlglot/issues/9169) opened by [@arpangupta1805](https://github.com/arpangupta1805)*
+- [`0936dbe`](https://github.com/tobymao/sqlglot/commit/0936dbe9192a3b57c6e6992acfcb93d4b429c51f) - **optimizer**: preserve scalar subqueries in predicates [CODEX] *(PR [#9171](https://github.com/tobymao/sqlglot/pull/9171) by [@hector2394](https://github.com/hector2394))*
+  - :arrow_lower_right: *fixes issue [#9148](https://github.com/tobymao/sqlglot/issues/9148) opened by [@arpangupta1805](https://github.com/arpangupta1805)*
+
+### :recycle: Refactors
+- [`1a6309a`](https://github.com/tobymao/sqlglot/commit/1a6309ade5b784e79033b924e55884a9545395f0) - **databricks**: inherit Optimize argument defaults *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`024134c`](https://github.com/tobymao/sqlglot/commit/024134c6691f5b6cb97b29d9e227f3343021f032) - **optimizer**: simplify merge_subqueries wrap check, test OR under AND *(commit by [@geooo109](https://github.com/geooo109))*
+- [`b9c408b`](https://github.com/tobymao/sqlglot/commit/b9c408ba1fdf50de5f07ba97818db1baa7a60688) - **optimizer**: drop redundant SAFE_TO_REPLACE_UNWRAPPED comment *(commit by [@geooo109](https://github.com/geooo109))*
+
+
 ## [v30.32.0] - 2026-11-16
 ### :sparkles: New Features
 - [`466a644`](https://github.com/tobymao/sqlglot/commit/466a6443905f6684cfc38eea0422284231cd1182) - **Snowflake**: Fix type for Snowflake TO_VARIANT *(PR [#8979](https://github.com/tobymao/sqlglot/pull/8979) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
@@ -16848,3 +16897,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.30.0]: https://github.com/tobymao/sqlglot/compare/v30.29.0...v30.30.0
 [v30.31.0]: https://github.com/tobymao/sqlglot/compare/v30.30.0...v30.31.0
 [v30.32.0]: https://github.com/tobymao/sqlglot/compare/v30.31.0...v30.32.0
+[v30.33.0]: https://github.com/tobymao/sqlglot/compare/v30.32.0...v30.33.0

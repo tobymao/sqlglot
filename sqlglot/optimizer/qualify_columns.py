@@ -1358,28 +1358,18 @@ def _expand_stars(
                     using_tables = using_column_tables[name]
                     coalesce_args = [exp.column(name, table=table) for table in using_tables]
 
-                    replaced_column = replaced_columns.get(name)
-                    selection = alias(
-                        replaced_column.this
-                        if replaced_column
-                        else exp.func("coalesce", *coalesce_args),
-                        alias=renamed_columns.get(name, name),
-                        copy=False,
-                    )
+                    selection = alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                 else:
-                    alias_ = renamed_columns.get(name, name)
                     quoted = name in quoted_columns or (
                         # if it has characters that the dialect would have changed, infer that it was quoted.
                         isinstance(source, exp.Table) and dialect.case_sensitive(name)
                     )
-                    selection_expr = replaced_columns.get(name) or exp.column(
-                        name, table=table, quoted=quoted
-                    )
-                    selection = (
-                        alias(selection_expr, alias_, copy=False)
-                        if alias_ != name
-                        else selection_expr
-                    )
+                    selection = exp.column(name, table=table, quoted=quoted)
+
+                selection = replaced_columns.get(name) or selection
+                alias_ = renamed_columns.get(name, name)
+                if alias_ != name:
+                    selection = alias(selection, alias_, copy=False)
 
                 if name in using_selections and using_selections[name] is None:
                     using_selections[name] = selection

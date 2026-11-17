@@ -3,7 +3,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
-from sqlglot.generator import unsupported_args
 from sqlglot.dialects.dialect import (
     array_sort_order,
     array_slice_to_slice_sql,
@@ -240,8 +239,10 @@ class Spark2Generator(HiveGenerator):
     WRAP_DERIVED_VALUES = False
     CREATE_FUNCTION_RETURN_AS = False
 
-    @unsupported_args("is_fmt")
     def format_sql(self, expression: exp.Format) -> str:
+        if expression.args.get("is_fmt"):
+            return super().format_sql(expression)
+
         return self.func("FORMAT_STRING", expression.this, *expression.expressions)
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:

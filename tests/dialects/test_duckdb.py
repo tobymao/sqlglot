@@ -68,6 +68,31 @@ class TestDuckDB(Validator):
                     read={"postgres": f"FORMAT('{fmt}', 1, 'a')"},
                 )
 
+    def test_format_uppercase(self):
+        for arg in ("1", "'abc'", "TRUE"):
+            with self.subTest(arg=arg):
+                self.validate_all(
+                    f"UPPER(FORMAT('{{}}', {arg}))",
+                    read={"spark": f"FORMAT_STRING('%S', {arg})"},
+                )
+
+    def test_format_literal(self):
+        for literal in ("'hello'", "''", "'100%'", "'%%s'", "'it''s %s'"):
+            expression = self.validate_identity(f"FORMAT({literal})")
+            for dialect in ("bigquery", "spark", "sqlite", "postgres", "snowflake"):
+                with self.subTest(literal=literal, dialect=dialect):
+                    self.assertEqual(
+                        expression.sql(dialect, unsupported_level=ErrorLevel.RAISE),
+                        parse_one(literal, read="duckdb").sql(dialect),
+                    )
+
+        self.validate_all(
+            "FORMAT('hello', NULL)",
+            write=dict.fromkeys(
+                ("bigquery", "spark", "sqlite", "postgres", "snowflake"), UnsupportedError
+            ),
+        )
+
     def test_binary_strposition(self):
         for sql, schema, expected in (
             (

@@ -4671,6 +4671,11 @@ class DuckDBGenerator(generator.Generator):
             return self.func("FORMAT", expression.this, *expression.expressions)
 
         fmt = expression.name
+        if expression.this.is_string and fmt == "%S" and len(expression.expressions) == 1:
+            return self.func(
+                "UPPER", self.func("FORMAT", exp.Literal.string("{}"), expression.expressions[0])
+            )
+
         if expression.this.is_string and "%s" in fmt and "%" not in re.sub(r"%%|%s", "", fmt):
             # Use brace formatting to support non-string %s arguments, as in PostgreSQL.
             fmt = fmt.replace("{", "{{").replace("}", "}}")

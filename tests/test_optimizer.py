@@ -1995,6 +1995,22 @@ class TestOptimizer(unittest.TestCase):
                 )
                 self.assertEqual(qualified.expressions[0].sql(), "* RENAME (b AS new_b)")
 
+    def test_qualify_star_replace_rename_unexpanded(self):
+        qualified = qualify(
+            parse_one(
+                "SELECT * REPLACE(b * 2 AS b) RENAME(b AS new_b) "
+                "FROM x FULL JOIN y USING (b) CROSS JOIN (SELECT 1 AS c, 2 AS c) AS z",
+                dialect="snowflake",
+            ),
+            schema=self.schema,
+            dialect="snowflake",
+            quote_identifiers=False,
+        )
+        self.assertEqual(
+            qualified.expressions[0].sql("snowflake"),
+            "* REPLACE (COALESCE(X.B, Y.B) * 2 AS B) RENAME (B AS NEW_B)",
+        )
+
     def test_qualify_star_rename_quoted(self):
         schema = {"x": {"b": "INT"}, "y": {"b": "INT"}}
         for source, selection, qualified_source in (

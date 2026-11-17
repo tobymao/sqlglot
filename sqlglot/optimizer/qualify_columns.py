@@ -1364,7 +1364,7 @@ def _expand_stars(
 
                 selection = replaced_columns.get(name) or selection
                 if alias_ := renamed_columns.get(name):
-                    selection = alias(selection, alias_, copy=False)
+                    selection = alias(selection, alias_)
 
                 if name in using_selections and using_selections[name] is None:
                     using_selections[name] = selection

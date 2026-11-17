@@ -917,6 +917,27 @@ TBLPROPERTIES (
             },
         )
         self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSS')",
+            read={
+                "snowflake": "SELECT TO_TIMESTAMP(x, 'YYYY-MM-DD HH24:MI:SS.FF3')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(x AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%f')",
+                "snowflake": "SELECT TO_CHAR(CAST(x AS TIMESTAMP), 'yyyy-mm-DD hh24:mi:ss.ff6')",
+                "spark": "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            write={
+                "duckdb": "SELECT STRPTIME(x, '%Y-%m-%d %H:%M:%S.%f')",
+                "spark": "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={
                 "bigquery": "SELECT REGEXP_CONTAINS('John Doe', 'John.*')",

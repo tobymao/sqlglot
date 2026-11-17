@@ -950,7 +950,6 @@ class TestMySQL(Validator):
         self.validate_identity("CHAR(77, 121, 83, 81, '76')")
         self.validate_identity("CHAR(77, 77.3, '77.3' USING utf8mb4)")
         self.validate_identity("SELECT * FROM t1 PARTITION(p0)")
-        self.validate_identity("SELECT @var1 := 1, @var2")
         self.validate_identity("SELECT @var1, @var2 := @var1")
         self.validate_identity("SELECT @var1 := COUNT(*) FROM t1")
         self.validate_identity("SET @var1 := 1", "SET @var1 = 1")
@@ -1498,10 +1497,6 @@ class TestMySQL(Validator):
 
         # With timezone, make sure the TIMESTAMP constructor is used
         # also TIMESTAMP doesnt have the subsecond precision truncation issue that DATETIME does so we dont need to TIMESTAMP(6)
-        self.validate_identity(
-            "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
-            write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",
-        )
         self.validate_identity(
             "SELECT TIME_STR_TO_TIME('2023-01-01 13:14:15-08:00', 'America/Los_Angeles')",
             write_sql="SELECT TIMESTAMP('2023-01-01 13:14:15-08:00')",

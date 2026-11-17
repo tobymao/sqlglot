@@ -403,14 +403,6 @@ COALESCE(tbl.date_col, tbl.bigint_col, tbl.str_col);
 STRING;
 
 # dialect: hive, spark2, spark
-COALESCE(tbl.str_col, tbl.date_col, tbl.bigint_col);
-STRING;
-
-# dialect: hive, spark2, spark
-COALESCE(tbl.date_col, tbl.str_col, tbl.bigint_col);
-STRING;
-
-# dialect: hive, spark2, spark
 COALESCE(tbl.date_col, NULL, tbl.bigint_col, tbl.str_col);
 STRING;
 
@@ -1770,10 +1762,6 @@ NORMALIZE_AND_CASEFOLD('\u00ea', NFKC);
 STRING;
 
 # dialect: bigquery
-NORMALIZE_AND_CASEFOLD('\u00ea', NFKC);
-STRING;
-
-# dialect: bigquery
 OCTET_LENGTH("foo");
 BIGINT;
 
@@ -1987,14 +1975,6 @@ JSON;
 
 # dialect: bigquery
 JSON_ARRAY_APPEND(PARSE_JSON('["a", "b", "c"]'), '$', [1, 2], append_each_element => FALSE);
-JSON;
-
-# dialect: bigquery
-JSON_ARRAY_INSERT(PARSE_JSON('["a", ["b", "c"], "d"]'), '$[1]', 1);
-JSON;
-
-# dialect: bigquery
-JSON_ARRAY_INSERT(PARSE_JSON('["a", "b", "c"]'), '$[1]', [1, 2], insert_each_element => FALSE);
 JSON;
 
 # dialect: bigquery

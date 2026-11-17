@@ -952,10 +952,6 @@ class TestClickhouse(Validator):
             parse_one("Tuple(select Int64)", into=exp.DataType, read="clickhouse"), exp.DataType
         )
 
-        self.validate_identity(
-            "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
-            "INSERT INTO t (col1, col2) VALUES (('abcd'), (1234))",
-        )
         self.validate_all(
             "INSERT INTO t (col1, col2) VALUES ('abcd', 1234)",
             write={

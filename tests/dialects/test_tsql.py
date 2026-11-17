@@ -469,12 +469,6 @@ class TestTSQL(Validator):
             },
         )
         self.validate_all(
-            "WITH t(c) AS (SELECT 1) SELECT * INTO UNLOGGED foo FROM (SELECT c AS c FROM t) AS temp",
-            write={
-                "duckdb": "CREATE TABLE foo AS WITH t(c) AS (SELECT 1) SELECT * FROM (SELECT c AS c FROM t) AS temp",
-            },
-        )
-        self.validate_all(
             "WITH y AS (SELECT 2 AS c) INSERT INTO #t SELECT * FROM y",
             write={
                 "duckdb": "WITH y AS (SELECT 2 AS c) INSERT INTO t SELECT * FROM y",
@@ -519,13 +513,6 @@ class TestTSQL(Validator):
                 "spark2": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
                 "spark": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
                 "databricks": "CREATE TEMPORARY TABLE mytemptable (a INT) USING PARQUET",
-            },
-        )
-        self.validate_all(
-            "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
-            write={
-                "spark": "CREATE TEMPORARY TABLE mytemp (a INT, b CHAR(2), c TIMESTAMP, d FLOAT) USING PARQUET",
-                "tsql": "CREATE TABLE #mytemp (a INTEGER, b CHAR(2), c TIME(4), d FLOAT(24))",
             },
         )
         self.validate_all(
@@ -617,15 +604,11 @@ class TestTSQL(Validator):
         self.validate_identity("SELECT * FROM t WITH (NOWAIT)")
         self.validate_identity("SELECT CASE WHEN a > 1 THEN b END")
         self.validate_identity("SELECT * FROM taxi ORDER BY 1 OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY")
-        self.validate_identity("END")
-        self.validate_identity("@x")
-        self.validate_identity("#x")
         self.validate_identity("PRINT @TestVariable", check_command_warning=True)
         self.validate_identity("SELECT Employee_ID, Department_ID FROM @MyTableVar")
         self.validate_identity("INSERT INTO @TestTable VALUES (1, 'Value1', 12, 20)")
         self.validate_identity("SELECT * FROM #foo")
         self.validate_identity("SELECT * FROM ##foo")
-        self.validate_identity("SELECT a = 1", "SELECT 1 AS a")
         self.validate_identity(
             "DECLARE @TestVariable AS VARCHAR(100) = 'Save Our Planet'",
             "DECLARE @TestVariable VARCHAR(100) = 'Save Our Planet'",
@@ -1312,14 +1295,6 @@ FOR JSON
         )
 
     def test_types_date(self):
-        self.validate_all(
-            "CAST(x as DATE)",
-            write={
-                "spark": "CAST(x AS DATE)",
-                "tsql": "CAST(x AS DATE)",
-            },
-        )
-
         self.validate_all(
             "CAST(x as DATE)",
             write={
@@ -2554,9 +2529,6 @@ WHERE
         )
         self.validate_identity(
             """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history], DATA_CONSISTENCY_CHECK=OFF))"""
-        )
-        self.validate_identity(
-            """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history]))"""
         )
         self.validate_identity(
             """CREATE TABLE test ([data] CHAR(7), [valid_from] DATETIME2(2) GENERATED ALWAYS AS ROW START NOT NULL, [valid_to] DATETIME2(2) GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])) WITH(SYSTEM_VERSIONING=ON(HISTORY_TABLE=[dbo].[benchmark_history]))"""

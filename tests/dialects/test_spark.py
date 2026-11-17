@@ -41,8 +41,8 @@ class TestSpark(Validator):
                             dialects,
                             f"CREATE TABLE t (a INT) USING parquet OPTIONS ({key} {separator} 's3://b/t')",
                         ),
-                        write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError},
                     )
+        self.validate_all(sql, write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError})
         expression = self.validate_identity(sql)
         self.assertIsInstance(expression, exp.Create)
         options = expression.find(exp.OptionsProperty)

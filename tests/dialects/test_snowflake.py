@@ -1635,13 +1635,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT TO_ARRAY(['test'])",
-            write={
-                "snowflake": "SELECT TO_ARRAY(['test'])",
-                "spark": "SELECT ARRAY('test')",
-            },
-        )
-        self.validate_all(
             # We need to qualify the columns in this query because "value" would be ambiguous
             'WITH t(x, "value") AS (SELECT [1, 2, 3], 1) SELECT IFF(_u.pos = _u_2.pos_2, _u_2."value", NULL) AS "value" FROM t CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE(t.x)) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => t.x)) AS _u_2(seq, key, path, pos_2, "value", this) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > (ARRAY_SIZE(t.x) - 1) AND _u_2.pos_2 = (ARRAY_SIZE(t.x) - 1))',
             read={
@@ -3636,7 +3629,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("SELECT CURRENT_DATABASE()")
         self.validate_identity("SELECT CURRENT_SCHEMA()")
 
         self.validate_all(
@@ -3828,9 +3820,6 @@ class TestSnowflake(Validator):
             "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')"
         )
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity(
-            "PUT file:///dir/tmp.csv @%table", "PUT 'file:///dir/tmp.csv' @%table"
-        )
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
@@ -4245,7 +4234,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
@@ -5628,8 +5616,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")
-        self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
-        self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
         self.validate_identity(
             "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
         )

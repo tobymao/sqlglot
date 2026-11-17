@@ -414,13 +414,7 @@ class HiveGenerator(generator.Generator):
     IGNORE_NULLS_FUNCS: t.ClassVar = (exp.First, exp.Last, exp.FirstValue, exp.LastValue)
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
-        if expression.text("unit").upper() in (
-            "HOUR",
-            "MINUTE",
-            "SECOND",
-            "MILLISECOND",
-            "MICROSECOND",
-        ):
+        if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
             this: exp.Expr = exp.cast(expression.this, exp.DType.TIMESTAMP, dialect=self.dialect)
             amount = expression.expression
             if amount.is_number:

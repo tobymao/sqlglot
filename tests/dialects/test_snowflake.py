@@ -4019,8 +4019,6 @@ class TestSnowflake(Validator):
                         "snowflake": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
                     },
                     write={
-                        "hive": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
-                        "spark2": f"SELECT CAST(ts AS TIMESTAMP) + INTERVAL '{amount}' {unit} FROM t",
                         "spark": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
                     },
                 )

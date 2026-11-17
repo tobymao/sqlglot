@@ -1,4 +1,6 @@
 import sqlite3
+import unittest
+from contextlib import closing
 
 from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
@@ -9,6 +11,45 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_variadic_iif(self):
+        for name in ("IIF", "IF"):
+            self.validate_all(
+                f"SELECT {name}(a, b, c, d)",
+                write={
+                    "sqlite": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                    "duckdb": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                    "postgres": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                },
+            )
+            self.validate_all(
+                f"SELECT {name}(a, b, c, d, e)",
+                write={"sqlite": "SELECT CASE WHEN a THEN b WHEN c THEN d ELSE e END"},
+            )
+
+        self.validate_identity("SELECT IIF(a, b)")
+        self.validate_identity("SELECT IIF(a, b, c)")
+
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 49), "Requires variadic SQLite IIF")
+    def test_variadic_iif_execution(self):
+        with closing(sqlite3.connect(":memory:")) as connection:
+            for name in ("IIF", "IF"):
+                for args in (
+                    "1, 10, 1, 20",
+                    "0, 10, 1, 20",
+                    "0, 10, 0, 20",
+                    "NULL, 10, 1, 20",
+                    "0, 10, 0, 20, 30",
+                    "0, 10, NULL, 20, 1, 30, 40",
+                    "1, IIF(0, 10, 1, 20), 0, 30, 40",
+                ):
+                    with self.subTest(name=name, args=args):
+                        sql = f"SELECT {name}({args})"
+                        generated = parse_one(sql, dialect="sqlite").sql("sqlite")
+                        self.assertEqual(
+                            connection.execute(generated).fetchall(),
+                            connection.execute(sql).fetchall(),
+                        )
 
     def test_length_null_terminated_text(self):
         for arg, duckdb_arg in (

@@ -130,6 +130,7 @@ class SQLiteParser(parser.Parser):
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
         "GROUP_CONCAT": lambda self: self._parse_string_agg(),
+        "IIF": lambda self: self._parse_iif(),
     }
 
     PROPERTY_PARSERS = {
@@ -177,6 +178,26 @@ class SQLiteParser(parser.Parser):
                 this = cls(this=is_node.this, expression=is_node.expression)
 
         return this
+
+    def _parse_if(self) -> exp.Expr | None:
+        if not self._match(TokenType.L_PAREN):
+            return super()._parse_if()
+
+        expression = self._parse_iif()
+        self._match_r_paren()
+        return expression
+
+    def _parse_iif(self) -> exp.If | exp.Case:
+        args = self._parse_function_args()
+        if len(args) <= 3:
+            return self.validate_expression(exp.If.from_arg_list(args), args)
+
+        return self.expression(
+            exp.Case(
+                ifs=[exp.If(this=args[i], true=args[i + 1]) for i in range(0, len(args) - 1, 2)],
+                default=args[-1] if len(args) % 2 else None,
+            )
+        )
 
     def _parse_string_agg(self) -> exp.GroupConcat:
         expression = super()._parse_string_agg()

@@ -275,6 +275,10 @@ class SQLiteGenerator(generator.Generator):
             unit = unit or modifier.unit
             modifier = modifier.this
 
+        if unit and unit.name.upper() == "WEEK":
+            modifier = modifier * 7
+            unit = exp.var("DAY")
+
         modifier = modifier.unnest()
         if (
             unit

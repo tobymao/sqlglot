@@ -12,6 +12,7 @@ from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.presto import PrestoGenerator
 from sqlglot.parsers.presto import PrestoParser
 from sqlglot.tokens import TokenType
+from sqlglot.trie import new_trie
 from sqlglot.typing.presto import EXPRESSION_METADATA
 
 
@@ -33,6 +34,38 @@ class Presto(Dialect):
     UUID_IS_STRING_TYPE = False
 
     TIME_MAPPING = MySQL.TIME_MAPPING
+
+    # FORMAT_DATETIME's Joda patterns, which DATE_FORMAT's MySQL codes can't always express, e.g. SSS.
+    # Fields that would format differently elsewhere are left out: fractions of a second other than
+    # ss.SSS (Joda keeps only milliseconds, and BigQuery writes them only with seconds), z and Z
+    # (other dialects don't keep the zone) and d (BigQuery pads it with a space).
+    # https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
+    JODA_TIME_MAPPING = {
+        "yyyy": "%Y",
+        "yy": "%y",
+        "MMMM": "%B",
+        "MMM": "%b",
+        "MM": "%m",
+        "M": "%-m",
+        "dd": "%d",
+        "DDD": "%j",
+        "D": "%-j",
+        "EEEE": "%A",
+        "EEE": "%a",
+        "a": "%p",
+        "HH": "%H",
+        "H": "%-H",
+        "hh": "%I",
+        "h": "%-I",
+        "mm": "%M",
+        "m": "%-M",
+        "ss": "%S",
+        "s": "%-S",
+        "ss.SSS": "%S.%f_three",
+    }
+    JODA_TIME_TRIE = new_trie(JODA_TIME_MAPPING)
+    INVERSE_JODA_TIME_MAPPING = {v: k for k, v in JODA_TIME_MAPPING.items()}
+    INVERSE_JODA_TIME_TRIE = new_trie(INVERSE_JODA_TIME_MAPPING)
 
     # https://github.com/trinodb/trino/issues/17
     # https://github.com/trinodb/trino/issues/12289

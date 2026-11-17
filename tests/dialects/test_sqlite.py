@@ -57,6 +57,39 @@ class TestSQLite(Validator):
                     "ROUND(123.45, -1)",
                 )
 
+    def test_week_date_arithmetic(self):
+        self.validate_all(
+            "DATE(d, (n * 7) || ' DAY')",
+            read={"mysql": "DATE_ADD(d, INTERVAL n WEEK)"},
+        )
+        connection = sqlite3.connect(":memory:")
+        try:
+            for operation, amount, expected in (
+                ("ADD", "2", "2024-01-15"),
+                ("SUB", "2", "2023-12-18"),
+                ("ADD", "-2", "2023-12-18"),
+                ("SUB", "-2", "2024-01-15"),
+                ("ADD", "0", "2024-01-01"),
+            ):
+                with self.subTest(operation=operation, amount=amount):
+                    source = f"SELECT DATE_{operation}('2024-01-01', INTERVAL {amount} WEEK)"
+                    sql = parse_one(source, read="mysql").sql("sqlite")
+                    self.assertEqual(connection.execute(sql).fetchone()[0], expected)
+
+            for operation, expected in (("ADD", "2024-01-15"), ("SUB", "2023-12-18")):
+                source = f"SELECT DATE_{operation}(d, INTERVAL n WEEK) FROM (SELECT '2024-01-01' AS d, 2 AS n) AS t"
+                sql = parse_one(source, read="mysql").sql("sqlite")
+                self.assertEqual(connection.execute(sql).fetchone()[0], expected)
+            source = (
+                "SELECT DATE_ADD('2024-01-01', INTERVAL (n + 1) WEEK) FROM (SELECT 1 AS n) AS t"
+            )
+            sql = parse_one(source, read="mysql").sql("sqlite")
+            self.assertEqual(connection.execute(sql).fetchone()[0], "2024-01-15")
+            sql = parse_one("SELECT DATE_ADD(NULL, INTERVAL 2 WEEK)", read="mysql").sql("sqlite")
+            self.assertIsNone(connection.execute(sql).fetchone()[0])
+        finally:
+            connection.close()
+
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
             ("NULL", "NULL"),

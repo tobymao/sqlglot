@@ -4116,6 +4116,18 @@ class Generator:
 
         return escaped
 
+    def format_sql(self, expression: exp.Format) -> str:
+        if (
+            expression.args.get("is_fmt")
+            and expression.this.is_string
+            and not expression.expressions
+            and not any(c in expression.name for c in "{}")
+        ):
+            return self.sql(expression.this)
+
+        self._warn_unsupported_arg(expression, "is_fmt")
+        return self.function_fallback_sql(expression)
+
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 

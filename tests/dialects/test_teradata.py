@@ -260,6 +260,7 @@ class TestTeradata(Validator):
             write={
                 "": "(u - l) * RAND() + l",
                 "teradata": "RANDOM(l, u)",
+                "duckdb": "CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(u AS INT128) - CAST(l AS INT128)) + 1)) + CAST(l AS INT128) AS BIGINT)",
             },
         )
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")

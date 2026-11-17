@@ -111,6 +111,10 @@ class SQLiteParser(parser.Parser):
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "MAX": _build_max,
         "MIN": _build_min,
+        "RANDOM": lambda args: exp.Rand(
+            lower=exp.Literal.number(-9223372036854775807),
+            upper=exp.Literal.number(9223372036854775807),
+        ),
         "ROUND": lambda args: exp.Round(
             this=seq_get(args, 0), decimals=seq_get(args, 1), negative_decimals_are_zero=True
         ),

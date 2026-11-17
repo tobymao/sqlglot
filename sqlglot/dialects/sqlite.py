@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.generators.sqlite import SQLiteGenerator
 from sqlglot.parsers.sqlite import SQLiteParser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.sqlite import EXPRESSION_METADATA
 
 
 class SQLite(Dialect):
@@ -28,6 +29,7 @@ class SQLite(Dialect):
     CONCAT_WS_COALESCE = True
     INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
+    EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]

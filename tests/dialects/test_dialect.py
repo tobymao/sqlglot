@@ -4128,7 +4128,6 @@ FROM subquery2""",
                 "postgres": "RANDOM()",
                 "presto": "RAND()",
                 "spark": "RAND()",
-                "sqlite": "RANDOM()",
                 "tsql": "RAND()",
             },
         )

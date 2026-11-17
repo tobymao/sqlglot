@@ -604,8 +604,8 @@ class SnowflakeParser(parser.Parser):
         "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
         "RANDOM": lambda args: exp.Rand(
             this=seq_get(args, 0),
-            lower=exp.Literal.number(-9223372036854775808.0),  # -2^63 as float to avoid overflow
-            upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            lower=exp.Literal.number(-9223372036854775808),
+            upper=exp.Literal.number(9223372036854775807),
         ),
         "REPLACE": build_replace_with_optional_replacement,
         "RIGHT": lambda args: exp.Right(

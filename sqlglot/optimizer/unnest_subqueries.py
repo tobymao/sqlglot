@@ -89,6 +89,8 @@ def unnest(select, parent_select, next_alias_name):
         not predicate
         # EXISTS tests row presence, so joining its potentially many or NULL-valued rows is unsafe.
         or isinstance(predicate, exp.Exists)
+        # Scalar IN-list elements cannot replace the entire membership predicate.
+        or (isinstance(predicate, exp.In) and predicate.expressions)
         # Do not unnest subqueries inside table-valued functions such as
         # FROM GENERATE_SERIES(...), FROM UNNEST(...) etc in order to preserve join order
         or (

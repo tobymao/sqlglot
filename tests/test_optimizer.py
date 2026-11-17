@@ -2346,15 +2346,21 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         schema = {"x": {"id": "INT", "ref": "INT"}, "y": {"id": "INT"}}
         with duckdb.connect() as connection:
             connection.execute("CREATE TABLE x (id INT, ref INT)")
-            connection.execute("INSERT INTO x VALUES (2, 10)")
+            connection.execute("INSERT INTO x VALUES (2, 10), (10, 10)")
             connection.execute("CREATE TABLE y (id INT)")
             connection.execute("INSERT INTO y VALUES (10)")
 
-            sql = "SELECT x.id FROM x WHERE x.id IN ((SELECT y.id FROM y WHERE y.id = x.ref), 2)"
-            optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb").sql("duckdb")
-            for query in (sql, optimized):
-                with self.subTest(query=query):
-                    self.assertEqual(connection.execute(query).fetchall(), [(2,)])
+            for values in (
+                "(SELECT y.id FROM y WHERE y.id = x.ref), 2",
+                "(SELECT y.id FROM y WHERE y.id = x.ref), (SELECT 2)",
+                "(SELECT 2), (SELECT y.id FROM y WHERE y.id = x.ref)",
+                "(SELECT 10), (SELECT 2)",
+            ):
+                sql = f"SELECT x.id FROM x WHERE x.id IN ({values})"
+                optimized = optimizer.optimize(sql, schema=schema, dialect="duckdb").sql("duckdb")
+                for query in (sql, optimized):
+                    with self.subTest(query=query):
+                        self.assertCountEqual(connection.execute(query).fetchall(), [(2,), (10,)])
 
             connection.execute("INSERT INTO y VALUES (10)")
             sql = "SELECT x.id FROM x WHERE (SELECT y.id FROM y WHERE y.id = x.ref) > 1"

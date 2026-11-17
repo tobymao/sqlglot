@@ -60,7 +60,8 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
 
             if where:
                 selected_sources: Sources = scope.selected_sources
-                join_index = {join.alias_or_name: i for i, join in enumerate(joins)}
+                join_index = {id(join): i for i, join in enumerate(joins)}
+                source_positions: dict[str, int] = {}
 
                 # A RIGHT or FULL join null-extends everything joined before it, and an outer WHERE filter
                 # removes those rows, so a source can only be pushed into if no such join comes after it.
@@ -78,9 +79,18 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                         if isinstance(node, exp.Unnest) and unnest_requires_cross_join:
                             pushdown_allowed = False
                             break
-                        position = join_index.get(parent.alias_or_name, -1)
-                    else:
+                        position = join_index.get(id(parent))
+                    elif isinstance(parent, exp.From) and parent.parent is select:
                         position = -1
+                    else:
+                        continue
+
+                    # Joins inside parenthesized operands are not in the direct-join index.
+                    if position is None:
+                        continue
+
+                    # Keep dependency positions even for sources we cannot safely push filters into.
+                    source_positions[k] = position
 
                     if position >= last_null_extending:
                         reachable[k] = (node, source)
@@ -88,7 +98,9 @@ def pushdown_predicates(expression: E, dialect: DialectType = None) -> E:
                 selected_sources = reachable
 
                 if pushdown_allowed:
-                    pushdown(where.this, selected_sources, scope_ref_count, dialect, join_index)
+                    pushdown(
+                        where.this, selected_sources, scope_ref_count, dialect, source_positions
+                    )
 
             # joins should only pushdown into itself, not to other joins
             # so we limit the selected sources to only itself
@@ -114,7 +126,7 @@ def pushdown(
     sources: Sources,
     scope_ref_count: Mapping[int, int],
     dialect: DialectType,
-    join_index: Mapping[str, int] | None = None,
+    source_positions: Mapping[str, int] | None = None,
 ) -> None:
     if not condition:
         return
@@ -129,30 +141,32 @@ def pushdown(
     )
 
     if cnf_like:
-        pushdown_cnf(predicates, sources, scope_ref_count, join_index=join_index)
+        pushdown_cnf(predicates, sources, scope_ref_count, source_positions=source_positions)
     else:
-        pushdown_dnf(predicates, sources, scope_ref_count, join_index=join_index)
+        pushdown_dnf(predicates, sources, scope_ref_count, source_positions=source_positions)
 
 
 def pushdown_cnf(
     predicates: Iterable[exp.Expr],
     sources: Sources,
     scope_ref_count: Mapping[int, int],
-    join_index: Mapping[str, int] | None = None,
+    source_positions: Mapping[str, int] | None = None,
 ) -> None:
     """
     If the predicates are in CNF like form, we can simply replace each block in the parent.
     """
     for predicate in predicates:
-        for node in nodes_for_predicate(predicate, sources, scope_ref_count).values():
+        for name, node in nodes_for_predicate(predicate, sources, scope_ref_count).items():
             if isinstance(node, exp.Join):
-                name = node.alias_or_name
                 predicate_tables = exp.column_table_names(predicate, name)
 
-                if join_index:
-                    # Don't push the predicate if it references tables that appear in later joins
-                    this_index = join_index[name]
-                    if all(join_index.get(table, -1) < this_index for table in predicate_tables):
+                if source_positions is not None:
+                    # Only push if every other referenced source precedes this join.
+                    this_index = source_positions[name]
+                    if all(
+                        table in source_positions and source_positions[table] < this_index
+                        for table in predicate_tables
+                    ):
                         predicate.replace(exp.true())
                         node.on(predicate, copy=False)
                         break
@@ -169,7 +183,7 @@ def pushdown_dnf(
     predicates: Iterable[exp.Expr],
     sources: Sources,
     scope_ref_count: Mapping[int, int],
-    join_index: Mapping[str, int] | None = None,
+    source_positions: Mapping[str, int] | None = None,
 ) -> None:
     """
     If the predicates are in DNF form, we can only push down conditions that are in all blocks.
@@ -218,10 +232,13 @@ def pushdown_dnf(
         predicate = conditions[table]
 
         if isinstance(table_node, exp.Join):
-            if join_index:
-                this_index = join_index[table]
+            if source_positions is not None:
+                this_index = source_positions[table]
                 predicate_tables = exp.column_table_names(predicate, table)
-                if not all(join_index.get(t, -1) < this_index for t in predicate_tables):
+                if not all(
+                    t in source_positions and source_positions[t] < this_index
+                    for t in predicate_tables
+                ):
                     continue
             table_node.on(predicate, copy=False)
         elif isinstance(table_node, exp.Select):

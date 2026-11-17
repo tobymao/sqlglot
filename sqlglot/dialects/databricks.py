@@ -34,6 +34,7 @@ class Databricks(Spark):
         KEYWORDS = {
             **Spark.Tokenizer.KEYWORDS,
             "MATCH_RECOGNIZE": TokenType.MATCH_RECOGNIZE,
+            "OPTIMIZE": TokenType.OPTIMIZE,
             "STREAM": TokenType.STREAM,
             "VOID": TokenType.VOID,
         }

@@ -13,6 +13,11 @@ class DatabricksParser(SparkParser):
     COLON_IS_VARIANT_EXTRACT = True
     COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
+    STATEMENT_PARSERS = {
+        **SparkParser.STATEMENT_PARSERS,
+        TokenType.OPTIMIZE: lambda self: self._parse_optimize(),
+    }
+
     FUNCTIONS = {
         **SparkParser.FUNCTIONS,
         "IFF": exp.If.from_arg_list,
@@ -57,6 +62,24 @@ class DatabricksParser(SparkParser):
         *SparkParser.CAST_COLUMN_OPERATORS,
         TokenType.QDCOLON,
     }
+
+    def _parse_optimize(self) -> exp.Optimize | exp.Command:
+        start = self._prev
+        if len(self._tokens) - self._index in (1, 3, 5):
+            tokens = self._tokens[self._index :]
+            if all(
+                token.token_type in self.ID_VAR_TOKENS
+                and (
+                    token.token_type == TokenType.IDENTIFIER
+                    or not any(char.isspace() for char in token.text)
+                )
+                for token in tokens[::2]
+            ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
+                return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
+
+        command = self._parse_as_command(start)
+        command.set("this", start.text.upper())
+        return self.expression(command)
 
     def _parse_curdate(self) -> exp.CurrentDate:
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses

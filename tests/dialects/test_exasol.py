@@ -730,8 +730,6 @@ class TestExasol(Validator):
             "HASH_SHA(x)",
             read={
                 "exasol": "HASH_SHA1(x)",
-                "presto": "SHA1(x)",
-                "trino": "SHA1(x)",
             },
             write={
                 "exasol": "HASH_SHA(x)",

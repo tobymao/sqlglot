@@ -869,6 +869,14 @@ class TestClickhouse(Validator):
 
         self.validate_identity("SELECT SHA1(x), SHA256(x), SHA512(x)")
         self.validate_all(
+            "SELECT SHA1(x), SHA256(x), SHA512(x)",
+            read={
+                "presto": "SELECT SHA1(x), SHA256(x), SHA512(x)",
+                "trino": "SELECT SHA1(x), SHA256(x), SHA512(x)",
+                "tsql": "SELECT HASHBYTES('SHA1', x), HASHBYTES('SHA2_256', x), HASHBYTES('SHA2_512', x)",
+            },
+        )
+        self.validate_all(
             "SELECT LOWER(HEX(SHA256(x))), LOWER(HEX(SHA1(x)))",
             read={"duckdb": "SELECT SHA256(x), SHA1(x)"},
         )

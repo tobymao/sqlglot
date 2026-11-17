@@ -710,33 +710,34 @@ class TestTSQL(Validator):
         self.validate_all(
             "HASHBYTES('SHA1', x)",
             read={
-                "snowflake": "SHA1(x)",
-                "spark": "SHA(x)",
+                "snowflake": "SHA1_BINARY(x)",
             },
             write={
-                "snowflake": "SHA1(x)",
-                "spark": "SHA(x)",
+                "snowflake": "SHA1_BINARY(x)",
+                "spark": "UNHEX(SHA(x))",
+                "duckdb": "UNHEX(SHA1(x))",
                 "tsql": "HASHBYTES('SHA1', x)",
             },
         )
         self.validate_all(
             "HASHBYTES('SHA2_256', x)",
             read={
-                "spark": "SHA2(x, 256)",
+                "bigquery": "SHA256(x)",
             },
             write={
                 "tsql": "HASHBYTES('SHA2_256', x)",
-                "spark": "SHA2(x, 256)",
+                "spark": "UNHEX(SHA2(x, 256))",
+                "duckdb": "UNHEX(SHA256(x))",
             },
         )
         self.validate_all(
             "HASHBYTES('SHA2_512', x)",
             read={
-                "spark": "SHA2(x, 512)",
+                "bigquery": "SHA512(x)",
             },
             write={
                 "tsql": "HASHBYTES('SHA2_512', x)",
-                "spark": "SHA2(x, 512)",
+                "spark": "UNHEX(SHA2(x, 512))",
             },
         )
         self.validate_all(

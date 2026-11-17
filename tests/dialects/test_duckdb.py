@@ -10,6 +10,20 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_length(self):
+        for dialect in ("bigquery", "snowflake"):
+            for dtype, expected in (
+                ("TEXT", "SELECT LENGTH(t.x) FROM t"),
+                ("BLOB", "SELECT OCTET_LENGTH(t.x) FROM t"),
+            ):
+                with self.subTest(dialect=dialect, dtype=dtype):
+                    expression = annotate_types(
+                        parse_one("SELECT LENGTH(t.x) FROM t", read=dialect),
+                        schema={"t": {"x": dtype}},
+                        dialect=dialect,
+                    )
+                    self.assertEqual(expression.sql("duckdb"), expected)
+
     def test_format(self):
         for sql in (
             "FORMAT('{}-{}', 1, 2)",

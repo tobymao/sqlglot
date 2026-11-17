@@ -11,22 +11,57 @@ class TestSQLite(Validator):
     dialect = "sqlite"
 
     def test_length_null_terminated_text(self):
-        for arg in ("''", "'abc'", "'a' || CHAR(0) || 'b'", "CHAR(0)", "NULL"):
+        for arg, duckdb_arg in (
+            ("''", "''"),
+            ("'abc'", "'abc'"),
+            ("'a' || CHAR(0) || 'b'", "'a' || CHR(0) || 'b'"),
+            ("CHAR(0)", "CHR(0)"),
+            ("CHAR(0) || 'ab'", "CHR(0) || 'ab'"),
+            ("'ab' || CHAR(0)", "'ab' || CHR(0)"),
+            ("'é😊' || CHAR(0) || 'x'", "'é😊' || CHR(0) || 'x'"),
+            ("NULL", "NULL"),
+        ):
             sql = f"SELECT LENGTH({arg})"
-            self.validate_identity(sql)
-            expression = parse_one(sql, dialect="sqlite")
-            length = expression.find(exp.Length)
-            self.assertTrue(length.args.get("null_terminated"))
-            self.assertTrue(length.args.get("binary"))
-            self.assertIn("SPLIT_PART(", expression.sql("duckdb"))
+            self.validate_all(
+                sql,
+                write={
+                    "sqlite": sql,
+                    "duckdb": f"SELECT LENGTH(SPLIT_PART({duckdb_arg}, CHR(0), 1))",
+                },
+            )
 
-        expression = parse_one("SELECT LENGTH(x)", dialect="sqlite")
+        for sql, expected in (
+            ("SELECT LENGTH(x'610062')", "SELECT OCTET_LENGTH(UNHEX('610062'))"),
+            ("SELECT LENGTH(x'')", "SELECT OCTET_LENGTH(UNHEX(''))"),
+            ("SELECT LENGTH(123)", "SELECT LENGTH(SPLIT_PART(CAST(123 AS TEXT), CHR(0), 1))"),
+        ):
+            expression = annotate_types(self.validate_identity(sql), dialect="sqlite")
+            self.assertEqual(expression.sql("duckdb"), expected)
+
+        for dtype, expected in (
+            ("TEXT", "SELECT LENGTH(SPLIT_PART(t.x, CHR(0), 1)) FROM t"),
+            ("BLOB", "SELECT OCTET_LENGTH(t.x) FROM t"),
+            ("INT", "SELECT LENGTH(SPLIT_PART(CAST(t.x AS TEXT), CHR(0), 1)) FROM t"),
+        ):
+            expression = annotate_types(
+                self.parse_one("SELECT LENGTH(t.x) FROM t"),
+                schema={"t": {"x": dtype}},
+                dialect="sqlite",
+            )
+            self.assertEqual(expression.sql("duckdb"), expected)
+
+        self.validate_all(
+            "SELECT LENGTH('é')",
+            write={"mysql": "SELECT CHAR_LENGTH('é')"},
+        )
+
+        expression = self.validate_identity("SELECT LENGTH(x)")
         original = expression.copy()
         sql = expression.sql("duckdb", copy=False)
-        self.assertIn("WHEN 'BLOB' THEN OCTET_LENGTH(", sql)
-        self.assertIn("ELSE LENGTH(SPLIT_PART(", sql)
+        self.assertEqual(sql, "SELECT LENGTH(SPLIT_PART(x, CHR(0), 1))")
         self.assertEqual(expression, original)
         length = expression.find(exp.Length)
+        self.assertTrue(length.args.get("null_terminated"))
         self.assertIs(length.this.parent, length)
         self.assertEqual(expression.sql("sqlite", copy=False), "SELECT LENGTH(x)")
         self.assertEqual(

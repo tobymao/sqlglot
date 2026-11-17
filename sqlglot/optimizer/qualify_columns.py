@@ -1163,10 +1163,6 @@ def _expand_stars(
     """Expand stars to lists of column selections"""
 
     new_selections: list[exp.Expr] = []
-    except_columns: dict[int, set[str]] = {}
-    replace_columns: dict[int, dict[str, exp.Alias]] = {}
-    rename_columns: dict[int, dict[str, exp.Identifier]] = {}
-    ilike_pattern: str | None = None
 
     dialect = resolver.dialect
 
@@ -1192,6 +1188,10 @@ def _expand_stars(
 
     for expression in scope_expression.selects:
         tables: list[str] = []
+        except_columns: dict[int, set[str]] = {}
+        replace_columns: dict[int, dict[str, exp.Alias]] = {}
+        rename_columns: dict[int, dict[str, exp.Identifier]] = {}
+        ilike_pattern: str | None = None
         is_unqualified_star = isinstance(expression, exp.Star)
         coalesced_columns = set()
 

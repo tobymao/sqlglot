@@ -420,7 +420,6 @@ class PrestoGenerator(generator.Generator):
         exp.TimeStrToUnix: lambda self, e: self.func(
             "TO_UNIXTIME", self.func("DATE_PARSE", e.this, type(self.dialect).TIME_FORMAT)
         ),
-        exp.TimeToStr: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
         exp.TimeToUnix: rename_func("TO_UNIXTIME"),
         exp.ToChar: lambda self, e: self.func("DATE_FORMAT", e.this, self.format_time(e)),
         exp.TryCast: transforms.preprocess([transforms.epoch_cast_to_ts]),
@@ -590,6 +589,20 @@ class PrestoGenerator(generator.Generator):
             this = exp.Encode(this=this, charset=exp.Literal.string("utf-8"))
 
         return self.func("LOWER", self.func("TO_HEX", self.func(f"SHA{length}", self.sql(this))))
+
+    def timetostr_sql(self, expression: exp.TimeToStr) -> str:
+        if expression.args.get("joda"):
+            from sqlglot.dialects.presto import Presto
+
+            return self.func(
+                "FORMAT_DATETIME",
+                expression.this,
+                self.format_time(
+                    expression, Presto.INVERSE_JODA_TIME_MAPPING, Presto.INVERSE_JODA_TIME_TRIE
+                ),
+            )
+
+        return self.func("DATE_FORMAT", expression.this, self.format_time(expression))
 
     def strtounix_sql(self, expression: exp.StrToUnix) -> str:
         # Since `TO_UNIXTIME` requires a `TIMESTAMP`, we need to parse the argument into one.

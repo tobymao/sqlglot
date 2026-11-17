@@ -120,6 +120,53 @@ class TestTrino(Validator):
                     self.assertEqual(expression.args["quantile"], self.parse_one(quantile))
                     self.assertIsNone(expression.args.get("accuracy"))
 
+    def test_format_datetime(self):
+        self.validate_all(
+            "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "bigquery": "FORMAT_DATE('%F %H:%M:%E3S', t)",
+                "trino": "FORMAT_DATETIME(t, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "FORMAT_DATETIME(t, 'mm:ss.SSS')",
+            write={
+                "bigquery": "FORMAT_DATE('%M:%E3S', t)",
+                "trino": "FORMAT_DATETIME(t, 'mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "FORMAT_DATETIME(t, 'EEEE, MMMM dd yyyy hh:mm a, DDD')",
+            write={
+                "bigquery": "FORMAT_DATE('%A, %B %d %Y %I:%M %p, %j', t)",
+                "trino": "FORMAT_DATETIME(t, 'EEEE, MMMM dd yyyy hh:mm a, DDD')",
+            },
+        )
+        self.validate_all(
+            "FORMAT_DATETIME(CAST(t AS TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'America/Los_Angeles', 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "bigquery": "FORMAT_DATE('%F %H:%M:%E3S', TIMESTAMP(DATETIME(CAST(t AS TIMESTAMP), 'America/Los_Angeles')))",
+            },
+        )
+
+        # Empty formats, and formats with quoted text, a literal % or a field without a mapping,
+        # are left as is
+        for fmt in (
+            "",
+            "yyyy-MM-dd''T''HH",
+            "%Y",
+            "y",
+            "DD",
+            "yyyyy",
+            "G",
+            "d MMM yyyy",
+            "SSS",
+            "ss.SSSSSS",
+            "HH:mm z",
+        ):
+            with self.subTest(fmt=fmt):
+                self.validate_identity(f"FORMAT_DATETIME(t, '{fmt}')")
+
     def test_decimal_beyond_numeric_range(self):
         # BigQuery's NUMERIC holds at most 29 integer digits and 9 fractional digits
         self.validate_all(

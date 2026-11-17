@@ -70,7 +70,7 @@ class Left(Expression, Func):
 
 
 class Length(Expression, Func):
-    arg_types = {"this": True, "binary": False, "encoding": False}
+    arg_types = {"this": True, "binary": False, "encoding": False, "null_terminated": False}
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 

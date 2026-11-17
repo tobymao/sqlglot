@@ -10,6 +10,30 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_length_null_terminated_text(self):
+        for arg in ("''", "'abc'", "'a' || CHAR(0) || 'b'", "CHAR(0)", "NULL"):
+            sql = f"SELECT LENGTH({arg})"
+            self.validate_identity(sql)
+            expression = parse_one(sql, dialect="sqlite")
+            length = expression.find(exp.Length)
+            self.assertTrue(length.args.get("null_terminated"))
+            self.assertTrue(length.args.get("binary"))
+            self.assertIn("SPLIT_PART(", expression.sql("duckdb"))
+
+        expression = parse_one("SELECT LENGTH(x)", dialect="sqlite")
+        original = expression.copy()
+        sql = expression.sql("duckdb", copy=False)
+        self.assertIn("WHEN 'BLOB' THEN OCTET_LENGTH(", sql)
+        self.assertIn("ELSE LENGTH(SPLIT_PART(", sql)
+        self.assertEqual(expression, original)
+        length = expression.find(exp.Length)
+        self.assertIs(length.this.parent, length)
+        self.assertEqual(expression.sql("sqlite", copy=False), "SELECT LENGTH(x)")
+        self.assertEqual(
+            parse_one("SELECT LENGTH(x)", dialect="duckdb").sql("duckdb"),
+            "SELECT LENGTH(x)",
+        )
+
     def test_round(self):
         for sql, duckdb_sql in (
             ("ROUND(123.45)", "ROUND(123.45)"),

@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from collections import Counter, defaultdict
+from itertools import chain
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
@@ -186,7 +187,7 @@ def merge_ctes(
             continue
         alias = table.alias_or_name
         if _mergeable(
-            outer_scope, inner_scope, leave_tables_isolated, from_or_join, table
+            outer_scope, inner_scope, leave_tables_isolated, from_or_join, table, scope_lookup
         ) and copy_budget.consume(outer_scope, inner_scope, alias):
             _rename_inner_sources(outer_scope, inner_scope, alias, scope_lookup)
             _merge_from(outer_scope, inner_scope, table, alias)
@@ -221,7 +222,12 @@ def merge_derived_tables(
             if not isinstance(inner_scope, Scope):
                 continue
             if _mergeable(
-                outer_scope, inner_scope, leave_tables_isolated, from_or_join, subquery
+                outer_scope,
+                inner_scope,
+                leave_tables_isolated,
+                from_or_join,
+                subquery,
+                scope_lookup,
             ) and copy_budget.consume(outer_scope, inner_scope, alias):
                 _rename_inner_sources(outer_scope, inner_scope, alias, scope_lookup)
                 _merge_from(outer_scope, inner_scope, subquery, alias)
@@ -241,6 +247,7 @@ def _mergeable(
     leave_tables_isolated: bool,
     from_or_join: FromOrJoin,
     source: exp.Selectable,
+    scope_lookup: dict[int, Scope],
 ) -> bool:
     """
     Return True if `inner_select` can be merged into outer query.
@@ -483,6 +490,28 @@ def _mergeable(
         if not has_column:
             column_free_aliases.add(name)
 
+    external_sources = {column.table for column in inner_scope.external_columns}
+    if external_sources:
+        # Ancestor sources cannot be renamed here, so skip merges that would capture them.
+        if external_sources.intersection(
+            name for name, _ in outer_scope.references if name != inner_name
+        ):
+            return False
+
+        outer_columns = outer_scope.source_columns(inner_name)
+        for name, projection in projections.items():
+            sources = external_sources.intersection(
+                column.table for column in projection.find_all(exp.Column)
+            )
+            if sources and sources.intersection(
+                _nested_source_names(
+                    outer_scope,
+                    (column for column in outer_columns if column.name == name),
+                    scope_lookup,
+                )
+            ):
+                return False
+
     return (
         not _constant_projection_empties_group_by_all(column_free_aliases)
         and not _outer_select_joins_on_inner_select_join(projections)
@@ -495,7 +524,7 @@ def _mergeable(
 
 
 def _nested_source_names(
-    scope: Scope, columns: t.Iterable[exp.Column], scope_lookup: dict[int, Scope]
+    scope: Scope, columns: t.Iterable[exp.Expr], scope_lookup: dict[int, Scope]
 ) -> set[str]:
     names: set[str] = set()
     seen = {id(scope.expression)}
@@ -533,10 +562,20 @@ def _rename_inner_sources(
 
     taken = outer_taken.union(name for name, _ in inner_scope.references)
     taken.update(column.table for column in inner_scope.external_columns)
+    table_columns = [
+        column
+        for scope in inner_scope.traverse()
+        for column in scope.table_columns
+        if column.name in conflicts
+        and column.name not in _nested_source_names(inner_scope, (column,), scope_lookup)
+    ]
     taken.update(
         _nested_source_names(
             inner_scope,
-            (column for column in inner_scope.columns if column.table in conflicts),
+            chain(
+                (column for column in inner_scope.columns if column.table in conflicts),
+                table_columns,
+            ),
             scope_lookup,
         )
     )
@@ -558,6 +597,10 @@ def _rename_inner_sources(
 
         for column in inner_scope.source_columns(conflict):
             column.set("table", exp.to_identifier(new_name))
+
+        for table_column in table_columns:
+            if table_column.name == conflict:
+                table_column.set("this", exp.to_identifier(new_name))
 
         inner_scope.rename_source(conflict, new_name)
 

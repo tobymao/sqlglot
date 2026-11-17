@@ -31,6 +31,11 @@ class SQLite(Dialect):
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    TIME_MAPPING = {
+        "%%": "%%",
+        "%f": "%S.%f_three",
+    }
+
     class Tokenizer(tokens.Tokenizer):
         IDENTIFIERS = ['"', ("[", "]"), "`"]
         HEX_STRINGS = [("x'", "'"), ("X'", "'"), ("0x", ""), ("0X", "")]

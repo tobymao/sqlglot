@@ -1077,6 +1077,51 @@ class TestSQLite(Validator):
             },
         )
 
+    def test_strftime_fractional_seconds(self):
+        self.validate_all(
+            "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', '2024-02-29 12:34:56.123')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2024-02-29 12:34:56.123' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%g')",
+                "sqlite": "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', '2024-02-29 12:34:56.123')",
+            },
+        )
+        for value in ("'2024-02-29 12:34:00.007'", "'2024-02-29 12:34:56'", "NULL"):
+            self.validate_all(
+                f"SELECT STRFTIME('%f', {value})",
+                write={
+                    "duckdb": f"SELECT STRFTIME(CAST({value} AS TIMESTAMP), '%S.%g')",
+                    "sqlite": f"SELECT STRFTIME('%f', {value})",
+                },
+            )
+
+        self.validate_all(
+            "SELECT STRFTIME('%f', ts) FROM (SELECT '2024-02-29 12:34:56.123' AS ts) AS t",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(ts AS TIMESTAMP), '%S.%g') FROM (SELECT '2024-02-29 12:34:56.123' AS ts) AS t",
+            },
+        )
+
+        for source, target in (
+            ("%%f", "%%f"),
+            ("%%%f", "%%%S.%g"),
+            ("%%%%f", "%%%%f"),
+            ("%S.%f", "%S.%S.%g"),
+            ("%f|%%f|%f", "%S.%g|%%f|%S.%g"),
+        ):
+            self.validate_all(
+                f"SELECT STRFTIME('{source}', '2024-02-29 12:34:56.123')",
+                write={
+                    "duckdb": f"SELECT STRFTIME(CAST('2024-02-29 12:34:56.123' AS TIMESTAMP), '{target}')",
+                    "sqlite": f"SELECT STRFTIME('{source}', '2024-02-29 12:34:56.123')",
+                },
+            )
+
+        self.validate_identity("SELECT STRFTIME('%f')", "SELECT STRFTIME('%f', CURRENT_TIMESTAMP)")
+        self.validate_identity("SELECT STRFTIME('%f', '2024-02-29 12:34:56.123', '+1 second')")
+        self.validate_identity(
+            "SELECT STRFTIME(fmt, '2024-02-29 12:34:56.123') FROM (SELECT '%f' AS fmt) AS t"
+        )
+
     def test_datediff(self):
         self.assertEqual(
             parse_one("DATEDIFF(a, b, 'day')").sql("sqlite", unsupported_level=ErrorLevel.RAISE),

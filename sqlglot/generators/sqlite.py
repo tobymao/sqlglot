@@ -175,7 +175,7 @@ class SQLiteGenerator(generator.Generator):
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="INSTR"),
         exp.TableSample: no_tablesample_sql,
         exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
-        exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),
+        exp.TimeToStr: lambda self, e: self.func("STRFTIME", self.format_time(e), e.this),
         exp.TryCast: no_trycast_sql,
         exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
     }

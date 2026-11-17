@@ -1977,6 +1977,51 @@ class TestOptimizer(unittest.TestCase):
             "WITH T AS (SELECT 1 AS A) SELECT T.$2 AS _COL_0 FROM T AS T",
         )
 
+    def test_qualify_star_rename_unexpanded(self):
+        for sql, expand_stars in (
+            ("SELECT * RENAME(b AS new_b) FROM x FULL JOIN y USING (b)", False),
+            (
+                "SELECT * RENAME(b AS new_b) FROM (SELECT a, a, b FROM x) AS x "
+                "FULL JOIN y USING (b)",
+                True,
+            ),
+        ):
+            with self.subTest(sql=sql):
+                qualified = qualify(
+                    parse_one(sql),
+                    schema=self.schema,
+                    expand_stars=expand_stars,
+                    quote_identifiers=False,
+                )
+                self.assertEqual(qualified.expressions[0].sql(), "* RENAME (b AS new_b)")
+
+    def test_qualify_star_rename_quoted(self):
+        schema = {"x": {"b": "INT"}, "y": {"b": "INT"}}
+        for source, selection, qualified_source in (
+            ("x", "X.B", "X AS X"),
+            (
+                "x FULL JOIN y USING (b)",
+                "COALESCE(X.B, Y.B)",
+                "X AS X FULL JOIN Y AS Y ON X.B = Y.B",
+            ),
+        ):
+            for name in ("mixedCase", "B"):
+                for replace in (False, True):
+                    with self.subTest(source=source, name=name, replace=replace):
+                        modifier = " REPLACE(b * 2 AS b)" if replace else ""
+                        sql = f'SELECT *{modifier} RENAME(b AS "{name}") FROM {source}'
+                        qualified = qualify(
+                            parse_one(sql, dialect="snowflake"),
+                            schema=schema,
+                            dialect="snowflake",
+                            quote_identifiers=False,
+                        )
+                        expected = selection + " * 2" if replace else selection
+                        self.assertEqual(
+                            qualified.sql("snowflake"),
+                            f'SELECT {expected} AS "{name}" FROM {qualified_source}',
+                        )
+
     def test_qualify_columns_using_after_outer_join(self):
         source = "(VALUES (1, 'c1'), (2, 'c2'), (2, 'c3'), (3, 'c4'), (NULL, 'cn')) AS c(k, vc)"
         for side in ("FULL", "RIGHT"):
@@ -3223,6 +3268,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             ).sql(),
             'SELECT "bar"."a" AS "a" FROM "bar"',
         )
+
+    def test_scope_star_rename(self):
+        for star in ("*", "x.*"):
+            with self.subTest(star=star):
+                scope = build_scope(
+                    parse_one(
+                        f"SELECT b AS plain_b, {star} REPLACE(b * 2 AS b) RENAME(b AS new_b) FROM x"
+                    )
+                )
+                self.assertEqual(scope.columns, [exp.column("b"), exp.column("b")])
 
     def test_scope(self):
         ast = parse_one("SELECT IF(a IN UNNEST(b), 1, 0) AS c FROM t", dialect="bigquery")

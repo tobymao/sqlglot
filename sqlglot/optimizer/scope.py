@@ -400,6 +400,10 @@ class Scope:
 
             self._columns = []
             for column in columns + external_columns:
+                # Star RENAME sources are column labels, not references.
+                if isinstance(column.parent, exp.Alias) and column.parent.arg_key == "rename":
+                    continue
+
                 ancestor = column.find_ancestor(
                     exp.Select,
                     exp.Qualify,

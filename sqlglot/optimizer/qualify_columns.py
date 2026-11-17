@@ -347,10 +347,6 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
 
     if column_tables:
         for column in scope.columns:
-            # The source name of a star's RENAME is resolved when the star is expanded
-            if isinstance(column.parent, exp.Alias) and column.parent.arg_key == "rename":
-                continue
-
             if not column.table and column.name in column_tables:
                 tables = column_tables[column.name]
                 coalesce_args = [exp.column(column.name, table=table) for table in tables]
@@ -1169,7 +1165,7 @@ def _expand_stars(
     new_selections: list[exp.Expr] = []
     except_columns: dict[int, set[str]] = {}
     replace_columns: dict[int, dict[str, exp.Alias]] = {}
-    rename_columns: dict[int, dict[str, str]] = {}
+    rename_columns: dict[int, dict[str, exp.Identifier]] = {}
     ilike_pattern: str | None = None
 
     dialect = resolver.dialect
@@ -1367,8 +1363,7 @@ def _expand_stars(
                     selection = exp.column(name, table=table, quoted=quoted)
 
                 selection = replaced_columns.get(name) or selection
-                alias_ = renamed_columns.get(name, name)
-                if alias_ != name:
+                if alias_ := renamed_columns.get(name):
                     selection = alias(selection, alias_, copy=False)
 
                 if name in using_selections and using_selections[name] is None:
@@ -1456,14 +1451,14 @@ def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, 
 
 
 def _add_rename_columns(
-    expression: exp.Expr, tables, rename_columns: dict[int, dict[str, str]]
+    expression: exp.Expr, tables, rename_columns: dict[int, dict[str, exp.Identifier]]
 ) -> None:
     rename = expression.args.get("rename")
 
     if not rename:
         return
 
-    columns = {e.this.name: e.alias for e in rename}
+    columns = {e.this.name: e.args["alias"] for e in rename}
 
     for table in tables:
         rename_columns[id(table)] = columns

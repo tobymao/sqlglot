@@ -696,6 +696,7 @@ class TestDatabricks(Validator):
         self.assertEqual(tree, self.parse_one(tree.sql(dialect="databricks")))
         for sql in ("SELECT optimize FROM optimize", "SELECT 1 AS optimize"):
             self.validate_identity(sql)
+        self.validate_identity("SELECT 1 optimize", "SELECT 1 AS optimize")
         self.validate_identity("SELECT * FROM t optimize", "SELECT * FROM t AS optimize")
         self.validate_identity("SELECT OPTIMIZE(1)")
         table = self.parse_one("OPTIMIZE\ncatalog.t").this
@@ -710,6 +711,19 @@ class TestDatabricks(Validator):
                 self.assertIsInstance(parse_one("OPTIMIZE t", read=dialect), exp.Command)
                 with self.assertRaises(UnsupportedError):
                     tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
+    def test_optimize_comments(self):
+        for sql in (
+            "/* comment */ OPTIMIZE db.t",
+            "OPTIMIZE /* comment */ db.t",
+            "OPTIMIZE db /* comment */ .t",
+            "OPTIMIZE db.t /* comment */",
+            "OPTIMIZE db.t -- comment\n",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql, "OPTIMIZE db.t /* comment */")
+                self.assertIsInstance(tree, exp.Optimize)
+                self.assertIsInstance(tree.this, exp.Table)
 
     def test_optimize_fallback(self):
         for sql in (

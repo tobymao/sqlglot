@@ -67,19 +67,14 @@ class DatabricksParser(SparkParser):
         start = self._prev
         if len(self._tokens) - self._index in (1, 3, 5):
             tokens = self._tokens[self._index :]
-            if (
-                not start.comments
-                and not any(token.comments for token in tokens)
-                and all(
-                    token.token_type in self.ID_VAR_TOKENS
-                    and (
-                        token.token_type == TokenType.IDENTIFIER
-                        or not any(char.isspace() for char in token.text)
-                    )
-                    for token in tokens[::2]
+            if all(
+                token.token_type in self.ID_VAR_TOKENS
+                and (
+                    token.token_type == TokenType.IDENTIFIER
+                    or not any(char.isspace() for char in token.text)
                 )
-                and all(token.token_type == TokenType.DOT for token in tokens[1::2])
-            ):
+                for token in tokens[::2]
+            ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
                 return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
 
         command = self._parse_as_command(start)

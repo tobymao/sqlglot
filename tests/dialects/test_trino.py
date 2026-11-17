@@ -473,6 +473,12 @@ class TestTrino(Validator):
             identify=True,
         )
 
+    def test_add_months(self):
+        self.validate_all(
+            "SELECT CASE WHEN DAY(d) = DAY(LAST_DAY_OF_MONTH(d)) THEN DATE_ADD('DAY', DAY(LAST_DAY_OF_MONTH(DATE_ADD('MONTH', 1, d))) - DAY(DATE_ADD('MONTH', 1, d)), DATE_ADD('MONTH', 1, d)) ELSE DATE_ADD('MONTH', 1, d) END",
+            read={"snowflake": "SELECT ADD_MONTHS(d, 1)"},
+        )
+
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")
         self.validate_identity("ANALYZE tbl WITH (prop1=val1, prop2=val2)")

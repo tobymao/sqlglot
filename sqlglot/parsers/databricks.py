@@ -75,7 +75,13 @@ class DatabricksParser(SparkParser):
                 )
                 for token in tokens[::2]
             ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
-                return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
+                this = self._parse_table_parts(schema=True)
+                if this and any(token.comments for token in tokens[1::2]):
+                    this.pop_comments()
+                    this.add_comments(
+                        [comment for token in tokens for comment in token.comments or []]
+                    )
+                return self.expression(exp.Optimize(this=this))
 
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())

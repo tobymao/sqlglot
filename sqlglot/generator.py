@@ -4805,7 +4805,24 @@ class Generator:
                 l.replace(exp.cast(l.copy(), to=exp.DType.DOUBLE))
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
-            if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
+            # Untyped literal operands still carry enough information for integer division.
+            # Restrict this to SQLite-style safe division and values that fit its signed
+            # integer range. Larger literals become REAL in SQLite.
+            literal_ints = False
+            if expression.args.get("safe") and l.is_int and r.is_int:
+                try:
+                    left_value, right_value = l.to_py(), r.to_py()
+                    literal_ints = (
+                        -(2**63) <= left_value < 2**63
+                        and -(2**63) <= right_value < 2**63
+                        and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
+                    )
+                except ValueError:
+                    # Extremely long integer literals can exceed Python's conversion limit.
+                    pass
+            if literal_ints or (
+                l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES)
+            ):
                 # Native integer division depends on the target's operand types, which may differ
                 # from the source's (e.g. FLOOR(int) is DOUBLE in DuckDB), unless the operands are
                 # integer literals or casts

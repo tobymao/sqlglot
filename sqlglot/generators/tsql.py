@@ -52,6 +52,14 @@ def _format_sql(self: TSQLGenerator, expression: exp.NumberToStr | exp.TimeToStr
     return self.func("FORMAT", expression.this, fmt_sql, expression.args.get("culture"))
 
 
+def _sha2_sql(self: TSQLGenerator, expression: exp.SHA2 | exp.SHA2Digest) -> str:
+    return self.func(
+        "HASHBYTES",
+        exp.Literal.string(f"SHA2_{expression.args.get('length', 256)}"),
+        expression.this,
+    )
+
+
 def _string_agg_sql(self: TSQLGenerator, expression: exp.GroupConcat) -> str:
     this = expression.this
     distinct = find_in_scope(expression, exp.Distinct)
@@ -252,9 +260,8 @@ class TSQLGenerator(generator.Generator):
         exp.Subquery: transforms.preprocess([qualify_derived_table_outputs]),
         exp.SHA: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
         exp.SHA1Digest: lambda self, e: self.func("HASHBYTES", exp.Literal.string("SHA1"), e.this),
-        exp.SHA2: lambda self, e: self.func(
-            "HASHBYTES", exp.Literal.string(f"SHA2_{e.args.get('length', 256)}"), e.this
-        ),
+        exp.SHA2: _sha2_sql,
+        exp.SHA2Digest: _sha2_sql,
         exp.TemporaryProperty: lambda self, e: "",
         exp.TimeStrToTime: _timestrtotime_sql,
         exp.TimeToStr: _format_sql,

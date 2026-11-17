@@ -2813,32 +2813,56 @@ class DuckDBGenerator(generator.Generator):
 
     def strposition_sql(self, expression: exp.StrPosition) -> str:
         this = expression.this
-        substr = expression.args.get("substr")
+        substr = expression.args["substr"]
         position = expression.args.get("position")
+        clamp_position = expression.args.get("clamp_position")
+
+        if clamp_position and position:
+            position = exp.If(
+                this=exp.LTE(this=position, expression=exp.Literal.number(0)),
+                true=exp.Literal.number(1),
+                false=position.copy(),
+            )
 
         # For BINARY/BLOB: DuckDB's STRPOS doesn't support BLOB types
         if _is_binary(this):
+            haystack: exp.Expr = exp.Hex(this=this)
+            offset: exp.Expr = exp.Literal.number(0)
+            if position:
+                # Bound the arithmetic too: DuckDB may fold unreachable CASE branches.
+                limit = exp.func("COALESCE", exp.ByteLength(this=this), 0) + 1
+                offset = exp.Least(this=position, expressions=[limit], ignore_nulls=True) - 1
+                haystack = exp.Substring(this=haystack, start=offset * 2 + 1)
+
             # Match whole bytes, counting a two-character sentinel as the first byte.
             prefix = exp.RegexpExtract(
-                this=exp.DPipe(this=exp.Literal.string("xx"), expression=exp.Hex(this=this)),
+                this=exp.DPipe(this=exp.Literal.string("xx"), expression=haystack),
                 expression=exp.DPipe(
                     this=exp.Literal.string("^(xx(?:..)*?)"), expression=exp.Hex(this=substr)
                 ),
                 group=exp.Literal.number(1),
             )
-            return self.sql(exp.paren(exp.Length(this=prefix) // 2))
+            result: exp.Expr = exp.paren(exp.Length(this=prefix) // 2)
+            if position:
+                result = (
+                    exp.case()
+                    .when(
+                        exp.or_(
+                            this.is_(exp.null()), substr.is_(exp.null()), position.is_(exp.null())
+                        ),
+                        exp.null(),
+                    )
+                    .when(
+                        position > exp.func("GREATEST", exp.ByteLength(this=this), 1),
+                        exp.Literal.number(0),
+                    )
+                    .else_(exp.func("COALESCE", exp.func("NULLIF", result, 0) + offset, 0))
+                )
+            return self.sql(result)
 
-        # For VARCHAR: handle clamp_position
-        if expression.args.get("clamp_position") and position:
+        if clamp_position and position:
             expression = expression.copy()
-            expression.set(
-                "position",
-                exp.If(
-                    this=exp.LTE(this=position, expression=exp.Literal.number(0)),
-                    true=exp.Literal.number(1),
-                    false=position.copy(),
-                ),
-            )
+            expression.set("position", position)
 
         return strposition_sql(self, expression)
 

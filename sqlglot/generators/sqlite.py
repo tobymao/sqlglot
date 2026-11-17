@@ -275,6 +275,10 @@ class SQLiteGenerator(generator.Generator):
             unit = unit or modifier.unit
             modifier = modifier.this
 
+        if unit and unit.name.upper() == "WEEK":
+            modifier = modifier * 7
+            unit = exp.var("DAY")
+
         # SQLite DATE deliberately returns only a date, so sub-day units would
         # silently drop the time; DATETIME retains it.
         func = "DATETIME" if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND") else "DATE"

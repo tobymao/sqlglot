@@ -381,6 +381,9 @@ class RedshiftGenerator(PostgresGenerator):
 
         return f"SET{exprs}{location}{file_format}"
 
+    def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        return Generator.arraysize_sql(self, expression)
+
     def array_sql(self, expression: exp.Array) -> str:
         if expression.args.get("bracket_notation"):
             return super().array_sql(expression)

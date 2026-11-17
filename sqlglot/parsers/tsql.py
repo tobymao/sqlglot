@@ -196,11 +196,11 @@ def _build_hashbytes(args: list) -> exp.Expr:
         return exp.MD5(this=data)
     if kind in ("SHA", "SHA1"):
         args.pop(0)
-        return exp.SHA(this=data)
+        return exp.SHA1Digest(this=data)
     if kind == "SHA2_256":
-        return exp.SHA2(this=data, length=exp.Literal.number(256))
+        return exp.SHA2Digest(this=data, length=exp.Literal.number(256))
     if kind == "SHA2_512":
-        return exp.SHA2(this=data, length=exp.Literal.number(512))
+        return exp.SHA2Digest(this=data, length=exp.Literal.number(512))
 
     return exp.func("HASHBYTES", *args)
 

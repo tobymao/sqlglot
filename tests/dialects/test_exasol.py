@@ -729,14 +729,11 @@ class TestExasol(Validator):
         self.validate_all(
             "HASH_SHA(x)",
             read={
-                "clickhouse": "SHA1(x)",
                 "exasol": "HASH_SHA1(x)",
-                "presto": "SHA1(x)",
-                "trino": "SHA1(x)",
             },
             write={
                 "exasol": "HASH_SHA(x)",
-                "clickhouse": "SHA1(x)",
+                "clickhouse": "LOWER(HEX(SHA1(x)))",
                 "bigquery": "SHA1(x)",
                 "": "SHA(x)",
                 "presto": "SHA1(x)",
@@ -773,14 +770,13 @@ class TestExasol(Validator):
         self.validate_all(
             "HASH_SHA256(x)",
             read={
-                "clickhouse": "SHA256(x)",
                 "duckdb": "SHA256(x)",
             },
             write={
                 "exasol": "HASH_SHA256(x)",
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
-                "clickhouse": "SHA256(x)",
+                "clickhouse": "LOWER(HEX(SHA256(x)))",
                 "postgres": "ENCODE(SHA256(x), 'hex')",
                 "presto": "LOWER(TO_HEX(SHA256(x)))",
                 "redshift": "SHA2(x, 256)",
@@ -791,12 +787,9 @@ class TestExasol(Validator):
         )
         self.validate_all(
             "HASH_SHA512(x)",
-            read={
-                "clickhouse": "SHA512(x)",
-            },
             write={
                 "exasol": "HASH_SHA512(x)",
-                "clickhouse": "SHA512(x)",
+                "clickhouse": "LOWER(HEX(SHA512(x)))",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
                 "presto": "LOWER(TO_HEX(SHA512(x)))",

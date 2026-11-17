@@ -1456,7 +1456,7 @@ LANGUAGE js AS
             },
             write={
                 "bigquery": "SHA256(x)",
-                "spark2": "SHA2(x, 256)",
+                "spark2": "UNHEX(SHA2(x, 256))",
                 "clickhouse": "SHA256(x)",
                 "postgres": "SHA256(x)",
                 "presto": "SHA256(x)",
@@ -1476,7 +1476,7 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
-                "spark2": "SHA2(x, 512)",
+                "spark2": "UNHEX(SHA2(x, 512))",
                 "presto": "SHA512(x)",
                 "trino": "SHA512(x)",
             },

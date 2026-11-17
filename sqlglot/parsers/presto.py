@@ -146,6 +146,7 @@ class PrestoParser(parser.Parser):
             this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
         ),
         "MD5": exp.MD5Digest.from_arg_list,
+        "SHA1": exp.SHA1Digest.from_arg_list,
         "SHA256": lambda args: exp.SHA2Digest(
             this=seq_get(args, 0), length=exp.Literal.number(256)
         ),

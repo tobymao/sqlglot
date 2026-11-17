@@ -352,8 +352,13 @@ class ClickHouseParser(parser.Parser):
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
         "UNIQ": exp.ApproxDistinct.from_arg_list,
         "MD5": exp.MD5Digest.from_arg_list,
-        "SHA256": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(256)),
-        "SHA512": lambda args: exp.SHA2(this=seq_get(args, 0), length=exp.Literal.number(512)),
+        "SHA1": exp.SHA1Digest.from_arg_list,
+        "SHA256": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(256)
+        ),
+        "SHA512": lambda args: exp.SHA2Digest(
+            this=seq_get(args, 0), length=exp.Literal.number(512)
+        ),
         "SPLITBYCHAR": _build_split_by_char,
         "SPLITBYREGEXP": _build_split(exp.RegexpSplit),
         "SPLITBYSTRING": _build_split(exp.Split),

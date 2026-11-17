@@ -10,6 +10,53 @@ from tests.dialects.test_dialect import Validator
 class TestSQLite(Validator):
     dialect = "sqlite"
 
+    def test_round(self):
+        for sql, duckdb_sql in (
+            ("ROUND(123.45)", "ROUND(123.45)"),
+            ("ROUND(123.45, -1)", "ROUND(123.45, 0)"),
+            ("ROUND(123.45, -2)", "ROUND(123.45, 0)"),
+            ("ROUND(-123.45, -1)", "ROUND(-123.45, 0)"),
+            ("ROUND(123.45, 0)", "ROUND(123.45, 0)"),
+            ("ROUND(123.45, 1)", "ROUND(123.45, 1)"),
+            ("ROUND(NULL, -1)", "ROUND(NULL, 0)"),
+            (
+                "ROUND(123.45, NULL)",
+                "ROUND(CAST(123.45 AS DOUBLE), CASE WHEN NULL < 0 THEN 0 ELSE NULL END)",
+            ),
+            ("ROUND(x, n)", "ROUND(CAST(x AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END)"),
+            (
+                "ROUND(123.45, n)",
+                "ROUND(CAST(123.45 AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END)",
+            ),
+            (
+                "ROUND(x, n - 1)",
+                "ROUND(CAST(x AS DOUBLE), CASE WHEN (n - 1) < 0 THEN 0 ELSE n - 1 END)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(sql, write={"sqlite": sql, "duckdb": duckdb_sql})
+
+        sql = "SELECT ROUND(x, n) FROM t"
+        expression = self.validate_identity(sql)
+        original = expression.copy()
+        for _ in range(3):
+            self.assertEqual(
+                expression.sql("duckdb", copy=False),
+                "SELECT ROUND(CAST(x AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END) FROM t",
+            )
+            self.assertEqual(expression, original)
+            round_expression = expression.find(exp.Round)
+            self.assertIs(round_expression.args["decimals"].parent, round_expression)
+            self.assertEqual(expression.sql("sqlite", copy=False), sql)
+            expression = self.parse_one(expression.sql("sqlite"))
+
+        for dialect in ("duckdb", "postgres", "snowflake"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(
+                    parse_one("ROUND(123.45, -1)", dialect=dialect).sql("duckdb"),
+                    "ROUND(123.45, -1)",
+                )
+
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
             ("NULL", "NULL"),

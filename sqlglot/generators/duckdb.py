@@ -4819,6 +4819,17 @@ class DuckDBGenerator(generator.Generator):
         decimals = expression.args.get("decimals")
         truncate = expression.args.get("truncate")
 
+        if decimals is not None and expression.args.get("negative_decimals_are_zero"):
+            if decimals.is_int:
+                decimals = exp.Literal.number(max(0, decimals.to_py()))
+            else:
+                # DuckDB's DECIMAL overload requires constant precision; SQLite rounds doubles.
+                this = exp.cast(this, exp.DType.DOUBLE)
+                # Preserve NULL precision, which GREATEST(decimals, 0) would replace with 0.
+                decimals = exp.If(
+                    this=decimals < 0, true=exp.Literal.number(0), false=decimals.copy()
+                )
+
         # DuckDB requires the scale (decimals) argument to be an INT
         # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
         if decimals is not None and expression.args.get("casts_non_integer_decimals"):

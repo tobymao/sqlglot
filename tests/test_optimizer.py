@@ -2328,7 +2328,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
                 "> 1",
                 "IN (5, 6)",
                 "= ANY (SELECT 5)",
-                "< ANY (SELECT y2.id FROM y AS y2 WHERE y2.id = x.id)",
+                "> ANY (SELECT y2.id FROM y AS y2 WHERE y2.id = x.id)",
                 "< ALL (SELECT y2.id FROM y AS y2 WHERE y2.id = x.id)",
             ):
                 sql = (

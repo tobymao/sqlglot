@@ -344,6 +344,14 @@ class TestSQLite(Validator):
             },
         )
 
+    def test_unannotated_integer_division_does_not_mutate_expression(self):
+        expression = self.parse_one("SELECT 5 / 2")
+        original = expression.copy()
+        for _ in range(3):
+            self.assertEqual(expression.sql("duckdb", copy=False), "SELECT 5 // NULLIF(2, 0)")
+            self.assertEqual(expression, original)
+        self.assertEqual(expression.sql("sqlite", copy=False), "SELECT 5 / 2")
+
     def test_unannotated_large_integer_division(self):
         # Avoid Python's integer string conversion limit for very long SQL literals.
         number = "9" * 5000

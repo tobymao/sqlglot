@@ -4798,6 +4798,31 @@ class Generator:
 
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
+
+        if (
+            not self.dialect.TYPED_DIVISION
+            and expression.args.get("typed")
+            and expression.args.get("safe")
+            and l.is_int
+            and r.is_int
+        ):
+            # SQLite-style integer literals fit within its signed 64-bit range; larger
+            # literals become REAL. Some target engines overflow at their integer minima.
+            try:
+                left_value, right_value = l.to_py(), r.to_py()
+                if (
+                    -(2**63) <= left_value < 2**63
+                    and -(2**63) <= right_value < 2**63
+                    and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
+                ):
+                    divisor = r.copy()
+                    if not self.dialect.SAFE_DIVISION:
+                        divisor = exp.Nullif(this=divisor, expression=exp.Literal.number(0))
+                    return self.sql(exp.IntDiv(this=l.copy(), expression=divisor))
+            except ValueError:
+                # Extremely long integer literals can exceed Python's conversion limit.
+                pass
+
         self.nullif_zero_divisor(expression)
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):
@@ -4805,24 +4830,7 @@ class Generator:
                 l.replace(exp.cast(l.copy(), to=exp.DType.DOUBLE))
 
         elif not self.dialect.TYPED_DIVISION and expression.args.get("typed"):
-            # Untyped literal operands still carry enough information for integer division.
-            # Restrict this to SQLite-style safe division and values that fit its signed
-            # integer range. Larger literals become REAL in SQLite.
-            literal_ints = False
-            if expression.args.get("safe") and l.is_int and r.is_int:
-                try:
-                    left_value, right_value = l.to_py(), r.to_py()
-                    literal_ints = (
-                        -(2**63) <= left_value < 2**63
-                        and -(2**63) <= right_value < 2**63
-                        and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
-                    )
-                except ValueError:
-                    # Extremely long integer literals can exceed Python's conversion limit.
-                    pass
-            if literal_ints or (
-                l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES)
-            ):
+            if l.is_type(*exp.DataType.INTEGER_TYPES) and r.is_type(*exp.DataType.INTEGER_TYPES):
                 # Native integer division depends on the target's operand types, which may differ
                 # from the source's (e.g. FLOOR(int) is DOUBLE in DuckDB), unless the operands are
                 # integer literals or casts

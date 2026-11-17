@@ -309,55 +309,6 @@ class TestSQLite(Validator):
                 with self.subTest(sql=sql, dialect=dialect):
                     self.assertEqual(expression.sql(dialect), output)
 
-    def test_unannotated_integer_literal_division(self):
-        for expression, duckdb_expression in (
-            ("5 / 2", "5 // NULLIF(2, 0)"),
-            ("-5 / 2", "-5 // NULLIF(2, 0)"),
-            ("5 / -2", "5 // NULLIF(-2, 0)"),
-            ("-5 / -2", "-5 // NULLIF(-2, 0)"),
-            ("5 / 0", "5 // NULLIF(0, 0)"),
-            ("9223372036854775807 / 3", "9223372036854775807 // NULLIF(3, 0)"),
-            ("5.0 / 2", "5.0 / NULLIF(2, 0)"),
-            ("5 / 2.0", "5 / NULLIF(2.0, 0)"),
-            ("9223372036854775808 / 2", "9223372036854775808 / NULLIF(2, 0)"),
-            ("-2147483648 / -1", "-2147483648 / NULLIF(-1, 0)"),
-            ("-9223372036854775808 / -1", "-9223372036854775808 / NULLIF(-1, 0)"),
-            ("a / b", "a / NULLIF(b, 0)"),
-        ):
-            with self.subTest(expression=expression):
-                self.validate_all(
-                    f"SELECT {expression}",
-                    write={
-                        "sqlite": f"SELECT {expression}",
-                        "duckdb": f"SELECT {duckdb_expression}",
-                    },
-                )
-
-    def test_unannotated_integer_division_targets(self):
-        self.validate_all(
-            "SELECT 5 / 2",
-            write={
-                "sqlite": "SELECT 5 / 2",
-                "duckdb": "SELECT 5 // NULLIF(2, 0)",
-                "bigquery": "SELECT DIV(5, NULLIF(2, 0))",
-                "snowflake": "SELECT CAST(TRUNC(5 / NULLIF(2, 0)) AS BIGINT)",
-            },
-        )
-
-    def test_unannotated_integer_division_does_not_mutate_expression(self):
-        expression = self.parse_one("SELECT 5 / 2")
-        original = expression.copy()
-        for _ in range(3):
-            self.assertEqual(expression.sql("duckdb", copy=False), "SELECT 5 // NULLIF(2, 0)")
-            self.assertEqual(expression, original)
-        self.assertEqual(expression.sql("sqlite", copy=False), "SELECT 5 / 2")
-
-    def test_unannotated_large_integer_division(self):
-        # Avoid Python's integer string conversion limit for very long SQL literals.
-        number = "9" * 5000
-        expression = parse_one(f"SELECT {number} / 2", read="sqlite")
-        self.assertEqual(expression.sql("duckdb"), f"SELECT {number} / NULLIF(2, 0)")
-
     def test_subquery_modifiers(self):
         for source, expected in (
             (

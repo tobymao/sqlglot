@@ -4798,26 +4798,6 @@ class Generator:
 
     def div_sql(self, expression: exp.Div) -> str:
         l, r = expression.left, expression.right
-
-        if (
-            not self.dialect.TYPED_DIVISION
-            and expression.args.get("typed")
-            and expression.args.get("safe")
-            and l.is_int
-            and r.is_int
-        ):
-            # SQLite-style integer literals fit within its signed 64-bit range; larger
-            # literals become REAL. Some target engines overflow at their integer minima.
-            left_value, right_value = l.to_py(), r.to_py()
-            if (
-                -(2**63) <= left_value < 2**63
-                and -(2**63) <= right_value < 2**63
-                and not (right_value == -1 and left_value in (-(2**31), -(2**63)))
-            ):
-                expression = expression.copy()
-                self.nullif_zero_divisor(expression)
-                return self.sql(exp.IntDiv(this=expression.left, expression=expression.right))
-
         self.nullif_zero_divisor(expression)
 
         if self.dialect.TYPED_DIVISION and not expression.args.get("typed"):

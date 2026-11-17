@@ -253,7 +253,7 @@ class Trim(Expression, Func):
 
 
 class Unicode(Expression, Func):
-    arg_types = {"this": True, "empty_is_zero": False}
+    arg_types = {"this": True, "empty_is_zero": False, "empty_is_null": False}
 
 
 class Upper(Expression, Func):

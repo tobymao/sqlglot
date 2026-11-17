@@ -2077,7 +2077,7 @@ WHERE
                 "snowflake": "SELECT LENGTH(foo)",
             },
             write={
-                "duckdb": "SELECT LENGTH(foo)",
+                "duckdb": "SELECT CASE TYPEOF(foo) WHEN 'BLOB' THEN OCTET_LENGTH(CAST(foo AS BLOB)) ELSE LENGTH(CAST(foo AS TEXT)) END",
                 "snowflake": "SELECT LENGTH(foo)",
                 "": "SELECT LENGTH(foo)",
             },

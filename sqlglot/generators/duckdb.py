@@ -3404,16 +3404,41 @@ class DuckDBGenerator(generator.Generator):
     def length_sql(self, expression: exp.Length) -> str:
         arg = expression.this
 
-        if arg.is_type(*exp.DataType.BINARY_TYPES):
-            return self.func("OCTET_LENGTH", arg)
+        def text_arg(value: exp.Expr) -> exp.Expr:
+            if expression.args.get("null_terminated"):
+                return exp.SplitPart(
+                    this=value.copy(),
+                    delimiter=exp.Chr(expressions=[exp.Literal.number(0)]),
+                    part_index=exp.Literal.number(1),
+                )
+            return value
 
-        if expression.args.get("null_terminated"):
-            arg = exp.SplitPart(
-                this=_cast_to_varchar(arg.copy()),
-                delimiter=exp.Chr(expressions=[exp.Literal.number(0)]),
-                part_index=exp.Literal.number(1),
-            )
-        return self.func("LENGTH", arg)
+        # SQLite, BQ and Snowflake also accept binary values as args, so
+        # DDB will attempt to infer the type or resort to case/when resolution
+        if (
+            not (expression.args.get("binary") or expression.args.get("null_terminated"))
+            or arg.is_string
+        ):
+            return self.func("LENGTH", text_arg(arg))
+
+        if not arg.type:
+            from sqlglot.optimizer.annotate_types import annotate_types
+
+            arg = annotate_types(arg, dialect=self.dialect)
+
+        if arg.is_type(*exp.DataType.TEXT_TYPES):
+            return self.func("LENGTH", text_arg(arg))
+
+        # We need these casts to make duckdb's static type checker happy
+        blob = exp.cast(arg, exp.DType.VARBINARY)
+        varchar = exp.cast(arg, exp.DType.VARCHAR)
+
+        case = (
+            exp.case(exp.Typeof(this=arg.copy()))
+            .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
+            .else_(exp.Length(this=text_arg(varchar)))
+        )
+        return self.sql(case)
 
     def bitlength_sql(self, expression: exp.BitLength) -> str:
         if not _is_binary(arg := expression.this):

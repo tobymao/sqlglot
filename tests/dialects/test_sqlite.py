@@ -2,7 +2,7 @@ import sqlite3
 import unittest
 from contextlib import closing
 
-from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -27,8 +27,11 @@ class TestSQLite(Validator):
                 write={"sqlite": "SELECT CASE WHEN a THEN b WHEN c THEN d ELSE e END"},
             )
 
-        self.validate_identity("SELECT IIF(a, b)")
-        self.validate_identity("SELECT IIF(a, b, c)")
+        for args in ("0, 1", "0, 1, 2"):
+            with self.subTest(args=args):
+                sql = f"IIF({args})"
+                call = self.validate_identity(f"SELECT\n  {sql}", f"SELECT {sql}").expressions[0]
+                self.assertEqual(call.meta, {"line": 2, "col": 5, "start": 9, "end": 11})
 
     @unittest.skipIf(sqlite3.sqlite_version_info < (3, 49), "Requires variadic SQLite IIF")
     def test_variadic_iif_execution(self):
@@ -50,6 +53,34 @@ class TestSQLite(Validator):
                             connection.execute(generated).fetchall(),
                             connection.execute(sql).fetchall(),
                         )
+
+    def test_quoted_variadic_iif(self):
+        for name in ('"IF"', '"IIF"'):
+            with self.subTest(name=name):
+                call = self.validate_identity(
+                    f"SELECT {name}(0, 1, 1, 2)", "SELECT CASE WHEN 0 THEN 1 WHEN 1 THEN 2 END"
+                ).expressions[0]
+                end = 6 + len(name)
+                self.assertEqual(call.meta, {"line": 1, "col": end + 1, "start": 7, "end": end})
+                with self.assertRaisesRegex(ParseError, r"Expecting \)"):
+                    self.parse_one(f"SELECT {name}(0, 1")
+
+    def test_iif_anonymous_marker(self):
+        for name, args in (
+            ("IIF", "0, 1, 2"),
+            ("iF", "0, 1, 2"),
+            ('"iF"', "0, 1, 1, 2"),
+        ):
+            with self.subTest(name=name):
+                sql = f"SELECT {name}({args})"
+                query = self.parse_one(f"{sql} /* sqlglot.anonymous */")
+                call = query.expressions[0]
+                self.assertIsInstance(call, exp.Anonymous)
+                self.assertEqual(call.comments, [" sqlglot.anonymous "])
+                for dialect in ("postgres", "duckdb"):
+                    self.assertEqual(
+                        query.sql(dialect, comments=False, normalize_functions=False), sql
+                    )
 
     def test_length_null_terminated_text(self):
         for arg, duckdb_arg in (

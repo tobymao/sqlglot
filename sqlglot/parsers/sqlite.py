@@ -130,6 +130,7 @@ class SQLiteParser(parser.Parser):
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
         "GROUP_CONCAT": lambda self: self._parse_string_agg(),
+        "IF": lambda self: self._parse_iif(),
         "IIF": lambda self: self._parse_iif(),
     }
 
@@ -184,19 +185,40 @@ class SQLiteParser(parser.Parser):
             return super()._parse_if()
 
         expression = self._parse_iif()
-        self._match_r_paren()
+
+        # Keep the marker on anonymous calls without moving comments on keyword IF.
+        self._match(
+            TokenType.R_PAREN,
+            expression=expression if isinstance(expression, exp.Anonymous) else None,
+        )
         return expression
 
-    def _parse_iif(self) -> exp.If | exp.Case:
+    def _parse_iif(self) -> exp.If | exp.Case | exp.Anonymous:
+        token = self._tokens[self._index - 2]
         args = self._parse_function_args()
+
+        if self._curr.token_type != TokenType.R_PAREN:
+            self.raise_error("Expecting )")
+
+        if (comments := self._curr.comments) and any(
+            comment.lstrip().startswith(exp.SQLGLOT_ANONYMOUS) for comment in comments
+        ):
+            name: str | exp.Identifier = token.text
+            if token.token_type == TokenType.IDENTIFIER:
+                name = exp.Identifier(this=name, quoted=True).update_positions(token)
+            return self.expression(exp.Anonymous(this=name, expressions=args), token)
+
         if len(args) <= 3:
-            return self.validate_expression(exp.If.from_arg_list(args), args)
+            return self.validate_expression(exp.If.from_arg_list(args), args).update_positions(
+                token
+            )
 
         return self.expression(
             exp.Case(
                 ifs=[exp.If(this=args[i], true=args[i + 1]) for i in range(0, len(args) - 1, 2)],
                 default=args[-1] if len(args) % 2 else None,
-            )
+            ),
+            token,
         )
 
     def _parse_string_agg(self) -> exp.GroupConcat:

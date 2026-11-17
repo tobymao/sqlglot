@@ -90,6 +90,27 @@ class TestSQLite(Validator):
         finally:
             connection.close()
 
+    def test_random(self):
+        duckdb_random = "CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775807 AS INT128)) + 1)) + CAST(-9223372036854775807 AS INT128) AS BIGINT)"
+        self.validate_all(
+            "SELECT RANDOM()",
+            write={
+                "sqlite": "SELECT RANDOM()",
+                "duckdb": f"SELECT {duckdb_random}",
+            },
+        )
+        self.validate_all(
+            "SELECT ABS(RANDOM()) % 2 WHERE RANDOM() < 0",
+            write={
+                "sqlite": "SELECT ABS(RANDOM()) % 2 WHERE RANDOM() < 0",
+                "duckdb": f"SELECT ABS({duckdb_random}) % NULLIF(2, 0) WHERE {duckdb_random} < 0",
+            },
+        )
+        expression = annotate_types(self.parse_one("RANDOM()"), dialect="sqlite")
+        self.assertTrue(expression.is_type(exp.DType.BIGINT))
+        self.assertEqual(expression.args["lower"].to_py(), -9223372036854775807)
+        self.assertEqual(expression.args["upper"].to_py(), 9223372036854775807)
+
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
             ("NULL", "NULL"),

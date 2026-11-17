@@ -3947,13 +3947,13 @@ class DuckDBGenerator(generator.Generator):
         upper = expression.args.get("upper")
 
         if lower and upper:
-            # scale DuckDB's [0,1) to the specified range
-            range_size = exp.paren(upper - lower)
-            scaled = exp.Add(this=lower, expression=exp.func("random") * range_size)
-
-            # For now we assume that if bounds are set, return type is BIGINT. Snowflake/Teradata
-            result = exp.cast(scaled, exp.DType.BIGINT)
-            return self.sql(result)
+            # Build 64 random bits in integer arithmetic to preserve the low bits and
+            # avoid overflow when the inclusive range spans signed BIGINT's limits.
+            random_bits = exp.cast(exp.Floor(this=exp.Rand() * (1 << 32)), exp.DType.INT128)
+            random = random_bits * (1 << 32) + random_bits.copy()
+            lower = exp.cast(lower, exp.DType.INT128)
+            upper = exp.cast(upper, exp.DType.INT128)
+            return self.sql(exp.cast(random % (upper - lower + 1) + lower, exp.DType.BIGINT))
 
         # Default DuckDB behavior - just return RANDOM() as float
         return "RANDOM()"

@@ -163,7 +163,7 @@ class SQLiteGenerator(generator.Generator):
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
         exp.Pivot: no_pivot_sql,
-        exp.Rand: rename_func("RANDOM"),
+        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [

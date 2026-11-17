@@ -1976,9 +1976,7 @@ class Where(Expression):
 
 
 class Optimize(Expression):
-    """Reorganizes a table's data layout."""
-
-    arg_types = {"this": True}
+    pass
 
 
 class Analyze(Expression):

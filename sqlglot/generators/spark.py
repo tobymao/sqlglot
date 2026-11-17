@@ -147,7 +147,13 @@ class SparkGenerator(Spark2Generator):
     }
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
-        if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
+        if expression.text("unit").upper() in (
+            "HOUR",
+            "MINUTE",
+            "SECOND",
+            "MILLISECOND",
+            "MICROSECOND",
+        ):
             amount = expression.expression
             return self.func(
                 "TIMESTAMPADD",

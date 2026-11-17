@@ -73,6 +73,7 @@ class Hive(Dialect):
         "ss": "%Sstrict",
         "s": "%-S",
         "SSSSSS": "%f",
+        "SSS": "%f_three",
         "a": "%p",
         "DD": "%j",
         "D": "%-j",

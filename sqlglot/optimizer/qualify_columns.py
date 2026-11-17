@@ -1163,10 +1163,6 @@ def _expand_stars(
     """Expand stars to lists of column selections"""
 
     new_selections: list[exp.Expr] = []
-    except_columns: dict[int, set[str]] = {}
-    replace_columns: dict[int, dict[str, exp.Alias]] = {}
-    rename_columns: dict[int, dict[str, str]] = {}
-    ilike_pattern: str | None = None
 
     dialect = resolver.dialect
 
@@ -1192,6 +1188,10 @@ def _expand_stars(
 
     for expression in scope_expression.selects:
         tables: list[str] = []
+        except_columns: dict[int, set[str]] = {}
+        replace_columns: dict[int, dict[str, exp.Alias]] = {}
+        rename_columns: dict[int, dict[str, exp.Identifier]] = {}
+        ilike_pattern: str | None = None
         is_unqualified_star = isinstance(expression, exp.Star)
         coalesced_columns = set()
 
@@ -1356,19 +1356,15 @@ def _expand_stars(
 
                     selection = alias(exp.func("coalesce", *coalesce_args), alias=name, copy=False)
                 else:
-                    alias_ = renamed_columns.get(name, name)
                     quoted = name in quoted_columns or (
                         # if it has characters that the dialect would have changed, infer that it was quoted.
                         isinstance(source, exp.Table) and dialect.case_sensitive(name)
                     )
-                    selection_expr = replaced_columns.get(name) or exp.column(
-                        name, table=table, quoted=quoted
-                    )
-                    selection = (
-                        alias(selection_expr, alias_, copy=False)
-                        if alias_ != name
-                        else selection_expr
-                    )
+                    selection = exp.column(name, table=table, quoted=quoted)
+
+                selection = replaced_columns.get(name) or selection
+                if alias_ := renamed_columns.get(name):
+                    selection = alias(selection, alias_)
 
                 if name in using_selections and using_selections[name] is None:
                     using_selections[name] = selection
@@ -1455,14 +1451,14 @@ def _add_except_columns(expression: exp.Expr, tables, except_columns: dict[int, 
 
 
 def _add_rename_columns(
-    expression: exp.Expr, tables, rename_columns: dict[int, dict[str, str]]
+    expression: exp.Expr, tables, rename_columns: dict[int, dict[str, exp.Identifier]]
 ) -> None:
     rename = expression.args.get("rename")
 
     if not rename:
         return
 
-    columns = {e.this.name: e.alias for e in rename}
+    columns = {e.this.name: e.args["alias"] for e in rename}
 
     for table in tables:
         rename_columns[id(table)] = columns

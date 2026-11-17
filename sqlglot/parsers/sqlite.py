@@ -111,6 +111,9 @@ class SQLiteParser(parser.Parser):
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "MAX": _build_max,
         "MIN": _build_min,
+        "ROUND": lambda args: exp.Round(
+            this=seq_get(args, 0), decimals=seq_get(args, 1), negative_decimals_are_zero=True
+        ),
         "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),

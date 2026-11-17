@@ -159,7 +159,6 @@ class TestSingleStore(Validator):
 
     def test_json_extract(self):
         self.validate_identity("SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t")
-        self.validate_identity("SELECT a::b FROM t", "SELECT JSON_EXTRACT_JSON(a, 'b') FROM t")
         self.validate_identity("SELECT a::$b FROM t", "SELECT JSON_EXTRACT_STRING(a, 'b') FROM t")
         self.validate_identity("SELECT a::%b FROM t", "SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t")
         self.validate_identity(
@@ -183,10 +182,6 @@ class TestSingleStore(Validator):
         self.validate_all(
             "SELECT JSON_EXTRACT_DOUBLE(a, 'b') FROM t",
             write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', DOUBLE) FROM t"},
-        )
-        self.validate_all(
-            "SELECT JSON_EXTRACT_BIGINT(a, 'b') FROM t",
-            write={"": "SELECT JSON_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
         )
         self.validate_all(
             "SELECT JSON_EXTRACT_BIGINT(a, 'b') FROM t",
@@ -220,10 +215,6 @@ class TestSingleStore(Validator):
         self.validate_all(
             "SELECT BSON_EXTRACT_DOUBLE(a, 'b') FROM t",
             write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', DOUBLE) FROM t"},
-        )
-        self.validate_all(
-            "SELECT BSON_EXTRACT_BIGINT(a, 'b') FROM t",
-            write={"": "SELECT JSONB_EXTRACT_SCALAR(a, '$.b', BIGINT) FROM t"},
         )
         self.validate_all(
             "SELECT BSON_EXTRACT_BIGINT(a, 'b') FROM t",
@@ -501,14 +492,6 @@ class TestSingleStore(Validator):
                 # group, position, occurrence parameters are not supported in SingleStore, so they are ignored
                 "": "SELECT REGEXP_EXTRACT_ALL('adog', 'O', 1, 'c', 1, 'gr1')",
                 "singlestore": "SELECT REGEXP_MATCH('adog', 'O', 'c')",
-            },
-        )
-        self.validate_all(
-            "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
-            read={
-                # group parameter is not supported in SingleStore, so it is ignored
-                "": "SELECT REGEXP_EXTRACT('adog', 'O', 1, 1, 'c', 'gr1')",
-                "singlestore": "SELECT REGEXP_SUBSTR('adog', 'O', 1, 1, 'c')",
             },
         )
         self.validate_all(

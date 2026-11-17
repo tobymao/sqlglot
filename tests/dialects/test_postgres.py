@@ -1846,10 +1846,6 @@ FROM json_data, field_ids""",
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'",
         )
         self.validate_identity(
-            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
-            "CREATE TABLE test (x TIMESTAMP[][])",
-        )
-        self.validate_identity(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
             "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
         )

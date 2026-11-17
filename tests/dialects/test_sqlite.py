@@ -1407,7 +1407,9 @@ class TestSQLite(Validator):
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):
-                self.validate_identity("CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT IGNORE)")
+                self.validate_identity(
+                    f"CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT {conflict_action})"
+                )
 
         self.validate_identity("CREATE TABLE over (x, y)")
         self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")

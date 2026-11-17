@@ -522,9 +522,6 @@ class TestRedshift(Validator):
             "SELECT COUNT(*) FROM event WHERE eventname LIKE '%Ring%' OR eventname LIKE '%Die%'"
         )
         self.validate_identity(
-            "CREATE TABLE SOUP (LIKE other_table) DISTKEY(soup1) SORTKEY(soup2) DISTSTYLE ALL"
-        )
-        self.validate_identity(
             "CREATE TABLE sales (salesid INTEGER NOT NULL) DISTKEY(listid) COMPOUND SORTKEY(listid, sellerid) DISTSTYLE AUTO"
         )
         self.validate_all(
@@ -756,7 +753,6 @@ FROM (
         self.validate_identity("ALTER TABLE s.t ALTER SORTKEY (c)")
         self.validate_identity("ALTER TABLE t ALTER SORTKEY AUTO")
         self.validate_identity("ALTER TABLE t ALTER SORTKEY NONE")
-        self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
         self.validate_identity("ALTER TABLE t ALTER SORTKEY (c1, c2)")
         self.validate_identity("ALTER TABLE t ALTER COMPOUND SORTKEY (c1, c2)")
         self.validate_identity("ALTER TABLE t ALTER DISTSTYLE ALL")

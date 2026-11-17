@@ -111,6 +111,7 @@ class SQLiteParser(parser.Parser):
         "JSON_EXTRACT": _build_json_extract,
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
+        "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), binary=True, null_terminated=True),
         "MAX": _build_max,
         "MIN": _build_min,
         "RANDOM": lambda args: exp.Rand(

@@ -3404,10 +3404,19 @@ class DuckDBGenerator(generator.Generator):
     def length_sql(self, expression: exp.Length) -> str:
         arg = expression.this
 
+        def text_arg(value: exp.Expr) -> exp.Expr:
+            if expression.args.get("null_terminated"):
+                return exp.SplitPart(
+                    this=value.copy(),
+                    delimiter=exp.Chr(expressions=[exp.Literal.number(0)]),
+                    part_index=exp.Literal.number(1),
+                )
+            return value
+
         # Dialects like BQ and Snowflake also accept binary values as args, so
         # DDB will attempt to infer the type or resort to case/when resolution
         if not expression.args.get("binary") or arg.is_string:
-            return self.func("LENGTH", arg)
+            return self.func("LENGTH", text_arg(arg))
 
         if not arg.type:
             from sqlglot.optimizer.annotate_types import annotate_types
@@ -3415,16 +3424,16 @@ class DuckDBGenerator(generator.Generator):
             arg = annotate_types(arg, dialect=self.dialect)
 
         if arg.is_type(*exp.DataType.TEXT_TYPES):
-            return self.func("LENGTH", arg)
+            return self.func("LENGTH", text_arg(arg))
 
         # We need these casts to make duckdb's static type checker happy
         blob = exp.cast(arg, exp.DType.VARBINARY)
         varchar = exp.cast(arg, exp.DType.VARCHAR)
 
         case = (
-            exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))
+            exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg.copy()]))
             .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
-            .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
+            .else_(exp.Anonymous(this="LENGTH", expressions=[text_arg(varchar)]))
         )
         return self.sql(case)
 

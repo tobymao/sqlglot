@@ -10,6 +10,64 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_format(self):
+        for sql in (
+            "FORMAT('{}-{}', 1, 2)",
+            "FORMAT('{:02x}', 15)",
+            "FORMAT('%s', 1)",
+            "FORMAT('{{{}}}', 'a')",
+            "SELECT FORMAT(fmt, 1) FROM (VALUES ('{}')) AS t(fmt)",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql)
+                self.assertTrue(expression.find(exp.Format).args.get("is_fmt"))
+                self.validate_all(
+                    sql,
+                    write=dict.fromkeys(
+                        ("bigquery", "spark", "sqlite", "postgres", "snowflake"),
+                        UnsupportedError,
+                    ),
+                )
+
+        expression = self.validate_identity("PRINTF('%d-%s', 1, 'a')")
+        self.assertIsInstance(expression, exp.Format)
+        self.assertFalse(expression.args.get("is_fmt"))
+        self.validate_all(
+            "PRINTF('%d-%s', 1, 'a')",
+            read={
+                "bigquery": "FORMAT('%d-%s', 1, 'a')",
+                "spark": "FORMAT_STRING('%d-%s', 1, 'a')",
+                "sqlite": "FORMAT('%d-%s', 1, 'a')",
+            },
+            write={
+                "bigquery": "FORMAT('%d-%s', 1, 'a')",
+                "spark": "FORMAT_STRING('%d-%s', 1, 'a')",
+                "sqlite": "FORMAT('%d-%s', 1, 'a')",
+            },
+        )
+        self.validate_all(
+            "PRINTF('%04d-%.2f-%%', 1, 1.25)",
+            read={
+                "bigquery": "FORMAT('%04d-%.2f-%%', 1, 1.25)",
+                "sqlite": "FORMAT('%04d-%.2f-%%', 1, 1.25)",
+            },
+        )
+        self.validate_identity("SELECT PRINTF(fmt, 1, 'a') FROM (VALUES ('%d-%s')) AS t(fmt)")
+
+        for fmt, expected in (
+            ("%s", "{}"),
+            ("%s-%s", "{}-{}"),
+            ("{%s}-%s-%%", "{{{}}}-{}-%"),
+            ("%%s-%s", "%s-{}"),
+            ("%%%s", "%{}"),
+            ("%%d-%s", "%d-{}"),
+        ):
+            with self.subTest(fmt=fmt):
+                self.validate_all(
+                    f"FORMAT('{expected}', 1, 'a')",
+                    read={"postgres": f"FORMAT('{fmt}', 1, 'a')"},
+                )
+
     def test_binary_strposition(self):
         for sql, schema, expected in (
             (

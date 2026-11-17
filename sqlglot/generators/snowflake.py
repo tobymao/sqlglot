@@ -1122,6 +1122,7 @@ class SnowflakeGenerator(generator.Generator):
     def modelattribute_sql(self, expression: exp.ModelAttribute) -> str:
         return f"{self.sql(expression, 'this')}!{self.sql(expression, 'expression')}"
 
+    @unsupported_args("is_fmt")
     def format_sql(self, expression: exp.Format) -> str:
         if expression.name.lower() == "%s" and len(expression.expressions) == 1:
             return self.func("TO_CHAR", expression.expressions[0])

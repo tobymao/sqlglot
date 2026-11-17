@@ -2259,7 +2259,7 @@ class DuckDBGenerator(generator.Generator):
                 SUBSTR(h, 1, 8) || '-' ||
                 SUBSTR(h, 9, 4) || '-' ||
                 '5' || SUBSTR(h, 14, 3) || '-' ||
-                FORMAT('{:02x}', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
+                PRINTF('%02x', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
                 SUBSTR(h, 21, 12)
             )
         FROM (
@@ -4667,10 +4667,17 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(result_expr)
 
     def format_sql(self, expression: exp.Format) -> str:
-        if expression.name.lower() == "%s" and len(expression.expressions) == 1:
-            return self.func("FORMAT", "'{}'", expression.expressions[0])
+        if expression.args.get("is_fmt"):
+            return self.func("FORMAT", expression.this, *expression.expressions)
 
-        return self.function_fallback_sql(expression)
+        fmt = expression.name
+        if expression.this.is_string and "%s" in fmt and "%" not in re.sub(r"%%|%s", "", fmt):
+            # Use brace formatting to support non-string %s arguments, as in PostgreSQL.
+            fmt = fmt.replace("{", "{{").replace("}", "}}")
+            fmt = re.sub(r"%%|%s", lambda m: "%" if m[0] == "%%" else "{}", fmt)
+            return self.func("FORMAT", exp.Literal.string(fmt), *expression.expressions)
+
+        return self.func("PRINTF", expression.this, *expression.expressions)
 
     def hexstring_sql(
         self, expression: exp.HexString, binary_function_repr: str | None = None

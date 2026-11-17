@@ -51,7 +51,9 @@ class EndsWith(Expression, Func):
 
 
 class Format(Expression, Func):
-    arg_types = {"this": True, "expressions": False}
+    """Formats values using printf syntax, or brace syntax when is_fmt is set."""
+
+    arg_types = {"this": True, "expressions": False, "is_fmt": False}
     is_var_len_args = True
 
 

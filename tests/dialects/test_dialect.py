@@ -5582,7 +5582,7 @@ FROM subquery2""",
                 "": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "postgres": "FORMAT('str fmt1 fmt2', 1, 'a')",
-                "duckdb": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "duckdb": "PRINTF('str fmt1 fmt2', 1, 'a')",
             },
             write={
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
@@ -5590,7 +5590,7 @@ FROM subquery2""",
                 "spark2": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "spark": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "databricks": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
-                "duckdb": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "duckdb": "PRINTF('str fmt1 fmt2', 1, 'a')",
             },
         )
 

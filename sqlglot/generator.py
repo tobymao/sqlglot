@@ -4116,6 +4116,10 @@ class Generator:
 
         return escaped
 
+    @unsupported_args("is_fmt")
+    def format_sql(self, expression: exp.Format) -> str:
+        return self.function_fallback_sql(expression)
+
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 

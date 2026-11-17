@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, transforms
+from sqlglot.generator import unsupported_args
 from sqlglot.dialects.dialect import (
     array_sort_order,
     array_slice_to_slice_sql,
@@ -187,7 +188,6 @@ class Spark2Generator(HiveGenerator):
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfYear: rename_func("DAYOFYEAR"),
-            exp.Format: rename_func("FORMAT_STRING"),
             exp.From: transforms.preprocess([_unalias_pivot]),
             exp.FromTimeZone: lambda self, e: self.func(
                 "TO_UTC_TIMESTAMP", e.this, e.args.get("zone")
@@ -239,6 +239,10 @@ class Spark2Generator(HiveGenerator):
 
     WRAP_DERIVED_VALUES = False
     CREATE_FUNCTION_RETURN_AS = False
+
+    @unsupported_args("is_fmt")
+    def format_sql(self, expression: exp.Format) -> str:
+        return self.func("FORMAT_STRING", expression.this, *expression.expressions)
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
         if expression.text("unit").upper() in (

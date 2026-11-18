@@ -382,6 +382,9 @@ class RedshiftGenerator(PostgresGenerator):
         return f"SET{exprs}{location}{file_format}"
 
     def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        if not expression.expression:
+            return self.func("GET_ARRAY_LENGTH", expression.this)
+
         return Generator.arraysize_sql(self, expression)
 
     def array_sql(self, expression: exp.Array) -> str:

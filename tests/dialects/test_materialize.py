@@ -5,9 +5,10 @@ class TestMaterialize(Validator):
     dialect = "materialize"
 
     def test_array_length(self):
+        self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2], 1)")
         self.validate_all(
-            "SELECT ARRAY_LENGTH(ARRAY[1, 2], 1)",
-            read={"spark": "SELECT SIZE(ARRAY(1, 2))"},
+            "SELECT CASE WHEN arr IS NULL THEN NULL ELSE COALESCE(ARRAY_LENGTH(arr, 1), 0) END FROM t",
+            read={"postgres": "SELECT CARDINALITY(arr) FROM t", "spark": "SELECT SIZE(arr) FROM t"},
         )
 
     def test_materialize(self):

@@ -101,6 +101,7 @@ DATE_DELTA_INTERVAL = {
 }
 
 TIME_DIFF_FACTOR = {
+    "MICROSECOND": " * 1000000",
     "MILLISECOND": " * 1000",
     "SECOND": "",
     "MINUTE": " / 60",

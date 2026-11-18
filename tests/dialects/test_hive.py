@@ -455,6 +455,12 @@ class TestHive(Validator):
         # A missing parse format falls back to plain CAST, instead of UNIX_TIMESTAMP(x, None)
         self.validate_all("STR_TO_DATE(x)", write={"hive": "CAST(x AS DATE)"})
         self.validate_all(
+            "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000000",
+            read={
+                "presto": "DATE_DIFF('microsecond', x, y)",
+            },
+        )
+        self.validate_all(
             "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000",
             read={
                 "presto": "DATE_DIFF('millisecond', x, y)",

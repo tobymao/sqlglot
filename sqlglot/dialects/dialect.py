@@ -1521,6 +1521,13 @@ def no_pivot_sql(self: Generator, expression: exp.Pivot) -> str:
 
 
 def no_trycast_sql(self: Generator, expression: exp.TryCast) -> str:
+    """Use for dialects whose CAST is already null-safe (e.g. Hive, Drill)."""
+    return self.cast_sql(expression)
+
+
+def lossy_trycast_sql(self: Generator, expression: exp.TryCast) -> str:
+    """Use for dialects where CAST raises an error or returns a wrong value on
+    invalid input instead of returning NULL (e.g. Postgres, MySQL, SQLite, Dremio)."""
     self.unsupported(
         "TRY_CAST is not supported; using CAST instead, "
         "which raises an error on invalid input rather than returning NULL"

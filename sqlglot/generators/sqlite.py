@@ -12,7 +12,7 @@ from sqlglot.dialects.dialect import (
     no_ilike_sql,
     no_pivot_sql,
     no_tablesample_sql,
-    no_trycast_sql,
+    lossy_trycast_sql,
     rename_func,
     strposition_sql,
 )
@@ -176,7 +176,7 @@ class SQLiteGenerator(generator.Generator):
         exp.TableSample: no_tablesample_sql,
         exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
         exp.TimeToStr: lambda self, e: self.func("STRFTIME", self.format_time(e), e.this),
-        exp.TryCast: no_trycast_sql,
+        exp.TryCast: lossy_trycast_sql,
         exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
     }
 

@@ -28,7 +28,7 @@ from sqlglot.dialects.dialect import (
     no_map_from_entries_sql,
     no_paren_current_date_sql,
     no_pivot_sql,
-    no_trycast_sql,
+    lossy_trycast_sql,
     regexp_replace_global_modifier,
     rename_func,
     sha256_sql,
@@ -447,7 +447,7 @@ class PostgresGenerator(generator.Generator):
             self.function_fallback_sql(e) if e.args.get("format") else self.tochar_sql(e)
         ),
         exp.Trim: trim_sql,
-        exp.TryCast: no_trycast_sql,
+        exp.TryCast: lossy_trycast_sql,
         exp.TsOrDsAdd: _date_add_sql("+"),
         exp.TsOrDsDiff: _date_diff_sql,
         exp.UnixToTime: lambda self, e: self.func("TO_TIMESTAMP", e.this),

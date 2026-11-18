@@ -94,7 +94,7 @@ class TeradataParser(parser.Parser):
         )
 
     def _parse_atom(self) -> exp.Expr | None:
-        if self._is_hex_character_string():
+        if self._is_hex_character_string() or self._is_integer_cast(1):
             return None
         return super()._parse_atom()
 
@@ -306,6 +306,20 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
+        if (
+            optional_parens
+            and self._is_integer_cast(1)
+            and (
+                self._curr.token_type == TokenType.IDENTIFIER
+                or (
+                    self._curr.text.upper()
+                    not in (self.FUNCTIONS if functions is None else functions)
+                    and self._curr.text.upper() not in self.FUNCTION_PARSERS
+                )
+            )
+        ):
+            return None
+
         # Column data attributes are not function arguments.
         if (
             self._next
@@ -324,8 +338,25 @@ class TeradataParser(parser.Parser):
             any_token=any_token,
         )
 
+    def _is_integer_cast(self, offset: int = 0) -> bool:
+        index = self._index + offset
+        return (
+            index + 2 < len(self._tokens)
+            and self._tokens[index].token_type == TokenType.L_PAREN
+            and self._tokens[index + 1].token_type in self.TYPE_TOKENS
+            and self._tokens[index + 1].text.upper()
+            in {"BYTEINT", "SMALLINT", "INTEGER", "INT", "BIGINT"}
+            and self._tokens[index + 2].token_type == TokenType.R_PAREN
+        )
+
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
+
+        if this and self._is_integer_cast():
+            self._advance()
+            this = self.expression(exp.Cast(this=this, to=self._parse_types()))
+            self._match_r_paren()
+            this = super()._parse_column_ops(this)
 
         while (
             this

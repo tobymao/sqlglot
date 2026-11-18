@@ -548,6 +548,32 @@ class TestSQLite(Validator):
             with self.subTest(source=source):
                 self.validate_all(expected, read={"mysql": source})
 
+    def test_negative_limit(self):
+        # A negative LIMIT means "no limit" in SQLite
+        self.validate_all(
+            "SELECT x FROM t LIMIT -1 OFFSET 5",
+            write={
+                "sqlite": "SELECT x FROM t LIMIT -1 OFFSET 5",
+                "duckdb": "SELECT x FROM t LIMIT ALL OFFSET 5",
+                "postgres": "SELECT x FROM t LIMIT ALL OFFSET 5",
+                "tsql": "SELECT x FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM t LIMIT 5, -2",
+            write={
+                "sqlite": "SELECT x FROM t LIMIT -1 OFFSET 5",
+                "duckdb": "SELECT x FROM t LIMIT ALL OFFSET 5",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM t LIMIT -1",
+            write={
+                "sqlite": "SELECT x FROM t",
+                "duckdb": "SELECT x FROM t LIMIT ALL",
+            },
+        )
+
     def test_cast(self):
         for dtype, func in (
             ("DATETIME", "DATETIME"),

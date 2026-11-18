@@ -291,6 +291,23 @@ class SQLiteParser(parser.Parser):
 
         return super()._parse_unique()
 
+    def _parse_limit(
+        self,
+        this: exp.Expr | None = None,
+        top: bool = False,
+        skip_limit_token: bool = False,
+    ) -> exp.Expr | None:
+        limit = super()._parse_limit(this=this, top=top, skip_limit_token=skip_limit_token)
+
+        # A negative LIMIT means there is no upper bound on the number of rows returned
+        # https://www.sqlite.org/lang_select.html#limitoffset
+        if isinstance(limit, exp.Limit):
+            expression = limit.args.get("expression")
+            if expression and expression.is_int and expression.to_py() < 0:
+                limit.set("expression", exp.var("ALL"))
+
+        return limit
+
     def _parse_without_rowid(self) -> exp.WithoutRowidProperty | None:
         index = self._index
         if self._match_text_seq("ROWID"):

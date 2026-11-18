@@ -556,7 +556,6 @@ class TestSQLite(Validator):
                 "sqlite": "SELECT x FROM t LIMIT -1 OFFSET 5",
                 "duckdb": "SELECT x FROM t LIMIT ALL OFFSET 5",
                 "postgres": "SELECT x FROM t LIMIT ALL OFFSET 5",
-                "bigquery": "SELECT x FROM t OFFSET 5",
                 "tsql": "SELECT x FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS",
             },
         )

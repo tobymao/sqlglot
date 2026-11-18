@@ -2341,6 +2341,39 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_case_when_where(self):
+        for condition in (
+            "x.a IN (SELECT y.b FROM y)",
+            "x.a IN (SELECT y.b FROM y WHERE FALSE)",
+            "(x.a = ANY (SELECT y.b FROM y)) AND x.b > 1 OR x.b = 1",
+        ):
+            sql = f"SELECT x.a FROM x WHERE CASE WHEN {condition} THEN 1 ELSE 0 END = 1"
+            with self.subTest(sql=sql):
+                expression = qualify(parse_one(sql), schema=self.schema)
+                rewritten = optimizer.unnest_subqueries.unnest_subqueries(expression)
+                self.assertIsNone(rewritten.find(exp.In, exp.Any))
+                self.assertCountEqual(
+                    self.conn.execute(rewritten.sql("duckdb")).fetchall(),
+                    self.conn.execute(sql).fetchall(),
+                )
+
+    def test_unnest_case_when_scope(self):
+        predicate = "x.a IN (SELECT y.b FROM y)"
+        case = f"CASE WHEN {predicate} THEN 1 ELSE 0 END"
+        for sql in (
+            f"SELECT x.a FROM x WHERE CASE FALSE WHEN ({predicate}) THEN TRUE ELSE FALSE END",
+            f"SELECT x.a FROM x WHERE CASE WHEN TRUE THEN ({predicate}) ELSE FALSE END",
+            f"SELECT x.a FROM x WHERE CASE WHEN FALSE THEN TRUE ELSE ({predicate}) END",
+            f"SELECT x.a FROM x WHERE CASE WHEN NOT ({predicate}) THEN 1 ELSE 0 END = 1",
+            f"SELECT x.a, {case} FROM x GROUP BY x.a",
+            f"SELECT x.a FROM x JOIN x AS x2 ON {case} = 0",
+        ):
+            with self.subTest(sql=sql):
+                expression = qualify(parse_one(sql), schema=self.schema)
+                self.assertEqual(
+                    optimizer.unnest_subqueries.unnest_subqueries(expression.copy()), expression
+                )
+
     def test_optimize_scalar_subquery_predicates(self):
         schema = {"x": {"id": "INT", "ref": "INT"}, "y": {"id": "INT", "val": "INT"}}
         with duckdb.connect() as connection:

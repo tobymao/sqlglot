@@ -2346,6 +2346,7 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             write={
                 "bigquery": "ARRAY_LENGTH(arr)",
                 "duckdb": "ARRAY_LENGTH(arr)",
+                "redshift": "GET_ARRAY_LENGTH(arr)",
                 "spark": "SIZE(arr)",
             },
         )

@@ -18,7 +18,6 @@ from sqlglot.dialects.dialect import (
     min_or_least,
     no_ilike_sql,
     no_recursive_cte_sql,
-    no_trycast_sql,
     regexp_extract_sql,
     regexp_replace_sql,
     rename_func,
@@ -370,7 +369,7 @@ class HiveGenerator(generator.Generator):
         exp.TsOrDsAdd: _add_date_sql,
         exp.TsOrDsDiff: _date_diff_sql,
         exp.TsOrDsToDate: _to_date_sql,
-        exp.TryCast: no_trycast_sql,
+        exp.TryCast: lambda self, e: self.cast_sql(e),
         exp.Trim: trim_sql,
         exp.Unicode: rename_func("ASCII"),
         exp.UnixToStr: lambda self, e: self.func(

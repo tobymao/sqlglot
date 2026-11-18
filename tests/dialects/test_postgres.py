@@ -2343,6 +2343,11 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "spark": "SIZE(arr)",
                 "databricks": "SIZE(arr)",
             },
+            write={
+                "bigquery": "ARRAY_LENGTH(arr)",
+                "duckdb": "ARRAY_LENGTH(arr)",
+                "spark": "SIZE(arr)",
+            },
         )
         self.validate_all(
             "ARRAY_LENGTH(arr, 1)",

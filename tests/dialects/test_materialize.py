@@ -5,6 +5,7 @@ class TestMaterialize(Validator):
     dialect = "materialize"
 
     def test_array_length(self):
+        self.validate_identity("SELECT CARDINALITY(arr)")
         self.validate_all(
             "SELECT ARRAY_LENGTH(ARRAY[1, 2], 1)",
             read={"spark": "SELECT SIZE(ARRAY(1, 2))"},

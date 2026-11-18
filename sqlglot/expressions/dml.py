@@ -507,6 +507,8 @@ class Update(Expression, DML):
 
 
 class Merge(Expression, DML):
+    """A MERGE statement, optionally enabling automatic schema evolution."""
+
     arg_types = {
         "this": True,
         "using": True,
@@ -515,6 +517,7 @@ class Merge(Expression, DML):
         "whens": True,
         "with_": False,
         "returning": False,
+        "schema_evolution": False,
     }
 
 

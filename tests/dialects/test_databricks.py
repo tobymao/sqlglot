@@ -193,6 +193,38 @@ class TestDatabricks(Validator):
             "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
         )
 
+    def test_merge_schema_evolution(self):
+        for sql in (
+            "MERGE WITH SCHEMA EVOLUTION INTO target AS t USING source AS s ON t.id = s.id "
+            "WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *",
+            "WITH s AS (SELECT id, value FROM source) "
+            "MERGE WITH SCHEMA EVOLUTION INTO `catalog`.`schema`.`target` AS t USING s "
+            "ON t.id = s.id WHEN MATCHED THEN UPDATE SET value = s.value "
+            "WHEN NOT MATCHED THEN INSERT (id, value) VALUES (s.id, s.value)",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql)
+                self.assertIsInstance(tree, exp.Merge)
+                self.assertTrue(tree.args["schema_evolution"])
+                self.assertEqual(exp.Expr.load(tree.dump()), tree)
+                self.assertEqual(tree, self.parse_one(tree.sql(dialect="databricks", pretty=True)))
+
+                ordinary_sql = sql.replace(" WITH SCHEMA EVOLUTION", "")
+                ordinary = self.validate_identity(ordinary_sql)
+                self.assertFalse(ordinary.args.get("schema_evolution"))
+                tree.set("schema_evolution", None)
+                self.assertEqual(tree, ordinary)
+
+    def test_merge_schema_evolution_unsupported(self):
+        tree = self.parse_one(
+            "MERGE WITH SCHEMA EVOLUTION INTO target AS t USING source AS s ON t.id = s.id "
+            "WHEN MATCHED THEN UPDATE SET value = s.value"
+        )
+        for dialect in ("spark", "snowflake", "postgres"):
+            with self.subTest(dialect=dialect):
+                with self.assertRaisesRegex(UnsupportedError, "MERGE WITH SCHEMA EVOLUTION"):
+                    tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
     def test_databricks(self):
         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")

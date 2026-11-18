@@ -81,6 +81,13 @@ class DatabricksParser(SparkParser):
         command.set("this", start.text.upper())
         return self.expression(command)
 
+    def _parse_merge(self) -> exp.Merge:
+        schema_evolution = self._match_text_seq("WITH", "SCHEMA", "EVOLUTION")
+        merge = super()._parse_merge()
+        if schema_evolution:
+            merge.set("schema_evolution", True)
+        return merge
+
     def _parse_curdate(self) -> exp.CurrentDate:
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses
         if self._match(TokenType.L_PAREN):

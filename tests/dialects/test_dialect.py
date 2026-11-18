@@ -4096,6 +4096,21 @@ FROM subquery2""",
                 self.assertEqual(expression.sql(dialect="mysql"), expected_sql)
                 self.assertEqual(expression.sql(dialect="tsql"), expected_sql)
 
+    def test_no_trycast_emits_unsupported_warning(self):
+        sql = "SELECT TRY_CAST(x AS INT) FROM t"
+        for dialect in ("postgres", "sqlite", "mysql"):
+            with self.subTest(dialect=dialect):
+                generator = Dialect.get_or_raise(dialect).generator_class(
+                    unsupported_level=ErrorLevel.WARN
+                )
+                ast = parse_one(sql, read="snowflake")
+                generator.generate(ast)
+                self.assertTrue(
+                    generator.unsupported_messages,
+                    msg=f"Expected an unsupported warning for TRY_CAST -> {dialect}",
+                )
+                self.assertIn("TRY_CAST", generator.unsupported_messages[0])
+
     def test_random(self):
         self.validate_all(
             "RAND()",

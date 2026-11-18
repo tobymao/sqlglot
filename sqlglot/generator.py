@@ -332,6 +332,9 @@ class Generator:
     # Whether MERGE ... WHEN MATCHED/NOT MATCHED THEN UPDATE/INSERT ... WHERE is supported
     SUPPORTS_MERGE_WHERE = False
 
+    # First version supporting MERGE WITH SCHEMA EVOLUTION
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION: t.ClassVar[tuple[int, ...] | None] = None
+
     # Whether MERGE uses ALL BY NAME instead of a star to update or insert all columns
     MERGE_ALL_BY_NAME = False
 
@@ -5235,6 +5238,14 @@ class Generator:
         return self.expressions(expression, sep=" ", indent=False)
 
     def merge_sql(self, expression: exp.Merge) -> str:
+        schema_evolution = ""
+        if expression.args.get("schema_evolution"):
+            min_version = self.MERGE_SCHEMA_EVOLUTION_MIN_VERSION
+            if min_version and self.dialect.version >= min_version:
+                schema_evolution = " WITH SCHEMA EVOLUTION"
+            else:
+                self.unsupported("MERGE WITH SCHEMA EVOLUTION is not supported")
+
         table = expression.this
         table_alias = ""
 
@@ -5262,7 +5273,7 @@ class Generator:
 
         return self.prepend_ctes(
             expression,
-            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{whens}",
+            f"MERGE{schema_evolution} INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{whens}",
         )
 
     @unsupported_args("format")

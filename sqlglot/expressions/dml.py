@@ -515,6 +515,7 @@ class Merge(Expression, DML):
         "whens": True,
         "with_": False,
         "returning": False,
+        "schema_evolution": False,
     }
 
 

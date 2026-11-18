@@ -9,6 +9,23 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_merge_schema_evolution(self):
+        sql = (
+            "MERGE WITH SCHEMA EVOLUTION INTO target AS t USING source AS s ON t.id = s.id "
+            "WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *"
+        )
+        self.validate_all(
+            sql,
+            read={"databricks": sql},
+            write={
+                "spark, version=4.0": sql,
+                "spark, version=3.5": UnsupportedError,
+                "databricks, version=15.2": sql,
+                "databricks, version=15.1": UnsupportedError,
+                "postgres": UnsupportedError,
+            },
+        )
+
     def test_trunc_unknown_format(self):
         sql = "TRUNC(CAST('2024-05-15' AS DATE), 'WW')"
         self.assertEqual(self.parse_one(sql).sql("spark", unsupported_level=ErrorLevel.RAISE), sql)

@@ -1018,6 +1018,7 @@ class TestMySQL(Validator):
 
     def test_canonical_functions(self):
         self.validate_identity("SELECT LEFT('str', 2)", "SELECT LEFT('str', 2)")
+        self.validate_identity("SELECT FIND_IN_SET('b', 'a,b,c,d')")
         self.validate_all(
             "SELECT LEFT(x, n), RIGHT(x, -1)",
             write={

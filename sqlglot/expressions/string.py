@@ -45,6 +45,10 @@ class Elt(Expression, Func):
     is_var_len_args = True
 
 
+class FindInSet(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class EndsWith(Expression, Func):
     _sql_names = ["ENDS_WITH", "ENDSWITH"]
     arg_types = {"this": True, "expression": True}

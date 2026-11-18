@@ -162,6 +162,7 @@ class MySQLGenerator(generator.Generator):
         exp.BitwiseOrAgg: rename_func("BIT_OR"),
         exp.BitwiseXorAgg: rename_func("BIT_XOR"),
         exp.BitwiseCount: rename_func("BIT_COUNT"),
+        exp.FindInSet: rename_func("FIND_IN_SET"),
         exp.Chr: lambda self, e: self.chr_sql(e, "CHAR"),
         exp.CurrentDate: no_paren_current_date_sql,
         exp.CurrentVersion: rename_func("VERSION"),

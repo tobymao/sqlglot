@@ -553,7 +553,21 @@ class PrestoGenerator(generator.Generator):
         return self.sql(to_unix)
 
     def addmonths_sql(self, expression: exp.AddMonths) -> str:
+        from sqlglot.optimizer.annotate_types import annotate_types
+
         this = expression.this
+        if not this.type:
+            this = annotate_types(this, dialect=self.dialect)
+
+        if expression.args.get("returns_date"):
+            this = (
+                exp.cast(this, exp.DType.DATE, dialect=self.dialect)
+                if this.is_type(*exp.DataType.TEMPORAL_TYPES)
+                else exp.TsOrDsToDate(this=this)
+            )
+        elif this.is_type(*exp.DataType.TEXT_TYPES):
+            this = exp.cast(this, exp.DType.TIMESTAMP)
+
         added = exp.DateAdd(this=this, expression=expression.expression, unit=exp.var("MONTH"))
 
         if not expression.args.get("preserve_end_of_month"):

@@ -478,6 +478,29 @@ class TestTrino(Validator):
             "SELECT CASE WHEN DAY(d) = DAY(LAST_DAY_OF_MONTH(d)) THEN DATE_ADD('DAY', DAY(LAST_DAY_OF_MONTH(DATE_ADD('MONTH', 1, d))) - DAY(DATE_ADD('MONTH', 1, d)), DATE_ADD('MONTH', 1, d)) ELSE DATE_ADD('MONTH', 1, d) END",
             read={"snowflake": "SELECT ADD_MONTHS(d, 1)"},
         )
+        self.validate_all(
+            "SELECT CASE WHEN DAY(CAST('2019-02-28' AS TIMESTAMP)) = DAY(LAST_DAY_OF_MONTH(CAST('2019-02-28' AS TIMESTAMP))) THEN DATE_ADD('DAY', DAY(LAST_DAY_OF_MONTH(DATE_ADD('MONTH', 1, CAST('2019-02-28' AS TIMESTAMP)))) - DAY(DATE_ADD('MONTH', 1, CAST('2019-02-28' AS TIMESTAMP))), DATE_ADD('MONTH', 1, CAST('2019-02-28' AS TIMESTAMP))) ELSE DATE_ADD('MONTH', 1, CAST('2019-02-28' AS TIMESTAMP)) END",
+            read={"snowflake": "SELECT ADD_MONTHS('2019-02-28', 1)"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD('MONTH', 1, d)",
+            read={"": "SELECT ADD_MONTHS(d, 1)"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD('MONTH', 1, CAST(CAST('2019-02-15 12:34:56' AS TIMESTAMP) AS DATE))",
+            read={"spark": "SELECT ADD_MONTHS(TIMESTAMP_NTZ '2019-02-15 12:34:56', 1)"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD('MONTH', 1, CAST(CAST('2019-02-28' AS TIMESTAMP) AS DATE))",
+            read={
+                "spark": "SELECT ADD_MONTHS('2019-02-28', 1)",
+                "databricks": "SELECT ADD_MONTHS('2019-02-28', 1)",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_ADD('MONTH', 1, CAST('2019-02-28' AS DATE))",
+            read={"spark": "SELECT ADD_MONTHS(DATE '2019-02-28', 1)"},
+        )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")

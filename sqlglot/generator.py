@@ -333,7 +333,7 @@ class Generator:
     SUPPORTS_MERGE_WHERE = False
 
     # First version supporting MERGE WITH SCHEMA EVOLUTION
-    MERGE_SCHEMA_EVOLUTION_MIN_VERSION: tuple[int, ...] | None = None
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION: t.ClassVar[tuple[int, ...] | None] = None
 
     # Whether MERGE uses ALL BY NAME instead of a star to update or insert all columns
     MERGE_ALL_BY_NAME = False

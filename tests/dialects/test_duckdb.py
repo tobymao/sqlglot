@@ -3296,7 +3296,10 @@ class TestDuckDB(Validator):
             "SELECT s.region, s.amount FROM (VALUES ('east', 2), ('west', 5)) AS s(region, amount) "
             "JOIN (VALUES ('east')) AS r(region) ON s.region = r.region"
         )
-        self.validate_identity(f"PIVOT ({source}) ON region USING SUM(amount)")
+        self.validate_identity(
+            f"PIVOT ({source}) ON s.region USING SUM(s.amount)",
+            f"PIVOT ({source}) ON region USING SUM(amount)",
+        )
         self.validate_identity(f"WITH sales AS ({source}) PIVOT sales ON region USING SUM(amount)")
 
     def test_simplified_pivot_unpivot(self):

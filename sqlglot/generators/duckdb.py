@@ -1787,9 +1787,6 @@ class DuckDBGenerator(generator.Generator):
         exp.NextDay: _day_navigation_sql,
         exp.PercentileCont: rename_func("QUANTILE_CONT"),
         exp.PercentileDisc: rename_func("QUANTILE_DISC"),
-        # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
-        # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
-        exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
         exp.PreviousDay: _day_navigation_sql,
         exp.RegexpILike: lambda self, e: self.func(
             "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
@@ -2405,6 +2402,14 @@ class DuckDBGenerator(generator.Generator):
     # Ref: https://docs.snowflake.com/en/sql-reference/date-time-input-output#date-formats
     _TRYCAST_DATE_SLASH_FMT = "%m/%d/%Y"
     _TRYCAST_DATE_MON_FMT = "%d-%b-%Y"
+
+    def pivot_sql(self, expression: exp.Pivot) -> str:
+        # DuckDB requires unqualified pivot expressions. The source and CTEs have their own scope.
+        # https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
+        for clause in expression.iter_expressions():
+            if clause.arg_key not in ("this", "with_"):
+                transforms.unqualify_columns(clause)
+        return super().pivot_sql(expression)
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         if expression.is_type(exp.DType.ARRAY):

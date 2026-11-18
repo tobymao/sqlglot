@@ -6165,6 +6165,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             },
         )
         self.validate_identity("SELECT TRY_CAST(x AS DOUBLE)")
+        self.validate_all(
+            "SELECT TRY_CAST('1.2345' AS NUMBER(10, 3))",
+            write={"bigquery": "SELECT SAFE_CAST('1.2345' AS NUMERIC)"},
+        )
         self.validate_identity(
             "SELECT TRY_CAST(FOO() AS TEXT)", "SELECT TRY_CAST(FOO() AS VARCHAR)"
         )

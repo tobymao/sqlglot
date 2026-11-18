@@ -2728,6 +2728,14 @@ WHERE
             "SELECT CAST(1 AS NUMERIC)",
         )
         self.validate_identity(
+            "SELECT SAFE_CAST('foo' AS NUMERIC(10, 3))",
+            "SELECT SAFE_CAST('foo' AS NUMERIC)",
+        )
+        self.validate_identity(
+            "SELECT SAFE_CAST('100000000000000000000000000000' AS NUMERIC(38, 0))",
+            "SELECT SAFE_CAST('100000000000000000000000000000' AS BIGNUMERIC)",
+        )
+        self.validate_identity(
             "SELECT CAST('1' AS STRING(10)) UNION ALL SELECT CAST('2' AS STRING(10))",
             "SELECT CAST('1' AS STRING) UNION ALL SELECT CAST('2' AS STRING)",
         )

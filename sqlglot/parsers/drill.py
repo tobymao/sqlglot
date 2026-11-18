@@ -16,8 +16,6 @@ def _build_ilike(args: list) -> exp.Expr:
 class DrillParser(parser.Parser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.COMPARISON
 
-    STRICT_CAST = False
-
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,

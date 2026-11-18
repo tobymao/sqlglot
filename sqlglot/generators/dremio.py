@@ -6,7 +6,7 @@ from sqlglot import expressions as exp
 from sqlglot import generator
 from sqlglot.dialects.dialect import (
     rename_func,
-    lossy_trycast_sql,
+    no_trycast_sql,
 )
 
 DATE_DELTA = t.Union[exp.DateAdd, exp.DateSub]
@@ -67,7 +67,7 @@ class DremioGenerator(generator.Generator):
         exp.BitwiseOrAgg: rename_func("BIT_OR"),
         exp.ToChar: rename_func("TO_CHAR"),
         exp.TimeToStr: lambda self, e: self.func("TO_CHAR", e.this, self.format_time(e)),
-        exp.TryCast: lossy_trycast_sql,
+        exp.TryCast: no_trycast_sql,
         exp.DateAdd: _date_delta_sql("DATE_ADD"),
         exp.DateSub: _date_delta_sql("DATE_SUB"),
         exp.GenerateSeries: rename_func("ARRAY_GENERATE_RANGE"),

@@ -391,6 +391,22 @@ class TestDialect(Validator):
                     [precision, scale],
                 )
 
+    def test_try_cast_fallback(self):
+        sql = "TRY_CAST('abc' AS INT)"
+        self.validate_all(
+            sql,
+            write=dict.fromkeys(
+                ("dremio", "drill", "mysql", "postgres", "sqlite"), UnsupportedError
+            ),
+        )
+        expression = self.parse_one(sql)
+        self.assertEqual(
+            expression.sql("hive", unsupported_level=ErrorLevel.RAISE), "CAST('abc' AS INT)"
+        )
+        with self.assertLogs(generator_logger, level="WARNING") as logs:
+            self.assertEqual(expression.sql("sqlite"), "CAST('abc' AS INTEGER)")
+        self.assertIn("TRY_CAST", logs.output[0])
+
     def test_cast(self):
         self.validate_all(
             "CAST(a AS TEXT)",
@@ -505,6 +521,7 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "CAST(a AS VARCHAR)",
+            read={"drill": "CAST(a AS VARCHAR)"},
             write={
                 "bigquery": "CAST(a AS STRING)",
                 "drill": "CAST(a AS VARCHAR)",
@@ -4095,39 +4112,6 @@ FROM subquery2""",
 
                 self.assertEqual(expression.sql(dialect="mysql"), expected_sql)
                 self.assertEqual(expression.sql(dialect="tsql"), expected_sql)
-
-    def test_lossy_trycast_emits_unsupported_warning(self):
-        # CAST in these dialects is NOT null-safe: Postgres raises an error,
-        # MySQL/SQLite return 0.  Transpiling TRY_CAST to them must warn.
-        sql = "SELECT TRY_CAST(x AS INT) FROM t"
-        for dialect in ("postgres", "sqlite", "mysql", "dremio"):
-            with self.subTest(dialect=dialect):
-                generator = Dialect.get_or_raise(dialect).generator_class(
-                    unsupported_level=ErrorLevel.WARN
-                )
-                ast = parse_one(sql, read="snowflake")
-                generator.generate(ast)
-                self.assertTrue(
-                    generator.unsupported_messages,
-                    msg=f"Expected an unsupported warning for TRY_CAST -> {dialect}",
-                )
-                self.assertIn("TRY_CAST", generator.unsupported_messages[0])
-
-    def test_no_trycast_no_warning_for_null_safe_dialects(self):
-        # CAST in Hive and Drill is already null-safe (sqlglot parses their
-        # CAST as TryCast).  Transpiling TRY_CAST to them must NOT warn.
-        sql = "SELECT TRY_CAST(x AS INT) FROM t"
-        for dialect in ("hive", "drill"):
-            with self.subTest(dialect=dialect):
-                generator = Dialect.get_or_raise(dialect).generator_class(
-                    unsupported_level=ErrorLevel.WARN
-                )
-                ast = parse_one(sql, read="snowflake")
-                generator.generate(ast)
-                self.assertFalse(
-                    generator.unsupported_messages,
-                    msg=f"Expected no warning for TRY_CAST -> {dialect} (CAST is null-safe there)",
-                )
 
     def test_random(self):
         self.validate_all(

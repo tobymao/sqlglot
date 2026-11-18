@@ -16,7 +16,7 @@ from sqlglot.dialects.dialect import (
     no_paren_current_date_sql,
     no_pivot_sql,
     no_tablesample_sql,
-    lossy_trycast_sql,
+    no_trycast_sql,
     if_sql,
     remove_ts_or_ds_to_date,
     rename_func,
@@ -230,7 +230,7 @@ class MySQLGenerator(generator.Generator):
         exp.Trunc: lambda self, e: self.func(
             "TRUNCATE", e.this, e.args.get("decimals") or exp.Literal.number(0)
         ),
-        exp.TryCast: lossy_trycast_sql,
+        exp.TryCast: no_trycast_sql,
         exp.TsOrDsAdd: date_add_sql("ADD"),
         exp.TsOrDsDiff: lambda self, e: self.func("DATEDIFF", e.this, e.expression),
         exp.TsOrDsToDate: _ts_or_ds_to_date_sql,

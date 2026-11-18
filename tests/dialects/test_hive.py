@@ -457,7 +457,7 @@ class TestHive(Validator):
         self.validate_all(
             "(UNIX_TIMESTAMP(y) - UNIX_TIMESTAMP(x)) * 1000000",
             read={
-                "presto": "DATE_DIFF('microsecond', x, y)",
+                "duckdb": "DATE_DIFF('microsecond', x, y)",
             },
         )
         self.validate_all(

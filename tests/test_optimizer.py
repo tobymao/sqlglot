@@ -4160,7 +4160,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_lateral_annotation(self):
         expression = optimizer.optimize(
-            parse_one("SELECT c FROM (select 1 a) as x LATERAL VIEW EXPLODE (a) AS c")
+            parse_one("SELECT c FROM (select array(1) a) as x LATERAL VIEW EXPLODE (a) AS c")
         ).expressions[0]
         self.assertEqual(expression.type.this, exp.DataType.Type.INT)
 

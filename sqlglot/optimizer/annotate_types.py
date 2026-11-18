@@ -354,11 +354,11 @@ class TypeAnnotator:
                 expression = expression.this.unnest()
 
         if isinstance(expression, exp.UDTF):
-            values = []
+            values: list[exp.Expression] = []
 
             if isinstance(expression, exp.Lateral):
                 if isinstance(expression.this, exp.Explode):
-                    values = [expression.this.this]
+                    values = [expression.this]
             elif isinstance(expression, exp.Unnest):
                 values = [expression]
             elif not isinstance(expression, exp.TableFromRows):
@@ -384,6 +384,11 @@ class TypeAnnotator:
                     for col_def in struct_type.expressions
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
+                if isinstance(expression, exp.Lateral):
+                    # LATERAL VIEW EXPLODE(array_of_structs) tbl AS alias: unlike BigQuery's
+                    # UNNEST value-table semantics, EXPLODE's own alias must resolve to the
+                    # whole element struct, in addition to the splatted field names above
+                    result.update({alias: struct_type for alias in alias_column_names})
             elif isinstance(expression, exp.Values):
                 # Like a set operation's, each VALUES column's type is coerced across all rows
                 column_types: list[exp.DataType | exp.DType] = [exp.DType.NULL] * len(values)
@@ -395,7 +400,10 @@ class TypeAnnotator:
 
                 result = dict(zip(alias_column_names, column_types))
             else:
-                result = {alias: column.type for alias, column in zip(alias_column_names, values)}
+                result = {
+                    alias: t.cast(t.Union[exp.DataType, exp.DType], column.type)
+                    for alias, column in zip(alias_column_names, values)
+                }
 
             if isinstance(expression, exp.Unnest) and isinstance(
                 offset := expression.args.get("offset"), exp.Identifier

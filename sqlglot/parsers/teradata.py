@@ -94,7 +94,7 @@ class TeradataParser(parser.Parser):
         )
 
     def _parse_atom(self) -> exp.Expr | None:
-        if self._is_hex_character_string() or self._is_integer_cast(1):
+        if self._is_hex_character_string():
             return None
         return super()._parse_atom()
 
@@ -133,6 +133,15 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
+        if (
+            optional_parens
+            and self._curr.token_type == TokenType.CURRENT_DATE
+            and self._prev.token_type != TokenType.DOT
+            and self._is_integer_cast(1)
+        ):
+            self._advance()
+            return self.expression(exp.CurrentDate())
+
         expression = super()._parse_function_call(functions, anonymous, optional_parens, any_token)
         conversion = expression.this if isinstance(expression, exp.Window) else expression
         if isinstance(conversion, (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)):
@@ -349,14 +358,19 @@ class TeradataParser(parser.Parser):
             and self._tokens[index + 2].token_type == TokenType.R_PAREN
         )
 
+    def _parse_type(
+        self, parse_interval: bool = True, fallback_to_identifier: bool = False
+    ) -> exp.Expr | None:
+        this = super()._parse_type(
+            parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
+        )
+        if this and self._is_integer_cast():
+            this = self.expression(exp.Cast(this=this, to=self._parse_wrapped(self._parse_types)))
+            return self._parse_column_ops(this)
+        return this
+
     def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
         this = super()._parse_column_ops(this)
-
-        if this and self._is_integer_cast():
-            self._advance()
-            this = self.expression(exp.Cast(this=this, to=self._parse_types()))
-            self._match_r_paren()
-            this = super()._parse_column_ops(this)
 
         while (
             this

@@ -1,4 +1,4 @@
-from sqlglot import exp, transpile, UnsupportedError, ErrorLevel
+from sqlglot import exp, parse_one, transpile, ParseError, UnsupportedError, ErrorLevel
 from tests.dialects.test_dialect import Validator
 
 
@@ -1064,3 +1064,97 @@ class TestExasol(Validator):
             read={"mysql": "SELECT COUNT(*) AS cnt FROM t HAVING cnt > 1"},
             write={"exasol": "SELECT COUNT(*) AS cnt FROM t HAVING LOCAL.cnt > 1"},
         )
+
+    def test_skyline(self):
+        # https://docs.exasol.com/db/latest/advanced_analytics/skyline.htm
+        for sql in (
+            "SELECT * FROM funds PREFERRING HIGH performance PLUS LOW volatility",
+            "SELECT * FROM cars PREFERRING (LOW ROUND(price / 1000) PLUS HIGH ROUND(power / 10)) PRIOR TO (color = 'silver')",
+            "SELECT id FROM t PREFERRING HIGH a",
+            "SELECT id FROM t PREFERRING INVERSE(HIGH a)",
+            "SELECT id FROM t PREFERRING INVERSE(HIGH a PLUS LOW b)",
+            "SELECT id FROM t PREFERRING b > 0",
+            "SELECT id FROM t PREFERRING HIGH (b > 0)",
+            "SELECT id FROM t PREFERRING (a + 1) > 0 PLUS HIGH b",
+            "SELECT id FROM t PREFERRING HIGH a PLUS HIGH b PRIOR TO HIGH c",
+            "SELECT id FROM t PREFERRING (HIGH a PLUS HIGH b) PRIOR TO HIGH c",
+            "SELECT id FROM t PREFERRING HIGH a PLUS (HIGH b PRIOR TO HIGH c)",
+            "SELECT id FROM t PREFERRING HIGH a PARTITION BY grp",
+            "SELECT id FROM t PREFERRING HIGH a PARTITION BY grp, c ORDER BY id",
+            "SELECT id FROM t WHERE id IN (1, 2) PREFERRING LOW a",
+            "SELECT grp, SUM(a) AS s FROM t PREFERRING HIGH a GROUP BY grp",
+            "SELECT id FROM t PREFERRING LOW a PRIOR TO (grp IN (SELECT 'Y' FROM DUAL))",
+            "SELECT t.id, g.grp FROM t JOIN g ON t.grp = g.grp PREFERRING HIGH t.a",
+            "WITH best AS (SELECT id FROM t PREFERRING HIGH a PARTITION BY grp) SELECT id FROM best",
+            "SELECT id FROM (SELECT id, a FROM t PREFERRING HIGH a) AS s WHERE a < 3",
+            "UPDATE t SET c = 99 PREFERRING HIGH a",
+            "UPDATE t SET c = 99 WHERE grp = 'X' PREFERRING HIGH a",
+            "DELETE FROM t PREFERRING HIGH a",
+            "DELETE FROM t WHERE grp = 'X' PREFERRING HIGH a",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql)
+
+        # PARTITION BY is only allowed in SELECT, and HIGH / LOW don't take AND / OR operands
+        for sql in (
+            "UPDATE t SET c = 99 PREFERRING HIGH a PARTITION BY grp",
+            "DELETE FROM t PREFERRING HIGH a PARTITION BY grp",
+            "SELECT id FROM t PREFERRING HIGH a > 1 OR b = 3",
+            "SELECT id FROM t PREFERRING HIGH a > 1 AND b = 3",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(ParseError):
+                self.parse_one(sql)
+
+        # PRIOR TO binds tighter than PLUS
+        preferring = self.parse_one(
+            "SELECT id FROM t PREFERRING HIGH a PLUS HIGH b PRIOR TO HIGH c"
+        ).args["preferring"]
+        self.assertIsInstance(preferring.this, exp.PreferencePlus)
+        self.assertIsInstance(preferring.this.expression, exp.PreferencePriorTo)
+
+        # HIGH / LOW accept a predicate operand, e.g. HIGH a = 1 is HIGH (a = 1)
+        preferring = self.validate_identity(
+            "SELECT id FROM t PREFERRING HIGH a = 1 PLUS LOW b"
+        ).args["preferring"]
+        self.assertIsInstance(preferring.this.this, exp.PreferenceHigh)
+        self.assertIsInstance(preferring.this.this.this, exp.EQ)
+        self.validate_identity("SELECT id FROM t PREFERRING HIGH a IN (1, 3)")
+        self.validate_identity("SELECT id FROM t PREFERRING a > 1 OR b = 3")
+
+        preferring = self.parse_one("SELECT id FROM t PREFERRING HIGH a PARTITION BY x, y").args[
+            "preferring"
+        ]
+        self.assertIsInstance(preferring.this, exp.PreferenceHigh)
+        self.assertEqual([e.sql() for e in preferring.args["partition_by"]], ["x", "y"])
+
+        # A quoted identifier is not a preference keyword
+        self.validate_identity('SELECT id FROM t PREFERRING "high" = 1')
+
+        # Aliases must be referenced with LOCAL; a plain name refers to the source column
+        self.validate_identity("SELECT id, a * 10 AS score FROM t PREFERRING HIGH LOCAL.score")
+        self.validate_identity("SELECT id, -a AS b FROM t PREFERRING HIGH b")
+        self.validate_identity("SELECT id, -a AS b FROM t PREFERRING HIGH LOCAL.b PLUS LOW b")
+
+        # "preferring" is not a keyword in other dialects
+        self.assertEqual(
+            parse_one("SELECT preferring FROM preferring", read="duckdb").sql("duckdb"),
+            "SELECT preferring FROM preferring",
+        )
+        self.assertEqual(
+            parse_one("SELECT preferring FROM t", read="duckdb").sql(self.dialect),
+            'SELECT "preferring" FROM t',
+        )
+
+        # Other dialects drop the clause with a warning
+        with self.assertLogs("sqlglot", level="WARNING"):
+            self.assertEqual(
+                transpile("SELECT * FROM t PREFERRING HIGH a", read="exasol", write="duckdb"),
+                ["SELECT * FROM t"],
+            )
+        for sql in (
+            "SELECT * FROM t PREFERRING HIGH a",
+            "DELETE FROM t PREFERRING HIGH a",
+            "UPDATE t SET c = 1 PREFERRING HIGH a",
+        ):
+            with self.subTest(sql=sql), self.assertRaises(UnsupportedError):
+                transpile(sql, read="exasol", write="duckdb", unsupported_level=ErrorLevel.RAISE)

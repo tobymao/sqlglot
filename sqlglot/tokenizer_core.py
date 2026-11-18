@@ -386,6 +386,7 @@ class TokenType(IntEnum):
     POOL = auto()
     POSITIONAL = auto()
     PRAGMA = auto()
+    PREFERRING = auto()
     PREWHERE = auto()
     PRIMARY_KEY = auto()
     PROCEDURE = auto()

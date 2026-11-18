@@ -74,6 +74,7 @@ class Delete(Expression, DML):
         "this": False,
         "using": False,
         "where": False,
+        "preferring": False,  # Exasol
         "returning": False,
         "order": False,
         "limit": False,
@@ -300,6 +301,7 @@ class Update(Expression, DML):
         "expressions": False,
         "from_": False,
         "where": False,
+        "preferring": False,  # Exasol
         "returning": False,
         "order": False,
         "limit": False,

@@ -2525,6 +2525,7 @@ QUERY_MODIFIERS = {
     "laterals": False,
     "joins": False,
     "connect": False,
+    "preferring": False,
     "pivots": False,
     "prewhere": False,
     "where": False,

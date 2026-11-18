@@ -1913,15 +1913,16 @@ class Generator:
         cluster = self.sql(expression, "cluster")
         cluster = f" {cluster}" if cluster else ""
         where = self.sql(expression, "where")
+        preferring = self.sql(expression, "preferring")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         tables = self.expressions(expression, key="tables")
         tables = f" {tables}" if tables else ""
         if self.RETURNING_END:
-            expression_sql = f"{this}{using}{cluster}{where}{returning}{order}{limit}"
+            expression_sql = f"{this}{using}{cluster}{where}{preferring}{returning}{order}{limit}"
         else:
-            expression_sql = f"{returning}{this}{using}{cluster}{where}{order}{limit}"
+            expression_sql = f"{returning}{this}{using}{cluster}{where}{preferring}{order}{limit}"
         return self.prepend_ctes(expression, f"DELETE{hint}{tables}{expression_sql}")
 
     def drop_sql(self, expression: exp.Drop) -> str:
@@ -2878,13 +2879,14 @@ class Generator:
         join_sql, from_sql = self._update_from_joins_sql(expression)
         set_sql = self.expressions(expression, flat=True)
         where_sql = self.sql(expression, "where")
+        preferring = self.sql(expression, "preferring")
         returning = self.sql(expression, "returning")
         order = self.sql(expression, "order")
         limit = self.sql(expression, "limit")
         if self.RETURNING_END:
-            expression_sql = f"{from_sql}{where_sql}{returning}"
+            expression_sql = f"{from_sql}{where_sql}{preferring}{returning}"
         else:
-            expression_sql = f"{returning}{from_sql}{where_sql}"
+            expression_sql = f"{returning}{from_sql}{where_sql}{preferring}"
         options = self.expressions(expression, key="options")
         options = f" OPTION({options})" if options else ""
         sql = f"UPDATE{hint} {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
@@ -3549,6 +3551,7 @@ class Generator:
             self.sql(expression, "prewhere"),
             self.sql(expression, "where"),
             self.sql(expression, "connect"),
+            self.sql(expression, "preferring"),
             self.sql(expression, "group"),
             self.sql(expression, "having"),
             *[gen(self, expression) for gen in self.AFTER_HAVING_MODIFIER_TRANSFORMS.values()],
@@ -3728,6 +3731,10 @@ class Generator:
     def qualify_sql(self, expression: exp.Qualify) -> str:
         this = self.indent(self.sql(expression, "this"))
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
+
+    def preferring_sql(self, expression: exp.Preferring) -> str:
+        self.unsupported("Skyline PREFERRING clause is not supported in this dialect")
+        return ""
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         args = self.expressions(expression, flat=True)

@@ -62,6 +62,8 @@ class Exasol(Dialect):
             "SEPARATOR": TokenType.SEPARATOR,
             "SYSTIMESTAMP": TokenType.SYSTIMESTAMP,
             "MINUS": TokenType.EXCEPT,
+            # https://docs.exasol.com/db/latest/advanced_analytics/skyline.htm
+            "PREFERRING": TokenType.PREFERRING,
         }
         KEYWORDS.pop("DIV")
 

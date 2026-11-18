@@ -921,6 +921,31 @@ class Qualify(Expression):
     pass
 
 
+# https://docs.exasol.com/db/latest/advanced_analytics/skyline.htm
+class Preferring(Expression):
+    arg_types = {"this": True, "partition_by": False}
+
+
+class PreferenceHigh(Expression):
+    pass
+
+
+class PreferenceLow(Expression):
+    pass
+
+
+class PreferenceInverse(Expression):
+    pass
+
+
+class PreferencePlus(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
+class PreferencePriorTo(Expression):
+    arg_types = {"this": True, "expression": True}
+
+
 class InputOutputFormat(Expression):
     arg_types = {"input_format": False, "output_format": False}
 

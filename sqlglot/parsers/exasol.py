@@ -14,6 +14,20 @@ from sqlglot.tokens import TokenType
 
 DATE_UNITS = {"DAY", "WEEK", "MONTH", "YEAR", "HOUR", "MINUTE", "SECOND"}
 
+PREFERENCE_KEYWORDS: dict[str, type[exp.Expr]] = {
+    "HIGH": exp.PreferenceHigh,
+    "LOW": exp.PreferenceLow,
+    "INVERSE": exp.PreferenceInverse,
+}
+
+PREFERENCE_TERMS = (
+    exp.PreferenceHigh,
+    exp.PreferenceLow,
+    exp.PreferenceInverse,
+    exp.PreferencePlus,
+    exp.PreferencePriorTo,
+)
+
 
 # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/zeroifnull.htm
 def _build_zeroifnull(args: list) -> exp.If:
@@ -31,6 +45,11 @@ class ExasolParser(parser.Parser):
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,
+    }
+
+    QUERY_MODIFIER_PARSERS = {
+        **parser.Parser.QUERY_MODIFIER_PARSERS,
+        TokenType.PREFERRING: lambda self: ("preferring", self._parse_preferring()),
     }
 
     FUNCTIONS = {
@@ -145,7 +164,77 @@ class ExasolParser(parser.Parser):
             and not bool(table_ident.args.get("quoted"))
         ):
             column.set("table", None)
+            # Remember the explicit alias reference, e.g. PREFERRING HIGH LOCAL.x, where an
+            # unprefixed name would resolve to a source column instead of the alias
+            column.meta["alias_ref"] = True
         return column
+
+    def _parse_delete(self) -> exp.Delete:
+        delete = super()._parse_delete()
+        delete.set("preferring", self._parse_preferring(partition=False))
+        return delete
+
+    def _parse_update(self) -> exp.Update:
+        update = super()._parse_update()
+        update.set("preferring", self._parse_preferring(partition=False))
+        return update
+
+    # https://docs.exasol.com/db/latest/advanced_analytics/skyline.htm
+    def _parse_preferring(self, partition: bool = True) -> exp.Preferring | None:
+        if not self._match(TokenType.PREFERRING):
+            return None
+
+        this = self._parse_preference_term()
+
+        # PARTITION BY is only allowed in SELECT, not in UPDATE / DELETE
+        partition_by = self._parse_partition_by() if partition else None
+
+        return self.expression(exp.Preferring(this=this, partition_by=partition_by or None))
+
+    def _parse_preference_term(self) -> exp.Expr | None:
+        # PLUS has a lower precedence than PRIOR TO
+        this = self._parse_preference_prior_to()
+        while self._match_text_seq("PLUS"):
+            this = self.expression(
+                exp.PreferencePlus(this=this, expression=self._parse_preference_prior_to())
+            )
+        return this
+
+    def _parse_preference_prior_to(self) -> exp.Expr | None:
+        this = self._parse_preference_unary()
+        while self._match_text_seq("PRIOR", "TO"):
+            this = self.expression(
+                exp.PreferencePriorTo(this=this, expression=self._parse_preference_unary())
+            )
+        return this
+
+    def _parse_preference_unary(self) -> exp.Expr | None:
+        keyword = self._curr.text.upper() if self._curr.token_type == TokenType.VAR else None
+
+        if keyword in PREFERENCE_KEYWORDS:
+            self._advance()
+            if keyword == "INVERSE":
+                return self.expression(
+                    exp.PreferenceInverse(this=self._parse_wrapped(self._parse_preference_term))
+                )
+            # The operand may be a predicate, e.g. HIGH a = 1, but not a connector like AND / OR
+            return self.expression(PREFERENCE_KEYWORDS[keyword](this=self._parse_equality()))
+
+        # A parenthesized term is either a group of preferences, e.g. (HIGH a PLUS LOW b),
+        # or a regular boolean expression, e.g. (a + 1) > 0
+        if self._curr.token_type == TokenType.L_PAREN:
+            index = self._index
+            self._advance()
+            this = self._parse_preference_term()
+            if (
+                this
+                and isinstance(this.unnest(), PREFERENCE_TERMS)
+                and self._match(TokenType.R_PAREN)
+            ):
+                return self.expression(exp.Paren(this=this))
+            self._retreat(index)
+
+        return self._parse_disjunction()
 
     def _parse_json_extract(self) -> exp.JSONExtract:
         args = self._parse_expressions()

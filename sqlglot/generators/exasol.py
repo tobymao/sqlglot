@@ -74,6 +74,16 @@ def _add_local_prefix_for_aliases(expression: exp.Expr, dialect: Dialect) -> exp
             if arg := expression.args.get(key):
                 expression.set(key, arg.transform(lambda node: prefix_local(node, aliases)))
 
+        # In PREFERRING, an unprefixed name resolves to a source column even if it matches an
+        # alias, so only the explicit LOCAL references from the original query are restored
+        if preferring := expression.args.get("preferring"):
+            expression.set(
+                "preferring",
+                preferring.transform(
+                    lambda node: prefix_local(node, aliases) if node.meta_get("alias_ref") else node
+                ),
+            )
+
         seen_aliases: dict[str, exp.Identifier] = {}
         new_selects: list[exp.Expr] = []
         for sel in expression.selects:
@@ -318,6 +328,28 @@ class ExasolGenerator(generator.Generator):
         processed = _add_local_prefix_for_aliases(processed, self.dialect)
         processed = _group_by_all(processed)
         return super().select_sql(t.cast(exp.Select, processed))
+
+    # https://docs.exasol.com/db/latest/advanced_analytics/skyline.htm
+    def preferring_sql(self, expression: exp.Preferring) -> str:
+        this = self.indent(self.sql(expression, "this"))
+        partition_by = self.expressions(expression, key="partition_by", flat=True)
+        partition_by = f" PARTITION BY {partition_by}" if partition_by else ""
+        return f"{self.seg('PREFERRING')}{self.sep()}{this}{partition_by}"
+
+    def preferencehigh_sql(self, expression: exp.PreferenceHigh) -> str:
+        return f"HIGH {self.sql(expression, 'this')}"
+
+    def preferencelow_sql(self, expression: exp.PreferenceLow) -> str:
+        return f"LOW {self.sql(expression, 'this')}"
+
+    def preferenceinverse_sql(self, expression: exp.PreferenceInverse) -> str:
+        return f"INVERSE({self.sql(expression, 'this')})"
+
+    def preferenceplus_sql(self, expression: exp.PreferencePlus) -> str:
+        return f"{self.sql(expression, 'this')} PLUS {self.sql(expression, 'expression')}"
+
+    def preferencepriorto_sql(self, expression: exp.PreferencePriorTo) -> str:
+        return f"{self.sql(expression, 'this')} PRIOR TO {self.sql(expression, 'expression')}"
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE

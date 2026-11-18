@@ -30,7 +30,7 @@ class DatabricksGenerator(SparkGenerator):
     QUOTE_JSON_PATH = False
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     SUPPORTS_TEMPORAL_PRECISION = True
-    SUPPORTS_MERGE_SCHEMA_EVOLUTION = True
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (15, 2)
 
     # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
     # CUME_DIST() OVER (ORDER BY NULL), which Databricks still rejects with

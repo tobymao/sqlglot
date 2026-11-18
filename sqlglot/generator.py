@@ -332,8 +332,8 @@ class Generator:
     # Whether MERGE ... WHEN MATCHED/NOT MATCHED THEN UPDATE/INSERT ... WHERE is supported
     SUPPORTS_MERGE_WHERE = False
 
-    # Whether MERGE WITH SCHEMA EVOLUTION is supported
-    SUPPORTS_MERGE_SCHEMA_EVOLUTION = False
+    # First version supporting MERGE WITH SCHEMA EVOLUTION
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION: tuple[int, ...] | None = None
 
     # Whether MERGE uses ALL BY NAME instead of a star to update or insert all columns
     MERGE_ALL_BY_NAME = False
@@ -5240,7 +5240,8 @@ class Generator:
     def merge_sql(self, expression: exp.Merge) -> str:
         schema_evolution = ""
         if expression.args.get("schema_evolution"):
-            if self.SUPPORTS_MERGE_SCHEMA_EVOLUTION:
+            min_version = self.MERGE_SCHEMA_EVOLUTION_MIN_VERSION
+            if min_version and self.dialect.version >= min_version:
                 schema_evolution = " WITH SCHEMA EVOLUTION"
             else:
                 self.unsupported("MERGE WITH SCHEMA EVOLUTION is not supported")

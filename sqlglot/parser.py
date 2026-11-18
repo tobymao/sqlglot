@@ -10002,6 +10002,7 @@ class Parser:
         )
 
     def _parse_merge(self) -> exp.Merge:
+        schema_evolution = self._match_text_seq("WITH", "SCHEMA", "EVOLUTION")
         self._match(TokenType.INTO)
         target = self._parse_table()
 
@@ -10019,6 +10020,7 @@ class Parser:
                 using_cond=self._match(TokenType.USING) and self._parse_using_identifiers(),
                 whens=self._parse_when_matched(),
                 returning=self._parse_returning(),
+                schema_evolution=schema_evolution or None,
             )
         )
 

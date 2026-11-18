@@ -4832,6 +4832,11 @@ class TestSnowflake(Validator):
             "CREATE DYNAMIC TABLE dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_wh AS SELECT * FROM bla",
         )
         create = self.validate_identity(
+            "CREATE HYBRID TABLE t (id INT PRIMARY KEY, customer INT)"
+        ).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.find(exp.HybridProperty), exp.HybridProperty)
+        create = self.validate_identity(
             "CREATE INTERACTIVE TABLE t CLUSTER BY (a) AS SELECT a FROM s"
         ).assert_is(exp.Create)
         self.assertEqual(create.kind, "TABLE")

@@ -804,6 +804,7 @@ class SnowflakeParser(parser.Parser):
         **parser.Parser.PROPERTY_PARSERS,
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
+        "HYBRID": lambda self: self.expression(exp.HybridProperty()),
         "IGNORE": lambda self: self._parse_ignore_property(),
         "INTERACTIVE": lambda self: self.expression(exp.InteractiveProperty()),
         "LOCATION": lambda self: self._parse_location_property(),

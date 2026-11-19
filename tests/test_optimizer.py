@@ -2284,6 +2284,24 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_conditional_result_type(self):
+        for sql, folds in (
+            ("IF(TRUE, 7, 2)", True),
+            ("IF(TRUE, 7, 1.5)", False),
+            ("IF(TRUE, 7::DECIMAL(5, 2), 2::DECIMAL(5, 2))", False),
+            ("CASE WHEN FALSE THEN 0::BIGINT ELSE 2147483647::INT END", False),
+        ):
+            with self.subTest(sql=sql):
+                expr = parse_one(sql, read="duckdb")
+                self.assertEqual(optimizer.simplify.simplify(expr.copy(), dialect="duckdb"), expr)
+                annotated = annotate_types(expr.copy(), dialect="duckdb")
+                reduced = optimizer.simplify.simplify(annotated, dialect="duckdb")
+                self.assertEqual(reduced != expr, folds)
+
+        partial = annotate_types(parse_one("CASE WHEN p THEN 1 WHEN TRUE THEN 2 ELSE 3 END"))
+        partial.args["ifs"][0].args["true"].type = None
+        self.assertEqual(optimizer.simplify.simplify(partial.copy()), partial)
+
     def test_simplify_string_comparisons(self):
         with duckdb.connect() as conn:
             for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):

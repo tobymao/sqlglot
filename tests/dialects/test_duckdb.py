@@ -815,7 +815,7 @@ class TestDuckDB(Validator):
             "SELECT RANGE(1, 5)",
             write={
                 "duckdb": "SELECT RANGE(1, 5)",
-                "spark": "SELECT SEQUENCE(1, 4)",
+                "spark": "SELECT IF(FALSE, ARRAY(), SEQUENCE(1, 4))",
                 "snowflake": "SELECT ARRAY_GENERATE_RANGE(1, 5)",
             },
         )
@@ -823,14 +823,14 @@ class TestDuckDB(Validator):
             "SELECT RANGE(1, 5, 2)",
             write={
                 "duckdb": "SELECT RANGE(1, 5, 2)",
-                "spark": "SELECT SEQUENCE(1, 3, 2)",
+                "spark": "SELECT IF(FALSE, ARRAY(), SEQUENCE(1, 3, 2))",
             },
         )
         self.validate_all(
             "SELECT RANGE(1, 1)",
             write={
                 "duckdb": "SELECT RANGE(1, 1)",
-                "spark": "SELECT ARRAY()",
+                "spark": "SELECT IF(TRUE, ARRAY(), SEQUENCE(1, 0))",
             },
         )
         self.validate_all(
@@ -839,7 +839,7 @@ class TestDuckDB(Validator):
                 "bigquery": "SELECT GENERATE_ARRAY(5, 1 + 1, -1)",
                 "duckdb": "SELECT RANGE(5, 1, -1)",
                 "postgres": "SELECT GENERATE_SERIES(5, 1 + 1, -1)",
-                "spark": "SELECT SEQUENCE(5, 2, -1)",
+                "spark": "SELECT IF(FALSE, ARRAY(), SEQUENCE(5, 2, -1))",
                 "snowflake": "SELECT ARRAY_GENERATE_RANGE(5, 1, -1)",
             },
         )
@@ -847,7 +847,7 @@ class TestDuckDB(Validator):
             "SELECT RANGE(5, 1, 0)",
             write={
                 "duckdb": "SELECT RANGE(5, 1, 0)",
-                "spark": "SELECT ARRAY()",
+                "spark": "SELECT IF(TRUE, ARRAY(), SEQUENCE(5, 1, 0))",
             },
         )
         self.validate_all(
@@ -869,7 +869,7 @@ class TestDuckDB(Validator):
             "SELECT RANGE(1, 2)",
             write={
                 "duckdb": "SELECT RANGE(1, 2)",
-                "spark": "SELECT SEQUENCE(1, 1)",
+                "spark": "SELECT IF(FALSE, ARRAY(), SEQUENCE(1, 1))",
             },
         )
         self.validate_all(

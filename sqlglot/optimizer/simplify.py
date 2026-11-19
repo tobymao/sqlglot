@@ -1498,32 +1498,54 @@ class Simplifier:
     @annotate_types_on_change
     def simplify_conditionals(self, expression):
         """Simplifies expressions like IF, CASE if their condition is statically known."""
+        dtype = expression.type
+        if dtype is None:
+            # We return early here because reducing a conditional may change its type if we
+            # pick a branch whose type would be promoted in the original expression.
+            return expression
+
         if isinstance(expression, exp.Case):
-            this = expression.this
-            for case in expression.args["ifs"]:
-                cond = case.this
-                if this:
-                    # Convert CASE x WHEN matching_value ... to CASE WHEN x = matching_value ...
-                    cond = cond.replace(this.pop().eq(cond))
+            ifs = expression.args["ifs"]
+            if this := expression.this:
+                # Convert CASE x WHEN matching_value ... to CASE WHEN x = matching_value ...
+                this.pop()
+                for case in ifs:
+                    case.set("this", this.eq(case.this))
+                return expression
 
-                if always_true(cond):
-                    if case.index == 0:
-                        return exp.paren(case.args["true"], copy=False)
-
-                    expression.set("default", case.args["true"])
-                    expression.set("ifs", expression.args["ifs"][: case.index])
-                    break
-
-                if always_false(cond):
-                    case.pop()
-                    if not expression.args["ifs"]:
-                        return exp.paren(expression.args.get("default") or exp.null(), copy=False)
+            default = expression.args.get("default")
         elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
-            if always_true(expression.this):
-                return exp.paren(expression.args["true"], copy=False)
-            if always_false(expression.this):
-                return exp.paren(expression.args.get("false") or exp.null(), copy=False)
+            ifs = [expression]
+            default = expression.args.get("false")
+        else:
+            return expression
 
+        remaining = []
+        kept = default
+        for case in ifs:
+            if always_true(case.this):
+                kept = case.args["true"]
+                break
+            if not always_false(case.this):
+                remaining.append(case)
+
+        if len(remaining) == len(ifs) or kept is None:
+            return expression
+
+        if dtype.expressions or dtype.is_type(exp.DType.UNKNOWN, exp.DType.NULL):
+            return expression
+
+        # For a partial reduction, check the existing annotations on every surviving result.
+        for result in (kept, *(case.args["true"] for case in remaining)):
+            result_type = result.type
+            if result_type is None or not dtype.is_type(result_type, check_nullable=True):
+                return expression
+
+        if not remaining:
+            return exp.paren(kept, copy=False)
+
+        expression.set("ifs", remaining)
+        expression.set("default", kept)
         return expression
 
     @annotate_types_on_change

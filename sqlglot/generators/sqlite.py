@@ -164,7 +164,6 @@ class SQLiteGenerator(generator.Generator):
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
         exp.Pivot: no_pivot_sql,
-        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [
@@ -242,6 +241,14 @@ class SQLiteGenerator(generator.Generator):
             expression.set("alternative", "IGNORE")
 
         return super().insert_sql(expression)
+
+    def rand_sql(self, expression: exp.Rand) -> str:
+        random = self.func("RANDOM", expression.this)
+        if any(expression.args.values()):
+            return random
+
+        # Keep 53 bits so even the largest draw is exactly representable and strictly below 1 after division.
+        return f"(CAST({random} & 9007199254740991 AS REAL) / 9007199254740992)"
 
     def bitwiseandagg_sql(self, expression: exp.BitwiseAndAgg) -> str:
         self.unsupported("BITWISE_AND aggregation is not supported in SQLite")

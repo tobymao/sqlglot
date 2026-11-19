@@ -242,6 +242,25 @@ class TestSQLite(Validator):
             connection.close()
 
     def test_random(self):
+        unit = "(CAST(RANDOM() & 9007199254740991 AS REAL) / 9007199254740992)"
+        self.validate_all(
+            f"SELECT {unit} < 0.1",
+            read={
+                "bigquery": "SELECT RAND() < 0.1",
+                "mysql": "SELECT RAND() < 0.1",
+                "postgres": "SELECT RANDOM() < 0.1",
+            },
+        )
+        with closing(sqlite3.connect(":memory:")) as conn:
+            for raw, expected in ((0, 0.0), (-1, 1 - 2**-53), (2**63 - 1, 1 - 2**-53)):
+                conn.create_function("RANDOM", 0, lambda: raw)
+                value, reciprocal = conn.execute(
+                    parse_one("SELECT RAND(), 1.0 / RAND()", read="mysql").sql("sqlite")
+                ).fetchone()
+                self.assertIsInstance(value, float)
+                self.assertEqual(value, expected)
+                self.assertEqual(reciprocal, 1 / expected if expected else None)
+
         duckdb_random = "CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775807 AS INT128)) + 1)) + CAST(-9223372036854775807 AS INT128) AS BIGINT)"
         self.validate_all(
             "SELECT RANDOM()",

@@ -211,6 +211,18 @@ class TestPostgres(Validator):
                 create = self.validate_identity(sql).assert_is(exp.Create)
                 self.validate_identity(create.sql("postgres", pretty=True), sql)
 
+    def test_root_operator_precedence(self):
+        self.validate_all(
+            "SELECT |/ 16 + 9, ||/ 27 + 37, |/ 16 * 4",
+            write=dict.fromkeys(
+                ("postgres", "duckdb"), "SELECT SQRT(16 + 9), CBRT(27 + 37), SQRT(16 * 4)"
+            ),
+        )
+        self.validate_identity(
+            "SELECT 2 * |/ 16 + 9 < 11, (|/ 16) + 9, |/ 16 || 'x'",
+            "SELECT 2 * SQRT(16 + 9) < 11, (SQRT(16)) + 9, SQRT(16) || 'x'",
+        )
+
     def test_is_precedence(self):
         for predicate in (
             "NULL IN (0)",

@@ -1796,6 +1796,7 @@ class TestDialect(Validator):
 
         # BigQuery can't sort an aggregate's result, so the sort folds into the ARRAY_AGG
         distinct_nulls = "ARRAY_AGG(DISTINCT) only puts NULLs first when ascending"
+        kept_nulls = "ARRAY_CONCAT_AGG(IF(c, IF(x IS NULL, [x], []), NULL))"
         unfoldable = (
             "is only supported on an ARRAY_AGG without ORDER BY or LIMIT and with a literal order"
         )
@@ -1829,26 +1830,35 @@ class TestDialect(Validator):
                 "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
                 ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
             ),
-            # A FILTER becomes an IF that IGNORE NULLS drops, so NULLs need no placing
+            # Retained NULLs are placed in the source sort order, at most once for DISTINCT.
             (
                 "trino",
                 "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x) FILTER(WHERE c)))",
-                "ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+                "ARRAY_CONCAT(COALESCE(ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS "
+                f"ORDER BY IF(c, x, NULL)), []), ARRAY_SLICE({kept_nulls}, 0, 0))",
             ),
             (
                 "trino",
                 "ARRAY_SORT(ARRAY_AGG(x) FILTER(WHERE c))",
-                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+                "ARRAY_CONCAT(COALESCE(ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS "
+                f"ORDER BY IF(c, x, NULL)), []), {kept_nulls})",
             ),
             (
                 "duckdb",
                 "LIST_SORT(LIST(x) FILTER(WHERE c), 'DESC', 'NULLS FIRST')",
-                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL) DESC)",
+                f"ARRAY_CONCAT({kept_nulls}, COALESCE(ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS "
+                "ORDER BY IF(c, x, NULL) DESC), []))",
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(DISTINCT x) FILTER(WHERE c), 'ASC', 'NULLS FIRST')",
+                f"ARRAY_CONCAT(ARRAY_SLICE({kept_nulls}, 0, 0), COALESCE(ARRAY_AGG("
+                "DISTINCT IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL)), []))",
             ),
             (
                 "spark",
                 "SORT_ARRAY(COLLECT_LIST(x) FILTER(WHERE c))",
-                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+                "COALESCE(ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL)), [])",
             ),
             (
                 "spark",

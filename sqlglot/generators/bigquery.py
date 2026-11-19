@@ -223,7 +223,6 @@ def _array_agg_fold_sql(
 
     order = array_sort_order(sort) if sort else None
 
-    # A FILTER folds into the value as IF(condition, value, NULL), which IGNORE NULLS then drops
     condition = None
     if isinstance(agg, exp.Filter):
         condition, agg = agg.expression.this, agg.this
@@ -242,24 +241,35 @@ def _array_agg_fold_sql(
     value = agg.this
     if isinstance(value, exp.Distinct):
         distinct, value = True, value.expressions[0]
+    kept_nulls: exp.Expr | None = None
     if condition is not None:
+        if not ignore_nulls and not agg.args.get("nulls_excluded"):
+            # A kept NULL contributes [NULL], a kept value contributes [], and a rejected row
+            # contributes no array. ARRAY_CONCAT_AGG returns NULL when no rows qualify.
+            nulls = exp.If(
+                this=value.is_(exp.null()),
+                true=exp.Array(expressions=[value.copy()], value_constructor=True),
+                false=exp.array(),
+            )
+            kept_nulls = exp.ArrayConcatAgg(
+                this=exp.If(this=condition.copy(), true=nulls, false=exp.null())
+            )
+            if distinct:
+                kept_nulls = exp.func("ARRAY_SLICE", kept_nulls, 0, 0)
+
         # With DISTINCT, BigQuery only orders by the aggregated value, so the keys take the IF too
         value = exp.If(this=condition, true=value, false=exp.null())
-        # IGNORE NULLS drops the rows the condition rejects, and any NULLs with them
         agg.set("nulls_excluded", None)
 
     folded: exp.Expr = exp.Distinct(expressions=[value]) if distinct else value
+    nulls_first = False
     if order is not None:
-        asc, nulls_first = order
+        asc, placement = order
+        nulls_first = asc if placement is None else placement
         keys = [exp.Ordered(this=value.copy(), desc=not asc or None, nulls_first=asc)]
 
         # Aggregate ORDER BY only puts NULLs first when ascending, so other placements need a key
-        if (
-            not ignore_nulls
-            and condition is None
-            and nulls_first is not None
-            and nulls_first != asc
-        ):
+        if not ignore_nulls and condition is None and nulls_first != asc:
             if distinct:
                 self.unsupported("ARRAY_AGG(DISTINCT) only puts NULLs first when ascending")
             else:
@@ -272,16 +282,19 @@ def _array_agg_fold_sql(
                 )
         folded = exp.Order(this=folded, expressions=keys)
     agg.set("this", folded)
+    if ignore_nulls or condition is not None:
+        agg = exp.func("COALESCE", exp.IgnoreNulls(this=agg), exp.array())
     if ignore_nulls:
         # All-NULL input yields [], but an empty input still yields NULL.
         rows = exp.CountIf(this=condition.copy()) if condition else exp.Count(this=exp.Star())
         agg = exp.If(
             this=rows.eq(0),
             true=exp.null(),
-            false=exp.func("COALESCE", exp.IgnoreNulls(this=agg), exp.array()),
+            false=agg,
         )
-    elif condition is not None:
-        agg = exp.IgnoreNulls(this=agg)
+    elif kept_nulls is not None:
+        arrays = (kept_nulls, agg) if nulls_first else (agg, kept_nulls)
+        return self.func("ARRAY_CONCAT", *arrays)
     return self.sql(agg)
 
 

@@ -1602,6 +1602,34 @@ def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _similar_to_regex(pattern: str) -> str:
+    """Converts a SQL-standard SIMILAR TO pattern (default escape) into a regular expression."""
+    # Mirrors Postgres' similar_escape(): % and _ are wildcards, . ^ $ are literal characters,
+    # the other regex metacharacters keep their meaning and bracket expressions are copied as is
+    result = []
+    in_bracket = False
+    chars = iter(pattern)
+    for char in chars:
+        if char == "\\":
+            escaped = next(chars, "")
+            result.append(escaped if escaped.isalnum() or escaped in "%_" else "\\" + escaped)
+        elif in_bracket:
+            result.append(char)
+            in_bracket = char != "]"
+        elif char == "[":
+            result.append(char)
+            in_bracket = True
+        elif char == "%":
+            result.append(".*")
+        elif char == "_":
+            result.append(".")
+        elif char in ".^$":
+            result.append("\\" + char)
+        else:
+            result.append(char)
+    return "".join(result)
+
+
 class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
@@ -2872,6 +2900,16 @@ class DuckDBGenerator(generator.Generator):
             expression.set("position", position)
 
         return strposition_sql(self, expression)
+
+    def similarto_sql(self, expression: exp.SimilarTo) -> str:
+        # The standard SIMILAR TO uses SQL patterns, whereas DuckDB's is a plain regular expression
+        pattern = expression.expression
+        if isinstance(expression.parent, exp.Escape) or not pattern.is_string:
+            self.unsupported("SIMILAR TO is only supported with a literal pattern and no ESCAPE")
+            return super().similarto_sql(expression)
+
+        regex = exp.Literal.string(_similar_to_regex(pattern.name))
+        return self.func("REGEXP_FULL_MATCH", expression.this, regex)
 
     def substring_sql(self, expression: exp.Substring) -> str:
         if expression.args.get("zero_start"):

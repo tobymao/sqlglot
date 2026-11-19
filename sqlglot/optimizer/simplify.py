@@ -1500,6 +1500,8 @@ class Simplifier:
         """Simplifies expressions like IF, CASE if their condition is statically known."""
         dtype = expression.type
         if dtype is None:
+            # We return early here because reducing a conditional may change its type if we
+            # pick a branch whose type would be promoted in the original expression.
             return expression
 
         if isinstance(expression, exp.Case):

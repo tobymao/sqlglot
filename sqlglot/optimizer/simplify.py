@@ -435,6 +435,21 @@ def extract_date(cast: exp.Expr) -> date | None:
     return cast_value(value, to)
 
 
+def _comparable_dates(a: date | None, b: date | None) -> tuple[date | None, date | None]:
+    # A DATE compares with a TIMESTAMP as midnight of that day
+    if isinstance(a, datetime) != isinstance(b, datetime):
+        a = a and cast_as_datetime(a)
+        b = b and cast_as_datetime(b)
+    # Comparing a TIMESTAMPTZ with a TIMESTAMP depends on the session time zone
+    if (
+        isinstance(a, datetime)
+        and isinstance(b, datetime)
+        and (a.tzinfo is None) != (b.tzinfo is None)
+    ):
+        return None, None
+    return a, b
+
+
 def _is_date_literal(expression: exp.Expr) -> bool:
     return extract_date(expression) is not None
 
@@ -1384,8 +1399,8 @@ class Simplifier:
                 return date_literal(a + date, target_type)
         elif _is_date_literal(a) and _is_date_literal(b):
             if isinstance(expression, exp.Predicate):
-                a, b = extract_date(a), extract_date(b)
-                boolean = eval_boolean(expression, a, b)
+                a, b = _comparable_dates(extract_date(a), extract_date(b))
+                boolean = a is not None and b is not None and eval_boolean(expression, a, b)
                 if boolean:
                     return boolean
 

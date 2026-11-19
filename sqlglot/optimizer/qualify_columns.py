@@ -710,9 +710,15 @@ def _expand_positional_references(
 
 def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
     try:
-        return expression.selects[int(node.this) - 1].assert_is(exp.Alias)
+        select = expression.selects[int(node.this) - 1]
     except IndexError:
         raise OptimizeError(f"Unknown output column: {node.name}")
+
+    if not isinstance(select, exp.Alias):
+        # e.g. an unexpanded star, whose columns aren't known
+        raise OptimizeError(f"Cannot resolve positional reference {node.name} to {select.sql()}")
+
+    return select
 
 
 def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:

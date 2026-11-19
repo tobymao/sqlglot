@@ -2201,7 +2201,7 @@ class DistanceNd(Expression, Binary):
 
 
 class Escape(Expression, Binary):
-    pass
+    arg_types = {"this": True, "expression": True, "is_implicit": False}
 
 
 class Glob(Expression, Binary, Predicate):

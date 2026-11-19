@@ -1202,16 +1202,25 @@ class Generator:
                 return self.sql(value)
             return ""
 
-        handler = self._dispatch.get(expression.__class__)
-
-        if handler:
-            sql = handler(self, expression)
-        elif isinstance(expression, exp.Func):
-            sql = self.function_fallback_sql(expression)
-        elif isinstance(expression, exp.Property):
-            sql = self.property_sql(expression)
+        if (
+            isinstance(expression, exp.Escape)
+            and expression.args.get("is_implicit")
+            and self.dialect.LIKE_DEFAULT_ESCAPE is not None
+            and expression.expression.is_string
+            and expression.expression.this == self.dialect.LIKE_DEFAULT_ESCAPE
+        ):
+            sql = self.sql(expression.this)
         else:
-            raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
+            handler = self._dispatch.get(expression.__class__)
+
+            if handler:
+                sql = handler(self, expression)
+            elif isinstance(expression, exp.Func):
+                sql = self.function_fallback_sql(expression)
+            elif isinstance(expression, exp.Property):
+                sql = self.property_sql(expression)
+            else:
+                raise ValueError(f"Unsupported expression type {expression.__class__.__name__}")
 
         return self.maybe_comment(sql, expression) if self.comments and comment else sql
 
@@ -4902,7 +4911,11 @@ class Generator:
                     this=this, expression=expr, negate=expression.args.get("negate")
                 )
                 if escape:
-                    like = exp.Escape(this=like, expression=escape.expression.copy())
+                    like = exp.Escape(
+                        this=like,
+                        expression=escape.expression.copy(),
+                        is_implicit=escape.args.get("is_implicit"),
+                    )
                 return like
 
             like_expr: exp.Expr = _make_like(exprs[0])

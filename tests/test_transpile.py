@@ -21,6 +21,90 @@ class TestTranspile(unittest.TestCase):
     def validate(self, sql, target, **kwargs):
         self.assertEqual(transpile(sql, **kwargs)[0], target)
 
+    def test_like_default_escape(self):
+        cases = (
+            ("postgres", "postgres", r"SELECT x LIKE 'a\_%'", r"SELECT x LIKE 'a\_%'"),
+            ("duckdb", "duckdb", r"SELECT x LIKE 'a\_%'", r"SELECT x LIKE 'a\_%'"),
+            ("sqlite", "sqlite", r"SELECT x LIKE 'a\_%'", r"SELECT x LIKE 'a\_%'"),
+            (
+                "postgres",
+                "sqlite",
+                r"SELECT x LIKE 'a\_%'",
+                r"SELECT x LIKE 'a\_%' ESCAPE '\'",
+            ),
+            (
+                "duckdb",
+                "postgres",
+                r"SELECT x LIKE 'a\_%'",
+                r"SELECT x LIKE 'a\_%' ESCAPE ''",
+            ),
+            (
+                "sqlite",
+                "postgres",
+                r"SELECT x LIKE 'a\_%'",
+                r"SELECT x LIKE 'a\_%' ESCAPE ''",
+            ),
+            ("duckdb", "sqlite", r"SELECT x LIKE 'a\_%'", r"SELECT x LIKE 'a\_%'"),
+            ("sqlite", "duckdb", r"SELECT x LIKE 'a\_%'", r"SELECT x LIKE 'a\_%'"),
+            (
+                "postgres",
+                "sqlite",
+                "SELECT x LIKE pattern",
+                r"SELECT x LIKE pattern ESCAPE '\'",
+            ),
+            (
+                "duckdb",
+                "postgres",
+                "SELECT x LIKE pattern",
+                "SELECT x LIKE pattern ESCAPE ''",
+            ),
+            (
+                "postgres",
+                "sqlite",
+                "SELECT x NOT LIKE pattern",
+                r"SELECT x NOT LIKE pattern ESCAPE '\'",
+            ),
+            (
+                "duckdb",
+                "postgres",
+                "SELECT x NOT LIKE pattern",
+                "SELECT x NOT LIKE pattern ESCAPE ''",
+            ),
+        )
+
+        for read, write, sql, expected in cases:
+            with self.subTest(read=read, write=write, sql=sql):
+                self.assertEqual(transpile(sql, read=read, write=write)[0], expected)
+
+        self.assertEqual(
+            transpile(r"SELECT x ILIKE 'a\_%'", read="postgres", write="duckdb")[0],
+            r"SELECT x ILIKE 'a\_%' ESCAPE '\'",
+        )
+        self.assertEqual(
+            transpile("SELECT x LIKE 'a_%' ESCAPE '!'", read="postgres", write="duckdb")[0],
+            "SELECT x LIKE 'a_%' ESCAPE '!'",
+        )
+        self.assertEqual(
+            transpile(r"SELECT x ILIKE 'a\_%'", read="postgres", write="bigquery")[0],
+            r"SELECT LOWER(x) LIKE LOWER('a\\_%')",
+        )
+
+        for read in ("duckdb", "sqlite"):
+            with self.subTest(read=read, write="bigquery", pattern="literal"):
+                self.assertEqual(
+                    transpile(r"SELECT x LIKE 'a\_%'", read=read, write="bigquery")[0],
+                    r"SELECT x LIKE REPLACE('a\\_%', '\\', '\\\\')",
+                )
+            with self.subTest(read=read, write="bigquery", pattern="dynamic"):
+                self.assertEqual(
+                    transpile("SELECT x LIKE pattern", read=read, write="bigquery")[0],
+                    r"SELECT x LIKE REPLACE(pattern, '\\', '\\\\')",
+                )
+        self.assertEqual(
+            transpile(r"SELECT x LIKE 'a\_%'", read="postgres", write="duckdb")[0],
+            r"SELECT x LIKE 'a\_%' ESCAPE '\'",
+        )
+
     def test_weird_chars(self):
         self.assertEqual(transpile("0Êß")[0], "0 AS Êß")
         self.assertEqual(

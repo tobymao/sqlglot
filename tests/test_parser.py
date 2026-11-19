@@ -10,6 +10,45 @@ from tests.helpers import assert_logger_contains
 
 
 class TestParser(unittest.TestCase):
+    def test_like_default_escape(self):
+        for dialect, default_escape in (
+            ("postgres", "\\"),
+            ("duckdb", ""),
+            ("sqlite", ""),
+        ):
+            for operator, expression_type in (("LIKE", exp.Like), ("ILIKE", exp.ILike)):
+                with self.subTest(dialect=dialect, operator=operator):
+                    expression = parse_one(f"SELECT x {operator} pattern", dialect=dialect)
+                    escape = expression.find(exp.Escape)
+                    self.assertIsNotNone(escape)
+                    self.assertIsInstance(escape.this, expression_type)
+                    self.assertEqual(escape.expression, exp.Literal.string(default_escape))
+                    self.assertTrue(escape.args["is_implicit"])
+
+            not_like = parse_one("SELECT x NOT LIKE pattern", dialect=dialect).find(exp.Escape)
+            self.assertTrue(not_like.this.args["negate"])
+            self.assertTrue(not_like.args["is_implicit"])
+
+            self.assertIsNone(
+                parse_one("SELECT x LIKE 'literal'", dialect=dialect).find(exp.Escape)
+            )
+
+            self.assertIsNone(parse_one("SELECT x LIKE ''", dialect=dialect).find(exp.Escape))
+
+            escaped_literal = parse_one(r"SELECT x LIKE 'a\_%'", dialect=dialect).find(exp.Escape)
+            self.assertTrue(escaped_literal.args["is_implicit"])
+
+            explicit = parse_one(
+                "SELECT x LIKE pattern ESCAPE '!'",
+                dialect=dialect,
+            ).find(exp.Escape)
+            self.assertFalse(explicit.args.get("is_implicit", False))
+            self.assertEqual(explicit.expression, exp.Literal.string("!"))
+
+        escaped_string = parse_one(r"SELECT x LIKE E'a\\\\_%'", dialect="postgres").find(exp.Escape)
+        self.assertIsInstance(escaped_string.this.expression, exp.ByteString)
+        self.assertTrue(escaped_string.args["is_implicit"])
+
     def test_conditionless_join(self):
         self.assertEqual(parse_one("JOIN b", into=exp.Join).sql(), "CROSS JOIN b")
         self.assertEqual(

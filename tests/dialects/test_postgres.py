@@ -654,12 +654,12 @@ class TestPostgres(Validator):
         self.validate_identity("SELECT NOT ('testa 1' LIKE ALL (ARRAY['testa%', 'testb%']))")
         infix_not_like = self.parse_one("SELECT a NOT LIKE ALL (b)").expressions[0]
         prefix_not_like = self.parse_one("SELECT NOT a LIKE ALL (b)").expressions[0]
-        self.assertIsInstance(infix_not_like, exp.Like)
-        self.assertTrue(infix_not_like.args.get("negate"))
+        self.assertIsInstance(infix_not_like, exp.Escape)
+        self.assertTrue(infix_not_like.this.args.get("negate"))
         self.assertIsInstance(prefix_not_like, exp.Not)
-        self.assertIsInstance(prefix_not_like.this, exp.Like)
-        self.assertFalse(prefix_not_like.this.args.get("negate"))
-        self.assertNotEqual(infix_not_like, prefix_not_like)
+        self.assertIsInstance(prefix_not_like.this, exp.Escape)
+        self.assertFalse(prefix_not_like.this.this.args.get("negate"))
+        self.assertNotEqual(infix_not_like.this, prefix_not_like.this.this)
         self.validate_identity(
             "'45 days'::interval day",
             "CAST('45 days' AS INTERVAL DAY)",

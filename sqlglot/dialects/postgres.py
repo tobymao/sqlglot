@@ -9,6 +9,7 @@ from sqlglot.typing.postgres import EXPRESSION_METADATA
 
 
 class Postgres(Dialect):
+    LIKE_DEFAULT_ESCAPE = "\\"
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
     ASCII_ONLY_NORMALIZATION = True

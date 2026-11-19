@@ -4924,7 +4924,6 @@ FROM subquery2""",
                     f"SELECT col LIKE {quantifier} (x, y, z)",
                     read={
                         "": f"SELECT col LIKE {quantifier} (x, y, z)",
-                        "bigquery": f"SELECT col LIKE {quantifier} (x, y, z)",
                         "snowflake": f"SELECT col LIKE {quantifier} (x, y, z)",
                         "spark": f"SELECT col LIKE {quantifier} (x, y, z)",
                         "databricks": f"SELECT col LIKE {quantifier} (x, y, z)",
@@ -4936,6 +4935,16 @@ FROM subquery2""",
                         "databricks": f"SELECT col LIKE {quantifier} (x, y, z)",
                         "duckdb": f"SELECT (col LIKE x {connector} col LIKE y) {connector} col LIKE z",
                     },
+                )
+                bigquery_sql = f"SELECT col LIKE {quantifier} (x, y, z)"
+                bigquery_expression = parse_one(bigquery_sql, read="bigquery")
+                self.assertEqual(bigquery_expression.sql("bigquery"), bigquery_sql)
+                self.assertEqual(bigquery_expression.sql(), f"{bigquery_sql} ESCAPE '\\'")
+                connector = "OR" if quantifier == "ANY" else "AND"
+                self.assertEqual(
+                    bigquery_expression.sql("duckdb"),
+                    f"SELECT (col LIKE x ESCAPE '\\' {connector} col LIKE y ESCAPE '\\') "
+                    f"{connector} col LIKE z ESCAPE '\\'",
                 )
 
             with self.subTest(f"Testing ILIKE {quantifier}"):

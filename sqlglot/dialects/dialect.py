@@ -721,6 +721,11 @@ class Dialect(metaclass=_Dialect):
     pattern are matched literally (DuckDB).
     """
 
+    LIKE_DEFAULT_ESCAPE: str | None = None
+    """
+    The default LIKE/ILIKE escape character, or an empty string if there is no escape character.
+    """
+
     EXCLUDES_PSEUDOCOLUMNS_FROM_STAR = False
     """
     Whether pseudocolumns should be excluded from star expansion (SELECT *).

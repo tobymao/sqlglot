@@ -89,7 +89,22 @@ def binary_range_parser(
         expression = self._parse_bitwise()
         if reverse_args:
             this, expression = expression, this
-        return self._parse_escape(self.expression(expr_type(this=this, expression=expression)))
+        expression = self._parse_escape(
+            self.expression(expr_type(this=this, expression=expression))
+        )
+        if isinstance(expression, (exp.Like, exp.ILike)) and not (
+            expression.expression.is_string and "\\" not in expression.expression.this
+        ):
+            default_escape = self.dialect.LIKE_DEFAULT_ESCAPE
+            if default_escape is not None:
+                expression = self.expression(
+                    exp.Escape(
+                        this=expression,
+                        expression=exp.Literal.string(default_escape),
+                        is_implicit=True,
+                    )
+                )
+        return expression
 
     return _parse_binary_range
 

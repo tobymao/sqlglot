@@ -20,6 +20,7 @@ if t.TYPE_CHECKING:
 
 
 class BigQuery(Dialect):
+    LIKE_DEFAULT_ESCAPE = "\\"
     WEEK_OFFSET = -1
     UNNEST_COLUMN_ONLY = True
     SUPPORTS_USER_DEFINED_TYPES = False

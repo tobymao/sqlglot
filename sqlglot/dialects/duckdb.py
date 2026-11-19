@@ -16,6 +16,7 @@ from sqlglot.typing.duckdb import EXPRESSION_METADATA
 
 
 class DuckDB(Dialect):
+    LIKE_DEFAULT_ESCAPE = ""
     NULL_ORDERING = "nulls_are_last"
     SUPPORTS_USER_DEFINED_TYPES = True
     INDEX_OFFSET = 1

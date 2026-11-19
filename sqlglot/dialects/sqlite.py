@@ -14,6 +14,7 @@ from sqlglot.typing.sqlite import EXPRESSION_METADATA
 
 
 class SQLite(Dialect):
+    LIKE_DEFAULT_ESCAPE = ""
     # https://sqlite.org/forum/forumpost/5e575586ac5c711b?raw
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
     ASCII_ONLY_NORMALIZATION = True

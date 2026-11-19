@@ -862,6 +862,25 @@ class BigQueryGenerator(generator.Generator):
         # pattern is rewritten to backslash escapes. UPPER/LOWER around it can't change a
         # caseless escape character, e.g. ^, so those patterns are rewritten too.
         like, char = expression.this.copy(), expression.expression.name
+        if expression.args.get("is_implicit") and expression.expression.is_string and not char:
+            if isinstance(like, exp.ILike):
+                like = exp.Like(
+                    this=exp.Lower(this=like.this),
+                    expression=exp.Lower(this=like.expression),
+                    negate=like.args.get("negate"),
+                )
+
+            like.set(
+                "expression",
+                exp.func(
+                    "REPLACE",
+                    like.expression,
+                    exp.Literal.string("\\"),
+                    exp.Literal.string("\\\\"),
+                ),
+            )
+            return self.sql(like)
+
         pattern = like.expression
         if isinstance(pattern, (exp.Upper, exp.Lower)) and char.upper() == char.lower():
             pattern = pattern.this

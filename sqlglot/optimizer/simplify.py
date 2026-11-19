@@ -1385,6 +1385,9 @@ class Simplifier:
         elif _is_date_literal(a) and _is_date_literal(b):
             if isinstance(expression, exp.Predicate):
                 a, b = extract_date(a), extract_date(b)
+                # Engines promote a DATE to midnight when comparing it with a timestamp
+                if isinstance(a, datetime) != isinstance(b, datetime):
+                    a, b = cast_as_datetime(a), cast_as_datetime(b)
                 boolean = eval_boolean(expression, a, b)
                 if boolean:
                     return boolean

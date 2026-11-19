@@ -868,6 +868,19 @@ CAST('1998-09-02 00:00:00' AS DATETIME);
 CAST(x AS DATETIME) + interval '1' WEEK;
 CAST(x AS DATETIME) + INTERVAL '1' WEEK;
 
+# title: DATE literals are promoted to midnight when compared with timestamps
+timestamp '2024-02-01 00:00:00' = date '2024-02-01';
+TRUE;
+
+timestamp '2024-01-01 10:00:00' > date '2024-01-01';
+TRUE;
+
+date '2024-01-01' < timestamp '2024-01-01 00:00:00';
+FALSE;
+
+date '2024-01-31' + interval '1' day = date '2024-02-01';
+TRUE;
+
 # dialect: bigquery
 CAST('2023-01-01' AS TIMESTAMP) + INTERVAL 1 DAY;
 CAST('2023-01-02 00:00:00' AS TIMESTAMP);

@@ -272,6 +272,17 @@ def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
     return self.func("ROUND", this, decimals)
 
 
+def _left_right_sql(self: PostgresGenerator, expression: exp.Left | exp.Right) -> str:
+    length = expression.expression
+
+    # Postgres drops characters from the other end for a negative length,
+    # so clamp it to 0 to return an empty string instead
+    if expression.args.get("negative_length_returns_empty"):
+        length = exp.If(this=length < 0, true=exp.Literal.number(0), false=length)
+
+    return self.func(expression.sql_name(), expression.this, length)
+
+
 class PostgresGenerator(generator.Generator):
     SELECT_KINDS = ()
     VARIANCE_NAME = "VAR_SAMP"
@@ -399,6 +410,7 @@ class PostgresGenerator(generator.Generator):
         exp.JSONPathRoot: lambda *_: "",
         exp.JSONPathSubscript: lambda self, e: self.json_path_part(e.this),
         exp.LastDay: no_last_day_sql,
+        exp.Left: _left_right_sql,
         exp.LogicalOr: rename_func("BOOL_OR"),
         exp.LogicalAnd: rename_func("BOOL_AND"),
         exp.Max: max_or_greatest,
@@ -421,6 +433,7 @@ class PostgresGenerator(generator.Generator):
             e.args.get("occurrence"),
             regexp_replace_global_modifier(e),
         ),
+        exp.Right: _left_right_sql,
         exp.Round: _round_sql,
         exp.Select: transforms.preprocess(
             [

@@ -1181,6 +1181,7 @@ TBLPROPERTIES (
             "SELECT LEFT(x, n), RIGHT(x, -1)",
             write={
                 "duckdb": "SELECT LEFT(x, CASE WHEN n < 0 THEN 0 ELSE n END), RIGHT(x, CASE WHEN -1 < 0 THEN 0 ELSE -1 END)",
+                "postgres": "SELECT LEFT(x, CASE WHEN n < 0 THEN 0 ELSE n END), RIGHT(x, CASE WHEN -1 < 0 THEN 0 ELSE -1 END)",
                 "spark": "SELECT LEFT(x, n), RIGHT(x, -1)",
             },
         )

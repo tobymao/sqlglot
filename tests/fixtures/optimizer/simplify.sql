@@ -1904,25 +1904,25 @@ CASE WHEN y = 5 THEN x = z END AND x = 1;
 -- Simplify Conditionals
 --------------------------------------
 IF(TRUE, x, y);
-x;
+CASE WHEN TRUE THEN x ELSE y END;
 
 IF(FALSE, x, y);
-y;
+CASE WHEN FALSE THEN x ELSE y END;
 
 IF(FALSE, x);
-NULL;
+CASE WHEN FALSE THEN x END;
 
 IF(NULL, x, y);
-y;
+CASE WHEN NULL THEN x ELSE y END;
 
 IF(cond, x, y);
 CASE WHEN cond THEN x ELSE y END;
 
 CASE WHEN TRUE THEN x ELSE y END;
-x;
+CASE WHEN TRUE THEN x ELSE y END;
 
 CASE WHEN FALSE THEN x ELSE y END;
-y;
+CASE WHEN FALSE THEN x ELSE y END;
 
 CASE WHEN TRUE THEN (SELECT 1) ELSE (SELECT 2) END;
 (SELECT 1);
@@ -1937,52 +1937,52 @@ IF(FALSE, (SELECT 1), (SELECT 2));
 (SELECT 2);
 
 CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN TRUE THEN z END;
-z;
+CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN TRUE THEN z END;
 
 CASE WHEN cond THEN x WHEN TRUE THEN y END;
-CASE WHEN cond THEN x ELSE y END;
+CASE WHEN cond THEN x WHEN TRUE THEN y END;
 
 CASE WHEN cond THEN x WHEN TRUE THEN y WHEN other_cond THEN z ELSE w END;
-CASE WHEN cond THEN x ELSE y END;
+CASE WHEN cond THEN x WHEN TRUE THEN y WHEN other_cond THEN z ELSE w END;
 
 CASE WHEN FALSE THEN w WHEN cond THEN x WHEN NULL THEN y WHEN other_cond THEN z WHEN TRUE THEN v ELSE u END;
-CASE WHEN cond THEN x WHEN other_cond THEN z ELSE v END;
+CASE WHEN FALSE THEN w WHEN cond THEN x WHEN NULL THEN y WHEN other_cond THEN z WHEN TRUE THEN v ELSE u END;
 
 CASE WHEN cond THEN x WHEN 1 + 1 = 2 THEN y ELSE z END;
-CASE WHEN cond THEN x ELSE y END;
+CASE WHEN cond THEN x WHEN TRUE THEN y ELSE z END;
 
 CASE 1 WHEN x THEN y WHEN 1 THEN z ELSE w END;
-CASE WHEN x = 1 THEN y ELSE z END;
+CASE WHEN x = 1 THEN y WHEN TRUE THEN z ELSE w END;
 
 # execute: true
-SELECT CASE WHEN a > 1 THEN b WHEN TRUE THEN 2 END AS result FROM comparisons;
-SELECT CASE WHEN a > 1 THEN b ELSE 2 END AS result FROM comparisons;
+SELECT CASE WHEN a > 1 THEN comparisons.b WHEN TRUE THEN 2 END AS result FROM comparisons;
+SELECT CASE WHEN a > 1 THEN comparisons.b ELSE 2 END AS result FROM comparisons;
 
 # execute: true
-SELECT CASE WHEN c THEN a WHEN b = 1 THEN b WHEN TRUE THEN 2 WHEN a = 2 THEN 3 ELSE 4 END AS result FROM comparisons;
-SELECT CASE WHEN c THEN a WHEN b = 1 THEN b ELSE 2 END AS result FROM comparisons;
+SELECT CASE WHEN c THEN comparisons.a WHEN b = 1 THEN comparisons.b WHEN TRUE THEN 2 WHEN a = 2 THEN 3 ELSE 4 END AS result FROM comparisons;
+SELECT CASE WHEN c THEN comparisons.a WHEN b = 1 THEN comparisons.b ELSE 2 END AS result FROM comparisons;
 
 # execute: true
-SELECT CASE 1 WHEN a THEN b WHEN 1 THEN 2 ELSE 3 END AS result FROM comparisons;
-SELECT CASE WHEN a = 1 THEN b ELSE 2 END AS result FROM comparisons;
+SELECT CASE 1 WHEN a THEN comparisons.b WHEN 1 THEN 2 ELSE 3 END AS result FROM comparisons;
+SELECT CASE WHEN a = 1 THEN comparisons.b ELSE 2 END AS result FROM comparisons;
 
 CASE NULL WHEN NULL THEN x ELSE y END;
-y;
+CASE WHEN NULL THEN x ELSE y END;
 
 CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z ELSE w END;
-w;
+CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN FALSE THEN z ELSE w END;
 
 CASE 4 WHEN 1 THEN x WHEN 2 THEN y WHEN 3 THEN z WHEN 4 THEN w END;
-w;
+CASE WHEN FALSE THEN x WHEN FALSE THEN y WHEN FALSE THEN z WHEN TRUE THEN w END;
 
 CASE WHEN value = 1 THEN x ELSE y END;
 CASE WHEN value = 1 THEN x ELSE y END;
 
 CASE WHEN FALSE THEN x END;
-NULL;
+CASE WHEN FALSE THEN x END;
 
 CASE 1 WHEN 1 + 1 THEN x END;
-NULL;
+CASE WHEN FALSE THEN x END;
 
 CASE WHEN cond THEN x ELSE y END;
 CASE WHEN cond THEN x ELSE y END;
@@ -2001,31 +2001,31 @@ CASE WHEN x3 = (x1 + x2) THEN x4 WHEN (x1 + x2) = (x5 + x6) THEN x7 ELSE x8 END;
 
 -- collapsing a CASE under an operator must preserve the grouping of the branch
 x * CASE WHEN FALSE THEN NULL ELSE a - b END;
-x * (a - b);
+x * CASE WHEN FALSE THEN NULL ELSE a - b END;
 
 x * (CASE WHEN 1 IS NULL THEN NULL ELSE 1 - b END);
-x * (1 - b);
+x * CASE WHEN FALSE THEN NULL ELSE 1 - b END;
 
 x - CASE WHEN TRUE THEN a + b ELSE c END;
-x - (a + b);
+x - CASE WHEN TRUE THEN a + b ELSE c END;
 
 CASE WHEN FALSE THEN NULL ELSE a - b END * x;
-(a - b) * x;
+CASE WHEN FALSE THEN NULL ELSE a - b END * x;
 
 x / CASE WHEN FALSE THEN 1 ELSE a * b END;
-x / (a * b);
+x / CASE WHEN FALSE THEN 1 ELSE a * b END;
 
 x + CASE WHEN TRUE THEN a * b ELSE c END;
-x + a * b;
+x + CASE WHEN TRUE THEN a * b ELSE c END;
 
 x * IF(TRUE, a - b, c);
-x * (a - b);
+x * CASE WHEN TRUE THEN a - b ELSE c END;
 
 x * IF(FALSE, c, a - b);
-x * (a - b);
+x * CASE WHEN FALSE THEN c ELSE a - b END;
 
 x * CASE WHEN TRUE THEN IF(FALSE, c, a - b) ELSE c END;
-x * (a - b);
+x * CASE WHEN TRUE THEN CASE WHEN FALSE THEN c ELSE a - b END ELSE c END;
 
 CASE WHEN TRUE THEN NOT p ELSE FALSE END || 'x';
 (NOT p) || 'x';
@@ -2034,10 +2034,10 @@ IF(FALSE, FALSE, NOT p) || 'x';
 (NOT p) || 'x';
 
 NOT CASE WHEN TRUE THEN a AND b ELSE c END;
-NOT a OR NOT b;
+NOT CASE WHEN TRUE THEN a AND b ELSE c END;
 
 -CASE WHEN TRUE THEN a + b ELSE c END;
--(a + b);
+-CASE WHEN TRUE THEN a + b ELSE c END;
 
 --------------------------------------
 -- Simplify STARTSWITH

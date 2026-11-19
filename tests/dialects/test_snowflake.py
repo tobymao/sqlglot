@@ -1696,7 +1696,7 @@ class TestSnowflake(Validator):
                 "bigquery": "GENERATE_ARRAY(0, 3 - 1)",
                 "duckdb": "RANGE(0, 3)",
                 "postgres": "GENERATE_SERIES(0, 3 - 1)",
-                "presto": "SEQUENCE(0, 2)",
+                "presto": "IF(FALSE, ARRAY[], SEQUENCE(0, 2))",
                 "snowflake": "ARRAY_GENERATE_RANGE(0, 3)",
             },
         )

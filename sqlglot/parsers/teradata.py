@@ -33,7 +33,7 @@ class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
-    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
+    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.ALL}) | {
         TokenType.ANTI,
         TokenType.SEMI,
     }
@@ -261,6 +261,12 @@ class TeradataParser(parser.Parser):
                 with_error=self._match_text_seq("WITH", "ERROR"),
             )
         )
+
+    def _parse_delete(self) -> exp.Delete:
+        expression = super()._parse_delete()
+        if not expression.args.get("where"):
+            self._match(TokenType.ALL)
+        return expression
 
     # FROM before SET in Teradata UPDATE syntax
     # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause

@@ -552,30 +552,24 @@ class PrestoGenerator(generator.Generator):
         return self.sql(to_unix)
 
     def addmonths_sql(self, expression: exp.AddMonths) -> str:
-        from sqlglot.optimizer.annotate_types import annotate_types
-
         this = expression.this
-        if not this.type:
-            this = annotate_types(this, dialect=self.dialect)
-
-        if expression.args.get("returns_date"):
-            this = (
-                exp.cast(this, exp.DType.DATE, dialect=self.dialect)
-                if this.is_type(*exp.DataType.TEMPORAL_TYPES)
-                else exp.TsOrDsToDate(this=this)
-            )
-        elif this.is_type(*exp.DataType.TEXT_TYPES):
-            this = exp.cast(this, exp.DType.TIMESTAMP)
+        if this.is_string or this.is_type(*exp.DataType.TEXT_TYPES):
+            this = exp.TimeStrToTime(this=this)
+        if expression.is_type(exp.DType.DATE) and not this.is_type(exp.DType.DATE):
+            this = exp.cast(this, exp.DType.DATE)
 
         added = exp.DateAdd(this=this, expression=expression.expression, unit=exp.var("MONTH"))
 
         if not expression.args.get("preserve_end_of_month"):
             return self.sql(added)
 
-        # The last day of a month maps to the last day of the target month. The day numbers are
-        # compared instead of the values themselves, so that the time part of timestamps is kept
-        eom_shift = exp.Day(this=exp.LastDay(this=added.copy())) - exp.Day(this=added.copy())
-        to_eom = exp.DateAdd(this=added.copy(), expression=eom_shift, unit=exp.var("DAY"))
+        # Shift the original value by whole days to preserve its time of day.
+        eom_shift = exp.DateDiff(
+            this=exp.LastDay(this=added.copy()),
+            expression=exp.cast(this, exp.DType.DATE),
+            unit=exp.var("DAY"),
+        )
+        to_eom = exp.DateAdd(this=this.copy(), expression=eom_shift, unit=exp.var("DAY"))
         is_eom = exp.Day(this=this.copy()).eq(exp.Day(this=exp.LastDay(this=this.copy())))
 
         return self.sql(exp.case().when(is_eom, to_eom).else_(added))

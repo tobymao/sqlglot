@@ -74,12 +74,7 @@ class UtcTimestamp(Expression, Func):
 
 
 class AddMonths(Expression, Func):
-    arg_types = {
-        "this": True,
-        "expression": True,
-        "preserve_end_of_month": False,
-        "returns_date": False,
-    }
+    arg_types = {"this": True, "expression": True, "preserve_end_of_month": False}
 
 
 class DateAdd(Expression, Func, IntervalOp):

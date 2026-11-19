@@ -70,9 +70,6 @@ class SparkParser(Spark2Parser):
 
     FUNCTIONS = {
         **Spark2Parser.FUNCTIONS,
-        "ADD_MONTHS": lambda args: exp.AddMonths(
-            this=seq_get(args, 0), expression=seq_get(args, 1), returns_date=True
-        ),
         "ANY_VALUE": build_with_ignore_nulls(exp.AnyValue),
         "ARRAY_INSERT": lambda args: exp.ArrayInsert(
             this=seq_get(args, 0),

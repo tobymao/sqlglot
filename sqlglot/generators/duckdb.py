@@ -45,6 +45,8 @@ from sqlglot.helper import find_new_name, is_date_unit, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
 
+_SIMILAR_TO_REGEX_CHARS = frozenset(r"\|*+?{}()[]")
+
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
@@ -2872,6 +2874,18 @@ class DuckDBGenerator(generator.Generator):
             expression.set("position", position)
 
         return strposition_sql(self, expression)
+
+    def similarto_sql(self, expression: exp.SimilarTo) -> str:
+        pattern = expression.expression.unnest()
+        if (
+            pattern.is_string
+            and not isinstance(expression.parent, exp.Escape)
+            and _SIMILAR_TO_REGEX_CHARS.isdisjoint(pattern.name)
+        ):
+            return self.sql(expression.this.like(pattern))
+
+        self.unsupported("Cannot translate this SIMILAR TO pattern to DuckDB LIKE")
+        return super().similarto_sql(expression)
 
     def substring_sql(self, expression: exp.Substring) -> str:
         if expression.args.get("zero_start"):

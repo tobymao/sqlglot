@@ -1400,6 +1400,7 @@ class TestDuckDB(Validator):
             },
         )
         self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
+
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
@@ -2356,6 +2357,51 @@ class TestDuckDB(Validator):
                 "snowflake": "UNICODE(foo)",
             },
         )
+
+    def test_similar_to(self):
+        self.validate_identity("x SIMILAR TO 'a_c%'", "REGEXP_FULL_MATCH(x, 'a_c%')")
+        self.validate_identity("x NOT SIMILAR TO 'a.c'", "NOT REGEXP_FULL_MATCH(x, 'a.c')")
+        self.validate_all(
+            "x LIKE 'a_c%'",
+            read={"postgres": "x SIMILAR TO 'a_c%'", "redshift": "x SIMILAR TO 'a_c%'"},
+        )
+        self.validate_all("x LIKE 'a.c^$'", read={"postgres": "x SIMILAR TO ('a.c^$')"})
+        self.validate_all("NOT x LIKE '%b%'", read={"postgres": "x NOT SIMILAR TO '%b%'"})
+
+        for sql in (
+            "x SIMILAR TO '(a|b)%'",
+            r"x SIMILAR TO '\d'",
+            "x SIMILAR TO '[[:digit:]%]'",
+            "x SIMILAR TO 'a!_c' ESCAPE '!'",
+            "x SIMILAR TO y",
+        ):
+            with self.subTest(sql), self.assertRaises(UnsupportedError):
+                parse_one(sql, read="postgres").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
+
+    def test_regexp_full_match_to_postgres(self):
+        sql = "SELECT 'abc' SIMILAR TO 'abc', 'xabc' SIMILAR TO 'abc'"
+        self.assertEqual(
+            self.parse_one(sql).sql("postgres", unsupported_level=ErrorLevel.RAISE),
+            "SELECT ('abc' SIMILAR TO 'abc'), ('xabc' SIMILAR TO 'abc')",
+        )
+        self.validate_all(
+            "SELECT 'xabc' NOT SIMILAR TO 'abc'",
+            write={"postgres": "SELECT NOT ('xabc' SIMILAR TO 'abc')"},
+        )
+        self.validate_all(
+            "SELECT REGEXP_FULL_MATCH('abc', 'abc') || '!', '!' || REGEXP_FULL_MATCH('abc', 'abc')",
+            write={
+                "postgres": "SELECT ('abc' SIMILAR TO 'abc') || '!', '!' || ('abc' SIMILAR TO 'abc')"
+            },
+        )
+        for sql in (
+            "SELECT 'abc' SIMILAR TO 'a.c'",
+            "SELECT 'a_c%' SIMILAR TO 'a_c%'",
+            "SELECT 'abc' SIMILAR TO p FROM (VALUES ('abc')) AS t(p)",
+            "SELECT REGEXP_FULL_MATCH('ABC', 'abc', 'i')",
+        ):
+            with self.subTest(sql):
+                self.validate_all(sql, write={"postgres": UnsupportedError})
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

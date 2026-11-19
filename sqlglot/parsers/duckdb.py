@@ -156,6 +156,8 @@ class DuckDBParser(parser.Parser):
         **parser.Parser.RANGE_PARSERS,
         TokenType.DAMP: binary_range_parser(exp.ArrayOverlaps),
         TokenType.TILDE: lambda self, this: self._parse_tilde(this),
+        # https://duckdb.org/docs/stable/sql/functions/pattern_matching#similar-to
+        TokenType.SIMILAR_TO: _parse_regexp_full_match,
     }
 
     EXPONENT = {

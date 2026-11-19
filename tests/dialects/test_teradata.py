@@ -36,6 +36,8 @@ class TestTeradata(Validator):
             'ABS("INTEGER")',
             "ABS(INTEGER)",
             "CEIL(SMALLINT)",
+            "text_find(FLOAT)",
+            "sch.CURDATE(INTEGER)",
             'my_udf("INTEGER")',
             'sch.my_udf("BIGINT")',
             "my_udf(INT32)",
@@ -47,10 +49,15 @@ class TestTeradata(Validator):
         table = self.parse_one("SELECT * FROM my_udf(INTEGER)").find(exp.Table)
         self.assertIsInstance(table.this, exp.Anonymous)
         self.validate_identity("amount (INTEGER)::BIGINT", "CAST(CAST(amount AS INT) AS BIGINT)")
-        for value in ("DATE '2024-01-01'", "CURRENT_DATE"):
-            self.assertEqual(
-                self.parse_one(f"{value} (INTEGER)"), self.parse_one(f"CAST({value} AS INTEGER)")
-            )
+        for value in ("DATE '2024-01-01'", "CURRENT_DATE", "DATE", "INTERVAL '1' DAY"):
+            with self.subTest(value=value):
+                self.assertEqual(
+                    self.parse_one(f"{value} (INTEGER)"),
+                    self.parse_one(f"CAST({value} AS INTEGER)"),
+                )
+        self.assertEqual(
+            self.parse_one("CURDATE (INTEGER)"), self.parse_one("CAST(CURRENT_DATE AS INTEGER)")
+        )
         self.assertIsInstance(parse_one("amount(BIGINT)"), exp.Anonymous)
 
     def test_characters(self):

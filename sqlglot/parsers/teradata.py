@@ -133,15 +133,6 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        if (
-            optional_parens
-            and self._curr.token_type == TokenType.CURRENT_DATE
-            and self._prev.token_type != TokenType.DOT
-            and self._is_integer_cast(1)
-        ):
-            self._advance()
-            return self.expression(exp.CurrentDate())
-
         expression = super()._parse_function_call(functions, anonymous, optional_parens, any_token)
         conversion = expression.this if isinstance(expression, exp.Window) else expression
         if isinstance(conversion, (exp.StrToDate, exp.StrToTime, exp.TsOrDsToDate)):
@@ -153,6 +144,14 @@ class TeradataParser(parser.Parser):
                     "Hexadecimal character literals are not supported in conversion formats"
                 )
         return expression
+
+    def _parse_interval_span(
+        self, this: exp.Expr, parse_function_unit: bool = True
+    ) -> exp.Interval:
+        # In INTERVAL '1' DAY (INTEGER), the conversion applies to the interval.
+        return super()._parse_interval_span(
+            this, parse_function_unit=parse_function_unit and not self._is_integer_cast(1)
+        )
 
     def _parse_interval(
         self, require_interval: bool = True, parse_function_unit: bool = True
@@ -315,19 +314,23 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        if (
-            optional_parens
-            and self._is_integer_cast(1)
-            and (
-                self._curr.token_type == TokenType.IDENTIFIER
-                or (
-                    self._curr.text.upper()
-                    not in (self.FUNCTIONS if functions is None else functions)
-                    and self._curr.text.upper() not in self.FUNCTION_PARSERS
-                )
-            )
-        ):
-            return None
+        if optional_parens and self._is_integer_cast(1):
+            if self._curr.token_type == TokenType.IDENTIFIER:
+                return None
+
+            name = self._curr.text.upper()
+            if self._prev.token_type != TokenType.DOT:
+                if name in {"CURRENT_DATE", "CURDATE"}:
+                    self._advance()
+                    return self.expression(exp.CurrentDate())
+                if name == "DATE":
+                    return None
+
+            if (
+                name not in (self.FUNCTIONS if functions is None else functions)
+                and name not in self.FUNCTION_PARSERS
+            ):
+                return None
 
         # Column data attributes are not function arguments.
         if (

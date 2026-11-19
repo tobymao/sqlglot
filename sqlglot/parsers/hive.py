@@ -259,7 +259,9 @@ class HiveParser(parser.Parser):
         if this and not schema:
 
             def _to_text(node: exp.Expr) -> exp.Expr:
-                if isinstance(node, exp.DataType) and node.is_type("char", "varchar"):
+                if isinstance(node, exp.DataType) and node.is_type(
+                    exp.DType.CHAR, exp.DType.VARCHAR
+                ):
                     node.set("this", exp.DType.TEXT)
                     node.set("expressions", None)
                 return node

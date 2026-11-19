@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     generate_series_sql,
     groupconcat_sql,
-    no_ilike_sql,
     no_pivot_sql,
     no_tablesample_sql,
     no_trycast_sql,
@@ -129,6 +128,16 @@ class SQLiteGenerator(generator.Generator):
         exp.DType.VARBINARY: "BLOB",
     }
 
+    def ilike_sql(self, expression: exp.ILike) -> str:
+        # SQLite's LIKE is already case-insensitive for ASCII characters
+        return self.like_sql(
+            exp.Like(
+                this=expression.this,
+                expression=expression.expression,
+                negate=expression.args.get("negate"),
+            )
+        )
+
     def nullsafeeq_sql(self, expression: exp.NullSafeEQ) -> str:
         return self.binary(expression, "IS")
 
@@ -152,7 +161,6 @@ class SQLiteGenerator(generator.Generator):
         exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.If: rename_func("IIF"),
-        exp.ILike: no_ilike_sql,
         exp.JSONArrayAgg: unsupported_args("order", "null_handling", "return_type", "strict")(
             rename_func("JSON_GROUP_ARRAY")
         ),

@@ -944,6 +944,14 @@ class TestSQLite(Validator):
             "SELECT LIKE('%y%', 'xyz', '')", write={"sqlite": "SELECT 'xyz' LIKE '%y%' ESCAPE ''"}
         )
         self.validate_all(
+            "SELECT x LIKE 'a%', LIKE('a%', x), x NOT LIKE 'a!%' ESCAPE '!'",
+            write={
+                "duckdb": "SELECT x ILIKE 'a%', x ILIKE 'a%', x NOT ILIKE 'a!%' ESCAPE '!'",
+                "postgres": "SELECT x ILIKE 'a%', x ILIKE 'a%', x NOT ILIKE 'a!%' ESCAPE '!'",
+                "sqlite": "SELECT x LIKE 'a%', x LIKE 'a%', x NOT LIKE 'a!%' ESCAPE '!'",
+            },
+        )
+        self.validate_all(
             "SELECT MIN(a, b) FROM t",
             read={
                 "sqlite": "SELECT MIN(a, b) FROM t",

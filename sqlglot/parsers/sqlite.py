@@ -38,6 +38,12 @@ def _build_min(args: list) -> exp.Min | exp.Least:
     return exp.Min.from_arg_list(args)
 
 
+def _build_like(args: list) -> exp.Escape | exp.ILike:
+    # like(Y, X) is X LIKE Y, which is case-insensitive in SQLite (see RANGE_PARSERS)
+    like = exp.ILike(this=seq_get(args, 1), expression=seq_get(args, 0))
+    return exp.Escape(this=like, expression=seq_get(args, 2)) if len(args) > 2 else like
+
+
 def _build_dpipe(
     self: parser.Parser, this: exp.Expr | None, expression: exp.Expr | None
 ) -> exp.DPipe:
@@ -112,6 +118,7 @@ class SQLiteParser(parser.Parser):
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
         "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), null_terminated=True),
+        "LIKE": _build_like,
         "MAX": _build_max,
         "MIN": _build_min,
         "RANDOM": lambda args: exp.Rand(
@@ -152,6 +159,9 @@ class SQLiteParser(parser.Parser):
         **parser.Parser.RANGE_PARSERS,
         # https://www.sqlite.org/lang_expr.html
         TokenType.MATCH: binary_range_parser(exp.Match),
+        # SQLite's LIKE is case-insensitive for ASCII characters by default
+        # https://www.sqlite.org/lang_expr.html#the_like_glob_regexp_match_and_extract_operators
+        TokenType.LIKE: binary_range_parser(exp.ILike),
     }
 
     def _parse_is(self, this: exp.Expr | None) -> exp.Expr | None:

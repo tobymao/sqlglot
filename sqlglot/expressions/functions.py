@@ -93,6 +93,12 @@ class Convert(Expression, Func):
 # Conditional
 
 
+class WithExpr(Expression, Func):
+    """BigQuery WITH expression with local variable bindings."""
+
+    arg_types = {"this": True, "expressions": True}
+
+
 class If(Expression, Func):
     arg_types = {"this": True, "true": True, "false": False}
     _sql_names = ["IF", "IIF"]

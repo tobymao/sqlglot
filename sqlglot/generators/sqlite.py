@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.parsers.sqlite import SQLITE_NOW
 from sqlglot.tokens import TokenType
 
 
@@ -265,6 +266,16 @@ class SQLiteGenerator(generator.Generator):
             # ->> strips it, observable when the result feeds another JSON function
             return self.func("JSON_EXTRACT", expression.this, expression.expression)
         return arrow_json_extract_sql(self, expression)
+
+    def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+        if expression == SQLITE_NOW:
+            # SQLite date functions accept 'now' directly and retain its milliseconds.
+            if expression.arg_key == "this" and isinstance(
+                expression.parent, (exp.Date, exp.TimeToStr)
+            ):
+                return "'now'"
+            return self.func("STRFTIME", "'%Y-%m-%d %H:%M:%f'", "'now'")
+        return super().attimezone_sql(expression)
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:
         modifier = expression.expression

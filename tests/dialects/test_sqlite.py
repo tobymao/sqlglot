@@ -1231,12 +1231,26 @@ class TestSQLite(Validator):
             "SELECT (a COLLATE NOCASE -> b) + c FROM t",
         )
 
+    def test_now(self):
+        self.validate_all(
+            "SELECT DATE('nOw'), STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')",
+            write={
+                "sqlite": "SELECT DATE('now'), STRFTIME('%Y-%m-%d %H:%M:%f', 'now')",
+                "duckdb": "SELECT CAST(CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AS DATE), "
+                "STRFTIME(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '%Y-%m-%d %H:%M:%S.%g')",
+            },
+        )
+        self.validate_all(
+            "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', 'now')",
+            read={"duckdb": "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"},
+        )
+        self.validate_identity("SELECT DATE(now), STRFTIME('%f', now) FROM t")
+
     def test_strftime(self):
-        self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
         self.validate_identity(
             "SELECT STRFTIME('%s')",
-            "SELECT STRFTIME('%s', CURRENT_TIMESTAMP)",
+            "SELECT STRFTIME('%s', 'now')",
         )
 
         self.validate_all(
@@ -1293,7 +1307,14 @@ class TestSQLite(Validator):
                 },
             )
 
-        self.validate_identity("SELECT STRFTIME('%f')", "SELECT STRFTIME('%f', CURRENT_TIMESTAMP)")
+        self.validate_all(
+            "SELECT STRFTIME('%f')",
+            write={
+                "sqlite": "SELECT STRFTIME('%f', 'now')",
+                "duckdb": "SELECT STRFTIME(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', '%S.%g')",
+            },
+        )
+        self.validate_identity("SELECT STRFTIME('%f', CURRENT_TIMESTAMP)")
         self.validate_identity("SELECT STRFTIME('%f', '2024-02-29 12:34:56.123', '+1 second')")
         self.validate_identity(
             "SELECT STRFTIME(fmt, '2024-02-29 12:34:56.123') FROM (SELECT '%f' AS fmt) AS t"

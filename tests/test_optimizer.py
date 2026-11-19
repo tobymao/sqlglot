@@ -1,3 +1,4 @@
+import inspect
 import json
 import sqlite3
 import sys
@@ -304,6 +305,129 @@ class TestOptimizer(unittest.TestCase):
             execute=True,
             schema=schema,
         )
+
+    def test_rule_args_cache_reuse(self):
+        def rule(expression, schema=None):
+            return expression
+
+        rule_args = optimizer.optimizer._rule_args
+        rule_args.cache_clear()
+
+        try:
+            with patch.object(
+                optimizer.optimizer.inspect,
+                "getfullargspec",
+                wraps=inspect.getfullargspec,
+            ) as getfullargspec:
+                expected = ("expression", "schema")
+
+                self.assertEqual(optimizer.optimizer._get_rule_args(rule), expected)
+                self.assertEqual(optimizer.optimizer._get_rule_args(rule), expected)
+
+                self.assertEqual(getfullargspec.call_count, 1)
+        finally:
+            rule_args.cache_clear()
+
+    def test_rule_args_introspection_type_error(self):
+        def rule(expression):
+            return expression
+
+        rule_args = optimizer.optimizer._rule_args
+        rule_args.cache_clear()
+
+        try:
+            with patch.object(
+                optimizer.optimizer.inspect,
+                "getfullargspec",
+                side_effect=TypeError("introspection failed"),
+            ):
+                with self.assertRaisesRegex(TypeError, "introspection failed"):
+                    optimizer.optimizer._get_rule_args(rule)
+        finally:
+            rule_args.cache_clear()
+
+    def test_rule_args_cache_separate_rules(self):
+        def first_rule(expression, schema=None):
+            return expression
+
+        def second_rule(expression, dialect=None):
+            return expression
+
+        rule_args = optimizer.optimizer._rule_args
+        rule_args.cache_clear()
+
+        try:
+            with patch.object(
+                optimizer.optimizer.inspect,
+                "getfullargspec",
+                wraps=inspect.getfullargspec,
+            ) as getfullargspec:
+                self.assertEqual(
+                    optimizer.optimizer._get_rule_args(first_rule),
+                    ("expression", "schema"),
+                )
+                self.assertEqual(
+                    optimizer.optimizer._get_rule_args(second_rule),
+                    ("expression", "dialect"),
+                )
+
+                # Repeated calls should use their respective cache entries.
+                optimizer.optimizer._get_rule_args(first_rule)
+                optimizer.optimizer._get_rule_args(second_rule)
+
+                self.assertEqual(getfullargspec.call_count, 2)
+        finally:
+            rule_args.cache_clear()
+
+    def test_rule_args_unhashable_callable(self):
+        class UnhashableRule:
+            __hash__ = None
+
+            def __call__(self, expression, schema=None):
+                return expression
+
+        rule = UnhashableRule()
+        rule_args = optimizer.optimizer._rule_args
+        rule_args.cache_clear()
+
+        try:
+            with patch.object(
+                optimizer.optimizer.inspect,
+                "getfullargspec",
+                wraps=inspect.getfullargspec,
+            ) as getfullargspec:
+                first_result = optimizer.optimizer._get_rule_args(rule)
+                second_result = optimizer.optimizer._get_rule_args(rule)
+
+                self.assertEqual(first_result, second_result)
+                self.assertEqual(getfullargspec.call_count, 2)
+
+                # Unhashable callables should not enter the cache.
+                self.assertEqual(rule_args.cache_info().currsize, 0)
+        finally:
+            rule_args.cache_clear()
+
+    def test_optimize_custom_rule_kwargs(self):
+        received = []
+
+        def custom_rule(expression, custom_option=None):
+            received.append(custom_option)
+            return expression
+
+        rule_args = optimizer.optimizer._rule_args
+        rule_args.cache_clear()
+
+        try:
+            result = optimizer.optimize(
+                "SELECT 1",
+                rules=[custom_rule],
+                custom_option="expected",
+            )
+
+            self.assertEqual(received, ["expected"])
+            self.assertEqual(result.sql(), "SELECT 1")
+        finally:
+            rule_args.cache_clear()
 
     def test_optimize_copy(self):
         sql = "SELECT a + 1 + 1 AS b FROM x"

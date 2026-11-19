@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import typing as t
 from collections.abc import Sequence
+from functools import lru_cache
 from sqlglot import Schema, exp
 from sqlglot.dialects.dialect import DialectType
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -53,6 +54,21 @@ RULES: tuple[OptimizerFn, ...] = (
     canonicalize,
     simplify,
 )
+
+
+@lru_cache(maxsize=128)
+def _rule_args(rule: OptimizerFn) -> tuple[str, ...]:
+    return tuple(inspect.getfullargspec(rule).args)
+
+
+def _get_rule_args(rule: OptimizerFn) -> tuple[str, ...]:
+    try:
+        hash(rule)
+    except TypeError:
+        # Callable instances can be unhashable, so they cannot be used as cache keys.
+        return tuple(inspect.getfullargspec(rule).args)
+
+    return _rule_args(t.cast(t.Hashable, rule))
 
 
 def optimize(
@@ -108,7 +124,7 @@ def optimize(
     optimized = exp.maybe_parse(expression, dialect=dialect, copy=copy)
     for rule in rules:
         # Find any additional rule parameters, beyond `expression`
-        rule_params = inspect.getfullargspec(rule).args
+        rule_params = _get_rule_args(rule)
         rule_kwargs = {
             param: possible_kwargs[param] for param in rule_params if param in possible_kwargs
         }

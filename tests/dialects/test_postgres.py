@@ -2488,6 +2488,24 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
             "ROUND(CAST(x AS DECIMAL(18, 3)), 4)", read={"duckdb": "ROUND(x::DECIMAL, 4)"}
         )
 
+    def test_make_date(self):
+        self.validate_all(
+            "SELECT MAKE_DATE(2024, 1, 31)",
+            read={
+                "bigquery": "SELECT DATE(2024, 1, 31)",
+                "duckdb": "SELECT MAKE_DATE(2024, 1, 31)",
+                "spark": "SELECT MAKE_DATE(2024, 1, 31)",
+                "tsql": "SELECT DATEFROMPARTS(2024, 1, 31)",
+            },
+            write={
+                "bigquery": "SELECT DATE(2024, 1, 31)",
+                "duckdb": "SELECT MAKE_DATE(2024, 1, 31)",
+                "snowflake": "SELECT DATE_FROM_PARTS(2024, 1, 31)",
+                "spark": "SELECT MAKE_DATE(2024, 1, 31)",
+                "tsql": "SELECT DATEFROMPARTS(2024, 1, 31)",
+            },
+        )
+
     def test_extract_date_parts(self):
         self.validate_all(
             "SELECT EXTRACT(DAY FROM CAST(x AS DATE)), EXTRACT(MONTH FROM CAST(x AS DATE)), EXTRACT(YEAR FROM CAST(x AS DATE))",

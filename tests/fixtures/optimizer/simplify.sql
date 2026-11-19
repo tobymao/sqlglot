@@ -823,6 +823,28 @@ r IS NOT NULL AND r IS NULL;
 r IS NOT NULL AND r > 5;
 r > 5 AND r IS NOT NULL;
 
+# execute: true
+TIMESTAMP '2024-02-01 00:00:00' = DATE '2024-02-01';
+TRUE;
+
+# execute: true
+DATE '2024-02-01' >= TIMESTAMP '2024-02-01 10:00:00';
+FALSE;
+
+# dialect: duckdb
+# execute: true
+DATE '2024-01-31' + INTERVAL 1 DAY = DATE '2024-02-01';
+TRUE;
+
+# dialect: duckdb
+# execute: true
+DATE '2024-02-01' = TIMESTAMPTZ '2024-02-01 00:00:00+00:00';
+CAST('2024-02-01 00:00:00+00:00' AS TIMESTAMPTZ) = CAST('2024-02-01' AS DATE);
+
+# dialect: duckdb
+x > DATE '2024-02-01' AND x > TIMESTAMPTZ '2024-02-01 00:00:00+00:00';
+x > CAST('2024-02-01 00:00:00+00:00' AS TIMESTAMPTZ) AND x > CAST('2024-02-01' AS DATE);
+
 date '1998-12-01' - interval x day;
 CAST('1998-12-01' AS DATE) - INTERVAL x DAY;
 

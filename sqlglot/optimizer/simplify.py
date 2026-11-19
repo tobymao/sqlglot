@@ -396,9 +396,9 @@ def cast_as_date(value: datetime | date | str) -> date | None:
 
 
 def cast_as_datetime(
-    value: datetime | date | str,
+    value: datetime | date | str | None,
 ) -> datetime | None:
-    if isinstance(value, datetime):
+    if value is None or isinstance(value, datetime):
         return value
     if isinstance(value, date):
         return datetime(year=value.year, month=value.month, day=value.day)
@@ -437,6 +437,17 @@ def extract_date(cast: exp.Expr) -> date | None:
 
 def _is_date_literal(expression: exp.Expr) -> bool:
     return extract_date(expression) is not None
+
+
+def _comparable_datetimes(a: exp.Expr, b: exp.Expr) -> tuple[datetime, datetime] | None:
+    left = cast_as_datetime(extract_date(a))
+    if left is None:
+        return None
+    right = cast_as_datetime(extract_date(b))
+    # Comparing a naive value to an aware one may depend on the session time zone.
+    if right is None or (left.tzinfo is None) != (right.tzinfo is None):
+        return None
+    return left, right
 
 
 def extract_interval(expression: exp.Expr) -> relativedelta | None:
@@ -1020,15 +1031,10 @@ class Simplifier:
                         return None
                     l = l.name
                     r = r.name
+                elif datetimes := _comparable_datetimes(l, r):
+                    l, r = datetimes
                 else:
-                    l = extract_date(l)
-                    if not l:
-                        return None
-                    r = extract_date(r)
-                    if not r:
-                        return None
-                    # python won't compare date and datetime, but many engines will upcast
-                    l, r = cast_as_datetime(l), cast_as_datetime(r)
+                    return None
 
                 false = (
                     exp.false()
@@ -1360,7 +1366,7 @@ class Simplifier:
 
             if boolean:
                 return boolean
-        elif _is_date_literal(a) and isinstance(b, exp.Interval):
+        elif isinstance(b, exp.Interval) and _is_date_literal(a):
             date, b = extract_date(a), extract_interval(b)
             if date and b:
                 target_type = (
@@ -1382,12 +1388,10 @@ class Simplifier:
                     else extract_type(b)
                 )
                 return date_literal(a + date, target_type)
-        elif _is_date_literal(a) and _is_date_literal(b):
-            if isinstance(expression, exp.Predicate):
-                a, b = extract_date(a), extract_date(b)
-                boolean = eval_boolean(expression, a, b)
-                if boolean:
-                    return boolean
+        elif isinstance(expression, self.COMPARISONS) and (
+            datetimes := _comparable_datetimes(a, b)
+        ):
+            return eval_boolean(expression, *datetimes)
 
         return None
 

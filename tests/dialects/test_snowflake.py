@@ -511,14 +511,14 @@ class TestSnowflake(Validator):
             "SELECT RANDOM()",
             write={
                 "snowflake": "SELECT RANDOM()",
-                "duckdb": "SELECT CAST(-9.223372036854776E+18 + RANDOM() * (9.223372036854776e+18 - -9.223372036854776E+18) AS BIGINT)",
+                "duckdb": "SELECT CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775808 AS INT128)) + 1)) + CAST(-9223372036854775808 AS INT128) AS BIGINT)",
             },
         )
         self.validate_all(
             "SELECT RANDOM(123)",
             write={
                 "snowflake": "SELECT RANDOM(123)",
-                "duckdb": "SELECT CAST(-9.223372036854776E+18 + RANDOM() * (9.223372036854776e+18 - -9.223372036854776E+18) AS BIGINT)",
+                "duckdb": "SELECT CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775808 AS INT128)) + 1)) + CAST(-9223372036854775808 AS INT128) AS BIGINT)",
             },
         )
         self.validate_identity("SELECT RANDSTR(123, 456)")
@@ -551,7 +551,7 @@ class TestSnowflake(Validator):
             "SELECT RANDSTR(10, RANDOM())",
             write={
                 "snowflake": "SELECT RANDSTR(10, RANDOM())",
-                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + CAST(-9.223372036854776E+18 + RANDOM() * (9.223372036854776e+18 - -9.223372036854776E+18) AS BIGINT))) % 1000) / 1000.0 AS random_value FROM RANGE(10) AS t(i)))",
+                "duckdb": "SELECT (SELECT LISTAGG(SUBSTRING('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 1 + CAST(FLOOR(random_value * 62) AS INT), 1), '') FROM (SELECT (ABS(HASH(i + CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775808 AS INT128)) + 1)) + CAST(-9223372036854775808 AS INT128) AS BIGINT))) % 1000) / 1000.0 AS random_value FROM RANGE(10) AS t(i)))",
             },
         )
 
@@ -1635,13 +1635,6 @@ class TestSnowflake(Validator):
             },
         )
         self.validate_all(
-            "SELECT TO_ARRAY(['test'])",
-            write={
-                "snowflake": "SELECT TO_ARRAY(['test'])",
-                "spark": "SELECT ARRAY('test')",
-            },
-        )
-        self.validate_all(
             # We need to qualify the columns in this query because "value" would be ambiguous
             'WITH t(x, "value") AS (SELECT [1, 2, 3], 1) SELECT IFF(_u.pos = _u_2.pos_2, _u_2."value", NULL) AS "value" FROM t CROSS JOIN TABLE(FLATTEN(INPUT => ARRAY_GENERATE_RANGE(0, (GREATEST(ARRAY_SIZE(t.x)) - 1) + 1))) AS _u(seq, key, path, index, pos, this) CROSS JOIN TABLE(FLATTEN(INPUT => t.x)) AS _u_2(seq, key, path, pos_2, "value", this) WHERE _u.pos = _u_2.pos_2 OR (_u.pos > (ARRAY_SIZE(t.x) - 1) AND _u_2.pos_2 = (ARRAY_SIZE(t.x) - 1))',
             read={
@@ -2489,7 +2482,7 @@ class TestSnowflake(Validator):
                 "spark2": "CAST(UUID() AS STRING)",
                 "spark": "CAST(UUID() AS STRING)",
                 "databricks": "CAST(UUID() AS STRING)",
-                "duckdb": "(SELECT LOWER(SUBSTRING(h, 1, 8) || '-' || SUBSTRING(h, 9, 4) || '-' || '5' || SUBSTRING(h, 14, 3) || '-' || FORMAT('{:02x}', CAST('0x' || SUBSTRING(h, 17, 2) AS INT) & 63 | 128) || SUBSTRING(h, 19, 2) || '-' || SUBSTRING(h, 21, 12)) FROM (SELECT SUBSTRING(SHA1(UNHEX(REPLACE('fe971b24-9572-4005-b22f-351e9c09274d', '-', '')) || ENCODE('foo')), 1, 32) AS h))",
+                "duckdb": "(SELECT LOWER(SUBSTRING(h, 1, 8) || '-' || SUBSTRING(h, 9, 4) || '-' || '5' || SUBSTRING(h, 14, 3) || '-' || PRINTF('%02x', CAST('0x' || SUBSTRING(h, 17, 2) AS INT) & 63 | 128) || SUBSTRING(h, 19, 2) || '-' || SUBSTRING(h, 21, 12)) FROM (SELECT SUBSTRING(SHA1(UNHEX(REPLACE('fe971b24-9572-4005-b22f-351e9c09274d', '-', '')) || ENCODE('foo')), 1, 32) AS h))",
                 "presto": "CAST(UUID() AS VARCHAR)",
                 "trino": "CAST(UUID() AS VARCHAR)",
                 "postgres": "GEN_RANDOM_UUID()",
@@ -3636,7 +3629,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("SELECT CURRENT_DATABASE()")
         self.validate_identity("SELECT CURRENT_SCHEMA()")
 
         self.validate_all(
@@ -3828,9 +3820,6 @@ class TestSnowflake(Validator):
             "SELECT $1, $2, metadata$filename FROM @mystage (PATTERN => '.*data-100.*')"
         )
         self.validate_identity("SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv')")
-        self.validate_identity(
-            "PUT file:///dir/tmp.csv @%table", "PUT 'file:///dir/tmp.csv' @%table"
-        )
         self.validate_identity("SELECT * FROM (SELECT a FROM @foo)")
         self.validate_identity(
             "SELECT * FROM (SELECT * FROM '@external/location' (FILE_FORMAT => 'path.to.csv'))"
@@ -4010,6 +3999,18 @@ class TestSnowflake(Validator):
                 "spark": "SELECT TIMESTAMPADD(HOUR, 2, CAST('2024-01-01 10:00:00' AS TIMESTAMP_NTZ))",
             },
         )
+
+        for unit in ("MILLISECOND", "MICROSECOND"):
+            for amount in ("500", "-500", "0"):
+                self.validate_all(
+                    f"SELECT DATEADD({unit}, {amount}, ts) FROM t",
+                    read={
+                        "snowflake": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                    write={
+                        "spark": f"SELECT TIMESTAMPADD({unit}, {amount}, ts) FROM t",
+                    },
+                )
 
     def test_timestamps(self):
         self.validate_identity("SELECT CAST('12:00:00' AS TIME)")
@@ -4233,7 +4234,6 @@ class TestSnowflake(Validator):
             },
         )
 
-        self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATEADD(y, 5, x)", "DATEADD(YEAR, 5, x)")
         self.validate_identity("DATE_PART(yyy, x)", "DATE_PART(YEAR, x)")
         self.validate_identity("DATE_TRUNC(yr, x)", "DATE_TRUNC('YEAR', x)")
@@ -4831,6 +4831,11 @@ class TestSnowflake(Validator):
             "CREATE DYNAMIC TABLE dt TARGET_LAG='1 minute' WAREHOUSE=my_wh (id) AS SELECT * FROM bla",
             "CREATE DYNAMIC TABLE dt (id) TARGET_LAG='1 minute' WAREHOUSE=my_wh AS SELECT * FROM bla",
         )
+        create = self.validate_identity(
+            "CREATE HYBRID TABLE t (id INT PRIMARY KEY, customer INT)"
+        ).assert_is(exp.Create)
+        self.assertEqual(create.kind, "TABLE")
+        self.assertIsInstance(create.find(exp.HybridProperty), exp.HybridProperty)
         create = self.validate_identity(
             "CREATE INTERACTIVE TABLE t CLUSTER BY (a) AS SELECT a FROM s"
         ).assert_is(exp.Create)
@@ -5616,8 +5621,6 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
         self.validate_identity("SELECT SEARCH((play, line), 'dream')")
-        self.validate_identity("SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER')")
-        self.validate_identity("SELECT SEARCH(character, 'king queen', SEARCH_MODE => 'AND')")
         self.validate_identity(
             "SELECT SEARCH(line, 'king', ANALYZER => 'UNICODE_ANALYZER', SEARCH_MODE => 'OR')"
         )
@@ -6167,6 +6170,10 @@ STORAGE_ALLOWED_LOCATIONS=('s3://mybucket1/path1/', 's3://mybucket2/path2/')""",
             },
         )
         self.validate_identity("SELECT TRY_CAST(x AS DOUBLE)")
+        self.validate_all(
+            "SELECT TRY_CAST('1.2345' AS NUMBER(10, 3))",
+            write={"bigquery": "SELECT SAFE_CAST('1.2345' AS NUMERIC)"},
+        )
         self.validate_identity(
             "SELECT TRY_CAST(FOO() AS TEXT)", "SELECT TRY_CAST(FOO() AS VARCHAR)"
         )

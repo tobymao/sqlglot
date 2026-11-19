@@ -1593,6 +1593,15 @@ def _sha_sql(
     return self.func("UNHEX", result) if is_binary else result
 
 
+def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
+    # DuckDB requires unqualified pivot expressions. The source and CTEs have their own scope.
+    # https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
+    for clause in expression.iter_expressions():
+        if clause.arg_key not in ("this", "with_"):
+            transforms.unqualify_columns(clause)
+    return expression
+
+
 class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
@@ -1787,9 +1796,7 @@ class DuckDBGenerator(generator.Generator):
         exp.NextDay: _day_navigation_sql,
         exp.PercentileCont: rename_func("QUANTILE_CONT"),
         exp.PercentileDisc: rename_func("QUANTILE_DISC"),
-        # DuckDB doesn't allow qualified columns inside of PIVOT expressions.
-        # See: https://github.com/duckdb/duckdb/blob/671faf92411182f81dce42ac43de8bfb05d9909e/src/planner/binder/tableref/bind_pivot.cpp#L61-L62
-        exp.Pivot: transforms.preprocess([transforms.unqualify_columns]),
+        exp.Pivot: transforms.preprocess([_unqualify_pivot_columns]),
         exp.PreviousDay: _day_navigation_sql,
         exp.RegexpILike: lambda self, e: self.func(
             "REGEXP_MATCHES", e.this, e.expression, exp.Literal.string("i")
@@ -2259,7 +2266,7 @@ class DuckDBGenerator(generator.Generator):
                 SUBSTR(h, 1, 8) || '-' ||
                 SUBSTR(h, 9, 4) || '-' ||
                 '5' || SUBSTR(h, 14, 3) || '-' ||
-                FORMAT('{:02x}', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
+                PRINTF('%02x', CAST('0x' || SUBSTR(h, 17, 2) AS INT) & 63 | 128) || SUBSTR(h, 19, 2) || '-' ||
                 SUBSTR(h, 21, 12)
             )
         FROM (
@@ -2988,6 +2995,9 @@ class DuckDBGenerator(generator.Generator):
         return self.func("JSON", arg)
 
     def unicode_sql(self, expression: exp.Unicode) -> str:
+        if expression.args.get("empty_is_null"):
+            return self.func("NULLIF", self.func("UNICODE", expression.this), "-1")
+
         if expression.args.get("empty_is_zero"):
             return self.sql(
                 exp.case()
@@ -3401,10 +3411,22 @@ class DuckDBGenerator(generator.Generator):
     def length_sql(self, expression: exp.Length) -> str:
         arg = expression.this
 
-        # Dialects like BQ and Snowflake also accept binary values as args, so
+        def text_arg(value: exp.Expr) -> exp.Expr:
+            if expression.args.get("null_terminated"):
+                return exp.SplitPart(
+                    this=value.copy(),
+                    delimiter=exp.Chr(expressions=[exp.Literal.number(0)]),
+                    part_index=exp.Literal.number(1),
+                )
+            return value
+
+        # SQLite, BQ and Snowflake also accept binary values as args, so
         # DDB will attempt to infer the type or resort to case/when resolution
-        if not expression.args.get("binary") or arg.is_string:
-            return self.func("LENGTH", arg)
+        if (
+            not (expression.args.get("binary") or expression.args.get("null_terminated"))
+            or arg.is_string
+        ):
+            return self.func("LENGTH", text_arg(arg))
 
         if not arg.type:
             from sqlglot.optimizer.annotate_types import annotate_types
@@ -3412,16 +3434,16 @@ class DuckDBGenerator(generator.Generator):
             arg = annotate_types(arg, dialect=self.dialect)
 
         if arg.is_type(*exp.DataType.TEXT_TYPES):
-            return self.func("LENGTH", arg)
+            return self.func("LENGTH", text_arg(arg))
 
         # We need these casts to make duckdb's static type checker happy
         blob = exp.cast(arg, exp.DType.VARBINARY)
         varchar = exp.cast(arg, exp.DType.VARCHAR)
 
         case = (
-            exp.case(exp.Anonymous(this="TYPEOF", expressions=[arg]))
+            exp.case(exp.Typeof(this=arg.copy()))
             .when(exp.Literal.string("BLOB"), exp.ByteLength(this=blob))
-            .else_(exp.Anonymous(this="LENGTH", expressions=[varchar]))
+            .else_(exp.Length(this=text_arg(varchar)))
         )
         return self.sql(case)
 
@@ -3944,13 +3966,13 @@ class DuckDBGenerator(generator.Generator):
         upper = expression.args.get("upper")
 
         if lower and upper:
-            # scale DuckDB's [0,1) to the specified range
-            range_size = exp.paren(upper - lower)
-            scaled = exp.Add(this=lower, expression=exp.func("random") * range_size)
-
-            # For now we assume that if bounds are set, return type is BIGINT. Snowflake/Teradata
-            result = exp.cast(scaled, exp.DType.BIGINT)
-            return self.sql(result)
+            # Build 64 random bits in integer arithmetic to preserve the low bits and
+            # avoid overflow when the inclusive range spans signed BIGINT's limits.
+            random_bits = exp.cast(exp.Floor(this=exp.Rand() * (1 << 32)), exp.DType.INT128)
+            random = random_bits * (1 << 32) + random_bits.copy()
+            lower = exp.cast(lower, exp.DType.INT128)
+            upper = exp.cast(upper, exp.DType.INT128)
+            return self.sql(exp.cast(random % (upper - lower + 1) + lower, exp.DType.BIGINT))
 
         # Default DuckDB behavior - just return RANDOM() as float
         return "RANDOM()"
@@ -4664,10 +4686,22 @@ class DuckDBGenerator(generator.Generator):
         return self.sql(result_expr)
 
     def format_sql(self, expression: exp.Format) -> str:
-        if expression.name.lower() == "%s" and len(expression.expressions) == 1:
-            return self.func("FORMAT", "'{}'", expression.expressions[0])
+        if expression.args.get("is_fmt"):
+            return self.func("FORMAT", expression.this, *expression.expressions)
 
-        return self.function_fallback_sql(expression)
+        fmt = expression.name
+        if expression.this.is_string and fmt == "%S" and len(expression.expressions) == 1:
+            return self.func(
+                "UPPER", self.func("FORMAT", exp.Literal.string("{}"), expression.expressions[0])
+            )
+
+        if expression.this.is_string and "%s" in fmt and "%" not in re.sub(r"%%|%s", "", fmt):
+            # Use brace formatting to support non-string %s arguments, as in PostgreSQL.
+            fmt = fmt.replace("{", "{{").replace("}", "}}")
+            fmt = re.sub(r"%%|%s", lambda m: "%" if m[0] == "%%" else "{}", fmt)
+            return self.func("FORMAT", exp.Literal.string(fmt), *expression.expressions)
+
+        return self.func("PRINTF", expression.this, *expression.expressions)
 
     def hexstring_sql(
         self, expression: exp.HexString, binary_function_repr: str | None = None
@@ -4818,6 +4852,17 @@ class DuckDBGenerator(generator.Generator):
         this = expression.this
         decimals = expression.args.get("decimals")
         truncate = expression.args.get("truncate")
+
+        if decimals is not None and expression.args.get("negative_decimals_are_zero"):
+            if decimals.is_int:
+                decimals = exp.Literal.number(max(0, decimals.to_py()))
+            else:
+                # DuckDB's DECIMAL overload requires constant precision; SQLite rounds doubles.
+                this = exp.cast(this, exp.DType.DOUBLE)
+                # Preserve NULL precision, which GREATEST(decimals, 0) would replace with 0.
+                decimals = exp.If(
+                    this=decimals < 0, true=exp.Literal.number(0), false=decimals.copy()
+                )
 
         # DuckDB requires the scale (decimals) argument to be an INT
         # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally

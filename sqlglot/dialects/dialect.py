@@ -1521,6 +1521,7 @@ def no_pivot_sql(self: Generator, expression: exp.Pivot) -> str:
 
 
 def no_trycast_sql(self: Generator, expression: exp.TryCast) -> str:
+    self.unsupported("TRY_CAST is unsupported. CAST may not return NULL on conversion failure.")
     return self.cast_sql(expression)
 
 

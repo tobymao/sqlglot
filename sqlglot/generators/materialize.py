@@ -36,6 +36,11 @@ class MaterializeGenerator(PostgresGenerator):
     }
 
     def arraysize_sql(self, expression: exp.ArraySize) -> str:
+        if not expression.expression:
+            array = self.sql(expression, "this")
+            length = self.func("COALESCE", self.func("ARRAY_LENGTH", array, "1"), "0")
+            return f"CASE WHEN {array} IS NULL THEN NULL ELSE {length} END"
+
         return Generator.arraysize_sql(self, expression)
 
     def propertyeq_sql(self, expression: exp.PropertyEQ) -> str:

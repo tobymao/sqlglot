@@ -817,6 +817,7 @@ class Parser:
         TokenType.NEXT,
         TokenType.OFFSET,
         TokenType.OPERATOR,
+        TokenType.OPTIMIZE,
         TokenType.ORDINALITY,
         TokenType.OUT,
         TokenType.OVER,
@@ -949,6 +950,7 @@ class Parser:
         TokenType.MERGE,
         TokenType.NEXT,
         TokenType.OFFSET,
+        TokenType.OPTIMIZE,
         TokenType.PRIMARY_KEY,
         TokenType.RANGE,
         TokenType.REPLACE,
@@ -5096,6 +5098,9 @@ class Parser:
             if parts is None:
                 parts = []
 
+            if has_dot and self._prev_comments:
+                comments = comments + self._prev_comments
+
             if comments:
                 if all_comments is None:
                     all_comments = []
@@ -5150,7 +5155,7 @@ class Parser:
         db: exp.Expr | str | None = None
         table: exp.Expr | str | None = self._parse_table_part(schema=schema)
 
-        while self._match(TokenType.DOT):
+        while self._match(TokenType.DOT, expression=table if isinstance(table, exp.Expr) else None):
             if catalog:
                 # This allows nesting the table in arbitrarily many dot expressions if needed
                 table = self.expression(
@@ -9997,6 +10002,7 @@ class Parser:
         )
 
     def _parse_merge(self) -> exp.Merge:
+        schema_evolution = self._match_text_seq("WITH", "SCHEMA", "EVOLUTION")
         self._match(TokenType.INTO)
         target = self._parse_table()
 
@@ -10014,6 +10020,7 @@ class Parser:
                 using_cond=self._match(TokenType.USING) and self._parse_using_identifiers(),
                 whens=self._parse_when_matched(),
                 returning=self._parse_returning(),
+                schema_evolution=schema_evolution or None,
             )
         )
 

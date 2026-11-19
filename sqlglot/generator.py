@@ -332,6 +332,9 @@ class Generator:
     # Whether MERGE ... WHEN MATCHED/NOT MATCHED THEN UPDATE/INSERT ... WHERE is supported
     SUPPORTS_MERGE_WHERE = False
 
+    # First version supporting MERGE WITH SCHEMA EVOLUTION
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION: t.ClassVar[tuple[int, ...] | None] = None
+
     # Whether MERGE uses ALL BY NAME instead of a star to update or insert all columns
     MERGE_ALL_BY_NAME = False
 
@@ -4116,6 +4119,18 @@ class Generator:
 
         return escaped
 
+    def format_sql(self, expression: exp.Format) -> str:
+        if (
+            expression.args.get("is_fmt")
+            and expression.this.is_string
+            and not expression.expressions
+            and not any(c in expression.name for c in "{}")
+        ):
+            return self.sql(expression.this)
+
+        self._warn_unsupported_arg(expression, "is_fmt")
+        return self.function_fallback_sql(expression)
+
     def formatjson_sql(self, expression: exp.FormatJson) -> str:
         return f"{self.sql(expression, 'this')} FORMAT JSON"
 
@@ -4473,6 +4488,10 @@ class Generator:
 
     def command_sql(self, expression: exp.Command) -> str:
         return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
+
+    def optimize_sql(self, expression: exp.Optimize) -> str:
+        self.unsupported("OPTIMIZE is only supported in Databricks")
+        return f"OPTIMIZE {self.sql(expression, 'this')}"
 
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")
@@ -5219,6 +5238,14 @@ class Generator:
         return self.expressions(expression, sep=" ", indent=False)
 
     def merge_sql(self, expression: exp.Merge) -> str:
+        schema_evolution = ""
+        if expression.args.get("schema_evolution"):
+            min_version = self.MERGE_SCHEMA_EVOLUTION_MIN_VERSION
+            if min_version and self.dialect.version >= min_version:
+                schema_evolution = " WITH SCHEMA EVOLUTION"
+            else:
+                self.unsupported("MERGE WITH SCHEMA EVOLUTION is not supported")
+
         table = expression.this
         table_alias = ""
 
@@ -5246,7 +5273,7 @@ class Generator:
 
         return self.prepend_ctes(
             expression,
-            f"MERGE INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{whens}",
+            f"MERGE{schema_evolution} INTO {this}{table_alias}{sep}{using}{sep}{on}{sep}{whens}",
         )
 
     @unsupported_args("format")

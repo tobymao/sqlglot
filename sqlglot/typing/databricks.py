@@ -35,6 +35,7 @@ EXPRESSION_METADATA = {
     },
     exp.RegrCount: {"returns": exp.DType.BIGINT},
     exp.Search: {"returns": exp.DType.BOOLEAN},
+    exp.TimestampTrunc: {"returns": exp.DType.TIMESTAMP},
     exp.RegexpExtractAll: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.from_str("ARRAY<STRING>", dialect="databricks")

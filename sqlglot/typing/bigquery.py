@@ -66,8 +66,13 @@ def _annotate_datetime_or_timestamp_add(
     return self._set_type(expression, exp.DType.DATETIME)
 
 
-def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> exp.Expr:
+def _annotate_int_pair_as_double(
+    self: TypeAnnotator, expression: exp.SafeDivide | exp.Pow
+) -> exp.Expr:
     """
+    Shared by SAFE_DIVIDE and POW/POWER: both promote INT64/INT64 to FLOAT64,
+    otherwise follow normal numeric coercion.
+
     +------------+------------+------------+-------------+---------+
     | INPUT      | INT64      | NUMERIC    | BIGNUMERIC  | FLOAT64 |
     +------------+------------+------------+-------------+---------+
@@ -76,13 +81,16 @@ def _annotate_safe_divide(self: TypeAnnotator, expression: exp.SafeDivide) -> ex
     | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC | BIGNUMERIC  | FLOAT64 |
     | FLOAT64    | FLOAT64    | FLOAT64    | FLOAT64     | FLOAT64 |
     +------------+------------+------------+-------------+---------+
-    """
-    if expression.this.is_type(*exp.DataType.INTEGER_TYPES) and expression.expression.is_type(
-        *exp.DataType.INTEGER_TYPES
-    ):
-        return self._set_type(expression, exp.DType.DOUBLE)
 
-    return _annotate_by_args_with_coerce(self, expression)
+    NULL operands coerce the same way INT64 does, since BigQuery treats a bare NULL
+    argument as an unresolved integer-family type for this promotion.
+    """
+    _annotate_by_args_with_coerce(self, expression)
+
+    if expression.is_type(exp.DType.NULL, *exp.DataType.INTEGER_TYPES):
+        self._set_type(expression, exp.DType.DOUBLE)
+
+    return expression
 
 
 def _annotate_by_args_with_coerce(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
@@ -431,7 +439,8 @@ EXPRESSION_METADATA = {
     },
     exp.ParseBignumeric: {"returns": exp.DType.BIGDECIMAL},
     exp.ParseNumeric: {"returns": exp.DType.DECIMAL},
-    exp.SafeDivide: {"annotator": lambda self, e: _annotate_safe_divide(self, e)},
+    exp.Pow: {"annotator": lambda self, e: _annotate_int_pair_as_double(self, e)},
+    exp.SafeDivide: {"annotator": lambda self, e: _annotate_int_pair_as_double(self, e)},
     exp.ToCodePoints: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.from_str("ARRAY<BIGINT>", dialect="bigquery")

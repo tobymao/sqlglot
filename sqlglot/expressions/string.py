@@ -45,13 +45,19 @@ class Elt(Expression, Func):
     is_var_len_args = True
 
 
+class FindInSet(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+
+
 class EndsWith(Expression, Func):
     _sql_names = ["ENDS_WITH", "ENDSWITH"]
     arg_types = {"this": True, "expression": True}
 
 
 class Format(Expression, Func):
-    arg_types = {"this": True, "expressions": False}
+    """Formats values using printf syntax, or brace syntax when is_fmt is set."""
+
+    arg_types = {"this": True, "expressions": False, "is_fmt": False}
     is_var_len_args = True
 
 
@@ -68,7 +74,7 @@ class Left(Expression, Func):
 
 
 class Length(Expression, Func):
-    arg_types = {"this": True, "binary": False, "encoding": False}
+    arg_types = {"this": True, "binary": False, "encoding": False, "null_terminated": False}
     _sql_names = ["LENGTH", "LEN", "CHAR_LENGTH", "CHARACTER_LENGTH"]
 
 
@@ -253,7 +259,7 @@ class Trim(Expression, Func):
 
 
 class Unicode(Expression, Func):
-    arg_types = {"this": True, "empty_is_zero": False}
+    arg_types = {"this": True, "empty_is_zero": False, "empty_is_null": False}
 
 
 class Upper(Expression, Func):

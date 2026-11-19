@@ -1,6 +1,8 @@
 import sqlite3
+import unittest
+from contextlib import closing
 
-from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
@@ -9,6 +11,256 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+
+    def test_variadic_iif(self):
+        for name in ("IIF", "IF"):
+            self.validate_all(
+                f"SELECT {name}(a, b, c, d)",
+                write={
+                    "sqlite": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                    "duckdb": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                    "postgres": "SELECT CASE WHEN a THEN b WHEN c THEN d END",
+                },
+            )
+            self.validate_all(
+                f"SELECT {name}(a, b, c, d, e)",
+                write={"sqlite": "SELECT CASE WHEN a THEN b WHEN c THEN d ELSE e END"},
+            )
+
+        for args in ("0, 1", "0, 1, 2"):
+            with self.subTest(args=args):
+                sql = f"IIF({args})"
+                call = self.validate_identity(f"SELECT\n  {sql}", f"SELECT {sql}").expressions[0]
+                self.assertEqual(call.meta, {"line": 2, "col": 5, "start": 9, "end": 11})
+
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 49), "Requires variadic SQLite IIF")
+    def test_variadic_iif_execution(self):
+        with closing(sqlite3.connect(":memory:")) as connection:
+            for name in ("IIF", "IF"):
+                for args in (
+                    "1, 10, 1, 20",
+                    "0, 10, 1, 20",
+                    "0, 10, 0, 20",
+                    "NULL, 10, 1, 20",
+                    "0, 10, 0, 20, 30",
+                    "0, 10, NULL, 20, 1, 30, 40",
+                    "1, IIF(0, 10, 1, 20), 0, 30, 40",
+                ):
+                    with self.subTest(name=name, args=args):
+                        sql = f"SELECT {name}({args})"
+                        generated = parse_one(sql, dialect="sqlite").sql("sqlite")
+                        self.assertEqual(
+                            connection.execute(generated).fetchall(),
+                            connection.execute(sql).fetchall(),
+                        )
+
+    def test_quoted_variadic_iif(self):
+        for name in ('"IF"', '"IIF"'):
+            with self.subTest(name=name):
+                call = self.validate_identity(
+                    f"SELECT {name}(0, 1, 1, 2)", "SELECT CASE WHEN 0 THEN 1 WHEN 1 THEN 2 END"
+                ).expressions[0]
+                end = 6 + len(name)
+                self.assertEqual(call.meta, {"line": 1, "col": end + 1, "start": 7, "end": end})
+                with self.assertRaisesRegex(ParseError, r"Expecting \)"):
+                    self.parse_one(f"SELECT {name}(0, 1")
+
+    def test_iif_anonymous_marker(self):
+        for name, args in (
+            ("IIF", "0, 1, 2"),
+            ("iF", "0, 1, 2"),
+            ('"iF"', "0, 1, 1, 2"),
+        ):
+            with self.subTest(name=name):
+                sql = f"SELECT {name}({args})"
+                query = self.parse_one(f"{sql} /* sqlglot.anonymous */")
+                call = query.expressions[0]
+                self.assertIsInstance(call, exp.Anonymous)
+                self.assertEqual(call.comments, [" sqlglot.anonymous "])
+                for dialect in ("postgres", "duckdb"):
+                    self.assertEqual(
+                        query.sql(dialect, comments=False, normalize_functions=False), sql
+                    )
+
+    def test_length_null_terminated_text(self):
+        for arg, duckdb_arg in (
+            ("''", "''"),
+            ("'abc'", "'abc'"),
+            ("'a' || CHAR(0) || 'b'", "'a' || CHR(0) || 'b'"),
+            ("CHAR(0)", "CHR(0)"),
+            ("CHAR(0) || 'ab'", "CHR(0) || 'ab'"),
+            ("'ab' || CHAR(0)", "'ab' || CHR(0)"),
+            ("'é😊' || CHAR(0) || 'x'", "'é😊' || CHR(0) || 'x'"),
+        ):
+            sql = f"SELECT LENGTH({arg})"
+            self.validate_all(
+                sql,
+                write={
+                    "sqlite": sql,
+                    "duckdb": f"SELECT LENGTH(SPLIT_PART({duckdb_arg}, CHR(0), 1))",
+                },
+            )
+
+        for arg, duckdb_arg in (
+            ("NULL", "NULL"),
+            ("123", "123"),
+            ("x'610062'", "UNHEX('610062')"),
+            ("x''", "UNHEX('')"),
+        ):
+            sql = f"SELECT LENGTH({arg})"
+            self.validate_all(
+                sql,
+                write={
+                    "sqlite": sql,
+                    "duckdb": f"SELECT CASE TYPEOF({duckdb_arg}) "
+                    f"WHEN 'BLOB' THEN OCTET_LENGTH(CAST({duckdb_arg} AS BLOB)) "
+                    f"ELSE LENGTH(SPLIT_PART(CAST({duckdb_arg} AS TEXT), CHR(0), 1)) END",
+                },
+            )
+
+        for dtype, expected in (
+            ("TEXT", "SELECT LENGTH(SPLIT_PART(t.x, CHR(0), 1)) FROM t"),
+            (
+                "BLOB",
+                "SELECT CASE TYPEOF(t.x) WHEN 'BLOB' THEN OCTET_LENGTH(CAST(t.x AS BLOB)) "
+                "ELSE LENGTH(SPLIT_PART(CAST(t.x AS TEXT), CHR(0), 1)) END FROM t",
+            ),
+            (
+                "INT",
+                "SELECT CASE TYPEOF(t.x) WHEN 'BLOB' THEN OCTET_LENGTH(CAST(t.x AS BLOB)) "
+                "ELSE LENGTH(SPLIT_PART(CAST(t.x AS TEXT), CHR(0), 1)) END FROM t",
+            ),
+        ):
+            expression = annotate_types(
+                self.parse_one("SELECT LENGTH(t.x) FROM t"),
+                schema={"t": {"x": dtype}},
+                dialect="sqlite",
+            )
+            self.assertEqual(expression.sql("duckdb"), expected)
+
+        self.validate_all(
+            "SELECT LENGTH('é')",
+            write={"mysql": "SELECT CHAR_LENGTH('é')"},
+        )
+
+        expression = self.validate_identity("SELECT LENGTH(x)")
+        original = expression.copy()
+        sql = expression.sql("duckdb", copy=False)
+        self.assertEqual(
+            sql,
+            "SELECT CASE TYPEOF(x) WHEN 'BLOB' THEN OCTET_LENGTH(CAST(x AS BLOB)) "
+            "ELSE LENGTH(SPLIT_PART(CAST(x AS TEXT), CHR(0), 1)) END",
+        )
+        self.assertEqual(expression, original)
+        length = expression.find(exp.Length)
+        self.assertTrue(length.args.get("null_terminated"))
+        self.assertIs(length.this.parent, length)
+        self.assertEqual(expression.sql("sqlite", copy=False), "SELECT LENGTH(x)")
+        self.assertEqual(
+            parse_one("SELECT LENGTH(x)", dialect="duckdb").sql("duckdb"),
+            "SELECT LENGTH(x)",
+        )
+
+    def test_round(self):
+        for sql, duckdb_sql in (
+            ("ROUND(123.45)", "ROUND(123.45)"),
+            ("ROUND(123.45, -1)", "ROUND(123.45, 0)"),
+            ("ROUND(123.45, -2)", "ROUND(123.45, 0)"),
+            ("ROUND(-123.45, -1)", "ROUND(-123.45, 0)"),
+            ("ROUND(123.45, 0)", "ROUND(123.45, 0)"),
+            ("ROUND(123.45, 1)", "ROUND(123.45, 1)"),
+            ("ROUND(NULL, -1)", "ROUND(NULL, 0)"),
+            (
+                "ROUND(123.45, NULL)",
+                "ROUND(CAST(123.45 AS DOUBLE), CASE WHEN NULL < 0 THEN 0 ELSE NULL END)",
+            ),
+            ("ROUND(x, n)", "ROUND(CAST(x AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END)"),
+            (
+                "ROUND(123.45, n)",
+                "ROUND(CAST(123.45 AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END)",
+            ),
+            (
+                "ROUND(x, n - 1)",
+                "ROUND(CAST(x AS DOUBLE), CASE WHEN (n - 1) < 0 THEN 0 ELSE n - 1 END)",
+            ),
+        ):
+            with self.subTest(sql=sql):
+                self.validate_all(sql, write={"sqlite": sql, "duckdb": duckdb_sql})
+
+        sql = "SELECT ROUND(x, n) FROM t"
+        expression = self.validate_identity(sql)
+        original = expression.copy()
+        for _ in range(3):
+            self.assertEqual(
+                expression.sql("duckdb", copy=False),
+                "SELECT ROUND(CAST(x AS DOUBLE), CASE WHEN n < 0 THEN 0 ELSE n END) FROM t",
+            )
+            self.assertEqual(expression, original)
+            round_expression = expression.find(exp.Round)
+            self.assertIs(round_expression.args["decimals"].parent, round_expression)
+            self.assertEqual(expression.sql("sqlite", copy=False), sql)
+            expression = self.parse_one(expression.sql("sqlite"))
+
+        for dialect in ("duckdb", "postgres", "snowflake"):
+            with self.subTest(dialect=dialect):
+                self.assertEqual(
+                    parse_one("ROUND(123.45, -1)", dialect=dialect).sql("duckdb"),
+                    "ROUND(123.45, -1)",
+                )
+
+    def test_week_date_arithmetic(self):
+        self.validate_all(
+            "DATE(d, (n * 7) || ' DAY')",
+            read={"mysql": "DATE_ADD(d, INTERVAL n WEEK)"},
+        )
+        connection = sqlite3.connect(":memory:")
+        try:
+            for operation, amount, expected in (
+                ("ADD", "2", "2024-01-15"),
+                ("SUB", "2", "2023-12-18"),
+                ("ADD", "-2", "2023-12-18"),
+                ("SUB", "-2", "2024-01-15"),
+                ("ADD", "0", "2024-01-01"),
+            ):
+                with self.subTest(operation=operation, amount=amount):
+                    source = f"SELECT DATE_{operation}('2024-01-01', INTERVAL {amount} WEEK)"
+                    sql = parse_one(source, read="mysql").sql("sqlite")
+                    self.assertEqual(connection.execute(sql).fetchone()[0], expected)
+
+            for operation, expected in (("ADD", "2024-01-15"), ("SUB", "2023-12-18")):
+                source = f"SELECT DATE_{operation}(d, INTERVAL n WEEK) FROM (SELECT '2024-01-01' AS d, 2 AS n) AS t"
+                sql = parse_one(source, read="mysql").sql("sqlite")
+                self.assertEqual(connection.execute(sql).fetchone()[0], expected)
+            source = (
+                "SELECT DATE_ADD('2024-01-01', INTERVAL (n + 1) WEEK) FROM (SELECT 1 AS n) AS t"
+            )
+            sql = parse_one(source, read="mysql").sql("sqlite")
+            self.assertEqual(connection.execute(sql).fetchone()[0], "2024-01-15")
+            sql = parse_one("SELECT DATE_ADD(NULL, INTERVAL 2 WEEK)", read="mysql").sql("sqlite")
+            self.assertIsNone(connection.execute(sql).fetchone()[0])
+        finally:
+            connection.close()
+
+    def test_random(self):
+        duckdb_random = "CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(9223372036854775807 AS INT128) - CAST(-9223372036854775807 AS INT128)) + 1)) + CAST(-9223372036854775807 AS INT128) AS BIGINT)"
+        self.validate_all(
+            "SELECT RANDOM()",
+            write={
+                "sqlite": "SELECT RANDOM()",
+                "duckdb": f"SELECT {duckdb_random}",
+            },
+        )
+        self.validate_all(
+            "SELECT ABS(RANDOM()) % 2 WHERE RANDOM() < 0",
+            write={
+                "sqlite": "SELECT ABS(RANDOM()) % 2 WHERE RANDOM() < 0",
+                "duckdb": f"SELECT ABS({duckdb_random}) % NULLIF(2, 0) WHERE {duckdb_random} < 0",
+            },
+        )
+        expression = annotate_types(self.parse_one("RANDOM()"), dialect="sqlite")
+        self.assertTrue(expression.is_type(exp.DType.BIGINT))
+        self.assertEqual(expression.args["lower"].to_py(), -9223372036854775807)
+        self.assertEqual(expression.args["upper"].to_py(), 9223372036854775807)
 
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
@@ -111,6 +363,33 @@ class TestSQLite(Validator):
                         connection.execute(sql).fetchall(),
                         connection.execute(generated).fetchall(),
                     )
+        finally:
+            connection.close()
+
+    def test_date_add_sub_day_units_retain_time(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            for sql, expected in (
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 2 HOUR)",
+                    "2024-01-01 12:00:00",
+                ),
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 30 MINUTE)",
+                    "2024-01-01 10:30:00",
+                ),
+                (
+                    "SELECT DATE_ADD('2024-01-01 10:00:00', INTERVAL 45 SECOND)",
+                    "2024-01-01 10:00:45",
+                ),
+                (
+                    "SELECT DATE_SUB('2024-01-01 10:00:00', INTERVAL 2 HOUR)",
+                    "2024-01-01 08:00:00",
+                ),
+            ):
+                with self.subTest(sql=sql):
+                    generated = parse_one(sql, read="mysql").sql("sqlite")
+                    self.assertEqual([(expected,)], connection.execute(generated).fetchall())
         finally:
             connection.close()
 
@@ -268,6 +547,32 @@ class TestSQLite(Validator):
         ):
             with self.subTest(source=source):
                 self.validate_all(expected, read={"mysql": source})
+
+    def test_negative_limit(self):
+        # A negative LIMIT means "no limit" in SQLite
+        self.validate_all(
+            "SELECT x FROM t LIMIT -1 OFFSET 5",
+            write={
+                "sqlite": "SELECT x FROM t LIMIT -1 OFFSET 5",
+                "duckdb": "SELECT x FROM t LIMIT ALL OFFSET 5",
+                "postgres": "SELECT x FROM t LIMIT ALL OFFSET 5",
+                "tsql": "SELECT x FROM t ORDER BY (SELECT NULL) OFFSET 5 ROWS",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM t LIMIT 5, -2",
+            write={
+                "sqlite": "SELECT x FROM t LIMIT -1 OFFSET 5",
+                "duckdb": "SELECT x FROM t LIMIT ALL OFFSET 5",
+            },
+        )
+        self.validate_all(
+            "SELECT x FROM t LIMIT -1",
+            write={
+                "sqlite": "SELECT x FROM t",
+                "duckdb": "SELECT x FROM t LIMIT ALL",
+            },
+        )
 
     def test_cast(self):
         for dtype, func in (
@@ -503,6 +808,38 @@ class TestSQLite(Validator):
             "SELECT DATE(d, (n) || ' DAY') FROM t",
             read={
                 "mysql": "SELECT DATE_SUB(d, INTERVAL -n DAY) FROM t",
+            },
+        )
+        # DATE drops the time component, so sub-day units use DATETIME instead
+        self.validate_all(
+            "SELECT DATETIME(d, '2 HOUR') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 2 HOUR) FROM t",
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL 2 HOUR) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '30 MINUTE') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 30 MINUTE) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '45 SECOND') FROM t",
+            read={
+                "mysql": "SELECT DATE_ADD(d, INTERVAL 45 SECOND) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '-2 HOUR') FROM t",
+            read={
+                "mysql": "SELECT DATE_SUB(d, INTERVAL 2 HOUR) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, (n) || ' HOUR') FROM t",
+            read={
+                "duckdb": "SELECT DATE_ADD(d, INTERVAL (n) HOUR) FROM t",
             },
         )
         self.validate_all(
@@ -802,6 +1139,7 @@ class TestSQLite(Validator):
             "UNICODE(x)",
             write={
                 "": "UNICODE(x)",
+                "duckdb": "NULLIF(UNICODE(x), -1)",
                 "mysql": "ORD(CONVERT(x USING utf32))",
                 "oracle": "ASCII(UNISTR(x))",
                 "postgres": "ASCII(x)",
@@ -835,6 +1173,18 @@ class TestSQLite(Validator):
         self.validate_identity("SELECT * FROM t WHERE NULL IS y")
         self.validate_identity("SELECT * FROM t WHERE NULL IS NOT y")
         self.validate_identity("SELECT SQLITE_VERSION()")
+
+    def test_unicode(self):
+        for arg in ("''", "NULL", "'A'", "'Ω'", "'😀'", "LOWER('')"):
+            with self.subTest(arg=arg):
+                sql = f"SELECT UNICODE({arg})"
+                self.validate_all(
+                    sql,
+                    write={
+                        "sqlite": sql,
+                        "duckdb": f"SELECT NULLIF(UNICODE({arg}), -1)",
+                    },
+                )
 
     def test_json_arrow_precedence(self):
         # ||, -> and ->> form a single left-associative precedence tier that binds
@@ -902,6 +1252,51 @@ class TestSQLite(Validator):
                 "duckdb": "SELECT STRFTIME(CAST(CURRENT_TIMESTAMP AS TIMESTAMP), '%Y-%m-%d')",
                 "sqlite": "SELECT STRFTIME('%Y-%m-%d', CURRENT_TIMESTAMP)",
             },
+        )
+
+    def test_strftime_fractional_seconds(self):
+        self.validate_all(
+            "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', '2024-02-29 12:34:56.123')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST('2024-02-29 12:34:56.123' AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%g')",
+                "sqlite": "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', '2024-02-29 12:34:56.123')",
+            },
+        )
+        for value in ("'2024-02-29 12:34:00.007'", "'2024-02-29 12:34:56'", "NULL"):
+            self.validate_all(
+                f"SELECT STRFTIME('%f', {value})",
+                write={
+                    "duckdb": f"SELECT STRFTIME(CAST({value} AS TIMESTAMP), '%S.%g')",
+                    "sqlite": f"SELECT STRFTIME('%f', {value})",
+                },
+            )
+
+        self.validate_all(
+            "SELECT STRFTIME('%f', ts) FROM (SELECT '2024-02-29 12:34:56.123' AS ts) AS t",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(ts AS TIMESTAMP), '%S.%g') FROM (SELECT '2024-02-29 12:34:56.123' AS ts) AS t",
+            },
+        )
+
+        for source, target in (
+            ("%%f", "%%f"),
+            ("%%%f", "%%%S.%g"),
+            ("%%%%f", "%%%%f"),
+            ("%S.%f", "%S.%S.%g"),
+            ("%f|%%f|%f", "%S.%g|%%f|%S.%g"),
+        ):
+            self.validate_all(
+                f"SELECT STRFTIME('{source}', '2024-02-29 12:34:56.123')",
+                write={
+                    "duckdb": f"SELECT STRFTIME(CAST('2024-02-29 12:34:56.123' AS TIMESTAMP), '{target}')",
+                    "sqlite": f"SELECT STRFTIME('{source}', '2024-02-29 12:34:56.123')",
+                },
+            )
+
+        self.validate_identity("SELECT STRFTIME('%f')", "SELECT STRFTIME('%f', CURRENT_TIMESTAMP)")
+        self.validate_identity("SELECT STRFTIME('%f', '2024-02-29 12:34:56.123', '+1 second')")
+        self.validate_identity(
+            "SELECT STRFTIME(fmt, '2024-02-29 12:34:56.123') FROM (SELECT '%f' AS fmt) AS t"
         )
 
     def test_datediff(self):
@@ -1110,7 +1505,9 @@ class TestSQLite(Validator):
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):
-                self.validate_identity("CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT IGNORE)")
+                self.validate_identity(
+                    f"CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT {conflict_action})"
+                )
 
         self.validate_identity("CREATE TABLE over (x, y)")
         self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")

@@ -186,6 +186,7 @@ class Round(Expression, Func):
         "decimals": False,
         "truncate": False,
         "casts_non_integer_decimals": False,
+        "negative_decimals_are_zero": False,
     }
 
 

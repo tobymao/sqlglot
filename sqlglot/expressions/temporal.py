@@ -509,7 +509,8 @@ class TimeStrToUnix(Expression, Func):
 
 
 class TimeToStr(Expression, Func):
-    arg_types = {"this": True, "format": True, "culture": False, "zone": False}
+    # joda: parsed from Presto/Trino's FORMAT_DATETIME, which DATE_FORMAT can't always express
+    arg_types = {"this": True, "format": True, "culture": False, "zone": False, "joda": False}
 
 
 class TimeToTimeStr(Expression, Func):

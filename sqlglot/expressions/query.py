@@ -1975,6 +1975,10 @@ class Where(Expression):
     pass
 
 
+class Optimize(Expression):
+    pass
+
+
 class Analyze(Expression):
     arg_types = {
         "kind": False,

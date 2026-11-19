@@ -9,6 +9,23 @@ from tests.dialects.test_dialect import Validator
 class TestSpark(Validator):
     dialect = "spark"
 
+    def test_merge_schema_evolution(self):
+        sql = (
+            "MERGE WITH SCHEMA EVOLUTION INTO target AS t USING source AS s ON t.id = s.id "
+            "WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *"
+        )
+        self.validate_all(
+            sql,
+            read={"databricks": sql},
+            write={
+                "spark, version=4.0": sql,
+                "spark, version=3.5": UnsupportedError,
+                "databricks, version=15.2": sql,
+                "databricks, version=15.1": UnsupportedError,
+                "postgres": UnsupportedError,
+            },
+        )
+
     def test_trunc_unknown_format(self):
         sql = "TRUNC(CAST('2024-05-15' AS DATE), 'WW')"
         self.assertEqual(self.parse_one(sql).sql("spark", unsupported_level=ErrorLevel.RAISE), sql)
@@ -41,8 +58,8 @@ class TestSpark(Validator):
                             dialects,
                             f"CREATE TABLE t (a INT) USING parquet OPTIONS ({key} {separator} 's3://b/t')",
                         ),
-                        write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError},
                     )
+        self.validate_all(sql, write={**dict.fromkeys(dialects, sql), "hive": UnsupportedError})
         expression = self.validate_identity(sql)
         self.assertIsInstance(expression, exp.Create)
         options = expression.find(exp.OptionsProperty)
@@ -901,6 +918,42 @@ TBLPROPERTIES (
             },
         )
         self.validate_identity("SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss')")
+        self.validate_all(
+            "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(x AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%g')",
+                "snowflake": "SELECT TO_CHAR(CAST(x AS TIMESTAMP), 'yyyy-mm-DD hh24:mi:ss.ff3')",
+                "spark": "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            write={
+                "duckdb": "SELECT STRPTIME(x, '%Y-%m-%d %H:%M:%S.%g')",
+                "spark": "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSS')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-M-d H:m:s.SSS')",
+            read={
+                "snowflake": "SELECT TO_TIMESTAMP(x, 'YYYY-MM-DD HH24:MI:SS.FF3')",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            write={
+                "duckdb": "SELECT STRFTIME(CAST(x AS TIMESTAMP), '%Y-%m-%d %H:%M:%S.%f')",
+                "snowflake": "SELECT TO_CHAR(CAST(x AS TIMESTAMP), 'yyyy-mm-DD hh24:mi:ss.ff6')",
+                "spark": "SELECT DATE_FORMAT(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
+        self.validate_all(
+            "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            write={
+                "duckdb": "SELECT STRPTIME(x, '%Y-%m-%d %H:%M:%S.%f')",
+                "spark": "SELECT TO_TIMESTAMP(x, 'yyyy-MM-dd HH:mm:ss.SSSSSS')",
+            },
+        )
         self.validate_all(
             "SELECT RLIKE('John Doe', 'John.*')",
             write={

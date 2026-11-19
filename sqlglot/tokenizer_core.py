@@ -465,6 +465,7 @@ class TokenType(IntEnum):
     SINK = auto()
     SOURCE = auto()
     ANALYZE = auto()
+    OPTIMIZE = auto()
     NAMESPACE = auto()
     EXPORT = auto()
 

@@ -426,6 +426,9 @@ class BigQueryGenerator(generator.Generator):
         exp.Cast: transforms.preprocess(
             [_widen_decimal, transforms.remove_precision_parameterized_types]
         ),
+        exp.TryCast: transforms.preprocess(
+            [_widen_decimal, transforms.remove_precision_parameterized_types]
+        ),
         exp.CollateProperty: lambda self, e: (
             f"DEFAULT COLLATE {self.sql(e, 'this')}"
             if e.args.get("default")

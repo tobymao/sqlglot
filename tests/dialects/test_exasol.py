@@ -608,16 +608,6 @@ class TestExasol(Validator):
                     },
                 )
 
-                self.validate_all(
-                    "SELECT CAST(ADD_DAYS(ADD_MONTHS(DATE_TRUNC('MONTH', DATE '2008-11-25'), 1), -1) AS DATE)",
-                    read={
-                        "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
-                        "databricks": "SELECT LAST_DAY('2008-11-25')",
-                        "spark": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
-                        "presto": "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
-                    },
-                )
-
             with self.subTest(f"Testing {unit}S_BETWEEN"):
                 self.validate_all(
                     f"SELECT {unit}S_BETWEEN(TIMESTAMP '2000-02-28 00:00:00', CURRENT_TIMESTAMP)",
@@ -631,6 +621,15 @@ class TestExasol(Validator):
                         "tsql": f"SELECT DATEDIFF({unit}, GETDATE(), CAST('2000-02-28 00:00:00' AS DATETIME2))",
                     },
                 )
+        self.validate_all(
+            "SELECT CAST(ADD_DAYS(ADD_MONTHS(DATE_TRUNC('MONTH', DATE '2008-11-25'), 1), -1) AS DATE)",
+            read={
+                "snowflake": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE), MONTH)",
+                "databricks": "SELECT LAST_DAY('2008-11-25')",
+                "spark": "SELECT LAST_DAY(CAST('2008-11-25' AS DATE))",
+                "presto": "SELECT LAST_DAY_OF_MONTH(CAST('2008-11-25' AS DATE))",
+            },
+        )
         self.validate_all(
             "SELECT quarter('2016-08-31')",
             write={
@@ -729,14 +728,11 @@ class TestExasol(Validator):
         self.validate_all(
             "HASH_SHA(x)",
             read={
-                "clickhouse": "SHA1(x)",
                 "exasol": "HASH_SHA1(x)",
-                "presto": "SHA1(x)",
-                "trino": "SHA1(x)",
             },
             write={
                 "exasol": "HASH_SHA(x)",
-                "clickhouse": "SHA1(x)",
+                "clickhouse": "LOWER(HEX(SHA1(x)))",
                 "bigquery": "SHA1(x)",
                 "": "SHA(x)",
                 "presto": "SHA1(x)",
@@ -773,14 +769,13 @@ class TestExasol(Validator):
         self.validate_all(
             "HASH_SHA256(x)",
             read={
-                "clickhouse": "SHA256(x)",
                 "duckdb": "SHA256(x)",
             },
             write={
                 "exasol": "HASH_SHA256(x)",
                 "bigquery": "SHA256(x)",
                 "spark2": "SHA2(x, 256)",
-                "clickhouse": "SHA256(x)",
+                "clickhouse": "LOWER(HEX(SHA256(x)))",
                 "postgres": "ENCODE(SHA256(x), 'hex')",
                 "presto": "LOWER(TO_HEX(SHA256(x)))",
                 "redshift": "SHA2(x, 256)",
@@ -791,12 +786,9 @@ class TestExasol(Validator):
         )
         self.validate_all(
             "HASH_SHA512(x)",
-            read={
-                "clickhouse": "SHA512(x)",
-            },
             write={
                 "exasol": "HASH_SHA512(x)",
-                "clickhouse": "SHA512(x)",
+                "clickhouse": "LOWER(HEX(SHA512(x)))",
                 "bigquery": "SHA512(x)",
                 "spark2": "SHA2(x, 512)",
                 "presto": "LOWER(TO_HEX(SHA512(x)))",

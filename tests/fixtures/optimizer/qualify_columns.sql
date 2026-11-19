@@ -1035,6 +1035,45 @@ SELECT COALESCE(x.a, x.b) AS new_b FROM x AS x;
 SELECT * REPLACE(1 AS a, a AS b) RENAME(b AS new_b) FROM x;
 SELECT 1 AS a, x.a AS new_b FROM x AS x;
 
+# title: REPLACE of a USING column
+# dialect: duckdb
+# execute_min_python: 3.10
+# note: DuckDB 1.4.5 returns duplicate USING columns with REPLACE.
+SELECT * REPLACE(b * 2 AS b) FROM x JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y.b) * 2 AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: RENAME of a USING column
+# dialect: duckdb
+SELECT * RENAME(b AS new_b) FROM x FULL JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y.b) AS new_b, y.c AS c FROM x AS x FULL JOIN y AS y ON x.b = y.b;
+
+# title: REPLACE and RENAME of a USING column
+# dialect: snowflake
+# execute: false
+SELECT * REPLACE(b * 2 AS b) RENAME(b AS new_b) FROM x FULL JOIN y USING (b);
+SELECT COALESCE(X.B, Y.B) * 2 AS NEW_B, X.A AS A, Y.C AS C FROM X AS X FULL JOIN Y AS Y ON X.B = Y.B;
+
+# title: REPLACE only affects its own star
+# dialect: duckdb
+# execute_min_python: 3.10
+SELECT * REPLACE(b * 2 AS b), * FROM x JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y.b) * 2 AS b, y.c AS c, x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x JOIN y AS y ON x.b = y.b;
+
+# title: RENAME only affects its own star
+# dialect: duckdb
+SELECT * RENAME(b AS new_b), * FROM x FULL JOIN y USING (b);
+SELECT x.a AS a, COALESCE(x.b, y.b) AS new_b, y.c AS c, x.a AS a, COALESCE(x.b, y.b) AS b, y.c AS c FROM x AS x FULL JOIN y AS y ON x.b = y.b;
+
+# title: REPLACE only affects its own qualified star
+# dialect: duckdb
+SELECT x.* REPLACE(b * 2 AS b), x.* FROM x;
+SELECT x.a AS a, x.b * 2 AS b, x.a AS a, x.b AS b FROM x AS x;
+
+# title: EXCLUDE only affects its own star
+# dialect: duckdb
+SELECT * EXCLUDE(b), * FROM x;
+SELECT x.a AS a, x.a AS a, x.b AS b FROM x AS x;
+
 --------------------------------------
 -- Using
 --------------------------------------

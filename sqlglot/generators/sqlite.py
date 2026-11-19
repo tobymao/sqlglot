@@ -163,7 +163,7 @@ class SQLiteGenerator(generator.Generator):
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
         exp.Pivot: no_pivot_sql,
-        exp.Rand: rename_func("RANDOM"),
+        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
         exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [
@@ -175,7 +175,7 @@ class SQLiteGenerator(generator.Generator):
         exp.StrPosition: lambda self, e: strposition_sql(self, e, func_name="INSTR"),
         exp.TableSample: no_tablesample_sql,
         exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
-        exp.TimeToStr: lambda self, e: self.func("STRFTIME", e.args.get("format"), e.this),
+        exp.TimeToStr: lambda self, e: self.func("STRFTIME", self.format_time(e), e.this),
         exp.TryCast: no_trycast_sql,
         exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
     }
@@ -275,6 +275,14 @@ class SQLiteGenerator(generator.Generator):
             unit = unit or modifier.unit
             modifier = modifier.this
 
+        if unit and unit.name.upper() == "WEEK":
+            modifier = modifier * 7
+            unit = exp.var("DAY")
+
+        # SQLite DATE deliberately returns only a date, so sub-day units would
+        # silently drop the time; DATETIME retains it.
+        func = "DATETIME" if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND") else "DATE"
+
         modifier = modifier.unnest()
         if (
             unit
@@ -282,7 +290,7 @@ class SQLiteGenerator(generator.Generator):
             and not (isinstance(modifier, exp.Neg) and modifier.this.is_number)
         ):
             return self.func(
-                "DATE",
+                func,
                 expression.this,
                 exp.DPipe(
                     this=exp.paren(modifier),
@@ -291,7 +299,7 @@ class SQLiteGenerator(generator.Generator):
             )
         modifier = modifier.name if modifier.is_string else self.sql(modifier)
         modifier = f"{modifier} {unit.name}" if unit else modifier
-        return self.func("DATE", expression.this, exp.Literal.string(modifier))
+        return self.func(func, expression.this, exp.Literal.string(modifier))
 
     def datesub_sql(self, expression: exp.DateSub) -> str:
         # SQLite has no DATE_SUB, so add the negated amount instead

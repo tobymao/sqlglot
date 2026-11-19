@@ -10,6 +10,8 @@ from sqlglot.tokens import TokenType
 class MaterializeParser(PostgresParser):
     TYPED_LAMBDA_ARGS = True
 
+    FUNCTIONS = {k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "CARDINALITY"}
+
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,
         "MAP": lambda self: self._parse_map(),

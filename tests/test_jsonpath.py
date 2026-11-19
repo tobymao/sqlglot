@@ -152,8 +152,13 @@ class TestJsonpath(unittest.TestCase):
             """$[1:5:\r2]""": """$[1:5:2]""",
         }
 
+        seen = set()
         for test in tests:
             selector = test["selector"]
+            key = (selector, bool(test.get("invalid_selector")))
+            if key in seen:
+                continue
+            seen.add(key)
 
             with self.subTest(f"{selector.strip()} /* {test['name']} */"):
                 if test.get("invalid_selector"):

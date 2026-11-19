@@ -70,6 +70,7 @@ class SparkGenerator(Spark2Generator):
     SUPPORTS_CONVERT_TIMEZONE = True
     SUPPORTS_MEDIAN = True
     SUPPORTS_UNIX_SECONDS = True
+    MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (4, 0)
     SUPPORTS_DECODE_CASE = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
@@ -147,7 +148,13 @@ class SparkGenerator(Spark2Generator):
     }
 
     def dateadd_sql(self, expression: exp.DateAdd | exp.DateSub) -> str:
-        if expression.text("unit").upper() in ("HOUR", "MINUTE", "SECOND"):
+        if expression.text("unit").upper() in (
+            "HOUR",
+            "MINUTE",
+            "SECOND",
+            "MILLISECOND",
+            "MICROSECOND",
+        ):
             amount = expression.expression
             return self.func(
                 "TIMESTAMPADD",

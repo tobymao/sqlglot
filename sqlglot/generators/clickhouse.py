@@ -385,9 +385,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.Xor: lambda self, e: self.func("xor", e.this, e.expression),
         exp.MD5Digest: rename_func("MD5"),
         exp.MD5: lambda self, e: self.func("LOWER", self.func("HEX", self.func("MD5", e.this))),
-        exp.SHA: rename_func("SHA1"),
+        exp.SHA: lambda self, e: self.func("LOWER", self.func("HEX", self.func("SHA1", e.this))),
         exp.SHA1Digest: rename_func("SHA1"),
-        exp.SHA2: sha256_sql,
+        exp.SHA2: lambda self, e: self.func("LOWER", self.func("HEX", sha256_sql(self, e))),
         exp.SHA2Digest: sha2_digest_sql,
         exp.Split: lambda self, e: self.func(
             "splitByString", e.args.get("expression"), e.this, e.args.get("limit")

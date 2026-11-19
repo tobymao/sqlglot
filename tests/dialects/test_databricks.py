@@ -1,5 +1,5 @@
-from sqlglot import exp, transpile, parse_one
-from sqlglot.errors import ParseError
+from sqlglot import exp, transpile, parse_one, parse
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 from tests.dialects.test_dialect import Validator
 
 
@@ -668,6 +668,113 @@ class TestDatabricks(Validator):
         self.validate_identity(
             "REVOKE SELECT ON TABLE t FROM `fab9e00e-ca35-11ec-9d64-0242ac120002`"
         )
+
+    def test_optimize(self):
+        for sql in (
+            "OPTIMIZE t",
+            "OPTIMIZE db.t",
+            "OPTIMIZE catalog.db.t",
+            "OPTIMIZE `cat.name`.`some schema`.`a``b`",
+            "OPTIMIZE `DOUBLE PRECISION`",
+            "OPTIMIZE 123t",
+            "OPTIMIZE vacuum.t",
+            "OPTIMIZE optimize.t",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql)
+                self.assertIsInstance(tree, exp.Optimize)
+                self.assertIsInstance(tree.this, exp.Table)
+                self.assertEqual(list(tree.find_all(exp.Table)), [tree.this])
+                for part in tree.this.parts:
+                    self.assertEqual(
+                        sql[part.meta["start"] : part.meta["end"] + 1],
+                        part.sql(dialect="databricks"),
+                    )
+
+        tree = self.validate_identity("optimize db.t", "OPTIMIZE db.t")
+        self.assertEqual(exp.Expr.load(tree.dump()), tree)
+        self.assertEqual(tree, self.parse_one(tree.sql(dialect="databricks")))
+        for sql in ("SELECT optimize FROM optimize", "SELECT 1 AS optimize"):
+            self.validate_identity(sql)
+        self.validate_identity("SELECT 1 optimize", "SELECT 1 AS optimize")
+        self.validate_identity("SELECT * FROM t optimize", "SELECT * FROM t AS optimize")
+        self.validate_identity("SELECT OPTIMIZE(1)")
+        table = self.parse_one("OPTIMIZE\ncatalog.t").this
+        self.assertEqual((table.this.meta["line"], table.this.meta["col"]), (2, 9))
+
+        statements = parse("OPTIMIZE `a;b`; OPTIMIZE t FULL; SELECT 1", read="databricks")
+        self.assertEqual(
+            [type(tree) for tree in statements], [exp.Optimize, exp.Command, exp.Select]
+        )
+        for dialect in ("hive", "spark", "snowflake"):
+            with self.subTest(dialect=dialect):
+                self.assertIsInstance(parse_one("OPTIMIZE t", read=dialect), exp.Command)
+                with self.assertRaises(UnsupportedError):
+                    tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
+    def test_optimize_comments(self):
+        for sql in (
+            "/* comment */ OPTIMIZE db.t",
+            "OPTIMIZE /* comment */ db.t",
+            "OPTIMIZE db /* comment */ .t",
+            "OPTIMIZE db. /* comment */ t",
+            "OPTIMIZE db. -- comment\nt",
+            "OPTIMIZE db.t /* comment */",
+            "OPTIMIZE db.t -- comment\n",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql, "OPTIMIZE db.t /* comment */")
+                self.assertIsInstance(tree, exp.Optimize)
+                self.assertIsInstance(tree.this, exp.Table)
+        tree = self.validate_identity(
+            "OPTIMIZE catalog. /* first */ db. /* second */ t",
+            "OPTIMIZE catalog.db.t /* first */ /* second */",
+        )
+        self.assertEqual([comment.strip() for comment in tree.this.comments], ["first", "second"])
+
+    def test_optimize_comment_order(self):
+        self.validate_identity(
+            "/* first */ OPTIMIZE db. /* second */ t /* third */",
+            "OPTIMIZE db.t /* second */ /* third */ /* first */",
+        )
+        tree = self.validate_identity(
+            "OPTIMIZE CaT. /* sqlglot.meta case_sensitive=true */ "
+            "Db /* sqlglot.meta case_sensitive=false */",
+            "OPTIMIZE CaT.Db /* sqlglot.meta case_sensitive=true */ "
+            "/* sqlglot.meta case_sensitive=false */",
+        )
+        self.assertFalse(tree.this.meta["case_sensitive"])
+
+    def test_optimize_fallback(self):
+        for sql in (
+            "OPTIMIZE t FULL",
+            "OPTIMIZE t WHERE partition_id = 1",
+            "OPTIMIZE t ZORDER BY (id)",
+            "OPTIMIZE t WHERE partition_id = 1 ZORDER BY (id)",
+            "OPTIMIZE a.b.c.d",
+            "OPTIMIZE t.",
+            "OPTIMIZE 'not_a_table'",
+            "OPTIMIZE 1e3",
+            "OPTIMIZE DOUBLE PRECISION",
+            "OPTIMIZE DOUBLE\tPRECISION",
+            "OPTIMIZE t.ADD FILE",
+            "OPTIMIZE f(" + "(" * 80 + "1" + ")" * 80 + ")",
+        ):
+            with self.subTest(sql=sql):
+                self.assertIsInstance(
+                    self.validate_identity(sql, check_command_warning=True), exp.Command
+                )
+        for sql in ("OPTIMIZE t FULL /* trailing */", "OPTIMIZE t FULL -- trailing\n"):
+            tree = self.validate_identity(sql, "/* trailing */ OPTIMIZE t FULL")
+            self.assertIsInstance(tree, exp.Command)
+            self.assertEqual([comment.strip() for comment in tree.comments], ["trailing"])
+
+    def test_optimize_parser_limits(self):
+        with self.assertRaises(ParseError):
+            self.parse_one("OPTIMIZE t", max_nodes=1)
+        self.assertIsInstance(self.parse_one("OPTIMIZE t", max_nodes=2), exp.Optimize)
+        with self.assertRaises(ParseError):
+            self.parse_one("OPTIMIZE t FULL", max_nodes=0)
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")

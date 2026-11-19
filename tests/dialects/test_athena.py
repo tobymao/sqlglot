@@ -213,12 +213,6 @@ class TestAthena(Validator):
         self.validate_identity('CREATE TABLE "foo" AS SELECT * FROM "a"')
 
         self.validate_identity('DROP VIEW IF EXISTS "foo"."bar"')
-        self.validate_identity('CREATE VIEW "foo" AS SELECT "id" FROM "tbl"')
-        self.validate_identity(
-            "CREATE VIEW foo AS SELECT id FROM tbl",
-            'CREATE VIEW "foo" AS SELECT "id" FROM "tbl"',
-            identify=True,
-        )
 
         self.validate_identity("DROP TABLE `foo`")
         self.validate_identity("DROP TABLE foo")

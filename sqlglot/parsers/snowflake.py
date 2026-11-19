@@ -604,8 +604,8 @@ class SnowflakeParser(parser.Parser):
         "REGEXP_SUBSTR_ALL": _build_regexp_extract(exp.RegexpExtractAll),
         "RANDOM": lambda args: exp.Rand(
             this=seq_get(args, 0),
-            lower=exp.Literal.number(-9223372036854775808.0),  # -2^63 as float to avoid overflow
-            upper=exp.Literal.number(9223372036854775807.0),  # 2^63-1 as float
+            lower=exp.Literal.number(-9223372036854775808),
+            upper=exp.Literal.number(9223372036854775807),
         ),
         "REPLACE": build_replace_with_optional_replacement,
         "RIGHT": lambda args: exp.Right(
@@ -804,6 +804,7 @@ class SnowflakeParser(parser.Parser):
         **parser.Parser.PROPERTY_PARSERS,
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
         "FILE_FORMAT": lambda self: self._parse_file_format_property(),
+        "HYBRID": lambda self: self.expression(exp.HybridProperty()),
         "IGNORE": lambda self: self._parse_ignore_property(),
         "INTERACTIVE": lambda self: self.expression(exp.InteractiveProperty()),
         "LOCATION": lambda self: self._parse_location_property(),

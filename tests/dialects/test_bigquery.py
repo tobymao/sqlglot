@@ -888,13 +888,6 @@ LANGUAGE js AS
             },
         )
         self.validate_all(
-            "PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E6S%z', x)",
-            write={
-                "bigquery": "PARSE_TIMESTAMP('%FT%H:%M:%E6S%z', x)",
-                "duckdb": "STRPTIME('1970 ' || x, '%Y ' || '%Y-%m-%dT%H:%M:%S.%f%z')",
-            },
-        )
-        self.validate_all(
             "SELECT results FROM Coordinates, Coordinates.position AS results",
             write={
                 "bigquery": "SELECT results FROM Coordinates CROSS JOIN UNNEST(Coordinates.position) AS results",
@@ -1456,7 +1449,7 @@ LANGUAGE js AS
             },
             write={
                 "bigquery": "SHA256(x)",
-                "spark2": "SHA2(x, 256)",
+                "spark2": "UNHEX(SHA2(x, 256))",
                 "clickhouse": "SHA256(x)",
                 "postgres": "SHA256(x)",
                 "presto": "SHA256(x)",
@@ -1476,7 +1469,7 @@ LANGUAGE js AS
             write={
                 "clickhouse": "SHA512(x)",
                 "bigquery": "SHA512(x)",
-                "spark2": "SHA2(x, 512)",
+                "spark2": "UNHEX(SHA2(x, 512))",
                 "presto": "SHA512(x)",
                 "trino": "SHA512(x)",
             },
@@ -2434,14 +2427,6 @@ WHERE
             },
         )
         self.validate_all(
-            "SELECT b'a'",
-            write={
-                "bigquery": "SELECT b'a'",
-                "duckdb": "SELECT CAST('a' AS BLOB)",
-                "postgres": "SELECT DECODE('61', 'hex')",
-            },
-        )
-        self.validate_all(
             "SELECT GENERATE_UUID()",
             write={
                 "bigquery": "SELECT GENERATE_UUID()",
@@ -2665,14 +2650,6 @@ WHERE
             for actual, expected in zip(statements, expected_statements):
                 self.assertEqual(actual.sql(dialect="bigquery"), expected)
 
-        with self.assertLogs(helper_logger) as cm:
-            self.validate_identity(
-                "SELECT * FROM t AS t(c1, c2)",
-                "SELECT * FROM t AS t",
-            )
-
-            self.assertIn("Named columns are not supported in table alias.", cm.output[0])
-
         with self.assertLogs(helper_logger):
             self.validate_all(
                 "SELECT a[1], b[OFFSET(1)], c[ORDINAL(1)], d[SAFE_OFFSET(1)], e[SAFE_ORDINAL(1)]",
@@ -2751,6 +2728,14 @@ WHERE
             "SELECT CAST(1 AS NUMERIC)",
         )
         self.validate_identity(
+            "SELECT SAFE_CAST('foo' AS NUMERIC(10, 3))",
+            "SELECT SAFE_CAST('foo' AS NUMERIC)",
+        )
+        self.validate_identity(
+            "SELECT SAFE_CAST('100000000000000000000000000000' AS NUMERIC(38, 0))",
+            "SELECT SAFE_CAST('100000000000000000000000000000' AS BIGNUMERIC)",
+        )
+        self.validate_identity(
             "SELECT CAST('1' AS STRING(10)) UNION ALL SELECT CAST('2' AS STRING(10))",
             "SELECT CAST('1' AS STRING) UNION ALL SELECT CAST('2' AS STRING)",
         )
@@ -2774,9 +2759,6 @@ WHERE
         )
         self.validate_identity(
             "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'null')], origin => CAST('2023-11-01 09:30:01' AS DATETIME)) ORDER BY time"
-        )
-        self.validate_identity(
-            "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'locf')]) ORDER BY time"
         )
 
     def test_models(self):

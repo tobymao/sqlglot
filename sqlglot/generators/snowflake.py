@@ -1123,6 +1123,9 @@ class SnowflakeGenerator(generator.Generator):
         return f"{self.sql(expression, 'this')}!{self.sql(expression, 'expression')}"
 
     def format_sql(self, expression: exp.Format) -> str:
+        if expression.args.get("is_fmt"):
+            return super().format_sql(expression)
+
         if expression.name.lower() == "%s" and len(expression.expressions) == 1:
             return self.func("TO_CHAR", expression.expressions[0])
 

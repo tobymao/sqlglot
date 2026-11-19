@@ -260,6 +260,7 @@ class TestTeradata(Validator):
             write={
                 "": "(u - l) * RAND() + l",
                 "teradata": "RANDOM(l, u)",
+                "duckdb": "CAST((((CAST(FLOOR(RANDOM() * 4294967296) AS INT128) * 4294967296) + CAST(FLOOR(RANDOM() * 4294967296) AS INT128)) % ((CAST(u AS INT128) - CAST(l AS INT128)) + 1)) + CAST(l AS INT128) AS BIGINT)",
             },
         )
         self.validate_identity("TO_NUMBER(expr, fmt, nlsparam)")
@@ -374,10 +375,6 @@ class TestTeradata(Validator):
             "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
             "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
         )
-        self.validate_identity(
-            "REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
-            "CREATE OR REPLACE VIEW view_b (COL1, COL2) AS LOCKING ROW FOR ACCESS SELECT COL1, COL2 FROM table_b",
-        )
         self.validate_identity("CREATE TABLE x (y INT) PRIMARY INDEX (y) PARTITION BY y INDEX (y)")
         self.validate_identity("CREATE TABLE x (y INT) PARTITION BY y INDEX (y)")
         self.validate_identity(
@@ -394,9 +391,6 @@ class TestTeradata(Validator):
         )
         self.validate_identity(
             "CREATE TABLE a (b INT) PARTITION BY RANGE_N(b BETWEEN *, 1 AND * EACH b) INDEX (a)"
-        )
-        self.validate_identity(
-            "CREATE TABLE a, NO FALLBACK PROTECTION, NO LOG, NO JOURNAL, CHECKSUM=ON, NO MERGEBLOCKRATIO, BLOCKCOMPRESSION=ALWAYS (a INT)"
         )
         self.validate_identity(
             "CREATE TABLE a, NO FALLBACK PROTECTION, NO LOG, NO JOURNAL, CHECKSUM=ON, NO MERGEBLOCKRATIO, BLOCKCOMPRESSION=ALWAYS (a INT)"

@@ -10,6 +10,89 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_format(self):
+        for sql in (
+            "FORMAT('{}-{}', 1, 2)",
+            "FORMAT('{:02x}', 15)",
+            "FORMAT('%s', 1)",
+            "FORMAT('{{{}}}', 'a')",
+            "SELECT FORMAT(fmt, 1) FROM (VALUES ('{}')) AS t(fmt)",
+        ):
+            with self.subTest(sql=sql):
+                expression = self.validate_identity(sql)
+                self.assertTrue(expression.find(exp.Format).args.get("is_fmt"))
+                self.validate_all(
+                    sql,
+                    write=dict.fromkeys(
+                        ("bigquery", "spark", "sqlite", "postgres", "snowflake"),
+                        UnsupportedError,
+                    ),
+                )
+
+        expression = self.validate_identity("PRINTF('%d-%s', 1, 'a')")
+        self.assertIsInstance(expression, exp.Format)
+        self.assertFalse(expression.args.get("is_fmt"))
+        self.validate_all(
+            "PRINTF('%d-%s', 1, 'a')",
+            read={
+                "bigquery": "FORMAT('%d-%s', 1, 'a')",
+                "spark": "FORMAT_STRING('%d-%s', 1, 'a')",
+                "sqlite": "FORMAT('%d-%s', 1, 'a')",
+            },
+            write={
+                "bigquery": "FORMAT('%d-%s', 1, 'a')",
+                "spark": "FORMAT_STRING('%d-%s', 1, 'a')",
+                "sqlite": "FORMAT('%d-%s', 1, 'a')",
+            },
+        )
+        self.validate_all(
+            "PRINTF('%04d-%.2f-%%', 1, 1.25)",
+            read={
+                "bigquery": "FORMAT('%04d-%.2f-%%', 1, 1.25)",
+                "sqlite": "FORMAT('%04d-%.2f-%%', 1, 1.25)",
+            },
+        )
+        self.validate_identity("SELECT PRINTF(fmt, 1, 'a') FROM (VALUES ('%d-%s')) AS t(fmt)")
+
+        for fmt, expected in (
+            ("%s", "{}"),
+            ("%s-%s", "{}-{}"),
+            ("{%s}-%s-%%", "{{{}}}-{}-%"),
+            ("%%s-%s", "%s-{}"),
+            ("%%%s", "%{}"),
+            ("%%d-%s", "%d-{}"),
+        ):
+            with self.subTest(fmt=fmt):
+                self.validate_all(
+                    f"FORMAT('{expected}', 1, 'a')",
+                    read={"postgres": f"FORMAT('{fmt}', 1, 'a')"},
+                )
+
+    def test_format_uppercase(self):
+        for arg in ("1", "'abc'", "TRUE"):
+            with self.subTest(arg=arg):
+                self.validate_all(
+                    f"UPPER(FORMAT('{{}}', {arg}))",
+                    read={"spark": f"FORMAT_STRING('%S', {arg})"},
+                )
+
+    def test_format_literal(self):
+        for literal in ("'hello'", "''", "'100%'", "'%%s'", "'it''s %s'"):
+            expression = self.validate_identity(f"FORMAT({literal})")
+            for dialect in ("bigquery", "spark", "sqlite", "postgres", "snowflake"):
+                with self.subTest(literal=literal, dialect=dialect):
+                    self.assertEqual(
+                        expression.sql(dialect, unsupported_level=ErrorLevel.RAISE),
+                        parse_one(literal, read="duckdb").sql(dialect),
+                    )
+
+        self.validate_all(
+            "FORMAT('hello', NULL)",
+            write=dict.fromkeys(
+                ("bigquery", "spark", "sqlite", "postgres", "snowflake"), UnsupportedError
+            ),
+        )
+
     def test_binary_strposition(self):
         for sql, schema, expected in (
             (
@@ -3207,6 +3290,17 @@ class TestDuckDB(Validator):
         self.validate_identity("DETACH DATABASE IF EXISTS file", "DETACH DATABASE IF EXISTS file")
 
         self.validate_identity("DETACH DATABASE db", "DETACH db")
+
+    def test_pivot_source_qualifiers(self):
+        source = (
+            "SELECT s.region, s.amount FROM (VALUES ('east', 2), ('west', 5)) AS s(region, amount) "
+            "JOIN (VALUES ('east')) AS r(region) ON s.region = r.region"
+        )
+        self.validate_identity(
+            f"PIVOT ({source}) ON s.region USING SUM(s.amount)",
+            f"PIVOT ({source}) ON region USING SUM(amount)",
+        )
+        self.validate_identity(f"WITH sales AS ({source}) PIVOT sales ON region USING SUM(amount)")
 
     def test_simplified_pivot_unpivot(self):
         self.validate_identity("PIVOT Cities ON Year USING SUM(Population)")

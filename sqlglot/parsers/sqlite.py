@@ -3,6 +3,7 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp, parser
+from sqlglot.helper import seq_get
 from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import Token, TokenType
 
@@ -13,11 +14,13 @@ def _build_date(args: list) -> exp.Date | exp.Anonymous:
     return exp.Anonymous(this="DATE", expressions=args)
 
 
-def _build_strftime(args: list) -> exp.Anonymous | exp.TimeToStr:
+def _build_strftime(args: list, dialect: t.Any) -> exp.Anonymous | exp.TimeToStr:
     if len(args) == 1:
         args.append(exp.CurrentTimestamp())
     if len(args) == 2:
-        return exp.TimeToStr(this=exp.TsOrDsToTimestamp(this=args[1]), format=args[0])
+        return exp.TimeToStr(
+            this=exp.TsOrDsToTimestamp(this=args[1]), format=dialect.format_time(args[0])
+        )
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
@@ -108,16 +111,27 @@ class SQLiteParser(parser.Parser):
         "JSON_EXTRACT": _build_json_extract,
         "JSON_GROUP_ARRAY": exp.JSONArrayAgg.from_arg_list,
         "JSON_GROUP_OBJECT": lambda args: exp.JSONObjectAgg(expressions=args),
+        "LENGTH": lambda args: exp.Length(this=seq_get(args, 0), null_terminated=True),
         "MAX": _build_max,
         "MIN": _build_min,
+        "RANDOM": lambda args: exp.Rand(
+            lower=exp.Literal.number(-9223372036854775807),
+            upper=exp.Literal.number(9223372036854775807),
+        ),
+        "ROUND": lambda args: exp.Round(
+            this=seq_get(args, 0), decimals=seq_get(args, 1), negative_decimals_are_zero=True
+        ),
         "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
+        "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_null=True),
     }
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
         "GROUP_CONCAT": lambda self: self._parse_string_agg(),
+        "IF": lambda self: self._parse_iif(),
+        "IIF": lambda self: self._parse_iif(),
     }
 
     PROPERTY_PARSERS = {
@@ -165,6 +179,47 @@ class SQLiteParser(parser.Parser):
                 this = cls(this=is_node.this, expression=is_node.expression)
 
         return this
+
+    def _parse_if(self) -> exp.Expr | None:
+        if not self._match(TokenType.L_PAREN):
+            return super()._parse_if()
+
+        expression = self._parse_iif()
+
+        # Keep the marker on anonymous calls without moving comments on keyword IF.
+        self._match(
+            TokenType.R_PAREN,
+            expression=expression if isinstance(expression, exp.Anonymous) else None,
+        )
+        return expression
+
+    def _parse_iif(self) -> exp.If | exp.Case | exp.Anonymous:
+        token = self._tokens[self._index - 2]
+        args = self._parse_function_args()
+
+        if self._curr.token_type != TokenType.R_PAREN:
+            self.raise_error("Expecting )")
+
+        if (comments := self._curr.comments) and any(
+            comment.lstrip().startswith(exp.SQLGLOT_ANONYMOUS) for comment in comments
+        ):
+            name: str | exp.Identifier = token.text
+            if token.token_type == TokenType.IDENTIFIER:
+                name = exp.Identifier(this=name, quoted=True).update_positions(token)
+            return self.expression(exp.Anonymous(this=name, expressions=args), token)
+
+        if len(args) <= 3:
+            return self.validate_expression(exp.If.from_arg_list(args), args).update_positions(
+                token
+            )
+
+        return self.expression(
+            exp.Case(
+                ifs=[exp.If(this=args[i], true=args[i + 1]) for i in range(0, len(args) - 1, 2)],
+                default=args[-1] if len(args) % 2 else None,
+            ),
+            token,
+        )
 
     def _parse_string_agg(self) -> exp.GroupConcat:
         expression = super()._parse_string_agg()
@@ -235,6 +290,23 @@ class SQLiteParser(parser.Parser):
             return self.expression(exp.UniqueColumnConstraint())
 
         return super()._parse_unique()
+
+    def _parse_limit(
+        self,
+        this: exp.Expr | None = None,
+        top: bool = False,
+        skip_limit_token: bool = False,
+    ) -> exp.Expr | None:
+        limit = super()._parse_limit(this=this, top=top, skip_limit_token=skip_limit_token)
+
+        # A negative LIMIT means there is no upper bound on the number of rows returned
+        # https://www.sqlite.org/lang_select.html#limitoffset
+        if isinstance(limit, exp.Limit):
+            expression = limit.args.get("expression")
+            if expression and expression.is_int and expression.to_py() < 0:
+                limit.set("expression", exp.var("ALL"))
+
+        return limit
 
     def _parse_without_rowid(self) -> exp.WithoutRowidProperty | None:
         index = self._index

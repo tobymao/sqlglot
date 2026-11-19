@@ -391,6 +391,22 @@ class TestDialect(Validator):
                     [precision, scale],
                 )
 
+    def test_try_cast_fallback(self):
+        sql = "TRY_CAST('abc' AS INT)"
+        self.validate_all(
+            sql,
+            write=dict.fromkeys(
+                ("dremio", "drill", "mysql", "postgres", "sqlite"), UnsupportedError
+            ),
+        )
+        expression = self.parse_one(sql)
+        self.assertEqual(
+            expression.sql("hive", unsupported_level=ErrorLevel.RAISE), "CAST('abc' AS INT)"
+        )
+        with self.assertLogs(generator_logger, level="WARNING") as logs:
+            self.assertEqual(expression.sql("sqlite"), "CAST('abc' AS INTEGER)")
+        self.assertIn("TRY_CAST", logs.output[0])
+
     def test_cast(self):
         self.validate_all(
             "CAST(a AS TEXT)",
@@ -505,6 +521,7 @@ class TestDialect(Validator):
         )
         self.validate_all(
             "CAST(a AS VARCHAR)",
+            read={"drill": "CAST(a AS VARCHAR)"},
             write={
                 "bigquery": "CAST(a AS STRING)",
                 "drill": "CAST(a AS VARCHAR)",
@@ -4128,7 +4145,6 @@ FROM subquery2""",
                 "postgres": "RANDOM()",
                 "presto": "RAND()",
                 "spark": "RAND()",
-                "sqlite": "RANDOM()",
                 "tsql": "RAND()",
             },
         )
@@ -5583,7 +5599,7 @@ FROM subquery2""",
                 "": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
                 "postgres": "FORMAT('str fmt1 fmt2', 1, 'a')",
-                "duckdb": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "duckdb": "PRINTF('str fmt1 fmt2', 1, 'a')",
             },
             write={
                 "bigquery": "FORMAT('str fmt1 fmt2', 1, 'a')",
@@ -5591,7 +5607,7 @@ FROM subquery2""",
                 "spark2": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "spark": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
                 "databricks": "FORMAT_STRING('str fmt1 fmt2', 1, 'a')",
-                "duckdb": "FORMAT('str fmt1 fmt2', 1, 'a')",
+                "duckdb": "PRINTF('str fmt1 fmt2', 1, 'a')",
             },
         )
 

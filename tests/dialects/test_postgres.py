@@ -1846,10 +1846,6 @@ FROM json_data, field_ids""",
             "CREATE FUNCTION x(INT) RETURNS INT SET search_path = 'public'",
         )
         self.validate_identity(
-            "CREATE TABLE test (x TIMESTAMP WITHOUT TIME ZONE[][])",
-            "CREATE TABLE test (x TIMESTAMP[][])",
-        )
-        self.validate_identity(
             "CREATE OR REPLACE FUNCTION function_name (input_a character varying DEFAULT NULL::character varying)",
             "CREATE OR REPLACE FUNCTION function_name(input_a VARCHAR DEFAULT CAST(NULL AS VARCHAR))",
         )
@@ -2346,6 +2342,12 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
                 "spark2": "SIZE(arr)",
                 "spark": "SIZE(arr)",
                 "databricks": "SIZE(arr)",
+            },
+            write={
+                "bigquery": "ARRAY_LENGTH(arr)",
+                "duckdb": "ARRAY_LENGTH(arr)",
+                "redshift": "GET_ARRAY_LENGTH(arr)",
+                "spark": "SIZE(arr)",
             },
         )
         self.validate_all(

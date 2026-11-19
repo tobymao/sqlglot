@@ -720,7 +720,8 @@ class TestDatabricks(Validator):
         )
         for dialect in ("hive", "spark", "snowflake"):
             with self.subTest(dialect=dialect):
-                self.assertIsInstance(parse_one("OPTIMIZE t", read=dialect), exp.Command)
+                with self.assertLogs("sqlglot", level="WARNING"):
+                    self.assertIsInstance(parse_one("OPTIMIZE t", read=dialect), exp.Command)
                 with self.assertRaises(UnsupportedError):
                     tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
 
@@ -775,7 +776,8 @@ class TestDatabricks(Validator):
                     self.validate_identity(sql, check_command_warning=True), exp.Command
                 )
         for sql in ("OPTIMIZE t UNKNOWN /* trailing */", "OPTIMIZE t UNKNOWN -- trailing\n"):
-            tree = self.validate_identity(sql, "/* trailing */ OPTIMIZE t UNKNOWN")
+            with self.assertLogs("sqlglot", level="WARNING"):
+                tree = self.validate_identity(sql, "/* trailing */ OPTIMIZE t UNKNOWN")
             self.assertIsInstance(tree, exp.Command)
             self.assertEqual([comment.strip() for comment in tree.comments], ["trailing"])
 

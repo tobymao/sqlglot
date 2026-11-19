@@ -363,7 +363,7 @@ class PostgresGenerator(generator.Generator):
         **{
             k: v
             for k, v in generator.Generator.TRANSFORMS.items()
-            if k != exp.CommentColumnConstraint
+            if k not in (exp.CommentColumnConstraint, exp.JSONObjectAgg)
         },
         exp.AnyValue: _versioned_anyvalue_sql,
         exp.ArrayConcat: array_concat_sql("ARRAY_CAT"),
@@ -475,7 +475,6 @@ class PostgresGenerator(generator.Generator):
         exp.Unicode: rename_func("ASCII"),
         exp.UnixToTime: _unix_to_time_sql,
         exp.Levenshtein: _levenshtein_sql,
-        exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
         exp.FileFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",
@@ -515,6 +514,23 @@ class PostgresGenerator(generator.Generator):
             exp.Literal.string(expression.this.encode("latin-1").hex()),
             exp.Literal.string("hex"),
         )
+
+    def jsonobjectagg_sql(self, expression: exp.JSONObjectAgg) -> str:
+        args = expression.expressions
+        pair = args[0] if len(args) == 1 else None
+        # Only the SQL/JSON spelling, JSON_OBJECTAGG, accepts these clauses.
+        if (
+            isinstance(pair, exp.FormatJson)
+            or expression.args.get("null_handling")
+            or expression.args.get("unique_keys") is not None
+            or expression.args.get("return_type")
+            or expression.args.get("encoding")
+        ):
+            return self._jsonobject_sql(expression)
+
+        if isinstance(pair, exp.JSONKeyValue):
+            args = [pair.this, pair.expression]
+        return self.func("JSON_OBJECT_AGG", *args)
 
     def schemacommentproperty_sql(self, expression: exp.SchemaCommentProperty) -> str:
         self.unsupported("Table comments are not supported in the CREATE statement")

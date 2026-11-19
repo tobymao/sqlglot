@@ -2284,6 +2284,92 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_conditionals(self):
+        schema = {"t": {"qty": "INT", "price": "NUMERIC"}}
+
+        # Collapsing constant branch preserves unified conditional type across branches
+        sql = "SELECT (CASE WHEN 1 = 0 THEN price ELSE qty END) / 2 AS v FROM t"
+        self.assertEqual(
+            optimizer.optimize(sql, schema=schema, dialect="postgres").sql("postgres"),
+            'SELECT CAST("t"."qty" AS DECIMAL) / 2 AS "v" FROM "t" AS "t"',
+        )
+
+        sql = "SELECT (CASE WHEN 1 = 0 THEN 0.5 ELSE 7 END) / 2 AS v"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="postgres"), dialect="postgres").sql(
+                "postgres"
+            ),
+            "SELECT CAST(7 AS DOUBLE PRECISION) / 2 AS v",
+        )
+
+        sql = "SELECT (CASE WHEN 1 = 1 THEN 7 ELSE 0.5 END) / 2 AS v"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="postgres"), dialect="postgres").sql(
+                "postgres"
+            ),
+            "SELECT CAST(7 AS DOUBLE PRECISION) / 2 AS v",
+        )
+
+        sql = "SELECT CAST(IF(TRUE, 7, 1.5) AS VARCHAR) AS v"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="duckdb"), dialect="duckdb").sql(
+                "duckdb"
+            ),
+            "SELECT CAST(CAST(7 AS DOUBLE) AS TEXT) AS v",
+        )
+
+        sql = "SELECT CAST(IF(FALSE, 1.5, 7) AS VARCHAR) AS v"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="duckdb"), dialect="duckdb").sql(
+                "duckdb"
+            ),
+            "SELECT CAST(CAST(7 AS DOUBLE) AS TEXT) AS v",
+        )
+
+        # No redundant cast when branch types already match
+        sql = "SELECT (CASE WHEN 1 = 0 THEN 1 ELSE 7 END) / 2 AS v"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="postgres"), dialect="postgres").sql(
+                "postgres"
+            ),
+            "SELECT 7 / 2 AS v",
+        )
+
+        sql = "SELECT IF(TRUE, 7, 8)"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="duckdb"), dialect="duckdb").sql(
+                "duckdb"
+            ),
+            "SELECT 7",
+        )
+
+        # Unannotated columns / unknown types do not add casts
+        sql = "CASE WHEN TRUE THEN x ELSE y END"
+        self.assertEqual(optimizer.simplify.simplify(parse_one(sql)).sql(), "x")
+
+        # Multi-branch CASE where preceding false branches are eliminated
+        sql = "CASE WHEN 1 = 0 THEN 0.5 WHEN 2 = 0 THEN 1.5 ELSE 7 END"
+        self.assertEqual(
+            optimizer.simplify.simplify(parse_one(sql, read="postgres"), dialect="postgres").sql(
+                "postgres"
+            ),
+            "CAST(7 AS DOUBLE PRECISION)",
+        )
+
+        # Verify execution semantics match in DuckDB
+        with duckdb.connect() as conn:
+            sql = "SELECT CAST(IF(TRUE, 7, 1.5) AS VARCHAR)"
+            optimized = optimizer.simplify.simplify(
+                parse_one(sql, read="duckdb"), dialect="duckdb"
+            ).sql("duckdb")
+            self.assertEqual(conn.execute(sql).fetchall(), conn.execute(optimized).fetchall())
+
+            sql = "SELECT (CASE WHEN 1 = 0 THEN 0.5 ELSE 7 END) / 2"
+            optimized = optimizer.simplify.simplify(
+                parse_one(sql, read="duckdb"), dialect="duckdb"
+            ).sql("duckdb")
+            self.assertEqual(conn.execute(sql).fetchall(), conn.execute(optimized).fetchall())
+
     def test_simplify_string_comparisons(self):
         with duckdb.connect() as conn:
             for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):

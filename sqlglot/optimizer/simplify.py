@@ -1495,9 +1495,38 @@ class Simplifier:
 
         return concat_type(expressions=new_args, **args)
 
+    def _collapse_branch(self, branch: exp.Expr, target_type: exp.DataType | None) -> exp.Expr:
+        if (
+            target_type is not None
+            and not target_type.is_type(exp.DType.UNKNOWN, exp.DType.NULL)
+            and not is_null(branch)
+        ):
+            branch_type = branch.type
+            if branch_type is None and self.annotate_new_expressions:
+                self._annotator.clear()
+                self._annotator.annotate(branch, annotate_scope=False)
+                branch_type = branch.type
+
+            if (
+                branch_type is not None
+                and not branch_type.is_type(exp.DType.UNKNOWN)
+                and branch_type != target_type
+            ):
+                return exp.cast(branch, target_type.copy(), copy=False)
+
+        return exp.paren(branch, copy=False)
+
     @annotate_types_on_change
     def simplify_conditionals(self, expression):
         """Simplifies expressions like IF, CASE if their condition is statically known."""
+        target_type = expression.type
+        if self.annotate_new_expressions and (
+            target_type is None or target_type.is_type(exp.DType.UNKNOWN)
+        ):
+            self._annotator.clear()
+            self._annotator.annotate(expression, annotate_scope=False)
+            target_type = expression.type
+
         if isinstance(expression, exp.Case):
             this = expression.this
             for case in expression.args["ifs"]:
@@ -1508,7 +1537,7 @@ class Simplifier:
 
                 if always_true(cond):
                     if case.index == 0:
-                        return exp.paren(case.args["true"], copy=False)
+                        return self._collapse_branch(case.args["true"], target_type)
 
                     expression.set("default", case.args["true"])
                     expression.set("ifs", expression.args["ifs"][: case.index])
@@ -1517,12 +1546,16 @@ class Simplifier:
                 if always_false(cond):
                     case.pop()
                     if not expression.args["ifs"]:
-                        return exp.paren(expression.args.get("default") or exp.null(), copy=False)
+                        return self._collapse_branch(
+                            expression.args.get("default") or exp.null(), target_type
+                        )
         elif isinstance(expression, exp.If) and not isinstance(expression.parent, exp.Case):
             if always_true(expression.this):
-                return exp.paren(expression.args["true"], copy=False)
+                return self._collapse_branch(expression.args["true"], target_type)
             if always_false(expression.this):
-                return exp.paren(expression.args.get("false") or exp.null(), copy=False)
+                return self._collapse_branch(
+                    expression.args.get("false") or exp.null(), target_type
+                )
 
         return expression
 

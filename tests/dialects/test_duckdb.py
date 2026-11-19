@@ -2381,11 +2381,18 @@ class TestDuckDB(Validator):
     def test_regexp_full_match_to_postgres(self):
         sql = "SELECT 'abc' SIMILAR TO 'abc', 'xabc' SIMILAR TO 'abc'"
         self.assertEqual(
-            self.parse_one(sql).sql("postgres", unsupported_level=ErrorLevel.RAISE), sql
+            self.parse_one(sql).sql("postgres", unsupported_level=ErrorLevel.RAISE),
+            "SELECT ('abc' SIMILAR TO 'abc'), ('xabc' SIMILAR TO 'abc')",
         )
         self.validate_all(
             "SELECT 'xabc' NOT SIMILAR TO 'abc'",
-            write={"postgres": "SELECT NOT 'xabc' SIMILAR TO 'abc'"},
+            write={"postgres": "SELECT NOT ('xabc' SIMILAR TO 'abc')"},
+        )
+        self.validate_all(
+            "SELECT REGEXP_FULL_MATCH('abc', 'abc') || '!', '!' || REGEXP_FULL_MATCH('abc', 'abc')",
+            write={
+                "postgres": "SELECT ('abc' SIMILAR TO 'abc') || '!', '!' || ('abc' SIMILAR TO 'abc')"
+            },
         )
         for sql in (
             "SELECT 'abc' SIMILAR TO 'a.c'",

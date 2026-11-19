@@ -640,7 +640,8 @@ class PostgresGenerator(generator.Generator):
                 "Only plain literal REGEXP_FULL_MATCH patterns translate to SIMILAR TO"
             )
 
-        return self.sql(exp.SimilarTo(this=expression.this, expression=expression.expression))
+        predicate = exp.SimilarTo(this=expression.this, expression=expression.expression)
+        return self.sql(exp.paren(predicate, copy=False))
 
     def regexplike_sql(self, expression: exp.RegexpLike) -> str:
         flag = expression.args.get("flag")

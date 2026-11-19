@@ -274,6 +274,30 @@ class TeradataParser(parser.Parser):
             self._match(TokenType.ALL)
         return expression
 
+    def _parse_insert(self) -> exp.Insert | exp.MultitableInserts:
+        expression = super()._parse_insert()
+        target = expression.this
+        if (
+            isinstance(expression, exp.Insert)
+            and not expression.expression
+            and not expression.args.get("default")
+            and not expression.args.get("source")
+            and isinstance(target, exp.Schema)
+            and target.expressions
+            and all(
+                isinstance(value, (exp.Literal, exp.Func, exp.Null)) for value in target.expressions
+            )
+        ):
+            expression.set("this", target.this)
+            expression.set(
+                "expression",
+                self.expression(
+                    exp.Values(expressions=[exp.Tuple(expressions=target.expressions)]),
+                    comments=target.pop_comments(),
+                ),
+            )
+        return expression
+
     # FROM before SET in Teradata UPDATE syntax
     # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
     def _parse_update(self) -> exp.Update:

@@ -393,6 +393,33 @@ class TestTeradata(Validator):
         self.parse_one("BEGIN TRANSACTION").assert_is(exp.Transaction)
         self.assertNotIsInstance(parse_one("SELECT BEGIN(p) FROM t").expressions[0], exp.Anonymous)
 
+    def test_implicit_insert_values(self):
+        for prefix in ("INSERT INTO", "INSERT"):
+            for table in ("t", "db.t"):
+                for row in (
+                    "(1, CURRENT_TIMESTAMP(0), 'value')",
+                    "(2, NULL, 'null')",
+                    "(COALESCE(NULL, 3), CAST(NULL AS TIMESTAMP(0)), CAST('cast-row' AS VARCHAR(20)))",
+                ):
+                    sql = f"{prefix} {table} {row}"
+                    expected = f"INSERT INTO {table} VALUES {row}"
+                    with self.subTest(sql=sql):
+                        expression = self.validate_identity(sql, expected).assert_is(exp.Insert)
+                        expression.this.assert_is(exp.Table)
+                        values = expression.expression.assert_is(exp.Values)
+                        self.assertEqual(len(values.expressions), 1)
+                        values.expressions[0].assert_is(exp.Tuple)
+                        self.assertIsNone(expression.find(exp.ColumnDef))
+                        self.assertEqual(expression, self.parse_one(expected))
+
+        self.validate_identity("INSERT INTO t (a, b) VALUES (1, 'value')")
+        self.validate_identity("INSERT INTO t (a, b) SELECT a, b FROM s")
+        self.validate_identity("INSERT INTO t VALUES (1, 'value')")
+        self.validate_identity("INSERT INTO t SELECT a, b FROM s")
+        self.parse_one("INSERT INTO t (a, b)").this.assert_is(exp.Schema)
+        self.parse_one("INSERT INTO t (a INT, b VARCHAR(10))").this.assert_is(exp.Schema)
+        parse_one("INSERT INTO t (1, 'value')").this.assert_is(exp.Schema)
+
     def test_teradata(self):
         self.validate_all(
             "RANDOM(l, u)",

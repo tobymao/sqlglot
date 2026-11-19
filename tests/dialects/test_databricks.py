@@ -679,6 +679,11 @@ class TestDatabricks(Validator):
             "OPTIMIZE 123t",
             "OPTIMIZE vacuum.t",
             "OPTIMIZE optimize.t",
+            "OPTIMIZE t FULL",
+            "OPTIMIZE t WHERE partition_id = 1",
+            "OPTIMIZE t ZORDER BY (current_date, event.kind)",
+            "OPTIMIZE t FULL WHERE partition_id > 15",
+            "OPTIMIZE t WHERE (partition_id = 1 OR partition_id = 2) ZORDER BY (id, `event type`)",
         ):
             with self.subTest(sql=sql):
                 tree = self.validate_identity(sql)
@@ -704,7 +709,14 @@ class TestDatabricks(Validator):
 
         statements = parse("OPTIMIZE `a;b`; OPTIMIZE t FULL; SELECT 1", read="databricks")
         self.assertEqual(
-            [type(tree) for tree in statements], [exp.Optimize, exp.Command, exp.Select]
+            [type(tree) for tree in statements], [exp.Optimize, exp.Optimize, exp.Select]
+        )
+        tree = self.validate_identity("OPTIMIZE db.t FULL WHERE p = 1 ZORDER BY (x, y)")
+        self.assertTrue(tree.args["full"])
+        self.assertIsInstance(tree.args["where"], exp.Where)
+        self.assertEqual(tree.args["zorder"], [exp.column("x"), exp.column("y")])
+        self.assertEqual(
+            tree.sql("spark", unsupported_level=ErrorLevel.IGNORE), tree.sql("databricks")
         )
         for dialect in ("hive", "spark", "snowflake"):
             with self.subTest(dialect=dialect):
@@ -747,10 +759,8 @@ class TestDatabricks(Validator):
 
     def test_optimize_fallback(self):
         for sql in (
-            "OPTIMIZE t FULL",
-            "OPTIMIZE t WHERE partition_id = 1",
-            "OPTIMIZE t ZORDER BY (id)",
-            "OPTIMIZE t WHERE partition_id = 1 ZORDER BY (id)",
+            "OPTIMIZE t UNKNOWN",
+            "OPTIMIZE t ZORDER BY (id) WHERE p = 1",
             "OPTIMIZE a.b.c.d",
             "OPTIMIZE t.",
             "OPTIMIZE 'not_a_table'",
@@ -764,10 +774,21 @@ class TestDatabricks(Validator):
                 self.assertIsInstance(
                     self.validate_identity(sql, check_command_warning=True), exp.Command
                 )
-        for sql in ("OPTIMIZE t FULL /* trailing */", "OPTIMIZE t FULL -- trailing\n"):
-            tree = self.validate_identity(sql, "/* trailing */ OPTIMIZE t FULL")
+        for sql in ("OPTIMIZE t UNKNOWN /* trailing */", "OPTIMIZE t UNKNOWN -- trailing\n"):
+            tree = self.validate_identity(sql, "/* trailing */ OPTIMIZE t UNKNOWN")
             self.assertIsInstance(tree, exp.Command)
             self.assertEqual([comment.strip() for comment in tree.comments], ["trailing"])
+
+    def test_optimize_invalid_clauses(self):
+        for clause in (
+            "WHERE",
+            "ZORDER BY id",
+            "ZORDER BY ()",
+            "ZORDER BY (x,)",
+            "ZORDER BY (t.f())",
+        ):
+            with self.subTest(clause=clause), self.assertRaises(ParseError):
+                self.parse_one(f"OPTIMIZE t {clause}")
 
     def test_optimize_parser_limits(self):
         with self.assertRaises(ParseError):

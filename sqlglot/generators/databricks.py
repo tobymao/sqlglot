@@ -30,6 +30,7 @@ class DatabricksGenerator(SparkGenerator):
     QUOTE_JSON_PATH = False
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
     SUPPORTS_TEMPORAL_PRECISION = True
+    SUPPORTS_OPTIMIZE = True
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (15, 2)
 
     # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
@@ -213,6 +214,3 @@ class DatabricksGenerator(SparkGenerator):
     def clusterproperty_sql(self, expression):
         this = self.sql(expression, "this") or f"({self.expressions(expression, flat=True)})"
         return f"CLUSTER BY {this}"
-
-    def optimize_sql(self, expression: exp.Optimize) -> str:
-        return f"OPTIMIZE {self.sql(expression, 'this')}"

@@ -503,6 +503,8 @@ class Generator:
     # Whether the SELECT .. INTO syntax is used instead of CTAS
     SUPPORTS_SELECT_INTO = False
 
+    SUPPORTS_OPTIMIZE = False
+
     # Whether UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
 
@@ -4494,8 +4496,13 @@ class Generator:
         return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
 
     def optimize_sql(self, expression: exp.Optimize) -> str:
-        self.unsupported("OPTIMIZE is only supported in Databricks")
-        return f"OPTIMIZE {self.sql(expression, 'this')}"
+        if not self.SUPPORTS_OPTIMIZE:
+            self.unsupported("OPTIMIZE is only supported in Databricks")
+        full = " FULL" if expression.args.get("full") else ""
+        where = self.sql(expression, "where")
+        columns = self.expressions(expression, key="zorder", flat=True)
+        zorder = self.seg(f"ZORDER BY ({columns})") if columns else ""
+        return f"OPTIMIZE {self.sql(expression, 'this')}{full}{where}{zorder}"
 
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")

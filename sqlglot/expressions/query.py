@@ -1976,7 +1976,7 @@ class Where(Expression):
 
 
 class Optimize(Expression):
-    pass
+    arg_types = {"this": True, "full": False, "where": False, "zorder": False}
 
 
 class Analyze(Expression):

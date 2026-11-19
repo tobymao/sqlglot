@@ -5076,12 +5076,13 @@ class Parser:
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts_fast(self) -> exp.Table | None:
+    def _parse_table_parts_fast(self, allow_keywords: bool = False) -> exp.Table | None:
         index = self._index
+        identifier_tokens = self.ID_VAR_TOKENS if allow_keywords else self.IDENTIFIER_TOKENS
         parts: list[exp.Identifier] | None = None
         all_comments: list[str] | None = None
 
-        while self._match_set(self.IDENTIFIER_TOKENS):
+        while self._match_set(identifier_tokens):
             token = self._prev
             comments = self._prev_comments
 
@@ -5092,7 +5093,7 @@ class Parser:
                 if curr_tt in self.TABLE_POSTFIX_TOKENS:
                     self._retreat(index)
                     return None
-            elif curr_tt not in self.IDENTIFIER_TOKENS:
+            elif curr_tt not in identifier_tokens:
                 self._retreat(index)
                 return None
 
@@ -5121,6 +5122,12 @@ class Parser:
                 break
 
         if parts is None:
+            return None
+
+        # A compound keyword such as ADD FILE can only be used as a name when quoted.
+        if allow_keywords and any(
+            not part.quoted and len(part.name.split()) != 1 for part in parts
+        ):
             return None
 
         n = len(parts)

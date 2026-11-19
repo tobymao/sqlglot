@@ -65,17 +65,24 @@ class DatabricksParser(SparkParser):
 
     def _parse_optimize(self) -> exp.Optimize | exp.Command:
         start = self._prev
-        if len(self._tokens) - self._index in (1, 3, 5):
-            tokens = self._tokens[self._index :]
-            if all(
-                token.token_type in self.ID_VAR_TOKENS
-                and (
-                    token.token_type == TokenType.IDENTIFIER
-                    or not any(char.isspace() for char in token.text)
+        table = self._parse_table_parts_fast(allow_keywords=True)
+        if table and len(table.parts) <= 3:
+            optimize = exp.Optimize(this=self.validate_expression(table))
+            if self._match(TokenType.FULL, expression=optimize):
+                optimize.set("full", True)
+            optimize.set("where", self._parse_where())
+            if self._match_text_seq("ZORDER", "BY"):
+                self._add_comments(optimize)
+                columns = self._parse_wrapped_csv(
+                    lambda: (
+                        self.expression(name.to_column(copy=False), comments=name.comments)
+                        if (name := self._parse_table_parts_fast(allow_keywords=True))
+                        else self.raise_error("Expected a column name in ZORDER BY")
+                    )
                 )
-                for token in tokens[::2]
-            ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
-                return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
+                optimize.set("zorder", columns)
+            if not self._curr:
+                return self.expression(optimize)
 
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())

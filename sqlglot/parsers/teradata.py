@@ -99,7 +99,11 @@ class TeradataParser(parser.Parser):
         "UNICODE_TO_UNICODE_NFKD",
     }
 
-    FUNC_TOKENS = (parser.Parser.FUNC_TOKENS - {TokenType.REPLACE}) | {TokenType.MOD}
+    FUNC_TOKENS = (parser.Parser.FUNC_TOKENS - {TokenType.REPLACE}) | {
+        TokenType.BEGIN,
+        TokenType.END,
+        TokenType.MOD,
+    }
 
     STATEMENT_PARSERS = {
         **parser.Parser.STATEMENT_PARSERS,

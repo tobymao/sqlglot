@@ -1498,10 +1498,20 @@ FROM json_data, field_ids""",
 
         self.validate_all(
             "SELECT JSON_OBJECT_AGG(k, v) FROM t",
+            read={
+                "postgres": "SELECT JSON_OBJECTAGG(k VALUE v) FROM t",
+                "mysql": "SELECT JSON_OBJECTAGG(k, v) FROM t",
+                "oracle": "SELECT JSON_OBJECTAGG(KEY k VALUE v) FROM t",
+            },
             write={
                 "postgres": "SELECT JSON_OBJECT_AGG(k, v) FROM t",
                 "duckdb": "SELECT JSON_GROUP_OBJECT(k, v) FROM t",
             },
+        )
+
+        self.validate_all(
+            "SELECT JSON_OBJECTAGG(k VALUE v ABSENT ON NULL) FROM t",
+            write={"postgres": "SELECT JSON_OBJECTAGG(k: v ABSENT ON NULL) FROM t"},
         )
 
         self.validate_all(

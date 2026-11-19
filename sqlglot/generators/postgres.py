@@ -253,6 +253,25 @@ def _versioned_anyvalue_sql(self: PostgresGenerator, expression: exp.AnyValue) -
     return rename_func("ANY_VALUE")(self, expression)
 
 
+def _jsonobjectagg_sql(self: PostgresGenerator, expression: exp.JSONObjectAgg) -> str:
+    # JSON_OBJECT_AGG is the two-argument aggregate, which doesn't accept key/value pairs
+    # or ON NULL handling; those require the SQL/JSON JSON_OBJECTAGG aggregate
+    if any(
+        expression.args.get(arg)
+        for arg in ("null_handling", "unique_keys", "return_type", "encoding")
+    ):
+        return self._jsonobject_sql(expression)
+
+    args = ", ".join(
+        f"{self.sql(e, 'this')}, {self.sql(e, 'expression')}"
+        if isinstance(e, exp.JSONKeyValue)
+        else self.sql(e)
+        for e in expression.expressions
+    )
+
+    return f"JSON_OBJECT_AGG({args})"
+
+
 def _round_sql(self: PostgresGenerator, expression: exp.Round) -> str:
     this = self.sql(expression, "this")
     decimals = self.sql(expression, "decimals")
@@ -475,7 +494,7 @@ class PostgresGenerator(generator.Generator):
         exp.Unicode: rename_func("ASCII"),
         exp.UnixToTime: _unix_to_time_sql,
         exp.Levenshtein: _levenshtein_sql,
-        exp.JSONObjectAgg: rename_func("JSON_OBJECT_AGG"),
+        exp.JSONObjectAgg: lambda self, e: _jsonobjectagg_sql(self, e),
         exp.JSONBObjectAgg: rename_func("JSONB_OBJECT_AGG"),
         exp.CountIf: count_if_to_sum,
         exp.FileFormatProperty: lambda self, e: f"USING {self.sql(e, 'this')}",

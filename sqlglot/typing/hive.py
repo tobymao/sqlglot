@@ -51,6 +51,7 @@ EXPRESSION_METADATA = {
             exp.RegexpReplace,
             exp.Replace,
             exp.Soundex,
+            exp.SplitPart,
         }
     },
     **{

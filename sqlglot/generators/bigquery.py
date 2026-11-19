@@ -223,6 +223,11 @@ def _array_agg_fold_sql(
 
     order = array_sort_order(sort) if sort else None
 
+    # A FILTER folds into the value as IF(condition, value, NULL), which IGNORE NULLS then drops
+    condition = None
+    if isinstance(agg, exp.Filter):
+        condition, agg = agg.expression.this, agg.this
+
     # An ARRAY_AGG with its own ORDER BY or LIMIT can't take another
     if (
         not isinstance(agg, exp.ArrayAgg)
@@ -237,6 +242,11 @@ def _array_agg_fold_sql(
     value = agg.this
     if isinstance(value, exp.Distinct):
         distinct, value = True, value.expressions[0]
+    if condition is not None:
+        # With DISTINCT, BigQuery only orders by the aggregated value, so the keys take the IF too
+        value = exp.If(this=condition, true=value, false=exp.null())
+        # IGNORE NULLS drops the rows the condition rejects, and any NULLs with them
+        agg.set("nulls_excluded", None)
 
     folded: exp.Expr = exp.Distinct(expressions=[value]) if distinct else value
     if order is not None:
@@ -244,7 +254,12 @@ def _array_agg_fold_sql(
         keys = [exp.Ordered(this=value.copy(), desc=not asc or None, nulls_first=asc)]
 
         # Aggregate ORDER BY only puts NULLs first when ascending, so other placements need a key
-        if not ignore_nulls and nulls_first is not None and nulls_first != asc:
+        if (
+            not ignore_nulls
+            and condition is None
+            and nulls_first is not None
+            and nulls_first != asc
+        ):
             if distinct:
                 self.unsupported("ARRAY_AGG(DISTINCT) only puts NULLs first when ascending")
             else:
@@ -259,11 +274,14 @@ def _array_agg_fold_sql(
     agg.set("this", folded)
     if ignore_nulls:
         # All-NULL input yields [], but an empty input still yields NULL.
+        rows = exp.CountIf(this=condition.copy()) if condition else exp.Count(this=exp.Star())
         agg = exp.If(
-            this=exp.Count(this=exp.Star()).eq(0),
+            this=rows.eq(0),
             true=exp.null(),
             false=exp.func("COALESCE", exp.IgnoreNulls(this=agg), exp.array()),
         )
+    elif condition is not None:
+        agg = exp.IgnoreNulls(this=agg)
     return self.sql(agg)
 
 

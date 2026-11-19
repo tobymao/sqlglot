@@ -1829,6 +1829,27 @@ class TestDialect(Validator):
                 "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
                 ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
             ),
+            # A FILTER becomes an IF that IGNORE NULLS drops, so NULLs no longer need placing
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x) FILTER(WHERE c)))",
+                "ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+            ),
+            (
+                "trino",
+                "ARRAY_SORT(ARRAY_AGG(x) FILTER(WHERE c))",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+            ),
+            (
+                "duckdb",
+                "LIST_SORT(LIST(x) FILTER(WHERE c), 'DESC', 'NULLS FIRST')",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL) DESC)",
+            ),
+            (
+                "spark",
+                "SORT_ARRAY(COLLECT_LIST(x) FILTER(WHERE c))",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
+            ),
             (
                 "spark",
                 "SORT_ARRAY(COLLECT_LIST(x), y)",

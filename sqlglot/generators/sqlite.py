@@ -153,7 +153,6 @@ class SQLiteGenerator(generator.Generator):
         exp.ColumnDef: transforms.preprocess([_generated_to_auto_increment]),
         exp.DateStrToDate: lambda self, e: self.sql(e, "this"),
         exp.If: rename_func("IIF"),
-        exp.ILike: no_ilike_sql,
         exp.JSONArrayAgg: unsupported_args("order", "null_handling", "return_type", "strict")(
             rename_func("JSON_GROUP_ARRAY")
         ),
@@ -241,6 +240,12 @@ class SQLiteGenerator(generator.Generator):
             expression.set("alternative", "IGNORE")
 
         return super().insert_sql(expression)
+
+    def ilike_sql(self, expression: exp.ILike) -> str:
+        rhs = expression.expression
+        if isinstance(rhs, exp.Any) and isinstance(rhs.this.unnest(), exp.Tuple):
+            return self._like_quantifier_sql(expression, rhs)
+        return no_ilike_sql(self, expression)
 
     def rand_sql(self, expression: exp.Rand) -> str:
         random = self.func("RANDOM", expression.this)

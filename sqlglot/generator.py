@@ -4885,50 +4885,53 @@ class Generator:
         expression: exp.Like | exp.ILike,
         escape: exp.Escape | None = None,
     ) -> str:
-        this = expression.this
         rhs = expression.expression
+        if isinstance(rhs, (exp.All, exp.Any)) and not self.SUPPORTS_LIKE_QUANTIFIERS:
+            return self._like_quantifier_sql(expression, rhs, escape=escape)
 
-        if isinstance(expression, exp.Like):
-            exp_class: type[exp.Like | exp.ILike] = exp.Like
-            op = "LIKE"
-        else:
-            exp_class = exp.ILike
-            op = "ILIKE"
+        op = "LIKE" if isinstance(expression, exp.Like) else "ILIKE"
 
         if expression.args.get("negate"):
             op = f"NOT {op}"
 
-        if isinstance(rhs, (exp.All, exp.Any)) and not self.SUPPORTS_LIKE_QUANTIFIERS:
-            exprs = rhs.this.unnest()
-
-            if isinstance(exprs, exp.Tuple):
-                exprs = exprs.expressions
-            else:
-                exprs = [exprs]
-
-            connective = exp.or_ if isinstance(rhs, exp.Any) else exp.and_
-
-            def _make_like(expr: exp.Expression) -> exp.Expression:
-                like: exp.Expression = exp_class(
-                    this=this, expression=expr, negate=expression.args.get("negate")
-                )
-                if escape:
-                    like = exp.Escape(this=like, expression=escape.expression.copy())
-                return like
-
-            like_expr: exp.Expr = _make_like(exprs[0])
-            for expr in exprs[1:]:
-                like_expr = connective(like_expr, _make_like(expr), copy=False)
-
-            parent = escape.parent if escape else expression.parent
-            if not isinstance(parent, (type(like_expr), exp.Paren)) and isinstance(
-                parent, exp.Condition
-            ):
-                like_expr = exp.paren(like_expr, copy=False)
-
-            return self.sql(like_expr)
-
         return self.binary(expression, op)
+
+    def _like_quantifier_sql(
+        self,
+        expression: exp.Like | exp.ILike,
+        quantifier: exp.All | exp.Any,
+        escape: exp.Escape | None = None,
+    ) -> str:
+        this = expression.this
+        exp_class = exp.Like if isinstance(expression, exp.Like) else exp.ILike
+        exprs = quantifier.this.unnest()
+
+        if isinstance(exprs, exp.Tuple):
+            exprs = exprs.expressions
+        else:
+            exprs = [exprs]
+
+        connective = exp.or_ if isinstance(quantifier, exp.Any) else exp.and_
+
+        def _make_like(expr: exp.Expression) -> exp.Expression:
+            like: exp.Expression = exp_class(
+                this=this, expression=expr, negate=expression.args.get("negate")
+            )
+            if escape:
+                like = exp.Escape(this=like, expression=escape.expression.copy())
+            return like
+
+        like_expr: exp.Expr = _make_like(exprs[0])
+        for expr in exprs[1:]:
+            like_expr = connective(like_expr, _make_like(expr), copy=False)
+
+        parent = escape.parent if escape else expression.parent
+        if not isinstance(parent, (type(like_expr), exp.Paren)) and isinstance(
+            parent, exp.Condition
+        ):
+            like_expr = exp.paren(like_expr, copy=False)
+
+        return self.sql(like_expr)
 
     def like_sql(self, expression: exp.Like) -> str:
         return self._like_sql(expression)

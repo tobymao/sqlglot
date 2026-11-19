@@ -54,6 +54,17 @@ class TestSQLite(Validator):
                             connection.execute(sql).fetchall(),
                         )
 
+    def test_ilike_any_execution(self):
+        with closing(sqlite3.connect(":memory:")) as connection:
+            for sql, expected in (
+                ("SELECT 'abc' ILIKE ANY ('a%', 'b%')", 1),
+                ("SELECT 'Abc' ILIKE ANY ('x%', 'a%')", 1),
+                ("SELECT 'abc' ILIKE ANY ('x%', 'y%')", 0),
+            ):
+                with self.subTest(sql=sql):
+                    generated = parse_one(sql, read="snowflake").sql("sqlite")
+                    self.assertEqual(connection.execute(generated).fetchall(), [(expected,)])
+
     def test_quoted_variadic_iif(self):
         for name in ('"IF"', '"IIF"'):
             with self.subTest(name=name):

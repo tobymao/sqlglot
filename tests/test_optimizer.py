@@ -2318,6 +2318,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         partial.args["ifs"][0].args["true"].type = None
         self.assertEqual(optimizer.simplify.simplify(partial.copy()), partial)
 
+    def test_sqlite_date_datetime_comparison(self):
+        sql = "SELECT DATE('2024-02-01') = CAST('2024-02-01 00:00:00' AS DATETIME)"
+        optimized = optimizer.optimize(sql, dialect="sqlite").sql("sqlite")
+        connection = sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        self.assertEqual(connection.execute(sql).fetchone(), (0,))
+        self.assertEqual(connection.execute(optimized).fetchone(), (0,))
+
     def test_simplify_string_comparisons(self):
         with duckdb.connect() as conn:
             for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):

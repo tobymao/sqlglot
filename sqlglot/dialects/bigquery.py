@@ -116,6 +116,15 @@ class BigQuery(Dialect):
     # All set operations require either a DISTINCT or ALL specifier
     SET_OP_DISTINCT_BY_DEFAULT = dict.fromkeys((exp.Except, exp.Intersect, exp.Union), None)
 
+    # DATE compares with BigQuery DATETIME (SQLGlot TIMESTAMP). Comparing either to
+    # BigQuery TIMESTAMP (SQLGlot TIMESTAMPTZ) requires an explicit cast.
+    COMPARABLE_TEMPORAL_TYPES = {
+        exp.DType.DATE,
+        exp.DType.DATETIME,
+        exp.DType.TIMESTAMP,
+        exp.DType.TIMESTAMPNTZ,
+    }
+
     # https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions#percentile_cont
     COERCES_TO = {
         **TypeAnnotator.COERCES_TO,

@@ -439,13 +439,20 @@ def _is_date_literal(expression: exp.Expr) -> bool:
     return extract_date(expression) is not None
 
 
-def _comparable_datetimes(a: exp.Expr, b: exp.Expr) -> tuple[datetime, datetime] | None:
+def _comparable_datetimes(
+    a: exp.Expr, b: exp.Expr, dialect: Dialect
+) -> tuple[datetime, datetime] | None:
     left = cast_as_datetime(extract_date(a))
     if left is None:
         return None
     right = cast_as_datetime(extract_date(b))
     # Comparing a naive value to an aware one may depend on the session time zone.
     if right is None or (left.tzinfo is None) != (right.tzinfo is None):
+        return None
+    # extract_date accepts a temporal cast or TsOrDsToDate.
+    a_type = a.to.this if isinstance(a, exp.Cast) else exp.DType.DATE
+    b_type = b.to.this if isinstance(b, exp.Cast) else exp.DType.DATE
+    if a_type != b_type and not {a_type, b_type} <= dialect.COMPARABLE_TEMPORAL_TYPES:
         return None
     return left, right
 
@@ -1031,7 +1038,7 @@ class Simplifier:
                         return None
                     l = l.name
                     r = r.name
-                elif datetimes := _comparable_datetimes(l, r):
+                elif datetimes := _comparable_datetimes(l, r, self.dialect):
                     l, r = datetimes
                 else:
                     return None
@@ -1389,7 +1396,7 @@ class Simplifier:
                 )
                 return date_literal(a + date, target_type)
         elif isinstance(expression, self.COMPARISONS) and (
-            datetimes := _comparable_datetimes(a, b)
+            datetimes := _comparable_datetimes(a, b, self.dialect)
         ):
             return eval_boolean(expression, *datetimes)
 

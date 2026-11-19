@@ -5076,10 +5076,9 @@ class Parser:
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts_fast(
-        self, identifier_tokens: t.Collection[TokenType]
-    ) -> exp.Table | None:
+    def _parse_table_parts_fast(self, allow_keywords: bool = False) -> exp.Table | None:
         index = self._index
+        identifier_tokens = self.ID_VAR_TOKENS if allow_keywords else self.IDENTIFIER_TOKENS
         parts: list[exp.Identifier] | None = None
         all_comments: list[str] | None = None
 
@@ -5125,6 +5124,12 @@ class Parser:
         if parts is None:
             return None
 
+        # A compound keyword such as ADD FILE can only be used as a name when quoted.
+        if allow_keywords and any(
+            not part.quoted and len(part.name.split()) != 1 for part in parts
+        ):
+            return None
+
         n = len(parts)
 
         if n == 1:
@@ -5152,7 +5157,7 @@ class Parser:
         fast: bool = False,
     ) -> exp.Table | exp.Dot | None:
         if fast:
-            return self._parse_table_parts_fast(self.IDENTIFIER_TOKENS)
+            return self._parse_table_parts_fast()
 
         catalog: exp.Expr | str | None = None
         db: exp.Expr | str | None = None

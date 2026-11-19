@@ -65,21 +65,36 @@ class DatabricksParser(SparkParser):
 
     def _parse_optimize(self) -> exp.Optimize | exp.Command:
         start = self._prev
-        if len(self._tokens) - self._index in (1, 3, 5):
-            tokens = self._tokens[self._index :]
-            if all(
-                token.token_type in self.ID_VAR_TOKENS
-                and (
-                    token.token_type == TokenType.IDENTIFIER
-                    or not any(char.isspace() for char in token.text)
-                )
-                for token in tokens[::2]
-            ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
-                return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
+        table = self._parse_optimize_name()
+        if table and len(table.parts) <= 3:
+            optimize = exp.Optimize(this=self.validate_expression(table))
+            if self._match(TokenType.FULL, expression=optimize):
+                optimize.set("full", True)
+            optimize.set("where", self._parse_where())
+            if self._match_text_seq("ZORDER", "BY"):
+                self._add_comments(optimize)
+                optimize.set("zorder", self._parse_wrapped_csv(self._parse_zorder_column))
+            if not self._curr:
+                return self.expression(optimize)
 
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())
         return self.expression(command)
+
+    def _parse_optimize_name(self) -> exp.Table | None:
+        # Multi-word tokens such as ADD FILE are only valid names when quoted.
+        name = self._parse_table_parts_fast(self.ID_VAR_TOKENS)
+        if name and all(
+            part.args.get("quoted") or len(part.name.split()) == 1 for part in name.parts
+        ):
+            return name
+        return None
+
+    def _parse_zorder_column(self) -> exp.Expr | None:
+        if name := self._parse_optimize_name():
+            return self.expression(name.to_column(copy=False), comments=name.comments)
+        self.raise_error("Expected a column name in ZORDER BY")
+        return None
 
     def _parse_curdate(self) -> exp.CurrentDate:
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses

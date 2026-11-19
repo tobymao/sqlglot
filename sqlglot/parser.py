@@ -5076,12 +5076,14 @@ class Parser:
             or self._parse_placeholder()
         )
 
-    def _parse_table_parts_fast(self) -> exp.Table | None:
+    def _parse_table_parts_fast(
+        self, identifier_tokens: t.Collection[TokenType]
+    ) -> exp.Table | None:
         index = self._index
         parts: list[exp.Identifier] | None = None
         all_comments: list[str] | None = None
 
-        while self._match_set(self.IDENTIFIER_TOKENS):
+        while self._match_set(identifier_tokens):
             token = self._prev
             comments = self._prev_comments
 
@@ -5092,7 +5094,7 @@ class Parser:
                 if curr_tt in self.TABLE_POSTFIX_TOKENS:
                     self._retreat(index)
                     return None
-            elif curr_tt not in self.IDENTIFIER_TOKENS:
+            elif curr_tt not in identifier_tokens:
                 self._retreat(index)
                 return None
 
@@ -5150,7 +5152,7 @@ class Parser:
         fast: bool = False,
     ) -> exp.Table | exp.Dot | None:
         if fast:
-            return self._parse_table_parts_fast()
+            return self._parse_table_parts_fast(self.IDENTIFIER_TOKENS)
 
         catalog: exp.Expr | str | None = None
         db: exp.Expr | str | None = None

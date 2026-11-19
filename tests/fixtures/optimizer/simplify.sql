@@ -833,7 +833,7 @@ FALSE;
 
 # dialect: bigquery
 DATE '2024-02-01' = TIMESTAMP '2024-02-01 00:00:00';
-TRUE;
+CAST('2024-02-01 00:00:00' AS TIMESTAMP) = CAST('2024-02-01' AS DATE);
 
 # dialect: duckdb
 # execute: true

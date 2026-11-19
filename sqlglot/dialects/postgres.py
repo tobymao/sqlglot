@@ -158,6 +158,7 @@ class Postgres(Dialect):
         SINGLE_TOKENS = {
             **tokens.Tokenizer.SINGLE_TOKENS,
             "$": TokenType.HEREDOC_STRING,
+            "@": TokenType.AT_SIGN,
         }
 
         VAR_SINGLE_TOKENS = {"$"}

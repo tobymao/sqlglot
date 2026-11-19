@@ -644,6 +644,13 @@ class BigQueryParser(parser.Parser):
 
         return unnest
 
+    def _parse_with(self, skip_with_token: bool = False) -> exp.With | None:
+        if not skip_with_token and self._match_pair(
+            TokenType.WITH, TokenType.L_PAREN, advance=False
+        ):
+            return None
+        return super()._parse_with(skip_with_token)
+
     def _parse_with_expr(self) -> exp.WithExpr:
         bindings = []
         while self._next.token_type == TokenType.ALIAS:
@@ -653,7 +660,11 @@ class BigQueryParser(parser.Parser):
             if not self._match(TokenType.COMMA):
                 self.raise_error("Expected comma after WITH variable")
 
-        return self.expression(exp.WithExpr(this=self._parse_assignment(), expressions=bindings))
+        expression = self.expression(
+            exp.WithExpr(this=self._parse_assignment(), expressions=bindings)
+        )
+        expression.bind_variables()
+        return expression
 
     def _parse_make_interval(self) -> exp.MakeInterval:
         expr = exp.MakeInterval()

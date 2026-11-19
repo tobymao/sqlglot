@@ -3792,6 +3792,35 @@ OPTIONS (
 
     def test_with_expression(self):
         self.validate_identity("SELECT WITH(x AS 2, y AS x + 1, x * y)")
+        self.validate_identity("SELECT (WITH(x AS 2, x + 1))")
+        self.validate_identity("SELECT (WITH q AS (SELECT 4 AS x) SELECT x FROM q)")
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT WITH(x AS 2, )")
+
+        field = self.validate_identity("SELECT WITH(s AS STRUCT(2 AS f), s.f)")
+        self.assertIsInstance(field.expressions[0].this, exp.Dot)
+
+        query = self.validate_identity(
+            "SELECT WITH(X AS x + 1, y AS x + 2, STRUCT(x AS a, y AS b, t.x AS c)) FROM t"
+        )
+        self.assertCountEqual([c.sql() for c in query.find_all(exp.Column)], ["x", "t.x"])
+
+        for inner, expected in (
+            ("(SELECT x FROM u)", "(SELECT u.x AS x FROM u AS u)"),
+            ("(SELECT x FROM w)", "(SELECT x AS x FROM w AS w)"),
+            ("WITH(y AS x + 1, x AS 10, y + x)", "WITH(y AS x + 1, x AS 10, y + x)"),
+        ):
+            with self.subTest(inner=inner):
+                qualified = qualify(
+                    self.parse_one(f"SELECT WITH(x AS 2, {inner}) FROM t"),
+                    dialect="bigquery",
+                    schema={"t": {"x": "INT"}, "u": {"x": "INT"}, "w": {"y": "INT"}},
+                    quote_identifiers=False,
+                )
+                self.assertEqual(
+                    qualified.sql("bigquery"),
+                    f"SELECT WITH(x AS 2, {expected}) AS _col_0 FROM t AS t",
+                )
 
     def test_array_distinct_fold(self):
         for source, order in (

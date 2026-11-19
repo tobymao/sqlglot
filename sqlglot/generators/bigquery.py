@@ -250,7 +250,7 @@ def _array_agg_fold_sql(
                 false=exp.null(),
             )
         )
-        items = exp.column("_items")
+        items = exp.to_identifier("_items")
         item = exp.column("_item")
         rows = (
             exp.select(item)

@@ -188,6 +188,7 @@ class PostgresParser(parser.Parser):
     NO_PAREN_FUNCTION_PARSERS = {
         **parser.Parser.NO_PAREN_FUNCTION_PARSERS,
         "VARIADIC": lambda self: self.expression(exp.Variadic(this=self._parse_bitwise())),
+        "@": lambda self: exp.Abs(this=self._parse_bitwise()),
     }
 
     NO_PAREN_FUNCTIONS = {

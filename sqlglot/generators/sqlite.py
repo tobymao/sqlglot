@@ -83,6 +83,15 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _ilike_any_quantifier(expression: exp.ILike) -> exp.Any | None:
+    rhs = expression.expression
+    if isinstance(rhs, exp.Any):
+        operand = rhs.this.unnest()
+        if isinstance(operand, exp.Tuple) or operand.is_string:
+            return rhs
+    return None
+
+
 class SQLiteGenerator(generator.Generator):
     SELECT_KINDS = ()
     TRY_SUPPORTED = False
@@ -242,10 +251,20 @@ class SQLiteGenerator(generator.Generator):
         return super().insert_sql(expression)
 
     def ilike_sql(self, expression: exp.ILike) -> str:
-        rhs = expression.expression
-        if isinstance(rhs, exp.Any) and isinstance(rhs.this.unnest(), exp.Tuple):
-            return self._like_quantifier_sql(expression, rhs)
+        if quantifier := _ilike_any_quantifier(expression):
+            return self._like_quantifier_sql(expression, quantifier)
         return no_ilike_sql(self, expression)
+
+    def escape_sql(self, expression: exp.Escape) -> str:
+        this = expression.this
+        escape = expression.expression
+        if isinstance(this, exp.ILike) and escape.is_string:
+            marker = escape.name
+            # LOWER can change which characters in a pattern are interpreted as escapes.
+            if len(marker) == 1 and marker.isascii() and not marker.isalpha():
+                if quantifier := _ilike_any_quantifier(this):
+                    return self._like_quantifier_sql(this, quantifier, escape=expression)
+        return super().escape_sql(expression)
 
     def rand_sql(self, expression: exp.Rand) -> str:
         random = self.func("RANDOM", expression.this)

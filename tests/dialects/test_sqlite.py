@@ -60,6 +60,11 @@ class TestSQLite(Validator):
                 ("SELECT 'abc' ILIKE ANY ('a%', 'b%')", 1),
                 ("SELECT 'Abc' ILIKE ANY ('x%', 'a%')", 1),
                 ("SELECT 'abc' ILIKE ANY ('x%', 'y%')", 0),
+                ("SELECT 'abc' ILIKE ANY ('a%')", 1),
+                ("SELECT 'abc' ILIKE ANY ('x%')", 0),
+                ("SELECT 'he%lo' ILIKE ANY ('he#%lo', 'hello') ESCAPE '#'", 1),
+                ("SELECT 'he%lo' ILIKE ANY ('hello', 'he#%lo') ESCAPE '#'", 1),
+                ("SELECT 'heXlo' ILIKE ANY ('he#%lo', 'hello') ESCAPE '#'", 0),
             ):
                 with self.subTest(sql=sql):
                     generated = parse_one(sql, read="snowflake").sql("sqlite")

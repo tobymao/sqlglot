@@ -348,6 +348,8 @@ EXPRESSION_METADATA = {
             exp.LaxFloat64,
             exp.Sec,
             exp.Sech,
+            exp.StX,
+            exp.StY,
         }
     },
     **{

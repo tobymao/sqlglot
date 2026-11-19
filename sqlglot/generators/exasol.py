@@ -266,6 +266,7 @@ def _group_by_all(expression: exp.Expr) -> exp.Expr:
 
 
 class ExasolGenerator(generator.Generator):
+    DATA_TYPE_SPECIFIERS_ALLOWED = True
     SELECT_KINDS = ()
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False

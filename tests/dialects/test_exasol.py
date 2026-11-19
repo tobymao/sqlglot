@@ -137,6 +137,25 @@ class TestExasol(Validator):
             "CAST(x AS TIMESTAMP WITH LOCAL TIME ZONE)",
         )
 
+    def test_hashtype(self):
+        for data_type in (
+            "HASHTYPE",
+            "HASHTYPE(1 BYTE)",
+            "HASHTYPE(16 BYTE)",
+            "HASHTYPE(1024 BYTE)",
+            "HASHTYPE(8 BIT)",
+            "HASHTYPE(128 BIT)",
+            "HASHTYPE(8192 BIT)",
+        ):
+            with self.subTest(data_type=data_type):
+                expression = self.validate_identity(f"SELECT CAST(NULL AS {data_type}) AS h")
+                self.assertEqual(expression.find(exp.DataType).this, exp.DType.HASHTYPE)
+
+    def test_create_table_hashtype(self):
+        self.validate_identity(
+            "CREATE TABLE t (h1 HASHTYPE, h2 HASHTYPE(16 BYTE), h3 HASHTYPE(128 BIT))"
+        )
+
     def test_mod(self):
         self.validate_all(
             "SELECT MOD(x, 10)",

@@ -74,6 +74,7 @@ class DType(AutoName):
     GEOGRAPHY = auto()
     GEOGRAPHYPOINT = auto()
     GEOMETRY = auto()
+    HASHTYPE = auto()
     POINT = auto()
     RING = auto()
     LINESTRING = auto()

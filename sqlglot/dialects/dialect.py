@@ -794,8 +794,8 @@ class Dialect(metaclass=_Dialect):
     table NULLs differently in this context.
     """
 
-    COMPARABLE_TEMPORAL_TYPES = exp.DataType.TEMPORAL_TYPES
-    """Temporal types whose literals can be compared as datetimes across different types."""
+    FOLD_MIXED_TEMPORAL_COMPARISONS = True
+    """Whether to compare literals of different temporal types as datetimes during simplification."""
 
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = False
     """

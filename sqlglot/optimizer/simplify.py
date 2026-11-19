@@ -449,10 +449,7 @@ def _comparable_datetimes(
     # Comparing a naive value to an aware one may depend on the session time zone.
     if right is None or (left.tzinfo is None) != (right.tzinfo is None):
         return None
-    # extract_date accepts a temporal cast or TsOrDsToDate.
-    a_type = a.to.this if isinstance(a, exp.Cast) else exp.DType.DATE
-    b_type = b.to.this if isinstance(b, exp.Cast) else exp.DType.DATE
-    if a_type != b_type and not {a_type, b_type} <= dialect.COMPARABLE_TEMPORAL_TYPES:
+    if not dialect.FOLD_MIXED_TEMPORAL_COMPARISONS and extract_type(a) != extract_type(b):
         return None
     return left, right
 

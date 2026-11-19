@@ -45,6 +45,8 @@ from sqlglot.helper import find_new_name, is_date_unit, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
 
+_SIMILAR_TO_REGEX_CHARS = frozenset(r"\|*+?{}()[]")
+
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
@@ -1602,34 +1604,6 @@ def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def _similar_to_regex(pattern: str) -> str:
-    """Converts a SQL-standard SIMILAR TO pattern (default escape) into a regular expression."""
-    # Mirrors Postgres' similar_escape(): % and _ are wildcards, . ^ $ are literal characters,
-    # the other regex metacharacters keep their meaning and bracket expressions are copied as is
-    result = []
-    in_bracket = False
-    chars = iter(pattern)
-    for char in chars:
-        if char == "\\":
-            escaped = next(chars, "")
-            result.append(escaped if escaped.isalnum() or escaped in "%_" else "\\" + escaped)
-        elif in_bracket:
-            result.append(char)
-            in_bracket = char != "]"
-        elif char == "[":
-            result.append(char)
-            in_bracket = True
-        elif char == "%":
-            result.append(".*")
-        elif char == "_":
-            result.append(".")
-        elif char in ".^$":
-            result.append("\\" + char)
-        else:
-            result.append(char)
-    return "".join(result)
-
-
 class DuckDBGenerator(generator.Generator):
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
@@ -2902,14 +2876,16 @@ class DuckDBGenerator(generator.Generator):
         return strposition_sql(self, expression)
 
     def similarto_sql(self, expression: exp.SimilarTo) -> str:
-        # The standard SIMILAR TO uses SQL patterns, whereas DuckDB's is a plain regular expression
-        pattern = expression.expression
-        if isinstance(expression.parent, exp.Escape) or not pattern.is_string:
-            self.unsupported("SIMILAR TO is only supported with a literal pattern and no ESCAPE")
-            return super().similarto_sql(expression)
+        pattern = expression.expression.unnest()
+        if (
+            pattern.is_string
+            and not isinstance(expression.parent, exp.Escape)
+            and _SIMILAR_TO_REGEX_CHARS.isdisjoint(pattern.name)
+        ):
+            return self.sql(expression.this.like(pattern))
 
-        regex = exp.Literal.string(_similar_to_regex(pattern.name))
-        return self.func("REGEXP_FULL_MATCH", expression.this, regex)
+        self.unsupported("Cannot translate this SIMILAR TO pattern to DuckDB LIKE")
+        return super().similarto_sql(expression)
 
     def substring_sql(self, expression: exp.Substring) -> str:
         if expression.args.get("zero_start"):

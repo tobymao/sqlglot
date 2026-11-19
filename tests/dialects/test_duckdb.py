@@ -1401,33 +1401,6 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("REGEXP_FULL_MATCH(x, y, 'i')")
 
-    def test_similar_to(self):
-        # DuckDB's SIMILAR TO is a regular expression that matches the whole string
-        self.validate_identity("x SIMILAR TO 'a.c'", "REGEXP_FULL_MATCH(x, 'a.c')")
-        self.validate_identity("x NOT SIMILAR TO 'a.c'", "NOT REGEXP_FULL_MATCH(x, 'a.c')")
-
-        # The standard SIMILAR TO uses SQL patterns: % and _ are wildcards, . ^ $ are literals
-        self.validate_all(
-            "REGEXP_FULL_MATCH(x, 'a.c')",
-            read={"postgres": "x SIMILAR TO 'a_c'", "redshift": "x SIMILAR TO 'a_c'"},
-        )
-        self.validate_all(
-            "NOT REGEXP_FULL_MATCH(x, 'a\\.c.*')",
-            read={"postgres": "x NOT SIMILAR TO 'a.c%'"},
-        )
-        self.validate_all(
-            "REGEXP_FULL_MATCH(x, '(b|c).*[%_]\\^\\$')",
-            read={"postgres": "x SIMILAR TO '(b|c)%[%_]^$'"},
-        )
-        self.validate_all(
-            "REGEXP_FULL_MATCH(x, 'a%\\.')",
-            read={"postgres": "x SIMILAR TO 'a\\%\\.'"},
-        )
-
-        # A custom escape character or a non-literal pattern can't be converted
-        for sql in ("x SIMILAR TO 'a!_c' ESCAPE '!'", "x SIMILAR TO y"):
-            with self.subTest(sql), self.assertRaises(UnsupportedError):
-                parse_one(sql, read="postgres").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
         self.validate_all("SELECT * FROM 'x.y'", write={"duckdb": 'SELECT * FROM "x.y"'})
         self.validate_all(
             "SELECT LIST(DISTINCT sample_col) FILTER(WHERE NOT sample_col IS NULL) FROM sample_table",
@@ -2384,6 +2357,26 @@ class TestDuckDB(Validator):
                 "snowflake": "UNICODE(foo)",
             },
         )
+
+    def test_similar_to(self):
+        self.validate_identity("x SIMILAR TO 'a_c%'", "REGEXP_FULL_MATCH(x, 'a_c%')")
+        self.validate_identity("x NOT SIMILAR TO 'a.c'", "NOT REGEXP_FULL_MATCH(x, 'a.c')")
+        self.validate_all(
+            "x LIKE 'a_c%'",
+            read={"postgres": "x SIMILAR TO 'a_c%'", "redshift": "x SIMILAR TO 'a_c%'"},
+        )
+        self.validate_all("x LIKE 'a.c^$'", read={"postgres": "x SIMILAR TO ('a.c^$')"})
+        self.validate_all("NOT x LIKE '%b%'", read={"postgres": "x NOT SIMILAR TO '%b%'"})
+
+        for sql in (
+            "x SIMILAR TO '(a|b)%'",
+            r"x SIMILAR TO '\d'",
+            "x SIMILAR TO '[[:digit:]%]'",
+            "x SIMILAR TO 'a!_c' ESCAPE '!'",
+            "x SIMILAR TO y",
+        ):
+            with self.subTest(sql), self.assertRaises(UnsupportedError):
+                parse_one(sql, read="postgres").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
 
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:

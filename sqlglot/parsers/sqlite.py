@@ -8,29 +8,27 @@ from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import Token, TokenType
 
 
-def _is_now(expression: exp.Expr | None) -> bool:
+SQLITE_NOW = exp.AtTimeZone(this=exp.CurrentTimestamp(), zone=exp.Literal.string("UTC"))
+
+
+def _build_time_value(value: exp.Expr | None, *, as_timestamp: bool = False) -> exp.Expr:
     # https://www.sqlite.org/lang_datefunc.html#time_values
-    return (
-        isinstance(expression, exp.Literal)
-        and expression.is_string
-        and expression.name.lower() == "now"
-    )
+    if value is None or (value.is_string and value.name.lower() == "now"):
+        return SQLITE_NOW.copy()
+    return exp.TsOrDsToTimestamp(this=value) if as_timestamp else value
 
 
-def _build_date(args: list) -> exp.Date | exp.CurrentDate | exp.Anonymous:
-    if len(args) == 1 and _is_now(args[0]):
-        return exp.CurrentDate()
+def _build_date(args: list) -> exp.Date | exp.Anonymous:
     if len(args) <= 1:
-        return exp.Date.from_arg_list(args)
+        return exp.Date(this=_build_time_value(args[0]) if args else None)
     return exp.Anonymous(this="DATE", expressions=args)
 
 
 def _build_strftime(args: list, dialect: t.Any) -> exp.Anonymous | exp.TimeToStr:
-    if len(args) == 1 or (len(args) == 2 and _is_now(args[1])):
-        args = [args[0], exp.CurrentTimestamp()]
-    if len(args) == 2:
+    if 1 <= len(args) <= 2:
         return exp.TimeToStr(
-            this=exp.TsOrDsToTimestamp(this=args[1]), format=dialect.format_time(args[0])
+            this=_build_time_value(seq_get(args, 1), as_timestamp=True),
+            format=dialect.format_time(args[0]),
         )
     return exp.Anonymous(this="STRFTIME", expressions=args)
 

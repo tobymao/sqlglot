@@ -833,6 +833,10 @@ class MySQLGenerator(generator.Generator):
         return self.func("CONVERT_TZ", dt, from_tz, to_tz)
 
     def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
+        if expression.this == exp.CurrentTimestamp() and expression.args.get(
+            "zone"
+        ) == exp.Literal.string("UTC"):
+            return self.func("UTC_TIMESTAMP", exp.Literal.number(3))
         self.unsupported("AT TIME ZONE is not supported by MySQL")
         return self.sql(expression.this)
 

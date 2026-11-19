@@ -24,12 +24,15 @@ def _build_date(args: list) -> exp.Date | exp.Anonymous:
     return exp.Anonymous(this="DATE", expressions=args)
 
 
-def _build_strftime(args: list, dialect: t.Any) -> exp.Anonymous | exp.TimeToStr:
+def _build_strftime(args: list, dialect: t.Any) -> exp.Anonymous | exp.TimeToStr | exp.TimeToUnix:
     if 1 <= len(args) <= 2:
-        return exp.TimeToStr(
-            this=_build_time_value(seq_get(args, 1), as_timestamp=True),
-            format=dialect.format_time(args[0]),
-        )
+        this = _build_time_value(seq_get(args, 1), as_timestamp=True)
+
+        # %s is the Unix epoch, not a format specifier
+        if len(args) == 2 and isinstance(args[0], exp.Literal) and args[0].this == "%s":
+            return exp.TimeToUnix(this=this)
+
+        return exp.TimeToStr(this=this, format=dialect.format_time(args[0]))
     return exp.Anonymous(this="STRFTIME", expressions=args)
 
 
@@ -130,7 +133,6 @@ class SQLiteParser(parser.Parser):
         "ROUND": lambda args: exp.Round(
             this=seq_get(args, 0), decimals=seq_get(args, 1), negative_decimals_are_zero=True
         ),
-        "STRFTIME": _build_strftime,
         "SQLITE_VERSION": exp.CurrentVersion.from_arg_list,
         "TIME": lambda args: exp.Anonymous(this="TIME", expressions=args),
         "UNICODE": lambda args: exp.Unicode(this=seq_get(args, 0), empty_is_null=True),
@@ -141,6 +143,7 @@ class SQLiteParser(parser.Parser):
         "GROUP_CONCAT": lambda self: self._parse_string_agg(),
         "IF": lambda self: self._parse_iif(),
         "IIF": lambda self: self._parse_iif(),
+        "STRFTIME": lambda self: self._parse_strftime(),
     }
 
     PROPERTY_PARSERS = {
@@ -234,6 +237,12 @@ class SQLiteParser(parser.Parser):
         expression = super()._parse_string_agg()
         expression.set("null_separator_is_empty", True)
         return expression
+
+    def _parse_strftime(self) -> exp.Expr:
+        return self.expression(
+            _build_strftime(self._parse_function_args(), self.dialect),
+            self._tokens[self._index - 2],
+        )
 
     def _parse_is_rhs(self, distinct: bool = False) -> exp.Expr | None:
         # Ordering comparisons bind above IS, but range predicates bind below it.

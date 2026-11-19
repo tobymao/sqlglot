@@ -1339,6 +1339,26 @@ class TestSQLite(Validator):
             "SELECT STRFTIME('%s', 'now')",
         )
 
+        # %s is the Unix epoch, not a format specifier
+        self.validate_identity("SELECT STRFTIME('%s', 'now')")
+        self.validate_all(
+            "SELECT STRFTIME('%s', x) FROM t",
+            read={"duckdb": "SELECT EPOCH(x) FROM t"},
+            write={
+                "duckdb": "SELECT EPOCH(CAST(x AS TIMESTAMP)) FROM t",
+                "postgres": "SELECT DATE_PART('epoch', CAST(x AS TIMESTAMP)) FROM t",
+                "mysql": "SELECT UNIX_TIMESTAMP(CAST(x AS DATETIME)) FROM t",
+                "presto": "SELECT TO_UNIXTIME(CAST(x AS TIMESTAMP)) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT STRFTIME('%s', '2024-01-01 00:00:05')",
+            write={
+                "duckdb": "SELECT EPOCH(CAST('2024-01-01 00:00:05' AS TIMESTAMP))",
+                "postgres": "SELECT DATE_PART('epoch', CAST('2024-01-01 00:00:05' AS TIMESTAMP))",
+            },
+        )
+
         self.validate_all(
             "SELECT STRFTIME('%Y-%m-%d', '2020-01-01 12:05:03')",
             write={

@@ -176,6 +176,7 @@ class SQLiteGenerator(generator.Generator):
         exp.TableSample: no_tablesample_sql,
         exp.TimeStrToTime: lambda self, e: self.sql(e, "this"),
         exp.TimeToStr: lambda self, e: self.func("STRFTIME", self.format_time(e), e.this),
+        exp.TimeToUnix: lambda self, e: self.func("STRFTIME", exp.Literal.string("%s"), e.this),
         exp.TryCast: no_trycast_sql,
         exp.TsOrDsToTimestamp: lambda self, e: self.sql(e, "this"),
     }
@@ -278,7 +279,7 @@ class SQLiteGenerator(generator.Generator):
         if expression == SQLITE_NOW:
             # SQLite date functions accept 'now' directly and retain its milliseconds.
             if expression.arg_key == "this" and isinstance(
-                expression.parent, (exp.Date, exp.TimeToStr)
+                expression.parent, (exp.Date, exp.TimeToStr, exp.TimeToUnix)
             ):
                 return "'now'"
             return self.func("STRFTIME", "'%Y-%m-%d %H:%M:%f'", "'now'")

@@ -969,6 +969,17 @@ class TestMySQL(Validator):
         )
         self.validate_identity("SELECT * FROM t WHERE sounds LIKE 'a%'")
         self.validate_identity("SELECT SUBSTR(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
+        self.validate_identity("SELECT MID('abc', 2)", "SELECT SUBSTRING('abc', 2)")
+        self.validate_identity("SELECT MID(1 FROM 2 FOR 3)", "SELECT SUBSTRING(1, 2, 3)")
+        self.validate_all(
+            "SELECT MID('abcdef', 2, 3)",
+            write={
+                "duckdb": "SELECT SUBSTRING('abcdef', 2, 3)",
+                "mysql": "SELECT SUBSTRING('abcdef', 2, 3)",
+                "postgres": "SELECT SUBSTRING('abcdef' FROM 2 FOR 3)",
+                "sqlite": "SELECT SUBSTRING('abcdef', 2, 3)",
+            },
+        )
         self.validate_identity("SELECT ELT(2, 'foo', 'bar', 'baz') AS Result")
         self.validate_identity("SELECT CHARSET(CHAR(100 USING utf8))")
         self.validate_identity("SELECT VERSION()")

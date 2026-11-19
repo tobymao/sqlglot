@@ -34,7 +34,6 @@ COLLECTIBLE_TYPES = (
     exp.TableColumn,
     exp.JoinHint,
     exp.Comprehension,
-    exp.WithExpr,
 )
 
 
@@ -92,7 +91,6 @@ class Scope:
     _ctes: list[exp.CTE]
     _subqueries: list[exp.Select | exp.SetOperation]
     _join_hints: list[exp.JoinHint]
-    _with_exprs: list[exp.WithExpr]
     _comprehensions: list[exp.Comprehension]
     _semi_anti_join_tables: set[str]
     _column_index: set[int]
@@ -151,7 +149,6 @@ class Scope:
         self._ctes = []
         self._subqueries = []
         self._join_hints = []
-        self._with_exprs = []
         self._comprehensions = []
         self._semi_anti_join_tables = set()
         self._column_index = set()
@@ -195,7 +192,6 @@ class Scope:
         self._table_columns = []
         self._stars = []
         self._join_hints = []
-        self._with_exprs = []
         self._comprehensions = []
         self._semi_anti_join_tables = set()
         self._column_index = set()
@@ -253,8 +249,6 @@ class Scope:
                 self._subqueries.append(node)
             elif isinstance(node, exp.TableColumn):
                 self._table_columns.append(node)
-            elif isinstance(node, exp.WithExpr):
-                self._with_exprs.append(node)
             elif isinstance(node, exp.Comprehension):
                 self._comprehensions.append(node)
             elif isinstance(node, exp.Star) and (
@@ -300,12 +294,6 @@ class Scope:
         """
         self._ensure_collected()
         return self._tables
-
-    @property
-    def with_exprs(self) -> list[exp.WithExpr]:
-        """Scalar WITH expressions in this scope."""
-        self._ensure_collected()
-        return self._with_exprs
 
     @property
     def comprehensions(self) -> list[exp.Comprehension]:

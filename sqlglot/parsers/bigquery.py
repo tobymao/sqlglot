@@ -333,8 +333,6 @@ class BigQueryParser(parser.Parser):
         "WEEK": lambda args: exp.WeekStart(this=exp.var(seq_get(args, 0))),
     }
 
-    FUNC_TOKENS = {*parser.Parser.FUNC_TOKENS, TokenType.WITH}
-
     FUNCTION_PARSERS = {
         **{k: v for k, v in parser.Parser.FUNCTION_PARSERS.items() if k != "TRIM"},
         "ARRAY": lambda self: self.expression(
@@ -344,7 +342,6 @@ class BigQueryParser(parser.Parser):
             exp.JSONArray(expressions=self._parse_csv(self._parse_bitwise))
         ),
         "MAKE_INTERVAL": lambda self: self._parse_make_interval(),
-        "WITH": lambda self: self._parse_with_expr(),
         "PREDICT": lambda self: self._parse_ml(exp.Predict),
         "TRANSLATE": lambda self: self._parse_translate(),
         "FEATURES_AT_TIME": lambda self: self._parse_features_at_time(),
@@ -643,28 +640,6 @@ class BigQueryParser(parser.Parser):
                 unnest.set("explode_array", True)
 
         return unnest
-
-    def _parse_with(self, skip_with_token: bool = False) -> exp.With | None:
-        if not skip_with_token and self._match_pair(
-            TokenType.WITH, TokenType.L_PAREN, advance=False
-        ):
-            return None
-        return super()._parse_with(skip_with_token)
-
-    def _parse_with_expr(self) -> exp.WithExpr:
-        bindings = []
-        while self._next.token_type == TokenType.ALIAS:
-            name = self._parse_id_var()
-            self._advance()  # AS
-            bindings.append(self.expression(exp.Alias(this=self._parse_assignment(), alias=name)))
-            if not self._match(TokenType.COMMA):
-                self.raise_error("Expected comma after WITH variable")
-
-        expression = self.expression(
-            exp.WithExpr(this=self._parse_assignment(), expressions=bindings)
-        )
-        expression.bind_variables()
-        return expression
 
     def _parse_make_interval(self) -> exp.MakeInterval:
         expr = exp.MakeInterval()

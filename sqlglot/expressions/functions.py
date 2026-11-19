@@ -8,13 +8,11 @@ from sqlglot.expressions.core import (
     Expression,
     Func,
     Binary,
-    Column,
     SubqueryPredicate,
     ExpOrStr,
     maybe_parse,
     maybe_copy,
 )
-from sqlglot.expressions.query import Query
 
 # Re-export from focused submodules (backward compatibility)
 from sqlglot.expressions.math import *  # noqa: F401,F403
@@ -93,29 +91,6 @@ class Convert(Expression, Func):
 
 
 # Conditional
-
-
-class WithExpr(Expression, Func):
-    """BigQuery WITH expression with local variable bindings."""
-
-    arg_types = {"this": True, "expressions": True}
-
-    def bind_variables(self, column_ids: set[int] | None = None) -> None:
-        """Bind local references in declaration order. Nested queries resolve their columns first."""
-        names: set[str] = set()
-        bindings = self.expressions
-        for i, binding in enumerate(bindings):
-            names.add(binding.alias.casefold())
-            body = bindings[i + 1].this if i + 1 < len(bindings) else self.this
-            if body is None:
-                continue
-            for node in body.walk(prune=lambda n: column_ids is None and isinstance(n, Query)):
-                if (
-                    isinstance(node, Column)
-                    and (column_ids is None or id(node) in column_ids)
-                    and node.parts[0].name.casefold() in names
-                ):
-                    node.replace(node.to_dot(include_dots=False))
 
 
 class If(Expression, Func):

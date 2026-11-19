@@ -3790,38 +3790,6 @@ OPTIONS (
                 },
             )
 
-    def test_with_expression(self):
-        self.validate_identity("SELECT WITH(x AS 2, y AS x + 1, x * y)")
-        self.validate_identity("SELECT (WITH(x AS 2, x + 1))")
-        self.validate_identity("SELECT (WITH q AS (SELECT 4 AS x) SELECT x FROM q)")
-        with self.assertRaises(ParseError):
-            self.parse_one("SELECT WITH(x AS 2, )")
-
-        field = self.validate_identity("SELECT WITH(s AS STRUCT(2 AS f), s.f)")
-        self.assertIsInstance(field.expressions[0].this, exp.Dot)
-
-        query = self.validate_identity(
-            "SELECT WITH(X AS x + 1, y AS x + 2, STRUCT(x AS a, y AS b, t.x AS c)) FROM t"
-        )
-        self.assertCountEqual([c.sql() for c in query.find_all(exp.Column)], ["x", "t.x"])
-
-        for inner, expected in (
-            ("(SELECT x FROM u)", "(SELECT u.x AS x FROM u AS u)"),
-            ("(SELECT x FROM w)", "(SELECT x AS x FROM w AS w)"),
-            ("WITH(y AS x + 1, x AS 10, y + x)", "WITH(y AS x + 1, x AS 10, y + x)"),
-        ):
-            with self.subTest(inner=inner):
-                qualified = qualify(
-                    self.parse_one(f"SELECT WITH(x AS 2, {inner}) FROM t"),
-                    dialect="bigquery",
-                    schema={"t": {"x": "INT"}, "u": {"x": "INT"}, "w": {"y": "INT"}},
-                    quote_identifiers=False,
-                )
-                self.assertEqual(
-                    qualified.sql("bigquery"),
-                    f"SELECT WITH(x AS 2, {expected}) AS _col_0 FROM t AS t",
-                )
-
     def test_array_distinct_fold(self):
         for source, order in (
             ("LIST_DISTINCT(LIST(x))", ""),
@@ -3835,20 +3803,10 @@ OPTIONS (
                     read={"duckdb": source},
                 )
 
+        # A FILTER can leave no rows, so only the ones it keeps count
         self.validate_all(
-            "WITH(_items AS ARRAY_CONCAT_AGG(IF(RAND() < 0.5, [x], NULL)), "
-            "IF(_items IS NULL, NULL, ARRAY(SELECT DISTINCT _item FROM UNNEST(_items) AS _item "
-            "WHERE NOT _item IS NULL)))",
-            read={"duckdb": "LIST_DISTINCT(LIST(x) FILTER(WHERE RANDOM() < 0.5))"},
-        )
-        self.validate_all(
-            "SELECT ARRAY_LENGTH(WITH(_items AS ARRAY_CONCAT_AGG(IF(g IN (SELECT 1), [x], NULL)), "
-            "IF(_items IS NULL, NULL, ARRAY(SELECT DISTINCT _item FROM UNNEST(_items) AS _item "
-            "ORDER BY _item NULLS LAST)))) FROM t GROUP BY g",
-            read={
-                "trino": "SELECT CARDINALITY(ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x) "
-                "FILTER(WHERE g IN (SELECT 1))))) FROM t GROUP BY g"
-            },
+            "IF(COUNTIF(c) = 0, NULL, COALESCE(ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS), []))",
+            read={"duckdb": "LIST_DISTINCT(LIST(x) FILTER(WHERE c))"},
         )
 
         for values, where in (

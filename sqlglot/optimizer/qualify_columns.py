@@ -84,13 +84,6 @@ def qualify_columns(
 
         resolver = Resolver(scope, schema)
 
-        if scope.with_exprs:
-            # Inner query sources have been qualified; only their external references can bind here.
-            column_ids = {id(column) for column in scope.columns}
-            for with_expr in scope.with_exprs:
-                with_expr.bind_variables(column_ids)
-            scope.clear_cache()
-
         _qualify_comprehensions(scope, resolver)
 
         _pop_table_column_aliases(scope.ctes)

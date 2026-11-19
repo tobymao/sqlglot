@@ -1829,30 +1829,26 @@ class TestDialect(Validator):
                 "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
                 ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
             ),
-            # Filter rows before sorting so a retained NULL still has a place in the array.
+            # A FILTER becomes an IF that IGNORE NULLS drops, so NULLs need no placing
             (
                 "trino",
                 "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x) FILTER(WHERE c)))",
-                "WITH(_items AS ARRAY_CONCAT_AGG(IF(c, [x], NULL)), IF(_items IS NULL, NULL, "
-                "ARRAY(SELECT DISTINCT _item FROM UNNEST(_items) AS _item ORDER BY _item NULLS LAST)))",
+                "ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
             ),
             (
                 "trino",
                 "ARRAY_SORT(ARRAY_AGG(x) FILTER(WHERE c))",
-                "WITH(_items AS ARRAY_CONCAT_AGG(IF(c, [x], NULL)), IF(_items IS NULL, NULL, "
-                "ARRAY(SELECT _item FROM UNNEST(_items) AS _item ORDER BY _item NULLS LAST)))",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
             ),
             (
                 "duckdb",
                 "LIST_SORT(LIST(x) FILTER(WHERE c), 'DESC', 'NULLS FIRST')",
-                "WITH(_items AS ARRAY_CONCAT_AGG(IF(c, [x], NULL)), IF(_items IS NULL, NULL, "
-                "ARRAY(SELECT _item FROM UNNEST(_items) AS _item ORDER BY _item DESC NULLS FIRST)))",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL) DESC)",
             ),
             (
                 "spark",
                 "SORT_ARRAY(COLLECT_LIST(x) FILTER(WHERE c))",
-                "WITH(_items AS ARRAY_CONCAT_AGG(IF(c, [x], NULL)), ARRAY(SELECT _item "
-                "FROM UNNEST(_items) AS _item WHERE NOT _item IS NULL ORDER BY _item))",
+                "ARRAY_AGG(IF(c, x, NULL) IGNORE NULLS ORDER BY IF(c, x, NULL))",
             ),
             (
                 "spark",

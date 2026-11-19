@@ -262,6 +262,14 @@ class TeradataParser(parser.Parser):
             )
         )
 
+    def _parse_delete(self, alias_tokens: t.Collection[TokenType] | None = None) -> exp.Delete:
+        expression = super()._parse_delete(
+            alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS - {TokenType.ALL}
+        )
+        if not expression.args.get("where"):
+            self._match(TokenType.ALL)
+        return expression
+
     # FROM before SET in Teradata UPDATE syntax
     # https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/Teradata-VantageTM-SQL-Data-Manipulation-Language-17.20/Statement-Syntax/UPDATE/UPDATE-Syntax-Basic-Form-FROM-Clause
     def _parse_update(self) -> exp.Update:

@@ -346,6 +346,27 @@ class TestTeradata(Validator):
                 with self.assertRaises(ParseError):
                     self.parse_one(sql, error_level=ErrorLevel.RAISE)
 
+    def test_delete_all(self):
+        for prefix in ("DELETE", "DELETE FROM", "DEL FROM"):
+            for table, alias in (("t", ""), ("db.t", ""), ("t AS d", "d"), ('t AS "ALL"', "ALL")):
+                sql = f"{prefix} {table} ALL"
+                expected = f"{prefix.replace('DEL FROM', 'DELETE FROM')} {table}"
+                with self.subTest(sql=sql):
+                    expression = self.validate_identity(sql, expected).assert_is(exp.Delete)
+                    self.assertEqual(expression, self.parse_one(expected))
+                    target = expression.find(exp.Table)
+                    self.assertEqual(target.name, "t")
+                    self.assertEqual(target.alias, alias)
+                    self.assertIsNone(expression.args.get("where"))
+
+        self.validate_identity("DELETE FROM t WHERE id = 1")
+        self.validate_identity("DELETE FROM t AS d WHERE d.id = 1")
+        self.validate_identity('DELETE FROM t AS "ALL"')
+        self.validate_identity("SELECT * FROM t ALL", "SELECT * FROM t AS ALL")
+        self.assertEqual(parse_one("DELETE FROM t ALL").this.alias, "ALL")
+        with self.assertRaises(ParseError):
+            self.parse_one("DELETE FROM t WHERE id = 1 ALL")
+
     def test_teradata(self):
         self.validate_all(
             "RANDOM(l, u)",

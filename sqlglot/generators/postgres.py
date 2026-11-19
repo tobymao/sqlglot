@@ -44,6 +44,8 @@ from sqlglot.generator import unsupported_args
 from sqlglot.helper import ensure_list, seq_get, to_int
 
 
+_REGEXP_FULL_MATCH_METACHARS = frozenset(r"\|*+?{}()[].^$%_")
+
 DATE_DIFF_FACTOR = {
     "MICROSECOND": " * 1000000",
     "MILLISECOND": " * 1000",
@@ -629,6 +631,16 @@ class PostgresGenerator(generator.Generator):
         # https://www.postgresql.org/docs/current/functions-window.html
         self.unsupported("PostgreSQL does not support RESPECT NULLS.")
         return self.sql(expression.this)
+
+    @unsupported_args("options")
+    def regexpfullmatch_sql(self, expression: exp.RegexpFullMatch) -> str:
+        pattern = expression.expression.unnest()
+        if not pattern.is_string or not _REGEXP_FULL_MATCH_METACHARS.isdisjoint(pattern.name):
+            self.unsupported(
+                "Only plain literal REGEXP_FULL_MATCH patterns translate to SIMILAR TO"
+            )
+
+        return self.sql(exp.SimilarTo(this=expression.this, expression=expression.expression))
 
     def regexplike_sql(self, expression: exp.RegexpLike) -> str:
         flag = expression.args.get("flag")

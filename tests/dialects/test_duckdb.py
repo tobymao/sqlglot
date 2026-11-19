@@ -2378,6 +2378,24 @@ class TestDuckDB(Validator):
             with self.subTest(sql), self.assertRaises(UnsupportedError):
                 parse_one(sql, read="postgres").sql("duckdb", unsupported_level=ErrorLevel.RAISE)
 
+    def test_regexp_full_match_to_postgres(self):
+        sql = "SELECT 'abc' SIMILAR TO 'abc', 'xabc' SIMILAR TO 'abc'"
+        self.assertEqual(
+            self.parse_one(sql).sql("postgres", unsupported_level=ErrorLevel.RAISE), sql
+        )
+        self.validate_all(
+            "SELECT 'xabc' NOT SIMILAR TO 'abc'",
+            write={"postgres": "SELECT NOT 'xabc' SIMILAR TO 'abc'"},
+        )
+        for sql in (
+            "SELECT 'abc' SIMILAR TO 'a.c'",
+            "SELECT 'a_c%' SIMILAR TO 'a_c%'",
+            "SELECT 'abc' SIMILAR TO p FROM (VALUES ('abc')) AS t(p)",
+            "SELECT REGEXP_FULL_MATCH('ABC', 'abc', 'i')",
+        ):
+            with self.subTest(sql):
+                self.validate_all(sql, write={"postgres": UnsupportedError})
+
     def test_array_index(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

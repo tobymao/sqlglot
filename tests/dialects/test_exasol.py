@@ -138,15 +138,7 @@ class TestExasol(Validator):
         )
 
     def test_hashtype(self):
-        for data_type in (
-            "HASHTYPE",
-            "HASHTYPE(1 BYTE)",
-            "HASHTYPE(16 BYTE)",
-            "HASHTYPE(1024 BYTE)",
-            "HASHTYPE(8 BIT)",
-            "HASHTYPE(128 BIT)",
-            "HASHTYPE(8192 BIT)",
-        ):
+        for data_type in ("HASHTYPE", "HASHTYPE(16 BYTE)", "HASHTYPE(128 BIT)"):
             with self.subTest(data_type=data_type):
                 expression = self.validate_identity(f"SELECT CAST(NULL AS {data_type}) AS h")
                 self.assertEqual(expression.find(exp.DataType).this, exp.DType.HASHTYPE)

@@ -319,6 +319,18 @@ class TestPostgres(Validator):
             if expression.args.get("returning"):
                 self.assertIsInstance(expression.args["returning"], exp.DataType)
 
+    def test_absolute_value_operator(self):
+        self.validate_identity("SELECT @ x", "SELECT ABS(x)")
+        self.validate_identity("SELECT @ -5.0", "SELECT ABS(-5.0)")
+        self.validate_identity("SELECT @ -3 + 1", "SELECT ABS(-3 + 1)")
+        self.validate_identity("SELECT @ x > 1", "SELECT ABS(x) > 1")
+        self.validate_identity("SELECT @ -3 & 3", "SELECT ABS(-3) & 3")
+        self.validate_identity("SELECT 2 * @ -3", "SELECT 2 * ABS(-3)")
+        self.validate_identity("SELECT @ DECIMAL '-1.25'", "SELECT ABS(CAST('-1.25' AS DECIMAL))")
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT @")
+
     def test_postgres(self):
         expr = self.parse_one("SELECT * FROM r CROSS JOIN LATERAL UNNEST(ARRAY[1]) AS s(location)")
         unnest = expr.args["joins"][0].this.this
@@ -369,10 +381,6 @@ class TestPostgres(Validator):
         self.validate_identity("1.x", "1. AS x")
         self.validate_identity("|/ x", "SQRT(x)")
         self.validate_identity("||/ x", "CBRT(x)")
-        self.validate_identity("SELECT @ x", "SELECT ABS(x)")
-        self.validate_identity("SELECT @ -5.0", "SELECT ABS(-5.0)")
-        self.validate_identity("SELECT @ -3 + 1", "SELECT ABS(-3 + 1)")
-        self.validate_identity("SELECT @ x > 1", "SELECT ABS(x) > 1")
         self.validate_identity("SELECT EXTRACT(QUARTER FROM CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('QUARTER', CAST('2025-04-26' AS DATE))")
         self.validate_identity("SELECT DATE_TRUNC('DAY', x, 'America/New_York')")

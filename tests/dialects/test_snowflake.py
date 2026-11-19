@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ParseError, UnsupportedError, exp, parse_one, tokenize
+from sqlglot import ParseError, TokenError, UnsupportedError, exp, parse_one, tokenize
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify import qualify
@@ -3857,9 +3857,8 @@ class TestSnowflake(Validator):
             ("LIST @s/a--b", TokenType.STAGE_PATH, "@s/a--b"),
             ("LIST @~/a--b", TokenType.STAGE_PATH, "@~/a--b"),
             ('LIST @stg/p"x"', TokenType.STAGE_PATH, '@stg/p"x"'),
-            ('LIST @"my stage"/a--b', TokenType.STAGE_PATH, '@"my stage"/a--b'),
+            ('LIST @"my_stage"/a--b', TokenType.STAGE_PATH, '@"my_stage"/a--b'),
             ("COPY INTO t FROM @s/a--b/c", TokenType.STAGE_PATH, "@s/a--b/c"),
-            ("COPY INTO t FROM file:///tmp/a--b", TokenType.URI_START, "file:///tmp/a--b"),
         ):
             with self.subTest(sql):
                 tokens = tokenize(sql, read="snowflake")
@@ -3881,21 +3880,24 @@ class TestSnowflake(Validator):
 
         self.assertEqual(tokenize("SELECT @", read="snowflake")[-1].token_type, TokenType.PARAMETER)
 
-        tokens = tokenize('PUT file://a"b.csv @stg; SELECT 1 -- "', read="snowflake")
+        tokens = tokenize('PUT file:///tmp/a--b"c.csv @stg; SELECT 1 -- "', read="snowflake")
         self.assertEqual(
             [(t.token_type, t.text) for t in tokens[:4]],
             [
                 (TokenType.PUT, "PUT"),
-                (TokenType.URI_START, 'file://a"b.csv'),
+                (TokenType.URI_START, 'file:///tmp/a--b"c.csv'),
                 (TokenType.STAGE_PATH, "@stg"),
                 (TokenType.SEMICOLON, ";"),
             ],
         )
         self.assertEqual(tokens[-1].comments, [' "'])
 
-        tokens = tokenize('LIST @"a\nb"/x; SELECT 1', read="snowflake")
+        with self.assertRaises(TokenError):
+            tokenize('LIST @"my stage"/a--b', read="snowflake")
+
+        tokens = tokenize("""LIST '@"a\nb"/x'; SELECT 1""", read="snowflake")
         self.assertEqual(tokens[1].text, '@"a\nb"/x')
-        self.assertEqual([(t.line, t.col) for t in tokens[2:]], [(2, 5), (2, 12), (2, 14)])
+        self.assertEqual([(t.line, t.col) for t in tokens[2:]], [(2, 6), (2, 13), (2, 15)])
 
         for sql in (
             "SELECT $1 FROM @s/a--b",

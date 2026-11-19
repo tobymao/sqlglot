@@ -14,7 +14,7 @@ Please include these details in a bug report.
 - The result you expected and what actually happened
 - Relevant database documentation, especially for dialect-specific behavior
 
-For a feature request, describe your use case and give an example of the behavior you would like to see. For open-ended conversations about the project, use [GitHub discussions](https://github.com/tobymao/sqlglot/discussions).
+For a feature request, describe your use case and give an example of the behavior you would like to see.
 
 ## Submitting code changes (maintainers only)
 

@@ -371,6 +371,7 @@ class PostgresGenerator(generator.Generator):
         exp.CurrentVersion: rename_func("VERSION"),
         exp.DateAdd: _date_add_sql("+"),
         exp.DateDiff: _date_diff_sql,
+        exp.DateFromParts: rename_func("MAKE_DATE"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.DateSub: _date_add_sql("-"),
         exp.DatetimeAdd: _date_add_sql("+"),

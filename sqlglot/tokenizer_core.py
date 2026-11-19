@@ -195,6 +195,7 @@ class TokenType(IntEnum):
     GEOGRAPHYPOINT = auto()
     NULLABLE = auto()
     GEOMETRY = auto()
+    HASHTYPE = auto()
     POINT = auto()
     RING = auto()
     LINESTRING = auto()

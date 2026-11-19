@@ -621,6 +621,7 @@ class Parser:
         TokenType.GEOGRAPHY,
         TokenType.GEOGRAPHYPOINT,
         TokenType.GEOMETRY,
+        TokenType.HASHTYPE,
         TokenType.POINT,
         TokenType.RING,
         TokenType.LINESTRING,

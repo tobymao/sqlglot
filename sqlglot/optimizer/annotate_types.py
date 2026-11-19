@@ -369,26 +369,17 @@ class TypeAnnotator:
 
             alias_column_names = expression.alias_column_names
 
-            if isinstance(expression, exp.Unnest):
-                exp_type = expression.type
-            elif isinstance(expression, exp.Lateral) and isinstance(expression.this, exp.Explode):
-                exp_type = expression.this.type
-            else:
-                exp_type = None
-
-            struct_type = exp_type if exp_type and exp_type.is_type(exp.DType.STRUCT) else None
-
-            if struct_type:
+            element_type = (
+                values[0].type if isinstance(expression, (exp.Lateral, exp.Unnest)) else None
+            )
+            if element_type and element_type.is_type(exp.DType.STRUCT):
                 result = {
                     col_def.name: t.cast(t.Union[exp.DataType, exp.DType], col_def.kind)
-                    for col_def in struct_type.expressions
+                    for col_def in element_type.expressions
                     if isinstance(col_def, exp.ColumnDef) and col_def.kind
                 }
                 if isinstance(expression, exp.Lateral):
-                    # LATERAL VIEW EXPLODE(array_of_structs) tbl AS alias: unlike BigQuery's
-                    # UNNEST value-table semantics, EXPLODE's own alias must resolve to the
-                    # whole element struct, in addition to the splatted field names above
-                    result.update({alias: struct_type for alias in alias_column_names})
+                    result.update(dict.fromkeys(alias_column_names, element_type))
             elif isinstance(expression, exp.Values):
                 # Like a set operation's, each VALUES column's type is coerced across all rows
                 column_types: list[exp.DataType | exp.DType] = [exp.DType.NULL] * len(values)
@@ -401,8 +392,9 @@ class TypeAnnotator:
                 result = dict(zip(alias_column_names, column_types))
             else:
                 result = {
-                    alias: t.cast(t.Union[exp.DataType, exp.DType], column.type)
+                    alias: column.type
                     for alias, column in zip(alias_column_names, values)
+                    if column.type
                 }
 
             if isinstance(expression, exp.Unnest) and isinstance(

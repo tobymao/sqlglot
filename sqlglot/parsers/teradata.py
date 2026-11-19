@@ -38,6 +38,32 @@ class TeradataParser(parser.Parser):
         TokenType.SEMI,
     }
 
+    # Maximum number of literal type parameters. The tokenizer also recognizes
+    # aliases from other dialects, including INT32 and BYTE for integer types.
+    CONVERSION_TYPES: t.ClassVar = {
+        "BYTEINT": 0,
+        "SMALLINT": 0,
+        "INT": 0,
+        "INTEGER": 0,
+        "BIGINT": 0,
+        "DEC": 2,
+        "DECIMAL": 2,
+        "NUMERIC": 2,
+        "FLOAT": 1,
+        "REAL": 0,
+        "DOUBLE PRECISION": 0,
+        "CHAR": 1,
+        "CHARACTER": 1,
+        "VARCHAR": 1,
+        "CHAR VARYING": 1,
+        "CHARACTER VARYING": 1,
+        "DATE": 0,
+        "TIME": 1,
+        "TIMESTAMP": 1,
+        "INTERVAL": 0,
+    }
+    CONVERSION_ATTRIBUTES = {"FORMAT", "TITLE", "NAMED"}
+
     CHARSET_TRANSLATORS: t.ClassVar = {
         "GRAPHIC_TO_KANJISJIS",
         "GRAPHIC_TO_LATIN",
@@ -148,9 +174,8 @@ class TeradataParser(parser.Parser):
     def _parse_interval_span(
         self, this: exp.Expr, parse_function_unit: bool = True
     ) -> exp.Interval:
-        # In INTERVAL '1' DAY (INTEGER), the conversion applies to the interval.
         return super()._parse_interval_span(
-            this, parse_function_unit=parse_function_unit and not self._is_integer_cast(1)
+            this, parse_function_unit=parse_function_unit and not self._conversion_follows()
         )
 
     def _parse_interval(
@@ -307,6 +332,33 @@ class TeradataParser(parser.Parser):
             self._retreat(self._index - 2)
         return this
 
+    def _parse_table_part(self, schema: bool = False) -> exp.Expr | None:
+        if not schema and self._match_pair(TokenType.TABLE, TokenType.L_PAREN, advance=False):
+            if function := self._try_parse(self._parse_table_function):
+                return function
+        return super()._parse_table_part(schema)
+
+    def _parse_table_function(self) -> exp.TableFromRows | None:
+        # TABLE(db.f(DATE)) requires a function call even when DATE could be a target type.
+        self._advance(2)
+        parts: list[exp.Expr] = []
+        while self._next.token_type == TokenType.DOT:
+            qualifier = self._parse_id_var()
+            if not qualifier or not self._match(TokenType.DOT):
+                return None
+            parts.append(qualifier)
+
+        call = self._parse_function(
+            anonymous=bool(parts) or self._curr.token_type == TokenType.IDENTIFIER,
+            optional_parens=False,
+            any_token=bool(parts),
+        )
+        if not call or not self._match(TokenType.R_PAREN):
+            return None
+        return self.expression(
+            exp.TableFromRows(this=exp.Dot.build([*parts, call]) if parts else call)
+        )
+
     def _parse_function(
         self,
         functions: dict[str, t.Callable] | None = None,
@@ -314,105 +366,123 @@ class TeradataParser(parser.Parser):
         optional_parens: bool = True,
         any_token: bool = False,
     ) -> exp.Expr | None:
-        if optional_parens and self._is_integer_cast(1):
+        if optional_parens and self._conversion_follows():
+            name = self._curr.text.upper()
             if self._curr.token_type == TokenType.IDENTIFIER:
                 return None
-
-            name = self._curr.text.upper()
             if self._prev.token_type != TokenType.DOT:
-                if name in {"CURRENT_DATE", "CURDATE"}:
+                value = self.NO_PAREN_FUNCTIONS.get(self._curr.token_type)
+                if name == "CURDATE":
+                    value = exp.CurrentDate
+                elif name == "CURTIME":
+                    value = exp.CurrentTime
+                if value:
                     self._advance()
-                    return self.expression(exp.CurrentDate())
+                    return self.expression(value())
                 if name == "DATE":
                     return None
 
-            if (
+            if self._tokens[self._index + 2].text.upper() in self.CONVERSION_ATTRIBUTES or (
                 name not in (self.FUNCTIONS if functions is None else functions)
                 and name not in self.FUNCTION_PARSERS
             ):
                 return None
 
-        # Column data attributes are not function arguments.
-        if (
-            self._next
-            and self._next.token_type == TokenType.L_PAREN
-            and self._index + 3 < len(self._tokens)
-            and self._tokens[self._index + 2].token_type in {TokenType.FORMAT, TokenType.VAR}
-            and self._tokens[self._index + 2].text.upper() in {"FORMAT", "TITLE", "NAMED"}
-            and self._tokens[self._index + 3].token_type != TokenType.L_PAREN
-        ):
-            return None
+        return super()._parse_function(functions, anonymous, optional_parens, any_token)
 
-        return super()._parse_function(
-            functions=functions,
-            anonymous=anonymous,
-            optional_parens=optional_parens,
-            any_token=any_token,
-        )
+    def _conversion_follows(self) -> bool:
+        if self._next.token_type != TokenType.L_PAREN:
+            return False
+        index = self._index
+        self._advance(2)
+        if self._match_texts(self.CONVERSION_ATTRIBUTES, advance=False):
+            # Attribute keywords can also be function names, e.g. f(TITLE(x)).
+            follows = self._next.token_type != TokenType.L_PAREN
+        else:
+            follows = self._match_texts(self.CONVERSION_TYPES, advance=False) and bool(
+                self._try_parse(self._parse_conversion_items)
+            )
+        self._retreat(index)
+        return follows
 
-    def _is_integer_cast(self, offset: int = 0) -> bool:
-        index = self._index + offset
-        return (
-            index + 2 < len(self._tokens)
-            and self._tokens[index].token_type == TokenType.L_PAREN
-            and self._tokens[index + 1].token_type in self.TYPE_TOKENS
-            and self._tokens[index + 1].text.upper()
-            in {"BYTEINT", "SMALLINT", "INTEGER", "INT", "BIGINT"}
-            and self._tokens[index + 2].token_type == TokenType.R_PAREN
-        )
+    def _parse_conversion_type(self) -> exp.Expr | None:
+        index = self._index
+        if self._next.token_type == TokenType.L_PAREN:
+            # _parse_types also accepts expressions for sizes, e.g. DECIMAL(x). In
+            # this ambiguous position only a literal precision, scale or length counts.
+            max_params = self.CONVERSION_TYPES[self._curr.text.upper()]
+            self._advance(2)
+            for _ in range(max_params):
+                if not self._match(TokenType.NUMBER) or not self._prev.text.isdecimal():
+                    return None
+                if self._match(TokenType.R_PAREN):
+                    break
+                if not self._match(TokenType.COMMA):
+                    return None
+            else:
+                return None
+            self._retreat(index)
+
+        return self._parse_types(allow_identifiers=False)
+
+    def _parse_conversion_items(self) -> dict[str, exp.Expr] | None:
+        items: dict[str, exp.Expr] = {}
+        while True:
+            if self._match_texts(self.CONVERSION_ATTRIBUTES):
+                key = self._prev.text.upper()
+                if key == "NAMED":
+                    value = self._parse_id_var(
+                        any_token=False, tokens={TokenType.VAR, TokenType.STRING}
+                    )
+                    if not isinstance(value, exp.Identifier):
+                        return None
+                else:
+                    value = self._parse_string()
+                    if not value or (key == "TITLE" and not value.is_string):
+                        return None
+            elif self._match_texts(self.CONVERSION_TYPES, advance=False):
+                key = "TYPE"
+                value = self._parse_conversion_type()
+                if not isinstance(value, exp.DataType):
+                    return None
+            else:
+                return None
+
+            if key in items:
+                return None
+            items[key] = value
+            if not self._match(TokenType.COMMA):
+                break
+
+        return items if self._match(TokenType.R_PAREN) else None
 
     def _parse_type(
         self, parse_interval: bool = True, fallback_to_identifier: bool = False
     ) -> exp.Expr | None:
-        this = super()._parse_type(
-            parse_interval=parse_interval, fallback_to_identifier=fallback_to_identifier
-        )
-        if this and self._is_integer_cast():
-            this = self.expression(exp.Cast(this=this, to=self._parse_wrapped(self._parse_types)))
-            return self._parse_column_ops(this)
-        return this
+        this = super()._parse_type(parse_interval, fallback_to_identifier)
+        while this and self._match(TokenType.L_PAREN):
+            index = self._index - 1
+            items = self._try_parse(self._parse_conversion_items)
+            if not items:
+                if self._match_texts(self.CONVERSION_ATTRIBUTES, advance=False):
+                    self.raise_error("Invalid Teradata conversion attribute")
+                self._retreat(index)
+                break
 
-    def _parse_column_ops(self, this: exp.Expr | None) -> exp.Expr | None:
-        this = super()._parse_column_ops(this)
-
-        while (
-            this
-            and self._curr.token_type == TokenType.L_PAREN
-            and self._next.token_type in {TokenType.FORMAT, TokenType.VAR}
-            and self._next.text.upper() in {"FORMAT", "TITLE", "NAMED"}
-        ):
-            self._advance()
-            attributes: dict[str, exp.Expr | None] = {}
-            while True:
-                attribute = self._curr.text.upper()
-                if not self._match_texts(("FORMAT", "TITLE", "NAMED")):
-                    self.raise_error("Expected FORMAT, TITLE or NAMED")
-                    break
-                if attribute in attributes:
-                    self.raise_error(f"Duplicate {attribute} attribute")
-                value = (
-                    self._parse_id_var(any_token=False, tokens={TokenType.VAR, TokenType.STRING})
-                    if attribute == "NAMED"
-                    else self._parse_string()
-                )
-                if not value:
-                    self.raise_error(f"Expected value after {attribute}")
-                elif attribute == "NAMED" and not isinstance(value, exp.Identifier):
-                    self.raise_error("Expected alias after NAMED")
-                elif attribute == "TITLE" and not value.is_string:
-                    self.raise_error("Expected string literal after TITLE")
-                attributes[attribute] = value
-                if not self._match(TokenType.COMMA):
-                    break
-            self._match_r_paren()
-            if "FORMAT" in attributes:
-                this = self.expression(exp.FormatPhrase(this=this, format=attributes["FORMAT"]))
-            if "TITLE" in attributes:
-                this = self.expression(exp.TeradataTitle(this=this, title=attributes["TITLE"]))
-            if "NAMED" in attributes:
-                this = self.expression(exp.TeradataNamed(this=this, alias=attributes["NAMED"]))
-            this = super()._parse_column_ops(this)
-
+            to = items.get("TYPE")
+            fmt = items.get("FORMAT")
+            if to is not None:
+                if fmt or not to.is_type(*exp.DataType.NUMERIC_TYPES):
+                    this = self.expression(exp.TeradataConversion(this=this, to=to, format=fmt))
+                else:
+                    this = self.expression(exp.Cast(this=this, to=to))
+            elif fmt:
+                this = self.expression(exp.FormatPhrase(this=this, format=fmt))
+            if "TITLE" in items:
+                this = self.expression(exp.TeradataTitle(this=this, title=items["TITLE"]))
+            if "NAMED" in items:
+                this = self.expression(exp.TeradataNamed(this=this, alias=items["NAMED"]))
+            this = self._parse_column_ops(this)
         return this
 
     def _parse_projections(self) -> tuple[list[exp.Expr], list[exp.Expr] | None]:

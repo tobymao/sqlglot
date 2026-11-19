@@ -66,6 +66,7 @@ class TeradataGenerator(generator.Generator):
         exp.DType.DOUBLE: "DOUBLE PRECISION",
         exp.DType.TINYINT: "BYTEINT",
         exp.DType.TIMESTAMPTZ: "TIMESTAMP",
+        exp.DType.TIMETZ: "TIME",
     }
 
     PROPERTIES_LOCATION = {
@@ -123,6 +124,12 @@ class TeradataGenerator(generator.Generator):
     def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
         prefix, suffix = ("(", ")") if expression.this else ("", "")
         return self.func("CURRENT_TIMESTAMP", expression.this, prefix=prefix, suffix=suffix)
+
+    def teradataconversion_sql(self, expression: exp.TeradataConversion) -> str:
+        to = self.sql(expression, "to")
+        fmt = self.sql(expression, "format")
+        fmt = f", FORMAT {fmt}" if fmt else ""
+        return f"{self.sql(expression, 'this')} ({to}{fmt})"
 
     def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
         return f"{self.sql(expression, 'this')} (TITLE {self.sql(expression, 'title')})"

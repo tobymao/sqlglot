@@ -562,6 +562,11 @@ class TestParser(unittest.TestCase):
         self.assertIsNone(expression.expression)
         self.assertEqual(expression.sql(), "BEGIN")
 
+    def test_set_transaction(self):
+        for level in ("READ UNCOMMITTED", "READ COMMITTED", "REPEATABLE READ", "SERIALIZABLE"):
+            sql = f"SET TRANSACTION ISOLATION LEVEL {level}"
+            self.assertEqual(parse_one(sql).sql(), sql)
+
     def test_identify(self):
         expression = parse_one(
             """

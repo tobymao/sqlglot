@@ -1693,7 +1693,7 @@ class Parser:
         "ISOLATION": (
             ("LEVEL", "REPEATABLE", "READ"),
             ("LEVEL", "READ", "COMMITTED"),
-            ("LEVEL", "READ", "UNCOMITTED"),
+            ("LEVEL", "READ", "UNCOMMITTED"),
             ("LEVEL", "SERIALIZABLE"),
         ),
         "READ": ("WRITE", "ONLY"),

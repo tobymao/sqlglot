@@ -286,13 +286,21 @@ class SQLiteGenerator(generator.Generator):
             unit = unit or modifier.unit
             modifier = modifier.this
 
-        if unit and unit.name.upper() == "WEEK":
+        # Plural units (e.g. Postgres INTERVAL '2 hours') are valid SQLite modifiers
+        unit_name = unit.name.upper().removesuffix("S") if unit else ""
+        if unit_name == "WEEK":
             modifier = modifier * 7
             unit = exp.var("DAY")
 
-        # SQLite DATE deliberately returns only a date, so sub-day units would
-        # silently drop the time; DATETIME retains it.
-        func = "DATETIME" if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND") else "DATE"
+        # SQLite DATE deliberately returns only a date, so sub-day units or a
+        # timestamp operand would silently drop the time; DATETIME retains it.
+        func = (
+            "DATETIME"
+            if unit_name in ("HOUR", "MINUTE", "SECOND")
+            or isinstance(expression.this, exp.CurrentTimestamp)
+            or expression.this.is_type("datetime", "timestamp", "timestampntz")
+            else "DATE"
+        )
 
         modifier = modifier.unnest()
         if (
@@ -311,6 +319,22 @@ class SQLiteGenerator(generator.Generator):
         modifier = modifier.name if modifier.is_string else self.sql(modifier)
         modifier = f"{modifier} {unit.name}" if unit else modifier
         return self.func(func, expression.this, exp.Literal.string(modifier))
+
+    # SQLite has no INTERVAL type, so `x +/- INTERVAL n unit` uses date modifiers.
+    # Intervals without a unit (e.g. Postgres INTERVAL '1 day 2 hours') are left as is.
+    def add_sql(self, expression: exp.Add) -> str:
+        this, other = expression.this, expression.expression
+        if isinstance(this, exp.Interval) and not isinstance(other, exp.Interval):
+            this, other = other, this
+        if isinstance(other, exp.Interval) and other.unit:
+            return self.dateadd_sql(exp.DateAdd(this=this, expression=other))
+        return super().add_sql(expression)
+
+    def sub_sql(self, expression: exp.Sub) -> str:
+        interval = expression.expression
+        if isinstance(interval, exp.Interval) and interval.unit:
+            return self.datesub_sql(exp.DateSub(this=expression.this, expression=interval))
+        return super().sub_sql(expression)
 
     def datesub_sql(self, expression: exp.DateSub) -> str:
         # SQLite has no DATE_SUB, so add the negated amount instead

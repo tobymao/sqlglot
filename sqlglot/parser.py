@@ -1229,8 +1229,9 @@ class Parser:
         TokenType.NOT: lambda self: self.expression(exp.Not(this=self._parse_equality())),
         TokenType.TILDE: lambda self: self.expression(exp.BitwiseNot(this=self._parse_unary())),
         TokenType.DASH: lambda self: self.expression(exp.Neg(this=self._parse_unary())),
-        TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt(this=self._parse_unary())),
-        TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt(this=self._parse_unary())),
+        # Postgres prefix root operators bind less tightly than addition and subtraction.
+        TokenType.PIPE_SLASH: lambda self: self.expression(exp.Sqrt(this=self._parse_term())),
+        TokenType.DPIPE_SLASH: lambda self: self.expression(exp.Cbrt(this=self._parse_term())),
     }
 
     STRING_PARSERS: t.ClassVar = {

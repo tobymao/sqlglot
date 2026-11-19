@@ -367,6 +367,32 @@ class TestTeradata(Validator):
         with self.assertRaises(ParseError):
             self.parse_one("DELETE FROM t WHERE id = 1 ALL")
 
+    def test_period_bounds(self):
+        for name in ("BEGIN", "END"):
+            for argument in ("p", "t.p"):
+                expected_column = exp.column("p", table="t" if argument == "t.p" else None)
+                for alias in ("", " AS bound_value"):
+                    sql = f"SELECT {name}({argument}){alias} FROM t"
+                    with self.subTest(sql=sql):
+                        expression = self.validate_identity(sql)
+                        function = expression.find(exp.Anonymous)
+                        self.assertIsInstance(function, exp.Anonymous)
+                        self.assertEqual(function.name, name)
+                        self.assertEqual(function.expressions, [expected_column])
+                        self.assertEqual(
+                            {column.name for column in expression.find_all(exp.Column)}, {"p"}
+                        )
+                        self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+
+        self.validate_identity("SELECT COALESCE(BEGIN(p), END(p)) FROM t")
+        self.validate_identity(
+            "SELECT CASE WHEN x = 1 THEN BEGIN(p) ELSE END(p) END AS bound_value FROM t"
+        )
+        self.validate_identity("SELECT CASE WHEN x = 1 THEN y ELSE z END AS result FROM t")
+        self.validate_identity('SELECT "BEGIN", "END" FROM t')
+        self.parse_one("BEGIN TRANSACTION").assert_is(exp.Transaction)
+        self.assertNotIsInstance(parse_one("SELECT BEGIN(p) FROM t").expressions[0], exp.Anonymous)
+
     def test_teradata(self):
         self.validate_all(
             "RANDOM(l, u)",

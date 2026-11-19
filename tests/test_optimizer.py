@@ -2284,6 +2284,62 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT :expressions,item_id /* description */",
         )
 
+    def test_simplify_postgres_conditional_result_type(self):
+        schema = {"t": {"qty": "INT", "price": "NUMERIC"}}
+        sql = "SELECT (CASE WHEN 1 = 0 THEN price ELSE qty END) / 2 AS v FROM t"
+        optimized = optimizer.optimize(sql, schema=schema, dialect="postgres")
+        with self.subTest(sql=sql):
+            self.assertIsInstance(optimized.find(exp.Case), exp.Case)
+
+        for sql in (
+            "SELECT (CASE WHEN 1 = 0 THEN 0.5 ELSE 7 END) / 2",
+            "SELECT CASE WHEN TRUE THEN NULL ELSE 7 END",
+            "SELECT CASE WHEN TRUE THEN 'x' ELSE 'y' END",
+        ):
+            with self.subTest(sql=sql):
+                expression = optimizer.simplify.simplify(
+                    parse_one(sql, read="postgres"), dialect="postgres"
+                )
+                self.assertIsInstance(expression.find(exp.Case), exp.Case)
+
+        sql = "SELECT CASE WHEN FALSE THEN price WHEN enabled THEN qty ELSE 7 END FROM t"
+        expression = optimizer.simplify.simplify(
+            parse_one(sql, read="postgres"), dialect="postgres"
+        )
+        self.assertEqual(expression.sql("postgres"), sql)
+
+    def test_simplify_duckdb_conditional_result_type(self):
+        for sql in (
+            "SELECT CAST(CASE WHEN FALSE THEN 1.5 ELSE 7 END AS VARCHAR)",
+            "SELECT CAST(IF(TRUE, 7, 1.5) AS VARCHAR)",
+            "SELECT (CASE WHEN FALSE THEN 0::BIGINT ELSE 2147483647::INT END) + 1",
+            "SELECT TYPEOF(CASE WHEN FALSE THEN 1.25 ELSE 7.0 END)",
+            "SELECT TYPEOF(CASE WHEN TRUE THEN 7 ELSE 2147483648 END)",
+            "SELECT TYPEOF(IF(FALSE, 7, NULL))",
+            "SELECT TYPEOF(LIST_VALUE(CASE WHEN TRUE THEN 1 ELSE 2 END, 1::TINYINT))",
+            "SELECT TYPEOF(CASE WHEN FALSE THEN 2147483647 + 1 ELSE 7 END)",
+            "SELECT TYPEOF(IF(TRUE, 7, 2147483647 + 1))",
+        ):
+            with self.subTest(sql=sql):
+                simplified = optimizer.simplify.simplify(
+                    parse_one(sql, read="duckdb"), dialect="duckdb"
+                ).sql("duckdb")
+                self.assertEqual(
+                    self.conn.execute(sql).fetchall(), self.conn.execute(simplified).fetchall()
+                )
+
+    def test_simplify_same_type_conditional(self):
+        for dialect, sql, expected in (
+            ("postgres", "SELECT CASE WHEN 1 = 0 THEN 2 ELSE 7 END", "SELECT 7"),
+            ("duckdb", "SELECT IF(TRUE, 7::INT, 2::INT)", "SELECT CAST(7 AS INT)"),
+            ("duckdb", "SELECT IF(TRUE, FALSE, TRUE)", "SELECT FALSE"),
+        ):
+            with self.subTest(dialect=dialect, sql=sql):
+                simplified = optimizer.simplify.simplify(
+                    parse_one(sql, read=dialect), dialect=dialect
+                )
+                self.assertEqual(simplified.sql(dialect), expected)
+
     def test_simplify_string_comparisons(self):
         with duckdb.connect() as conn:
             for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):

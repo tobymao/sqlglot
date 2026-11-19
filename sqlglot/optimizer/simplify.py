@@ -760,6 +760,9 @@ class Simplifier:
                     self.simplify(node, constant_propagation, coalesce_simplification)
                 continue
 
+            if isinstance(node, (exp.Case, exp.If)) and not self._can_simplify_conditional(node):
+                continue
+
             parent = node.parent
             root = node is expression
 
@@ -1525,6 +1528,40 @@ class Simplifier:
                 return exp.paren(expression.args.get("false") or exp.null(), copy=False)
 
         return expression
+
+    def _can_simplify_conditional(self, expression: exp.Case | exp.If) -> bool:
+        if self.dialect not in ("postgres", "duckdb"):
+            return True
+
+        if isinstance(expression, exp.Case):
+            default = expression.args.get("default")
+            branches = [case.args["true"] for case in expression.args["ifs"]]
+        elif isinstance(expression.parent, exp.Case) and expression.arg_key == "ifs":
+            return True
+        else:
+            default = expression.args.get("false")
+            branches = [expression.args["true"]]
+
+        # Even an unreachable branch contributes to the result type, so preserve the
+        # entire conditional unless its branches have matching, concrete types.
+        default_type = self._conditional_branch_type(default)
+        return default_type is not None and all(
+            self._conditional_branch_type(branch) == default_type for branch in branches
+        )
+
+    def _conditional_branch_type(self, branch: exp.Expr | None) -> exp.DType | None:
+        branch = branch.unnest() if branch is not None else None
+        if isinstance(branch, exp.Boolean):
+            return exp.DType.BOOLEAN
+        if isinstance(branch, exp.Cast) and branch.to.is_type(
+            exp.DType.BOOLEAN, *exp.DataType.SIGNED_INTEGER_TYPES
+        ):
+            return branch.to.this
+        if self.dialect == "postgres" and isinstance(branch, exp.Literal) and branch.is_int:
+            value = to_int(branch.this)
+            if value is not None and -(2**31) <= value < 2**31:
+                return exp.DType.INT
+        return None
 
     @annotate_types_on_change
     def simplify_startswith(self, expression: exp.Expr) -> exp.Expr:

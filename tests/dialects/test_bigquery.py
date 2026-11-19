@@ -3803,6 +3803,12 @@ OPTIONS (
                     read={"duckdb": source},
                 )
 
+        # A FILTER can leave no rows, so only the ones it keeps count
+        self.validate_all(
+            "IF(COUNTIF(c) = 0, NULL, COALESCE(ARRAY_AGG(DISTINCT IF(c, x, NULL) IGNORE NULLS), []))",
+            read={"duckdb": "LIST_DISTINCT(LIST(x) FILTER(WHERE c))"},
+        )
+
         for values, where in (
             ("1, NULL, 2, 1", ""),
             ("NULL", ""),

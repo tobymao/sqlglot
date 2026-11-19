@@ -222,6 +222,12 @@ transformed = tree.transform(transformer)
 - Use comments for complex logic only
 - Don't change license or license files in setup.py, there's nothing wrong with it.
 
+## Deployment (maintainers only)
+
+1. On `main`, run `git pull` to get the latest changes.
+2. Tag the release, for example `git tag v28.5.0`.
+3. Run `git push && git push --tags` to deploy the new version.
+
 ## Important Files
 
 - `posts/ast_primer.md`: Detailed AST tutorial

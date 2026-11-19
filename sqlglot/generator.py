@@ -4141,6 +4141,10 @@ class Generator:
         fmt = self.sql(expression, "format")
         return f"{this} (FORMAT {fmt})"
 
+    def teradataconversion_sql(self, expression: exp.TeradataConversion) -> str:
+        self.unsupported("Teradata postfix conversion semantics are not supported")
+        return self.sql(exp.cast(expression.this, expression.args["to"]))
+
     def teradatatitle_sql(self, expression: exp.TeradataTitle) -> str:
         self.unsupported("Teradata TITLE display headings are not supported")
         return self.sql(expression, "this")

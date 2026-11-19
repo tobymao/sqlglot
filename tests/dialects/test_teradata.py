@@ -6,6 +6,98 @@ from tests.dialects.test_dialect import Validator
 class TestTeradata(Validator):
     dialect = "teradata"
 
+    def test_integer_postfix_cast(self):
+        for data_type in ("BYTEINT", "SMALLINT", "INTEGER", "INT", "BIGINT"):
+            for value in (
+                "amount",
+                "t.amount",
+                '"amount"',
+                '"SUM"',
+                "1",
+                "(amount + 1)",
+                "COALESCE(amount, 0)",
+                "SUM(amount)",
+            ):
+                with self.subTest(data_type=data_type, value=value):
+                    expression = self.parse_one(f"{value} ({data_type})").assert_is(exp.Cast)
+                    self.assertEqual(expression.this, self.parse_one(value))
+                    self.assertEqual(
+                        expression.args["to"], self.parse_one(f"CAST(1 AS {data_type})").args["to"]
+                    )
+                    self.assertEqual(expression, self.parse_one(expression.sql(self.dialect)))
+        self.validate_all(
+            "SELECT amount (BIGINT) AS converted FROM events",
+            write={
+                "teradata": "SELECT CAST(amount AS BIGINT) AS converted FROM events",
+                "databricks": "SELECT CAST(amount AS BIGINT) AS converted FROM events",
+            },
+        )
+        for sql in (
+            'ABS("INTEGER")',
+            "ABS(INTEGER)",
+            "CEIL(SMALLINT)",
+            'my_udf("INTEGER")',
+            'sch.my_udf("BIGINT")',
+            "my_udf(INT32)",
+            "my_udf(BYTE)",
+            "my_udf(INTEGER, 1)",
+            "sch.my_udf(INTEGER + 1)",
+        ):
+            self.assertIsNone(self.parse_one(sql).find(exp.Cast))
+        table = self.parse_one("SELECT * FROM my_udf(INTEGER)").find(exp.Table)
+        self.assertIsInstance(table.this, exp.Anonymous)
+        self.validate_identity("amount (INTEGER)::BIGINT", "CAST(CAST(amount AS INT) AS BIGINT)")
+        for value in ("DATE '2024-01-01'", "CURRENT_DATE"):
+            self.assertEqual(
+                self.parse_one(f"{value} (INTEGER)"), self.parse_one(f"CAST({value} AS INTEGER)")
+            )
+        self.assertIsInstance(parse_one("amount(BIGINT)"), exp.Anonymous)
+
+    def test_postfix_conversion(self):
+        self.validate_all(
+            "SUM(amount) (DECIMAL(12, 2)) (BIGINT)",
+            write={
+                "teradata": "CAST(CAST(SUM(amount) AS DECIMAL(12, 2)) AS BIGINT)",
+                "databricks": "CAST(CAST(SUM(amount) AS DECIMAL(12, 2)) AS BIGINT)",
+            },
+        )
+        for value, expected in (
+            ("INTERVAL '1' DAY", "INTERVAL '1' DAY"),
+            ("CURDATE", "CURRENT_DATE"),
+            ("DATE", "DATE"),
+        ):
+            self.assertEqual(
+                self.parse_one(f"{value} (INTEGER)"), self.parse_one(f"CAST({expected} AS INTEGER)")
+            )
+
+        for sql, expected in (
+            ("x (CHAR(3))", "x (CHAR(3))"),
+            ("t.d (FORMAT 'YYYY-MM-DD') (CHAR(10))", "t.d (FORMAT 'YYYY-MM-DD') (CHAR(10))"),
+            ("ts (TIME(6) WITH TIME ZONE)", "ts (TIME(6) WITH TIME ZONE)"),
+            ("date_text (FORMAT 'YYYYMMDD', DATE)", "date_text (DATE, FORMAT 'YYYYMMDD')"),
+        ):
+            conversion = self.validate_identity(sql, expected).assert_is(exp.TeradataConversion)
+            self.assertEqual(self.parse_one(expected), conversion)
+            self.assertEqual(
+                annotate_types(conversion, dialect="teradata").type, conversion.args["to"]
+            )
+
+        self.validate_identity(
+            "SELECT amount (NAMED r, DECIMAL(12, 2), TITLE 'Revenue') FROM t",
+            "SELECT CAST(amount AS DECIMAL(12, 2)) (TITLE 'Revenue') AS r FROM t",
+        )
+        with self.assertRaises(UnsupportedError):
+            self.parse_one("1234 (CHAR(2))").sql("databricks", unsupported_level=ErrorLevel.RAISE)
+
+    def test_postfix_conversion_function_arguments(self):
+        for sql in ("f(DATE '2024-01-01')", "f(DECIMAL(n))", "f(CHAR(1 + n))", "f(DATE, x)"):
+            self.parse_one(sql).assert_is(exp.Anonymous)
+
+        table = self.validate_identity("SELECT * FROM TABLE(db.my_udf(DATE)) AS t")
+        self.assertIsInstance(table.find(exp.TableFromRows).this.expression, exp.Anonymous)
+        self.assertIsNone(table.find(exp.TeradataConversion))
+        self.validate_identity("SELECT * FROM TABLE(db.CURDATE()) AS t")
+
     def test_characters(self):
         self.validate_identity("characters(x)", "LENGTH(x)").assert_is(exp.Length)
         for value in ("x", "'abc'", "''", "'a  '", "'\u00e9\u4e2d'", "NULL"):

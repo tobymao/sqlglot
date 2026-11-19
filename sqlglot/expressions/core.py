@@ -2336,6 +2336,20 @@ class FormatPhrase(Expression):
         return self.this.output_name
 
 
+class TeradataConversion(Expression):
+    """A postfix type conversion with Teradata-specific conversion or formatting semantics."""
+
+    arg_types = {"this": True, "to": True, "format": False}
+
+    @property
+    def name(self) -> str:
+        return self.this.name
+
+    @property
+    def output_name(self) -> str:
+        return self.this.output_name
+
+
 class TeradataTitle(Expression):
     """A Teradata TITLE display heading, which does not rename the expression."""
 

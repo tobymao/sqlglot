@@ -215,4 +215,4 @@ class DatabricksGenerator(SparkGenerator):
         return f"CLUSTER BY {this}"
 
     def optimize_sql(self, expression: exp.Optimize) -> str:
-        return f"OPTIMIZE {self.sql(expression, 'this')}"
+        return f"OPTIMIZE {self.sql(expression, 'this')}{self.sql(expression, 'where')}"

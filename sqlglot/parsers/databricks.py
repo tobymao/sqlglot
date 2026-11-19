@@ -65,17 +65,40 @@ class DatabricksParser(SparkParser):
 
     def _parse_optimize(self) -> exp.Optimize | exp.Command:
         start = self._prev
-        if len(self._tokens) - self._index in (1, 3, 5):
-            tokens = self._tokens[self._index :]
+        tokens = self._tokens[self._index :]
+        end = next(
+            (i for i, token in enumerate(tokens[:6]) if token.token_type == TokenType.WHERE),
+            len(tokens),
+        )
+        table_tokens = tokens[:end]
+        depth = 0
+        zorder = False
+        for token, following in zip(tokens[end:], tokens[end + 1 :]):
+            if token.token_type == TokenType.L_PAREN:
+                depth += 1
+            elif token.token_type == TokenType.R_PAREN:
+                depth -= 1
+            elif (
+                not depth
+                and token.token_type == following.token_type == TokenType.VAR
+                and (token.text.upper(), following.text.upper()) == ("ZORDER", "BY")
+            ):
+                zorder = True
+                break
+
+        if len(table_tokens) in (1, 3, 5) and not zorder:
             if all(
                 token.token_type in self.ID_VAR_TOKENS
                 and (
                     token.token_type == TokenType.IDENTIFIER
                     or not any(char.isspace() for char in token.text)
                 )
-                for token in tokens[::2]
-            ) and all(token.token_type == TokenType.DOT for token in tokens[1::2]):
-                return self.expression(exp.Optimize(this=self._parse_table_parts(schema=True)))
+                for token in table_tokens[::2]
+            ) and all(token.token_type == TokenType.DOT for token in table_tokens[1::2]):
+                this = self._parse_table_parts(schema=True)
+                where = self._try_parse(self._parse_where)
+                if not self._curr:
+                    return self.expression(exp.Optimize(this=this, where=where))
 
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())

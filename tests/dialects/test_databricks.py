@@ -712,6 +712,55 @@ class TestDatabricks(Validator):
                 with self.assertRaises(UnsupportedError):
                     tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
 
+    def test_optimize_where(self):
+        for sql in (
+            "OPTIMIZE events WHERE date >= '2017-01-01'",
+            "OPTIMIZE db.events WHERE region IN ('US', 'EU')",
+            "OPTIMIZE catalog.db.events WHERE date BETWEEN '2024-01-01' AND '2024-01-31'",
+            "OPTIMIZE `cat.name`.`some schema`.`a``b` WHERE date >= CAST('2024-01-01' AS DATE) AND region = 'US'",
+            "OPTIMIZE delta.`/tmp/events` WHERE region = 'US'",
+            "OPTIMIZE events WHERE zorder = 'BY'",
+            "OPTIMIZE events WHERE (date >= '2017-01-01' AND region = 'US')",
+        ):
+            with self.subTest(sql=sql):
+                tree = self.validate_identity(sql)
+                self.assertIsInstance(tree, exp.Optimize)
+                self.assertIsInstance(tree.this, exp.Table)
+                self.assertIsInstance(tree.args["where"], exp.Where)
+                self.assertEqual(list(tree.find_all(exp.Table)), [tree.this])
+                self.assertEqual(
+                    tree.args["where"],
+                    self.parse_one("SELECT * FROM t WHERE " + sql.split(" WHERE ", 1)[1]).args[
+                        "where"
+                    ],
+                )
+                self.assertEqual(exp.Expr.load(tree.dump()), tree)
+                self.assertEqual(self.parse_one(tree.sql(dialect="databricks", pretty=True)), tree)
+                for part in tree.this.parts:
+                    self.assertEqual(
+                        sql[part.meta["start"] : part.meta["end"] + 1],
+                        part.sql(dialect="databricks"),
+                    )
+
+        tree = self.validate_identity("OPTIMIZE db.events WHERE date >= '2017-01-01'")
+        self.assertEqual([column.name for column in tree.find_all(exp.Column)], ["date"])
+        statements = parse(
+            "OPTIMIZE events WHERE region = 'US'; OPTIMIZE events ZORDER BY (id); SELECT 1",
+            read="databricks",
+        )
+        self.assertEqual(
+            [type(statement) for statement in statements], [exp.Optimize, exp.Command, exp.Select]
+        )
+        self.validate_identity(
+            "OPTIMIZE db. /* table */ events WHERE /* predicate */ date >= '2017-01-01'",
+            "OPTIMIZE db.events /* table */ /* predicate */ WHERE date >= '2017-01-01'",
+        )
+        self.validate_identity("OPTIMIZE db.events WHERE date >= '2017-01-01' /* trailing */")
+        for dialect in ("hive", "spark", "snowflake"):
+            with self.subTest(dialect=dialect):
+                with self.assertRaises(UnsupportedError):
+                    tree.sql(dialect=dialect, unsupported_level=ErrorLevel.RAISE)
+
     def test_optimize_comments(self):
         for sql in (
             "/* comment */ OPTIMIZE db.t",
@@ -748,9 +797,13 @@ class TestDatabricks(Validator):
     def test_optimize_fallback(self):
         for sql in (
             "OPTIMIZE t FULL",
-            "OPTIMIZE t WHERE partition_id = 1",
             "OPTIMIZE t ZORDER BY (id)",
             "OPTIMIZE t WHERE partition_id = 1 ZORDER BY (id)",
+            "OPTIMIZE t FULL WHERE partition_id = 1",
+            "OPTIMIZE t WHERE",
+            "OPTIMIZE t WHERE partition_id =",
+            "OPTIMIZE t WHERE (partition_id = 1",
+            "OPTIMIZE t WHERE partition_id = 1 ORDER BY partition_id",
             "OPTIMIZE a.b.c.d",
             "OPTIMIZE t.",
             "OPTIMIZE 'not_a_table'",
@@ -775,6 +828,14 @@ class TestDatabricks(Validator):
         self.assertIsInstance(self.parse_one("OPTIMIZE t", max_nodes=2), exp.Optimize)
         with self.assertRaises(ParseError):
             self.parse_one("OPTIMIZE t FULL", max_nodes=0)
+        with self.assertRaises(ParseError):
+            self.parse_one("OPTIMIZE t WHERE partition_id = 1", max_nodes=2)
+        for predicate in ("partition_id = 1", "(" * 80 + "partition_id = 1" + ")" * 80):
+            with self.subTest(predicate=predicate):
+                self.assertIsInstance(
+                    self.parse_one(f"OPTIMIZE t WHERE {predicate} ZORDER BY (id)", max_nodes=2),
+                    exp.Command,
+                )
 
     def test_analyze(self):
         self.validate_identity("ANALYZE TABLE tbl COMPUTE DELTA STATISTICS NOSCAN")

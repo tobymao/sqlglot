@@ -4491,7 +4491,7 @@ class Generator:
 
     def optimize_sql(self, expression: exp.Optimize) -> str:
         self.unsupported("OPTIMIZE is only supported in Databricks")
-        return f"OPTIMIZE {self.sql(expression, 'this')}"
+        return f"OPTIMIZE {self.sql(expression, 'this')}{self.sql(expression, 'where')}"
 
     def comment_sql(self, expression: exp.Comment) -> str:
         this = self.sql(expression, "this")

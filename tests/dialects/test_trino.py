@@ -520,6 +520,43 @@ class TestTrino(Validator):
             identify=True,
         )
 
+    def test_add_months(self):
+        self.validate_all(
+            "SELECT DATE_ADD('MONTH', 1, d)",
+            read={"": "SELECT ADD_MONTHS(d, 1)"},
+        )
+
+        source = "FROM (SELECT '2019-02-28' AS d) AS t"
+        for arg in ("'2019-02-28'", "t.d"):
+            with self.subTest(arg=arg):
+                expression = annotate_types(
+                    parse_one(f"SELECT ADD_MONTHS({arg}, 1) {source}", read="snowflake"),
+                    dialect="snowflake",
+                )
+                timestamp = f"CAST({arg} AS TIMESTAMP)"
+                added = f"DATE_ADD('MONTH', 1, {timestamp})"
+                self.assertEqual(
+                    expression.sql(self.dialect),
+                    f"SELECT CASE WHEN DAY({timestamp}) = DAY(LAST_DAY_OF_MONTH({timestamp})) "
+                    f"THEN DATE_ADD('DAY', DATE_DIFF('DAY', CAST({timestamp} AS DATE), "
+                    f"LAST_DAY_OF_MONTH({added})), {timestamp}) ELSE {added} END {source}",
+                )
+
+        for dialect, arg, expected in (
+            ("spark", "DATE '2019-02-28'", "CAST('2019-02-28' AS DATE)"),
+            (
+                "spark",
+                "TIMESTAMP '2019-02-15 12:34:56'",
+                "CAST(CAST('2019-02-15 12:34:56' AS TIMESTAMP WITH TIME ZONE) AS DATE)",
+            ),
+            ("databricks", "'2019-02-28'", "CAST(CAST('2019-02-28' AS TIMESTAMP) AS DATE)"),
+        ):
+            with self.subTest(dialect=dialect, arg=arg):
+                expression = annotate_types(
+                    parse_one(f"ADD_MONTHS({arg}, 1)", read=dialect), dialect=dialect
+                )
+                self.assertEqual(expression.sql(self.dialect), f"DATE_ADD('MONTH', 1, {expected})")
+
     def test_analyze(self):
         self.validate_identity("ANALYZE tbl")
         self.validate_identity("ANALYZE tbl WITH (prop1=val1, prop2=val2)")

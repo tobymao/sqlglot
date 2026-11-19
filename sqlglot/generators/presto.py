@@ -551,6 +551,29 @@ class PrestoGenerator(generator.Generator):
 
         return self.sql(to_unix)
 
+    def addmonths_sql(self, expression: exp.AddMonths) -> str:
+        this = expression.this
+        if this.is_string or this.is_type(*exp.DataType.TEXT_TYPES):
+            this = exp.TimeStrToTime(this=this)
+        if expression.is_type(exp.DType.DATE) and not this.is_type(exp.DType.DATE):
+            this = exp.cast(this, exp.DType.DATE)
+
+        added = exp.DateAdd(this=this, expression=expression.expression, unit=exp.var("MONTH"))
+
+        if not expression.args.get("preserve_end_of_month"):
+            return self.sql(added)
+
+        # Shift the original value by whole days to preserve its time of day.
+        eom_shift = exp.DateDiff(
+            this=exp.LastDay(this=added.copy()),
+            expression=exp.cast(this, exp.DType.DATE),
+            unit=exp.var("DAY"),
+        )
+        to_eom = exp.DateAdd(this=this.copy(), expression=eom_shift, unit=exp.var("DAY"))
+        is_eom = exp.Day(this=this.copy()).eq(exp.Day(this=exp.LastDay(this=this.copy())))
+
+        return self.sql(exp.case().when(is_eom, to_eom).else_(added))
+
     def jsonformat_sql(self, expression: exp.JSONFormat) -> str:
         this = expression.this
         is_json = expression.args.get("is_json")

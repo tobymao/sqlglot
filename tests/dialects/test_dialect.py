@@ -1829,7 +1829,7 @@ class TestDialect(Validator):
                 "LIST_SORT(LIST(DISTINCT x), 'DESC', 'NULLS FIRST')",
                 ("ARRAY_AGG(DISTINCT x ORDER BY x DESC)", distinct_nulls),
             ),
-            # A FILTER becomes an IF that IGNORE NULLS drops, so NULLs no longer need placing
+            # A FILTER becomes an IF that IGNORE NULLS drops, so NULLs need no placing
             (
                 "trino",
                 "ARRAY_SORT(ARRAY_DISTINCT(ARRAY_AGG(x) FILTER(WHERE c)))",

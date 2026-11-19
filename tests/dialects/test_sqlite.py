@@ -11,7 +11,30 @@ from tests.dialects.test_dialect import Validator
 
 class TestSQLite(Validator):
     dialect = "sqlite"
+    def test_like_default_escape(self):
+        for operator in ("LIKE", "NOT LIKE"):
+            sql = rf"SELECT name FROM users WHERE name {operator} 'stg\_%'"
+            expected = (
+                rf"SELECT name FROM users WHERE name {operator} 'stg\_%' ESCAPE '\'"
+            )
 
+            self.assertEqual(
+                parse_one(sql, read="postgres").sql("sqlite"),
+                expected,
+            )
+                    # Pattern without backslash should not add ESCAPE
+        sql = "SELECT name FROM users WHERE name LIKE 'abc%'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("sqlite"),
+            sql,
+        )
+
+        # Explicit ESCAPE should be preserved
+        sql = r"SELECT name FROM users WHERE name LIKE 'stg\_%' ESCAPE '!'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("sqlite"),
+            sql,
+        )
     def test_variadic_iif(self):
         for name in ("IIF", "IF"):
             self.validate_all(

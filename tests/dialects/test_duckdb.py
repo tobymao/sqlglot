@@ -9,7 +9,39 @@ from tests.dialects.test_dialect import Validator
 
 class TestDuckDB(Validator):
     dialect = "duckdb"
+    def test_like_default_escape(self):
 
+        for operator in ("LIKE", "NOT LIKE"):
+            sql = rf"SELECT name FROM users WHERE name {operator} 'stg\_%'"
+            expected = (
+                rf"SELECT name FROM users WHERE name {operator} 'stg\_%' ESCAPE '\'"
+            )
+
+            self.assertEqual(
+                parse_one(sql, read="postgres").sql("duckdb"),
+                expected,
+            )
+                        # Pattern without backslash should not add ESCAPE
+        sql = "SELECT name FROM users WHERE name LIKE 'abc%'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("duckdb"),
+            sql,
+        )
+
+        # Explicit ESCAPE should be preserved
+        sql = r"SELECT name FROM users WHERE name LIKE 'stg\_%' ESCAPE '!'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("duckdb"),
+            sql,
+        )
+
+        # ILIKE should also preserve the PostgreSQL default escape
+        sql = r"SELECT name FROM users WHERE name ILIKE 'stg\_%'"
+        expected = r"SELECT name FROM users WHERE name ILIKE 'stg\_%' ESCAPE '\'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("duckdb"),
+            expected,
+        )
     def test_format(self):
         for sql in (
             "FORMAT('{}-{}', 1, 2)",

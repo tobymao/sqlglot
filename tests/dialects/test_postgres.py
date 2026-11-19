@@ -11,6 +11,32 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_like_default_escape(self):
+        for operator in ("LIKE", "NOT LIKE"):
+            sql = rf"SELECT path FROM users WHERE path {operator} 'C:\%'"
+            expected = (
+                rf"SELECT path FROM users WHERE path {operator} 'C:\%' ESCAPE ''"
+            )
+
+            self.assertEqual(
+                parse_one(sql, read="duckdb").sql("postgres"),
+                expected,
+            )
+                    # PostgreSQL to PostgreSQL should not add redundant ESCAPE
+        sql = r"SELECT name FROM users WHERE name LIKE 'stg\_%'"
+        self.assertEqual(
+            parse_one(sql, read="postgres").sql("postgres"),
+            sql,
+        )
+
+        # DuckDB ILIKE to PostgreSQL should disable the default escape
+        sql = r"SELECT name FROM users WHERE name ILIKE 'stg\_%'"
+        expected = r"SELECT name FROM users WHERE name ILIKE 'stg\_%' ESCAPE ''"
+        self.assertEqual(
+            parse_one(sql, read="duckdb").sql("postgres"),
+            expected,
+        )
+
     def test_convert(self):
         self.validate_identity(
             "SELECT ENCODE(CONVERT(DECODE('6162', 'hex'), 'UTF8', 'UTF8'), 'hex')"

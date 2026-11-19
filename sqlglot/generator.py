@@ -4899,17 +4899,26 @@ class Generator:
 
             def _make_like(expr: exp.Expression) -> exp.Expression:
                 like: exp.Expression = exp_class(
-                    this=this, expression=expr, negate=expression.args.get("negate")
+                    this=this,
+                    expression=expr,
+                    negate=expression.args.get("negate"),
                 )
+
                 if escape:
-                    like = exp.Escape(this=like, expression=escape.expression.copy())
+                    like = exp.Escape(
+                        this=like,
+                        expression=escape.expression.copy(),
+                    )
+
                 return like
 
             like_expr: exp.Expr = _make_like(exprs[0])
+
             for expr in exprs[1:]:
                 like_expr = connective(like_expr, _make_like(expr), copy=False)
 
             parent = escape.parent if escape else expression.parent
+
             if not isinstance(parent, (type(like_expr), exp.Paren)) and isinstance(
                 parent, exp.Condition
             ):
@@ -4917,13 +4926,50 @@ class Generator:
 
             return self.sql(like_expr)
 
-        return self.binary(expression, op)
+        sql = self.binary(expression, op)
+
+        if escape:
+            sql += f" ESCAPE {self.sql(escape.expression)}"
+
+        return sql
+
+    def _like_default_escape(
+        self,
+        expression: exp.Like | exp.ILike,
+    ) -> exp.Escape | None:
+        if "like_default_escape" not in expression.meta:
+            return None
+
+        source_escape = expression.meta["like_default_escape"]
+        target_escape = self.dialect.LIKE_DEFAULT_ESCAPE
+
+        if source_escape == target_escape:
+            return None
+
+        pattern = expression.expression
+
+        if not isinstance(pattern, exp.Literal) or not pattern.is_string:
+            return None
+
+        if "\\" not in pattern.this:
+            return None
+
+        return exp.Escape(
+            this=expression,
+            expression=exp.Literal.string(source_escape or ""),
+        )
 
     def like_sql(self, expression: exp.Like) -> str:
-        return self._like_sql(expression)
+        return self._like_sql(
+            expression,
+            escape=self._like_default_escape(expression),
+        )
 
     def ilike_sql(self, expression: exp.ILike) -> str:
-        return self._like_sql(expression)
+        return self._like_sql(
+            expression,
+            escape=self._like_default_escape(expression),
+        )
 
     def match_sql(self, expression: exp.Match) -> str:
         if expression.args.get("kind") or expression.args.get("analyzer"):

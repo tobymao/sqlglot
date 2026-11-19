@@ -6543,7 +6543,10 @@ class Parser:
 
     def _parse_escape(self, this: exp.Expr | None) -> exp.Expr | None:
         if not self._match(TokenType.ESCAPE):
+            if isinstance(this, (exp.Like, exp.ILike)):
+                this.meta["like_default_escape"] = self.dialect.LIKE_DEFAULT_ESCAPE
             return this
+
         return self.expression(
             exp.Escape(this=this, expression=self._parse_string() or self._parse_null())
         )

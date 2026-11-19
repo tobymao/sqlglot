@@ -436,9 +436,10 @@ class Dialect(metaclass=_Dialect):
     INDEX_OFFSET = 0
     """The base index offset for arrays."""
 
-    WEEK_OFFSET = 0
-    """First day of the week in DATE_TRUNC(week). Defaults to 0 (Monday). -1 would be Sunday."""
+    LIKE_DEFAULT_ESCAPE: str | None = None
+    """Default escape character used by LIKE patterns, or None if there is no default."""
 
+    WEEK_OFFSET = 0
     UNNEST_COLUMN_ONLY = False
     """Whether `UNNEST` table aliases are treated as column aliases."""
 

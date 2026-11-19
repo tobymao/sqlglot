@@ -2319,6 +2319,20 @@ WHERE
         self.validate_identity("PARSE_TIME('%I:%M:%S', '07:30:00')")
         self.validate_identity("BYTE_LENGTH('foo')")
         self.validate_identity("BYTE_LENGTH(b'foo')")
+        self.validate_all(
+            "BYTE_LENGTH(x)",
+            read={
+                "mysql": "OCTET_LENGTH(x)",
+                "postgres": "OCTET_LENGTH(x)",
+                "spark": "OCTET_LENGTH(x)",
+            },
+            write={
+                "bigquery": "BYTE_LENGTH(x)",
+                "mysql": "OCTET_LENGTH(x)",
+                "postgres": "OCTET_LENGTH(x)",
+                "spark": "OCTET_LENGTH(x)",
+            },
+        )
         self.validate_identity("CODE_POINTS_TO_STRING([65, 255])")
         self.validate_identity("APPROX_TOP_COUNT(col, 2)")
         self.validate_identity("ARPOX_TOP_SUM(col, 1.5, 2)")

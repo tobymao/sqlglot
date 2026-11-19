@@ -17,7 +17,7 @@ class BitLength(Expression, Func):
 
 
 class ByteLength(Expression, Func):
-    pass
+    _sql_names = ["OCTET_LENGTH", "BYTE_LENGTH"]
 
 
 class Chr(Expression, Func):

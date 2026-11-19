@@ -3984,14 +3984,14 @@ class Parser:
             )
         return self._parse_as_command(self._prev)
 
-    def _parse_delete(self) -> exp.Delete:
+    def _parse_delete(self, alias_tokens: t.Collection[TokenType] | None = None) -> exp.Delete:
         hint = self._parse_hint()
 
         # This handles MySQL's "Multiple-Table Syntax"
         # https://dev.mysql.com/doc/refman/8.0/en/delete.html
         tables = None
         if not self._match(TokenType.FROM, advance=False):
-            tables = self._parse_csv(self._parse_table) or None
+            tables = self._parse_csv(lambda: self._parse_table(alias_tokens=alias_tokens)) or None
 
         returning = self._parse_returning()
 
@@ -3999,7 +3999,8 @@ class Parser:
             exp.Delete(
                 hint=hint,
                 tables=tables,
-                this=self._match(TokenType.FROM) and self._parse_table(joins=True),
+                this=self._match(TokenType.FROM)
+                and self._parse_table(joins=True, alias_tokens=alias_tokens),
                 using=self._match(TokenType.USING)
                 and self._parse_csv(lambda: self._parse_table(joins=True)),
                 cluster=self._match(TokenType.ON) and self._parse_on_property(),

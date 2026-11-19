@@ -33,7 +33,7 @@ class TeradataParser(parser.Parser):
     TABLESAMPLE_CSV = True
     VALUES_FOLLOWED_BY_PAREN = False
 
-    TABLE_ALIAS_TOKENS = (parser.Parser.TABLE_ALIAS_TOKENS - {TokenType.ALL}) | {
+    TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,
     }
@@ -262,8 +262,10 @@ class TeradataParser(parser.Parser):
             )
         )
 
-    def _parse_delete(self) -> exp.Delete:
-        expression = super()._parse_delete()
+    def _parse_delete(self, alias_tokens: t.Collection[TokenType] | None = None) -> exp.Delete:
+        expression = super()._parse_delete(
+            alias_tokens=alias_tokens or self.TABLE_ALIAS_TOKENS - {TokenType.ALL}
+        )
         if not expression.args.get("where"):
             self._match(TokenType.ALL)
         return expression

@@ -362,6 +362,8 @@ class TestTeradata(Validator):
         self.validate_identity("DELETE FROM t WHERE id = 1")
         self.validate_identity("DELETE FROM t AS d WHERE d.id = 1")
         self.validate_identity('DELETE FROM t AS "ALL"')
+        self.validate_identity("SELECT * FROM t ALL", "SELECT * FROM t AS ALL")
+        self.assertEqual(parse_one("DELETE FROM t ALL").this.alias, "ALL")
         with self.assertRaises(ParseError):
             self.parse_one("DELETE FROM t WHERE id = 1 ALL")
 

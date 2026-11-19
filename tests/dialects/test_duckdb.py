@@ -2121,6 +2121,8 @@ class TestDuckDB(Validator):
         )
 
         self.validate_identity("ARRAY_SLICE(x, 1, 3, 2)")
+        self.validate_identity("LIST_INTERSECT(x, y)", "ARRAY_INTERSECT(x, y)")
+        self.validate_identity("LIST_SLICE(x, 1, 3, 2)", "ARRAY_SLICE(x, 1, 3, 2)")
         self.validate_identity("SELECT #2, #1 FROM (VALUES (1, 'foo'))")
         self.validate_identity("SELECT #2 AS a, #1 AS b FROM (VALUES (1, 'foo'))")
 

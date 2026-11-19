@@ -186,6 +186,7 @@ class MySQLParser(parser.Parser):
             exp.Anonymous(this="VALUES", expressions=[self._parse_id_var()])
         ),
         "JSON_VALUE": lambda self: self._parse_json_value(),
+        "MID": lambda self: self._parse_substring(),
         "SUBSTR": lambda self: self._parse_substring(),
     }
 

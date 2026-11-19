@@ -164,7 +164,7 @@ class SQLiteGenerator(generator.Generator):
         exp.LogicalOr: rename_func("MAX"),
         exp.LogicalAnd: rename_func("MIN"),
         exp.Pivot: no_pivot_sql,
-        exp.Rand: lambda self, e: self.func("RANDOM", e.this),
+        exp.Rand: lambda self, e: self.rand_sql(e),
         exp.RegexpLike: lambda self, e: self.binary(e, "REGEXP"),
         exp.Select: transforms.preprocess(
             [
@@ -492,3 +492,12 @@ class SQLiteGenerator(generator.Generator):
             return "RANGE CURRENT ROW"
 
         return super().windowspec_sql(expression)
+
+    def rand_sql(self, expression: exp.Rand) -> str:
+        if expression.args.get("lower") and expression.args.get("upper"):
+            return self.func("RANDOM")
+
+        if expression.this:
+            self.unsupported("SQLite does not support seeded random values")
+
+        return "ABS(RANDOM()) / 9223372036854775808.0"

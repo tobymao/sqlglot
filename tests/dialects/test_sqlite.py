@@ -261,6 +261,15 @@ class TestSQLite(Validator):
         self.assertTrue(expression.is_type(exp.DType.BIGINT))
         self.assertEqual(expression.args["lower"].to_py(), -9223372036854775807)
         self.assertEqual(expression.args["upper"].to_py(), 9223372036854775807)
+        for dialect, function in (
+            ("mysql", "RAND()"),
+            ("postgres", "RANDOM()"),
+            ("bigquery", "RAND()"),
+        ):
+            self.assertEqual(
+                parse_one(f"SELECT {function}", read=dialect).sql("sqlite"),
+                "SELECT ABS(RANDOM()) / 9223372036854775808.0",
+            )
 
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (

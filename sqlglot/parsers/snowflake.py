@@ -800,6 +800,11 @@ class SnowflakeParser(parser.Parser):
         TokenType.UNDROP: lambda self: self._parse_undrop(),
     }
 
+    PRIMARY_PARSERS = {
+        **parser.Parser.PRIMARY_PARSERS,
+        TokenType.STAGE_PATH: lambda self, token: self.expression(exp.var(token.text), token),
+    }
+
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
         "CREDENTIALS": lambda self: self._parse_credentials_property(),
@@ -1174,7 +1179,7 @@ class SnowflakeParser(parser.Parser):
         # https://docs.snowflake.com/en/user-guide/querying-stage
         if self._match(TokenType.STRING, advance=False):
             table = self._parse_string()
-        elif self._match_text_seq("@", advance=False):
+        elif self._match(TokenType.STAGE_PATH, advance=False):
             table = self._parse_location_path()
         else:
             table = None
@@ -1356,6 +1361,9 @@ class SnowflakeParser(parser.Parser):
         )
 
     def _parse_location_path(self) -> exp.Var:
+        if self._match_set((TokenType.STAGE_PATH, TokenType.URI_START)):
+            return self.expression(exp.var(self._prev.text), self._prev)
+
         start = self._curr
         self._advance_any(ignore_reserved=True)
 

@@ -87,6 +87,7 @@ class TokenType(IntEnum):
     EXCLAMATION = auto()
 
     URI_START = auto()
+    STAGE_PATH = auto()
 
     BLOCK_START = auto()
     BLOCK_END = auto()
@@ -590,6 +591,8 @@ class TokenizerCore:
         "numeric_escapes_are_bytes",
         "byte_strings_are_bytes",
         "lone_surrogate_replacement",
+        "unquoted_path_starts",
+        "unquoted_path_terminators",
     )
 
     def __init__(
@@ -627,6 +630,8 @@ class TokenizerCore:
         numeric_escapes_are_bytes: bool,
         byte_strings_are_bytes: bool,
         lone_surrogate_replacement: str,
+        unquoted_path_starts: dict[str, TokenType],
+        unquoted_path_terminators: set[str],
     ) -> None:
         self.single_tokens = single_tokens
         self.keywords = keywords
@@ -661,6 +666,8 @@ class TokenizerCore:
         self.numeric_escapes_are_bytes = numeric_escapes_are_bytes
         self.byte_strings_are_bytes = byte_strings_are_bytes
         self.lone_surrogate_replacement = lone_surrogate_replacement
+        self.unquoted_path_starts = unquoted_path_starts
+        self.unquoted_path_terminators = unquoted_path_terminators
         self.sql = ""
         self.size = 0
         self.tokens: list[Token] = []
@@ -892,13 +899,22 @@ class TokenizerCore:
                 return
             if prev_space or single_token or not char:
                 word = word.upper()
+                path_type = self.unquoted_path_starts.get(word)
+                if path_type is not None:
+                    self._advance(size - 1)
+                    self._scan_unquoted_path(path_type)
+                    return
                 if word in self.keywords:
                     self._advance(size - 1)
                     self._add(self.keywords[word], text=word)
                     return
 
         if self._char in single_tokens:
-            self._add(single_tokens[self._char], text=self._char)
+            path_type = self.unquoted_path_starts.get(self._char)
+            if path_type is not None and not self._is_unquoted_path_end(self._peek):
+                self._scan_unquoted_path(path_type)
+            else:
+                self._add(single_tokens[self._char], text=self._char)
             return
 
         self._scan_var()
@@ -1174,6 +1190,48 @@ class TokenizerCore:
             identifier_end, escapes=self.identifier_escapes | {identifier_end}
         )
         self._add(TokenType.IDENTIFIER, text)
+
+    def _is_unquoted_path_end(self, char: str) -> bool:
+        return not char or char.isspace() or char in self.unquoted_path_terminators
+
+    def _scan_unquoted_path(self, token_type: TokenType) -> None:
+        sql = self.sql
+        size = self.size
+        identifiers = self.identifiers
+        end = self._current
+        in_name = token_type == TokenType.STAGE_PATH
+        quoted = False
+
+        while end < size:
+            char = sql[end]
+            if self._is_unquoted_path_end(char):
+                break
+
+            end += 1
+            if char == "/":
+                in_name = False
+            elif in_name and char in identifiers:
+                # Quoted name parts, e.g. @"my stage"/path, may contain whitespace or terminators
+                quote_end = identifiers[char]
+                quoted = True
+                while True:
+                    if end >= size:
+                        raise TokenError(f"Missing {quote_end} from {self._line}:{self._start}")
+                    end += 1
+                    if sql[end - 1] == quote_end:
+                        if end < size and sql[end] == quote_end:
+                            end += 1
+                        else:
+                            break
+
+        if quoted:
+            # Advance one char at a time so that newlines in quoted names update the line and column
+            while self._current < end:
+                self._advance()
+        elif end > self._current:
+            self._advance(end - self._current)
+
+        self._add(token_type)
 
     def _scan_var(self) -> None:
         var_single_tokens = self.var_single_tokens

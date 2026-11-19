@@ -1,11 +1,12 @@
 from unittest import mock
 
-from sqlglot import ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ParseError, UnsupportedError, exp, parse_one, tokenize
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from sqlglot.parser import logger as parser_logger
+from sqlglot.tokens import TokenType
 from tests.dialects.test_dialect import Validator
 
 
@@ -3846,6 +3847,86 @@ class TestSnowflake(Validator):
             "SELECT * FROM @test.public.thing/location/somefile.csv( FILE_FORMAT => 'fmt' )",
             "SELECT * FROM @test.public.thing/location/somefile.csv (FILE_FORMAT => 'fmt')",
         )
+
+    def test_stage_path_tokenization(self):
+        for sql, token_type, text in (
+            ("SELECT $1 FROM @s/a--b", TokenType.STAGE_PATH, "@s/a--b"),
+            ("SELECT $1 FROM @s/a//b", TokenType.STAGE_PATH, "@s/a//b"),
+            ("SELECT $1 FROM @s/a/*b", TokenType.STAGE_PATH, "@s/a/*b"),
+            ("SELECT $1 FROM @s/a/*b*/c", TokenType.STAGE_PATH, "@s/a/*b*/c"),
+            ("LIST @s/a--b", TokenType.STAGE_PATH, "@s/a--b"),
+            ("LIST @~/a--b", TokenType.STAGE_PATH, "@~/a--b"),
+            ('LIST @stg/p"x"', TokenType.STAGE_PATH, '@stg/p"x"'),
+            ('LIST @"my stage"/a--b', TokenType.STAGE_PATH, '@"my stage"/a--b'),
+            ("COPY INTO t FROM @s/a--b/c", TokenType.STAGE_PATH, "@s/a--b/c"),
+            ("COPY INTO t FROM file:///tmp/a--b", TokenType.URI_START, "file:///tmp/a--b"),
+        ):
+            with self.subTest(sql):
+                tokens = tokenize(sql, read="snowflake")
+                token = tokens[-1]
+                self.assertEqual(token.token_type, token_type)
+                self.assertEqual(token.text, text)
+                self.assertEqual((token.start, token.end), (len(sql) - len(text), len(sql) - 1))
+                self.assertFalse(any(t.comments for t in tokens))
+
+        token = tokenize("SELECT $1 FROM @s/a -- note", read="snowflake")[-1]
+        self.assertEqual((token.token_type, token.text), (TokenType.STAGE_PATH, "@s/a"))
+        self.assertEqual(token.comments, [" note"])
+
+        tokens = tokenize("LIST @stg/ppattern='.*'", read="snowflake")
+        self.assertEqual(
+            [(t.token_type, t.text) for t in tokens[1:]],
+            [(TokenType.STAGE_PATH, "@stg/ppattern="), (TokenType.STRING, ".*")],
+        )
+
+        self.assertEqual(tokenize("SELECT @", read="snowflake")[-1].token_type, TokenType.PARAMETER)
+
+        tokens = tokenize('PUT file://a"b.csv @stg; SELECT 1 -- "', read="snowflake")
+        self.assertEqual(
+            [(t.token_type, t.text) for t in tokens[:4]],
+            [
+                (TokenType.PUT, "PUT"),
+                (TokenType.URI_START, 'file://a"b.csv'),
+                (TokenType.STAGE_PATH, "@stg"),
+                (TokenType.SEMICOLON, ";"),
+            ],
+        )
+        self.assertEqual(tokens[-1].comments, [' "'])
+
+        tokens = tokenize('LIST @"a\nb"/x; SELECT 1', read="snowflake")
+        self.assertEqual(tokens[1].text, '@"a\nb"/x')
+        self.assertEqual([(t.line, t.col) for t in tokens[2:]], [(2, 5), (2, 12), (2, 14)])
+
+        for sql in (
+            "SELECT $1 FROM @s/a--b",
+            "SELECT $1 FROM @s/a//b",
+            "SELECT $1 FROM @s/a/*b",
+            "SELECT $1 FROM @~/a--b",
+            "SELECT $1 FROM @%t/a--b",
+            "SELECT $1 FROM @db.sch.stg/a--b",
+            "SELECT * FROM @s/a--b (FILE_FORMAT => 'f')",
+            "SELECT * FROM (SELECT $1 FROM @s/a--b) AS x",
+            "SELECT * FROM @s/a--b, @t/c--d",
+            "SELECT $1 FROM '@s/a--b'",
+            "LIST @s/a--b",
+            "COPY INTO t FROM @s/a--b/c",
+            "COPY INTO t FROM 's3://b/p'",
+            "LIST @s/a /* keep */",
+            "SELECT $1 FROM @s/a /* keep */ WHERE 1 = 1",
+            "SELECT * FROM @s /* keep */ (PATTERN => 'x')",
+            "SELECT * FROM DIRECTORY(@s /* keep */)",
+            "SELECT BUILD_SCOPED_FILE_URL(@s /* keep */, 'x')",
+        ):
+            with self.subTest(sql):
+                self.validate_identity(sql)
+
+        self.validate_identity("SELECT $1 FROM @s/a -- note", "SELECT $1 FROM @s/a /* note */")
+        self.validate_identity(
+            "PUT file:///tmp/a--b @s/p", "PUT 'file:///tmp/a--b' @s/p"
+        ).assert_is(exp.Put)
+        self.validate_identity(
+            'PUT file:///dir/a"b.csv @stg', "PUT 'file:///dir/a\"b.csv' @stg"
+        ).assert_is(exp.Put)
 
     def test_sample(self):
         self.validate_identity("SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3)")

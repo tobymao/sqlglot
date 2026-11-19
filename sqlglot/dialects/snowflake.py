@@ -141,7 +141,6 @@ class Snowflake(Dialect):
             **tokens.Tokenizer.KEYWORDS,
             "(+)": TokenType.JOIN_MARKER,
             "BYTEINT": TokenType.INT,
-            "FILE://": TokenType.URI_START,
             "FILE FORMAT": TokenType.FILE_FORMAT,
             "GET": TokenType.GET,
             "INTEGRATION": TokenType.INTEGRATION,
@@ -186,6 +185,14 @@ class Snowflake(Dialect):
         }
 
         VAR_SINGLE_TOKENS = {"$"}
+
+        # https://docs.snowflake.com/en/user-guide/querying-stage
+        UNQUOTED_PATH_STARTS = {
+            "@": TokenType.STAGE_PATH,
+            "@~": TokenType.STAGE_PATH,
+            "FILE://": TokenType.URI_START,
+        }
+        UNQUOTED_PATH_TERMINATORS = {",", ";", "(", ")", "'", "`", "~", "<", ">", "|"}
 
         COMMANDS = tokens.Tokenizer.COMMANDS - {TokenType.SHOW}
 

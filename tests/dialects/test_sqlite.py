@@ -366,6 +366,48 @@ class TestSQLite(Validator):
         finally:
             connection.close()
 
+    def test_interval_arithmetic_execution(self):
+        connection = sqlite3.connect(":memory:")
+        try:
+            for read, sql, expected in (
+                (
+                    "postgres",
+                    "SELECT CAST('2024-01-15' AS DATE) + INTERVAL '1 day'",
+                    "2024-01-16 00:00:00",
+                ),
+                ("mysql", "SELECT CAST('2024-01-15' AS DATE) + INTERVAL 1 DAY", "2024-01-16"),
+                ("mysql", "SELECT CAST('2024-01-15' AS DATE) - INTERVAL 1 MONTH", "2023-12-15"),
+                (
+                    "duckdb",
+                    "SELECT INTERVAL 1 DAY + CAST('2024-01-15' AS DATE)",
+                    "2024-01-16 00:00:00",
+                ),
+                ("postgres", "SELECT TIME '14:30:00' - INTERVAL '1 hour'", "13:30:00"),
+                (
+                    "postgres",
+                    "WITH t AS (SELECT TIMESTAMP '2024-01-15 14:30:00' AS ts) "
+                    "SELECT t.ts + INTERVAL '1 day' FROM t",
+                    "2024-01-16 14:30:00",
+                ),
+                (
+                    "postgres",
+                    "SELECT CAST('2024-01-15 10:00:00' AS TIMESTAMP) - INTERVAL '2 hours'",
+                    "2024-01-15 08:00:00",
+                ),
+                (
+                    "postgres",
+                    "SELECT CAST('2024-01-15 10:00:00' AS TIMESTAMP) + INTERVAL '1 week'",
+                    "2024-01-22 10:00:00",
+                ),
+            ):
+                with self.subTest(sql=sql):
+                    generated = annotate_types(parse_one(sql, read=read), dialect=read).sql(
+                        "sqlite"
+                    )
+                    self.assertEqual([(expected,)], connection.execute(generated).fetchall())
+        finally:
+            connection.close()
+
     def test_date_add_sub_day_units_retain_time(self):
         connection = sqlite3.connect(":memory:")
         try:
@@ -845,6 +887,31 @@ class TestSQLite(Validator):
         self.validate_all(
             "SELECT DATE(d, (-(SELECT 1)) || ' DAY') FROM t",
             read={"mysql": "SELECT DATE_SUB(d, INTERVAL (SELECT 1) DAY) FROM t"},
+        )
+        # SQLite has no INTERVAL, so date arithmetic operators become date modifiers
+        self.validate_all(
+            "SELECT DATE(d, '1 DAY') FROM t",
+            read={
+                "postgres": "SELECT d + INTERVAL '1 day' FROM t",
+                "mysql": "SELECT d + INTERVAL 1 DAY FROM t",
+                "duckdb": "SELECT INTERVAL 1 DAY + d FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT DATE(d, '-1 MONTH') FROM t",
+            read={"mysql": "SELECT d - INTERVAL 1 MONTH FROM t"},
+        )
+        self.validate_all(
+            "SELECT DATETIME(d, '-2 HOURS') FROM t",
+            read={"postgres": "SELECT d - INTERVAL '2 hours' FROM t"},
+        )
+        self.validate_all(
+            "SELECT DATETIME(DATETIME(d), '1 DAY') FROM t",
+            read={"postgres": "SELECT CAST(d AS TIMESTAMP) + INTERVAL '1 day' FROM t"},
+        )
+        self.validate_all(
+            "SELECT DATETIME(CURRENT_TIMESTAMP, '-7 DAYS')",
+            read={"postgres": "SELECT CURRENT_TIMESTAMP - INTERVAL '7 days'"},
         )
         self.validate_all(
             "SELECT DATE_SUB(d, '1'') ; SELECT 1; --')",

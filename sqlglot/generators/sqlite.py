@@ -278,7 +278,9 @@ class SQLiteGenerator(generator.Generator):
         return super().attimezone_sql(expression)
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:
-        modifier = expression.expression
+        return self._date_delta_sql(expression, expression.this, expression.expression)
+
+    def _date_delta_sql(self, expression: exp.Expr, base: exp.Expr, modifier: exp.Expr) -> str:
         unit = expression.args.get("unit")
         # An INTERVAL amount carries its own unit, e.g. DATE_ADD(d, INTERVAL 1 DAY);
         # unwrap it so the unit is not left inside the quoted modifier string.
@@ -286,13 +288,29 @@ class SQLiteGenerator(generator.Generator):
             unit = unit or modifier.unit
             modifier = modifier.this
 
-        if unit and unit.name.upper() == "WEEK":
+        if isinstance(expression, (exp.Sub, exp.DateSub)):
+            modifier = self._negate_date_modifier(modifier)
+
+        # Plural units (e.g. Postgres INTERVAL '2 hours') are valid SQLite modifiers
+        unit_name = unit.name.upper().removesuffix("S") if unit else ""
+        if unit_name == "WEEK":
             modifier = modifier * 7
             unit = exp.var("DAY")
 
-        # SQLite DATE deliberately returns only a date, so sub-day units would
-        # silently drop the time; DATETIME retains it.
-        func = "DATETIME" if unit and unit.name.upper() in ("HOUR", "MINUTE", "SECOND") else "DATE"
+        # DATE + INTERVAL can return DATE or TIMESTAMP depending on the source dialect.
+        if expression.is_type(exp.DType.DATE, exp.DType.DATE32):
+            func = "DATE"
+        elif expression.is_type(exp.DType.TIME, exp.DType.TIMETZ):
+            func = "TIME"
+        elif (
+            expression.is_type(*exp.DataType.TEMPORAL_TYPES)
+            or unit_name in ("HOUR", "MINUTE", "SECOND")
+            or isinstance(base, exp.CurrentTimestamp)
+            or base.is_type(exp.DType.DATETIME, exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ)
+        ):
+            func = "DATETIME"
+        else:
+            func = "DATE"
 
         modifier = modifier.unnest()
         if (
@@ -302,39 +320,46 @@ class SQLiteGenerator(generator.Generator):
         ):
             return self.func(
                 func,
-                expression.this,
+                base,
                 exp.DPipe(
                     this=exp.paren(modifier),
                     expression=exp.Literal.string(f" {unit.name}"),
                 ),
             )
-        modifier = modifier.name if modifier.is_string else self.sql(modifier)
-        modifier = f"{modifier} {unit.name}" if unit else modifier
-        return self.func(func, expression.this, exp.Literal.string(modifier))
+        value = modifier.name if modifier.is_string else self.sql(modifier)
+        return self.func(func, base, exp.Literal.string(f"{value} {unit.name}" if unit else value))
+
+    # SQLite has no INTERVAL type, so `x +/- INTERVAL n unit` uses date modifiers.
+    # Intervals without a unit (e.g. Postgres INTERVAL '1 day 2 hours') are left as is.
+    def add_sql(self, expression: exp.Add) -> str:
+        this, other = expression.this, expression.expression
+        if isinstance(this, exp.Interval) and not isinstance(other, exp.Interval):
+            this, other = other, this
+        if isinstance(other, exp.Interval) and other.unit:
+            return self._date_delta_sql(expression, this, other)
+        return super().add_sql(expression)
+
+    def sub_sql(self, expression: exp.Sub) -> str:
+        interval = expression.expression
+        if isinstance(interval, exp.Interval) and interval.unit:
+            return self._date_delta_sql(expression, expression.this, interval)
+        return super().sub_sql(expression)
 
     def datesub_sql(self, expression: exp.DateSub) -> str:
-        # SQLite has no DATE_SUB, so add the negated amount instead
-        amount = expression.expression
-        unit = expression.args.get("unit")
-        if isinstance(amount, exp.Interval):
-            unit = unit or amount.unit
-            amount = amount.this
+        return self._date_delta_sql(expression, expression.this, expression.expression)
 
+    def _negate_date_modifier(self, amount: exp.Expr) -> exp.Expr:
         amount = amount.unnest()
-        negated: exp.Expr
         if isinstance(amount, exp.Neg):
-            negated = amount.this
-        elif isinstance(amount, exp.Literal):
+            return amount.this
+        if isinstance(amount, exp.Literal):
             text = amount.name.removeprefix("+")
-            negated = exp.Literal.string(text[1:] if text.startswith("-") else f"-{text}")
-        else:
-            negated = exp.Neg(
-                this=amount
-                if isinstance(amount, (exp.Column, exp.Func))
-                else exp.paren(amount, copy=False)
-            )
-
-        return self.dateadd_sql(exp.DateAdd(this=expression.this, expression=negated, unit=unit))
+            return exp.Literal.string(text[1:] if text.startswith("-") else f"-{text}")
+        return exp.Neg(
+            this=amount
+            if isinstance(amount, (exp.Column, exp.Func))
+            else exp.paren(amount, copy=False)
+        )
 
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):

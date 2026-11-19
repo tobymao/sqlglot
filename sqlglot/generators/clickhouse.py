@@ -450,11 +450,6 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
-    def attimezone_sql(self, expression: exp.AtTimeZone) -> str:
-        if expression.this == exp.CurrentTimestamp():
-            return self.func("now64", exp.Literal.number(3), expression.args.get("zone"))
-        return super().attimezone_sql(expression)
-
     @unsupported_args("json_scope")
     def contains_sql(self, expression: exp.Contains) -> str:
         # ClickHouse has no CONTAINS; keep the parentheses only where the parent needs them

@@ -1244,13 +1244,6 @@ class TestSQLite(Validator):
             "SELECT STRFTIME('%Y-%m-%d %H:%M:%f', 'now')",
             read={"duckdb": "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"},
         )
-        self.validate_all(
-            "SELECT DATE('now'), STRFTIME('%H', 'now')",
-            write={
-                "clickhouse": "SELECT DATE(now64(3, 'UTC')), formatDateTime(now64(3, 'UTC'), '%H')",
-                "mysql": "SELECT DATE(UTC_TIMESTAMP(3)), DATE_FORMAT(UTC_TIMESTAMP(3), '%H')",
-            },
-        )
         self.validate_identity("SELECT DATE(now), STRFTIME('%f', now) FROM t")
 
     def test_strftime(self):

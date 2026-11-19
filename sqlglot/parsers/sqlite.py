@@ -8,15 +8,26 @@ from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import Token, TokenType
 
 
-def _build_date(args: list) -> exp.Date | exp.Anonymous:
+def _is_now(expression: exp.Expr | None) -> bool:
+    # https://www.sqlite.org/lang_datefunc.html#time_values
+    return (
+        isinstance(expression, exp.Literal)
+        and expression.is_string
+        and expression.name.lower() == "now"
+    )
+
+
+def _build_date(args: list) -> exp.Date | exp.CurrentDate | exp.Anonymous:
+    if len(args) == 1 and _is_now(args[0]):
+        return exp.CurrentDate()
     if len(args) <= 1:
         return exp.Date.from_arg_list(args)
     return exp.Anonymous(this="DATE", expressions=args)
 
 
 def _build_strftime(args: list, dialect: t.Any) -> exp.Anonymous | exp.TimeToStr:
-    if len(args) == 1:
-        args.append(exp.CurrentTimestamp())
+    if len(args) == 1 or (len(args) == 2 and _is_now(args[1])):
+        args = [args[0], exp.CurrentTimestamp()]
     if len(args) == 2:
         return exp.TimeToStr(
             this=exp.TsOrDsToTimestamp(this=args[1]), format=dialect.format_time(args[0])

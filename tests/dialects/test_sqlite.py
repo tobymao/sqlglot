@@ -1231,8 +1231,20 @@ class TestSQLite(Validator):
             "SELECT (a COLLATE NOCASE -> b) + c FROM t",
         )
 
+    def test_now(self):
+        # 'now' is a special time value, not a date string
+        self.validate_all(
+            "SELECT DATE('now'), STRFTIME('%Y/%m/%d', 'NOW')",
+            write={
+                "sqlite": "SELECT CURRENT_DATE, STRFTIME('%Y/%m/%d', CURRENT_TIMESTAMP)",
+                "duckdb": "SELECT CURRENT_DATE, STRFTIME(CAST(CURRENT_TIMESTAMP AS TIMESTAMP), '%Y/%m/%d')",
+            },
+        )
+
     def test_strftime(self):
-        self.validate_identity("SELECT STRFTIME('%Y/%m/%d', 'now')")
+        self.validate_identity(
+            "SELECT STRFTIME('%Y/%m/%d', 'now')", "SELECT STRFTIME('%Y/%m/%d', CURRENT_TIMESTAMP)"
+        )
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
         self.validate_identity(
             "SELECT STRFTIME('%s')",

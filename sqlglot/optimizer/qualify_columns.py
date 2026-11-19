@@ -715,7 +715,6 @@ def _select_by_pos(expression: exp.Selectable, node: exp.Literal) -> exp.Alias:
         raise OptimizeError(f"Unknown output column: {node.name}")
 
     if not isinstance(select, exp.Alias):
-        # e.g. an unexpanded star, whose columns aren't known
         raise OptimizeError(f"Cannot resolve positional reference {node.name} to {select.sql()}")
 
     return select

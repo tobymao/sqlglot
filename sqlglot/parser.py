@@ -2352,6 +2352,19 @@ class Parser:
 
                 if i < total - 1:
                     chunks.append([])
+            elif token.token_type == TokenType.UESCAPE and chunks[-1]:
+                # The lexer keeps the clause's source spans for rendering. The parser needs
+                # one identifier covering the full clause, including its comments.
+                identifier = chunks[-1][-1]
+                chunks[-1][-1] = Token(
+                    TokenType.IDENTIFIER,
+                    identifier.text,
+                    line=token.line,
+                    col=token.col,
+                    start=identifier.start,
+                    end=token.end,
+                    comments=identifier.comments + token.comments,
+                )
             else:
                 chunks[-1].append(token)
 

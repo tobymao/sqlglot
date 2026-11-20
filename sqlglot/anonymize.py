@@ -8,7 +8,6 @@ from sqlglot.tokens import Token, TokenType
 
 
 ALPHABET = string.ascii_lowercase
-ALPHABET_SIZE = len(ALPHABET)
 ANONYMIZED_TYPES = {
     TokenType.BIT_STRING,
     TokenType.BYTE_STRING,
@@ -63,6 +62,12 @@ def anonymize(
     hint_end = tokenizer_class._COMMENTS.get(hint_start)
     nested = tokenizer_class.NESTED_COMMENTS
 
+    # An alias containing the active UESCAPE character would be read as another escape.
+    alphabet = ALPHABET
+    for token in tokens:
+        if token.token_type == TokenType.UESCAPE and len(token.text) == 1:
+            alphabet = alphabet.replace(token.text, "")
+
     seen: dict[tuple[bool, str], str] = {}
     counter = 0
 
@@ -95,7 +100,9 @@ def anonymize(
         alias = seen.get(key)
         if alias is None:
             seen[key] = (
-                _number_alias(counter, token.text) if is_number else _alias(counter, token.text)
+                _number_alias(counter, token.text)
+                if is_number
+                else _alias(counter, token.text, alphabet)
             )
             counter += 1
         token.text = seen[key]
@@ -171,11 +178,11 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
     return "".join(result)
 
 
-def _alias(counter: int, text: str) -> str:
+def _alias(counter: int, text: str, alphabet: str) -> str:
     digits = []
     while counter:
-        counter, digit = divmod(counter, ALPHABET_SIZE)
-        digits.append(ALPHABET[digit])
+        counter, digit = divmod(counter, len(alphabet))
+        digits.append(alphabet[digit])
 
     letters = "".join(reversed(digits)).rjust(sum(not char.isspace() for char in text), "a")
 

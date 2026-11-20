@@ -401,6 +401,26 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             self.assertEqual(rendered, expected)
             self.assertEqual(len(rendered), len(sql))
 
+    def test_unicode_identifier_uescape(self):
+        cases = [
+            ("""SELECT U&"secret" UESCAPE '!'""", """SELECT U&"aaaaaa" UESCAPE '!'"""),
+            (
+                """SELECT U&"secret" UESCAPE '!', 'unfinished""",
+                """SELECT U&"aaaaaa" UESCAPE '!', 'u.........""",
+            ),
+            (
+                """SELECT u&"s!0065cr""et" /* private */ uEsCaPe -- private\n E'\\041', x""",
+                """SELECT u&"aaaaaaaaaaaa" /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
+            ),
+            (
+                """SELECT a, b, c, d, e, f, U&"secret" UESCAPE 'g', secret""",
+                """SELECT a, b, c, d, e, f, U&"aaaaah" UESCAPE 'g', aaaaah""",
+            ),
+        ]
+        for sql, expected in cases:
+            with self.subTest(sql=sql):
+                self.assertEqual(render(sql, anonymize(sql, "postgres"), "postgres"), expected)
+
     def test_numbers_keep_their_shape(self):
         sql = "SELECT 1e, 1.e, 1e10, .5, 2002, 1e-5, 1E+2"
         rendered = render(sql, anonymize(sql))

@@ -118,6 +118,7 @@ class TokenType(IntEnum):
     HEREDOC_STRING = auto()
     UNICODE_STRING = auto()
     UNICODE_IDENTIFIER = auto()
+    UESCAPE = auto()  # The keyword and literal of a decoded Unicode identifier's escape clause
 
     # types
     BIT = auto()
@@ -710,31 +711,28 @@ class TokenizerCore:
             end = min(self._current + 50, self.size - 1)
             context = self.sql[start:end]
             raise TokenError(f"Error tokenizing '{context}'", start=start, end=end) from e
-
-        if self._has_unicode_identifiers:
-            self._decode_unicode_identifiers()
+        finally:
+            if self._has_unicode_identifiers:
+                self._decode_unicode_identifiers()
         return self.tokens
 
     def _decode_unicode_identifiers(self) -> None:
         # UESCAPE follows the identifier and may be separated from it by comments.
         tokens = self.tokens
         self.tokens = []
-        i = 0
-        while i < len(tokens):
-            token = tokens[i]
-            i += 1
+        for i, token in enumerate(tokens):
             if token.token_type != TokenType.UNICODE_IDENTIFIER:
                 self.tokens.append(token)
                 continue
 
             escape = "\\"
-            keyword = seq_get(tokens, i)
+            keyword = seq_get(tokens, i + 1)
             if (
                 keyword
                 and keyword.token_type == TokenType.VAR
                 and keyword.text.upper() == "UESCAPE"
             ):
-                literal = seq_get(tokens, i + 1)
+                literal = seq_get(tokens, i + 2)
                 if not literal or literal.token_type not in (
                     TokenType.STRING,
                     TokenType.BYTE_STRING,
@@ -755,10 +753,7 @@ class TokenizerCore:
                     raise TokenError(
                         "Invalid Unicode escape character", start=literal.start, end=literal.end + 1
                     )
-                token.comments.extend(keyword.comments)
-                token.comments.extend(literal.comments)
-                token.end, token.line, token.col = literal.end, literal.line, literal.col
-                i += 2
+                keyword.token_type = literal.token_type = TokenType.UESCAPE
 
             try:
                 token.text = decode_unicode_escapes(token.text, escape, strict=True)

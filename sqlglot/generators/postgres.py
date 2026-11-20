@@ -379,7 +379,6 @@ class PostgresGenerator(generator.Generator):
             "CONVERT", e.this, e.args.get("source"), e.args["dest"]
         ),
         exp.CurrentDate: no_paren_current_date_sql,
-        exp.CurrentTimestamp: lambda *_: "CURRENT_TIMESTAMP",
         exp.CurrentUser: lambda *_: "CURRENT_USER",
         exp.CurrentVersion: rename_func("VERSION"),
         exp.DateAdd: _date_add_sql("+"),
@@ -689,6 +688,17 @@ class PostgresGenerator(generator.Generator):
     @unsupported_args("this")
     def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
         return "CURRENT_SCHEMA"
+
+    def currenttime_sql(self, expression: exp.CurrentTime) -> str:
+        precision = expression.this
+        return self.func("CURRENT_TIME", precision) if precision else "CURRENT_TIME"
+
+    def currenttimestamp_sql(self, expression: exp.CurrentTimestamp) -> str:
+        # Other dialects can use this argument for a time zone instead of a precision.
+        precision = expression.this
+        if precision and precision.is_int:
+            return self.func("CURRENT_TIMESTAMP", precision)
+        return "CURRENT_TIMESTAMP"
 
     def interval_sql(self, expression: exp.Interval) -> str:
         unit = expression.text("unit").lower()

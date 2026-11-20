@@ -95,6 +95,7 @@ class Postgres(Dialect):
         HEX_STRINGS = [("x'", "'"), ("X'", "'")]
         BYTE_STRINGS = [("e'", "'"), ("E'", "'")]
         UNICODE_STRINGS = [("U&'", "'"), ("u&'", "'")]
+        UNICODE_IDENTIFIERS = [('U&"', '"'), ('u&"', '"')]
         BYTE_STRING_ESCAPES = ["'", "\\"]
         HEREDOC_STRINGS = ["$"]
 

@@ -162,6 +162,24 @@ def camel_to_snake_case(name: str) -> str:
     return CAMEL_CASE_PATTERN.sub("_", name).upper()
 
 
+def decode_unicode_escapes(text: str, escape: str, *, strict: bool = False) -> str:
+    """Decode SQL Unicode escapes, including doubled escape characters and UTF-16 pairs."""
+    prefix = re.escape(escape)
+    pattern = rf"{prefix}(?:\+([0-9a-fA-F]{{6}})|([0-9a-fA-F]{{4}})|({prefix}))"
+    if strict:
+        pattern += "?"  # Also match a bare escape so that decode can reject it.
+
+    def decode(match: re.Match[str]) -> str:
+        digits = match[1] or match[2]
+        if digits:
+            return chr(int(digits, 16))
+        if strict and match[3] is None:
+            raise ValueError("Invalid Unicode escape")
+        return escape
+
+    return re.sub(pattern, decode, text).encode("utf-16", "surrogatepass").decode("utf-16")
+
+
 def while_changing(expression: E, func: t.Callable[[E], E]) -> E:
     """
     Applies a transformation to a given expression until a fix point is reached.

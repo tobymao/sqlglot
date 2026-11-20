@@ -21,6 +21,7 @@ ANONYMIZED_TYPES = {
     TokenType.RAW_STRING,
     TokenType.STRING,
     TokenType.UNICODE_STRING,
+    TokenType.UNICODE_IDENTIFIER,
     TokenType.VAR,
 }
 QUOTED_TYPES = ANONYMIZED_TYPES - {TokenType.NUMBER, TokenType.VAR}

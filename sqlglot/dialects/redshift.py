@@ -43,6 +43,7 @@ class Redshift(Postgres):
         DROP_UNKNOWN_ESCAPES = True
         BIT_STRINGS = []
         HEX_STRINGS = []
+        UNICODE_IDENTIFIERS = []
         STRING_ESCAPES = ["\\", "'"]
 
         KEYWORDS = {

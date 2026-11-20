@@ -468,6 +468,11 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ("SELECT a, /* unterminated comment", "SELECT a, /*.....................", None),
             ('SELECT a, "unterminated ident', 'SELECT a, "u.................', None),
             ("SELECT a, $$unterminated heredoc", "SELECT a, $$....................", "postgres"),
+            (
+                """SELECT U&"secret", 'unfinished""",
+                """SELECT U&"aaaaaa", 'u.........""",
+                "postgres",
+            ),
             ("SELECT a, `unterminated backtick", "SELECT a, `u....................", "mysql"),
             ("'unterminated secret", "'u..................", None),  # nothing tokenized at all
             ("SELECT a, '", "SELECT a, '", None),  # remainder shorter than the delimiter

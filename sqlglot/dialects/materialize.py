@@ -11,6 +11,7 @@ class Materialize(Postgres):
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
 
     class Tokenizer(Postgres.Tokenizer):
+        UNICODE_IDENTIFIERS = []
         NUMERIC_ESCAPES = {"u": (16, 4, 4, 0xFFFF), "U": (16, 8, 8, 0x10FFFF)}
 
     Parser = MaterializeParser

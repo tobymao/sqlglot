@@ -414,12 +414,23 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ),
             (
                 """SELECT a, b, c, d, e, f, U&"secret" UESCAPE 'g', secret""",
-                """SELECT a, b, c, d, e, f, U&"aaaaah" UESCAPE 'g', aaaaah""",
+                """SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE '!', aaaaag""",
             ),
         ]
         for sql, expected in cases:
             with self.subTest(sql=sql):
                 self.assertEqual(render(sql, anonymize(sql, "postgres"), "postgres"), expected)
+
+        for literal, masked in [
+            ("$tag$g$tag$", "$tag$!$tag$"),
+            (r"E'\147'", r"E'\041'"),
+            (r"E'\u0067'", r"E'\u0021'"),
+        ]:
+            sql = f"""SELECT a, b, c, d, e, f, U&"secret" UESCAPE {literal}"""
+            self.assertEqual(
+                render(sql, anonymize(sql, "postgres"), "postgres"),
+                f"""SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE {masked}""",
+            )
 
     def test_numbers_keep_their_shape(self):
         sql = "SELECT 1e, 1.e, 1e10, .5, 2002, 1e-5, 1E+2"

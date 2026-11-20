@@ -8,6 +8,7 @@ from sqlglot.tokens import Token, TokenType
 
 
 ALPHABET = string.ascii_lowercase
+ALPHABET_SIZE = len(ALPHABET)
 ANONYMIZED_TYPES = {
     TokenType.BIT_STRING,
     TokenType.BYTE_STRING,
@@ -62,12 +63,6 @@ def anonymize(
     hint_end = tokenizer_class._COMMENTS.get(hint_start)
     nested = tokenizer_class.NESTED_COMMENTS
 
-    # An alias containing the active UESCAPE character would be read as another escape.
-    alphabet = ALPHABET
-    for token in tokens:
-        if token.token_type == TokenType.UESCAPE and len(token.text) == 1:
-            alphabet = alphabet.replace(token.text, "")
-
     seen: dict[tuple[bool, str], str] = {}
     counter = 0
 
@@ -100,9 +95,7 @@ def anonymize(
         alias = seen.get(key)
         if alias is None:
             seen[key] = (
-                _number_alias(counter, token.text)
-                if is_number
-                else _alias(counter, token.text, alphabet)
+                _number_alias(counter, token.text) if is_number else _alias(counter, token.text)
             )
             counter += 1
         token.text = seen[key]
@@ -161,7 +154,7 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
     result = []
     prev = 0
 
-    for token in tokens:
+    for i, token in enumerate(tokens):
         result.append(_redact(sql[prev : token.start], comments, nested))
         prev = token.end + 1
         span = sql[token.start : prev]
@@ -170,6 +163,15 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
             result.append(token.text)
         elif token.token_type in ANONYMIZED_TYPES:
             result.append(_fit(span, token.text, quotes, token.token_type))
+        elif (
+            token.token_type == TokenType.UESCAPE
+            and len(token.text) == 1
+            and i >= 2
+            and token.text in tokens[i - 2].text
+        ):
+            # The identifier's alias contains its escape character. Use ! for this clause
+            # so the alias still reads back literally, including at its other references.
+            result.append(_replace_uescape(span, token.text))
         else:
             result.append(span)
 
@@ -178,11 +180,24 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
     return "".join(result)
 
 
-def _alias(counter: int, text: str, alphabet: str) -> str:
+def _replace_uescape(span: str, escape: str) -> str:
+    if span.startswith("$"):
+        # Dollar quotes have identical delimiters on either side of the single character.
+        middle = len(span) // 2
+        return span[:middle] + "!" + span[middle + 1 :]
+    if span[-2] == escape:
+        return span[:-2] + "!'"
+    # In an E string, preserve the base and width of the numeric escape.
+    start, digits = (4, "21") if span[3] in "xuU" else (3, "41")
+    width = len(span) - start - 1
+    return span[:start] + (digits.zfill(width) if width > 1 else "1") + "'"
+
+
+def _alias(counter: int, text: str) -> str:
     digits = []
     while counter:
-        counter, digit = divmod(counter, len(alphabet))
-        digits.append(alphabet[digit])
+        counter, digit = divmod(counter, ALPHABET_SIZE)
+        digits.append(ALPHABET[digit])
 
     letters = "".join(reversed(digits)).rjust(sum(not char.isspace() for char in text), "a")
 

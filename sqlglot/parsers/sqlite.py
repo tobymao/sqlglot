@@ -326,10 +326,12 @@ class SQLiteParser(parser.Parser):
         return this
 
     def _parse_unique(self) -> exp.UniqueColumnConstraint:
-        # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
+        # Leave adjacent constraints for the caller, but consume UNIQUE's conflict clause.
         # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
         if self._curr.text.upper() in self.CONSTRAINT_PARSERS:
-            return self.expression(exp.UniqueColumnConstraint())
+            return self.expression(
+                exp.UniqueColumnConstraint(on_conflict=self._parse_on_conflict())
+            )
 
         return super()._parse_unique()
 

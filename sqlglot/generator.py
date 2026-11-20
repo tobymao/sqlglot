@@ -1358,16 +1358,20 @@ class Generator:
         return f"PERIOD FOR SYSTEM_TIME ({self.sql(expression, 'this')}, {self.sql(expression, 'expression')})"
 
     def notnullcolumnconstraint_sql(self, expression: exp.NotNullColumnConstraint) -> str:
-        return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL"
+        on_conflict = self.sql(expression, "on_conflict")
+        on_conflict = f" {on_conflict}" if on_conflict else ""
+        return f"{'' if expression.args.get('allow_null') else 'NOT '}NULL{on_conflict}"
 
     def primarykeycolumnconstraint_sql(self, expression: exp.PrimaryKeyColumnConstraint) -> str:
+        on_conflict = self.sql(expression, "on_conflict")
+        on_conflict = f" {on_conflict}" if on_conflict else ""
         desc = expression.args.get("desc")
         if desc is not None:
-            return f"PRIMARY KEY{' DESC' if desc else ' ASC'}"
+            return f"PRIMARY KEY{' DESC' if desc else ' ASC'}{on_conflict}"
         options = self.expressions(expression, key="options", flat=True, sep=" ")
         options = f" {options}" if options else ""
         include = self.sql(expression, "include")
-        return f"PRIMARY KEY{include}{options}"
+        return f"PRIMARY KEY{on_conflict}{include}{options}"
 
     def uniquecolumnconstraint_sql(self, expression: exp.UniqueColumnConstraint) -> str:
         this = self.sql(expression, "this")

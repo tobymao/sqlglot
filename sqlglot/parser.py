@@ -8147,7 +8147,9 @@ class Parser:
 
     def _parse_not_constraint(self) -> exp.Expr | None:
         if self._match_text_seq("NULL"):
-            return self.expression(exp.NotNullColumnConstraint())
+            return self.expression(
+                exp.NotNullColumnConstraint(on_conflict=self._parse_on_conflict())
+            )
         if self._match_text_seq("CASESPECIFIC"):
             return self.expression(exp.CaseSpecificColumnConstraint(not_=True))
         if self._match_text_seq("FOR", "REPLICATION"):
@@ -8368,7 +8370,9 @@ class Parser:
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(
                 exp.PrimaryKeyColumnConstraint(
-                    desc=desc, options=self._parse_key_constraint_options()
+                    desc=desc,
+                    on_conflict=self._parse_on_conflict(),
+                    options=self._parse_key_constraint_options(),
                 )
             )
 

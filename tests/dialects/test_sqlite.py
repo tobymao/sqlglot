@@ -1714,6 +1714,18 @@ class TestSQLite(Validator):
                     f"CREATE TABLE a (b, c, UNIQUE (b, c) ON CONFLICT {conflict_action})"
                 )
 
+        for constraint in (
+            "PRIMARY KEY ON CONFLICT REPLACE",
+            "NOT NULL ON CONFLICT IGNORE",
+            "UNIQUE ON CONFLICT FAIL",
+            "CONSTRAINT pk PRIMARY KEY ASC ON CONFLICT REPLACE AUTOINCREMENT",
+            "NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ROLLBACK",
+        ):
+            with self.subTest(constraint=constraint):
+                self.validate_identity(f"CREATE TABLE a (x INTEGER {constraint})")
+
+        self.validate_identity("CREATE TABLE a (x INTEGER NULL)")
+
         self.validate_identity("CREATE TABLE over (x, y)")
         self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")
         self.validate_identity("INSERT OR FAIL INTO foo (x, y) VALUES (1, 2)")

@@ -3626,6 +3626,20 @@ OPTIONS (
         for select in annotated.selects:
             self.assertEqual(select.type.sql("bigquery"), "TIMESTAMP")
 
+    def test_annotate_datetime_arithmetic(self):
+        for sql, dtype in (
+            ("DATETIME_ADD(DATETIME '2024-01-31 00:00:00', INTERVAL 1 DAY)", exp.DType.TIMESTAMP),
+            ("DATETIME_SUB('2024-02-01 00:00:00', INTERVAL 1 DAY)", exp.DType.TIMESTAMP),
+            ("TIMESTAMP_ADD(DATE '2024-01-31', INTERVAL 1 DAY)", exp.DType.TIMESTAMP),
+            (
+                "DATETIME_ADD(TIMESTAMP '2024-01-31 00:00:00+00', INTERVAL 1 DAY)",
+                exp.DType.TIMESTAMPTZ,
+            ),
+        ):
+            with self.subTest(sql=sql):
+                annotated = annotate_types(self.parse_one(sql), dialect="bigquery")
+                self.assertTrue(annotated.is_type(dtype), annotated.type)
+
     def test_set_operations(self):
         self.validate_identity("SELECT 1 AS foo INNER UNION ALL SELECT 3 AS foo, 4 AS bar")
 

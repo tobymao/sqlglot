@@ -7,14 +7,14 @@ easy and transparent as possible, whether it's:
 
 - Reporting a bug
 - Discussing the current state of the code
-- Submitting a fix
+- Suggesting a fix
 - Proposing new features
 
 ## We develop with GitHub
 
-We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
+SQLGlot accepts pull requests only from maintainers. Anyone can [open an issue](https://github.com/tobymao/sqlglot/issues/new/choose) to report a bug, suggest a fix, or request a feature. The core team decides which issues to take on based on project priorities.
 
-## Finding tasks to work on
+## Finding tasks to work on (maintainers only)
 
 When the core SQLGlot team does not plan to work on an issue, it is usually closed as "not planned". This may happen
 when a request is exceptionally difficult to address, or because the team deems that it shouldn't be prioritized.
@@ -25,9 +25,7 @@ need guidance, feel free to ask for clarifications.
 
 Before taking on a task, consider studying the [AST primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md) and the [onboarding document](https://github.com/tobymao/sqlglot/blob/main/posts/onboarding.md).
 
-## Submitting code changes
-
-Pull requests are the best way to propose changes to the codebase, and we actively welcome them.
+## Submitting code changes (maintainers only)
 
 Pull requests should be small and they need to follow the conventions of the project. For features that require
 many changes, please reach out to us on [Slack](https://tobikodata.com/slack) before making a request, in order
@@ -63,7 +61,7 @@ Our policy:
 - **Disclose LLM use.** Human contributors who used an LLM are encouraged to mention it in a disclaimer.
 - **Write the PR description yourself.** Keep it concise and human-written; a few clear sentences without
   emojis summaries and restatements of the diff are worth more than a wall of text.
-- **If you are a new contributor, prefer opening an issue over a PR.** We are interested in growing
+- **If you are an external contributor, open an issue.** We are interested in growing
   long-term contributors who genuinely understand the codebase. If you have found a bug or have a fix in
   mind, open a well-written issue with a reproducible example (see below). The core team can usually
   address it faster and more accurately than it takes to review an AI-generated PR.
@@ -86,11 +84,9 @@ We use GitHub issues to track public bugs. Report a bug by opening a new issue.
 - Notes (possibly including why you think this might be happening, or stuff you tried that didn't work)
 - References (e.g. documentation pages related to the issue)
 
-## Start a discussion using GitHub's [discussions](https://github.com/tobymao/sqlglot/discussions)
+## Request a feature
 
-[We use GitHub discussions](https://github.com/tobymao/sqlglot/discussions/190) to discuss about the current state
-of the code. If you want to propose a new feature, this is the right place to do it. Just start a discussion, and
-let us know why you think this feature would be a good addition to SQLGlot (by possibly including some usage examples).
+To propose a feature, [open an issue](https://github.com/tobymao/sqlglot/issues/new/choose) explaining why it would be a good addition to SQLGlot. Include a usage example if you can.
 
 ## Deployment (maintainers only)
 

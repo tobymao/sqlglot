@@ -360,7 +360,7 @@ There are still a few basic things we can do in our implementation to help impro
 * Cache bigram histograms to avoid computing them more than once for the same node.
 * Compute the canonical SQL string representation for each tree once while caching string representations of all inner nodes. This prevents redundant tree traversals when bigrams are computed.
 
-At the time of writing only the first two optimizations have been implemented, so there is an opportunity to contribute for anyone who’s interested.
+At the time of writing only the first two optimizations have been implemented. If diffing is slow for your queries, please [open an issue](https://github.com/tobymao/sqlglot/issues/new/choose) with an example.
 
 ## Alternative Solutions
 

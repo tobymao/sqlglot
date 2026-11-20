@@ -3584,6 +3584,26 @@ class TestDuckDB(Validator):
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 NO CYCLE")
         self.validate_identity("CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE")
 
+    def test_ddl_on_conflict_unsupported(self):
+        for columns, action in (
+            ("x INT NOT NULL", "IGNORE"),
+            ("x INT NULL", "IGNORE"),
+            ("x INT PRIMARY KEY", "REPLACE"),
+            ("x INT UNIQUE", "FAIL"),
+            ("x INT, y INT, UNIQUE (x, y)", "FAIL"),
+        ):
+            with self.subTest(columns=columns):
+                expression = parse_one(f"CREATE TABLE t ({columns} ON CONFLICT {action})", "sqlite")
+                with self.assertRaisesRegex(UnsupportedError, "ON CONFLICT on table or column"):
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.RAISE)
+                self.assertEqual(
+                    expression.sql("duckdb", unsupported_level=ErrorLevel.IGNORE),
+                    f"CREATE TABLE t ({columns})",
+                )
+
+        sql = "INSERT INTO t VALUES (1) ON CONFLICT DO NOTHING"
+        self.assertEqual(self.parse_one(sql).sql("duckdb", unsupported_level=ErrorLevel.RAISE), sql)
+
     def test_install(self):
         ast = self.validate_identity("INSTALL httpfs")
         ast.assert_is(exp.Install).name == "httpfs"

@@ -1717,6 +1717,7 @@ class TestSQLite(Validator):
         for constraint in (
             "PRIMARY KEY ON CONFLICT REPLACE",
             "NOT NULL ON CONFLICT IGNORE",
+            "NULL ON CONFLICT IGNORE",
             "UNIQUE ON CONFLICT FAIL",
             "CONSTRAINT pk PRIMARY KEY ASC ON CONFLICT REPLACE AUTOINCREMENT",
             "NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ROLLBACK",
@@ -1725,6 +1726,15 @@ class TestSQLite(Validator):
                 self.validate_identity(f"CREATE TABLE a (x INTEGER {constraint})")
 
         self.validate_identity("CREATE TABLE a (x INTEGER NULL)")
+        for columns in (
+            "x INTEGER NOT NULL",
+            "x INTEGER NULL",
+            "x INTEGER PRIMARY KEY",
+            "x INTEGER UNIQUE",
+            "x INTEGER, UNIQUE (x)",
+        ):
+            with self.subTest(columns=columns), self.assertRaises(ParseError):
+                self.parse_one(f"CREATE TABLE a ({columns} ON CONFLICT DO NOTHING)")
 
         self.validate_identity("CREATE TABLE over (x, y)")
         self.validate_identity("INSERT OR ABORT INTO foo (x, y) VALUES (1, 2)")

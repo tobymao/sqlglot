@@ -153,7 +153,7 @@ class MaskingPolicyColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class NotNullColumnConstraint(Expression, ColumnConstraintKind):
-    arg_types = {"allow_null": False}
+    arg_types = {"allow_null": False, "on_conflict": False}
 
 
 class OnUpdateColumnConstraint(Expression, ColumnConstraintKind):
@@ -161,7 +161,7 @@ class OnUpdateColumnConstraint(Expression, ColumnConstraintKind):
 
 
 class PrimaryKeyColumnConstraint(Expression, ColumnConstraintKind):
-    arg_types = {"desc": False, "options": False, "include": False}
+    arg_types = {"desc": False, "options": False, "include": False, "on_conflict": False}
 
 
 class TitleColumnConstraint(Expression, ColumnConstraintKind):

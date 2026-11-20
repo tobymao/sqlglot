@@ -143,6 +143,13 @@ class SQLiteParser(parser.Parser):
         "IIF": lambda self: self._parse_iif(),
     }
 
+    CONSTRAINT_PARSERS = {
+        **parser.Parser.CONSTRAINT_PARSERS,
+        "NULL": lambda self: self.expression(
+            exp.NotNullColumnConstraint(allow_null=True, on_conflict=self._parse_ddl_on_conflict())
+        ),
+    }
+
     PROPERTY_PARSERS = {
         **parser.Parser.PROPERTY_PARSERS,
         "USING": lambda self, **kwargs: self._parse_module_property(),
@@ -325,13 +332,13 @@ class SQLiteParser(parser.Parser):
 
         return this
 
-    def _parse_unique(self) -> exp.UniqueColumnConstraint:
-        # Do not consume more tokens if UNIQUE is used as a standalone constraint, e.g:
-        # CREATE TABLE foo (bar TEXT UNIQUE REFERENCES baz ...)
-        if self._curr.text.upper() in self.CONSTRAINT_PARSERS:
-            return self.expression(exp.UniqueColumnConstraint())
-
-        return super()._parse_unique()
+    def _parse_ddl_on_conflict(self) -> exp.OnConflict | None:
+        if not self._match_text_seq("ON", "CONFLICT"):
+            return None
+        if not self._match_texts(self.CONFLICT_ALGORITHMS):
+            self.raise_error("Expected a conflict resolution action")
+            return None
+        return self.expression(exp.OnConflict(action=exp.var(self._prev.text.upper())))
 
     def _parse_limit(
         self,

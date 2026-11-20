@@ -8145,9 +8145,14 @@ class Parser:
         self._match_text_seq("LENGTH")
         return self.expression(exp.InlineLengthColumnConstraint(this=self._parse_bitwise()))
 
+    def _parse_ddl_on_conflict(self) -> exp.OnConflict | None:
+        return self._parse_on_conflict()
+
     def _parse_not_constraint(self) -> exp.Expr | None:
         if self._match_text_seq("NULL"):
-            return self.expression(exp.NotNullColumnConstraint())
+            return self.expression(
+                exp.NotNullColumnConstraint(on_conflict=self._parse_ddl_on_conflict())
+            )
         if self._match_text_seq("CASESPECIFIC"):
             return self.expression(exp.CaseSpecificColumnConstraint(not_=True))
         if self._match_text_seq("FOR", "REPLICATION"):
@@ -8246,7 +8251,7 @@ class Parser:
                 nulls=self._match_text_seq("NULLS", "NOT", "DISTINCT"),
                 this=self._parse_schema(self._parse_unique_key()),
                 index_type=self._match(TokenType.USING) and self._advance_any() and self._prev.text,
-                on_conflict=self._parse_on_conflict(),
+                on_conflict=self._parse_ddl_on_conflict(),
                 options=self._parse_key_constraint_options(),
             )
         )
@@ -8368,7 +8373,9 @@ class Parser:
         if not in_props and not self._match(TokenType.L_PAREN, advance=False):
             return self.expression(
                 exp.PrimaryKeyColumnConstraint(
-                    desc=desc, options=self._parse_key_constraint_options()
+                    desc=desc,
+                    on_conflict=self._parse_ddl_on_conflict(),
+                    options=self._parse_key_constraint_options(),
                 )
             )
 

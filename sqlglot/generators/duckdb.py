@@ -4584,6 +4584,12 @@ class DuckDBGenerator(generator.Generator):
         self.unsupported("The AUTOINCREMENT column constraint is not supported by DuckDB")
         return ""
 
+    def onconflict_sql(self, expression: exp.OnConflict) -> str:
+        if expression.arg_key == "on_conflict":
+            self.unsupported("DuckDB does not support ON CONFLICT on table or column constraints")
+            return ""
+        return super().onconflict_sql(expression)
+
     def aliases_sql(self, expression: exp.Aliases) -> str:
         this = expression.this
         if isinstance(this, exp.Posexplode):

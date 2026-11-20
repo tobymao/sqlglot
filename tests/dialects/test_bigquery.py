@@ -2717,6 +2717,26 @@ WHERE
             "CREATE TEMPORARY FUNCTION string_length_0(strings ARRAY<STRING>) RETURNS FLOAT64 LANGUAGE js OPTIONS (library=['gs://ibis-testing-libraries/lodash.min.js']) AS '\\'use strict\\'; function string_length(strings) { return _.sum(_.map(strings, ((x) => x.length))); } return string_length(strings);'",
         )
 
+    def test_table_function_arguments(self):
+        expr = self.validate_identity("SELECT * FROM ML.DESCRIBE_DATA(TABLE `_SESSION.input`)")
+        self.assertEqual(
+            [(t.db, t.name) for t in expr.find_all(exp.Table) if t.name], [("_SESSION", "input")]
+        )
+        self.validate_identity(
+            "SELECT * FROM ML.DESCRIBE_DATA(TABLE `region-us.INFORMATION_SCHEMA.SCHEMATA_OPTIONS`)"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 42 AS x) "
+            "SELECT * FROM ML.DESCRIBE_DATA(TABLE t, STRUCT(2 AS num_quantiles))"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t)"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 2 AS `table`) SELECT ABS(table + 1), COUNTIF(table IS NULL) "
+            "FROM t GROUP BY 1"
+        )
+
     def test_remove_precision_parameterized_types(self):
         self.validate_identity("CREATE TABLE test (a NUMERIC(10, 2))")
         self.validate_identity(

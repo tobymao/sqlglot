@@ -661,6 +661,23 @@ class BigQueryParser(parser.Parser):
 
         return expr
 
+    def _parse_lambda(self, alias: bool = False) -> exp.Expr | None:
+        start = self._curr
+        arg = super()._parse_lambda(alias=alias)
+        # TABLE can also name a column, as in f(table + 1) or f(table IS NULL).
+        if (
+            start.token_type == TokenType.TABLE
+            and self._prev is start
+            and self._curr.token_type in self.ID_VAR_TOKENS
+        ):
+            table = self._parse_table_parts()
+            if table:
+                # INFORMATION_SCHEMA views get an implicit alias in a FROM clause.
+                table.set("alias", None)
+            return self.expression(exp.TableArgument(this=table), start, comments=start.comments)
+
+        return arg
+
     def _parse_ml(self, expr_type: type[E], **kwargs: t.Any) -> E:
         self._match_text_seq("MODEL")
         this = self._parse_table()

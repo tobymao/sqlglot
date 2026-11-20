@@ -2657,6 +2657,9 @@ class Generator:
 
         return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{joins}{laterals}{ordinality}"
 
+    def tableargument_sql(self, expression: exp.TableArgument) -> str:
+        return f"TABLE {self.sql(expression, 'this')}"
+
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)
         alias = self.sql(expression, "alias")

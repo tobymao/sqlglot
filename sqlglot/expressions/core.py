@@ -1900,7 +1900,6 @@ class Boolean(Expression, Condition):
 
 
 class Dot(Expression, Binary):
-    # Number of trailing fields that form a single ClickHouse subcolumn path.
     arg_types = {"this": True, "expression": True, "subcolumn_depth": False}
 
     @property

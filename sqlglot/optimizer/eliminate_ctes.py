@@ -51,7 +51,7 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
                         with_node.pop()
 
                     # Decrement the ref count for all sources this CTE selects from
-                    for _, source in scope.selected_sources.values():
+                    for _, source in scope.referenced_sources():
                         if isinstance(source, Scope):
                             ref_count[id(source)] -= 1
 

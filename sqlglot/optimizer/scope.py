@@ -87,6 +87,7 @@ class Scope:
     _derived_tables: list[exp.Subquery]
     _udtfs: list[exp.UDTF]
     _tables: list[exp.Table]
+    _table_arguments: list[exp.Table]
     _ordered_sources: list[exp.Expr]
     _ctes: list[exp.CTE]
     _subqueries: list[exp.Select | exp.SetOperation]
@@ -145,6 +146,7 @@ class Scope:
         self._derived_tables = []
         self._udtfs = []
         self._tables = []
+        self._table_arguments = []
         self._ordered_sources = []
         self._ctes = []
         self._subqueries = []
@@ -183,6 +185,7 @@ class Scope:
 
     def _collect(self) -> None:
         self._tables = []
+        self._table_arguments = []
         self._ordered_sources = []
         self._ctes = []
         self._subqueries = []
@@ -222,7 +225,10 @@ class Scope:
                     self._semi_anti_join_tables.add(node.alias_or_name)
 
                 self._tables.append(node)
-                self._ordered_sources.append(node)
+                if isinstance(node.parent, exp.TableArgument):
+                    self._table_arguments.append(node)
+                else:
+                    self._ordered_sources.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
             elif type(node) is exp.Lateral or (
@@ -467,6 +473,17 @@ class Scope:
             self._selected_sources = result
         return self._selected_sources
 
+    def table_argument_sources(self) -> Iterator[tuple[exp.Table, exp.Table | Scope]]:
+        """Relations passed to functions, resolved independently of FROM and JOIN aliases."""
+        self._ensure_collected()
+        for table in self._table_arguments:
+            yield table, self.cte_sources.get(table.name, table) if not table.db else table
+
+    def referenced_sources(self) -> Iterator[tuple[exp.Selectable, exp.Table | Scope]]:
+        """Yield selected sources and relations passed as table arguments."""
+        yield from self.selected_sources.values()
+        yield from self.table_argument_sources()
+
     @property
     def references(self) -> list[tuple[str, exp.Selectable]]:
         if self._references is None:
@@ -661,7 +678,7 @@ class Scope:
         scope_ref_count: dict[int, int] = defaultdict(int)
 
         for scope in self.traverse():
-            for _, source in scope.selected_sources.values():
+            for _, source in scope.referenced_sources():
                 scope_ref_count[id(source)] += 1
 
             for name in scope._semi_anti_join_tables:

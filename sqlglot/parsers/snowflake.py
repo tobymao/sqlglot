@@ -376,7 +376,7 @@ class SnowflakeParser(parser.Parser):
         TokenType.VOLUME,
     }
 
-    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.ROLLBACK}
+    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.ROLLBACK, TokenType.TOP}
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
         TokenType.INTEGRATION,
@@ -1235,6 +1235,22 @@ class SnowflakeParser(parser.Parser):
             this.set("expressions", self._parse_wrapped_csv(self._parse_lambda))
 
         return this
+
+    def _parse_limit(
+        self,
+        this: exp.Expr | None = None,
+        top: bool = False,
+        skip_limit_token: bool = False,
+    ) -> exp.Expr | None:
+        # Only a bare number starts a TOP limit. TOP(x) is a function call.
+        if (
+            top
+            and self._curr.token_type == TokenType.TOP
+            and self._next.token_type != TokenType.NUMBER
+        ):
+            return this
+
+        return super()._parse_limit(this, top=top, skip_limit_token=skip_limit_token)
 
     def _parse_id_var(
         self,

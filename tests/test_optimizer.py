@@ -4092,7 +4092,7 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             parse_one("SELECT 2 / 3, 2 / 3.0", dialect="presto")
         ).expressions
 
-        self.assertEqual(expressions[0].type.this, exp.DataType.Type.BIGINT)
+        self.assertEqual(expressions[0].type.this, exp.DataType.Type.INT)
         self.assertEqual(expressions[1].type.this, exp.DataType.Type.DOUBLE)
 
         expressions = annotate_types(

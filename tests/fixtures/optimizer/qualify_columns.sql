@@ -150,6 +150,21 @@ SELECT DATE(x.a) AS _col_0, DATE(x.b) AS c FROM x AS x GROUP BY DATE(x.a), DATE(
 SELECT (SELECT MIN(a) FROM UNNEST([1, 2]) AS t(a)) AS f FROM x GROUP BY 1;
 SELECT (SELECT MIN(t.a) AS _col_0 FROM UNNEST(ARRAY(1, 2)) AS t(a)) AS f FROM x AS x GROUP BY 1;
 
+# title: Unaliased subquery projection referenced by position in ORDER BY
+# execute: false
+SELECT (SELECT 2), a FROM x ORDER BY 1;
+SELECT (SELECT 2 AS "2") AS _col_0, x.a AS a FROM x AS x ORDER BY _col_0;
+
+# title: Unaliased subquery projection referenced by position in GROUP BY
+# execute: false
+SELECT (SELECT 2), a FROM x GROUP BY 1, 2;
+SELECT (SELECT 2 AS "2") AS _col_0, x.a AS a FROM x AS x GROUP BY (SELECT 2 AS "2"), x.a;
+
+# title: Unaliased correlated subquery projection referenced by position
+# execute: false
+SELECT a, (SELECT MAX(y.c) FROM y WHERE y.b = x.b) FROM x ORDER BY 2, 1;
+SELECT x.a AS a, (SELECT MAX(y.c) AS _col_0 FROM y AS y WHERE y.b = x.b) AS _col_1 FROM x AS x ORDER BY _col_1, a;
+
 # dialect: bigquery
 WITH x AS (select 'a' as a, 1 as b) SELECT x.a AS c, y.a as d, SUM(x.b) AS y, FROM x join x as y on x.a = y.a group by 1, 2;
 WITH x AS (SELECT 'a' AS a, 1 AS b) SELECT x.a AS c, y.a AS d, SUM(x.b) AS y FROM x AS x JOIN x AS y ON x.a = y.a GROUP BY x.a, 2;

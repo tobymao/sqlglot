@@ -305,6 +305,7 @@ class Update(Expression, DML):
         "limit": False,
         "options": False,
         "hint": False,
+        "alternative": False,
     }
 
     def table(

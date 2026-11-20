@@ -24,6 +24,7 @@ class SQLite(Dialect):
         exp.Qualify: AliasPrecedence.SOURCE,
     }
     SAFE_TO_ELIMINATE_DOUBLE_NEGATION = False
+    SUPPORTS_UPDATE_OR = True
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     CONCAT_COALESCE = True
     CONCAT_WS_COALESCE = True

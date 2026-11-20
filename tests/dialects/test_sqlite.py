@@ -1690,6 +1690,22 @@ class TestSQLite(Validator):
                     read={dialect: f"CREATE TABLE t (a INT {constraint})"},
                 )
 
+    def test_update_or(self):
+        for action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
+            with self.subTest(action=action):
+                update = self.validate_identity(f"UPDATE OR {action} t SET b = 'x' WHERE id = 1")
+                self.assertIsInstance(update, exp.Update)
+                self.assertEqual(update.args["alternative"], action)
+
+        sql = "UPDATE OR IGNORE t SET b = 'x'"
+        self.validate_all(
+            sql,
+            read={"": sql, "sqlite": "update or ignore t set b = 'x'"},
+            write={"": sql, "postgres": UnsupportedError, "teradata": UnsupportedError},
+        )
+        with self.assertRaises(ParseError):
+            self.parse_one("UPDATE OR t SET b = 'x'")
+
     def test_ddl(self):
         for conflict_action in ("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"):
             with self.subTest(f"ON CONFLICT {conflict_action}"):

@@ -2873,6 +2873,13 @@ class Generator:
 
     def update_sql(self, expression: exp.Update) -> str:
         hint = self.sql(expression, "hint")
+        alternative = self.sql(expression, "alternative")
+        if alternative:
+            if self.dialect.SUPPORTS_UPDATE_OR or self.dialect == "":
+                alternative = f" OR {alternative}"
+            else:
+                self.unsupported(f"UPDATE OR {alternative} is not supported")
+                alternative = ""
         this = self.sql(expression, "this")
         join_sql, from_sql = self._update_from_joins_sql(expression)
         set_sql = self.expressions(expression, flat=True)
@@ -2886,7 +2893,7 @@ class Generator:
             expression_sql = f"{returning}{from_sql}{where_sql}"
         options = self.expressions(expression, key="options")
         options = f" OPTION({options})" if options else ""
-        sql = f"UPDATE{hint} {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
+        sql = f"UPDATE{hint}{alternative} {this}{join_sql} SET {set_sql}{expression_sql}{order}{limit}{options}"
         return self.prepend_ctes(expression, sql)
 
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:

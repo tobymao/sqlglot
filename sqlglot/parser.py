@@ -1700,8 +1700,11 @@ class Parser:
         "READ": ("WRITE", "ONLY"),
     }
 
+    CONFLICT_ALGORITHMS: t.ClassVar = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
+
     CONFLICT_ACTIONS: t.ClassVar[OPTIONS_TYPE] = {
-        **dict.fromkeys(("ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK", "UPDATE"), tuple()),
+        **dict.fromkeys(CONFLICT_ALGORITHMS, tuple()),
+        "UPDATE": tuple(),
         "DO": ("NOTHING", "UPDATE"),
     }
 
@@ -1780,7 +1783,7 @@ class Parser:
         **dict.fromkeys(("GROUP", "TIES"), tuple()),
     }
 
-    INSERT_ALTERNATIVES: t.ClassVar = {"ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"}
+    INSERT_ALTERNATIVES: t.ClassVar = CONFLICT_ALGORITHMS
 
     CLONE_KEYWORDS: t.ClassVar = {"CLONE", "COPY"}
     # Time travel clause prefixes, mapped to whether they pin a timestamp or a version
@@ -4022,11 +4025,14 @@ class Parser:
         return this
 
     def _parse_update(self) -> exp.Update:
-        hint = self._parse_hint()
-        kwargs: dict[str, object] = {
-            "hint": hint,
-            "this": self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS),
-        }
+        kwargs: dict[str, object] = {"hint": self._parse_hint()}
+        if (self.dialect.SUPPORTS_UPDATE_OR or self.dialect == "") and self._match(TokenType.OR):
+            if self._match_texts(self.CONFLICT_ALGORITHMS):
+                kwargs["alternative"] = self._prev.text.upper()
+            else:
+                self.raise_error("Expected conflict resolution algorithm after UPDATE OR")
+
+        kwargs["this"] = self._parse_table(joins=True, alias_tokens=self.UPDATE_ALIAS_TOKENS)
         while self._curr:
             if self._match(TokenType.SET):
                 kwargs["expressions"] = self._parse_csv(self._parse_update_assignment)

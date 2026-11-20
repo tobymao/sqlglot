@@ -2326,6 +2326,12 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(connection.execute(sql).fetchone(), (0,))
         self.assertEqual(connection.execute(optimized).fetchone(), (0,))
 
+    def test_simplify_temporal_comparison_without_types(self):
+        expr = parse_one("TO_DATE('2024-02-01') < TO_DATE('2024-02-02')", read="databricks")
+        self.assertEqual(optimizer.simplify.simplify(expr.copy(), dialect="databricks"), expr)
+        annotate_types(expr, dialect="databricks")
+        self.assertEqual(optimizer.simplify.simplify(expr, dialect="databricks"), exp.true())
+
     def test_simplify_string_comparisons(self):
         with duckdb.connect() as conn:
             for dtype in (None, "UNKNOWN", "INT", "DECIMAL(10, 2)", "TEXT"):

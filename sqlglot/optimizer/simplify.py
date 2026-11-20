@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import logging
 import functools
 import itertools
+import re
 import typing as t
 from collections import deque, defaultdict
 from functools import reduce, wraps
@@ -32,6 +33,8 @@ logger = logging.getLogger("sqlglot")
 
 # Final means that an expression should not be simplified
 FINAL = "final"
+
+SUBMICROSECOND_PRECISION = re.compile(r"[.,]\d{7}")
 
 SIMPLIFIABLE = (
     exp.Binary,
@@ -389,10 +392,8 @@ def cast_as_date(value: datetime | date | str) -> date | None:
         return value.date()
     if isinstance(value, date):
         return value
-    try:
-        return datetime.fromisoformat(value).date()
-    except ValueError:
-        return None
+    parsed = cast_as_datetime(value)
+    return parsed.date() if parsed else None
 
 
 def cast_as_datetime(
@@ -402,6 +403,9 @@ def cast_as_datetime(
         return value
     if isinstance(value, date):
         return datetime(year=value.year, month=value.month, day=value.day)
+    # fromisoformat silently drops fractional digits beyond microseconds.
+    if SUBMICROSECOND_PRECISION.search(value):
+        return None
     try:
         return datetime.fromisoformat(value)
     except ValueError:
@@ -418,7 +422,7 @@ def cast_value(value: datetime | date | str, to: exp.DataType) -> date | None:
     return None
 
 
-def extract_date(cast: exp.Expr) -> date | None:
+def extract_date(cast: exp.Expr, *, for_comparison: bool = False) -> date | None:
     if isinstance(cast, exp.Cast):
         to = cast.to
     elif isinstance(cast, exp.TsOrDsToDate) and not cast.args.get("format"):
@@ -426,10 +430,24 @@ def extract_date(cast: exp.Expr) -> date | None:
     else:
         return None
 
+    # Zoned timestamps can depend on the session time zone, and casts with an
+    # explicit precision can round. Only fold known, unparameterized civil types.
+    if for_comparison and (
+        to.expressions
+        or not cast.is_type(
+            exp.DType.DATE,
+            exp.DType.DATETIME,
+            exp.DType.TIMESTAMP,
+            exp.DType.TIMESTAMPNTZ,
+            exp.DType.TIMESTAMP_NS,
+        )
+    ):
+        return None
+
     if isinstance(cast.this, exp.Literal):
         value: t.Any = cast.this.name
     elif isinstance(cast.this, (exp.Cast, exp.TsOrDsToDate)):
-        value = extract_date(cast.this)
+        value = extract_date(cast.this, for_comparison=for_comparison)
     else:
         return None
     return cast_value(value, to)
@@ -442,12 +460,11 @@ def _is_date_literal(expression: exp.Expr) -> bool:
 def _comparable_datetimes(
     a: exp.Expr, b: exp.Expr, dialect: Dialect
 ) -> tuple[datetime, datetime] | None:
-    left = cast_as_datetime(extract_date(a))
-    if left is None:
+    left = cast_as_datetime(extract_date(a, for_comparison=True))
+    if left is None or left.tzinfo is not None:
         return None
-    right = cast_as_datetime(extract_date(b))
-    # Comparing a naive value to an aware one may depend on the session time zone.
-    if right is None or (left.tzinfo is None) != (right.tzinfo is None):
+    right = cast_as_datetime(extract_date(b, for_comparison=True))
+    if right is None or right.tzinfo is not None:
         return None
     if not dialect.FOLD_MIXED_TEMPORAL_COMPARISONS and extract_type(a) != extract_type(b):
         return None

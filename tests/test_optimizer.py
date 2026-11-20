@@ -2914,6 +2914,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(optimizer.eliminate_ctes.eliminate_ctes(query.copy()), query)
 
         query = parse_one(
+            "WITH q AS (SELECT id, embedding FROM vectors) "
+            "SELECT q.distance FROM VECTOR_SEARCH(TABLE _SESSION.vectors, 'embedding', TABLE q, top_k => 1) AS q",
+            dialect="bigquery",
+        )
+        scope = build_scope(query)
+        self.assertEqual(list(scope.selected_sources), ["q"])
+        self.assertEqual(scope.ref_count()[id(scope.cte_sources["q"])], 1)
+
+        query = parse_one(
             "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.DESCRIBE_DATA("
             "TABLE ML.VALIDATE_DATA_DRIFT((SELECT x FROM t), TABLE t))",
             dialect="bigquery",

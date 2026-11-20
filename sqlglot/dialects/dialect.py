@@ -666,6 +666,9 @@ class Dialect(metaclass=_Dialect):
     Whether LIMIT ALL is supported (equivalent to no limit) as in Postgres.
     """
 
+    SUPPORTS_UPDATE_OR = False
+    """Whether UPDATE accepts an OR conflict resolution algorithm before the table name."""
+
     PROJECTION_ALIASES_SHADOW_SOURCE_NAMES = False
     """
     Whether projection alias names can shadow table/source names in GROUP BY and HAVING clauses.

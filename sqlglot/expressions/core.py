@@ -299,8 +299,8 @@ class Expr:
         """
         raise NotImplementedError
 
-    def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
-        """Yields the key and expression for all arguments, exploding list args."""
+    def iter_expressions(self, reverse: bool = False) -> Iterator[Expr]:
+        """Yield child expressions, including each expression in list arguments."""
         raise NotImplementedError
 
     def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
@@ -1153,14 +1153,14 @@ class Expression(Expr):
             return self.parent.depth + 1
         return 0
 
-    def iter_expressions(self: E, reverse: bool = False) -> Iterator[E]:
+    def iter_expressions(self, reverse: bool = False) -> Iterator[Expr]:
         for vs in reversed(self.args.values()) if reverse else self.args.values():
             if isinstance(vs, list):
                 for v in reversed(vs) if reverse else vs:
                     if isinstance(v, Expr):
-                        yield t.cast(E, v)
+                        yield v
             elif isinstance(vs, Expr):
-                yield t.cast(E, vs)
+                yield vs
 
     def find(self, *expression_types: Type[E], bfs: bool = True) -> E | None:
         return next(self.find_all(*expression_types, bfs=bfs), None)
@@ -1201,7 +1201,7 @@ class Expression(Expr):
             yield from self.dfs(prune=prune)
 
     def dfs(self, prune: t.Callable[[Expr], bool] | None = None) -> Iterator[Expr]:
-        stack = [self]
+        stack: list[Expr] = [self]
 
         while stack:
             node = stack.pop()

@@ -410,11 +410,19 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ),
             (
                 """SELECT u&"s!0065cr""et" /* private */ uEsCaPe -- private\n E'\\041', x""",
-                """SELECT u&"aaaaaaaaaaaa" /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
+                """SELECT u&"a!0061aaaaa"  /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
             ),
             (
                 """SELECT a, b, c, d, e, f, U&"secret" UESCAPE 'g', secret""",
                 """SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE '!', aaaaag""",
+            ),
+            (
+                """SELECT a, b, c, d, e, f, U&"sg0065cret" UESCAPE 'g', secret""",
+                """SELECT a, b, c, d, e, f, U&"a!0061aaag" UESCAPE '!', aaaaag""",
+            ),
+            (
+                r"""SELECT U&"\0062ases" u&"!0078" UESCAPE '!' FROM (VALUES (1)) AS t(bases)""",
+                r"""SELECT U&"\0061aaaa" u&"!0062" UESCAPE '!' FROM (VALUES (3)) AS d(aaaaa)""",
             ),
         ]
         for sql, expected in cases:
@@ -431,6 +439,22 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
                 render(sql, anonymize(sql, "postgres"), "postgres"),
                 f"""SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE {masked}""",
             )
+
+    def test_unicode_identifier_references(self):
+        cases = [
+            (r'U&"\0062ases"', "bases", r'U&"\0061aaaa"', "aaaaa"),
+            (r'U&"\+000062ases"', "bases", r'U&"\+000061aaaa"', "aaaaa"),
+            (r'U&"\D83D\DE00"', '"😀"', r'U&"\+000061"  ', '"a"'),
+            ("""u&"a!!b" UESCAPE '!'""", '"a!b"', """u&"aaa"  UESCAPE '!'""", '"aaa"'),
+            ('U&"a""b"', '"a""b"', 'U&"aaa" ', '"aaa" '),
+        ]
+        for ref, column, masked_ref, masked_column in cases:
+            sql = f"SELECT {ref} FROM (VALUES (42)) AS t({column})"
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    render(sql, anonymize(sql, "postgres"), "postgres"),
+                    f"SELECT {masked_ref} FROM (VALUES (11)) AS c({masked_column})",
+                )
 
     def test_numbers_keep_their_shape(self):
         sql = "SELECT 1e, 1.e, 1e10, .5, 2002, 1e-5, 1E+2"

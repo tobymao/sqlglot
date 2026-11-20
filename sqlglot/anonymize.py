@@ -162,7 +162,13 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
             # Blanked in place by `anonymize`, or synthesized by it, so already span-shaped
             result.append(token.text)
         elif token.token_type in ANONYMIZED_TYPES:
-            result.append(_fit(span, token.text, quotes, token.token_type))
+            if token.token_type == TokenType.IDENTIFIER and span.startswith(('U&"', 'u&"')):
+                escape = "\\"
+                if i + 2 < len(tokens) and tokens[i + 1].token_type == TokenType.UESCAPE:
+                    escape = tokens[i + 2].text
+                result.append(_fit_unicode_identifier(span, token.text, escape))
+            else:
+                result.append(_fit(span, token.text, quotes, token.token_type))
         elif (
             token.token_type == TokenType.UESCAPE
             and len(token.text) == 1
@@ -178,6 +184,33 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
     result.append(_redact(sql[prev:], comments, nested))
 
     return "".join(result)
+
+
+def _fit_unicode_identifier(span: str, alias: str, escape: str) -> str:
+    if len(span) == len(alias) + 4:
+        return span[:3] + alias + '"'
+
+    # Use the source spelling of each character so an escaped and a plain reference
+    # still decode to the same alias. _replace_uescape handles a colliding escape.
+    prefix = "!" if escape in alias else escape
+    parts = [span[:3]]
+    pos = 3
+    for char in alias:
+        if span[pos] == escape and span[pos + 1] != escape:
+            extended = span[pos + 1] == "+"
+            width = 6 if extended else 4
+            pos += 8 if extended else 5
+            if 0xD800 <= int(span[pos - width : pos], 16) <= 0xDBFF:
+                # A surrogate pair encodes one character; use a single long escape for it.
+                pos += 8 if span[pos + 1] == "+" else 5
+                extended = True
+            parts.append(f"{prefix}+{ord(char):06X}" if extended else f"{prefix}{ord(char):04X}")
+        else:
+            pos += 2 if span[pos] in (escape, '"') else 1
+            parts.append(char)
+
+    # Doubled quotes, doubled escapes and surrogate pairs can leave unused source width.
+    return ("".join(parts) + '"').ljust(len(span))
 
 
 def _replace_uescape(span: str, escape: str) -> str:
@@ -274,6 +307,8 @@ def _fit(span: str, alias: str, quotes: list[tuple[str, str]], token_type: Token
                 break
 
     width = len(span) - start - end
+    if token_type == TokenType.IDENTIFIER and end and len(alias) < width:
+        return (span[:start] + alias + span[-end:]).ljust(len(span))
     pad = "0" if token_type == TokenType.NUMBER else "a"
 
     return span[:start] + alias[:width].rjust(width, pad) + span[len(span) - end :]

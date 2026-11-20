@@ -172,6 +172,12 @@ class TestPostgres(Validator):
             with self.assertRaises(UnsupportedError):
                 expression.sql("postgres", unsupported_level=unsupported_level)
 
+    def test_current_time_precision(self):
+        self.validate_identity("SELECT CURRENT_TIME, CURRENT_TIME(0), CURRENT_TIME(3)")
+        self.validate_identity(
+            "SELECT CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(0), CURRENT_TIMESTAMP(3)"
+        )
+
     def test_datetime_arithmetic(self):
         self.validate_all(
             "SELECT CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND' - (CAST('2024-01-01 12:00:00' AS TIMESTAMP) + INTERVAL '30 SECOND')",

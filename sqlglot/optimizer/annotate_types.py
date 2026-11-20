@@ -867,13 +867,16 @@ class TypeAnnotator:
 
         return expression
 
-    def _annotate_literal(self, expression: exp.Literal) -> exp.Literal:
+    def _annotate_literal(
+        self,
+        expression: exp.Literal,
+    ) -> exp.Literal:
         if expression.is_string:
             self._set_type(expression, exp.DType.VARCHAR)
         elif expression.is_int:
-            self._set_type(expression, exp.DType.INT)
+            self._set_type(expression, self.dialect.int_literal_type(expression))
         else:
-            self._set_type(expression, exp.DType.DOUBLE)
+            self._set_type(expression, self.dialect.decimal_literal_type(expression.this))
 
         expression.meta["nonnull"] = True
 
@@ -1011,7 +1014,7 @@ class TypeAnnotator:
             and left_type in exp.DataType.INTEGER_TYPES
             and right_type in exp.DataType.INTEGER_TYPES
         ):
-            self._set_type(expression, exp.DType.BIGINT)
+            self._set_type(expression, self._maybe_coerce(left_type, right_type))
         else:
             self._set_type(expression, self._maybe_coerce(left_type, right_type))
             if expression.type and expression.type.this not in exp.DataType.REAL_TYPES:

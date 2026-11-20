@@ -1400,6 +1400,13 @@ class Dialect(metaclass=_Dialect):
             for i, _ in enumerate(expression.expressions[0].expressions)
         ]
 
+    def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
+        value = int(expression.to_py())
+        for bound, int_type in self.INT_LITERAL_TYPES:
+            if bound is None or value <= bound:
+                return int_type
+        return exp.DType.INT
+
     def decimal_literal_type(self, text: str) -> exp.DataType | exp.DType:
         return exp.DType.DOUBLE
 

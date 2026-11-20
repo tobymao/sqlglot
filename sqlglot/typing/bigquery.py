@@ -255,6 +255,7 @@ EXPRESSION_METADATA = {
             exp.Log,
             exp.Round,
             exp.Sqrt,
+            exp.Trunc,
         }
     },
     **{

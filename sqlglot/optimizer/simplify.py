@@ -36,6 +36,14 @@ FINAL = "final"
 
 SUBMICROSECOND_PRECISION = re.compile(r"[.,]\d{7}")
 
+COMPARABLE_TEMPORAL_TYPES = (
+    exp.DType.DATE,
+    exp.DType.DATETIME,
+    exp.DType.TIMESTAMP,
+    exp.DType.TIMESTAMPNTZ,
+    exp.DType.TIMESTAMP_NS,
+)
+
 SIMPLIFIABLE = (
     exp.Binary,
     exp.Func,
@@ -432,16 +440,7 @@ def extract_date(cast: exp.Expr, *, for_comparison: bool = False) -> date | None
 
     # Zoned timestamps can depend on the session time zone, and casts with an
     # explicit precision can round. Only fold known, unparameterized civil types.
-    if for_comparison and (
-        to.expressions
-        or not cast.is_type(
-            exp.DType.DATE,
-            exp.DType.DATETIME,
-            exp.DType.TIMESTAMP,
-            exp.DType.TIMESTAMPNTZ,
-            exp.DType.TIMESTAMP_NS,
-        )
-    ):
+    if for_comparison and (to.expressions or not cast.is_type(*COMPARABLE_TEMPORAL_TYPES)):
         return None
 
     if isinstance(cast.this, exp.Literal):

@@ -670,11 +670,9 @@ class BigQueryParser(parser.Parser):
             and self._prev is start
             and self._curr.token_type in self.ID_VAR_TOKENS
         ):
-            table = self._parse_table_parts()
-            if table:
-                # INFORMATION_SCHEMA views get an implicit alias in a FROM clause.
-                table.set("alias", None)
-            return self.expression(exp.TableArgument(this=table), start, comments=start.comments)
+            return self.expression(
+                exp.TableArgument(this=self._parse_table_parts()), start, comments=start.comments
+            )
 
         return arg
 

@@ -56,10 +56,13 @@ def eliminate_subqueries(expression: E) -> E:
 
     # All table names are taken
     for scope in root.traverse():
-        sources = itertools.chain(
-            scope.sources.values(), (source for _, source in scope.table_argument_sources())
+        taken.update(
+            {
+                source.name: source
+                for _, source in scope.sources.items()
+                if isinstance(source, exp.Table)
+            }
         )
-        taken.update((source.name, source) for source in sources if isinstance(source, exp.Table))
 
     # Map of Expr->alias
     # Existing CTES in the root expression. We'll use this for deduplication.
@@ -168,13 +171,10 @@ def _eliminate_cte(
     if not scope.parent:
         return cte
     for child_scope in scope.parent.traverse():
-        for table, source in child_scope.referenced_sources():
+        for table, source in child_scope.selected_sources.values():
             if source is scope:
-                if isinstance(table.parent, exp.TableArgument):
-                    table.set("this", exp.to_identifier(name))
-                else:
-                    new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name, copy=False)
-                    table.replace(new_table)
+                new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name, copy=False)
+                table.replace(new_table)
 
     return cte
 

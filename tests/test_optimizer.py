@@ -2906,8 +2906,20 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         query = parse_one(sql, dialect="bigquery")
         scope = build_scope(query)
         self.assertEqual(list(scope.selected_sources), ["drift"])
+        self.assertEqual(
+            [child.selected_sources["t"][1] for child in scope.subquery_scopes],
+            [scope.cte_sources["t"], scope.cte_sources["t"]],
+        )
         self.assertEqual(scope.ref_count()[id(scope.cte_sources["t"])], 2)
         self.assertEqual(optimizer.eliminate_ctes.eliminate_ctes(query.copy()), query)
+
+        query = parse_one(
+            "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.DESCRIBE_DATA("
+            "TABLE ML.VALIDATE_DATA_DRIFT((SELECT x FROM t), TABLE t))",
+            dialect="bigquery",
+        )
+        scope = build_scope(query)
+        self.assertEqual(scope.ref_count()[id(scope.cte_sources["t"])], 2)
 
         query = parse_one(
             f"WITH t AS (SELECT 1 AS x), unused AS ({call}) SELECT 1", dialect="bigquery"
@@ -2935,8 +2947,8 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
         optimizer.eliminate_subqueries.eliminate_subqueries(query)
         self.assertCountEqual(
-            [arg.this for arg in query.find_all(exp.TableArgument)],
-            [exp.to_table("t"), exp.to_table("t_2")],
+            [arg.sql("bigquery") for arg in query.find_all(exp.TableArgument)],
+            ["TABLE t", "TABLE t_2"],
         )
 
     def test_journal(self):

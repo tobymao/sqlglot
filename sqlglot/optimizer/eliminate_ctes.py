@@ -30,10 +30,11 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
 
     if root:
         ref_count = root.ref_count()
+        removed: set[Scope] = set()
 
         # Traverse the scope tree in reverse so we can remove chains of unused CTEs
         for scope in reversed(list(root.traverse())):
-            if scope.is_cte:
+            if scope.is_cte and scope not in removed:
                 count = ref_count[id(scope)]
                 if count <= 0:
                     cte_node = scope.expression.parent
@@ -50,9 +51,9 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
                             record(journal, with_node.parent, "with_")
                         with_node.pop()
 
-                    # Decrement the ref count for all sources this CTE selects from
-                    for _, source in scope.referenced_sources():
-                        if isinstance(source, Scope):
-                            ref_count[id(source)] -= 1
+                    # Removing the CTE also removes every reference in its child scopes.
+                    for source_id, count in scope.ref_count().items():
+                        ref_count[source_id] -= count
+                    removed.update(scope.traverse())
 
     return expression

@@ -350,12 +350,6 @@ def projection_reachability(
             # Column alias lists bind by position, so keep every projection they name.
             scope_node.dependencies.extend(source_outputs[: len(reference.alias_column_names)])
 
-        # A table function can read any of its input columns.
-        for _, source in scope.table_argument_sources():
-            if isinstance(source, Scope):
-                source = scopes_by_expression[id(source.expression)]
-                scope_node.dependencies.extend([scope_nodes[source], *output_nodes[source]])
-
         for col in scope.columns:
             source = scope.sources.get(col.table or col.name)
             if isinstance(source, Scope):

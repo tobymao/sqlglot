@@ -239,7 +239,7 @@ class Dayname(Expression, Func):
 
 
 class Extract(Expression, Func):
-    arg_types = {"this": True, "expression": True}
+    arg_types = {"this": True, "expression": True, "date_part": False}
 
 
 class GetExtract(Expression, Func):

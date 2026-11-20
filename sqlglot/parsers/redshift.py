@@ -84,6 +84,8 @@ class RedshiftParser(PostgresParser):
 
     FUNCTION_PARSERS = {
         **PostgresParser.FUNCTION_PARSERS,
+        "DATE_PART": lambda self: self._parse_date_part(self._parse_var_or_string(upper=True)),
+        "PGDATE_PART": lambda self: self._parse_date_part(self._parse_assignment()),
         "OBJECT_TRANSFORM": lambda self: self._parse_object_transform(),
     }
 

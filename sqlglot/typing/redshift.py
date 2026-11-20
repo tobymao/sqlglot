@@ -20,6 +20,15 @@ def _annotate_at_time_zone(self: TypeAnnotator, expression: exp.AtTimeZone) -> e
     return self._set_type(expression, exp.DType.UNKNOWN)
 
 
+def _annotate_extract(self: TypeAnnotator, expression: exp.Extract) -> exp.Expr:
+    source = expression.expression
+    if expression.args.get("date_part") or source.is_type(exp.DType.TIMESTAMPTZ):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    if source.is_type(*exp.DataType.TEMPORAL_TYPES, exp.DType.INTERVAL):
+        return self._set_type(expression, exp.DType.INT)
+    return self._set_type(expression, exp.DType.UNKNOWN)
+
+
 def _annotate_sha2(self: TypeAnnotator, expression: exp.SHA2) -> exp.Expr:
     size = 128
     length = expression.args.get("length")
@@ -33,6 +42,7 @@ def _annotate_sha2(self: TypeAnnotator, expression: exp.SHA2) -> exp.Expr:
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
+    exp.Extract: {"annotator": _annotate_extract},
     exp.SHA2: {"annotator": _annotate_sha2},
     # Redshift's TO_TIMESTAMP returns TIMESTAMPTZ, not TIMESTAMP
     # https://docs.aws.amazon.com/redshift/latest/dg/r_TO_TIMESTAMP.html

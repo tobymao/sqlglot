@@ -626,12 +626,10 @@ class TestPostgres(Validator):
         )
         self.validate_identity(
             "SELECT DATE_PART('isodow'::varchar(6), current_date)",
-            "SELECT EXTRACT(CAST('isodow' AS VARCHAR(6)) FROM CURRENT_DATE)",
+            "SELECT DATE_PART(CAST('isodow' AS VARCHAR(6)), CURRENT_DATE)",
         )
-        self.validate_identity(
-            "SELECT DATE_PART('isoyear', ts)",
-            "SELECT EXTRACT(ISOYEAR FROM ts)",
-        )
+        self.validate_identity("SELECT DATE_PART('isoyear', ts)")
+        self.validate_identity("SELECT DATE_PART('iso' || 'dow', CURRENT_DATE)")
         self.validate_identity(
             "END WORK AND NO CHAIN",
             "COMMIT AND NO CHAIN",
@@ -1149,16 +1147,16 @@ FROM json_data, field_ids""",
         self.validate_all(
             "SELECT DATE_PART('minute', timestamp '2023-01-04 04:05:06.789')",
             write={
-                "postgres": "SELECT EXTRACT(MINUTE FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
-                "redshift": "SELECT EXTRACT(MINUTE FROM CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "postgres": "SELECT DATE_PART('minute', CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
+                "redshift": "SELECT DATE_PART('minute', CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
                 "snowflake": "SELECT DATE_PART(MINUTE, CAST('2023-01-04 04:05:06.789' AS TIMESTAMP))",
             },
         )
         self.validate_all(
             "SELECT DATE_PART('month', date '20220502')",
             write={
-                "postgres": "SELECT EXTRACT(MONTH FROM CAST('20220502' AS DATE))",
-                "redshift": "SELECT EXTRACT(MONTH FROM CAST('20220502' AS DATE))",
+                "postgres": "SELECT DATE_PART('month', CAST('20220502' AS DATE))",
+                "redshift": "SELECT DATE_PART('month', CAST('20220502' AS DATE))",
                 "snowflake": "SELECT DATE_PART(MONTH, CAST('20220502' AS DATE))",
             },
         )

@@ -237,6 +237,34 @@ TIME;
 EXTRACT(day from x);
 INT;
 
+# dialect: postgres
+EXTRACT(SECOND FROM TIMESTAMP '2020-06-01 12:34:56.5');
+DECIMAL;
+
+# dialect: postgres, version=13
+EXTRACT(SECOND FROM TIMESTAMP '2020-06-01 12:34:56.5');
+DOUBLE;
+
+# dialect: postgres
+DATE_PART('year', x);
+DOUBLE;
+
+# dialect: redshift
+DATE_PART(second, TIMESTAMP '2020-06-01 12:34:56.5');
+DOUBLE;
+
+# dialect: redshift
+EXTRACT(SECOND FROM TIMESTAMP '2020-06-01 12:34:56.5');
+INT;
+
+# dialect: redshift
+EXTRACT(SECOND FROM TIMESTAMPTZ '2020-06-01 12:34:56.5+00');
+DOUBLE;
+
+# dialect: redshift
+EXTRACT(SECOND FROM x);
+UNKNOWN;
+
 CASE WHEN x THEN CAST(y AS DECIMAL(18, 2)) ELSE NULL END;
 DECIMAL(18,2);
 

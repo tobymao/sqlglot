@@ -1082,8 +1082,10 @@ class TypeAnnotator:
         if alias := expression.args.get("alias"):
             this = alias.copy()
         elif isinstance(expression, exp.Dot):
-            # Case: STRUCT(expr.field), e.g. STRUCT(CAST(x AS STRUCT<f INT>).f)
-            this = expression.expression.copy()
+            # Qualified function calls can also be represented as Dot.
+            if isinstance(expression.expression, exp.Identifier):
+                # Case: STRUCT(expr.field), e.g. STRUCT(CAST(x AS STRUCT<f INT>).f)
+                this = expression.expression.copy()
         elif expression.expression:
             # Case: STRUCT(key = value) or STRUCT(key := value)
             this = expression.this.copy()

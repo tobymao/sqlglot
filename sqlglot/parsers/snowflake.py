@@ -376,7 +376,8 @@ class SnowflakeParser(parser.Parser):
         TokenType.VOLUME,
     }
 
-    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.ROLLBACK}
+    FUNC_TOKENS = parser.Parser.FUNC_TOKENS | {TokenType.ROLLBACK, TokenType.TOP}
+    TOP_COUNT_TOKENS = {TokenType.NUMBER}
 
     ALIAS_TOKENS = parser.Parser.ALIAS_TOKENS | {
         TokenType.INTEGRATION,

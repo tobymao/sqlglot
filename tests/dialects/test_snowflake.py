@@ -123,6 +123,14 @@ class TestSnowflake(Validator):
             },
         )
 
+    def test_top_identifier(self):
+        self.validate_identity("SELECT top FROM t")
+        self.validate_identity("SELECT top.x FROM t AS top")
+        self.validate_identity("SELECT top, x FROM t")
+        self.validate_identity("SELECT TOP(x) FROM t")
+        self.validate_identity("SELECT TOP(5), x FROM t")
+        self.validate_identity("SELECT top:field FROM t", "SELECT GET_PATH(top, 'field') FROM t")
+
     def test_set_operation_top(self):
         for op in ("UNION", "UNION ALL", "INTERSECT", "EXCEPT"):
             with self.subTest(op=op):

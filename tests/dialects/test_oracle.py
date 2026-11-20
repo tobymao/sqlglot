@@ -230,6 +230,7 @@ class TestOracle(Validator):
 
     def test_oracle(self):
         self.validate_identity("SELECT top, x FROM t")
+        self.validate_identity("SELECT TOP(5), x FROM t")
         self.validate_identity("1 /* /* */", "1 /* / * */")
         self.validate_all(
             "SELECT CONNECT_BY_ROOT x y",

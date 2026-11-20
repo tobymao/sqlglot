@@ -1811,7 +1811,6 @@ class Parser:
     JSON_KEY_VALUE_SEPARATOR_TOKENS: t.ClassVar = {TokenType.COLON, TokenType.COMMA, TokenType.IS}
 
     FETCH_TOKENS: t.ClassVar = ID_VAR_TOKENS - {TokenType.ROW, TokenType.ROWS, TokenType.PERCENT}
-    TOP_COUNT_TOKENS: t.ClassVar = {TokenType.L_PAREN, *NUMERIC_PARSERS, *PLACEHOLDER_PARSERS}
 
     ADD_CONSTRAINT_TOKENS: t.ClassVar = {
         TokenType.CONSTRAINT,
@@ -6012,10 +6011,7 @@ class Parser:
         top: bool = False,
         skip_limit_token: bool = False,
     ) -> exp.Expr | None:
-        if skip_limit_token or (
-            (not top or self._next.token_type in self.TOP_COUNT_TOKENS)
-            and self._match(TokenType.TOP if top else TokenType.LIMIT)
-        ):
+        if skip_limit_token or self._match(TokenType.TOP if top else TokenType.LIMIT):
             comments = self._prev_comments
             if top:
                 limit_paren = self._match(TokenType.L_PAREN)

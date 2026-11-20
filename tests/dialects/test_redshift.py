@@ -504,10 +504,8 @@ class TestRedshift(Validator):
             "SELECT CONCAT('abc', 'def')",
             "SELECT 'abc' || 'def'",
         )
-        self.validate_identity(
-            "SELECT TOP 1 x FROM y",
-            "SELECT x FROM y LIMIT 1",
-        )
+        for count in ("1", "%s", "%(n)s"):
+            self.validate_identity(f"SELECT TOP {count} x FROM y", f"SELECT x FROM y LIMIT {count}")
         self.validate_identity(
             "SELECT DATE_DIFF('month', CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",
             "SELECT DATEDIFF(MONTH, CAST('2020-02-29 00:00:00' AS TIMESTAMP), CAST('2020-03-02 00:00:00' AS TIMESTAMP))",

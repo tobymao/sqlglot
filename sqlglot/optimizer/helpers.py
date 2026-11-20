@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp
-from sqlglot.optimizer.scope import find_in_scope, walk_in_scope
+from sqlglot.optimizer.scope import find_all_in_scope, find_in_scope, walk_in_scope
 
 WINDOW_HAS_AGGREGATE = "window_has_aggregate"
 
@@ -24,6 +26,8 @@ def is_implicit_group_by_all(select: exp.Select) -> bool:
 def projection_has_aggregate(
     projection: exp.Expr,
     windows: list[exp.Window] | None = None,
+    *,
+    aggregate_filter: t.Callable[[exp.AggFunc], bool] | None = None,
 ) -> bool:
     windowed_aggregates: set[int] = set()
     remaining_windows = {window.name: window for window in windows or []}
@@ -50,15 +54,24 @@ def projection_has_aggregate(
                 if window is None:
                     break
 
-                has_aggregate = window.meta_get(WINDOW_HAS_AGGREGATE)
-                if has_aggregate is None:
-                    has_aggregate = bool(find_in_scope(window, exp.AggFunc))
-                    window.meta[WINDOW_HAS_AGGREGATE] = has_aggregate
+                if aggregate_filter is None:
+                    has_aggregate = window.meta_get(WINDOW_HAS_AGGREGATE)
+                    if has_aggregate is None:
+                        has_aggregate = bool(find_in_scope(window, exp.AggFunc))
+                        window.meta[WINDOW_HAS_AGGREGATE] = has_aggregate
+                else:
+                    has_aggregate = any(
+                        aggregate_filter(agg) for agg in find_all_in_scope(window, exp.AggFunc)
+                    )
                 if has_aggregate:
                     return True
 
                 name = window.alias
-        elif isinstance(node, exp.AggFunc) and id(node) not in windowed_aggregates:
+        elif (
+            isinstance(node, exp.AggFunc)
+            and id(node) not in windowed_aggregates
+            and (aggregate_filter is None or aggregate_filter(node))
+        ):
             return True
 
     return False

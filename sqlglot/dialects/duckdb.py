@@ -29,6 +29,7 @@ class DuckDB(Dialect):
         exp.Order: AliasPrecedence.MERGED_SOURCE,
         exp.Qualify: AliasPrecedence.SOURCE,
     }
+    GROUP_BY_ALL_HAVING_MIN_VERSION = (2, 0, 1)
     SUPPORTS_FIXED_SIZE_ARRAYS = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
     QUERY_RESULTS_ARE_STRUCTS = True

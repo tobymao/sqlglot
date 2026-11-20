@@ -622,6 +622,9 @@ class Dialect(metaclass=_Dialect):
     regardless of their clause's expression precedence.
     """
 
+    GROUP_BY_ALL_HAVING_MIN_VERSION: t.ClassVar[tuple[int, ...] | None] = None
+    """First version where implicit GROUP BY ALL columns take precedence over HAVING aliases."""
+
     ANNOTATE_ALL_SCOPES = False
     """Whether to annotate all scopes during optimization. Used by BigQuery for UNNEST support."""
 

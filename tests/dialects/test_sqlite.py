@@ -281,6 +281,59 @@ class TestSQLite(Validator):
         self.assertEqual(expression.args["lower"].to_py(), -9223372036854775807)
         self.assertEqual(expression.args["upper"].to_py(), 9223372036854775807)
 
+    def test_empty_group_by(self):
+        self.validate_all(
+            "SELECT COUNT(*) FROM t",
+            read={"duckdb": "SELECT COUNT(*) FROM t GROUP BY ()"},
+        )
+        self.validate_all(
+            "SELECT SUM(COUNT(*)) OVER () FROM t",
+            read={"duckdb": "SELECT SUM(COUNT(*)) OVER () FROM t GROUP BY ()"},
+        )
+        self.validate_all(
+            "SELECT COALESCE(SUM(x), 0) FROM t HAVING COUNT(*) > 1",
+            read={"duckdb": "SELECT COALESCE(SUM(x), 0) FROM t GROUP BY () HAVING COUNT(*) > 1"},
+        )
+
+        for sql in (
+            "SELECT 1 FROM t GROUP BY ()",
+            "SELECT 1 FROM t GROUP BY () HAVING COUNT(*) > 0",
+            "SELECT COUNT(*) FILTER(WHERE TRUE) OVER () FROM t GROUP BY ()",
+            "SELECT SUM(COUNT(*)) OVER () FROM t GROUP BY () HAVING COUNT(*) > 1",
+            "SELECT (SELECT COUNT(*) FROM u) FROM t GROUP BY ()",
+            "SELECT COUNT(*) FROM t GROUP BY (), x",
+        ):
+            with self.subTest(sql=sql):
+                query = parse_one(sql, read="duckdb")
+                self.assertEqual(query.sql("sqlite", unsupported_level=ErrorLevel.IGNORE), sql)
+                with self.assertRaisesRegex(UnsupportedError, r"GROUP BY \(\)"):
+                    query.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+
+    def test_empty_group_by_min_max(self):
+        for sql in (
+            "SELECT MIN(x), MAX(y) FROM t GROUP BY ()",
+            "SELECT MIN(COUNT(*), 7) FROM t GROUP BY ()",
+            "SELECT MAX(0, SUM(x)) FROM t GROUP BY () HAVING SUM(x) > 0",
+            "SELECT ROW_NUMBER() OVER w FROM t GROUP BY () WINDOW w AS (ORDER BY MAX(0, SUM(x)))",
+        ):
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    parse_one(sql).sql("sqlite", unsupported_level=ErrorLevel.RAISE),
+                    sql.replace(" GROUP BY ()", ""),
+                )
+
+        for dialect, sql in (
+            ("", "SELECT MIN(x, y) FROM t GROUP BY ()"),
+            ("", "SELECT MAX(x, y) FROM t GROUP BY () HAVING COUNT(*) > 0"),
+            ("", "SELECT ROW_NUMBER() OVER w FROM t GROUP BY () WINDOW w AS (ORDER BY MAX(1, 2))"),
+            ("duckdb", "SELECT MIN(x, 2) FROM t GROUP BY ()"),
+        ):
+            with self.subTest(dialect=dialect, sql=sql):
+                query = parse_one(sql, read=dialect)
+                self.assertEqual(query.sql("sqlite", unsupported_level=ErrorLevel.IGNORE), sql)
+                with self.assertRaisesRegex(UnsupportedError, r"GROUP BY \(\)"):
+                    query.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+
     def test_group_concat_null_separator(self):
         for separator, duckdb_separator in (
             ("NULL", "NULL"),

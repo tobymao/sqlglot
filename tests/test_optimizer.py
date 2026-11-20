@@ -1135,6 +1135,22 @@ class TestOptimizer(unittest.TestCase):
                 expression, schema={"x": {"a": "INT", "b": "INT", "c": "TEXT"}}
             )
 
+    def test_group_by_all_having_with_unexpanded_star(self):
+        for star in ("*", "x.* EXCLUDE (a)"):
+            with self.subTest(star=star):
+                sql = f"SELECT {star}, SUM(b) AS a FROM x GROUP BY ALL HAVING a = 2"
+                qualified = qualify(
+                    parse_one(sql, read="duckdb"),
+                    dialect="duckdb",
+                    schema=self.schema,
+                    expand_stars=False,
+                    identify=False,
+                )
+                self.assertEqual(
+                    qualified.sql("duckdb"),
+                    f"SELECT {star}, SUM(x.b) AS a FROM x AS x GROUP BY ALL HAVING a = 2",
+                )
+
     def test_qualify_unknown_tvf_table_reference(self):
         for sql in (
             "SELECT r FROM range(3) AS r",

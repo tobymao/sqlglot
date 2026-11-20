@@ -17,6 +17,7 @@ from sqlglot.dialects.dialect import (
     strposition_sql,
 )
 from sqlglot.generator import unsupported_args
+from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.parsers.sqlite import SQLITE_NOW
 from sqlglot.tokens import TokenType
 
@@ -81,6 +82,30 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
         )
 
     return expression
+
+
+def _is_sqlite_aggregate(func: exp.AggFunc) -> bool:
+    # SQLite's MIN and MAX are scalar when called with multiple arguments.
+    return not isinstance(func, (exp.Min, exp.Max)) or (
+        not func.expressions and func.args.get("count") is None
+    )
+
+
+def _has_aggregate_projection(select: exp.Select) -> bool:
+    # SQLite requires a projected aggregate outside any window to allow ungrouped HAVING.
+    if select.args.get("having"):
+        return any(
+            isinstance(node, exp.AggFunc) and _is_sqlite_aggregate(node)
+            for projection in select.selects
+            for node in projection.walk(prune=lambda n: isinstance(n, (exp.Query, exp.Window)))
+        )
+
+    return any(
+        projection_has_aggregate(
+            p, select.args.get("windows"), aggregate_filter=_is_sqlite_aggregate
+        )
+        for p in select.selects
+    )
 
 
 class SQLiteGenerator(generator.Generator):
@@ -201,6 +226,23 @@ class SQLiteGenerator(generator.Generator):
 
     def root_properties(self, properties: exp.Properties) -> str:
         return self.expressions(properties, indent=False, sep=", ")
+
+    def group_sql(self, expression: exp.Group) -> str:
+        if any(isinstance(e, exp.Tuple) and not e.expressions for e in expression.expressions):
+            select = expression.parent
+            if (
+                len(expression.expressions) == 1
+                and not any(
+                    expression.args.get(k) for k in ("grouping_sets", "cube", "rollup", "totals")
+                )
+                and isinstance(select, exp.Select)
+                and _has_aggregate_projection(select)
+            ):
+                return ""
+
+            self.unsupported("SQLite does not support GROUP BY ()")
+
+        return super().group_sql(expression)
 
     def offset_limit_modifiers(
         self, expression: exp.Expr, fetch: bool, limit: exp.Fetch | exp.Limit | None

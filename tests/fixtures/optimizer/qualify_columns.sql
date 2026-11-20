@@ -63,6 +63,20 @@ SELECT SUM(x.a) AS a FROM x AS x HAVING SUM(x.a) > 3;
 SELECT SUM(a) AS c FROM x HAVING SUM(b) > 3;
 SELECT SUM(x.a) AS c FROM x AS x HAVING SUM(x.b) > 3;
 
+# dialect: duckdb, version=2.0.1
+# execute: false
+SELECT a AS k, SUM(b) AS a FROM x GROUP BY ALL HAVING a = 2;
+SELECT x.a AS k, SUM(x.b) AS a FROM x AS x GROUP BY ALL HAVING x.a = 2;
+
+# dialect: duckdb, version=2.0.0
+# execute: false
+SELECT a AS k, SUM(b) AS a FROM x GROUP BY ALL HAVING a = 2;
+SELECT x.a AS k, SUM(x.b) AS a FROM x AS x GROUP BY ALL HAVING SUM(x.b) = 2;
+
+# dialect: duckdb
+SELECT a + 1 AS k, SUM(b) AS a FROM x GROUP BY ALL HAVING a = 2;
+SELECT x.a + 1 AS k, SUM(x.b) AS a FROM x AS x GROUP BY ALL HAVING SUM(x.b) = 2;
+
 SELECT a AS j, b FROM x ORDER BY j;
 SELECT x.a AS j, x.b AS b FROM x AS x ORDER BY j;
 

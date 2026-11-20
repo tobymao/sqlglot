@@ -169,7 +169,9 @@ def merge_ctes(
     # We key on the CTE scope so we can detect CTES that are selected from multiple times.
     cte_selections = defaultdict(list)
     for outer_scope in scopes:
-        for table, inner_scope in outer_scope.selected_sources.values():
+        for table, inner_scope in chain(
+            outer_scope.selected_sources.values(), outer_scope.table_argument_sources()
+        ):
             if isinstance(inner_scope, Scope) and inner_scope.is_cte:
                 cte_selections[id(inner_scope)].append(
                     (
@@ -182,7 +184,7 @@ def merge_ctes(
     merged = False
     singular_cte_selections = [v[0] for k, v in cte_selections.items() if len(v) == 1]
     for outer_scope, inner_scope, table in singular_cte_selections:
-        from_or_join = table.find_ancestor(exp.From, exp.Join)
+        from_or_join = table.find_ancestor(exp.From, exp.Join, exp.TableArgument)
         if not isinstance(from_or_join, (exp.From, exp.Join)):
             continue
         alias = table.alias_or_name

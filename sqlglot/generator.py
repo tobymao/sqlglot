@@ -2661,6 +2661,10 @@ class Generator:
 
         return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{joins}{laterals}{ordinality}"
 
+    def tableargument_sql(self, expression: exp.TableArgument) -> str:
+        table = expression.this
+        return f"TABLE {self.maybe_comment(self.table_parts(table), table)}"
+
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)
         alias = self.sql(expression, "alias")
@@ -5472,19 +5476,17 @@ class Generator:
     def opclass_sql(self, expression: exp.Opclass) -> str:
         return f"{self.sql(expression, 'this')} {self.sql(expression, 'expression')}"
 
+    def _table_function_arg(self, arg: exp.Expr | None) -> exp.Expr | str | None:
+        # Previously the built-in TVFs stored named inputs directly as Table nodes.
+        return f"TABLE {self.sql(arg)}" if isinstance(arg, exp.Table) else arg
+
     def _ml_sql(self, expression: exp.Func, name: str) -> str:
-        model = self.sql(expression, "this")
-        model = f"MODEL {model}"
-        expr = expression.expression
-        if expr:
-            expr_sql = self.sql(expression, "expression")
-            expr_sql = f"TABLE {expr_sql}" if isinstance(expr, exp.Table) else expr_sql
-        else:
-            expr_sql = None
-
-        parameters = self.sql(expression, "params_struct") or None
-
-        return self.func(name, model, expr_sql, parameters)
+        return self.func(
+            name,
+            f"MODEL {self.sql(expression, 'this')}",
+            self._table_function_arg(expression.expression),
+            expression.args.get("params_struct"),
+        )
 
     def predict_sql(self, expression: exp.Predict) -> str:
         return self._ml_sql(expression, "PREDICT")
@@ -5515,13 +5517,9 @@ class Generator:
         return self._ml_sql(expression, "FORECAST")
 
     def aiforecast_sql(self, expression: exp.AIForecast) -> str:
-        this_sql = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Table):
-            this_sql = f"TABLE {this_sql}"
-
         return self.func(
             "FORECAST",
-            this_sql,
+            self._table_function_arg(expression.this),
             expression.args.get("data_col"),
             expression.args.get("timestamp_col"),
             expression.args.get("model"),
@@ -5534,32 +5532,20 @@ class Generator:
         )
 
     def featuresattime_sql(self, expression: exp.FeaturesAtTime) -> str:
-        this_sql = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Table):
-            this_sql = f"TABLE {this_sql}"
-
         return self.func(
             "FEATURES_AT_TIME",
-            this_sql,
+            self._table_function_arg(expression.this),
             expression.args.get("time"),
             expression.args.get("num_rows"),
             expression.args.get("ignore_feature_nulls"),
         )
 
     def vectorsearch_sql(self, expression: exp.VectorSearch) -> str:
-        this_sql = self.sql(expression, "this")
-        if isinstance(expression.this, exp.Table):
-            this_sql = f"TABLE {this_sql}"
-
-        query_table = self.sql(expression, "query_table")
-        if isinstance(expression.args["query_table"], exp.Table):
-            query_table = f"TABLE {query_table}"
-
         return self.func(
             "VECTOR_SEARCH",
-            this_sql,
+            self._table_function_arg(expression.this),
             expression.args.get("column_to_search"),
-            query_table,
+            self._table_function_arg(expression.args.get("query_table")),
             expression.args.get("query_column_to_search"),
             expression.args.get("top_k"),
             expression.args.get("distance_type"),
@@ -5966,9 +5952,11 @@ class Generator:
         return f"MASKING POLICY {this}{expressions}"
 
     def gapfill_sql(self, expression: exp.GapFill) -> str:
-        this = self.sql(expression, "this")
-        this = f"TABLE {this}"
-        return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
+        return self.func(
+            "GAP_FILL",
+            self._table_function_arg(expression.this),
+            *[v for k, v in expression.args.items() if k != "this"],
+        )
 
     def scope_resolution(self, rhs: str, scope_name: str) -> str:
         return self.func("SCOPE_RESOLUTION", scope_name or None, rhs)

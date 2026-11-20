@@ -2914,6 +2914,47 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             pretty=True,
         )
 
+    def test_table_argument_sources(self):
+        call = "SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t) AS t"
+        sql = f"WITH t AS (SELECT 1 AS x) {call}"
+        query = parse_one(sql, dialect="bigquery")
+        scope = build_scope(query)
+        self.assertEqual(list(scope.selected_sources), ["t"])
+        self.assertIsInstance(scope.selected_sources["t"][1], exp.Table)
+        self.assertFalse(scope.subquery_scopes)
+        self.assertEqual(scope.ref_count()[id(scope.cte_sources["t"])], 2)
+        self.assertEqual(optimizer.eliminate_ctes.eliminate_ctes(query.copy()), query)
+
+        query = parse_one(
+            f"WITH t AS (SELECT 1 AS x), unused AS ({call}) SELECT 1", dialect="bigquery"
+        )
+        self.assertEqual(optimizer.eliminate_ctes.eliminate_ctes(query), exp.select("1"))
+
+        query = parse_one(
+            "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.DESCRIBE_DATA(TABLE ds.t) AS t",
+            dialect="bigquery",
+        )
+        self.assertFalse(optimizer.eliminate_ctes.eliminate_ctes(query).ctes)
+
+        query = optimizer.optimize(
+            "WITH t AS (SELECT x, y FROM src) "
+            "SELECT t.x, f.name FROM t CROSS JOIN ML.DESCRIBE_DATA(TABLE t) AS f",
+            schema={"src": {"x": "INT", "y": "INT"}},
+            dialect="bigquery",
+        )
+        self.assertEqual(query.ctes[0].this.named_selects, ["x", "y"])
+
+        query = parse_one(
+            "SELECT * FROM (WITH t AS (SELECT 1 AS x) "
+            "SELECT * FROM ML.DESCRIBE_DATA(TABLE t)) AS a CROSS JOIN ML.DESCRIBE_DATA(TABLE t) AS b",
+            dialect="bigquery",
+        )
+        optimizer.eliminate_subqueries.eliminate_subqueries(query)
+        self.assertCountEqual(
+            [arg.sql("bigquery") for arg in query.find_all(exp.TableArgument)],
+            ["TABLE t", "TABLE t_2"],
+        )
+
     def test_journal(self):
         journal = []
 

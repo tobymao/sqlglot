@@ -1479,6 +1479,14 @@ class TestSQLite(Validator):
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) AS INTEGER)"},
         )
         self.validate_all(
+            "CAST((JULIANDAY(a, 'start of day') - JULIANDAY(b, 'start of day')) AS INTEGER)",
+            read={
+                "duckdb": "DATE_DIFF('day', b, a)",
+                "mysql": "DATEDIFF(a, b)",
+                "snowflake": "DATEDIFF(DAY, b, a)",
+            },
+        )
+        self.validate_all(
             "DATEDIFF(a, b, 'hour')",
             write={"sqlite": "CAST((JULIANDAY(a) - JULIANDAY(b)) * 24.0 AS INTEGER)"},
         )
@@ -1497,6 +1505,16 @@ class TestSQLite(Validator):
                 "tsql": "DATEDIFF_BIG(NANOSECOND, b, a)",
             },
         )
+
+    def test_datediff_day_boundary(self):
+        sql = parse_one(
+            "SELECT DATE_DIFF('day', a, b), DATE_DIFF('day', b, a) "
+            "FROM (SELECT TIMESTAMP '2024-03-01 23:59:59' AS a, "
+            "TIMESTAMP '2024-03-02 00:00:00' AS b) AS t",
+            dialect="duckdb",
+        ).sql("sqlite")
+        with closing(sqlite3.connect(":memory:")) as conn:
+            self.assertEqual(conn.execute(sql).fetchone(), (1, -1))
 
     def test_hexadecimal_literal(self):
         for sql, expected in (

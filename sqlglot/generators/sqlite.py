@@ -462,7 +462,14 @@ class SQLiteGenerator(generator.Generator):
         unit = expression.args.get("unit")
         unit = unit.name.upper() if unit else "DAY"
 
-        sql = f"(JULIANDAY({self.sql(expression, 'this')}) - JULIANDAY({self.sql(expression, 'expression')}))"
+        modifier = (
+            exp.Literal.string("start of day")
+            if unit == "DAY" and expression.args.get("date_part_boundary")
+            else None
+        )
+        end = self.func("JULIANDAY", expression.this, modifier)
+        start = self.func("JULIANDAY", expression.expression, modifier)
+        sql = f"({end} - {start})"
 
         if unit == "MONTH":
             sql = f"{sql} / 30.0"

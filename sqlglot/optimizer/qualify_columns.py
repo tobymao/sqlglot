@@ -766,7 +766,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver, expand_alias_refs
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     alias_roots = (
         resolver.select_aliases.difference(scope_sources, semi_or_anti_join_tables)
-        if expand_alias_refs and resolver.dialect.EXPAND_DOTTED_ALIAS_REFS
+        if expand_alias_refs and resolver.dialect.PREFER_PROJECTION_ALIASES_IN_DOT_PATHS
         else None
     )
     if alias_roots:

@@ -2068,13 +2068,7 @@ class Generator:
                     and node.args.get("limit")
                 ):
                     node = node.subquery(copy=False)
-                    if not self.SET_OP_PARENTHESIZED_OPERANDS:
-                        node = exp.select("*").from_(node, copy=False)
-                elif (
-                    not self.SET_OP_PARENTHESIZED_OPERANDS
-                    and isinstance(node, exp.Subquery)
-                    and isinstance(node.unnest(), exp.SetOperation)
-                ):
+                if not self.SET_OP_PARENTHESIZED_OPERANDS and isinstance(node, exp.Subquery):
                     node = exp.select("*").from_(node, copy=False)
                 sqls.append(open_parens + self.indent(self.sql(node), level=depth, pad=0))
                 open_parens = ""

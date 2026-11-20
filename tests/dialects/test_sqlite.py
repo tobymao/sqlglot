@@ -521,6 +521,16 @@ class TestSQLite(Validator):
                 with self.subTest(sql=sql, dialect=dialect):
                     self.assertEqual(expression.sql(dialect), output)
 
+    def test_parenthesized_set_operands(self):
+        self.validate_all(
+            "SELECT * FROM (SELECT DISTINCT a FROM t) EXCEPT SELECT * FROM (SELECT DISTINCT a FROM u)",
+            read={"duckdb": "(SELECT DISTINCT a FROM t) EXCEPT (SELECT DISTINCT a FROM u)"},
+        )
+        self.validate_all(
+            "SELECT 0 UNION ALL SELECT * FROM (SELECT a FROM t ORDER BY a DESC LIMIT 1)",
+            read={"duckdb": "SELECT 0 UNION ALL (SELECT a FROM t ORDER BY a DESC LIMIT 1)"},
+        )
+
     def test_subquery_modifiers(self):
         for source, expected in (
             (

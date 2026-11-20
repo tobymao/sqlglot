@@ -1412,6 +1412,13 @@ SELECT src.payload AS obj FROM src AS src WHERE src.payload.nested."Field Name" 
 SELECT (SELECT 1 AS src WHERE src.x = 2) AS correlated FROM src;
 SELECT (SELECT 1 AS src WHERE src.x = 2) AS correlated FROM src AS src;
 
+# title: ClickHouse resolves the same dotted name independently in a scalar subquery
+# dialect: clickhouse
+# execute: false
+# schema: {"src": {"obj": "JSON"}}
+SELECT '{"x":1}'::JSON AS obj, obj.x AS outer_x, (SELECT obj.x FROM src) AS inner_x;
+SELECT CAST('{"x":1}' AS JSON) AS obj, CAST('{"x":1}' AS JSON).x AS outer_x, (SELECT src.obj.x AS x FROM src AS src) AS inner_x;
+
 # title: noop - reference comes before alias
 # execute: false
 # validate_qualify_columns: false

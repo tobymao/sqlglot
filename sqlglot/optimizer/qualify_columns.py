@@ -91,9 +91,9 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
+        _convert_columns_to_dots(scope, resolver, expand_alias_refs=expand_alias_refs)
+
         if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
-            if dialect.EXPAND_DOTTED_ALIAS_REFS:
-                _separate_alias_fields(scope, resolver)
             _expand_alias_refs(
                 scope,
                 resolver,
@@ -101,7 +101,6 @@ def qualify_columns(
                 expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
             )
 
-        _convert_columns_to_dots(scope, resolver)
         _qualify_columns(
             scope,
             resolver,
@@ -366,36 +365,6 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
                 scope.replace(column, replacement)
 
     return column_tables, using_columns
-
-
-def _separate_alias_fields(scope: Scope, resolver: Resolver) -> None:
-    # Expose the alias in alias.field to the same expansion rules as a bare alias.
-    aliases = resolver.select_aliases.difference(name for name, _ in scope.references)
-    if not aliases:
-        return
-
-    for outer in resolver.outer_resolvers():
-        aliases.difference_update(outer.scope.selected_sources)
-
-    for column in scope.find_all(exp.Column):
-        if not column.table or column.is_star:
-            continue
-
-        root, *fields = column.parts
-        if root.name not in aliases:
-            continue
-
-        path: exp.Expr = column
-        while isinstance(path.parent, exp.Dot) and isinstance(
-            path.parent.expression, exp.Identifier
-        ):
-            path = path.parent
-            fields.append(path.expression)
-
-        dot = exp.Dot.build([exp.column(root, copy=False), *fields])
-        if len(fields) > 1:
-            dot.set("subcolumn_depth", len(fields))
-        scope.replace(path, dot)
 
 
 def _expand_alias_refs(
@@ -785,7 +754,7 @@ def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
+def _convert_columns_to_dots(scope: Scope, resolver: Resolver, expand_alias_refs: bool) -> None:
     """
     Converts `Column` instances that represent STRUCT or JSON field lookup into chained `Dots`.
 
@@ -795,6 +764,15 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
     converted = False
     scope_sources = scope.selected_sources
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
+    alias_roots = (
+        resolver.select_aliases.difference(scope_sources, semi_or_anti_join_tables)
+        if expand_alias_refs and resolver.dialect.EXPAND_DOTTED_ALIAS_REFS
+        else None
+    )
+    if alias_roots:
+        for outer in resolver.outer_resolvers():
+            alias_roots.difference_update(outer.scope.selected_sources)
+
     join_columns: dict[str, set[str]] = {}
     for column in itertools.chain(scope.columns, scope.stars):
         if isinstance(column, exp.Dot):
@@ -803,6 +781,29 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver) -> None:
         column_table: str | exp.Identifier | None = column.table
         is_star = isinstance(column.this, exp.Star)
         dot_parts = column.meta.pop("dot_parts", [])
+        if (
+            alias_roots
+            and column_table
+            and not is_star
+            and (column.catalog or column.db or column_table) in alias_roots
+            # scope.columns includes correlated references from child scopes.
+            and id(column) in scope.column_index
+        ):
+            # Leave the root unqualified so alias expansion can resolve it.
+            alias_root, *fields = column.parts
+            path: exp.Expr = column
+            while isinstance(path.parent, exp.Dot) and isinstance(
+                path.parent.expression, exp.Identifier
+            ):
+                path = path.parent
+                fields.append(path.expression)
+            dot = exp.Dot.build([exp.column(alias_root, copy=False), *fields])
+            if len(fields) > 1:
+                dot.set("subcolumn_depth", len(fields))
+            path.replace(dot)
+            converted = True
+            continue
+
         root_resolver: Resolver | None = None
         if semi_or_anti_join_tables and column_table:
             root = column.args.get("catalog") or column.args.get("db")

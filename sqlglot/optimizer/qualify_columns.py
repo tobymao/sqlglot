@@ -9,6 +9,7 @@ from sqlglot import alias, exp
 from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
 from sqlglot.optimizer.annotate_types import TypeAnnotator
+from sqlglot.optimizer.helpers import is_implicit_group_by_all
 from sqlglot.optimizer.resolver import Resolver
 from sqlglot.optimizer.scope import (
     Scope,
@@ -382,6 +383,7 @@ def _expand_alias_refs(
 
     alias_to_expression: dict[str, tuple[exp.Expr, int]] = {}
     grouped_columns: set[tuple[str, str]] = set()
+    group_by_all_has_star = False
     projections = {s.alias_or_name for s in expression.selects}
     replaced = False
 
@@ -441,6 +443,9 @@ def _expand_alias_refs(
                     isinstance(column.find_ancestor(exp.AggFunc, exp.Having), exp.AggFunc)
                     or (table.name, column.name) in grouped_columns
                 )
+                # An unexpanded star may group this input. Let the engine resolve the collision.
+                if group_by_all_has_star and alias_expr and not prefer_column:
+                    continue
 
             if table and (not alias_expr or skip_replace or prefer_column):
                 column.set("table", table)
@@ -520,6 +525,15 @@ def _expand_alias_refs(
                     grouping = expression.selects[index].unalias().unnest()
             if isinstance(grouping, exp.Column):
                 grouped_columns.add((grouping.table, grouping.name))
+
+        min_version = dialect.GROUP_BY_ALL_HAVING_MIN_VERSION
+        if min_version and dialect.version >= min_version and is_implicit_group_by_all(expression):
+            for projection in expression.selects:
+                grouping = projection.unalias().unnest()
+                if isinstance(grouping, (exp.Star, exp.Column, exp.Dot)) and grouping.is_star:
+                    group_by_all_has_star = True
+                elif isinstance(grouping, exp.Column):
+                    grouped_columns.add((grouping.table, grouping.name))
 
     replace_columns(expression.args.get("having"), resolve_table=True)
     replace_columns(expression.args.get("qualify"), resolve_table=True)

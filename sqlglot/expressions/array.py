@@ -400,8 +400,8 @@ class StPoint(Expression, Func):
 
 
 class StX(Expression, Func):
-    pass
+    arg_types = {"this": True, "expression": False}
 
 
 class StY(Expression, Func):
-    pass
+    arg_types = {"this": True, "expression": False}

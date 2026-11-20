@@ -33,6 +33,11 @@ class Presto(Dialect):
     LEAST_GREATEST_IGNORES_NULLS = False
     UUID_IS_STRING_TYPE = False
     ARRAY_REMOVE_PROPAGATES_NULLS = True
+    INT_LITERAL_TYPES = (
+        (2147483647, exp.DType.INT),
+        (9223372036854775807, exp.DType.BIGINT),
+        (None, exp.DType.BIGINT),
+    )
 
     TIME_MAPPING = MySQL.TIME_MAPPING
 

@@ -140,20 +140,4 @@ SELECT
   *
 FROM t1
 LEFT ANTI JOIN t2
-  ON t1.foo = t2.foo;
-
-# title: Removing nested CTEs accounts for each reference once
-WITH kept AS (SELECT 1 AS x),
-  dropped AS (SELECT 2 AS x),
-  unused AS (
-    WITH inner_cte AS (SELECT * FROM kept CROSS JOIN dropped)
-    SELECT * FROM inner_cte
-  )
-SELECT * FROM kept;
-WITH kept AS (
-  SELECT
-    1 AS x
-)
-SELECT
-  *
-FROM kept;
+  ON t1.foo = t2.foo

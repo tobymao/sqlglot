@@ -64,6 +64,10 @@ def eliminate_subqueries(expression: E) -> E:
             }
         )
 
+        for table, source in scope.table_argument_sources():
+            if source is table and not table.db:
+                taken[table.name] = table
+
     # Map of Expr->alias
     # Existing CTES in the root expression. We'll use this for deduplication.
     existing_ctes: ExistingCTEsMapping = {}
@@ -171,6 +175,9 @@ def _eliminate_cte(
     if not scope.parent:
         return cte
     for child_scope in scope.parent.traverse():
+        for arg, source in child_scope.table_argument_sources():
+            if source is scope:
+                arg.set("this", exp.to_identifier(name))
         for table, source in child_scope.selected_sources.values():
             if source is scope:
                 new_table = exp.alias_(exp.table_(name), alias=table.alias_or_name, copy=False)

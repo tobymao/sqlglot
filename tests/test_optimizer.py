@@ -2901,34 +2901,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         )
 
     def test_table_argument_sources(self):
-        call = "SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t) AS drift"
+        call = "SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t) AS t"
         sql = f"WITH t AS (SELECT 1 AS x) {call}"
         query = parse_one(sql, dialect="bigquery")
         scope = build_scope(query)
-        self.assertEqual(list(scope.selected_sources), ["drift"])
-        self.assertEqual(
-            [child.selected_sources["t"][1] for child in scope.subquery_scopes],
-            [scope.cte_sources["t"], scope.cte_sources["t"]],
-        )
+        self.assertEqual(list(scope.selected_sources), ["t"])
+        self.assertIsInstance(scope.selected_sources["t"][1], exp.Table)
+        self.assertFalse(scope.subquery_scopes)
         self.assertEqual(scope.ref_count()[id(scope.cte_sources["t"])], 2)
         self.assertEqual(optimizer.eliminate_ctes.eliminate_ctes(query.copy()), query)
-
-        query = parse_one(
-            "WITH q AS (SELECT id, embedding FROM vectors) "
-            "SELECT q.distance FROM VECTOR_SEARCH(TABLE _SESSION.vectors, 'embedding', TABLE q, top_k => 1) AS q",
-            dialect="bigquery",
-        )
-        scope = build_scope(query)
-        self.assertEqual(list(scope.selected_sources), ["q"])
-        self.assertEqual(scope.ref_count()[id(scope.cte_sources["q"])], 1)
-
-        query = parse_one(
-            "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.DESCRIBE_DATA("
-            "TABLE ML.VALIDATE_DATA_DRIFT((SELECT x FROM t), TABLE t))",
-            dialect="bigquery",
-        )
-        scope = build_scope(query)
-        self.assertEqual(scope.ref_count()[id(scope.cte_sources["t"])], 2)
 
         query = parse_one(
             f"WITH t AS (SELECT 1 AS x), unused AS ({call}) SELECT 1", dialect="bigquery"

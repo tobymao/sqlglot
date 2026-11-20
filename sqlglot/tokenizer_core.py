@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 from enum import IntEnum, auto
 
@@ -11,6 +12,10 @@ _CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 _DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
 _DIGIT_VALUES: dict[str, int] = {c: int(c, 16) for c in "0123456789abcdefABCDEF"}
 _OCTAL_CHARS: frozenset[str] = frozenset("01234567")
+# PostgreSQL continues a quoted string across a newline, including after a line comment.
+_QUOTE_CONTINUATION = re.compile(
+    r"[ \t\f\v]*(?:--[^\r\n]*)?[\r\n](?:[ \t\f\v\r\n]|--[^\r\n]*[\r\n])*'"
+)
 
 
 class TokenType(IntEnum):
@@ -118,7 +123,7 @@ class TokenType(IntEnum):
     HEREDOC_STRING = auto()
     UNICODE_STRING = auto()
     UNICODE_IDENTIFIER = auto()
-    UESCAPE = auto()  # The keyword and literal of a decoded Unicode identifier's escape clause
+    UESCAPE = auto()  # The keyword and literal fragments of a decoded identifier's escape clause
 
     # types
     BIT = auto()
@@ -744,6 +749,12 @@ class TokenizerCore:
                         end=keyword.end + 1,
                     )
                 escape = literal.text
+                last = literal
+                j = i + 3
+                while j < len(tokens) and tokens[j].token_type == TokenType.UESCAPE:
+                    last = tokens[j]
+                    escape += last.text
+                    j += 1
                 if (
                     len(escape) != 1
                     or not escape.isascii()
@@ -751,7 +762,7 @@ class TokenizerCore:
                     or escape in "+'\" \t\n\r\v\f\0"
                 ):
                     raise TokenError(
-                        "Invalid Unicode escape character", start=literal.start, end=literal.end + 1
+                        "Invalid Unicode escape character", start=literal.start, end=last.end + 1
                     )
                 keyword.token_type = literal.token_type = TokenType.UESCAPE
 
@@ -1234,6 +1245,25 @@ class TokenizerCore:
                 )
 
         self._add(token_type, text)
+        if (
+            self._has_unicode_identifiers
+            and token_type in (TokenType.STRING, TokenType.BYTE_STRING)
+            and len(self.tokens) >= 3
+            and self.tokens[-3].token_type == TokenType.UNICODE_IDENTIFIER
+            and self.tokens[-2].token_type == TokenType.VAR
+            and self.tokens[-2].text.upper() == "UESCAPE"
+        ):
+            # Bare continuations inherit the first literal's rules, including E-string escapes.
+            while match := _QUOTE_CONTINUATION.match(self.sql, self._current):
+                while self._current < match.end():
+                    self._advance()
+                    if self._char == "-":
+                        self._start = self._current - 1
+                        self._scan_comment("--")
+
+                self._start = self._current - 1
+                self._advance()
+                self._add(TokenType.UESCAPE, self._extract_string("'", escapes=escapes))
         return True
 
     def _scan_identifier(self, identifier_end: str) -> None:

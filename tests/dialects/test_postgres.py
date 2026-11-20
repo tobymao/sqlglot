@@ -2256,6 +2256,32 @@ FROM json_data, field_ids""",
             with self.subTest(identifier=identifier), self.assertRaises(TokenError):
                 self.parse_one(f"SELECT 1 AS {identifier}")
 
+    def test_unicode_identifier_continued_uescape(self):
+        prefix = 'SELECT 1 AS U&"x!0061" UESCAPE '
+        for literal in ("''\n'!'", "'!'\r\n''", "E''\n''\n'\\x21'"):
+            with self.subTest(literal=literal):
+                self.validate_identity(prefix + literal, 'SELECT 1 AS "xa"')
+
+        sql = prefix + "'' -- first\n'!' -- last\n''"
+        projection = self.parse_one(sql).selects[0]
+        alias = projection.args["alias"]
+        self.assertEqual(alias.name, "xa")
+        self.assertEqual(projection.comments, [" first", " last"])
+        self.assertEqual(
+            sql[alias.meta["start"] : alias.meta["end"] + 1], sql[len("SELECT 1 AS ") :]
+        )
+
+        for literal in (
+            "'!'\n'?'",
+            "''\n''",
+            "'' '!'",
+            "'' /* gap */\n'!'",
+            "$$$$\n'!'",
+            "''\nE'!'",
+        ):
+            with self.subTest(literal=literal), self.assertRaises(TokenError):
+                self.parse_one(prefix + literal)
+
     def test_unicode_string(self):
         self.validate_identity("SELECT u & 5 FROM t")
         self.validate_identity("SELECT (U&'\\FE01' || 'Test literal') AS label FROM data")

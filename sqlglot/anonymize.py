@@ -153,6 +153,7 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
 
     result = []
     prev = 0
+    uescape_alias = ""
 
     for i, token in enumerate(tokens):
         result.append(_redact(sql[prev : token.start], comments, nested))
@@ -162,68 +163,20 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
             # Blanked in place by `anonymize`, or synthesized by it, so already span-shaped
             result.append(token.text)
         elif token.token_type in ANONYMIZED_TYPES:
-            if token.token_type == TokenType.IDENTIFIER and span.startswith(('U&"', 'u&"')):
-                escape = "\\"
-                if i + 2 < len(tokens) and tokens[i + 1].token_type == TokenType.UESCAPE:
-                    escape = tokens[i + 2].text
-                result.append(_fit_unicode_identifier(span, token.text, escape))
-            else:
-                result.append(_fit(span, token.text, quotes, token.token_type))
-        elif (
-            token.token_type == TokenType.UESCAPE
-            and len(token.text) == 1
-            and i >= 2
-            and token.text in tokens[i - 2].text
-        ):
-            # The identifier's alias contains its escape character. Use ! for this clause
-            # so the alias still reads back literally, including at its other references.
-            result.append(_replace_uescape(span, token.text))
+            result.append(_fit(span, token.text, quotes, token.token_type))
+        elif token.token_type == TokenType.UESCAPE:
+            if token.text.upper() == "UESCAPE":
+                uescape_alias = tokens[i - 1].text
+            elif token.text and token.text in uescape_alias:
+                # Keep the alias literal when it contains the clause's escape character.
+                span = "'!'".ljust(len(span))
+            result.append(span)
         else:
             result.append(span)
 
     result.append(_redact(sql[prev:], comments, nested))
 
     return "".join(result)
-
-
-def _fit_unicode_identifier(span: str, alias: str, escape: str) -> str:
-    if len(span) == len(alias) + 4:
-        return span[:3] + alias + '"'
-
-    # Use the source spelling of each character so an escaped and a plain reference
-    # still decode to the same alias. _replace_uescape handles a colliding escape.
-    prefix = "!" if escape in alias else escape
-    parts = [span[:3]]
-    pos = 3
-    for char in alias:
-        if span[pos] == escape and span[pos + 1] != escape:
-            extended = span[pos + 1] == "+"
-            width = 6 if extended else 4
-            pos += 8 if extended else 5
-            if 0xD800 <= int(span[pos - width : pos], 16) <= 0xDBFF:
-                # A surrogate pair encodes one character; use a single long escape for it.
-                pos += 8 if span[pos + 1] == "+" else 5
-                extended = True
-            parts.append(f"{prefix}+{ord(char):06X}" if extended else f"{prefix}{ord(char):04X}")
-        else:
-            pos += 2 if span[pos] in (escape, '"') else 1
-            parts.append(char)
-
-    # Doubled quotes, doubled escapes and surrogate pairs can leave unused source width.
-    return ("".join(parts) + '"').ljust(len(span))
-
-
-def _replace_uescape(span: str, escape: str) -> str:
-    if span.startswith("$"):
-        # Dollar quotes have identical delimiters on either side of the single character.
-        middle = len(span) // 2
-        return span[:middle] + "!" + span[middle + 1 :]
-    if span[-2] == escape:
-        return span[:-2] + "!'"
-    # In an E string, preserve the base and width of the numeric escape.
-    start, digits = (4, "21") if span[3] in "xuU" else (3, "41")
-    width = len(span) - start - 1
-    return span[:start] + (digits.zfill(width) if width > 1 else "1") + "'"
 
 
 def _alias(counter: int, text: str) -> str:

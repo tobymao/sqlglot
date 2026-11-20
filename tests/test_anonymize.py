@@ -410,7 +410,7 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ),
             (
                 """SELECT u&"s!0065cr""et" /* private */ uEsCaPe -- private\n E'\\041', x""",
-                """SELECT u&"a!0061aaaaa"  /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
+                """SELECT u&"aaaaaaa"      /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
             ),
             (
                 """SELECT a, b, c, d, e, f, U&"secret" UESCAPE 'g', secret""",
@@ -418,11 +418,11 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ),
             (
                 """SELECT a, b, c, d, e, f, U&"sg0065cret" UESCAPE 'g', secret""",
-                """SELECT a, b, c, d, e, f, U&"a!0061aaag" UESCAPE '!', aaaaag""",
+                """SELECT a, b, c, d, e, f, U&"aaaaag"     UESCAPE '!', aaaaag""",
             ),
             (
                 r"""SELECT U&"\0062ases" u&"!0078" UESCAPE '!' FROM (VALUES (1)) AS t(bases)""",
-                r"""SELECT U&"\0061aaaa" u&"!0062" UESCAPE '!' FROM (VALUES (3)) AS d(aaaaa)""",
+                """SELECT U&"aaaaa"     u&"b"     UESCAPE '!' FROM (VALUES (3)) AS d(aaaaa)""",
             ),
         ]
         for sql, expected in cases:
@@ -430,9 +430,11 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
                 self.assertEqual(render(sql, anonymize(sql, "postgres"), "postgres"), expected)
 
         for literal, masked in [
-            ("$tag$g$tag$", "$tag$!$tag$"),
-            (r"E'\147'", r"E'\041'"),
-            (r"E'\u0067'", r"E'\u0021'"),
+            ("$tag$g$tag$", "'!'".ljust(11)),
+            (r"E'\147'", "'!'".ljust(7)),
+            (r"E'\u0067'", "'!'".ljust(9)),
+            ("'' -- private\n'g'\n''", "'' -- .......\n'!'\n''"),
+            ("E''\r\n'\\x67'", "E''\r\n'!'   "),
         ]:
             sql = f"""SELECT a, b, c, d, e, f, U&"secret" UESCAPE {literal}"""
             self.assertEqual(
@@ -442,9 +444,9 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
 
     def test_unicode_identifier_references(self):
         cases = [
-            (r'U&"\0062ases"', "bases", r'U&"\0061aaaa"', "aaaaa"),
-            (r'U&"\+000062ases"', "bases", r'U&"\+000061aaaa"', "aaaaa"),
-            (r'U&"\D83D\DE00"', '"😀"', r'U&"\+000061"  ', '"a"'),
+            (r'U&"\0062ases"', "bases", 'U&"aaaaa"    ', "aaaaa"),
+            (r'U&"\+000062ases"', "bases", 'U&"aaaaa"       ', "aaaaa"),
+            (r'U&"\D83D\DE00"', '"😀"', 'U&"a"         ', '"a"'),
             ("""u&"a!!b" UESCAPE '!'""", '"a!b"', """u&"aaa"  UESCAPE '!'""", '"aaa"'),
             ('U&"a""b"', '"a""b"', 'U&"aaa" ', '"aaa" '),
         ]

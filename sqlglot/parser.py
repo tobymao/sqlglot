@@ -2345,7 +2345,8 @@ class Parser:
         total = len(raw_tokens)
         chunks: list[list[Token]] = [[]]
 
-        for i, token in enumerate(raw_tokens):
+        indexed_tokens = enumerate(raw_tokens)
+        for i, token in indexed_tokens:
             if token.token_type == TokenType.SEMICOLON:
                 if token.comments:
                     chunks.append([token])
@@ -2356,6 +2357,10 @@ class Parser:
                 # The lexer keeps the clause's source spans for rendering. The parser needs
                 # one identifier covering the full clause, including its comments.
                 identifier = chunks[-1][-1]
+                comments = identifier.comments + token.comments
+                while i + 1 < total and raw_tokens[i + 1].token_type == TokenType.UESCAPE:
+                    i, token = next(indexed_tokens)
+                    comments.extend(token.comments)
                 chunks[-1][-1] = Token(
                     TokenType.IDENTIFIER,
                     identifier.text,
@@ -2363,7 +2368,7 @@ class Parser:
                     col=token.col,
                     start=identifier.start,
                     end=token.end,
-                    comments=identifier.comments + token.comments,
+                    comments=comments,
                 )
             else:
                 chunks[-1].append(token)

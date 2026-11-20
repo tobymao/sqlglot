@@ -19,6 +19,7 @@ from sqlglot.helper import seq_get
 
 
 class RedshiftGenerator(PostgresGenerator):
+    DATE_PART_WITH_EXPRESSION = "PGDATE_PART"
     LOCKING_READS_SUPPORTED = False
     QUERY_HINTS = False
     CAST_TO_INT_ROUNDS = True

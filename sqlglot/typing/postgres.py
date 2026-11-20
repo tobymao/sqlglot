@@ -9,6 +9,15 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
+def _annotate_extract(self: TypeAnnotator, expression: exp.Extract) -> exp.Expr:
+    # PostgreSQL 14 changed EXTRACT's return type from double precision to numeric.
+    if expression.args.get("date_part") or (
+        self.dialect.version < (14,) and self.dialect == "postgres"
+    ):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    return self._set_type(expression, exp.DType.DECIMAL)
+
+
 def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     if expression.this.is_type(exp.DType.FLOAT):
         return self._set_type(expression, exp.DType.DOUBLE)
@@ -93,6 +102,7 @@ EXPRESSION_METADATA = {
             exp.BitwiseXorAgg,
         }
     },
+    exp.Extract: {"annotator": _annotate_extract},
     exp.ToNumber: {"returns": exp.DType.DECIMAL},
     exp.Add: {"annotator": _annotate_add_sub},
     exp.Sub: {"annotator": _annotate_add_sub},

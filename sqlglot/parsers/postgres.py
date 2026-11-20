@@ -201,7 +201,7 @@ class PostgresParser(parser.Parser):
 
     FUNCTION_PARSERS = {
         **parser.Parser.FUNCTION_PARSERS,
-        "DATE_PART": lambda self: self._parse_date_part(),
+        "DATE_PART": lambda self: self._parse_date_part(self._parse_assignment()),
         "JSON_AGG": lambda self: self.expression(
             exp.JSONArrayAgg(this=self._parse_lambda(), order=self._parse_order())
         ),
@@ -363,15 +363,14 @@ class PostgresParser(parser.Parser):
         self._match_text_seq("S")
         return self.expression(exp.Placeholder(this=this))
 
-    def _parse_date_part(self) -> exp.Expr:
-        part = self._parse_type()
+    def _parse_date_part(self, part: exp.Expr | None) -> exp.Extract:
         self._match(TokenType.COMMA)
-        value = self._parse_bitwise()
-
-        if part and isinstance(part, (exp.Column, exp.Literal)):
+        if part and part.is_string and exp.SAFE_IDENTIFIER_RE.fullmatch(part.name):
             part = exp.var(part.name.upper())
 
-        return self.expression(exp.Extract(this=part, expression=value))
+        return self.expression(
+            exp.Extract(this=part, expression=self._parse_assignment(), date_part=True)
+        )
 
     def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:
         args = self._parse_csv(self._parse_assignment)

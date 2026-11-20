@@ -2321,7 +2321,7 @@ class Parser:
                 return expressions
 
             if expressions and not self._next and self._match(TokenType.END):
-                expressions.append(exp.EndStatement())
+                expressions.append(self._parse_batch_end())
                 continue
 
             expressions.append(parse_method(self))
@@ -2332,6 +2332,9 @@ class Parser:
             self.check_errors()
 
         return expressions
+
+    def _parse_batch_end(self) -> exp.Expr:
+        return exp.EndStatement()
 
     def _parse(
         self,

@@ -163,6 +163,39 @@ class SQLiteParser(parser.Parser):
         TokenType.MATCH: binary_range_parser(exp.Match),
     }
 
+    def _parse_statement(self) -> exp.Expr | None:
+        if (not self._next and self._match(TokenType.END)) or (
+            self._tokens_size - self._index == 2 and self._match_text_seq("END", "TRANSACTION")
+        ):
+            return self.expression(exp.Commit())
+        return super()._parse_statement()
+
+    def _parse_batch_end(self) -> exp.Expr:
+        # A trigger body can span several semicolon-delimited statements before its END.
+        for i in range(self._chunk_index - 2, -1, -1):
+            chunk = self._chunks[i]
+            if not chunk:
+                continue
+            if chunk[0].token_type == TokenType.END:
+                break
+
+            if (
+                len(chunk) > 1
+                and chunk[0].token_type == TokenType.COMMAND
+                and chunk[0].text.upper() == "EXPLAIN"
+            ):
+                # The tokenizer keeps the rest of an EXPLAIN command in a single string.
+                chunk = self.dialect.tokenize(chunk[1].text)
+                if chunk and chunk[0].text.upper() == "QUERY":
+                    chunk = chunk[2:]  # QUERY PLAN
+
+            if len(chunk) >= 2 and chunk[0].token_type == TokenType.CREATE:
+                kind = seq_get(chunk, 2) if chunk[1].token_type == TokenType.TEMPORARY else chunk[1]
+                if kind and kind.token_type == TokenType.TRIGGER:
+                    return super()._parse_batch_end()
+
+        return self.expression(exp.Commit())
+
     def _parse_is(self, this: exp.Expr | None) -> exp.Expr | None:
         """SQLite's IS / IS NOT is a null-safe equality against any expression.
 

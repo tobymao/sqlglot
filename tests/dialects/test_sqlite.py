@@ -6,6 +6,7 @@ from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.parser import logger as parser_logger
 from tests.dialects.test_dialect import Validator
 
 
@@ -1827,6 +1828,15 @@ class TestSQLite(Validator):
         self.validate_identity("REINDEX schma.idx", check_command_warning=True)
         self.validate_identity("SELECT reindex FROM t")
 
+    def test_end_transaction(self):
+        for sql in ("END", "END TRANSACTION"):
+            with self.subTest(sql=sql):
+                self.assertIsInstance(self.validate_identity(sql, "COMMIT"), exp.Commit)
+                block = self.validate_identity(f"BEGIN; {sql}", "BEGIN TRANSACTION; COMMIT")
+                self.assertIsInstance(block.expressions[-1], exp.Commit)
+
+        self.validate_identity("end + 1")
+
     def test_create_trigger(self):
         """Test that SQLite CREATE TRIGGER statements fall back to Command parsing."""
         self.validate_identity(
@@ -1843,6 +1853,16 @@ class TestSQLite(Validator):
             "CREATE TRIGGER view_insert INSTEAD OF INSERT ON employee_view BEGIN INSERT INTO employees (id, name, department) VALUES (NEW.id, NEW.name, NEW.department) END",
             check_command_warning=True,
         )
+
+        for prefix in ("", "EXPLAIN QUERY PLAN "):
+            trigger = (
+                f"{prefix}CREATE TEMP TRIGGER tr AFTER INSERT ON t BEGIN "
+                "SELECT CASE WHEN NEW.x THEN 1 END; SELECT 2; END"
+            )
+            with self.subTest(prefix=prefix), self.assertLogs(parser_logger):
+                self.validate_identity(
+                    f"BEGIN; {trigger}; END", f"BEGIN TRANSACTION; {trigger}; COMMIT"
+                )
 
     def test_is_operator_null_safe_comparison(self):
         # issue #8855: SQLite's IS / IS NOT is a null-safe equality against any

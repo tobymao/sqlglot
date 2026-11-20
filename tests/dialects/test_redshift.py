@@ -407,6 +407,16 @@ class TestRedshift(Validator):
         self.validate_identity("SELECT VERSION()")
         self.validate_identity("SELECT TEXTLEN('hello world')", "SELECT LENGTH('hello world')")
 
+    def test_quoted_date_part(self):
+        self.validate_identity(
+            """SELECT "date_part"('year'::text, CURRENT_DATE)""",
+            "SELECT PGDATE_PART(CAST('year' AS VARCHAR(MAX)), CURRENT_DATE)",
+        )
+        self.validate_identity(
+            """SELECT "date_part"(year, CURRENT_DATE) FROM (SELECT 'day' AS year) AS t""",
+            "SELECT PGDATE_PART(year, CURRENT_DATE) FROM (SELECT 'day' AS year) AS t",
+        )
+
     def test_date_part_column(self):
         postgres = "SELECT DATE_PART(part, CURRENT_DATE) FROM (SELECT 'year' AS part) AS t"
         self.validate_all(

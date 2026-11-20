@@ -794,6 +794,9 @@ class Dialect(metaclass=_Dialect):
     table NULLs differently in this context.
     """
 
+    FOLD_MIXED_TEMPORAL_COMPARISONS = True
+    """Whether to compare literals of different temporal types as datetimes during simplification."""
+
     HAS_DISTINCT_ARRAY_CONSTRUCTORS = False
     """
     Whether the ARRAY constructor is context-sensitive, i.e in Redshift ARRAY[1, 2, 3] != ARRAY(1, 2, 3)

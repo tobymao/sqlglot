@@ -4,7 +4,7 @@
 SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine written in pure Python. It supports 31+ SQL dialects and can transpile between them while preserving semantics. The codebase is performance-critical despite being pure Python, with an optional mypyc-compiled C extension for speed improvements (`sqlglotc/`).
 
 ## Development Commands
-Before contributing read CONTRIBUTING.md
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before contributing. Only maintainers submit pull requests. External contributors can report bugs and request features through GitHub issues.
 
 ### Installation
 ```bash

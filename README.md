@@ -10,7 +10,9 @@ SQLGlot can detect a variety of [syntax errors](#parser-errors), such as unbalan
 
 Learn more about SQLGlot in the API [documentation](https://sqlglot.com/) and the expression tree [primer](https://github.com/tobymao/sqlglot/blob/main/posts/ast_primer.md).
 
-Contributions are very welcome in SQLGlot; read the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) and the [onboarding document](https://github.com/tobymao/sqlglot/blob/main/posts/onboarding.md) to get started!
+SQLGlot now accepts pull requests only from maintainers. Reviewing the growing volume of LLM-generated pull requests was taking time away from fixing bugs and improving SQLGlot.
+
+You can still contribute by [opening an issue](https://github.com/tobymao/sqlglot/issues/new/choose) to report a bug or request a feature. The core team decides which issues to take on and which to close as "not planned" based on project priorities. See the [contribution guide](https://github.com/tobymao/sqlglot/blob/main/CONTRIBUTING.md) for help writing a report.
 
 ## Table of Contents
 
@@ -283,7 +285,7 @@ sqlglot.errors.UnsupportedError: Argument 'accuracy' is not supported for expres
 
 Some queries need additional information to be transpiled accurately, such as the schemas of the referenced tables. This is because certain transformations are type-sensitive and depend on type inference. The `qualify` and `annotate_types` optimizer [rules](https://github.com/tobymao/sqlglot/tree/main/sqlglot/optimizer) can provide this information, but they are not used by default because they add overhead and complexity.
 
-Transpilation is a hard problem, so SQLGlot solves it incrementally. Some dialect pairs may lack support for certain inputs, but coverage improves over time. We highly appreciate well-documented and tested issues or PRs, so feel free to [reach out](#get-in-touch) if you need guidance!
+Transpilation is a hard problem, so SQLGlot solves it incrementally. Some dialect pairs may lack support for certain inputs, but coverage improves over time. If a translation is incorrect, please [open an issue](https://github.com/tobymao/sqlglot/issues/new/choose) with the input SQL, the source and target dialects, and the output you expected.
 
 ### Build and Modify SQL
 
@@ -638,7 +640,7 @@ Without dateutil, the optimizer leaves this arithmetic unevaluated.
 
 **Official Dialects** are maintained by the core SQLGlot team with higher priority for bug fixes and feature additions.
 
-**Community Dialects** are developed and maintained primarily through community contributions. These are fully functional but may receive lower priority for issue resolution compared to officially supported dialects. We welcome and encourage community contributions to improve these dialects.
+**Community Dialects** grew out of community contributions. These are fully functional but may receive lower priority for issue resolution compared to officially supported dialects. We welcome bug reports and feature requests for these dialects.
 
 **Plugin Dialects** (supported since v28.6.0) are third-party dialects developed and maintained in external repositories by independent contributors. These dialects are not part of the SQLGlot codebase and are distributed as separate packages. The SQLGlot team does not provide support or maintenance for plugin dialects — please direct any issues or feature requests to their respective repositories. See [Creating a Dialect Plugin](#creating-a-dialect-plugin) below for information on how to build your own.
 

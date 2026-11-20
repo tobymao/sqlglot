@@ -53,17 +53,17 @@ def _annotate_datetime_or_timestamp_add(
 ) -> exp.Expr:
     """Annotate DATETIME_ADD / DATETIME_SUB / TIMESTAMP_ADD / TIMESTAMP_SUB.
 
-    Whichever of them is called, BigQuery returns a TIMESTAMP for a TIMESTAMP and a DATETIME
-    for a DATE or DATETIME. Any other argument, e.g. a string literal, gets the function's own type.
+    BigQuery TIMESTAMP inputs return TIMESTAMP (SQLGlot TIMESTAMPTZ). DATE and DATETIME
+    inputs return DATETIME (SQLGlot TIMESTAMP). A string literal gets the function's own type.
     """
     this = expression.this
     if this.is_type(exp.DType.TIMESTAMPTZ):
         return self._set_type(expression, exp.DType.TIMESTAMPTZ)
     if this.is_type(exp.DType.DATE, exp.DType.DATETIME, exp.DType.TIMESTAMP):
-        return self._set_type(expression, exp.DType.DATETIME)
+        return self._set_type(expression, exp.DType.TIMESTAMP)
     if isinstance(expression, (exp.TimestampAdd, exp.TimestampSub)):
         return self._set_type(expression, exp.DType.TIMESTAMPTZ)
-    return self._set_type(expression, exp.DType.DATETIME)
+    return self._set_type(expression, exp.DType.TIMESTAMP)
 
 
 def _annotate_int_pair_as_double(

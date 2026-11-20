@@ -84,16 +84,28 @@ def _generated_to_auto_increment(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _is_sqlite_aggregate(func: exp.AggFunc) -> bool:
+    # SQLite's MIN and MAX are scalar when called with multiple arguments.
+    return not isinstance(func, (exp.Min, exp.Max)) or (
+        not func.expressions and func.args.get("count") is None
+    )
+
+
 def _has_aggregate_projection(select: exp.Select) -> bool:
     # SQLite requires a projected aggregate outside any window to allow ungrouped HAVING.
     if select.args.get("having"):
         return any(
-            isinstance(node, exp.AggFunc)
+            isinstance(node, exp.AggFunc) and _is_sqlite_aggregate(node)
             for projection in select.selects
             for node in projection.walk(prune=lambda n: isinstance(n, (exp.Query, exp.Window)))
         )
 
-    return any(projection_has_aggregate(p, select.args.get("windows")) for p in select.selects)
+    return any(
+        projection_has_aggregate(
+            p, select.args.get("windows"), aggregate_filter=_is_sqlite_aggregate
+        )
+        for p in select.selects
+    )
 
 
 class SQLiteGenerator(generator.Generator):

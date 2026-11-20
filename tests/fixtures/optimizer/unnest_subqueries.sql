@@ -541,3 +541,11 @@ SELECT 1 + _u_0.n AS n FROM x CROSS JOIN (SELECT COUNT(*) AS n FROM y) AS _u_0 W
 # execute: true
 SELECT * FROM x WHERE EXISTS (SELECT y.b AS b FROM y WHERE y.b = x.a AND x.b IS NULL);
 SELECT * FROM x WHERE EXISTS(SELECT y.b AS b FROM y WHERE y.b = x.a AND x.b IS NULL);
+
+# title: Correlated scalar subquery projecting an unaliased nested subquery stays correlated
+SELECT x.a, (SELECT (SELECT y.b > 1) AS _col_0 FROM y WHERE y.a = x.a) AS r FROM x;
+SELECT x.a, (SELECT (SELECT y.b > 1) AS _col_0 FROM y WHERE y.a = x.a) AS r FROM x;
+
+# title: Correlated scalar subquery projecting an aliased nested subquery stays correlated
+SELECT x.a, (SELECT (SELECT y.b > 1) AS c FROM y WHERE y.a = x.a) AS r FROM x;
+SELECT x.a, (SELECT (SELECT y.b > 1) AS c FROM y WHERE y.a = x.a) AS r FROM x;

@@ -1900,6 +1900,8 @@ class Boolean(Expression, Condition):
 
 
 class Dot(Expression, Binary):
+    arg_types = {"this": True, "expression": True, "subcolumn_depth": False}
+
     @property
     def is_star(self) -> bool:
         return self.expression.is_star

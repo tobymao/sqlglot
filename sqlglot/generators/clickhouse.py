@@ -450,6 +450,22 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
+    def dot_sql(self, expression: exp.Dot) -> str:
+        if depth := expression.args.get("subcolumn_depth"):
+            root: exp.Expr = expression
+            fields: list[str] = []
+            while isinstance(root, exp.Dot) and len(fields) < depth:
+                fields.append(root.expression.name)
+                root = root.this
+
+            # expr.a.b performs two lookups, while a column path resolves the entire subcolumn.
+            if len(fields) == depth and not isinstance(root, exp.Column):
+                return self.func(
+                    "getSubcolumn", root, exp.Literal.string(".".join(reversed(fields)))
+                )
+
+        return super().dot_sql(expression)
+
     @unsupported_args("json_scope")
     def contains_sql(self, expression: exp.Contains) -> str:
         # ClickHouse has no CONTAINS; keep the parentheses only where the parent needs them

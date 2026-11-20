@@ -1399,6 +1399,47 @@ SELECT
 FROM x;
 SELECT x.a + 1 AS i, x.a + 1 + 1 AS j, x.a + 1 + 1 + 1 AS k FROM x AS x;
 
+# title: ClickHouse resolves dotted alias references before source columns
+# dialect: clickhouse
+# execute: false
+# schema: {"src": {"ambig": "UNKNOWN"}}
+SELECT '{"x":1}'::JSON AS ambig, getSubcolumn(ambig, 'x') AS via_func, ambig.x AS via_dot, src.ambig.x AS via_source FROM src;
+SELECT CAST('{"x":1}' AS JSON) AS ambig, getSubcolumn(CAST('{"x":1}' AS JSON), 'x') AS via_func, CAST('{"x":1}' AS JSON).x AS via_dot, src.ambig.x AS via_source FROM src AS src;
+
+# title: ClickHouse reads a field of a tuple alias even when the source has a dotted field name
+# dialect: clickhouse
+# execute: false
+# schema: {"t": {"s": "Tuple(n Tuple(x Int64), `n.x` Int64)"}}
+SELECT t.s.n AS v, v.x AS result FROM t;
+SELECT t.s.n AS v, (t.s.n).x AS result FROM t AS t;
+
+# title: ClickHouse reads a nested JSON subcolumn from a computed alias as one path
+# dialect: clickhouse
+# execute: false
+SELECT '{"a":{"b":{"c":{"X":1}}}}'::JSON AS obj, obj.a.b.c."X";
+SELECT CAST('{"a":{"b":{"c":{"X":1}}}}' AS JSON) AS obj, getSubcolumn(CAST('{"a":{"b":{"c":{"X":1}}}}' AS JSON), 'a.b.c.X') AS "X";
+
+# title: ClickHouse expands nested fields of a projection alias in a filter
+# dialect: clickhouse
+# execute: false
+# schema: {"src": {"payload": "JSON"}}
+SELECT src.payload AS obj FROM src WHERE obj.nested."Field Name" = 1;
+SELECT src.payload AS obj FROM src AS src WHERE src.payload.nested."Field Name" = 1;
+
+# title: ClickHouse preserves a correlated table qualifier that matches a projection alias
+# dialect: clickhouse
+# execute: false
+# schema: {"src": {"x": "INT"}}
+SELECT (SELECT 1 AS src WHERE src.x = 2) AS correlated FROM src;
+SELECT (SELECT 1 AS src WHERE src.x = 2) AS correlated FROM src AS src;
+
+# title: ClickHouse resolves the same dotted name independently in a scalar subquery
+# dialect: clickhouse
+# execute: false
+# schema: {"src": {"obj": "JSON"}}
+SELECT '{"x":1}'::JSON AS obj, obj.x AS outer_x, (SELECT obj.x FROM src) AS inner_x;
+SELECT CAST('{"x":1}' AS JSON) AS obj, CAST('{"x":1}' AS JSON).x AS outer_x, (SELECT src.obj.x AS x FROM src AS src) AS inner_x;
+
 # title: noop - reference comes before alias
 # execute: false
 # validate_qualify_columns: false

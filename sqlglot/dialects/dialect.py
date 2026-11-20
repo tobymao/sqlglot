@@ -610,6 +610,9 @@ class Dialect(metaclass=_Dialect):
         to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
+    PREFER_PROJECTION_ALIASES_IN_DOT_PATHS = False
+    """Whether `obj.field` prefers a projection alias named `obj` over a source column of the same name."""
+
     EXPAND_ONLY_GROUP_ALIAS_REF = False
     """Whether alias reference expansion before qualification should only happen for the GROUP BY clause."""
 

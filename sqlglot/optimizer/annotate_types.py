@@ -874,20 +874,7 @@ class TypeAnnotator:
         if expression.is_string:
             self._set_type(expression, exp.DType.VARCHAR)
         elif expression.is_int:
-            value = int(expression.to_py())
-            parent = expression.parent
-            while isinstance(parent, exp.Paren):
-                parent = parent.parent
-
-            # A negated literal's range is one wider
-            if isinstance(parent, exp.Neg):
-                value -= 1
-
-            for bound, int_type in self.dialect.INT_LITERAL_TYPES:
-                if bound is None or value <= bound:
-                    break
-
-            self._set_type(expression, int_type)
+            self._set_type(expression, self.dialect.int_literal_type(expression))
         else:
             self._set_type(expression, self.dialect.decimal_literal_type(expression.this))
 

@@ -49,6 +49,7 @@ class _TokenizerBase:
     RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
     UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]]
+    UNICODE_IDENTIFIERS: t.ClassVar[list[str | tuple[str, str]]]
     STRING_ESCAPES: t.ClassVar[list[str]]
     BYTE_STRING_ESCAPES: t.ClassVar[list[str]]
     IDENTIFIER_ESCAPES: t.ClassVar[list[str]]
@@ -99,6 +100,7 @@ class _TokenizerBase:
             **_quotes_to_format(TokenType.RAW_STRING, cls.RAW_STRINGS),
             **_quotes_to_format(TokenType.HEREDOC_STRING, cls.HEREDOC_STRINGS),
             **_quotes_to_format(TokenType.UNICODE_STRING, cls.UNICODE_STRINGS),
+            **_quotes_to_format(TokenType.UNICODE_IDENTIFIER, cls.UNICODE_IDENTIFIERS),
         }
         if not any(
             "BYTE_STRING_ESCAPES" in k.__dict__ for k in cls.__mro__ if k.__module__ != __name__
@@ -168,6 +170,7 @@ class Tokenizer(_TokenizerBase):
     RAW_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     HEREDOC_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
     UNICODE_STRINGS: t.ClassVar[list[str | tuple[str, str]]] = []
+    UNICODE_IDENTIFIERS: t.ClassVar[list[str | tuple[str, str]]] = []
     IDENTIFIERS: t.ClassVar[list[str | tuple[str, str]]] = ['"']
     QUOTES: t.ClassVar[list[tuple[str, str] | str]] = ["'"]
     STRING_ESCAPES: t.ClassVar[list[str]] = ["'"]

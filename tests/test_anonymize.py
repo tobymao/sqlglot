@@ -401,6 +401,63 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             self.assertEqual(rendered, expected)
             self.assertEqual(len(rendered), len(sql))
 
+    def test_unicode_identifier_uescape(self):
+        cases = [
+            ("""SELECT U&"secret" UESCAPE '!'""", """SELECT U&"aaaaaa" UESCAPE '!'"""),
+            (
+                """SELECT U&"secret" UESCAPE '!', 'unfinished""",
+                """SELECT U&"aaaaaa" UESCAPE '!', 'u.........""",
+            ),
+            (
+                """SELECT u&"s!0065cr""et" /* private */ uEsCaPe -- private\n E'\\041', x""",
+                """SELECT u&"aaaaaaa"      /* ....... */ uEsCaPe -- .......\n E'\\041', b""",
+            ),
+            (
+                """SELECT a, b, c, d, e, f, U&"secret" UESCAPE 'g', secret""",
+                """SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE '!', aaaaag""",
+            ),
+            (
+                """SELECT a, b, c, d, e, f, U&"sg0065cret" UESCAPE 'g', secret""",
+                """SELECT a, b, c, d, e, f, U&"aaaaag"     UESCAPE '!', aaaaag""",
+            ),
+            (
+                r"""SELECT U&"\0062ases" u&"!0078" UESCAPE '!' FROM (VALUES (1)) AS t(bases)""",
+                """SELECT U&"aaaaa"     u&"b"     UESCAPE '!' FROM (VALUES (3)) AS d(aaaaa)""",
+            ),
+        ]
+        for sql, expected in cases:
+            with self.subTest(sql=sql):
+                self.assertEqual(render(sql, anonymize(sql, "postgres"), "postgres"), expected)
+
+        for literal, masked in [
+            ("$tag$g$tag$", "'!'".ljust(11)),
+            (r"E'\147'", "'!'".ljust(7)),
+            (r"E'\u0067'", "'!'".ljust(9)),
+            ("'' -- private\n'g'\n''", "'' -- .......\n'!'\n''"),
+            ("E''\r\n'\\x67'", "E''\r\n'!'   "),
+        ]:
+            sql = f"""SELECT a, b, c, d, e, f, U&"secret" UESCAPE {literal}"""
+            self.assertEqual(
+                render(sql, anonymize(sql, "postgres"), "postgres"),
+                f"""SELECT a, b, c, d, e, f, U&"aaaaag" UESCAPE {masked}""",
+            )
+
+    def test_unicode_identifier_references(self):
+        cases = [
+            (r'U&"\0062ases"', "bases", 'U&"aaaaa"    ', "aaaaa"),
+            (r'U&"\+000062ases"', "bases", 'U&"aaaaa"       ', "aaaaa"),
+            (r'U&"\D83D\DE00"', '"😀"', 'U&"a"         ', '"a"'),
+            ("""u&"a!!b" UESCAPE '!'""", '"a!b"', """u&"aaa"  UESCAPE '!'""", '"aaa"'),
+            ('U&"a""b"', '"a""b"', 'U&"aaa" ', '"aaa" '),
+        ]
+        for ref, column, masked_ref, masked_column in cases:
+            sql = f"SELECT {ref} FROM (VALUES (42)) AS t({column})"
+            with self.subTest(sql=sql):
+                self.assertEqual(
+                    render(sql, anonymize(sql, "postgres"), "postgres"),
+                    f"SELECT {masked_ref} FROM (VALUES (11)) AS c({masked_column})",
+                )
+
     def test_numbers_keep_their_shape(self):
         sql = "SELECT 1e, 1.e, 1e10, .5, 2002, 1e-5, 1E+2"
         rendered = render(sql, anonymize(sql))
@@ -468,6 +525,11 @@ ORDER  BY aaaw.aaaaaaaaaaaaac,
             ("SELECT a, /* unterminated comment", "SELECT a, /*.....................", None),
             ('SELECT a, "unterminated ident', 'SELECT a, "u.................', None),
             ("SELECT a, $$unterminated heredoc", "SELECT a, $$....................", "postgres"),
+            (
+                """SELECT U&"secret", 'unfinished""",
+                """SELECT U&"aaaaaa", 'u.........""",
+                "postgres",
+            ),
             ("SELECT a, `unterminated backtick", "SELECT a, `u....................", "mysql"),
             ("'unterminated secret", "'u..................", None),  # nothing tokenized at all
             ("SELECT a, '", "SELECT a, '", None),  # remainder shorter than the delimiter

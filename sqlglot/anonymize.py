@@ -21,6 +21,7 @@ ANONYMIZED_TYPES = {
     TokenType.RAW_STRING,
     TokenType.STRING,
     TokenType.UNICODE_STRING,
+    TokenType.UNICODE_IDENTIFIER,
     TokenType.VAR,
 }
 QUOTED_TYPES = ANONYMIZED_TYPES - {TokenType.NUMBER, TokenType.VAR}
@@ -152,8 +153,9 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
 
     result = []
     prev = 0
+    uescape_alias = ""
 
-    for token in tokens:
+    for i, token in enumerate(tokens):
         result.append(_redact(sql[prev : token.start], comments, nested))
         prev = token.end + 1
         span = sql[token.start : prev]
@@ -162,6 +164,13 @@ def render(sql: str, tokens: list[Token], dialect: DialectType = None) -> str:
             result.append(token.text)
         elif token.token_type in ANONYMIZED_TYPES:
             result.append(_fit(span, token.text, quotes, token.token_type))
+        elif token.token_type == TokenType.UESCAPE:
+            if token.text.upper() == "UESCAPE":
+                uescape_alias = tokens[i - 1].text
+            elif token.text and token.text in uescape_alias:
+                # Keep the alias literal when it contains the clause's escape character.
+                span = "'!'".ljust(len(span))
+            result.append(span)
         else:
             result.append(span)
 
@@ -251,6 +260,8 @@ def _fit(span: str, alias: str, quotes: list[tuple[str, str]], token_type: Token
                 break
 
     width = len(span) - start - end
+    if token_type == TokenType.IDENTIFIER and end and len(alias) < width:
+        return (span[:start] + alias + span[-end:]).ljust(len(span))
     pad = "0" if token_type == TokenType.NUMBER else "a"
 
     return span[:start] + alias[:width].rjust(width, pad) + span[len(span) - end :]

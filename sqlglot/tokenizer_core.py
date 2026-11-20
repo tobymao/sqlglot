@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+import re
 import typing as t
 from enum import IntEnum, auto
 
 from sqlglot.errors import TokenError
+from sqlglot.helper import decode_unicode_escapes, seq_get
 
 # dict lookup is faster than .upper() and .isdigit()
 _CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 _DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
 _DIGIT_VALUES: dict[str, int] = {c: int(c, 16) for c in "0123456789abcdefABCDEF"}
 _OCTAL_CHARS: frozenset[str] = frozenset("01234567")
+# PostgreSQL continues a quoted string across a newline, including after a line comment.
+_QUOTE_CONTINUATION = re.compile(
+    r"[ \t\f\v]*(?:--[^\r\n]*)?[\r\n](?:[ \t\f\v\r\n]|--[^\r\n]*[\r\n])*'"
+)
 
 
 class TokenType(IntEnum):
@@ -116,6 +122,8 @@ class TokenType(IntEnum):
     RAW_STRING = auto()
     HEREDOC_STRING = auto()
     UNICODE_STRING = auto()
+    UNICODE_IDENTIFIER = auto()
+    UESCAPE = auto()  # The keyword and literal fragments of a decoded identifier's escape clause
 
     # types
     BIT = auto()
@@ -558,6 +566,7 @@ class TokenizerCore:
         "_end",
         "_peek",
         "_prev_token_line",
+        "_has_unicode_identifiers",
         "single_tokens",
         "keywords",
         "quotes",
@@ -677,6 +686,7 @@ class TokenizerCore:
         self._end = False
         self._peek = ""
         self._prev_token_line = -1
+        self._has_unicode_identifiers = False
 
     def reset(self) -> None:
         self.sql = ""
@@ -691,6 +701,7 @@ class TokenizerCore:
         self._end = False
         self._peek = ""
         self._prev_token_line = -1
+        self._has_unicode_identifiers = False
 
     def tokenize(self, sql: str) -> list[Token]:
         """Returns a list of tokens corresponding to the SQL string `sql`."""
@@ -705,8 +716,66 @@ class TokenizerCore:
             end = min(self._current + 50, self.size - 1)
             context = self.sql[start:end]
             raise TokenError(f"Error tokenizing '{context}'", start=start, end=end) from e
-
+        finally:
+            if self._has_unicode_identifiers:
+                self._decode_unicode_identifiers()
         return self.tokens
+
+    def _decode_unicode_identifiers(self) -> None:
+        # UESCAPE follows the identifier and may be separated from it by comments.
+        tokens = self.tokens
+        self.tokens = []
+        for i, token in enumerate(tokens):
+            if token.token_type != TokenType.UNICODE_IDENTIFIER:
+                self.tokens.append(token)
+                continue
+
+            escape = "\\"
+            keyword = seq_get(tokens, i + 1)
+            if (
+                keyword
+                and keyword.token_type == TokenType.VAR
+                and keyword.text.upper() == "UESCAPE"
+            ):
+                literal = seq_get(tokens, i + 2)
+                if not literal or literal.token_type not in (
+                    TokenType.STRING,
+                    TokenType.BYTE_STRING,
+                    TokenType.HEREDOC_STRING,
+                ):
+                    raise TokenError(
+                        "UESCAPE must be followed by a string literal",
+                        start=keyword.start,
+                        end=keyword.end + 1,
+                    )
+                escape = literal.text
+                last = literal
+                j = i + 3
+                while j < len(tokens) and tokens[j].token_type == TokenType.UESCAPE:
+                    last = tokens[j]
+                    escape += last.text
+                    j += 1
+                if (
+                    len(escape) != 1
+                    or not escape.isascii()
+                    or escape in _DIGIT_VALUES
+                    or escape in "+'\" \t\n\r\v\f\0"
+                ):
+                    raise TokenError(
+                        "Invalid Unicode escape character", start=literal.start, end=last.end + 1
+                    )
+                keyword.token_type = literal.token_type = TokenType.UESCAPE
+
+            try:
+                token.text = decode_unicode_escapes(token.text, escape, strict=True)
+                if not token.text or "\0" in token.text:
+                    raise ValueError("Empty or null-containing identifier")
+            except ValueError as e:
+                raise TokenError(
+                    "Invalid Unicode identifier", start=token.start, end=token.end + 1
+                ) from e
+            token.token_type = TokenType.IDENTIFIER
+            self.tokens.append(token)
 
     def _scan(self, check_semicolon: bool = False) -> None:
         identifiers = self.identifiers
@@ -1114,13 +1183,19 @@ class TokenizerCore:
     def _scan_string(self, start: str) -> bool:
         base = None
         token_type = TokenType.STRING
+        escapes = self.string_escapes
 
         if start in self.quotes:
             end = self.quotes[start]
         elif start in self.format_strings:
             end, token_type = self.format_strings[start]
 
-            if token_type == TokenType.HEX_STRING:
+            if token_type == TokenType.UNICODE_IDENTIFIER:
+                self._has_unicode_identifiers = True
+                escapes = {end}
+            elif token_type == TokenType.BYTE_STRING:
+                escapes = self.byte_string_escapes
+            elif token_type == TokenType.HEX_STRING:
                 base = 16
             elif token_type == TokenType.BIT_STRING:
                 base = 2
@@ -1155,11 +1230,7 @@ class TokenizerCore:
         self._advance(len(start))
         text = self._extract_string(
             end,
-            escapes=(
-                self.byte_string_escapes
-                if token_type == TokenType.BYTE_STRING
-                else self.string_escapes
-            ),
+            escapes=escapes,
             raw_string=token_type
             in (TokenType.RAW_STRING, TokenType.NATIONAL_RAW_STRING, TokenType.HEREDOC_STRING),
             bytes_literal=token_type == TokenType.BYTE_STRING and self.byte_strings_are_bytes,
@@ -1174,6 +1245,25 @@ class TokenizerCore:
                 )
 
         self._add(token_type, text)
+        if (
+            self._has_unicode_identifiers
+            and token_type in (TokenType.STRING, TokenType.BYTE_STRING)
+            and len(self.tokens) >= 3
+            and self.tokens[-3].token_type == TokenType.UNICODE_IDENTIFIER
+            and self.tokens[-2].token_type == TokenType.VAR
+            and self.tokens[-2].text.upper() == "UESCAPE"
+        ):
+            # Bare continuations inherit the first literal's rules, including E-string escapes.
+            while match := _QUOTE_CONTINUATION.match(self.sql, self._current):
+                while self._current < match.end():
+                    self._advance()
+                    if self._char == "-":
+                        self._start = self._current - 1
+                        self._scan_comment("--")
+
+                self._start = self._current - 1
+                self._advance()
+                self._add(TokenType.UESCAPE, self._extract_string("'", escapes=escapes))
         return True
 
     def _scan_identifier(self, identifier_end: str) -> None:

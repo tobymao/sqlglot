@@ -15,6 +15,8 @@ class RisingWave(Postgres):
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
 
     class Tokenizer(Postgres.Tokenizer):
+        UNICODE_IDENTIFIERS = []
+
         KEYWORDS = {
             **Postgres.Tokenizer.KEYWORDS,
             "SINK": TokenType.SINK,

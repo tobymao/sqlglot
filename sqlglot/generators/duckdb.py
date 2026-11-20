@@ -41,7 +41,7 @@ from sqlglot.dialects.dialect import (
     WEEK_START_DAY_TO_DOW,
 )
 from sqlglot.generator import unsupported_args
-from sqlglot.helper import find_new_name, is_date_unit, seq_get
+from sqlglot.helper import decode_unicode_escapes, find_new_name, is_date_unit, seq_get
 from sqlglot.optimizer.scope import find_all_in_scope
 from builtins import type as Type
 
@@ -2479,19 +2479,8 @@ class DuckDBGenerator(generator.Generator):
         # are decoded into the characters, e.g. U&'d\0061t\0061' and U&'d!+000061ta' UESCAPE '!'
         # are both 'data'
         escape = expression.args.get("escape")
-        escape_char = re.escape(escape.name if isinstance(escape, exp.Expr) else "\\")
-        pattern = re.compile(
-            rf"{escape_char}(?:\+([0-9a-fA-F]{{6}})|([0-9a-fA-F]{{4}})|({escape_char}))"
-        )
-
-        def decode(match: re.Match[str]) -> str:
-            if match.group(3):
-                return match.group(3)
-            return chr(int(match.group(1) or match.group(2), 16))
-
-        # A character outside the BMP can be written as a UTF-16 surrogate pair
-        text = (
-            pattern.sub(decode, expression.name).encode("utf-16", "surrogatepass").decode("utf-16")
+        text = decode_unicode_escapes(
+            expression.name, escape.name if isinstance(escape, exp.Expr) else "\\"
         )
         return self.sql(exp.Literal.string(text))
 

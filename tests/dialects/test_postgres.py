@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
+from sqlglot import ErrorLevel, ParseError, TokenError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.generator import logger as generator_logger
 from sqlglot.helper import logger as helper_logger
 from sqlglot.optimizer import optimize
@@ -2229,6 +2229,62 @@ FROM json_data, field_ids""",
                 "presto": "CONCAT(CAST(a AS VARCHAR), CAST(b AS VARCHAR))",
             },
         )
+
+    def test_unicode_identifier(self):
+        self.validate_identity(
+            r'SELECT U&"\0062ases" FROM (VALUES (42)) AS t(bases)',
+            'SELECT "bases" FROM (VALUES (42)) AS t(bases)',
+        )
+        self.validate_identity(
+            """WITH u&"T" AS (SELECT 1 AS U&"a""b!!c!+01F600" UESCAPE '!') """
+            r'SELECT "T".U&"a""b!c\D83D\DE00" FROM "T"',
+            'WITH "T" AS (SELECT 1 AS "a""b!c😀") SELECT "T"."a""b!c😀" FROM "T"',
+        )
+        self.validate_identity(
+            r"""SELECT 1 AS U&"a\\b", 2 AS u&"Mixed.0043ase" /* escape */ uescape '.'""",
+            r"""SELECT 1 AS "a\b", 2 AS "MixedCase" /* escape */""",
+        )
+        self.validate_identity(
+            'SELECT u &"bits", u& "bits", mu&"bits" FROM (VALUES (3, 2, 1)) AS t(u, mu, bits)',
+            'SELECT u & "bits", u & "bits", mu & "bits" FROM (VALUES (3, 2, 1)) AS t(u, mu, bits)',
+        )
+        for identifier in (
+            r'U&"\123"',
+            r'U&"\+110000"',
+            r'U&"\D800"',
+            r'U&"\0000"',
+            """U&"x" UESCAPE '+'""",
+            """U&"x" UESCAPE 'ab'""",
+            'U&"x" UESCAPE',
+        ):
+            with self.subTest(identifier=identifier), self.assertRaises(TokenError):
+                self.parse_one(f"SELECT 1 AS {identifier}")
+
+    def test_unicode_identifier_continued_uescape(self):
+        prefix = 'SELECT 1 AS U&"x!0061" UESCAPE '
+        for literal in ("''\n'!'", "'!'\r\n''", "E''\n''\n'\\x21'"):
+            with self.subTest(literal=literal):
+                self.validate_identity(prefix + literal, 'SELECT 1 AS "xa"')
+
+        sql = prefix + "'' -- first\n'!' -- last\n''"
+        projection = self.parse_one(sql).selects[0]
+        alias = projection.args["alias"]
+        self.assertEqual(alias.name, "xa")
+        self.assertEqual(projection.comments, [" first", " last"])
+        self.assertEqual(
+            sql[alias.meta["start"] : alias.meta["end"] + 1], sql[len("SELECT 1 AS ") :]
+        )
+
+        for literal in (
+            "'!'\n'?'",
+            "''\n''",
+            "'' '!'",
+            "'' /* gap */\n'!'",
+            "$$$$\n'!'",
+            "''\nE'!'",
+        ):
+            with self.subTest(literal=literal), self.assertRaises(TokenError):
+                self.parse_one(prefix + literal)
 
     def test_unicode_string(self):
         self.validate_identity("SELECT u & 5 FROM t")

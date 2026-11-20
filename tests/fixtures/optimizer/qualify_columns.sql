@@ -1392,6 +1392,13 @@ SELECT x.a + 1 AS i, x.a + 1 + 1 AS j, x.a + 1 + 1 + 1 AS k FROM x AS x;
 SELECT '{"x":1}'::JSON AS ambig, getSubcolumn(ambig, 'x') AS via_func, ambig.x AS via_dot, src.ambig.x AS via_source FROM src;
 SELECT CAST('{"x":1}' AS JSON) AS ambig, getSubcolumn(CAST('{"x":1}' AS JSON), 'x') AS via_func, CAST('{"x":1}' AS JSON).x AS via_dot, src.ambig.x AS via_source FROM src AS src;
 
+# title: ClickHouse reads a field of a tuple alias even when the source has a dotted field name
+# dialect: clickhouse
+# execute: false
+# schema: {"t": {"s": "Tuple(n Tuple(x Int64), `n.x` Int64)"}}
+SELECT t.s.n AS v, v.x AS result FROM t;
+SELECT t.s.n AS v, (t.s.n).x AS result FROM t AS t;
+
 # title: ClickHouse reads a nested JSON subcolumn from a computed alias as one path
 # dialect: clickhouse
 # execute: false

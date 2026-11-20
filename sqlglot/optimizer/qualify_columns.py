@@ -69,6 +69,7 @@ def qualify_columns(
     annotator = TypeAnnotator(schema)
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
+    convert_dots_early = expand_alias_refs and dialect.PREFER_PROJECTION_ALIASES_IN_DOT_PATHS
 
     # Qualified scopes that still lack types, in traversal order (sources precede dependents)
     unannotated_scopes: list[Scope] = []
@@ -91,7 +92,8 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
-        _convert_columns_to_dots(scope, resolver, expand_alias_refs=expand_alias_refs)
+        if convert_dots_early:
+            _convert_columns_to_dots(scope, resolver, prefer_projection_aliases=True)
 
         if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
             _expand_alias_refs(
@@ -100,6 +102,9 @@ def qualify_columns(
                 dialect,
                 expand_only_groupby=dialect.EXPAND_ONLY_GROUP_ALIAS_REF,
             )
+
+        if not convert_dots_early:
+            _convert_columns_to_dots(scope, resolver)
 
         _qualify_columns(
             scope,
@@ -754,7 +759,9 @@ def _qualify_comprehensions(scope: Scope, resolver: Resolver) -> None:
         scope.clear_cache()
 
 
-def _convert_columns_to_dots(scope: Scope, resolver: Resolver, expand_alias_refs: bool) -> None:
+def _convert_columns_to_dots(
+    scope: Scope, resolver: Resolver, prefer_projection_aliases: bool = False
+) -> None:
     """
     Converts `Column` instances that represent STRUCT or JSON field lookup into chained `Dots`.
 
@@ -766,7 +773,7 @@ def _convert_columns_to_dots(scope: Scope, resolver: Resolver, expand_alias_refs
     semi_or_anti_join_tables = scope.semi_or_anti_join_tables
     alias_roots = (
         resolver.select_aliases.difference(scope_sources, semi_or_anti_join_tables)
-        if expand_alias_refs and resolver.dialect.PREFER_PROJECTION_ALIASES_IN_DOT_PATHS
+        if prefer_projection_aliases
         else None
     )
     if alias_roots:

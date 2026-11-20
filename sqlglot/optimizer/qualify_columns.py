@@ -92,6 +92,8 @@ def qualify_columns(
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
         if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
+            if dialect.EXPAND_DOTTED_ALIAS_REFS:
+                _separate_alias_fields(scope, resolver)
             _expand_alias_refs(
                 scope,
                 resolver,
@@ -364,6 +366,36 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
                 scope.replace(column, replacement)
 
     return column_tables, using_columns
+
+
+def _separate_alias_fields(scope: Scope, resolver: Resolver) -> None:
+    # Expose the alias in alias.field to the same expansion rules as a bare alias.
+    aliases = resolver.select_aliases.difference(name for name, _ in scope.references)
+    if not aliases:
+        return
+
+    for outer in resolver.outer_resolvers():
+        aliases.difference_update(outer.scope.selected_sources)
+
+    for column in scope.find_all(exp.Column):
+        if not column.table or column.is_star:
+            continue
+
+        root, *fields = column.parts
+        if root.name not in aliases:
+            continue
+
+        path: exp.Expr = column
+        while isinstance(path.parent, exp.Dot) and isinstance(
+            path.parent.expression, exp.Identifier
+        ):
+            path = path.parent
+            fields.append(path.expression)
+
+        dot = exp.Dot.build([exp.column(root, copy=False), *fields])
+        if len(fields) > 1:
+            dot.set("subcolumn_depth", len(fields))
+        scope.replace(path, dot)
 
 
 def _expand_alias_refs(

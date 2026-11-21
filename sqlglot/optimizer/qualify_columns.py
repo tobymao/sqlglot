@@ -1563,7 +1563,7 @@ def qualify_outputs(scope_or_expression: Scope | exp.Expr, dialect: Dialect) -> 
             if not selection.output_name:
                 alias_identifier = exp.to_identifier(f"_col_{i}")
                 dialect.normalize_identifier(alias_identifier)
-                selection.set("alias", exp.TableAlias(this=alias_identifier))
+                selection = exp.Alias(this=selection, alias=alias_identifier)
         elif not isinstance(selection, (exp.Alias, exp.Aliases)) and not selection.is_star:
             unwrapped = selection.unnest()
             if isinstance(unwrapped, exp.Column):

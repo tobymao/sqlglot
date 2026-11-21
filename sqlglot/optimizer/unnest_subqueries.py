@@ -327,7 +327,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
         ):
             return
 
-        if find_in_scope(value, exp.Window):
+        if isinstance(value.unalias(), exp.Subquery) or find_in_scope(value, exp.Window):
             return
 
         if find_in_scope(value, exp.AggFunc, exp.Anonymous):

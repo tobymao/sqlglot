@@ -243,7 +243,6 @@ class Tokenizer(_TokenizerBase):
         "&>": TokenType.AMP_GT,
         "==": TokenType.EQ,
         "::": TokenType.DCOLON,
-        "?::": TokenType.QDCOLON,
         "||": TokenType.DPIPE,
         "|>": TokenType.PIPE_GT,
         ">=": TokenType.GTE,

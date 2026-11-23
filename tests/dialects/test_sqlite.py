@@ -475,11 +475,53 @@ class TestSQLite(Validator):
             ):
                 with self.subTest(sql=sql):
                     generated = annotate_types(parse_one(sql, read=read), dialect=read).sql(
-                        "sqlite"
+                        f"sqlite, version={sqlite3.sqlite_version}"
                     )
                     self.assertEqual([(expected,)], connection.execute(generated).fetchall())
         finally:
             connection.close()
+
+    @unittest.skipIf(sqlite3.sqlite_version_info < (3, 46), "Requires SQLite's floor modifier")
+    def test_month_end_interval_arithmetic(self):
+        with closing(sqlite3.connect(":memory:")) as connection:
+            for read, sql, expected in (
+                (
+                    "postgres",
+                    "SELECT DATE '2024-01-31' + INTERVAL '1 month'",
+                    "2024-02-29 00:00:00",
+                ),
+                (
+                    "postgres",
+                    "SELECT DATE '2024-02-29' + INTERVAL '1 year'",
+                    "2025-02-28 00:00:00",
+                ),
+                (
+                    "postgres",
+                    "SELECT INTERVAL '2 months' + TIMESTAMP '2023-12-31 12:34:56'",
+                    "2024-02-29 12:34:56",
+                ),
+                ("mysql", "SELECT DATE_ADD(DATE '2024-01-31', INTERVAL 1 QUARTER)", "2024-04-30"),
+                (
+                    "mysql",
+                    "SELECT DATE_SUB(d, INTERVAL n QUARTER) "
+                    "FROM (SELECT DATE '2024-05-31' AS d, 1 AS n) AS t",
+                    "2024-02-29",
+                ),
+            ):
+                with self.subTest(sql=sql):
+                    generated = annotate_types(parse_one(sql, read=read), dialect=read).sql(
+                        "sqlite"
+                    )
+                    self.assertEqual(connection.execute(generated).fetchone(), (expected,))
+
+    def test_month_end_interval_before_sqlite_3_46(self):
+        expression = parse_one("SELECT d - INTERVAL 1 MONTH FROM t", read="mysql")
+        with self.assertRaises(UnsupportedError):
+            expression.sql("sqlite, version=3.45", unsupported_level=ErrorLevel.RAISE)
+        self.assertEqual(
+            expression.sql("sqlite, version=3.45", unsupported_level=ErrorLevel.IGNORE),
+            "SELECT DATE(d, '-1 MONTH') FROM t",
+        )
 
     def test_date_add_sub_day_units_retain_time(self):
         connection = sqlite3.connect(":memory:")
@@ -889,7 +931,7 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE(d, (-n) || ' MONTH') FROM t",
+            "SELECT DATE(d, (-n) || ' MONTH', 'floor') FROM t",
             read={
                 "duckdb": "SELECT DATE_ADD(d, INTERVAL (-n) MONTH) FROM t",
             },
@@ -901,7 +943,7 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE(d, '-1 MONTH') FROM t",
+            "SELECT DATE(d, '-1 MONTH', 'floor') FROM t",
             read={
                 "bigquery": "SELECT DATE_SUB(d, INTERVAL 1 MONTH) FROM t",
                 "mysql": "SELECT DATE_SUB(d, INTERVAL 1 MONTH) FROM t",
@@ -981,7 +1023,7 @@ class TestSQLite(Validator):
             },
         )
         self.validate_all(
-            "SELECT DATE(d, '-1 MONTH') FROM t",
+            "SELECT DATE(d, '-1 MONTH', 'floor') FROM t",
             read={"mysql": "SELECT d - INTERVAL 1 MONTH FROM t"},
         )
         self.validate_all(

@@ -4013,6 +4013,15 @@ OPTIONS (
             },
         )
 
+    def test_native_unnest_offset_roundtrip(self):
+        self.validate_identity(
+            "WITH a AS (SELECT [10, 20] AS arr) SELECT x, pos FROM a "
+            "LEFT JOIN UNNEST(a.arr) AS x WITH OFFSET AS pos ON pos = 0"
+        )
+        self.validate_identity(
+            "UPDATE dst SET pos = n FROM UNNEST([10, 20]) AS x WITH OFFSET AS n WHERE dst.id = x"
+        )
+
     def test_update_from_unnest_with_ordinality(self):
         self.validate_all(
             "UPDATE dst SET pos = n FROM UNNEST(ARRAY(SELECT AS STRUCT x, n + 1 AS n "

@@ -969,8 +969,13 @@ class BigQueryGenerator(generator.Generator):
 
     def lateral_sql(self, expression: exp.Lateral) -> str:
         unnest = expression.this
-        if isinstance(unnest, exp.Unnest) and unnest.args.get("offset"):
-            unnest.set("alias", expression.args.get("alias"))
+        if (
+            isinstance(unnest, exp.Unnest)
+            and unnest.args.get("offset")
+            and unnest.args.get("offset_base") != 0
+        ):
+            if alias := expression.args.get("alias"):
+                unnest.set("alias", alias)
             return self.unnest_sql(unnest)
         return super().lateral_sql(expression)
 

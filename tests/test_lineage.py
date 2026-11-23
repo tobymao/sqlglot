@@ -64,6 +64,15 @@ class TestLineage(unittest.TestCase):
 
         self.assertEqual(source.sql(), source_sql)
 
+    def test_clickhouse_forward_alias(self) -> None:
+        node = lineage(
+            "val",
+            "SELECT if(visible, val, 'CENSORED') AS val, id = 1 AS visible FROM src",
+            schema={"src": {"val": "String", "id": "UInt8"}},
+            dialect="clickhouse",
+        )
+        self.assertCountEqual([child.name for child in node.downstream], ["src.val", "src.id"])
+
     def test_lineage_sql_with_cte(self) -> None:
         node = lineage(
             "a",

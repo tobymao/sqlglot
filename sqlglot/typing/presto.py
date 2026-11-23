@@ -25,6 +25,7 @@ EXPRESSION_METADATA = {
             exp.Sign,
         }
     },
+    exp.Div: {"annotator": lambda self, e: self._annotate_div(e, coerce_integer_operands=True)},
     exp.Mod: {"annotator": lambda self, e: self._annotate_by_args(e, "this", "expression")},
     exp.Rand: {
         "annotator": lambda self, e: (

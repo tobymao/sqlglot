@@ -50,7 +50,7 @@ class TestDremio(Validator):
             annotate_types(tree, dialect=dialect)
             return tree.find(exp.Div).type.this
 
-        assert _div_result_type("SELECT 5 / 2", "dremio") == exp.DataType.Type.INT
+        assert _div_result_type("SELECT 5 / 2", "dremio") == exp.DataType.Type.BIGINT
         assert _div_result_type("SELECT 5 / 2", "oracle") == exp.DataType.Type.DOUBLE
 
     def test_user_defined_types_unsupported(self):

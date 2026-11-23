@@ -354,6 +354,12 @@ EXPRESSION_METADATA = {
         }
     },
     **{
+        expr_type: {"returns": exp.DType.GEOGRAPHY}
+        for expr_type in {
+            exp.StGeogPoint,
+        }
+    },
+    **{
         expr_type: {"returns": exp.DType.JSON}
         for expr_type in {
             exp.JSONArray,

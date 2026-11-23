@@ -993,6 +993,13 @@ class TestSQLite(Validator):
             read={"postgres": "SELECT CAST(d AS TIMESTAMP) + INTERVAL '1 day' FROM t"},
         )
         self.validate_all(
+            "SELECT DATETIME(DATETIME('2024-01-15 23:30:00'), '1 DAY')",
+            read={
+                "mysql": "SELECT TIMESTAMP '2024-01-15 23:30:00' + INTERVAL 1 DAY",
+                "spark": "SELECT CAST('2024-01-15 23:30:00' AS TIMESTAMP_LTZ) + INTERVAL 1 DAY",
+            },
+        )
+        self.validate_all(
             "SELECT DATETIME(CURRENT_TIMESTAMP, '-7 DAYS')",
             read={"postgres": "SELECT CURRENT_TIMESTAMP - INTERVAL '7 days'"},
         )

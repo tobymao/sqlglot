@@ -21,6 +21,14 @@ from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot.parsers.sqlite import SQLITE_NOW
 from sqlglot.tokens import TokenType
 
+DATETIME_TYPES = (
+    exp.DType.DATETIME,
+    exp.DType.TIMESTAMP,
+    exp.DType.TIMESTAMPNTZ,
+    exp.DType.TIMESTAMPTZ,
+    exp.DType.TIMESTAMPLTZ,
+)
+
 
 def _transform_create(expression: exp.Expr) -> exp.Expr:
     """Move primary key to a column and place auto_increment after it."""
@@ -355,7 +363,7 @@ class SQLiteGenerator(generator.Generator):
             expression.is_type(*exp.DataType.TEMPORAL_TYPES)
             or unit_name in ("HOUR", "MINUTE", "SECOND")
             or isinstance(base, exp.CurrentTimestamp)
-            or base.is_type(exp.DType.DATETIME, exp.DType.TIMESTAMP, exp.DType.TIMESTAMPNTZ)
+            or base.is_type(*DATETIME_TYPES)
         ):
             func = "DATETIME"
         else:
@@ -413,7 +421,7 @@ class SQLiteGenerator(generator.Generator):
     def cast_sql(self, expression: exp.Cast, safe_prefix: str | None = None) -> str:
         if expression.is_type("date"):
             return self.func("DATE", expression.this)
-        if expression.is_type("datetime", "timestamp", "timestampntz"):
+        if expression.is_type(*DATETIME_TYPES):
             return self.func("DATETIME", expression.this)
         if expression.is_type("time"):
             return self.func("TIME", expression.this)

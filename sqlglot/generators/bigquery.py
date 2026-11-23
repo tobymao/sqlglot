@@ -145,6 +145,32 @@ def _pushdown_cte_column_names(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _unnest_ordinality_to_offset(expression: exp.Expr) -> exp.Expr:
+    for clause in (expression.args.get("from_"), *(expression.args.get("joins") or [])):
+        if not clause:
+            continue
+        source = clause.this
+        unnest = source.this if isinstance(source, exp.Lateral) else source
+        if (
+            isinstance(unnest, exp.Unnest)
+            and unnest.args.get("offset")
+            and unnest.args.get("offset_base") != 0
+        ):
+            alias = source.args.get("alias")
+            query = transforms.unnest_offset_select(unnest, alias, ordinality=False)
+            query.set("kind", "STRUCT")
+            # UNNEST of an array subquery can reference preceding FROM items in BigQuery.
+            clause.set(
+                "this",
+                exp.Unnest(
+                    expressions=[exp.array(query, copy=False)],
+                    alias=exp.TableAlias(columns=[alias.this]) if alias and alias.this else None,
+                ),
+            )
+
+    return expression
+
+
 def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
     """
     Rewrites exploding GENERATE_SERIES projections into table references, e.g.
@@ -539,6 +565,7 @@ class BigQueryGenerator(generator.Generator):
             [
                 _unnest_explode_generate_series,
                 transforms.explode_projection_to_unnest(),
+                _unnest_ordinality_to_offset,
                 transforms.unqualify_unnest,
                 transforms.eliminate_distinct_on,
                 _alias_ordered_group,

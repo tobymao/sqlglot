@@ -286,6 +286,7 @@ def _left_right_sql(self: PostgresGenerator, expression: exp.Left | exp.Right) -
 
 
 class PostgresGenerator(generator.Generator):
+    RESERVED_KEYWORDS = {"offset"}
     SELECT_KINDS = ()
     VARIANCE_NAME = "VAR_SAMP"
     DATE_PART_WITH_EXPRESSION = "DATE_PART"
@@ -566,6 +567,16 @@ class PostgresGenerator(generator.Generator):
     def unnest_sql(self, expression: exp.Unnest) -> str:
         if len(expression.expressions) == 1:
             arg = expression.expressions[0]
+            if expression.args.get("offset") and isinstance(
+                arg, (exp.GenerateSeries, exp.GenerateDateArray)
+            ):
+                # PostgreSQL's GENERATE_SERIES returns rows. UNNEST WITH ORDINALITY needs an array.
+                value: exp.Expr = exp.GenerateSeries(**arg.args)
+                if isinstance(arg, exp.GenerateDateArray):
+                    value = exp.cast(value, exp.DType.DATE)
+                expression.set("expressions", [exp.array(exp.select(value))])
+                return super().unnest_sql(expression)
+
             if isinstance(arg, exp.GenerateDateArray):
                 generate_series: exp.Expr = exp.GenerateSeries(**arg.args)
                 if isinstance(expression.parent, (exp.From, exp.Join)):

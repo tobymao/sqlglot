@@ -287,6 +287,30 @@ def remove_precision_parameterized_types(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def unnest_offset_select(
+    unnest: exp.Unnest, alias: exp.TableAlias | None, *, ordinality: bool
+) -> exp.Select:
+    """Project the UNNEST position in the source dialect's base alongside its value."""
+    unnest = unnest.copy()
+    offset = unnest.args["offset"]
+    if not isinstance(offset, exp.Identifier):
+        offset = exp.to_identifier("offset" if ordinality else "ordinality")
+    columns = alias.columns if alias else []
+    if not columns:
+        default_name = "_value" if ordinality else "unnest"
+        value = (alias and alias.this) or exp.to_identifier(
+            find_new_name({offset.name.lower()}, default_name)
+        )
+        columns = [value]
+    unnest.set("alias", exp.TableAlias(columns=[column.copy() for column in columns]))
+    unnest.set("offset", offset)
+    unnest.set("offset_base", int(ordinality))
+    position = exp.column(offset)
+    return exp.select(
+        *columns, exp.alias_(position - 1 if ordinality else position + 1, offset)
+    ).from_(unnest, copy=False)
+
+
 def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
     """Remove references to unnest table aliases, added by the optimizer's qualify_columns step."""
     from sqlglot.optimizer.scope import find_all_in_scope
@@ -571,6 +595,7 @@ def explode_projection_to_unnest(
                             exp.Unnest(
                                 expressions=[explode_arg.copy()],
                                 offset=exp.to_identifier(pos_alias),
+                                offset_base=index_offset,
                             ),
                             unnest_source_alias,
                             table=[explode_alias],

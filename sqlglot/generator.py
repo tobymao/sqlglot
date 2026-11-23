@@ -3740,11 +3740,21 @@ class Generator:
         return f"{self.seg('QUALIFY')}{self.sep()}{this}"
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        args = self.expressions(expression, flat=True)
-
         alias = expression.args.get("alias")
         offset = expression.args.get("offset")
 
+        if self.UNNEST_WITH_ORDINALITY and offset and expression.args.get("offset_base") == 0:
+            from sqlglot.transforms import unnest_offset_select
+
+            query = unnest_offset_select(expression, alias, ordinality=True)
+            subquery = query.subquery(
+                exp.TableAlias(this=exp.to_identifier(alias.this) if alias else None), copy=False
+            )
+            return self.sql(
+                exp.Lateral(this=subquery) if isinstance(expression.parent, exp.Join) else subquery
+            )
+
+        args = self.expressions(expression, flat=True)
         if self.UNNEST_WITH_ORDINALITY:
             if alias and isinstance(offset, exp.Expr):
                 alias.append("columns", offset)

@@ -610,8 +610,8 @@ class TestPostgres(Validator):
             "SELECT e'update table_name set a = ''foo'' where 1 = 0' AS x FROM tab",
         )
         self.validate_identity(
-            "select count() OVER(partition by a order by a range offset preceding exclude current row)",
-            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN offset preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
+            "select count() OVER(partition by a order by a range 1 preceding exclude current row)",
+            "SELECT COUNT() OVER (PARTITION BY a ORDER BY a range BETWEEN 1 preceding AND CURRENT ROW EXCLUDE CURRENT ROW)",
         )
         self.validate_identity(
             "x::JSON -> 'duration' ->> -1",

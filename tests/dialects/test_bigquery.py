@@ -3920,6 +3920,69 @@ OPTIONS (
             },
         )
 
+        for dialect, array in (
+            ("duckdb", "[10, 20, 30]"),
+            ("postgres", "ARRAY[10, 20, 30]"),
+            ("trino", "ARRAY[10, 20, 30]"),
+        ):
+            self.validate_all(
+                "SELECT x, off FROM UNNEST([10, 20, 30]) AS x WITH OFFSET AS off",
+                write={
+                    dialect: f"SELECT x, off FROM (SELECT x, off - 1 AS off FROM UNNEST({array}) "
+                    "WITH ORDINALITY AS _t1(x, off)) AS _t0",
+                },
+            )
+            self.validate_all(
+                "SELECT t.x, t.n FROM UNNEST(ARRAY(SELECT AS STRUCT x, n + 1 AS n "
+                "FROM UNNEST([10, 20, 30]) AS x WITH OFFSET AS n)) AS t",
+                read={
+                    dialect: f"SELECT t.x, t.n FROM UNNEST({array}) WITH ORDINALITY AS t(x, n)",
+                },
+            )
+
+        self.validate_all(
+            "SELECT offset FROM UNNEST([10, 20]) WITH OFFSET",
+            write={
+                "postgres": 'SELECT "offset" FROM (SELECT _value, "offset" - 1 AS "offset" '
+                'FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS _t1(_value, "offset")) AS _t0',
+            },
+        )
+        self.validate_all(
+            "WITH a AS (SELECT [10, 20] AS arr) SELECT * FROM a "
+            "LEFT JOIN UNNEST(a.arr) AS x WITH OFFSET AS off ON off = 0",
+            write={
+                "duckdb": "WITH a AS (SELECT [10, 20] AS arr) SELECT * FROM a LEFT JOIN LATERAL "
+                "(SELECT x, off - 1 AS off FROM UNNEST(a.arr) WITH ORDINALITY AS _t1(x, off)) "
+                "AS _t0 ON off = 0",
+            },
+        )
+        self.validate_all(
+            "WITH a AS (SELECT [10, 20] AS arr) SELECT t.* FROM a LEFT JOIN "
+            "UNNEST(ARRAY(SELECT AS STRUCT x, ordinality + 1 AS ordinality "
+            "FROM UNNEST(a.arr) AS x WITH OFFSET AS ordinality)) AS t ON t.ordinality = 1",
+            read={
+                "postgres": "WITH a AS (SELECT ARRAY[10, 20] AS arr) SELECT t.* FROM a "
+                "LEFT JOIN LATERAL UNNEST(a.arr) WITH ORDINALITY AS t(x) ON t.ordinality = 1",
+            },
+        )
+
+        self.validate_all(
+            "SELECT item.a, pos FROM UNNEST([STRUCT(10 AS a), STRUCT(20 AS a)]) AS item WITH OFFSET AS pos",
+            write={
+                "duckdb": "SELECT item.a, pos FROM (SELECT item, pos - 1 AS pos FROM "
+                "UNNEST([{'a': 10}, {'a': 20}]) WITH ORDINALITY AS _t1(item, pos)) AS _t0",
+            },
+        )
+        self.validate_all(
+            "SELECT d, i FROM UNNEST(GENERATE_DATE_ARRAY(DATE '2020-01-01', DATE '2020-01-02')) "
+            "AS d WITH OFFSET AS i",
+            write={
+                "postgres": "SELECT d, i FROM (SELECT d, i - 1 AS i FROM UNNEST(ARRAY(SELECT "
+                "CAST(GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-01-02' AS DATE), "
+                "INTERVAL '1 DAY') AS DATE))) WITH ORDINALITY AS _t1(d, i)) AS _t0",
+            },
+        )
+
     def test_generate_date_array(self):
         self.validate_all(
             "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08')",

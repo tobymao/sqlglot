@@ -4187,8 +4187,7 @@ class DuckDBGenerator(generator.Generator):
         return super().tablefromrows_sql(expression)
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
-        explode_array = expression.args.get("explode_array")
-        if explode_array:
+        if expression.args.get("explode_array") and not expression.args.get("offset"):
             # In BigQuery, UNNESTing a nested array leads to explosion of the top-level array & struct
             # This is transpiled to DDB by transforming "FROM UNNEST(...)" to "FROM (SELECT UNNEST(..., max_depth => 2))"
             expression.expressions.append(

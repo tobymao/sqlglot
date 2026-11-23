@@ -3895,9 +3895,15 @@ OPTIONS (
         self.assertEqual(self.parse_one(sql).sql("bigquery", pretty=True), expected)
 
     def test_unnest_with_offset(self):
-        for offset, alias in (("", "offset"), ("AS pos", "pos")):
+        for offset, alias in (("", "offset"), (" AS pos", "pos")):
             self.validate_all(
-                f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET {offset}",
+                f"SELECT x, {alias} FROM UNNEST([10, 20]) AS x WITH OFFSET{offset} ORDER BY {alias}",
+                write={
+                    "snowflake": f"SELECT x, {alias} FROM TABLE(FLATTEN(INPUT => [10, 20])) AS _t0(seq, key, path, {alias}, x, this) ORDER BY {alias} NULLS FIRST",
+                },
+            )
+            self.validate_all(
+                f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET{offset}",
                 write={
                     "bigquery": f"SELECT * FROM tbl CROSS JOIN UNNEST(col) AS ref WITH OFFSET AS {alias}",
                     "hive": f"SELECT * FROM tbl LATERAL VIEW POSEXPLODE(col) AS {alias}, ref",
@@ -3906,6 +3912,13 @@ OPTIONS (
                     "databricks": f"SELECT * FROM tbl CROSS JOIN LATERAL (SELECT * EXCEPT (pos), pos AS {alias} FROM POSEXPLODE(col)) AS _t0(ref, {alias})",
                 },
             )
+
+        self.validate_all(
+            "SELECT x.pos AS field, POS FROM UNNEST([STRUCT(42 AS pos)]) AS x WITH OFFSET AS pos WHERE pos = 0",
+            write={
+                "snowflake": "SELECT x['pos'] AS field, POS FROM TABLE(FLATTEN(INPUT => [OBJECT_CONSTRUCT('pos', 42)])) AS _t0(seq, key, path, pos, x, this) WHERE pos = 0",
+            },
+        )
 
     def test_generate_date_array(self):
         self.validate_all(

@@ -459,6 +459,12 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(expression.this.this.this.this, exp.Paren)
         self.assertIsInstance(expression.this.this.this.this.this, exp.EQ)
 
+    def test_top_with_comma(self):
+        for dialect in ("redshift", "teradata", "tsql"):
+            for sql in ("SELECT top, x FROM t", "SELECT TOP 1, x FROM t"):
+                with self.subTest(dialect=dialect, sql=sql), self.assertRaises(ParseError):
+                    parse_one(sql, read=dialect)
+
     def test_limit_percent_parses_without_modulo(self):
         expression = parse_one("SELECT * FROM range(1000) LIMIT 1 / 10% OFFSET 5")
         limit = expression.args["limit"]

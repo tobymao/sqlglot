@@ -6058,11 +6058,13 @@ class Parser:
                     expression = self._parse_term(parse_mod=False)
             limit_options = self._parse_limit_options()
 
+            offset = None
             if self._match(TokenType.COMMA):
-                offset = expression
-                expression = self._parse_term()
-            else:
-                offset = None
+                if top:
+                    self.raise_error("Unexpected comma after TOP", self._prev)
+                else:
+                    offset = expression
+                    expression = self._parse_term()
 
             limit_exp = self.expression(
                 exp.Limit(

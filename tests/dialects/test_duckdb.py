@@ -1909,6 +1909,14 @@ class TestDuckDB(Validator):
             "SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY y DESC) FROM t",
             "SELECT QUANTILE_DISC(y, 0.25 ORDER BY y DESC) FROM t",
         )
+        for suffix in ("CONT", "DISC"):
+            self.validate_all(
+                f"SELECT QUANTILE_{suffix}(x, CAST(0.9 AS DOUBLE) ORDER BY x ASC) FROM t",
+                read={
+                    "postgres": f"SELECT PERCENTILE_{suffix}(CAST(0.9 AS FLOAT)) "
+                    "WITHIN GROUP (ORDER BY x ASC) FROM t",
+                },
+            )
         self.validate_all(
             "SELECT QUANTILE_CONT(x, q) FROM t",
             write={

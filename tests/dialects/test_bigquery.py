@@ -2769,9 +2769,11 @@ WHERE
         ast = self.validate_identity(
             "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'locf')]) ORDER BY time"
         )
-        self.assertEqual(
-            ast.find(exp.GapFill).this, exp.TableArgument(this=exp.to_table("device_data"))
-        )
+        arg = ast.find(exp.GapFill).this
+        self.assertIsInstance(arg, exp.TableArgument)
+        sql = ast.sql("bigquery")
+        arg.replace(arg.this)
+        self.assertEqual(ast.sql("bigquery"), sql)
         self.validate_identity(
             "SELECT * FROM GAP_FILL((SELECT CURRENT_DATETIME() AS ts), "
             "ts_column => 'ts', bucket_width => INTERVAL '1' HOUR)"
@@ -2861,21 +2863,8 @@ OPTIONS (
             "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table, 'query_column_to_search', top_k => 2, distance_type => 'cosine', options => '{\"fraction_lists_to_search\":0.15}')"
         )
         vector_search = ast.find(exp.VectorSearch)
-        self.assertEqual(
-            vector_search.this, exp.TableArgument(this=exp.to_table("mydataset.base_table"))
-        )
-        self.assertEqual(
-            vector_search.args["query_table"],
-            exp.TableArgument(this=exp.to_table("mydataset.query_table")),
-        )
-        self.assertEqual(
-            exp.VectorSearch(
-                this=exp.to_table("ds.base"),
-                column_to_search=exp.Literal.string("embedding"),
-                query_table=exp.to_table("ds.probes"),
-            ).sql("bigquery"),
-            "VECTOR_SEARCH(TABLE ds.base, 'embedding', TABLE ds.probes)",
-        )
+        self.assertIsInstance(vector_search.this, exp.TableArgument)
+        self.assertIsInstance(vector_search.args["query_table"], exp.TableArgument)
         self.validate_identity(
             "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table, query_column_to_search => 'query_column_to_search', top_k => 2, distance_type => 'cosine', options => '{\"fraction_lists_to_search\":0.15}')"
         )

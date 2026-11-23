@@ -551,6 +551,20 @@ class TestSQLite(Validator):
                     f"SELECT {func}(t.ts, '1 DAY') FROM t",
                 )
 
+    def test_interval_arithmetic_text_column(self):
+        for sql in (
+            "SELECT t.ts + INTERVAL 1 DAY FROM t",
+            "SELECT DATE_ADD(t.ts, INTERVAL 1 DAY) FROM t",
+        ):
+            with self.subTest(sql=sql):
+                query = annotate_types(
+                    parse_one(sql, read="mysql"),
+                    schema={"t": {"ts": "VARCHAR(32)"}},
+                    dialect="mysql",
+                )
+                with self.assertRaisesRegex(UnsupportedError, "may discard the time"):
+                    query.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+
     def test_date_add_sub_day_units_retain_time(self):
         connection = sqlite3.connect(":memory:")
         try:

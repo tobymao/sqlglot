@@ -405,3 +405,8 @@ class StX(Expression, Func):
 
 class StY(Expression, Func):
     arg_types = {"this": True, "expression": False}
+
+
+class StGeogPoint(Expression, Func):
+    arg_types = {"this": True, "expression": True}
+    _sql_names = ["ST_GEOGPOINT"]

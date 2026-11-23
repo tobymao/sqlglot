@@ -2781,9 +2781,16 @@ def remove_from_array_using_filter(
         )
     )
 
-    if expression.args.get("null_propagation") and not isinstance(
-        removal_value, (exp.Literal, exp.Boolean, exp.Array)
-    ):
+    if expression.args.get("null_propagation"):
+        operand = removal_value.unnest()
+        if isinstance(operand, (exp.Literal, exp.Boolean, exp.Array)):
+            return filter_sql
+
+        while isinstance(operand, exp.Neg):
+            operand = operand.this.unnest()
+        if operand.is_number:
+            return filter_sql
+
         if supports_nullable_arrays:
             return self.sql(
                 exp.If(this=removal_value.is_(exp.null()), true=exp.null(), false=filter_sql)

@@ -418,11 +418,12 @@ def _expand_forward_alias_refs(scope: Scope, resolver: Resolver) -> None:
             column.set("table", table)
 
     for i in order:
+        projection = selects[i]
         for column, target in references.get(i, ()):
             definition = selects[target].this
-            if column is selects[i]:
+            if column is projection.unnest():
                 # SELECT x, 1 AS x exposes two columns named x.
-                column.replace(alias(definition, column.this))
+                projection.replace(alias(definition, column.this))
             else:
                 replacement = column.replace(exp.paren(definition))
                 simplified = simplify_parens(replacement, resolver.dialect)

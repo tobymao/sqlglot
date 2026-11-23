@@ -1480,6 +1480,13 @@ SELECT (t.x + 1 + 3) * 2 AS c, t.x + 1 + 3 AS b, t.x + 1 AS x, t.x AS original F
 SELECT b, b AS a, 7 AS b GROUP BY a;
 SELECT 7 AS b, 7 AS a, 7 AS b GROUP BY 2;
 
+# title: ClickHouse preserves the output name of a parenthesized forward alias reference
+# dialect: clickhouse
+# execute: false
+# schema: {"t": {"col": "INT"}}
+SELECT (src), ((src)), t.col AS src FROM t;
+SELECT t.col AS src, t.col AS src, t.col AS src FROM t AS t;
+
 # title: subquery
 SELECT
   *

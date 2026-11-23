@@ -7,6 +7,27 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_array_remove(self):
+        self.validate_all(
+            "ARRAY_REMOVE(ARRAY[1, 2, NULL, 2], 2)",
+            write={"clickhouse": "arrayFilter(_u -> NOT has([2], _u), [1, 2, NULL, 2])"},
+        )
+        for target in ("-1", "((2))", "-(1)"):
+            with self.subTest(target=target):
+                expr = self.parse_one(f"ARRAY_REMOVE(ARRAY[-1, 2], {target})")
+                self.assertEqual(
+                    expr.sql("clickhouse", unsupported_level=ErrorLevel.RAISE),
+                    f"arrayFilter(_u -> NOT has([{target}], _u), [-1, 2])",
+                )
+                self.assertEqual(
+                    expr.sql("duckdb"),
+                    f"LIST_FILTER([-1, 2], LAMBDA _u : _u IS DISTINCT FROM {target})",
+                )
+        self.validate_all(
+            "SELECT ARRAY_REMOVE(ARRAY[1, 2, NULL, 2], -target) FROM (VALUES (2), (NULL)) AS t(target)",
+            write={"clickhouse": UnsupportedError},
+        )
+
     def test_table_query_function(self):
         self.validate_identity(
             "SELECT * FROM TABLE(sequence(start => 1, stop => 2))",

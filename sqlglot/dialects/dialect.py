@@ -18,6 +18,7 @@ from sqlglot.generator import Generator, unsupported_args
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import (
     AutoName,
+    find_new_name,
     flatten,
     is_int,
     seq_get,
@@ -830,6 +831,9 @@ class Dialect(metaclass=_Dialect):
 
     ARRAY_FUNCS_PROPAGATES_NULLS = False
     """Whether Array update functions return NULL when the input array is NULL."""
+
+    ARRAY_REMOVE_PROPAGATES_NULLS = False
+    """Whether ARRAY_REMOVE returns NULL when the removal value is NULL."""
 
     PROMOTE_TO_INFERRED_DATETIME_TYPE = False
     """
@@ -2751,9 +2755,24 @@ def array_compact_sql(self: Generator, expression: exp.ArrayCompact) -> str:
     )
 
 
-def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove) -> str:
-    lambda_id = exp.to_identifier("_u")
-    cond = exp.NEQ(this=lambda_id, expression=expression.expression)
+def remove_from_array_using_filter(
+    self: Generator,
+    expression: exp.ArrayRemove,
+    *,
+    keep: t.Callable[[exp.Identifier, exp.Expr], exp.Expr] | None = None,
+    supports_nullable_arrays: bool = True,
+) -> str:
+    removal_value = expression.expression
+    lambda_id = exp.to_identifier(
+        find_new_name({i.name.lower() for i in removal_value.find_all(exp.Identifier)}, "_u")
+    )
+    if isinstance(removal_value, (exp.Predicate, exp.Connector, exp.Not)):
+        removal_value = exp.paren(removal_value)
+    cond = (
+        keep(lambda_id, removal_value)
+        if keep
+        else exp.NullSafeNEQ(this=lambda_id, expression=removal_value)
+    )
 
     filter_sql = self.sql(
         exp.ArrayFilter(
@@ -2762,28 +2781,22 @@ def remove_from_array_using_filter(self: Generator, expression: exp.ArrayRemove)
         )
     )
 
-    # Handle NULL propagation for ArrayRemove
-    source_null_propagation = bool(expression.args.get("null_propagation"))
-    target_null_propagation = self.dialect.ARRAY_FUNCS_PROPAGATES_NULLS
-
-    # Source propagates NULLs (Snowflake), target doesn't (DuckDB):
-    # When removal value is NULL, return NULL instead of applying filter
-    if source_null_propagation and not target_null_propagation:
-        removal_value = expression.expression
-
-        # Optimization: skip wrapper if removal value is a non-NULL literal
-        # (e.g., 5, 'a', TRUE) or an array literal (e.g., [1, 2])
-        if (
-            isinstance(removal_value, exp.Literal) and not isinstance(removal_value, exp.Null)
-        ) or isinstance(removal_value, exp.Array):
+    if expression.args.get("null_propagation"):
+        operand = removal_value.unnest()
+        if isinstance(operand, (exp.Literal, exp.Boolean, exp.Array)):
             return filter_sql
 
-        return self.sql(
-            exp.If(
-                this=exp.Is(this=removal_value, expression=exp.Null()),
-                true=exp.Null(),
-                false=filter_sql,
+        while isinstance(operand, exp.Neg):
+            operand = operand.this.unnest()
+        if operand.is_number:
+            return filter_sql
+
+        if supports_nullable_arrays:
+            return self.sql(
+                exp.If(this=removal_value.is_(exp.null()), true=exp.null(), false=filter_sql)
             )
+        self.unsupported(
+            "ClickHouse cannot return a NULL array when the ARRAY_REMOVE target is NULL"
         )
 
     return filter_sql

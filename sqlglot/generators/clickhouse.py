@@ -303,7 +303,6 @@ class ClickHouseGenerator(generator.Generator):
         exp.ArrayContains: rename_func("has"),
         exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
         exp.Transform: lambda self, e: self.func("arrayMap", e.expression, e.this),
-        exp.ArrayRemove: remove_from_array_using_filter,
         exp.ArrayReverse: rename_func("arrayReverse"),
         exp.ArraySort: _array_sort_sql,
         exp.ArraySlice: rename_func("arraySlice"),
@@ -449,6 +448,16 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.POLYGON,
         exp.DType.MULTIPOLYGON,
     }
+
+    def arrayremove_sql(self, expression: exp.ArrayRemove) -> str:
+        return remove_from_array_using_filter(
+            self,
+            expression,
+            keep=lambda element, target: exp.ArrayContains(
+                this=exp.array(target), expression=element
+            ).not_(),
+            supports_nullable_arrays=False,
+        )
 
     def dot_sql(self, expression: exp.Dot) -> str:
         if depth := expression.args.get("subcolumn_depth"):

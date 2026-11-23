@@ -3967,19 +3967,68 @@ OPTIONS (
         )
 
         self.validate_all(
-            "SELECT item.a, pos FROM UNNEST([STRUCT(10 AS a), STRUCT(20 AS a)]) AS item WITH OFFSET AS pos",
-            write={
-                "duckdb": "SELECT item.a, pos FROM (SELECT item, pos - 1 AS pos FROM "
-                "UNNEST([{'a': 10}, {'a': 20}]) WITH ORDINALITY AS _t1(item, pos)) AS _t0",
-            },
-        )
-        self.validate_all(
             "SELECT d, i FROM UNNEST(GENERATE_DATE_ARRAY(DATE '2020-01-01', DATE '2020-01-02')) "
             "AS d WITH OFFSET AS i",
             write={
                 "postgres": "SELECT d, i FROM (SELECT d, i - 1 AS i FROM UNNEST(ARRAY(SELECT "
                 "CAST(GENERATE_SERIES(CAST('2020-01-01' AS DATE), CAST('2020-01-02' AS DATE), "
                 "INTERVAL '1 DAY') AS DATE))) WITH ORDINALITY AS _t1(d, i)) AS _t0",
+            },
+        )
+
+    def test_unnest_struct_with_offset(self):
+        self.validate_all(
+            "SELECT a, pos FROM UNNEST([STRUCT(10 AS a)]) WITH OFFSET AS pos",
+            write={
+                "duckdb": "SELECT a, pos FROM (SELECT _value.*, pos - 1 AS pos "
+                "FROM UNNEST([{'a': 10}]) WITH ORDINALITY AS _t1(_value, pos)) AS _t0",
+            },
+        )
+        self.validate_all(
+            "SELECT *, item, item.*, a, item.b FROM UNNEST([STRUCT(10 AS a, 20 AS b)]) "
+            "AS item WITH OFFSET AS pos WHERE a = 10",
+            write={
+                "duckdb": "SELECT * EXCLUDE (_u.item), item, item.*, a, item.b FROM "
+                "(SELECT item.*, pos - 1 AS pos, item FROM UNNEST([{'a': 10, 'b': 20}]) "
+                "WITH ORDINALITY AS _t0(item, pos)) AS _u WHERE a = 10",
+            },
+        )
+        self.validate_all(
+            "SELECT *, item.item, item, pos, item.pos FROM UNNEST([STRUCT(10 AS item, 20 AS pos)]) "
+            "AS item WITH OFFSET AS pos",
+            write={
+                "duckdb": "SELECT * EXCLUDE (_u.item) RENAME (_u._item AS item, _u._pos AS pos), "
+                "item.item, item, pos, item.pos FROM (SELECT item.* RENAME (item AS _item, pos AS _pos), "
+                "pos - 1 AS pos, item FROM UNNEST([{'item': 10, 'pos': 20}]) WITH ORDINALITY "
+                "AS _t0(item, pos)) AS _u",
+            },
+        )
+        self.validate_all(
+            "SELECT * FROM (SELECT 3 AS item) AS t CROSS JOIN "
+            "UNNEST([STRUCT(CAST(t.item AS INT64) AS a)]) AS item WITH OFFSET AS pos",
+            write={
+                "duckdb": "SELECT * EXCLUDE (_u.item) FROM (SELECT 3 AS item) AS t CROSS JOIN LATERAL "
+                "(SELECT item.*, pos - 1 AS pos, item FROM UNNEST([{'a': CAST(t.item AS BIGINT)}]) "
+                "WITH ORDINALITY AS _t0(item, pos)) AS _u",
+            },
+        )
+
+    def test_update_from_unnest_with_ordinality(self):
+        self.validate_all(
+            "UPDATE dst SET pos = n FROM UNNEST(ARRAY(SELECT AS STRUCT x, n + 1 AS n "
+            "FROM UNNEST([10, 20]) AS x WITH OFFSET AS n)) AS u WHERE dst.id = x",
+            read={
+                "postgres": "UPDATE dst SET pos = n FROM UNNEST(ARRAY[10, 20]) "
+                "WITH ORDINALITY AS u(x, n) WHERE dst.id = x",
+            },
+        )
+        self.validate_all(
+            "UPDATE dst SET pos = u.n FROM (SELECT [10, 20] AS arr) AS a CROSS JOIN "
+            "UNNEST(ARRAY(SELECT AS STRUCT x, n + 1 AS n FROM UNNEST(a.arr) AS x "
+            "WITH OFFSET AS n)) AS u WHERE dst.id = u.x",
+            read={
+                "postgres": "UPDATE dst SET pos = u.n FROM (SELECT ARRAY[10, 20] AS arr) AS a "
+                "CROSS JOIN LATERAL UNNEST(a.arr) WITH ORDINALITY AS u(x, n) WHERE dst.id = u.x",
             },
         )
 

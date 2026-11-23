@@ -311,7 +311,7 @@ def unnest_offset_select(
     ).from_(unnest, copy=False)
 
 
-def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
+def unqualify_unnest(expression: exp.Expr, preserve_ordinality: bool = False) -> exp.Expr:
     """Remove references to unnest table aliases, added by the optimizer's qualify_columns step."""
     from sqlglot.optimizer.scope import find_all_in_scope
 
@@ -320,6 +320,11 @@ def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
             unnest.alias
             for unnest in find_all_in_scope(expression, exp.Unnest)
             if isinstance(unnest.parent, (exp.From, exp.Join))
+            and not (
+                preserve_ordinality
+                and unnest.args.get("offset")
+                and unnest.args.get("offset_base") != 0
+            )
         }
         if unnest_aliases:
             for column in expression.find_all(exp.Column):

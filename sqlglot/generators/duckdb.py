@@ -705,6 +705,70 @@ def _build_seq_expression(base: exp.Expr, byte_width: int, signed: bool) -> exp.
     return exp.replace_placeholders(_SEQ_UNSIGNED.copy(), base=base, max_val=max_val)
 
 
+def _expand_positional_unnest_structs(expression: exp.Expr) -> exp.Expr:
+    taken_names: set[str] = set()
+    for clause in (expression.args.get("from_"), *(expression.args.get("joins") or [])):
+        unnest = clause.this if clause else None
+        if not (
+            isinstance(unnest, exp.Unnest)
+            and unnest.args.get("explode_array")
+            and unnest.args.get("offset_base") == 0
+        ):
+            continue
+
+        alias = unnest.args.get("alias")
+        query = transforms.unnest_offset_select(unnest, alias, ordinality=True)
+        value, position = query.expressions
+        fields = exp.Star()
+        query.set("expressions", [exp.column(fields, table=value, copy=False), position])
+        table_name = alias.this if alias else None
+        stars = [s for s in expression.expressions if isinstance(s, exp.Star)]
+        if stars and not table_name:
+            if not taken_names:
+                taken_names.update(i.name.lower() for i in expression.find_all(exp.Identifier))
+            table_name = exp.to_identifier(find_new_name(taken_names, "_u"))
+            taken_names.add(table_name.name)
+
+        record = seq_get(alias.columns, 0) if alias else None
+        if record:
+            # A BigQuery range variable can also be selected as a single (possibly NULL) struct.
+            query.append("expressions", record.copy())
+            for star in stars:
+                if record.name.lower() not in {
+                    c.name.lower() for c in star.args.get("except_") or []
+                }:
+                    star.append("except_", exp.column(record, table_name))
+
+        # An explicit range or offset name takes precedence over a same-named struct field.
+        # Keep that field at its original position in SELECT *.
+        array_type = unnest.expressions[0].type
+        if array_type and array_type.expressions:
+            members = array_type.expressions[0].expressions
+            reserved = {position.alias.lower()}
+            if record:
+                reserved.add(record.name.lower())
+            used = reserved | {field.name.lower() for field in members}
+            for field in members:
+                name = field.name.lower()
+                if name in reserved:
+                    internal = find_new_name(used, f"_{name}")
+                    used.add(internal)
+                    fields.append("rename", exp.alias_(exp.column(field.this), internal))
+                    for star in stars:
+                        column = exp.column(internal, table_name)
+                        if name in {
+                            c.name.lower() for c in star.args.get("except_") or [] if not c.table
+                        }:
+                            star.append("except_", column)
+                        else:
+                            star.append("rename", exp.alias_(column, field.this))
+
+        table = query.subquery(exp.TableAlias(this=table_name), copy=False)
+        clause.set("this", exp.Lateral(this=table) if isinstance(clause, exp.Join) else table)
+
+    return expression
+
+
 def _seq_to_range_in_generator(expression: exp.Expr) -> exp.Expr:
     """
     Transform SEQ functions to `range` column references when inside a GENERATOR context.
@@ -1778,7 +1842,11 @@ class DuckDBGenerator(generator.Generator):
         exp.LogicalOr: lambda self, e: self.func("BOOL_OR", _cast_to_boolean(e.this)),
         exp.LogicalAnd: lambda self, e: self.func("BOOL_AND", _cast_to_boolean(e.this)),
         exp.Select: transforms.preprocess(
-            [connect_by_to_recursive_cte, _seq_to_range_in_generator]
+            [
+                connect_by_to_recursive_cte,
+                _seq_to_range_in_generator,
+                _expand_positional_unnest_structs,
+            ]
         ),
         exp.Seq1: lambda self, e: _seq_sql(self, e, 1),
         exp.Seq2: lambda self, e: _seq_sql(self, e, 2),

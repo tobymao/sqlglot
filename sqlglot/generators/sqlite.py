@@ -378,6 +378,13 @@ class SQLiteGenerator(generator.Generator):
         ):
             func = "DATETIME"
         else:
+            if unit_name in ("DAY", "WEEK", "MONTH", "QUARTER", "YEAR") and (
+                not base.type or base.is_type(exp.DType.UNKNOWN)
+            ):
+                self.unsupported(
+                    "SQLite DATE() may discard the time in interval arithmetic with an unknown "
+                    "operand type. Qualify columns and use annotate_types with the source schema."
+                )
             func = "DATE"
 
         modifier = modifier.unnest()

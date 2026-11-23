@@ -135,6 +135,7 @@ class Spark2Generator(HiveGenerator):
     CAN_IMPLEMENT_ARRAY_ANY = True
     ALTER_SET_TYPE = "TYPE"
     PARSE_JSON_NAME: str | None = None
+    ORDERED_PERCENTILE_MIN_VERSIONS: t.ClassVar[dict[type[exp.Expr], tuple[int, ...]]] = {}
 
     PROPERTIES_LOCATION = {
         **HiveGenerator.PROPERTIES_LOCATION,
@@ -225,9 +226,6 @@ class Spark2Generator(HiveGenerator):
             exp.UnixToTime: _unix_to_time_sql,
             exp.VariancePop: rename_func("VAR_POP"),
             exp.WeekOfYear: rename_func("WEEKOFYEAR"),
-            exp.WithinGroup: transforms.preprocess(
-                [transforms.remove_within_group_for_percentiles]
-            ),
             exp.ILike: None,
             exp.Left: None,
             exp.MonthsBetween: None,
@@ -238,6 +236,15 @@ class Spark2Generator(HiveGenerator):
 
     WRAP_DERIVED_VALUES = False
     CREATE_FUNCTION_RETURN_AS = False
+
+    def withingroup_sql(self, expression: exp.WithinGroup) -> str:
+        min_version = self.ORDERED_PERCENTILE_MIN_VERSIONS.get(type(expression.this))
+        if min_version is None or self.dialect.version < min_version:
+            percentile = transforms.remove_within_group_for_percentiles(expression)
+            if percentile is not expression:
+                return self.sql(percentile)
+
+        return super().withingroup_sql(expression)
 
     def format_sql(self, expression: exp.Format) -> str:
         if expression.args.get("is_fmt"):

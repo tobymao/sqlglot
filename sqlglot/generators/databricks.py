@@ -32,6 +32,7 @@ class DatabricksGenerator(SparkGenerator):
     SUPPORTS_TEMPORAL_PRECISION = True
     SUPPORTS_OPTIMIZE = True
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (15, 2)
+    ORDERED_PERCENTILE_MIN_VERSIONS = {exp.PercentileCont: (10, 4), exp.PercentileDisc: (11, 3)}
 
     # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
     # CUME_DIST() OVER (ORDER BY NULL), which Databricks still rejects with

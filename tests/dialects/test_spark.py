@@ -1782,6 +1782,27 @@ TBLPROPERTIES (
                 """WITH "t" AS (SELECT ARRAY[CAST(ROW(ARRAY[1, 2]) AS ROW("a" ARRAY(INTEGER)))] AS "arr") SELECT "t2"."x" AS "x" FROM "t" AS "t" CROSS JOIN UNNEST("t"."arr") AS "t1"("a") CROSS JOIN UNNEST("t1"."a") AS "t2"("x")""",
             )
 
+    def test_ordered_percentiles(self):
+        cont = "PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY x DESC)"
+        disc = "PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY x DESC)"
+        approx = "PERCENTILE_APPROX(x, 0.25)"
+        source = "FROM VALUES (0), (10) AS t(x)"
+        sql = f"SELECT {cont}, {disc} {source}"
+        fallback = f"SELECT {approx}, {approx} {source}"
+        self.validate_all(
+            sql,
+            read={"databricks": sql},
+            write={
+                "spark2": fallback,
+                "spark, version=3.2": fallback,
+                "spark, version=3.3": sql,
+                "databricks, version=10.3": fallback,
+                "databricks, version=10.4": f"SELECT {cont}, {approx} {source}",
+                "databricks, version=11.3": sql,
+                "databricks": sql,
+            },
+        )
+
     def test_approx_percentile(self):
         self.validate_all(
             "PERCENTILE_APPROX(DISTINCT col, 0.3)",

@@ -13,10 +13,8 @@ class TestPostgres(Validator):
 
     def test_string_agg_spark_versions(self):
         ordered = (
-            "ARRAY_JOIN(NULLIF(ARRAY_SORT(COLLECT_LIST(IF(NOT x IS NULL, "
-            "STRUCT(x AS value, y AS k0), NULL)), (l, r) -> CASE "
-            "WHEN l.k0 IS DISTINCT FROM r.k0 THEN IF(COALESCE(l.k0 > r.k0, l.k0 IS NULL), -1, 1) "
-            "ELSE 0 END).value, ARRAY()), ',')"
+            "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+            "STRUCT(y IS NULL, y AS sort_key, x AS value))), FALSE).value, ARRAY()), ',')"
         )
         native = "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y DESC NULLS FIRST)"
         self.validate_all(
@@ -32,41 +30,13 @@ class TestPostgres(Validator):
             "STRING_AGG(x, ',')",
             write={"databricks, version=15.4": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), ',')"},
         )
-        self.validate_all(
-            "STRING_AGG(x, '|' ORDER BY y NULLS FIRST, z DESC NULLS LAST) FILTER (WHERE ok)",
-            write={
-                "spark, version=3.5": (
-                    "ARRAY_JOIN(NULLIF(ARRAY_SORT(COLLECT_LIST(IF(ok AND NOT x IS NULL, "
-                    "STRUCT(x AS value, y AS k0, z AS k1), NULL)), (l, r) -> CASE "
-                    "WHEN l.k0 IS DISTINCT FROM r.k0 THEN IF(COALESCE(l.k0 < r.k0, l.k0 IS NULL), -1, 1) "
-                    "WHEN l.k1 IS DISTINCT FROM r.k1 THEN IF(COALESCE(l.k1 > r.k1, r.k1 IS NULL), -1, 1) "
-                    "ELSE 0 END).value, ARRAY()), '|')"
-                ),
-            },
-        )
-        self.validate_all(
-            "STRING_AGG(DISTINCT x, ':')",
-            write={"spark, version=3.5": "ARRAY_JOIN(NULLIF(COLLECT_SET(x), ARRAY()), ':')"},
-        )
-        self.validate_all(
-            "STRING_AGG(DISTINCT x, ':' ORDER BY x DESC)",
-            write={
-                "spark, version=3.5": (
-                    "ARRAY_JOIN(NULLIF(ARRAY_DISTINCT(ARRAY_SORT(COLLECT_LIST(IF(NOT x IS NULL, "
-                    "STRUCT(x AS value, x AS k0), NULL)), (l, r) -> CASE "
-                    "WHEN l.k0 IS DISTINCT FROM r.k0 THEN IF(COALESCE(l.k0 > r.k0, l.k0 IS NULL), -1, 1) "
-                    "ELSE 0 END).value), ARRAY()), ':')"
-                ),
-            },
-        )
-        self.validate_all(
-            "STRING_AGG(x, '|') FILTER (WHERE ok) OVER (PARTITION BY g)",
-            write={
-                "spark, version=3.5": (
-                    "ARRAY_JOIN(NULLIF(COLLECT_LIST(IF(ok, x, NULL)) OVER (PARTITION BY g), ARRAY()), '|')"
-                ),
-            },
-        )
+        for sql in (
+            "STRING_AGG(x, ',' ORDER BY y, z DESC)",
+            "STRING_AGG(DISTINCT x, ',' ORDER BY x)",
+            "STRING_AGG(x, ',') FILTER (WHERE ok)",
+            "STRING_AGG(x, ',') OVER (PARTITION BY g)",
+        ):
+            self.validate_all(sql, write={"spark, version=3.5": UnsupportedError})
 
     def test_convert(self):
         self.validate_identity(

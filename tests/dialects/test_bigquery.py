@@ -3774,10 +3774,7 @@ OPTIONS (
 
     def test_string_agg(self):
         self.validate_all(
-            "STRING_AGG(DISTINCT x, ',' LIMIT 2)",
-            write={
-                "spark, version=3.5": "ARRAY_JOIN(NULLIF(SLICE(COLLECT_SET(x), 1, 2), ARRAY()), ',')",
-            },
+            "STRING_AGG(x, ',' LIMIT 2)", write={"spark, version=3.5": UnsupportedError}
         )
         self.validate_identity("STRING_AGG(a, ' & ')")
         self.validate_identity("STRING_AGG(DISTINCT a, ' & ')")

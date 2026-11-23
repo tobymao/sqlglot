@@ -6748,6 +6748,7 @@ SINGLE = TRUE""",
         self.assertEqual(expr.find(exp.Placeholder), exp.Placeholder(this="1"))
         self.validate_identity("SELECT :1, :2")
         self.validate_identity("SELECT :1 + :2")
+        self.validate_identity("SELECT ?::NUMBER(10,2)", "SELECT CAST(? AS DECIMAL(10, 2))")
 
     def test_max_by_min_by(self):
         max_by = self.validate_identity("MAX_BY(DISTINCT selected_col, filtered_col)")

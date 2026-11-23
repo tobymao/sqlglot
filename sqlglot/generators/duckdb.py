@@ -3407,7 +3407,7 @@ class DuckDBGenerator(generator.Generator):
                 func.set("expression", func.this)
                 func.set("this", order_col.this)
 
-        this = self.sql(expression, "this").rstrip(")")
+        this = self.sql(expression, "this").removesuffix(")")
 
         return f"{this}{expression_sql})"
 

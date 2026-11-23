@@ -232,6 +232,76 @@ class TestBigQuery(Validator):
                 )
                 self.assertEqual(expression.sql("duckdb"), expected)
 
+    def test_date_add_timestamp(self):
+        # DATE_ADD only takes units up to DAY for a TIMESTAMP, so longer ones go through DATETIME_ADD
+        for unit in ("WEEK", "MONTH", "QUARTER", "YEAR"):
+            with self.subTest(unit):
+                self.validate_all(
+                    f"SELECT TIMESTAMP(DATETIME_ADD(DATETIME(CURRENT_TIMESTAMP()), INTERVAL 2 {unit}))",
+                    read={"trino": f"SELECT DATE_ADD('{unit.lower()}', 2, NOW())"},
+                )
+        self.validate_identity(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(CURRENT_TIMESTAMP()), INTERVAL '2' MONTH))"
+        )
+
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_SUB(DATETIME(CURRENT_TIMESTAMP()), INTERVAL '1' MONTH))",
+            read={"mysql": "SELECT DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 MONTH)"},
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP_SECONDS(t)), INTERVAL 1 MONTH))",
+            read={"trino": "SELECT DATE_ADD('month', 1, FROM_UNIXTIME(t))"},
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(CAST(t AS TIMESTAMP)), INTERVAL 1 MONTH))",
+            read={"trino": "SELECT DATE_ADD('month', 1, CAST(t AS TIMESTAMP WITH TIME ZONE))"},
+        )
+
+        # Through parentheses and functions that return their first argument's type
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP_TRUNC((TIMESTAMP(DATETIME(CAST(t AS TIMESTAMP), 'America/Los_Angeles'))), MONTH)), INTERVAL -11 MONTH))), INTERVAL 12 MONTH))",
+            read={
+                "trino": "SELECT DATE_ADD('month', 12, DATE_ADD('month', -11, DATE_TRUNC('MONTH', (CAST(t AS TIMESTAMP WITH TIME ZONE) AT TIME ZONE 'America/Los_Angeles'))))",
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL -1 DAY)), INTERVAL 1 MONTH))",
+            read={"trino": "SELECT DATE_ADD('month', 1, DATE_ADD('day', -1, NOW()))"},
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(DATE_SUB(CURRENT_TIMESTAMP(), INTERVAL '1' DAY)), INTERVAL '1' MONTH))",
+            read={
+                "mysql": "SELECT DATE_ADD(DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 1 DAY), INTERVAL 1 MONTH)"
+            },
+        )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR)), INTERVAL '1' MONTH))",
+            read={
+                "mysql": "SELECT DATE_ADD(TIMESTAMPADD(HOUR, 1, CURRENT_TIMESTAMP), INTERVAL 1 MONTH)"
+            },
+        )
+
+        # DATE and DATETIME arguments, units up to DAY and unknown types are left as they are
+        self.validate_all(
+            "SELECT DATE_ADD(CAST(t AS DATE), INTERVAL 2 MONTH)",
+            read={"trino": "SELECT DATE_ADD('month', 2, CAST(t AS DATE))"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(CAST(t AS DATETIME), INTERVAL 2 MONTH)",
+            read={"trino": "SELECT DATE_ADD('month', 2, CAST(t AS TIMESTAMP))"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 2 DAY)",
+            read={"trino": "SELECT DATE_ADD('day', 2, NOW())"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(t, INTERVAL 2 MONTH)",
+            read={"trino": "SELECT DATE_ADD('month', 2, t)"},
+        )
+        self.validate_identity(
+            "SELECT DATE_ADD(TIMESTAMP_SUB(CURRENT_DATETIME(), INTERVAL '1' HOUR), INTERVAL '1' MONTH)"
+        )
+
     def test_bigquery(self):
         # Presto's SHA512 takes VARBINARY, so annotated string args are wrapped in TO_UTF8
         expr = self.parse_one("SELECT SHA512('foo')")

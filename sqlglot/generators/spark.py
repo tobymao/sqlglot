@@ -195,7 +195,7 @@ class SparkGenerator(Spark2Generator):
         return self.func(
             "ARRAY_JOIN",
             exp.Nullif(this=values, expression=exp.array()),
-            expression.args.get("separator") or exp.Literal.string(""),
+            expression.args.get("separator") or exp.Literal.string(","),
         )
 
     def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:

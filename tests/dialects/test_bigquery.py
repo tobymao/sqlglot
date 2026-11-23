@@ -3773,6 +3773,15 @@ OPTIONS (
         )
 
     def test_string_agg(self):
+        for args, separator in (("x", "','"), ("x, ''", "''")):
+            ordered = (
+                "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+                f"STRUCT(y AS sort_key, x AS value)))).value, ARRAY()), {separator})"
+            )
+            self.validate_all(
+                f"STRING_AGG({args} ORDER BY y)",
+                write={"spark, version=3.5": ordered, "databricks, version=16.3": ordered},
+            )
         self.validate_all(
             "STRING_AGG(x, ',' LIMIT 2)", write={"spark, version=3.5": UnsupportedError}
         )

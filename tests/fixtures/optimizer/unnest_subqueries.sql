@@ -502,6 +502,61 @@ SELECT x.b, ARRAY_AGG(MAX(_u_0.b)) WITHIN GROUP (ORDER BY x.b) OVER () AS a FROM
 SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM((SELECT MAX(y.b) AS b FROM y)) ORDER BY x.b) AS n FROM x GROUP BY x.b ORDER BY x.b;
 SELECT x.b, ROW_NUMBER() OVER (PARTITION BY SUM(_u_0.b) ORDER BY x.b) AS n FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
 
+# title: Scalar subquery next to a window function over ungrouped rows
+# execute: true
+SELECT x.a, x.a + (SELECT MAX(y.b) AS b FROM y) AS c, RANK() OVER (ORDER BY x.a) AS r FROM x ORDER BY x.a;
+SELECT x.a, x.a + _u_0.b AS c, RANK() OVER (ORDER BY x.a) AS r FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 ORDER BY x.a;
+
+# title: Scalar subquery inside a window aggregate over ungrouped rows
+# execute: true
+SELECT x.a, SUM((SELECT MAX(y.b) AS b FROM y)) OVER () AS total FROM x ORDER BY x.a;
+SELECT x.a, SUM(_u_0.b) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 ORDER BY x.a;
+
+# title: Scalar subquery next to a window function over an aggregate
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, SUM(SUM(x.a)) OVER () AS total FROM x;
+SELECT MAX(_u_0.b) + 1 AS c, SUM(SUM(x.a)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0;
+
+# title: Preserve a scalar subquery in a query whose only aggregate is in HAVING
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x HAVING COUNT(*) > 1;
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x HAVING COUNT(*) > 1;
+
+# title: Preserve a scalar subquery in a query whose only aggregate is in ORDER BY
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x ORDER BY COUNT(*);
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x ORDER BY COUNT(*);
+
+# title: Preserve a scalar subquery in a query whose only aggregate is in QUALIFY
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY SUM(x.a)) = 1;
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY SUM(x.a)) = 1;
+
+# title: Preserve a scalar subquery with a HAVING that has no aggregates
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x HAVING 1 = 1;
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x HAVING 1 = 1;
+
+# title: Preserve a scalar subquery inside a HAVING that has no aggregates
+# execute: true
+SELECT 1 AS c FROM x HAVING 1 < (SELECT MAX(y.b) AS b FROM y);
+SELECT 1 AS c FROM x HAVING 1 < (SELECT MAX(y.b) AS b FROM y);
+
+# title: Scalar subquery in WHERE with a HAVING that has no aggregates
+# execute: true
+SELECT 1 AS c FROM x WHERE x.a = (SELECT MAX(y.b) AS b FROM y) HAVING 1 = 1;
+SELECT 1 AS c FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 WHERE x.a = _u_0.b HAVING 1 = 1;
+
+# title: Preserve a scalar set operation subquery in an aggregate query
+# execute: true
+SELECT (SELECT 1 AS b UNION SELECT 1 AS b) + 1 AS c, COUNT(*) AS n FROM x;
+SELECT (SELECT 1 AS b UNION SELECT 1 AS b) + 1 AS c, COUNT(*) AS n FROM x;
+
+# title: Preserve a quantified subquery in an aggregate query
+# execute: true
+SELECT 3 < ALL (SELECT y.b AS b FROM y) AS c, COUNT(*) AS n FROM x;
+SELECT 3 < ALL (SELECT y.b AS b FROM y) AS c, COUNT(*) AS n FROM x;
+
 # title: Aggregate ancestor traversal stops at a CTE query
 # execute: true
 WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;

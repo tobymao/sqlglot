@@ -57,15 +57,7 @@ def unnest_subqueries(expression: E) -> E:
             and scope.parent.expression is parent
             and scope.parent.is_correlated_subquery
             and not _has_plain_explicit_group(parent)
-            and (
-                _has_aggregate_projection(parent)
-                or _has_order_aggregate(parent)
-                or parent.args.get("having")
-                or (
-                    (qualify := parent.args.get("qualify"))
-                    and projection_has_aggregate(qualify, parent.args.get("windows"))
-                )
-            )
+            and (_has_aggregate_projection(parent) or _has_aggregate_clause(parent))
             and _is_post_aggregation(select, parent)
         ):
             continue
@@ -136,19 +128,19 @@ def unnest(select, parent_select, next_alias_name):
     if not isinstance(predicate, (exp.In, exp.Any)):
         column = exp.column(select.selects[0].alias_or_name, alias)
 
-        clause_parent_select = clause.parent_select if clause else None
-
-        if (isinstance(clause, exp.Having) and clause_parent_select is parent_select) or (
-            (not clause or clause_parent_select is not parent_select)
-            and (
-                parent_select.args.get("group")
-                or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
-            )
-        ):
-            if _is_post_aggregation(select, parent_select):
-                column = exp.Max(this=column)
-        elif not isinstance(select.parent, exp.Subquery):
+        # ARRAY(SELECT ...), ALL (SELECT ...) and set operations are left in place
+        if not isinstance(select.parent, exp.Subquery):
             return
+
+        if _is_post_aggregation(select, parent_select):
+            if parent_select.args.get("group") or _has_aggregate_projection(parent_select):
+                # Aggregates aren't allowed in a window function's FILTER (e.g. in Postgres)
+                if not isinstance(clause, exp.Where):
+                    column = exp.Max(this=column)
+            elif _has_aggregate_clause(parent_select):
+                # Whether a HAVING, or an aggregate in ORDER BY or QUALIFY, aggregates these rows
+                # depends on the dialect (e.g. MySQL's HAVING can just filter them)
+                return
 
         _replace(select.parent, column)
         parent_select.join(select, join_type="CROSS", join_alias=alias, copy=False)
@@ -643,6 +635,15 @@ def _has_aggregate_projection(select: exp.Select) -> bool:
 def _has_order_aggregate(select: exp.Select) -> bool:
     order = select.args.get("order")
     return order is not None and projection_has_aggregate(order, select.args.get("windows"))
+
+
+def _has_aggregate_clause(select: exp.Select) -> bool:
+    qualify = select.args.get("qualify")
+    return bool(
+        select.args.get("having")
+        or _has_order_aggregate(select)
+        or (qualify and projection_has_aggregate(qualify, select.args.get("windows")))
+    )
 
 
 def _other_operand(expression: object) -> exp.Expr | None:

@@ -523,6 +523,48 @@ class TestSQLite(Validator):
             "SELECT DATE(d, '-1 MONTH') FROM t",
         )
 
+    def test_interval_arithmetic_unknown_type(self):
+        for sql in (
+            "SELECT ts + INTERVAL 1 DAY FROM t",
+            "SELECT INTERVAL 1 WEEK + ts FROM t",
+            "SELECT ts - INTERVAL 1 MONTH FROM t",
+            "SELECT ts + INTERVAL 1 QUARTER FROM t",
+            "SELECT DATE_ADD(ts, INTERVAL 1 YEAR) FROM t",
+        ):
+            with (
+                self.subTest(sql=sql),
+                self.assertRaisesRegex(UnsupportedError, "may discard the time"),
+            ):
+                parse_one(sql, read="duckdb").sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+
+        query = parse_one("SELECT t.ts + INTERVAL 1 DAY FROM t", read="mysql")
+        annotate_types(query, dialect="mysql")
+        with self.assertLogs(generator_logger, level="WARNING") as logs:
+            self.assertEqual(query.sql("sqlite"), "SELECT DATE(t.ts, '1 DAY') FROM t")
+        self.assertIn("may discard the time", logs.output[0])
+
+        for dtype, func in (("DATE", "DATE"), ("TIMESTAMP", "DATETIME")):
+            with self.subTest(dtype=dtype):
+                annotate_types(query, schema={"t": {"ts": dtype}}, dialect="mysql")
+                self.assertEqual(
+                    query.sql("sqlite", unsupported_level=ErrorLevel.RAISE),
+                    f"SELECT {func}(t.ts, '1 DAY') FROM t",
+                )
+
+    def test_interval_arithmetic_text_column(self):
+        for sql in (
+            "SELECT t.ts + INTERVAL 1 DAY FROM t",
+            "SELECT DATE_ADD(t.ts, INTERVAL 1 DAY) FROM t",
+        ):
+            with self.subTest(sql=sql):
+                query = annotate_types(
+                    parse_one(sql, read="mysql"),
+                    schema={"t": {"ts": "VARCHAR(32)"}},
+                    dialect="mysql",
+                )
+                with self.assertRaisesRegex(UnsupportedError, "may discard the time"):
+                    query.sql("sqlite", unsupported_level=ErrorLevel.RAISE)
+
     def test_date_add_sub_day_units_retain_time(self):
         connection = sqlite3.connect(":memory:")
         try:

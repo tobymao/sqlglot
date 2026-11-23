@@ -273,23 +273,11 @@ def build_array_concat(args: BuilderArgs, dialect: Dialect) -> exp.ArrayConcat:
 
 
 def build_array_remove(args: BuilderArgs, dialect: Dialect) -> exp.ArrayRemove:
-    """
-    Builds ArrayRemove with NULL propagation semantics based on the dialect configuration.
-
-    Some dialects (Snowflake) return NULL when the removal value is NULL.
-    Others (DuckDB) may return empty array due to NULL comparison semantics.
-
-    Args:
-        args: Function arguments [array, value_to_remove]
-        dialect: The dialect to read ARRAY_FUNCS_PROPAGATES_NULLS from
-
-    Returns:
-        ArrayRemove expression with appropriate null_propagation flag
-    """
+    """A NULL removal value removes NULL elements in PostgreSQL and returns NULL in Spark."""
     return exp.ArrayRemove(
         this=seq_get(args, 0),
         expression=seq_get(args, 1),
-        null_propagation=dialect.ARRAY_FUNCS_PROPAGATES_NULLS,
+        null_propagation=dialect.ARRAY_REMOVE_PROPAGATES_NULLS,
     )
 
 

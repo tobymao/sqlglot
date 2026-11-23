@@ -303,7 +303,9 @@ class ClickHouseGenerator(generator.Generator):
         exp.ArrayContains: rename_func("has"),
         exp.ArrayFilter: lambda self, e: self.func("arrayFilter", e.expression, e.this),
         exp.Transform: lambda self, e: self.func("arrayMap", e.expression, e.this),
-        exp.ArrayRemove: remove_from_array_using_filter,
+        exp.ArrayRemove: lambda self, e: remove_from_array_using_filter(
+            self, e, supports_nullable_arrays=False
+        ),
         exp.ArrayReverse: rename_func("arrayReverse"),
         exp.ArraySort: _array_sort_sql,
         exp.ArraySlice: rename_func("arraySlice"),

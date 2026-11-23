@@ -87,7 +87,7 @@ class Scope:
     _derived_tables: list[exp.Subquery]
     _udtfs: list[exp.UDTF]
     _tables: list[exp.Table]
-    _table_arguments: list[exp.Table]
+    _table_arguments: list[tuple[exp.Table, str | None]]
     _ordered_sources: list[exp.Expr]
     _ctes: list[exp.CTE]
     _subqueries: list[exp.Select | exp.SetOperation]
@@ -226,7 +226,8 @@ class Scope:
 
                 self._tables.append(node)
                 if isinstance(node.parent, exp.TableArgument):
-                    self._table_arguments.append(node)
+                    # Hoisting a CTE can rename this node to the name of another visible CTE.
+                    self._table_arguments.append((node, None if node.db else node.name))
                 else:
                     self._ordered_sources.append(node)
             elif isinstance(node, exp.JoinHint):
@@ -476,8 +477,8 @@ class Scope:
     def table_argument_sources(self) -> Iterator[tuple[exp.Table, exp.Table | Scope]]:
         """Resolve TABLE arguments against visible CTEs independently of FROM aliases."""
         self._ensure_collected()
-        for table in self._table_arguments:
-            yield table, self.cte_sources.get(table.name, table) if not table.db else table
+        for table, cte_name in self._table_arguments:
+            yield table, self.cte_sources.get(cte_name, table) if cte_name is not None else table
 
     @property
     def references(self) -> list[tuple[str, exp.Selectable]]:

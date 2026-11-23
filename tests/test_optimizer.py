@@ -2931,14 +2931,16 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
         self.assertEqual(query.ctes[0].this.named_selects, ["x", "y"])
 
         query = parse_one(
-            "SELECT * FROM (WITH t AS (SELECT 1 AS x) "
-            "SELECT * FROM ML.DESCRIBE_DATA(TABLE t)) AS a CROSS JOIN ML.DESCRIBE_DATA(TABLE t) AS b",
+            "SELECT * FROM (WITH t AS (SELECT 1 AS x), t_2 AS (SELECT 2 AS x) "
+            "SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t_2)) AS a "
+            "CROSS JOIN ML.DESCRIBE_DATA(TABLE t) AS b",
             dialect="bigquery",
         )
-        optimizer.eliminate_subqueries.eliminate_subqueries(query)
-        self.assertCountEqual(
-            [arg.sql("bigquery") for arg in query.find_all(exp.TableArgument)],
-            ["TABLE t", "TABLE t_2"],
+        self.assertEqual(
+            optimizer.eliminate_subqueries.eliminate_subqueries(query).sql("bigquery"),
+            "WITH t_2 AS (SELECT 1 AS x), t_2_2 AS (SELECT 2 AS x), "
+            "a AS (SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t_2, TABLE t_2_2)) "
+            "SELECT * FROM a AS a CROSS JOIN ML.DESCRIBE_DATA(TABLE t) AS b",
         )
 
     def test_journal(self):

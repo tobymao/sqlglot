@@ -1163,7 +1163,7 @@ class Parser:
         exp.Limit: lambda self: self._parse_limit(),
         exp.Offset: lambda self: self._parse_offset(),
         exp.Order: lambda self: self._parse_order(),
-        exp.Ordered: lambda self: self._parse_ordered(),
+        exp.Ordered: lambda self: self._parse_ordered_with_all(),
         exp.Properties: lambda self: self._parse_properties(),
         exp.PartitionedByProperty: lambda self: self._parse_partitioned_by(),
         exp.Qualify: lambda self: self._parse_qualify(),
@@ -1398,7 +1398,7 @@ class Parser:
         "MULTISET": lambda self: self.expression(exp.SetProperty(multi=True)),
         "NO": lambda self: self._parse_no_property(),
         "ON": lambda self: self._parse_on_property(),
-        "ORDER BY": lambda self: self._parse_order(skip_order_token=True),
+        "ORDER BY": lambda self: self._parse_order(skip_order_token=True, allow_all=False),
         "OUTPUT": lambda self: self.expression(exp.OutputModelProperty(this=self._parse_schema())),
         "PARTITION": lambda self: self._parse_partitioned_of(),
         "PARTITION BY": lambda self: self._parse_partitioned_by(),
@@ -5938,7 +5938,7 @@ class Parser:
         return None
 
     def _parse_order(
-        self, this: exp.Expr | None = None, skip_order_token: bool = False
+        self, this: exp.Expr | None = None, skip_order_token: bool = False, allow_all: bool = True
     ) -> exp.Expr | None:
         siblings = None
         if not skip_order_token and not self._match(TokenType.ORDER_BY):
@@ -5951,7 +5951,9 @@ class Parser:
         return self.expression(
             exp.Order(
                 this=this,
-                expressions=self._parse_csv(self._parse_ordered),
+                expressions=self._parse_csv(
+                    self._parse_ordered_with_all if allow_all else self._parse_ordered
+                ),
                 siblings=siblings,
             ),
             comments=comments,
@@ -5962,15 +5964,31 @@ class Parser:
             return None
         return self.expression(exp_class(expressions=self._parse_csv(self._parse_ordered)))
 
+    def _parse_ordered_with_all(self) -> exp.Ordered | None:
+        token = self._curr
+        starts_with_all = (
+            token.token_type == TokenType.ALL and self._prev.token_type != TokenType.COMMA
+        )
+        ordered = self._parse_ordered()
+        if (
+            starts_with_all
+            and self.dialect.SUPPORTS_ORDER_BY_ALL
+            and ordered
+            and isinstance(ordered.this, exp.Column)
+            and not ordered.this.table
+            and self._curr.token_type != TokenType.COMMA
+        ):
+            ordered.set(
+                "this", self.expression(exp.var("ALL"), token, comments=ordered.this.comments)
+            )
+        return ordered
+
     def _parse_ordered(
         self, parse_method: t.Callable[[], exp.Expr | None] | None = None
     ) -> exp.Ordered | None:
         this = parse_method() if parse_method else self._parse_disjunction()
         if not this:
             return None
-
-        if this.name.upper() == "ALL" and self.dialect.SUPPORTS_ORDER_BY_ALL:
-            this = exp.var("ALL")
 
         asc = self._match(TokenType.ASC)
         desc: bool | None = True if self._match(TokenType.DESC) else (False if asc else None)
@@ -9226,7 +9244,7 @@ class Parser:
     def _parse_partition_and_order(
         self,
     ) -> tuple[list[exp.Expr], exp.Expr | None]:
-        return self._parse_partition_by(), self._parse_order()
+        return self._parse_partition_by(), self._parse_order(allow_all=False)
 
     def _parse_window_spec(self) -> dict[str, str | exp.Expr | None]:
         self._match(TokenType.BETWEEN)

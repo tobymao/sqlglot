@@ -23,6 +23,7 @@ class Snowflake(Dialect):
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
     NULL_ORDERING = "nulls_are_large"
     TIME_FORMAT = "'YYYY-MM-DD HH24:MI:SS'"
+    SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_USER_DEFINED_TYPES = False
     PREFER_CTE_ALIAS_COLUMN = True
     COLUMN_ALIAS_PRECEDENCE = {

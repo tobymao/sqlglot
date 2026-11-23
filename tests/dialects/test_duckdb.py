@@ -10,6 +10,30 @@ from tests.dialects.test_dialect import Validator
 class TestDuckDB(Validator):
     dialect = "duckdb"
 
+    def test_order_by_all(self):
+        self.validate_identity("SELECT ARRAY_AGG(x ORDER BY ALL) FROM t")
+        self.validate_all(
+            "SELECT x, y FROM t ORDER BY ALL DESC",
+            read={
+                "clickhouse": "SELECT x, y FROM t ORDER BY all DESC",
+                "snowflake": "SELECT x, y FROM t ORDER BY all DESC NULLS LAST",
+            },
+        )
+        for dialect, sort_key, expected in (
+            ("snowflake", '"ALL"', '"ALL"'),
+            ("clickhouse", "t.ALL", 't."ALL"'),
+            ("clickhouse", "ALL DESC, x", '"ALL" DESC, x'),
+            ("clickhouse", "x, ALL", 'x, "ALL"'),
+        ):
+            self.validate_all(
+                f"SELECT * FROM t ORDER BY {expected}",
+                read={dialect: f"SELECT * FROM t ORDER BY {sort_key}"},
+            )
+        self.validate_all(
+            'SELECT ROW_NUMBER() OVER (ORDER BY "ALL") FROM t',
+            read={"clickhouse": "SELECT ROW_NUMBER() OVER (ORDER BY ALL) FROM t"},
+        )
+
     def test_format(self):
         for sql in (
             "FORMAT('{}-{}', 1, 2)",

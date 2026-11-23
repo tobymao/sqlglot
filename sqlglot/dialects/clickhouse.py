@@ -16,6 +16,7 @@ class ClickHouse(Dialect):
     INDEX_OFFSET = 1
     NORMALIZE_FUNCTIONS: bool | str = False
     NULL_ORDERING = "nulls_are_last"
+    SUPPORTS_ORDER_BY_ALL = True
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST: bool | None = None
     FORCE_EARLY_ALIAS_REF_EXPANSION = True

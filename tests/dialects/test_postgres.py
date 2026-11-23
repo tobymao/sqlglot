@@ -12,19 +12,25 @@ class TestPostgres(Validator):
     dialect = "postgres"
 
     def test_string_agg_spark_versions(self):
-        ordered = (
-            "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
-            "STRUCT(y IS NULL, y AS sort_key, x AS value))), FALSE).value, ARRAY()), ',')"
-        )
+        for ordering, null_key, sort_direction in (
+            ("ASC NULLS FIRST", "", ""),
+            ("ASC NULLS LAST", "y IS NULL, ", ""),
+            ("DESC NULLS FIRST", "y IS NULL, ", ", FALSE"),
+            ("DESC NULLS LAST", "", ", FALSE"),
+        ):
+            ordered = (
+                "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+                f"STRUCT({null_key}y AS sort_key, x AS value))){sort_direction}).value, ARRAY()), ',')"
+            )
+            self.validate_all(
+                f"STRING_AGG(x, ',' ORDER BY y {ordering})",
+                write={"spark, version=3.5": ordered, "databricks, version=16.3": ordered},
+            )
+
         native = "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y DESC NULLS FIRST)"
         self.validate_all(
             "STRING_AGG(x, ',' ORDER BY y DESC)",
-            write={
-                "spark, version=3.5": ordered,
-                "spark, version=4.0": native,
-                "databricks, version=16.3": ordered,
-                "databricks, version=16.4": native,
-            },
+            write={"spark, version=4.0": native, "databricks, version=16.4": native},
         )
         self.validate_all(
             "STRING_AGG(x, ',')",

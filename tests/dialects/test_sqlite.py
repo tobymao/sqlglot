@@ -503,7 +503,7 @@ class TestSQLite(Validator):
                 ("mysql", "SELECT DATE_ADD(DATE '2024-01-31', INTERVAL 1 QUARTER)", "2024-04-30"),
                 (
                     "mysql",
-                    "SELECT DATE_SUB(d, INTERVAL n QUARTER) "
+                    "SELECT DATE_SUB(t.d, INTERVAL t.n QUARTER) "
                     "FROM (SELECT DATE '2024-05-31' AS d, 1 AS n) AS t",
                     "2024-02-29",
                 ),

@@ -353,6 +353,17 @@ class SQLiteGenerator(generator.Generator):
         if unit_name == "WEEK":
             modifier = modifier * 7
             unit = exp.var("DAY")
+        elif unit_name == "QUARTER":
+            modifier = modifier * 3
+            unit = exp.var("MONTH")
+
+        floor = None
+        if unit_name in ("MONTH", "QUARTER", "YEAR"):
+            # SQLite otherwise rolls overflowing days into the following month.
+            if self.dialect.version >= (3, 46):
+                floor = "'floor'"
+            else:
+                self.unsupported("Clamping month-end interval arithmetic requires SQLite 3.46+")
 
         # DATE + INTERVAL can return DATE or TIMESTAMP depending on the source dialect.
         if expression.is_type(exp.DType.DATE, exp.DType.DATE32):
@@ -375,16 +386,14 @@ class SQLiteGenerator(generator.Generator):
             and not isinstance(modifier, exp.Literal)
             and not (isinstance(modifier, exp.Neg) and modifier.this.is_number)
         ):
-            return self.func(
-                func,
-                base,
-                exp.DPipe(
-                    this=exp.paren(modifier),
-                    expression=exp.Literal.string(f" {unit.name}"),
-                ),
+            modifier = exp.DPipe(
+                this=exp.paren(modifier),
+                expression=exp.Literal.string(f" {unit.name}"),
             )
-        value = modifier.name if modifier.is_string else self.sql(modifier)
-        return self.func(func, base, exp.Literal.string(f"{value} {unit.name}" if unit else value))
+        else:
+            value = modifier.name if modifier.is_string else self.sql(modifier)
+            modifier = exp.Literal.string(f"{value} {unit.name}" if unit else value)
+        return self.func(func, base, modifier, floor)
 
     # SQLite has no INTERVAL type, so `x +/- INTERVAL n unit` uses date modifiers.
     # Intervals without a unit (e.g. Postgres INTERVAL '1 day 2 hours') are left as is.

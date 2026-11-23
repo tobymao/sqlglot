@@ -2611,6 +2611,12 @@ class TestDuckDB(Validator):
             "LIST_FILTER([1, 2, NULL, 2], LAMBDA _u : _u IS DISTINCT FROM NULL)",
             read={"postgres": "ARRAY_REMOVE(ARRAY[1, 2, NULL, 2], NULL)"},
         )
+        self.validate_all(
+            "SELECT LIST_FILTER([TRUE, FALSE, NULL], LAMBDA _u_2 : _u_2 IS DISTINCT FROM (_u OR FALSE)) FROM (VALUES (TRUE)) AS t(_u)",
+            read={
+                "postgres": "SELECT ARRAY_REMOVE(ARRAY[TRUE, FALSE, NULL], _u OR FALSE) FROM (VALUES (TRUE)) AS t(_u)",
+            },
+        )
 
     def test_array_remove_at(self):
         # Test remove first element (position 0)

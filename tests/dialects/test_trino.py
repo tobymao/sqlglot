@@ -10,7 +10,7 @@ class TestTrino(Validator):
     def test_array_remove(self):
         self.validate_all(
             "ARRAY_REMOVE(ARRAY[1, 2, NULL, 2], 2)",
-            write={"clickhouse": "arrayFilter(_u -> _u IS DISTINCT FROM 2, [1, 2, NULL, 2])"},
+            write={"clickhouse": "arrayFilter(_u -> NOT has([2], _u), [1, 2, NULL, 2])"},
         )
         self.validate_all(
             "SELECT ARRAY_REMOVE(ARRAY[1, 2, NULL, 2], target) FROM (VALUES (2), (NULL)) AS t(target)",

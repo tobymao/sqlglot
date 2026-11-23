@@ -18,6 +18,7 @@ from sqlglot.generator import Generator, unsupported_args
 from sqlglot.expressions import apply_index_offset
 from sqlglot.helper import (
     AutoName,
+    find_new_name,
     flatten,
     is_int,
     seq_get,
@@ -2755,11 +2756,23 @@ def array_compact_sql(self: Generator, expression: exp.ArrayCompact) -> str:
 
 
 def remove_from_array_using_filter(
-    self: Generator, expression: exp.ArrayRemove, *, supports_nullable_arrays: bool = True
+    self: Generator,
+    expression: exp.ArrayRemove,
+    *,
+    keep: t.Callable[[exp.Identifier, exp.Expr], exp.Expr] | None = None,
+    supports_nullable_arrays: bool = True,
 ) -> str:
     removal_value = expression.expression
-    lambda_id = exp.to_identifier("_u")
-    cond = exp.NullSafeNEQ(this=lambda_id, expression=removal_value)
+    lambda_id = exp.to_identifier(
+        find_new_name({i.name.lower() for i in removal_value.find_all(exp.Identifier)}, "_u")
+    )
+    if isinstance(removal_value, (exp.Predicate, exp.Connector, exp.Not)):
+        removal_value = exp.paren(removal_value)
+    cond = (
+        keep(lambda_id, removal_value)
+        if keep
+        else exp.NullSafeNEQ(this=lambda_id, expression=removal_value)
+    )
 
     filter_sql = self.sql(
         exp.ArrayFilter(

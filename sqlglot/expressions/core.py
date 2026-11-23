@@ -1405,14 +1405,15 @@ class Expression(Expr):
         return alias_(self, alias, quoted=quoted, dialect=dialect, copy=copy, table=table, **opts)
 
     def _binop(self, klass: Type[E], other: t.Any, reverse: bool = False) -> E:
-        this = self.copy()
-        other = convert(other, copy=True)
-        if not isinstance(this, klass) and not isinstance(other, klass):
-            this = _wrap(this, Binary)
-            other = _wrap(other, Binary)
+        left: Expr = self.copy()
+        right = convert(other, copy=True)
         if reverse:
-            return klass(this=other, expression=this)
-        return klass(this=this, expression=other)
+            left, right = right, left
+
+        # A repeated operator can chain on the left, but SQL may reject chained predicates.
+        if not isinstance(left, klass) or isinstance(left, Predicate):
+            left = _wrap(left, Binary)
+        return klass(this=left, expression=_wrap(right, Binary))
 
     def __getitem__(self, other: ExpOrStr | tuple[ExpOrStr, ...]) -> Bracket:
         return Bracket(

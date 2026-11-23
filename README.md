@@ -120,6 +120,10 @@ sqlglot.transpile("SELECT EPOCH_MS(1618088028295)", read="duckdb", write="hive")
 'SELECT FROM_UNIXTIME(1618088028295 / POW(10, 3))'
 ```
 
+For version-dependent SQL, include the target engine version in `write`. For example,
+`write="spark, version=3.5"` or `write="databricks, version=15.4"` translates PostgreSQL's
+`STRING_AGG` using array functions on engines that predate `LISTAGG`.
+
 SQLGlot can even translate custom time formats:
 
 ```python

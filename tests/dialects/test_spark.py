@@ -1290,7 +1290,7 @@ TBLPROPERTIES (
         self.validate_all(
             "STRING_AGG(x, ', ')",
             write={
-                "spark, version=3.0.0": "ARRAY_JOIN(COLLECT_LIST(x), ', ')",
+                "spark, version=3.0.0": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), ', ')",
                 "spark, version=4.0.0": "LISTAGG(x, ', ')",
                 "spark": "LISTAGG(x, ', ')",
             },
@@ -1302,7 +1302,7 @@ TBLPROPERTIES (
                 "databricks": "LISTAGG(ALL x, ', ')",
             },
             write={
-                "spark, version=3.0.0": "ARRAY_JOIN(COLLECT_LIST(x), ', ')",
+                "spark, version=3.0.0": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), ', ')",
                 "spark, version=4.0.0": "LISTAGG(x, ', ')",
                 "spark": "LISTAGG(x, ', ')",
             },

@@ -53,15 +53,29 @@ def _dateadd_sql(self: SparkGenerator, expression: exp.TsOrDsAdd | exp.Timestamp
     return this
 
 
-def _groupconcat_sql(self: SparkGenerator, expression: exp.GroupConcat) -> str:
-    if self.dialect.version < (4,):
-        expr = exp.ArrayToString(
-            this=exp.ArrayAgg(this=expression.this),
-            expression=expression.args.get("separator") or exp.Literal.string(""),
+def _listagg_sort(order: exp.Order, value: exp.Expr) -> tuple[exp.Struct, exp.Lambda]:
+    fields = [exp.alias_(value, "value")]
+    comparison = exp.case()
+    for i, key in enumerate(order.expressions):
+        name = f"k{i}"
+        fields.append(exp.alias_(key.this, name))
+        left, right = exp.column(name, "l"), exp.column(name, "r")
+        before = left > right if key.args.get("desc") else left < right
+        null_first = left if key.args.get("nulls_first") else right
+        comparison.when(
+            exp.NullSafeNEQ(this=left, expression=right),
+            exp.If(
+                this=exp.Coalesce(this=before, expressions=[null_first.is_(exp.null())]),
+                true=exp.Literal.number(-1),
+                false=exp.Literal.number(1),
+            ),
+            copy=False,
         )
-        return self.sql(expr)
 
-    return groupconcat_sql(self, expression)
+    return exp.Struct(expressions=fields), exp.Lambda(
+        this=comparison.else_(exp.Literal.number(0), copy=False),
+        expressions=[exp.to_identifier("l"), exp.to_identifier("r")],
+    )
 
 
 class SparkGenerator(Spark2Generator):
@@ -72,6 +86,7 @@ class SparkGenerator(Spark2Generator):
     SUPPORTS_UNIX_SECONDS = True
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (4, 0)
     ORDERED_PERCENTILE_MIN_VERSIONS = dict.fromkeys(exp.PERCENTILES, (3, 3))
+    LISTAGG_MIN_VERSION = (4, 0)
     SUPPORTS_DECODE_CASE = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
@@ -116,7 +131,6 @@ class SparkGenerator(Spark2Generator):
             exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
             exp.DatetimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.DatetimeSub: date_delta_to_binary_interval_op(cast=False),
-            exp.GroupConcat: _groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.JSONKeys: rename_func("JSON_OBJECT_KEYS"),
             exp.PartitionedByProperty: lambda self, e: (
@@ -168,6 +182,73 @@ class SparkGenerator(Spark2Generator):
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         return generator.Generator.ignorenulls_sql(self, expression)
+
+    def groupconcat_sql(
+        self,
+        expression: exp.GroupConcat,
+        condition: exp.Expr | None = None,
+        window: exp.Window | None = None,
+    ) -> str:
+        if self.dialect.version >= self.LISTAGG_MIN_VERSION:
+            return groupconcat_sql(self, expression)
+
+        this = expression.this
+        limit = this.expression if isinstance(this, exp.Limit) else None
+        if limit:
+            this = this.this
+        order = this if isinstance(this, exp.Order) else None
+        value = order.this if order else this
+        distinct = isinstance(value, exp.Distinct)
+        if distinct:
+            value = value.expressions[0]
+
+        comparator = None
+        if order:
+            # Collect each value with its sort keys. A struct containing a NULL value
+            # would otherwise survive COLLECT_LIST's implicit NULL filtering.
+            condition = exp.and_(condition, value.is_(exp.null()).not_())
+            value, comparator = _listagg_sort(order, value)
+
+        if condition is not None:
+            value = exp.If(this=condition, true=value, false=exp.null())
+        values: exp.Expr = (
+            exp.ArrayUniqueAgg(this=value) if distinct and not order else exp.ArrayAgg(this=value)
+        )
+        if window:
+            values = exp.Window(**{**window.args, "this": values})
+        if comparator:
+            values = exp.Dot(
+                this=exp.ArraySort(this=values, expression=comparator),
+                expression=exp.to_identifier("value"),
+            )
+            if distinct:
+                values = exp.ArrayDistinct(this=values)
+        if limit:
+            values = exp.ArraySlice(this=values, start=exp.Literal.number(1), end=limit)
+
+        return self.func(
+            "ARRAY_JOIN",
+            exp.Nullif(this=values, expression=exp.array()),
+            expression.args.get("separator") or exp.Literal.string(""),
+        )
+
+    def filter_sql(self, expression: exp.Filter) -> str:
+        if (
+            isinstance(expression.this, exp.GroupConcat)
+            and self.dialect.version < self.LISTAGG_MIN_VERSION
+        ):
+            return self.groupconcat_sql(expression.this, condition=expression.expression.this)
+        return super().filter_sql(expression)
+
+    def window_sql(self, expression: exp.Window) -> str:
+        if self.dialect.version < self.LISTAGG_MIN_VERSION:
+            agg = expression.this
+            condition = None
+            if isinstance(agg, exp.Filter):
+                condition, agg = agg.expression.this, agg.this
+            if isinstance(agg, exp.GroupConcat):
+                return self.groupconcat_sql(agg, condition=condition, window=expression)
+        return super().window_sql(expression)
 
     def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:
         return super().arrayinsert_sql(expression, index_offset=1)

@@ -143,6 +143,7 @@ class GroupConcat(Expression, AggFunc):
         "separator": False,
         "on_overflow": False,
         "null_separator_is_empty": False,
+        "empty_string_on_empty": False,
     }
 
 

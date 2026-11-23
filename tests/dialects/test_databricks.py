@@ -193,6 +193,17 @@ class TestDatabricks(Validator):
             "INSERT INTO target REPLACE USING (c1, c2) SELECT c1, c2 FROM source"
         )
 
+    def test_listagg_default_separator(self):
+        ordered = (
+            "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+            "STRUCT(x AS sort_key, x AS value)))).value, ARRAY()), '')"
+        )
+        for name in ("LISTAGG", "STRING_AGG"):
+            self.validate_all(
+                f"{name}(x) WITHIN GROUP (ORDER BY x)",
+                write={"spark, version=3.5": ordered, "databricks, version=16.3": ordered},
+            )
+
     def test_databricks(self):
         self.validate_identity("CREATE TABLE foo (my_arr ARRAY<STRING COLLATE UTF8_BINARY>)")
         self.validate_identity("CREATE TABLE foo (m MAP<STRING, STRING COLLATE UTF8_BINARY>)")

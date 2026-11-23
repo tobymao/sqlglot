@@ -6687,6 +6687,13 @@ SINGLE = TRUE""",
 
     def test_listagg(self):
         self.validate_identity("LISTAGG(data['some_field'], ',')")
+        self.validate_all(
+            "LISTAGG(x, ',')",
+            write={
+                "spark, version=3.5": "ARRAY_JOIN(COLLECT_LIST(x), ',')",
+                "databricks, version=16.3": "ARRAY_JOIN(COLLECT_LIST(x), ',')",
+            },
+        )
 
         for distinct in ("", "DISTINCT "):
             for order in ("", " WITHIN GROUP (ORDER BY col)"):

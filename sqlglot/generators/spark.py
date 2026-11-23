@@ -192,9 +192,12 @@ class SparkGenerator(Spark2Generator):
         else:
             values = exp.ArrayAgg(this=this)
 
+        if not expression.args.get("empty_string_on_empty"):
+            values = exp.Nullif(this=values, expression=exp.array())
+
         return self.func(
             "ARRAY_JOIN",
-            exp.Nullif(this=values, expression=exp.array()),
+            values,
             expression.args.get("separator") or exp.Literal.string(","),
         )
 

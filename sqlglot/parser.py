@@ -1917,6 +1917,9 @@ class Parser:
     # Whether string aliases are supported `SELECT COUNT(*) 'count'`
     STRING_ALIASES: t.ClassVar = False
 
+    # Set this when the source default differs from GroupConcat's implicit comma.
+    STRING_AGG_DEFAULT_SEPARATOR: t.ClassVar[str | None] = None
+
     # Whether query modifiers such as LIMIT are attached to the UNION node (vs its right operand)
     MODIFIERS_ATTACHED_TO_SET_OP: t.ClassVar = True
     SET_OP_MODIFIERS: t.ClassVar = {"order", "limit", "offset", "sort", "distribute", "cluster"}
@@ -8702,6 +8705,9 @@ class Parser:
         else:
             self._match(TokenType.ALL)
             args = self._parse_csv(self._parse_disjunction)  # type: ignore
+
+        if len(args) == 1 and self.STRING_AGG_DEFAULT_SEPARATOR is not None:
+            args.append(exp.Literal.string(self.STRING_AGG_DEFAULT_SEPARATOR))
 
         if self._match_text_seq("ON", "OVERFLOW"):
             # trino: LISTAGG(expression [, separator] [ON OVERFLOW overflow_behavior])

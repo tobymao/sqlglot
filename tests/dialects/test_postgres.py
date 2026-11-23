@@ -2613,6 +2613,13 @@ CROSS JOIN JSON_ARRAY_ELEMENTS(CAST(JSON_EXTRACT_PATH(tbox, 'boxes') AS JSON)) A
         )
 
     def test_extract_date_parts(self):
+        spark_sql = "SELECT EXTRACT(DOW_ISO FROM CAST('2024-06-16' AS DATE))"
+        for part in ("ISODOW", "'isodow'"):
+            self.validate_all(
+                f"SELECT EXTRACT({part} FROM DATE '2024-06-16')",
+                write={"spark": spark_sql, "databricks": spark_sql},
+            )
+
         self.validate_all(
             "SELECT EXTRACT(DAY FROM CAST(x AS DATE)), EXTRACT(MONTH FROM CAST(x AS DATE)), EXTRACT(YEAR FROM CAST(x AS DATE))",
             read={

@@ -3286,6 +3286,54 @@ OPTIONS (
                         f"WITH t AS (SELECT 1 AS id, 2 AS col1) SELECT {func_call} OVER (PARTITION BY id ORDER BY col1 {sort_order} {null_order}) FROM t"
                     )
 
+    def test_null_ordering_in_value_windows(self):
+        for func in (
+            "FIRST_VALUE(a)",
+            "LAST_VALUE(a IGNORE NULLS)",
+            "NTH_VALUE(a, 2 RESPECT NULLS)",
+        ):
+            with self.subTest(func=func):
+                self.validate_all(
+                    f"SELECT {func} OVER (PARTITION BY b ORDER BY b ASC, c IS NULL, c, d IS NULL DESC, d DESC) FROM t ORDER BY c NULLS LAST",
+                    read={
+                        "duckdb": f"SELECT {func} OVER (PARTITION BY b ORDER BY b ASC, c, d DESC NULLS FIRST) FROM t ORDER BY c",
+                    },
+                )
+
+        self.validate_all(
+            "SELECT LAST_VALUE(a) OVER (ORDER BY (b OR c) IS NULL, b OR c RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t",
+            read={
+                "duckdb": "SELECT LAST_VALUE(a) OVER (ORDER BY b OR c RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT FIRST_VALUE(a) OVER (ORDER BY b RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t",
+            read={
+                "duckdb": "SELECT FIRST_VALUE(a) OVER (ORDER BY b RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t",
+            },
+        )
+        self.validate_all(
+            "SELECT FIRST_VALUE(a) OVER (PARTITION BY b ORDER BY c IS NULL, c), LAG(a) OVER w FROM t "
+            "WINDOW w AS (PARTITION BY b ORDER BY c NULLS LAST)",
+            read={
+                "duckdb": "SELECT FIRST_VALUE(a) OVER v, LAG(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c), v AS (w)",
+            },
+        )
+        self.validate_all(
+            "SELECT FIRST_VALUE(a) OVER (PARTITION BY b ORDER BY b RANGE BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t",
+            read={
+                "duckdb": "SELECT FIRST_VALUE(a) OVER (w ORDER BY b RANGE BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t WINDOW w AS (PARTITION BY b)",
+            },
+        )
+        self.validate_identity(
+            "SELECT FIRST_VALUE(a) OVER w FROM t WINDOW w AS (ORDER BY b NULLS LAST ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)"
+        )
+        with self.assertRaisesRegex(UnsupportedError, "NULLS LAST"):
+            parse_one(
+                "SELECT LAST_VALUE(a) OVER (ORDER BY b RANGE BETWEEN UNBOUNDED PRECEDING AND 1 FOLLOWING) FROM t",
+                read="duckdb",
+            ).sql("bigquery", unsupported_level=ErrorLevel.RAISE)
+
     def test_json_extract(self):
         self.validate_all(
             "SELECT JSON_EXTRACT_SCALAR(j, '$.a')",

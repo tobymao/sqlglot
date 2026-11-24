@@ -547,6 +547,51 @@ SELECT DISTINCT ON (SUM(x.a)) (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVE
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x WINDOW w AS (ORDER BY SUM(x.a));
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x WINDOW w AS (ORDER BY SUM(x.a));
 
+# title: Preserve a scalar subquery with an anonymous aggregate in DISTINCT ON
+# execute: true
+SELECT DISTINCT ON (FAVG(x.a)) (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r FROM x;
+SELECT DISTINCT ON (FAVG(x.a)) (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r FROM x;
+
+# title: A sibling aggregate over outer rows groups the parent query
+# execute: true
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT SUM(x.a) AS s) AS s FROM x;
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT SUM(x.a) AS s) AS s FROM x;
+
+# title: An outer reference in a nested aggregate FILTER groups empty input
+# execute: true
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT (SELECT COUNT(*) FILTER(WHERE x.a > 0) AS n) AS n) AS n FROM x WHERE FALSE;
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT (SELECT COUNT(*) FILTER(WHERE x.a > 0) AS n) AS n) AS n FROM x WHERE FALSE;
+
+# title: A whole-row reference can make a sibling aggregate group the parent
+# execute: true
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT COUNT(x.*) AS n) AS n FROM x;
+SELECT (SELECT 4 AS b) + 1 AS c, RANK() OVER () AS r, (SELECT COUNT(x.*) AS n) AS n FROM x;
+
+# title: An outer reference in a sibling WHERE permits hoisting next to a local aggregate
+# execute: true
+SELECT (SELECT 4 AS b) + 1 AS c, (SELECT MAX(y.b) AS s FROM y WHERE y.b = x.a) + 1 AS s FROM x ORDER BY x.a;
+SELECT _u_0.b + 1 AS c, (SELECT MAX(y.b) AS s FROM y WHERE y.b = x.a) + 1 AS s FROM x CROSS JOIN (SELECT 4 AS b) AS _u_0 ORDER BY x.a;
+
+# title: An inner alias shadows the outer table when resolving a nested aggregate
+# execute: true
+SELECT x.a, (SELECT 4 AS b) + 1 AS c, (SELECT (SELECT SUM(x.b) AS s) AS s FROM y AS x) AS s FROM x ORDER BY x.a;
+SELECT x.a, _u_0.b + 1 AS c, (SELECT (SELECT SUM(x.b) AS s) AS s FROM y AS x) AS s FROM x CROSS JOIN (SELECT 4 AS b) AS _u_0 ORDER BY x.a;
+
+# title: An inner HAVING can remove the single aggregate row
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y HAVING COUNT(*) = 0) + 1 AS c, RANK() OVER () AS r FROM x;
+SELECT (SELECT MAX(y.b) AS b FROM y HAVING COUNT(*) = 0) + 1 AS c, RANK() OVER () AS r FROM x;
+
+# title: A scalar expression repeated in a grouping key must still match its projection
+# execute: true
+SELECT x.a + (SELECT 4 AS b) AS c, COUNT(*) AS n FROM x GROUP BY x.a + (SELECT 4 AS b) ORDER BY c;
+SELECT x.a + (SELECT 4 AS b) AS c, COUNT(*) AS n FROM x GROUP BY x.a + (SELECT 4 AS b) ORDER BY c;
+
+# title: DISTINCT ON and ORDER BY must agree on their scalar expression
+# execute: true
+SELECT DISTINCT ON (x.a + (SELECT 4 AS b)) x.a FROM x ORDER BY x.a + (SELECT 4 AS b);
+SELECT DISTINCT ON (x.a + (SELECT 4 AS b)) x.a FROM x ORDER BY x.a + (SELECT 4 AS b);
+
 # title: Preserve a scalar subquery with a HAVING that has no aggregates
 # execute: true
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x HAVING 1 = 1;

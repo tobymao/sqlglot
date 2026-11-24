@@ -2401,6 +2401,25 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_scalar_cardinality(self):
+        sql = "SELECT (SELECT y.b FROM y) + 1 AS c, RANK() OVER (ORDER BY x.a) AS r FROM x ORDER BY x.a"
+        rewritten = optimizer.optimize(sql, dialect="sqlite", schema=self.schema).sql("sqlite")
+        conn = sqlite3.connect(":memory:")
+        self.addCleanup(conn.close)
+        conn.executescript(
+            "CREATE TABLE x(a INT); INSERT INTO x VALUES (1), (2); CREATE TABLE y(b INT)"
+        )
+        for values, expected in (
+            ([], [(None, 1), (None, 2)]),
+            ([(None,)], [(None, 1), (None, 2)]),
+            ([(4,), (4,)], [(5, 1), (5, 2)]),
+        ):
+            with self.subTest(values=values):
+                conn.execute("DELETE FROM y")
+                conn.executemany("INSERT INTO y VALUES (?)", values)
+                self.assertEqual(conn.execute(sql).fetchall(), expected)
+                self.assertEqual(conn.execute(rewritten).fetchall(), expected)
+
     def test_unnest_case_when_where(self):
         for condition in (
             "x.a IN (SELECT y.b FROM y)",

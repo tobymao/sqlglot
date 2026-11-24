@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one, transpile
 from sqlglot.generator import logger as generator_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -6,6 +6,17 @@ from tests.dialects.test_dialect import Validator
 
 class TestTrino(Validator):
     dialect = "trino"
+
+    def test_execute_command_comments(self):
+        statements = [
+            "EXECUTE stmt USING 7 /* job; 42 */",
+            "EXECUTE stmt USING 8 -- job\n",
+            "SELECT 1",
+            "EXECUTE stmt USING\n/* before */ 9 -- done",
+        ]
+        with self.assertLogs("sqlglot"):
+            generated = transpile(";\n".join(statements), read="trino")
+        self.assertEqual(generated, statements)
 
     def test_execute_immediate(self):
         probe = self.validate_identity("EXECUTE IMMEDIATE 'SELECT 1'").assert_is(

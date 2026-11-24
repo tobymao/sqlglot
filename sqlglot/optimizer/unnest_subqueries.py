@@ -1,9 +1,14 @@
 from __future__ import annotations
+
 from sqlglot import exp
 from sqlglot.helper import name_sequence
-from sqlglot.optimizer.scope import ScopeType, find_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, ScopeType, find_in_scope, traverse_scope
 from sqlglot.optimizer.helpers import projection_has_aggregate
 from sqlglot._typing import E
+
+
+_INPUT_ROW_CLAUSES = ("with_", "from_", "laterals", "joins", "where")
+_SCALAR_AGGREGATES = (exp.Avg, exp.Count, exp.Max, exp.Min, exp.Sum)
 
 
 def unnest_subqueries(expression: E) -> E:
@@ -26,49 +31,37 @@ def unnest_subqueries(expression: E) -> E:
     """
     next_alias_name = name_sequence("_u_")
 
-    for scope in traverse_scope(expression):
+    scopes = traverse_scope(expression)
+    outer_aggregates = _outer_aggregate_scopes(scopes)
+
+    for scope in scopes:
         select = scope.expression
         parent = select.parent_select
         if not parent:
             continue
 
-        # Don't hoist anonymous functions because their input-row versus post-aggregation role is unknown.
-        if isinstance(select.find_ancestor(exp.Anonymous, exp.Select), exp.Anonymous) or (
-            not _has_plain_explicit_group(parent)
-            and _is_post_aggregation(select, parent)
-            and any(
-                find_in_scope(node, exp.Anonymous)
-                for node in (
-                    *parent.selects,
-                    parent.args.get("having"),
-                    parent.args.get("qualify"),
-                    parent.args.get("order"),
-                )
-                if node
-            )
-        ):
+        if isinstance(select.find_ancestor(exp.Anonymous, exp.Select), exp.Anonymous):
             continue
 
-        # Don't hoist a subquery out of a correlated, ungrouped aggregate if it's evaluated after the
-        # aggregation: the aggregate returns a row even for keys with no input rows, and the hoisted
-        # MAX(...) would turn the row's value into NULL
-        if (
-            scope.parent
-            and scope.parent.expression is parent
-            and scope.parent.is_correlated_subquery
-            and not _has_plain_explicit_group(parent)
-            and (
-                _has_aggregate_projection(parent)
-                or _has_order_aggregate(parent)
-                or parent.args.get("having")
-                or (
-                    (qualify := parent.args.get("qualify"))
-                    and projection_has_aggregate(qualify, parent.args.get("windows"))
+        if _is_post_aggregation(select, parent):
+            if _has_subquery_key(parent):
+                continue
+            if not _has_plain_explicit_group(parent) and (
+                scope.parent in outer_aggregates
+                or any(
+                    find_in_scope(clause, exp.Anonymous)
+                    for clause in parent.iter_expressions()
+                    if clause.arg_key not in _INPUT_ROW_CLAUSES
                 )
-            )
-            and _is_post_aggregation(select, parent)
-        ):
-            continue
+                or (
+                    scope.parent
+                    and scope.parent.expression is parent
+                    and scope.parent.is_correlated_subquery
+                    and (parent.args.get("having") or projection_has_aggregate(parent))
+                )
+            ):
+                # An ungrouped aggregate can produce a row even when the joined input is empty.
+                continue
 
         if scope.external_columns:
             # a correlated set operation branch can't be hoisted out on its own
@@ -136,19 +129,24 @@ def unnest(select, parent_select, next_alias_name):
     if not isinstance(predicate, (exp.In, exp.Any)):
         column = exp.column(select.selects[0].alias_or_name, alias)
 
-        clause_parent_select = clause.parent_select if clause else None
-
-        if (isinstance(clause, exp.Having) and clause_parent_select is parent_select) or (
-            (not clause or clause_parent_select is not parent_select)
-            and (
-                parent_select.args.get("group")
-                or any(find_in_scope(select, exp.AggFunc) for select in parent_select.selects)
-            )
-        ):
-            if _is_post_aggregation(select, parent_select):
-                column = exp.Max(this=column)
-        elif not isinstance(select.parent, exp.Subquery):
+        # ARRAY(SELECT ...), ALL (SELECT ...) and set operations are left in place
+        if not isinstance(select.parent, exp.Subquery) or not _returns_single_row(select):
             return
+
+        if _is_post_aggregation(select, parent_select):
+            # Aggregates aren't allowed in a window function's FILTER (e.g. in Postgres)
+            if _has_plain_explicit_group(parent_select) and not isinstance(
+                select.find_ancestor(exp.Where, exp.Select), exp.Where
+            ):
+                column = exp.Max(this=column)
+            elif (
+                parent_select.args.get("group")
+                or parent_select.args.get("having")
+                or projection_has_aggregate(parent_select)
+            ):
+                # Any other aggregation can return a row for no input rows, where MAX(...) would
+                # be NULL, and whether it aggregates at all can depend on the dialect (e.g. HAVING)
+                return
 
         _replace(select.parent, column)
         parent_select.join(select, join_type="CROSS", join_alias=alias, copy=False)
@@ -592,6 +590,77 @@ def _has_plain_explicit_group(select: exp.Select) -> bool:
     return isinstance(group, exp.Group) and not group.args.get("all") and _is_plain_group(group)
 
 
+def _has_subquery_key(select: exp.Select) -> bool:
+    # GROUP BY and DISTINCT can require the same expression in two clauses. Hoisting them
+    # independently produces different columns, and MAX is never valid in a grouping key.
+    group = select.args.get("group")
+    if group and (
+        group.find(exp.Subquery)
+        or any(
+            key.is_int or (isinstance(key, exp.Column) and not key.table)
+            for key in group.expressions
+        )
+    ):
+        return True
+    order = select.args.get("order")
+    return bool(select.args.get("distinct") and order and order.find(exp.Subquery))
+
+
+def _returns_single_row(select: exp.Select) -> bool:
+    # A scalar subquery yields NULL on empty input. A CROSS JOIN would drop the outer row.
+    if any(
+        value and key not in ("expressions", "with_", "from_", "joins", "where")
+        for key, value in select.args.items()
+    ):
+        return False
+
+    has_aggregate = False
+    pending = [select.selects[0].unalias()]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, _SCALAR_AGGREGATES) and not node.expressions:
+            has_aggregate = True
+        elif isinstance(node, (exp.Binary, exp.Neg, exp.Paren)):
+            pending.extend(node.iter_expressions())
+        elif not isinstance(node, (exp.Subquery, exp.Literal, exp.Null, exp.Boolean)):
+            # A projection can itself generate rows, e.g. UNNEST or a user-defined function.
+            return False
+
+    return has_aggregate or not any(select.args.get(key) for key in ("from_", "joins", "where"))
+
+
+def _outer_aggregate_scopes(scopes: list[Scope]) -> set[Scope]:
+    # An aggregate in a subquery can group an outer SELECT when its arguments or FILTER
+    # refer to that SELECT's rows. Resolve those references before rewriting any siblings.
+    owners: set[Scope] = set()
+    for scope in scopes:
+        if not scope.parent:
+            continue
+        local_tables = {name for name, _ in scope.references}
+        for column in scope.find_all(exp.Column, exp.TableColumn):
+            table = column.table if isinstance(column, exp.Column) else column.name
+            if table and table in local_tables:
+                continue
+            aggregate = column.find_ancestor(
+                exp.AggFunc, exp.Anonymous, exp.Filter, exp.WithinGroup
+            )
+            if aggregate is None:
+                continue
+
+            aggregate_select = aggregate.parent_select
+            current: Scope | None = scope.parent
+            aggregate_is_nested = scope.expression is aggregate_select
+            while current:
+                if any(not table or table == name for name, _ in current.references):
+                    if aggregate_is_nested:
+                        owners.add(current)
+                    if table:
+                        break
+                aggregate_is_nested = aggregate_is_nested or current.expression is aggregate_select
+                current = current.parent
+    return owners
+
+
 def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
     # The nearest ordinary aggregate consumes input rows, even inside a window.
     # A window aggregate consumes post-group rows.
@@ -613,12 +682,12 @@ def _is_post_aggregation(expression: exp.Expr, select: exp.Select) -> bool:
     node: exp.Expr | None = expression
     while node is not None and node.parent is not select:
         node = node.parent
-    return node is not None and node.arg_key not in ("with_", "from_", "laterals", "joins", "where")
+    return node is not None and node.arg_key not in _INPUT_ROW_CLAUSES
 
 
 def _is_supported_scalar_aggregate(expression: exp.Expr) -> bool:
     expression = expression.unnest()
-    if isinstance(expression, (exp.Count, exp.Sum, exp.Avg, exp.Min, exp.Max)):
+    if isinstance(expression, _SCALAR_AGGREGATES):
         return True
     if isinstance(expression, exp.Literal):
         return expression.is_number

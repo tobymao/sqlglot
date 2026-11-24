@@ -622,6 +622,9 @@ class Generator:
     # Whether to wrap <props> in `AlterSet`, e.g., ALTER ... SET (<props>)
     ALTER_SET_WRAPPED = False
 
+    # Fall back to the dialect's general date-part aliases when generating EXTRACT.
+    NORMALIZE_EXTRACT_DATE_PARTS = False
+
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
 
@@ -3946,12 +3949,18 @@ class Generator:
         order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
-    def extract_sql(self, expression: exp.Extract) -> str:
-        this = expression.this
-        if mapping := self.dialect.EXTRACT_DATE_PART_MAPPING:
+    def extract_date_part(self, part: exp.Expr) -> exp.Expr:
+        mapping = self.dialect.EXTRACT_DATE_PART_MAPPING
+        if self.NORMALIZE_EXTRACT_DATE_PARTS and part.name.upper() not in mapping:
+            mapping = self.dialect.DATE_PART_MAPPING
+        if mapping:
             import sqlglot.dialects.dialect
 
-            this = sqlglot.dialects.dialect.map_date_part(this, mapping=mapping)
+            return sqlglot.dialects.dialect.map_date_part(part, mapping=mapping)
+        return part
+
+    def extract_sql(self, expression: exp.Extract) -> str:
+        this = self.extract_date_part(expression.this)
         if self.EXTRACT_ALLOWS_QUOTES:
             this_sql = self.sql(this)
         elif isinstance(this, exp.WeekStart):

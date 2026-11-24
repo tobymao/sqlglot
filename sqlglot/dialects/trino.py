@@ -11,7 +11,6 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
     CONCAT_WS_COALESCE = True
-    EXTRACT_DATE_PART_MAPPING = {"ISOWEEK": "WEEK", "ISOYEAR": "YEAR_OF_WEEK"}
 
     def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
         value = int(expression.to_py())

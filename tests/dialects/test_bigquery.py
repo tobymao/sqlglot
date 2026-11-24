@@ -4168,7 +4168,7 @@ OPTIONS (
             "SELECT EXTRACT(ISOWEEK FROM DATE '2017-01-01') AS w",
             write={
                 **dict.fromkeys(
-                    ("duckdb", "postgres", "spark", "databricks", "trino"),
+                    ("duckdb", "postgres", "spark", "databricks", "presto", "trino"),
                     "SELECT EXTRACT(WEEK FROM CAST('2017-01-01' AS DATE)) AS w",
                 ),
                 "bigquery": "SELECT EXTRACT(ISOWEEK FROM CAST('2017-01-01' AS DATE)) AS w",
@@ -4188,7 +4188,10 @@ OPTIONS (
                     ("spark", "databricks"),
                     "SELECT EXTRACT(YEAROFWEEK FROM CAST('2018-12-31' AS DATE)) AS y",
                 ),
-                "trino": "SELECT EXTRACT(YEAR_OF_WEEK FROM CAST('2018-12-31' AS DATE)) AS y",
+                **dict.fromkeys(
+                    ("presto", "trino"),
+                    "SELECT EXTRACT(YEAR_OF_WEEK FROM CAST('2018-12-31' AS DATE)) AS y",
+                ),
                 "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2018-12-31' AS DATE)) AS y",
             },
         )

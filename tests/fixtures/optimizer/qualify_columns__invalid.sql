@@ -57,3 +57,6 @@ SELECT p.range FROM range(10) AS p WHERE EXISTS (SELECT 1 FROM range(1) AS q WHE
 SELECT p.range FROM range(10) AS p WHERE EXISTS (SELECT 1 WHERE range > 5);
 # dialect: duckdb
 SELECT p.range FROM (VALUES (0), (6)) AS p(range) WHERE EXISTS (SELECT 1 FROM range(1) AS q WHERE range > 5);
+
+# dialect: clickhouse
+SELECT b + 1 AS a, a + 1 AS b;

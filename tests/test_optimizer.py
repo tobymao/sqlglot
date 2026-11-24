@@ -2809,6 +2809,27 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             "SELECT x.a AS a, MAX(x.b) AS x FROM x AS x GROUP BY 1 HAVING x > 1",
         )
 
+    def test_projection_alias_flags(self):
+        dialect = sqlglot.Dialect.get_or_raise("clickhouse")
+        schema = {"t": {"x": "INT", "src": "INT", "s": "Tuple(f Int32)", "obj": "Tuple(f Int32)"}}
+        sql = "SELECT src * 2 AS derived, t.x AS src, t.s AS obj FROM t WHERE obj.f > 0"
+        for forward, dotted, src, obj in ((True, False, "x", "obj"), (False, True, "src", "s")):
+            with (
+                self.subTest(forward=forward, dotted=dotted),
+                patch.multiple(
+                    dialect,
+                    SUPPORTS_FORWARD_ALIAS_REFS=forward,
+                    PREFER_PROJECTION_ALIASES_IN_DOT_PATHS=dotted,
+                ),
+            ):
+                qualified = qualify(
+                    parse_one(sql, dialect), schema=schema, dialect=dialect, identify=False
+                )
+                self.assertEqual(
+                    qualified.sql(dialect),
+                    f"SELECT t.{src} * 2 AS derived, t.x AS src, t.s AS obj FROM t AS t WHERE t.{obj}.f > 0",
+                )
+
     def test_optimize_joins(self):
         self.check_file(
             "optimize_joins",

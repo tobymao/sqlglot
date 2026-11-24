@@ -611,6 +611,9 @@ class Dialect(metaclass=_Dialect):
         to "WHERE id = 1 GROUP BY id HAVING id = 1"
     """
 
+    SUPPORTS_FORWARD_ALIAS_REFS = False
+    """Whether SELECT list expressions can reference aliases defined later in the same list."""
+
     PREFER_PROJECTION_ALIASES_IN_DOT_PATHS = False
     """Whether `obj.field` prefers a projection alias named `obj` over a source column of the same name."""
 

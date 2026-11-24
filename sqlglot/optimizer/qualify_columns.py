@@ -8,6 +8,7 @@ from collections import Counter
 from sqlglot import alias, exp
 from sqlglot.dialects.dialect import AliasPrecedence, Dialect, DialectType, UsingColumnOrder
 from sqlglot.errors import OptimizeError, highlight_sql
+from sqlglot.helper import tsort
 from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.helpers import is_implicit_group_by_all
 from sqlglot.optimizer.resolver import Resolver
@@ -71,6 +72,8 @@ def qualify_columns(
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
     convert_dots_early = expand_alias_refs and dialect.PREFER_PROJECTION_ALIASES_IN_DOT_PATHS
+    expand_forward = expand_alias_refs and dialect.SUPPORTS_FORWARD_ALIAS_REFS
+    prepare_projection_aliases = convert_dots_early or expand_forward
 
     # Qualified scopes that still lack types, in traversal order (sources precede dependents)
     unannotated_scopes: list[Scope] = []
@@ -93,8 +96,11 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
-        if convert_dots_early:
-            _convert_columns_to_dots(scope, resolver, prefer_projection_aliases=True)
+        if prepare_projection_aliases:
+            if convert_dots_early:
+                _convert_columns_to_dots(scope, resolver, prefer_projection_aliases=True)
+            if expand_forward:
+                _expand_forward_alias_refs(scope, resolver)
 
         if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:
             _expand_alias_refs(
@@ -371,6 +377,63 @@ def _expand_using(scope: Scope, resolver: Resolver) -> tuple[dict[str, t.Any], l
                 scope.replace(column, replacement)
 
     return column_tables, using_columns
+
+
+def _expand_forward_alias_refs(scope: Scope, resolver: Resolver) -> None:
+    expression = scope.expression
+    if not isinstance(expression, exp.Select) or len(expression.selects) < 2:
+        return
+
+    selects = expression.selects
+    aliases = {s.alias: i for i, s in enumerate(selects) if isinstance(s, exp.Alias)}
+    if not aliases:
+        return
+
+    references: dict[int, list[tuple[exp.Column, int]]] = {}
+    self_references = []
+    for i, projection in enumerate(selects):
+        for column in walk_in_scope(projection, prune=lambda n: n.is_star):
+            if not isinstance(column, exp.Column) or column.table:
+                continue
+            target = aliases.get(column.name)
+            if target is None:
+                continue
+            if column.name == projection.alias:
+                self_references.append(column)
+            else:
+                references.setdefault(i, []).append((column, target))
+
+    if not references and not self_references:
+        return
+
+    try:
+        order = tsort({i: {target for _, target in columns} for i, columns in references.items()})
+    except ValueError as e:
+        raise OptimizeError("Cannot expand cyclic projection aliases") from e
+
+    # In x + 1 AS x, x is the input column. Bind it before copying the expression
+    # so the subsequent alias expansion cannot substitute x a second time.
+    for column in self_references:
+        table = resolver.get_table(column)
+        if not table and scope.can_be_correlated and not resolver.has_unknown_sources:
+            table = _get_outer_column_table(column, resolver)
+        if table:
+            column.set("table", table)
+
+    for i in order:
+        projection = selects[i]
+        for column, target in references.get(i, ()):
+            definition = selects[target].this
+            if column is projection.unnest():
+                # SELECT x, 1 AS x exposes two columns named x.
+                projection.replace(alias(definition, column.this))
+            else:
+                replacement = column.replace(exp.paren(definition))
+                simplified = simplify_parens(replacement, resolver.dialect)
+                if simplified is not replacement:
+                    replacement.replace(simplified)
+
+    scope.clear_cache()
 
 
 def _expand_alias_refs(

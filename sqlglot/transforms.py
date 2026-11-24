@@ -1056,33 +1056,53 @@ def any_to_exists(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def eliminate_window_clause(expression: exp.Expr) -> exp.Expr:
-    """Eliminates the `WINDOW` query clause by inling each named window."""
-    windows: list[exp.Expr] | None = expression.args.get("windows")
+def eliminate_window_clause(
+    expression: exp.Expr,
+    should_inline: t.Callable[[exp.Window, exp.Window], bool] | None = None,
+) -> exp.Expr:
+    """Inline named windows. If provided, should_inline takes a use and its resolved definition."""
+    windows: list[exp.Window] | None = expression.args.get("windows")
     if isinstance(expression, exp.Select) and windows is not None:
         from sqlglot.optimizer.scope import find_all_in_scope
 
         expression.set("windows", None)
+        definitions: dict[str, exp.Window] = {}
 
-        window_expression: dict[str, exp.Expr] = {}
-
-        def _inline_inherited_window(window: exp.Expr) -> None:
-            inherited_window = window_expression.get(window.alias.lower())
-            if not inherited_window:
-                return
-
+        def _inline(window: exp.Window, inherited: exp.Window) -> None:
             window.set("alias", None)
             for key in ("partition_by", "order", "spec"):
-                arg: exp.Expr | None = inherited_window.args.get(key)
+                arg = inherited.args.get(key)
                 if arg is not None:
-                    window.set(key, arg.copy())
+                    window.set(
+                        key, [e.copy() for e in arg] if isinstance(arg, list) else arg.copy()
+                    )
 
         for window in windows:
-            _inline_inherited_window(window)
-            window_expression[window.name.lower()] = window
+            if inherited := definitions.get(window.alias.lower()):
+                if should_inline:
+                    window = window.copy()
+                _inline(window, inherited)
+            definitions[window.name.lower()] = window
 
+        keep = set()
+        inlined = set()
         for window in find_all_in_scope(expression, exp.Window):
-            _inline_inherited_window(window)
+            if inherited := definitions.get(window.alias.lower()):
+                if should_inline is None or should_inline(window, inherited):
+                    inlined.add(window.alias.lower())
+                    _inline(window, inherited)
+                else:
+                    keep.add(window.alias.lower())
+
+        if should_inline:
+            retained = []
+            for window in reversed(windows):
+                if window.name.lower() in inlined and window.name.lower() not in keep:
+                    inlined.add(window.alias.lower())
+                else:
+                    retained.append(window)
+                    keep.add(window.alias.lower())
+            expression.set("windows", retained[::-1] or None)
 
     return expression
 

@@ -60,3 +60,9 @@ SELECT p.range FROM (VALUES (0), (6)) AS p(range) WHERE EXISTS (SELECT 1 FROM ra
 
 # dialect: clickhouse
 SELECT b + 1 AS a, a + 1 AS b;
+
+# dialect: trino
+SELECT b FROM x MATCH_RECOGNIZE (PARTITION BY a ORDER BY b ONE ROW PER MATCH PATTERN (z) DEFINE z AS TRUE);
+
+# dialect: trino
+SELECT x.a FROM x MATCH_RECOGNIZE (PARTITION BY a ORDER BY b PATTERN (z) DEFINE z AS TRUE) AS m;

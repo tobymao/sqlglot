@@ -116,3 +116,12 @@ SELECT "foÄ" FROM "baÜ";
 # dialect: teradata
 SELECT "FOO" FROM BAR;
 SELECT "foo" FROM bar;
+
+# title: pattern variables are uppercased unless quoted, whatever the dialect's identifiers
+# dialect: trino
+SELECT * FROM T MATCH_RECOGNIZE (MEASURES a.X AS Y, "b".X AS z PATTERN (a "b") DEFINE A AS a.X > 0, "b" AS TRUE);
+SELECT * FROM t MATCH_RECOGNIZE ( MEASURES A.x AS y, "b".x AS z PATTERN (a "b") DEFINE A AS A.x > 0, "b" AS TRUE);
+
+# dialect: snowflake
+SELECT * FROM t MATCH_RECOGNIZE (MEASURES a.x AS y PATTERN (a) DEFINE a AS x > 0);
+SELECT * FROM T MATCH_RECOGNIZE ( MEASURES A.X AS Y PATTERN (a) DEFINE A AS X > 0);

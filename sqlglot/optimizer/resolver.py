@@ -268,6 +268,8 @@ class Resolver:
                     columns = source_expr.this.named_selects
             elif isinstance(source, Scope) and isinstance(source.expression, exp.SetOperation):
                 columns = self.get_source_columns_from_set_op(source.expression)
+            elif isinstance(source, Scope) and isinstance(source.expression, exp.MatchRecognize):
+                columns = self._get_match_recognize_columns(source)
             else:
                 selectable = source.expression.assert_is(exp.Selectable)
                 select = seq_get(selectable.selects, 0)
@@ -304,6 +306,26 @@ class Resolver:
             self._get_source_columns_cache[cache_key] = columns
 
         return self._get_source_columns_cache[cache_key]
+
+    def _get_match_recognize_columns(self, source: Scope) -> list[str]:
+        """
+        A MATCH_RECOGNIZE outputs its PARTITION BY columns and its measures, and with ALL ROWS
+        PER MATCH, its ORDER BY columns and its other input columns too, in that order.
+        """
+        match = source.expression
+        rows = match.args.get("rows")
+        all_rows = rows is not None and rows.name.startswith("ALL ROWS")
+
+        keys = [e.output_name for e in match.args.get("partition_by") or []]
+        if all_rows and (order := match.args.get("order")):
+            keys.extend(o.this.output_name for o in order.expressions)
+        measures = [m.this.output_name for m in match.args.get("measures") or []]
+
+        names = [*keys, *measures]
+        if all_rows:
+            for input_columns in Resolver(source, self.schema)._get_all_source_columns().values():
+                names.extend(input_columns)
+        return [name for name in dict.fromkeys(names) if name]
 
     def _get_all_source_columns(self) -> dict[str, Sequence[str]]:
         if self._source_columns is None:

@@ -34,6 +34,7 @@ COLLECTIBLE_TYPES = (
     exp.TableColumn,
     exp.JoinHint,
     exp.Comprehension,
+    exp.MatchRecognize,
 )
 
 
@@ -44,6 +45,7 @@ class ScopeType(Enum):
     CTE = auto()
     SET_OPERATION = auto()
     UDTF = auto()
+    MATCH_RECOGNIZE = auto()
 
 
 @mypyc_attr(native_class=True)
@@ -128,6 +130,7 @@ class Scope:
         self.cte_scopes: list[Scope] = []
         self.set_operation_scopes: list[Scope] = []
         self.udtf_scopes: list[Scope] = []
+        self.match_recognize_scopes: list[Scope] = []
         self.can_be_correlated = can_be_correlated
         self.clear_cache()
 
@@ -232,6 +235,11 @@ class Scope:
                     self._ordered_sources.append(node)
             elif isinstance(node, exp.JoinHint):
                 self._join_hints.append(node)
+            elif isinstance(node, exp.MatchRecognize):
+                if _is_semi_or_anti_join_rhs(node):
+                    self._semi_anti_join_tables.add(node.alias_or_name)
+
+                self._ordered_sources.append(node)
             elif type(node) is exp.Lateral or (
                 isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
             ):
@@ -262,6 +270,11 @@ class Scope:
                 node.args.get("except_") or not isinstance(node.parent, ROW_LEVEL_AGG_FUNCS)
             ):
                 self._scans_all_subscope_columns = True
+
+        # MEASURES and DEFINE read their input's columns unqualified, or qualified by pattern
+        # variables, neither of which say which input columns they read
+        if isinstance(self.expression, exp.MatchRecognize):
+            self._scans_all_subscope_columns = True
 
         self._collected = True
 
@@ -406,9 +419,13 @@ class Scope:
             named_selects = set(expr.named_selects) if isinstance(expr, exp.Query) else set()
 
             self._columns = []
+            is_match_recognize = self.is_match_recognize
             for column in columns + external_columns:
                 # Star RENAME sources are column labels, not references.
                 if isinstance(column.parent, exp.Alias) and column.parent.arg_key == "rename":
+                    continue
+
+                if is_match_recognize and _is_pattern_column(column):
                     continue
 
                 ancestor = column.find_ancestor(
@@ -618,6 +635,11 @@ class Scope:
         return self.scope_type == ScopeType.UDTF
 
     @property
+    def is_match_recognize(self) -> bool:
+        """Determine if this scope is a MATCH_RECOGNIZE"""
+        return self.scope_type == ScopeType.MATCH_RECOGNIZE
+
+    @property
     def is_correlated_subquery(self) -> bool:
         """Determine if this scope is a correlated subquery"""
         return bool(self.can_be_correlated and self.external_columns)
@@ -755,6 +777,9 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         yield from _traverse_tables(scope)
     elif isinstance(expression, exp.UDTF):
         yield from _traverse_udtfs(scope)
+    elif isinstance(expression, exp.MatchRecognize):
+        yield from _traverse_tables(scope)
+        yield from _traverse_subqueries(scope)
     elif isinstance(expression, exp.DDL):
         ddl_expression = expression.expression
         if isinstance(ddl_expression, exp.Query):
@@ -946,7 +971,23 @@ def _is_from_or_join(expression: exp.Expr) -> bool:
     while type(parent) is exp.Subquery:
         parent = parent.parent
 
-    return type(parent) in (exp.From, exp.Join)
+    return type(parent) in (exp.From, exp.Join) or _is_match_recognize_input(expression)
+
+
+def _is_match_recognize_input(expression: exp.Expr) -> bool:
+    """Determine if `expression` is the relation a MATCH_RECOGNIZE reads, e.g. `t` in `t MATCH_RECOGNIZE (...)`."""
+    return type(expression.parent) is exp.MatchRecognize and expression.arg_key == "this"
+
+
+def _is_pattern_column(column: exp.Column) -> bool:
+    """
+    Determine if `column` is in a MATCH_RECOGNIZE's MEASURES or DEFINE, where it reads the
+    current row or a pattern variable's rows, e.g. `price` or `A.price`.
+    """
+    node: exp.Expr | None = column
+    while node is not None and type(node.parent) is not exp.MatchRecognize:
+        node = node.parent
+    return node is not None and node.arg_key in ("measures", "define")
 
 
 def _is_semi_or_anti_join_rhs(node: exp.Expr) -> bool:
@@ -969,6 +1010,9 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
 
     for join in scope.expression.args.get("joins") or []:
         expressions.append(join.this)
+
+    if isinstance(scope.expression, exp.MatchRecognize):
+        expressions.append(scope.expression.this)
 
     if isinstance(scope.expression, (exp.Table, exp.Subquery)):
         # A Subquery-rooted scope, e.g., the FROM clause of a DML statement, a DDL source or
@@ -1009,7 +1053,13 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
         # TODO (mypyc): rebind to exp.Expr to avoid DerivedTable/UDTF trait vtable dispatch
         node: exp.Expr = expression
 
-        if isinstance(expression, exp.UDTF):
+        if isinstance(expression, exp.MatchRecognize):
+            lateral_sources = None
+            scope_type = ScopeType.MATCH_RECOGNIZE
+            scopes = scope.match_recognize_scopes
+            if node is not scope.expression:
+                expressions.extend(join.this for join in node.args.get("joins") or [])
+        elif isinstance(expression, exp.UDTF):
             lateral_sources = sources
             scope_type = ScopeType.UDTF
             scopes = scope.udtf_scopes
@@ -1121,19 +1171,25 @@ def walk_in_scope(
 
         yield node
 
-        # Only CTEs and Queries can start child scopes; checking that first lets all
+        # Only CTEs, Queries and MATCH_RECOGNIZEs can start child scopes; checking that first lets all
         # other nodes (the vast majority) skip the rest of the boundary checks.
         if (
             node is not expression
-            and isinstance(node, (exp.CTE, exp.Query))
+            and isinstance(node, (exp.CTE, exp.Query, exp.MatchRecognize))
             and (
-                isinstance(node, exp.CTE)
-                or (isinstance(node.parent, (exp.From, exp.Join)) and _is_derived_table(node))
+                isinstance(node, (exp.CTE, exp.MatchRecognize))
+                or (
+                    (
+                        isinstance(node.parent, (exp.From, exp.Join))
+                        or _is_match_recognize_input(node)
+                    )
+                    and _is_derived_table(node)
+                )
                 or isinstance(node.parent, exp.UDTF)
                 or isinstance(node, exp.UNWRAPPED_QUERIES)
             )
         ):
-            if isinstance(node, (exp.Subquery, exp.UDTF)):
+            if isinstance(node, (exp.Subquery, exp.UDTF, exp.MatchRecognize)):
                 for key in ("joins", "laterals", "pivots"):
                     for arg in node.args.get(key) or []:
                         yield from walk_in_scope(arg, include_udtfs=include_udtfs)

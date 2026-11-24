@@ -132,7 +132,7 @@ def qualify_tables(
             subquery = query.parent
             if isinstance(subquery, exp.Subquery):
                 unwrapped = subquery.unwrap()
-                if isinstance(unwrapped.parent, (exp.From, exp.Join)):
+                if isinstance(unwrapped.parent, (exp.From, exp.Join, exp.MatchRecognize)):
                     # We can reach this from a wrapped derived table, which must keep its alias
                     continue
 
@@ -147,6 +147,20 @@ def qualify_tables(
             _set_alias(derived_table, canonical_aliases, scope=scope)
             if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)
+
+        if scope.match_recognize_scopes:
+            taken = {name for name, _ in scope.references}
+            for match_scope in scope.match_recognize_scopes:
+                # The MATCH_RECOGNIZE replaces its input, so it takes the input's name, as the
+                # query sees it, unless another relation in the FROM already has it
+                match = match_scope.expression
+                name = match.this.alias_or_name
+                _set_alias(
+                    match,
+                    canonical_aliases,
+                    target_alias=name if name and name not in taken else None,
+                    scope=scope,
+                )
 
         table_aliases = {}
 
@@ -231,7 +245,9 @@ def qualify_tables(
                         )
 
         for table in scope.tables:
-            if not table.alias and isinstance(table.parent, (exp.From, exp.Join)):
+            if not table.alias and isinstance(
+                table.parent, (exp.From, exp.Join, exp.MatchRecognize)
+            ):
                 _set_alias(table, canonical_aliases, target_alias=table.name)
 
         for column in local_columns:

@@ -8571,9 +8571,25 @@ class Parser:
 
         return self.expression(exp.Extract(this=this, expression=self._parse_bitwise()))
 
+    def _parse_table_argument(self, table_token: Token | None = None) -> exp.Expr | None:
+        if table_token is None and self._match(TokenType.TABLE):
+            table_token = self._prev
+
+        relation = (
+            self._parse_wrapped(self._parse_table_parts, optional=True)
+            if table_token
+            else self._parse_table()
+        )
+        if isinstance(relation, exp.Table):
+            return self.expression(
+                exp.TableArgument(this=relation),
+                table_token,
+                comments=table_token.comments if table_token else None,
+            )
+        return relation
+
     def _parse_gap_fill(self) -> exp.GapFill:
-        self._match(TokenType.TABLE)
-        this = self._parse_table()
+        this = self._parse_table_argument()
 
         self._match(TokenType.COMMA)
         args = [this, *self._parse_csv(self._parse_lambda)]

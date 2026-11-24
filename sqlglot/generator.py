@@ -2661,6 +2661,10 @@ class Generator:
 
         return f"{only}{table}{changes}{partition}{file_format}{pre_alias}{alias}{indexed}{hints}{pivots}{post_alias}{joins}{laterals}{ordinality}"
 
+    def tableargument_sql(self, expression: exp.TableArgument) -> str:
+        table = expression.this
+        return f"TABLE {self.maybe_comment(self.table_parts(table), table)}"
+
     def tablefromrows_sql(self, expression: exp.TableFromRows) -> str:
         table = self.func("TABLE", expression.this)
         alias = self.sql(expression, "alias")
@@ -5967,7 +5971,8 @@ class Generator:
 
     def gapfill_sql(self, expression: exp.GapFill) -> str:
         this = self.sql(expression, "this")
-        this = f"TABLE {this}"
+        if isinstance(expression.this, exp.Table):
+            this = f"TABLE {this}"
         return self.func("GAP_FILL", this, *[v for k, v in expression.args.items() if k != "this"])
 
     def scope_resolution(self, rhs: str, scope_name: str) -> str:

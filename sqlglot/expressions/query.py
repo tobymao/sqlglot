@@ -850,6 +850,10 @@ class Lateral(Expression, UDTF):
         return columns
 
 
+class TableArgument(Expression):
+    """A relation passed to a table function with the TABLE keyword."""
+
+
 class TableFromRows(Expression, UDTF):
     arg_types = {
         "this": True,

@@ -661,16 +661,30 @@ class BigQueryParser(parser.Parser):
 
         return expr
 
+    def _parse_lambda(self, alias: bool = False) -> exp.Expr | None:
+        start = self._curr
+        arg = super()._parse_lambda(alias=alias)
+        # TABLE can also name a column, as in f(table + 1) or f(table IS NULL).
+        if (
+            start.token_type == TokenType.TABLE
+            and self._prev is start
+            and self._curr.token_type in self.ID_VAR_TOKENS
+        ):
+            return self._parse_table_argument(start)
+
+        return arg
+
     def _parse_ml(self, expr_type: type[E], **kwargs: t.Any) -> E:
         self._match_text_seq("MODEL")
         this = self._parse_table()
 
         self._match(TokenType.COMMA)
-        self._match_text_seq("TABLE")
 
         # Certain functions like ML.FORECAST require a STRUCT argument but not a TABLE/SELECT one
         expression = (
-            self._parse_table() if not self._match(TokenType.STRUCT, advance=False) else None
+            self._parse_table_argument()
+            if not self._match(TokenType.STRUCT, advance=False)
+            else None
         )
 
         self._match(TokenType.COMMA)
@@ -687,10 +701,8 @@ class BigQueryParser(parser.Parser):
 
         self._match(TokenType.COMMA)
 
-        if self._match_text_seq("TABLE"):
-            expression = self._parse_table()
-        elif self._match(TokenType.L_PAREN, advance=False):
-            expression = self._parse_table()
+        if self._curr.token_type in (TokenType.TABLE, TokenType.L_PAREN):
+            expression = self._parse_table_argument()
         else:
             expression = self._parse_bitwise()
 
@@ -716,8 +728,7 @@ class BigQueryParser(parser.Parser):
 
         # AI.FORECAST is a TVF, where the first argument is either TABLE <table>
         # or a parenthesized query statement, followed by named arguments.
-        self._match(TokenType.TABLE)
-        this = self._parse_table()
+        this = self._parse_table_argument()
         if not this:
             self.raise_error("Expected table or query statement")
 
@@ -733,8 +744,7 @@ class BigQueryParser(parser.Parser):
         return expr
 
     def _parse_features_at_time(self) -> exp.FeaturesAtTime:
-        self._match(TokenType.TABLE)
-        this = self._parse_table()
+        this = self._parse_table_argument()
 
         expr = self.expression(exp.FeaturesAtTime(this=this))
 
@@ -749,16 +759,14 @@ class BigQueryParser(parser.Parser):
         return expr
 
     def _parse_vector_search(self) -> exp.VectorSearch:
-        self._match(TokenType.TABLE)
-        base_table = self._parse_table()
+        base_table = self._parse_table_argument()
 
         self._match(TokenType.COMMA)
 
         column_to_search = self._parse_bitwise()
         self._match(TokenType.COMMA)
 
-        self._match(TokenType.TABLE)
-        query_table = self._parse_table()
+        query_table = self._parse_table_argument()
 
         expr = self.expression(
             exp.VectorSearch(

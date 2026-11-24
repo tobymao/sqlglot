@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import typing as t
 
 from sqlglot.optimizer.journal import Journal, record
@@ -50,8 +51,10 @@ def eliminate_ctes(expression: E, journal: Journal | None = None) -> E:
                             record(journal, with_node.parent, "with_")
                         with_node.pop()
 
-                    # Decrement the ref count for all sources this CTE selects from
-                    for _, source in scope.selected_sources.values():
+                    # Drop this CTE's direct references, including tables passed to functions.
+                    for _, source in itertools.chain(
+                        scope.selected_sources.values(), scope.table_argument_sources()
+                    ):
                         if isinstance(source, Scope):
                             ref_count[id(source)] -= 1
 

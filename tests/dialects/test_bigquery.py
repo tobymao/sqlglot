@@ -2717,6 +2717,27 @@ WHERE
             "CREATE TEMPORARY FUNCTION string_length_0(strings ARRAY<STRING>) RETURNS FLOAT64 LANGUAGE js OPTIONS (library=['gs://ibis-testing-libraries/lodash.min.js']) AS '\\'use strict\\'; function string_length(strings) { return _.sum(_.map(strings, ((x) => x.length))); } return string_length(strings);'",
         )
 
+    def test_table_function_arguments(self):
+        expr = self.validate_identity("SELECT * FROM ML.DESCRIBE_DATA(TABLE `_SESSION.input`)")
+        self.assertIsInstance(expr.find(exp.TableArgument).this, exp.Table)
+        self.assertEqual(
+            [(t.db, t.name) for t in expr.find_all(exp.Table) if t.name], [("_SESSION", "input")]
+        )
+        self.validate_identity(
+            "SELECT * FROM ML.DESCRIBE_DATA(TABLE `region-us.INFORMATION_SCHEMA.SCHEMATA_OPTIONS`)"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 42 AS x) "
+            "SELECT * FROM ML.DESCRIBE_DATA(TABLE t, STRUCT(2 AS num_quantiles))"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 1 AS x) SELECT * FROM ML.VALIDATE_DATA_DRIFT(TABLE t, TABLE t)"
+        )
+        self.validate_identity(
+            "WITH t AS (SELECT 2 AS `table`) SELECT ABS(table + 1), COUNTIF(table IS NULL) "
+            "FROM t GROUP BY 1"
+        )
+
     def test_remove_precision_parameterized_types(self):
         self.validate_identity("CREATE TABLE test (a NUMERIC(10, 2))")
         self.validate_identity(
@@ -2745,8 +2766,17 @@ WHERE
         )
 
     def test_gap_fill(self):
-        self.validate_identity(
+        ast = self.validate_identity(
             "SELECT * FROM GAP_FILL(TABLE device_data, ts_column => 'time', bucket_width => INTERVAL '1' MINUTE, value_columns => [('signal', 'locf')]) ORDER BY time"
+        )
+        arg = ast.find(exp.GapFill).this
+        self.assertIsInstance(arg, exp.TableArgument)
+        sql = ast.sql("bigquery")
+        arg.replace(arg.this)
+        self.assertEqual(ast.sql("bigquery"), sql)
+        self.validate_identity(
+            "SELECT * FROM GAP_FILL((SELECT CURRENT_DATETIME() AS ts), "
+            "ts_column => 'ts', bucket_width => INTERVAL '1' HOUR)"
         )
         self.validate_identity(
             "SELECT a, b, c, d, e FROM GAP_FILL(TABLE foo, ts_column => 'b', partitioning_columns => ['a'], value_columns => [('c', 'bar'), ('d', 'baz'), ('e', 'bla')], bucket_width => INTERVAL '1' DAY)"
@@ -2823,15 +2853,18 @@ OPTIONS (
             "SELECT * FROM ML.PREDICT(MODEL my_dataset.vision_model, (SELECT uri, ML.CONVERT_COLOR_SPACE(ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 224, 280, TRUE), 'YIQ') AS input FROM my_dataset.object_table WHERE content_type = 'image/jpeg'))"
         )
         ast = self.validate_identity("SELECT * FROM ML.FEATURES_AT_TIME((SELECT 1), num_rows => 1)")
-        assert ast.find(exp.FeaturesAtTime)
-        self.validate_identity(
+        self.assertIsInstance(ast.find(exp.FeaturesAtTime).this, exp.Subquery)
+        ast = self.validate_identity(
             "SELECT * FROM ML.FEATURES_AT_TIME(TABLE mydataset.feature_table, time => '2022-06-11 10:00:00+00', num_rows => 1, ignore_feature_nulls => TRUE)"
         )
+        self.assertIsInstance(ast.find(exp.FeaturesAtTime).this, exp.TableArgument)
 
         ast = self.validate_identity(
             "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table, 'query_column_to_search', top_k => 2, distance_type => 'cosine', options => '{\"fraction_lists_to_search\":0.15}')"
         )
-        assert ast.find(exp.VectorSearch)
+        vector_search = ast.find(exp.VectorSearch)
+        self.assertIsInstance(vector_search.this, exp.TableArgument)
+        self.assertIsInstance(vector_search.args["query_table"], exp.TableArgument)
         self.validate_identity(
             "SELECT * FROM VECTOR_SEARCH(TABLE mydataset.base_table, 'column_to_search', TABLE mydataset.query_table, query_column_to_search => 'query_column_to_search', top_k => 2, distance_type => 'cosine', options => '{\"fraction_lists_to_search\":0.15}')"
         )
@@ -2853,16 +2886,20 @@ OPTIONS (
             "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, STRUCT(2 AS horizon))"
         )
         assert ast.find(exp.MLForecast)
-        self.validate_identity(
+        ast = self.validate_identity(
             "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, TABLE `mydataset.mybqtable`, STRUCT(2 AS horizon, 4 AS confidence_level))"
         )
+        forecast = ast.find(exp.MLForecast)
+        self.assertIsInstance(forecast.this, exp.Table)
+        self.assertIsInstance(forecast.expression, exp.TableArgument)
         self.validate_identity(
             "SELECT * FROM ML.FORECAST(MODEL `mydataset.mymodel`, (SELECT * FROM mydataset.query_table), STRUCT())"
         )
 
-        self.validate_identity(
+        ast = self.validate_identity(
             "SELECT * FROM AI.FORECAST(TABLE citibike_trips, data_col => 'num_trips', timestamp_col => 'date', horizon => 30)"
         )
+        self.assertIsInstance(ast.find(exp.AIForecast).this, exp.TableArgument)
         self.validate_identity(
             "SELECT * FROM AI.FORECAST((SELECT * FROM citibike_trips), data_col => 'num_trips', timestamp_col => 'date', horizon => 30)"
         )
@@ -2878,9 +2915,10 @@ OPTIONS (
 
                 assert ast.find(exp.GenerateEmbedding)
 
-        self.validate_identity(
+        ast = self.validate_identity(
             "SELECT * FROM ML.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
         )
+        self.assertIsInstance(ast.find(exp.GenerateText).expression, exp.TableArgument)
         self.validate_identity(
             "SELECT * FROM AI.GENERATE_TEXT(MODEL `mydataset.gemini_model`, TABLE `mydataset.prompt_table`, STRUCT(0.15 AS temperature))"
         )

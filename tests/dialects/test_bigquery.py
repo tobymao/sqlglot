@@ -256,6 +256,12 @@ class TestBigQuery(Validator):
             "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(CAST(t AS TIMESTAMP)), INTERVAL 1 MONTH))",
             read={"trino": "SELECT DATE_ADD('month', 1, CAST(t AS TIMESTAMP WITH TIME ZONE))"},
         )
+        self.validate_all(
+            "SELECT TIMESTAMP(DATETIME_ADD(DATETIME(CAST('2024-01-31 10:00:00' AS TIMESTAMP)), INTERVAL 1 MONTH))",
+            read={
+                "": "SELECT DATE_ADD(TIME_STR_TO_TIME('2024-01-31 10:00:00', 'UTC'), 1, 'MONTH')"
+            },
+        )
 
         # Through parentheses and functions that return their first argument's type
         self.validate_all(
@@ -289,6 +295,18 @@ class TestBigQuery(Validator):
         self.validate_all(
             "SELECT DATE_ADD(CAST(t AS DATETIME), INTERVAL 2 MONTH)",
             read={"trino": "SELECT DATE_ADD('month', 2, CAST(t AS TIMESTAMP))"},
+        )
+        self.validate_all(
+            "SELECT DATE_ADD(CAST('2024-01-31 10:00:00' AS DATETIME), INTERVAL 1 MONTH)",
+            read={"": "SELECT DATE_ADD(TIME_STR_TO_TIME('2024-01-31 10:00:00'), 1, 'MONTH')"},
+        )
+        expression = annotate_types(
+            parse_one("SELECT DATE_ADD(TIME_STR_TO_TIME('2024-01-31 10:00:00'), 1, 'MONTH')"),
+            dialect="bigquery",
+        )
+        self.assertEqual(
+            expression.sql("bigquery"),
+            "SELECT DATE_ADD(CAST('2024-01-31 10:00:00' AS DATETIME), INTERVAL 1 MONTH)",
         )
         self.validate_all(
             "SELECT DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 2 DAY)",

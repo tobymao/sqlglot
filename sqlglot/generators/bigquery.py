@@ -841,7 +841,12 @@ class BigQueryGenerator(generator.Generator):
             node = this
             while isinstance(node, FIRST_ARG_TYPED):
                 node = node.this
-            if isinstance(node, TIMESTAMP_TYPED) or node.is_type(exp.DType.TIMESTAMPTZ):
+            # TIME_STR_TO_TIME is written as CAST(x AS DATETIME) without a zone, whatever its type
+            if (
+                node.args.get("zone")
+                if isinstance(node, exp.TimeStrToTime)
+                else isinstance(node, TIMESTAMP_TYPED) or node.is_type(exp.DType.TIMESTAMPTZ)
+            ):
                 # TIMESTAMP arithmetic only takes units up to DAY, so use the UTC DATETIME instead
                 shifted = (exp.DatetimeSub if kind == "SUB" else exp.DatetimeAdd)(
                     this=exp.TsOrDsToDatetime(this=this),

@@ -58,6 +58,7 @@ class TestBuild(unittest.TestCase):
             (lambda: x.is_(exp.Null()), "x IS NULL"),
             (lambda: x.is_(not_(exp.null())), "x IS NOT NULL"),
             (lambda: x.is_(not_(exp.true())), "x IS NOT TRUE"),
+            (lambda: x.is_(not_(exp.column("y"))), "x IS (NOT y)", "sqlite"),
             (lambda: x.eq(1).is_(exp.null()), "(x = 1) IS NULL"),
             (lambda: x.is_(exp.null()).eq(False), "(x IS NULL) = FALSE"),
             (lambda: x.eq(1).eq(True), "(x = 1) = TRUE"),

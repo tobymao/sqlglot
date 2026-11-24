@@ -1413,8 +1413,7 @@ class Expression(Expr):
         # NOT binds more tightly than AND and OR, but more loosely than comparisons and arithmetic.
         if not issubclass(klass, Connector):
             left = _wrap(left, Not)
-            if klass is not Is:  # A right-hand NOT is part of the IS NOT operator.
-                right = _wrap(right, Not)
+            right = _wrap(right, Not)
 
         # A repeated operator can chain on the left, but SQL may reject chained predicates.
         if not isinstance(left, klass) or isinstance(left, Predicate):
@@ -1480,6 +1479,10 @@ class Expression(Expr):
         return between
 
     def is_(self, other: ExpOrStr) -> Is:
+        if isinstance(other, Not) and isinstance(other.this, (Null, Boolean)):
+            predicate = self._binop(Is, other.this)
+            predicate.set("negate", True)
+            return predicate
         return self._binop(Is, other)
 
     def like(self, other: ExpOrStr) -> Like:

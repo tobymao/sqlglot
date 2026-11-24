@@ -305,6 +305,18 @@ class TestOptimizer(unittest.TestCase):
             schema=schema,
         )
 
+    def test_optimize_built_is_not(self):
+        query = exp.select("x").from_("(VALUES (TRUE), (FALSE), (NULL)) AS t(x)")
+        for operand, expected in (
+            (exp.null(), [(True,), (False,)]),
+            (exp.true(), [(False,), (None,)]),
+            (exp.false(), [(True,), (None,)]),
+        ):
+            with self.subTest(operand=operand):
+                filtered = query.where(exp.column("x").is_(exp.not_(operand)))
+                optimized = optimizer.optimize(filtered, dialect="duckdb").sql("duckdb")
+                self.assertCountEqual(self.conn.execute(optimized).fetchall(), expected)
+
     def test_optimize_copy(self):
         sql = "SELECT a + 1 + 1 AS b FROM x"
         expression = parse_one(sql)

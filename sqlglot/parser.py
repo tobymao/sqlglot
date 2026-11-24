@@ -1629,7 +1629,6 @@ class Parser:
     }
 
     QUERY_MODIFIER_PARSERS: t.ClassVar = {
-        TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
         TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
         TokenType.WHERE: lambda self: ("where", self._parse_where()),
         TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
@@ -4706,9 +4705,10 @@ class Parser:
             )
         )
 
-    def _parse_match_recognize(self) -> exp.MatchRecognize | None:
+    def _parse_match_recognize(self, this: exp.Expr) -> exp.Expr:
+        """Wraps the relation `this` in the MATCH_RECOGNIZE that follows it, if any."""
         if not self._match(TokenType.MATCH_RECOGNIZE):
-            return None
+            return this
 
         self._match_l_paren()
 
@@ -4788,6 +4788,7 @@ class Parser:
 
         return self.expression(
             exp.MatchRecognize(
+                this=this,
                 partition_by=partition,
                 order=order,
                 measures=measures,
@@ -5290,15 +5291,16 @@ class Parser:
 
         if values := self._parse_derived_table_values():
             values.set("pivots", self._parse_pivots())
-            return values
+            return self._parse_match_recognize(values)
 
         if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())
+            source = self._parse_match_recognize(subquery)
             if joins:
                 for join in self._parse_joins():
-                    subquery.append("joins", join)
-            return subquery
+                    source.append("joins", join)
+            return source
 
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table(this=bracket)) if bracket else None
@@ -5377,6 +5379,8 @@ class Parser:
 
         if not self.dialect.ALIAS_POST_VERSION:
             this.set("version", self._parse_version())
+
+        this = self._parse_match_recognize(this)
 
         if joins:
             for join in self._parse_joins(alias_tokens=alias_tokens):

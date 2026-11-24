@@ -489,6 +489,15 @@ class TestTrino(Validator):
         self.validate_identity(
             "SELECT * FROM tbl MATCH_RECOGNIZE (PARTITION BY id ORDER BY col MEASURES FIRST(col, 2) AS col1, LAST(col, 2) AS col2 PATTERN (B* A) DEFINE A AS col = 1)"
         )
+        # MATCH_RECOGNIZE applies to the relation before it, not to the joins after it
+        self.validate_identity(
+            "SELECT * FROM a AS o MATCH_RECOGNIZE (PARTITION BY o.x ORDER BY y PATTERN (A) DEFINE A AS TRUE) AS m JOIN b ON m.x = b.x",
+            "SELECT * FROM a AS o MATCH_RECOGNIZE (PARTITION BY o.x ORDER BY y PATTERN (A) DEFINE A AS TRUE) m JOIN b ON m.x = b.x",
+        )
+        self.validate_identity(
+            "SELECT * FROM a JOIN b MATCH_RECOGNIZE (ORDER BY y PATTERN (A) DEFINE A AS TRUE) AS m ON a.x = m.x",
+            "SELECT * FROM a JOIN b MATCH_RECOGNIZE ( ORDER BY y PATTERN (A) DEFINE A AS TRUE) m ON a.x = m.x",
+        )
 
         self.validate_identity("SELECT VERSION()")
 

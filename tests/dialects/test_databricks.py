@@ -174,7 +174,10 @@ class TestDatabricks(Validator):
             "PATTERN (strt up+) DEFINE up AS price > PREV(price))"
         )
         expression = self.validate_identity(f"{sql} AS T", f"{sql} T")
-        self.assertIsInstance(expression.args["match"], exp.MatchRecognize)
+        match = expression.args["from_"].this
+        self.assertIsInstance(match, exp.MatchRecognize)
+        self.assertEqual(match.this.name, "stock_ticker")
+        self.assertEqual(match.alias, "T")
         self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
 
         for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):

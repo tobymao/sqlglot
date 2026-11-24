@@ -276,7 +276,7 @@ class PrestoGenerator(generator.Generator):
     # Bind the array once and count its elements without SEQUENCE's length limit.
     CORRELATED_UNNEST_OFFSET_ARRAY: t.ClassVar[exp.Expr | None] = exp.maybe_parse(
         "FLATTEN(TRANSFORM(ARRAY(:arr), a -> ZIP_WITH("
-        "a, ARRAY_CUM_SUM(TRANSFORM(a, x -> CAST(1 AS BIGINT))), (x, i) -> ROW(x, i - 1))))"
+        "a, ARRAY_CUM_SUM(TRANSFORM(a, x -> CAST(1 AS BIGINT))), (x, i) -> :row)))"
     )
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
@@ -522,20 +522,47 @@ class PrestoGenerator(generator.Generator):
 
     def unnest_sql(self, expression: exp.Unnest) -> str:
         if (
-            self.CORRELATED_UNNEST_OFFSET_ARRAY is not None
-            and expression.args.get("offset_base") == 0
-            and expression.args.get("offset")
-            and isinstance(expression.parent, exp.Join)
-            and len(expression.expressions) == 1
-            and expression.expressions[0].find(exp.Column)
+            expression.args.get("offset_base") != 0
+            or not expression.args.get("offset")
+            or len(expression.expressions) != 1
         ):
-            alias = expression.args.get("alias")
+            return super().unnest_sql(expression)
+
+        array = expression.expressions[0]
+        alias = expression.args.get("alias")
+        fields = []
+        if not (alias and alias.columns):
+            if not array.type or array.is_type(exp.DType.UNKNOWN):
+                from sqlglot.optimizer.annotate_types import annotate_types
+
+                # A preceding FROM item can supply the type of a correlated array.
+                root = expression.root()
+                if not root.type:
+                    annotate_types(root, dialect=self.dialect, overwrite_types=False)
+            array_type = array.type
+            if array_type and array_type.is_type(exp.DType.ARRAY) and array_type.expressions:
+                element = array_type.expressions[0]
+                if element.is_type(exp.DType.STRUCT) and all(
+                    isinstance(field, exp.ColumnDef) for field in element.expressions
+                ):
+                    fields = [field.this.copy() for field in element.expressions]
+                    alias = exp.TableAlias(this=alias and alias.this, columns=fields)
+                    expression.set("alias", alias)
+
+        if (
+            self.CORRELATED_UNNEST_OFFSET_ARRAY is not None
+            and isinstance(expression.parent, exp.Join)
+            and array.find(exp.Column)
+        ):
             columns, offset = transforms.unnest_offset_columns(expression, alias, ordinality=True)
-            array = exp.replace_placeholders(
-                self.CORRELATED_UNNEST_OFFSET_ARRAY, arr=expression.expressions[0]
+            values = [exp.column(field, "x") for field in fields] or [exp.column("x")]
+            indexed_array = exp.replace_placeholders(
+                self.CORRELATED_UNNEST_OFFSET_ARRAY,
+                arr=array,
+                row=exp.Struct(expressions=[*values, exp.column("i") - 1]),
             )
             expression = exp.Unnest(
-                expressions=[array],
+                expressions=[indexed_array],
                 alias=exp.TableAlias(this=alias and alias.this, columns=[*columns, offset]),
             )
         return super().unnest_sql(expression)

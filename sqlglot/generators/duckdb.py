@@ -707,8 +707,8 @@ def _build_seq_expression(base: exp.Expr, byte_width: int, signed: bool) -> exp.
 
 def _expand_positional_unnest_structs(expression: exp.Expr) -> exp.Expr:
     taken_names: set[str] = set()
-    for clause in (expression.args.get("from_"), *(expression.args.get("joins") or [])):
-        unnest = clause.this if clause else None
+    for clause in find_all_in_scope(expression, exp.From, exp.Join):
+        unnest = clause.this
         if not (
             isinstance(unnest, exp.Unnest)
             and unnest.args.get("explode_array")

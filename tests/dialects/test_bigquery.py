@@ -4000,6 +4000,38 @@ OPTIONS (
         )
 
     def test_unnest_struct_with_offset(self):
+        structs = "[STRUCT(10 AS a, 20 AS b), STRUCT(30 AS a, 40 AS b)]"
+        rows = (
+            "ARRAY[CAST(ROW(10, 20) AS ROW(a INTEGER, b INTEGER)), "
+            "CAST(ROW(30, 40) AS ROW(a INTEGER, b INTEGER))]"
+        )
+        self.validate_all(
+            f"SELECT *, a + b AS total FROM UNNEST({structs}) WITH OFFSET AS pos ORDER BY pos",
+            write={
+                "trino": f"SELECT *, a + b AS total FROM (SELECT a, b, pos - 1 AS pos FROM UNNEST({rows}) "
+                "WITH ORDINALITY AS _t1(a, b, pos)) AS _t0 ORDER BY pos NULLS FIRST",
+            },
+        )
+        self.validate_all(
+            f"WITH t AS (SELECT {structs} AS arr) SELECT *, a + b AS total "
+            "FROM t CROSS JOIN UNNEST(t.arr) WITH OFFSET AS off ORDER BY off",
+            write={
+                "presto": f"WITH t AS (SELECT {rows} AS arr) SELECT *, a + b AS total FROM t CROSS JOIN "
+                "UNNEST(FLATTEN(TRANSFORM(ARRAY[t.arr], a -> ZIP_WITH(a, ARRAY_CUM_SUM(TRANSFORM(a, "
+                "x -> CAST(1 AS BIGINT))), (x, i) -> ROW(x.a, x.b, i - 1))))) AS _t0(a, b, off) "
+                "ORDER BY off NULLS FIRST",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS id) SELECT * EXCEPT (id), item.a AS value FROM "
+            "(t CROSS JOIN UNNEST([STRUCT(10 AS a), STRUCT(20 AS a)]) AS item WITH OFFSET AS pos) "
+            "WHERE a > 0 ORDER BY pos",
+            write={
+                "duckdb": "WITH t AS (SELECT 1 AS id) SELECT * EXCLUDE (id, _u.item), item.a AS value "
+                "FROM (t CROSS JOIN LATERAL (SELECT item.*, pos - 1 AS pos, item FROM UNNEST([{'a': 10}, "
+                "{'a': 20}]) WITH ORDINALITY AS _t0(item, pos)) AS _u) WHERE a > 0 ORDER BY pos NULLS FIRST",
+            },
+        )
         self.validate_all(
             "SELECT a, pos FROM UNNEST([STRUCT(10 AS a)]) WITH OFFSET AS pos",
             write={

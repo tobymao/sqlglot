@@ -960,7 +960,7 @@ class TypeAnnotator:
 
         if promote:
             this_type = result_type.this if isinstance(result_type, exp.DataType) else result_type
-            if this_type in exp.DataType.INTEGER_TYPES:
+            if this_type in exp.DataType.INTEGER_TYPES and this_type != exp.DType.BIGNUM:
                 self._set_type(expression, exp.DType.BIGINT)
             elif this_type in exp.DataType.FLOAT_TYPES:
                 self._set_type(expression, exp.DType.DOUBLE)

@@ -54,19 +54,18 @@ def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
 
 
 def _annotate_literal_or_neg(self: TypeAnnotator, expression: exp.Literal | exp.Neg) -> exp.Expr:
-    # DuckDB folds unary minus into integer constants, including through parentheses.
+    # The literal 9223372036854775808 is HUGEINT in DuckDB, but its negation fits
+    # in BIGINT. Resolve nested minus signs through parentheses before choosing the type.
     operand: exp.Expr = expression
     negated = False
-    while isinstance(operand, (exp.Neg, exp.Pos)):
-        if isinstance(operand, exp.Neg):
-            negated = not negated
-        elif not expression.this.is_type(exp.DType.BIGINT):
-            # Plus ends literal folding, but negating a constant BIGINT minimum still widens it.
-            return self._annotate_unary(expression)
+    while isinstance(operand, exp.Neg):
+        negated = not negated
         operand = operand.this.unnest()
     if operand.is_number and operand.name.isdecimal():
         value = operand.to_py()
         if negated:
+            # to_py() can return Decimal for very long literals. Unary minus can
+            # round across a type boundary at the current decimal precision.
             value = value.copy_negate() if isinstance(value, Decimal) else -value
         expression.meta["nonnull"] = True
         return self._set_type(expression, self.dialect.integer_type_for_value(value))
@@ -74,13 +73,6 @@ def _annotate_literal_or_neg(self: TypeAnnotator, expression: exp.Literal | exp.
     if isinstance(expression, exp.Literal):
         return self._annotate_literal(expression)
     return self._annotate_unary(expression)
-
-
-def _annotate_pos(self: TypeAnnotator, expression: exp.Pos) -> exp.Expr:
-    self._annotate_unary(expression)
-    if expression.is_type(exp.DType.BIGNUM):
-        return self._set_type(expression, exp.DType.DOUBLE)
-    return expression
 
 
 def _annotate_add_sub(self: TypeAnnotator, expression: exp.Add | exp.Sub) -> exp.Expr:
@@ -173,14 +165,6 @@ EXPRESSION_METADATA = {
     exp.Sub: {"annotator": _annotate_add_sub},
     exp.Literal: {"annotator": _annotate_literal_or_neg},
     exp.Neg: {"annotator": _annotate_literal_or_neg},
-    exp.Pos: {"annotator": _annotate_pos},
-    exp.Round: {
-        "annotator": lambda self, e: self._set_type(
-            e,
-            e.this.type if e.this.is_type(*exp.DataType.SIGNED_INTEGER_TYPES) else exp.DType.DOUBLE,
-        )
-    },
-    exp.Sign: {"returns": exp.DType.TINYINT},
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},

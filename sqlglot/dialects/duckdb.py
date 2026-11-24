@@ -52,20 +52,15 @@ class DuckDB(Dialect):
     )
     COERCES_TO = {
         **TypeAnnotator.COERCES_TO,
-        **{
-            dtype: targets | {exp.DType.INT128, exp.DType.BIGNUM}
-            for dtype, targets in TypeAnnotator.COERCES_TO.items()
-            if dtype in exp.DataType.SIGNED_INTEGER_TYPES
-        },
         exp.DType.INT128: TypeAnnotator.COERCES_TO[exp.DType.BIGINT] | {exp.DType.BIGNUM},
-        **{
-            dtype: {exp.DType.UINT128, exp.DType.BIGNUM}
-            for dtype in exp.DataType.UNSIGNED_INTEGER_TYPES
-        },
-        exp.DType.UINT128: {exp.DType.BIGNUM, exp.DType.FLOAT, exp.DType.DOUBLE},
+        exp.DType.UINT128: exp.DataType.FLOAT_TYPES | {exp.DType.BIGNUM},
         exp.DType.FLOAT: TypeAnnotator.COERCES_TO[exp.DType.FLOAT] | {exp.DType.BIGNUM},
         exp.DType.BIGNUM: {exp.DType.DOUBLE},
     }
+    for _dtype in exp.DataType.SIGNED_INTEGER_TYPES & TypeAnnotator.COERCES_TO.keys():
+        COERCES_TO[_dtype] = COERCES_TO[_dtype] | {exp.DType.INT128, exp.DType.BIGNUM}
+    for _dtype in exp.DataType.UNSIGNED_INTEGER_TYPES - {exp.DType.UINT128}:
+        COERCES_TO[_dtype] = {exp.DType.UINT128, exp.DType.BIGNUM}
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

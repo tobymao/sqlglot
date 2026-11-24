@@ -152,6 +152,7 @@ def _tokenize_as_hive(tokens: list[Token]) -> bool:
 
 # Athena extensions to Trino's tokenizer
 class _TrinoTokenizer(Trino.Tokenizer):
+    COMMANDS = Trino.Tokenizer.COMMANDS | {TokenType.EXECUTE}
     KEYWORDS = {
         **Trino.Tokenizer.KEYWORDS,
         "UNLOAD": TokenType.COMMAND,

@@ -12,6 +12,7 @@ from sqlglot.generators.presto import PrestoGenerator, amend_exploded_column_tab
 
 
 class TrinoGenerator(PrestoGenerator):
+    SUPPORTS_EXECUTE_IMMEDIATE = True
     SUPPORTS_TEMPORAL_PRECISION = True
     SUPPORTS_LEFT_JOIN_UNNEST = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True

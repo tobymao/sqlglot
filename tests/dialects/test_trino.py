@@ -1,4 +1,4 @@
-from sqlglot import ErrorLevel, UnsupportedError, exp, parse_one
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from sqlglot.generator import logger as generator_logger
 from sqlglot.optimizer.annotate_types import annotate_types
 from tests.dialects.test_dialect import Validator
@@ -6,6 +6,37 @@ from tests.dialects.test_dialect import Validator
 
 class TestTrino(Validator):
     dialect = "trino"
+
+    def test_execute_immediate(self):
+        probe = self.validate_identity("EXECUTE IMMEDIATE 'SELECT 1'").assert_is(
+            exp.ExecuteImmediate
+        )
+        self.assertEqual(probe.this, exp.Literal.string("SELECT 1"))
+        self.assertEqual(probe.expressions, [])
+
+        sql = "EXECUTE IMMEDIATE 'SELECT ? AS x' USING 42"
+        self.validate_all(sql, write={"athena": UnsupportedError, "presto": UnsupportedError})
+        wrapper = self.validate_identity(sql)
+        self.assertEqual(wrapper.this, exp.Literal.string("SELECT ? AS x"))
+        self.assertEqual(wrapper.expressions, [exp.Literal.number(42)])
+
+        wrapper = self.validate_identity(
+            "EXECUTE IMMEDIATE 'WITH t AS (SELECT ? AS a) SELECT a, ''?'' AS marker, ? AS b FROM t' "
+            "USING 1 + 2, 'O''Brien'"
+        )
+        self.assertEqual(
+            wrapper.this.to_py(), "WITH t AS (SELECT ? AS a) SELECT a, '?' AS marker, ? AS b FROM t"
+        )
+        self.assertEqual(
+            wrapper.expressions, [self.parse_one("1 + 2"), exp.Literal.string("O'Brien")]
+        )
+
+        self.validate_identity(
+            "EXECUTE prepared_query USING 1", check_command_warning=True
+        ).assert_is(exp.Command)
+        for arguments in ("", ", 1", "1,", "1,, 2"):
+            with self.subTest(arguments=arguments), self.assertRaises(ParseError):
+                self.parse_one(f"EXECUTE IMMEDIATE 'SELECT ?' USING {arguments}")
 
     def test_array_remove(self):
         self.validate_all(

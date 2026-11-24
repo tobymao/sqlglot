@@ -12,6 +12,11 @@ FRACTIONAL_SECONDS_RE = re.compile(r":\d+\.(\d+)")
 
 
 class TrinoParser(PrestoParser):
+    STATEMENT_PARSERS = {
+        **PrestoParser.STATEMENT_PARSERS,
+        TokenType.EXECUTE: lambda self: self._parse_execute(),
+    }
+
     TYPE_LITERAL_PARSERS: t.ClassVar = {
         **PrestoParser.TYPE_LITERAL_PARSERS,
         **dict.fromkeys(
@@ -60,6 +65,29 @@ class TrinoParser(PrestoParser):
             ),
         ),
     }
+
+    def _parse_execute(self) -> exp.ExecuteImmediate | exp.Command:
+        start = self._prev
+        if not self._match_text_seq("IMMEDIATE") or self._curr.token_type not in (
+            TokenType.STRING,
+            TokenType.UNICODE_STRING,
+        ):
+            return self._parse_as_command(start)
+
+        def parse_argument() -> exp.Expr | None:
+            argument = self._parse_disjunction()
+            if argument is None:
+                self.raise_error("Expected an expression in EXECUTE IMMEDIATE USING")
+            return argument
+
+        return self.expression(
+            exp.ExecuteImmediate(
+                this=self._parse_string(),
+                expressions=self._parse_csv(parse_argument)
+                if self._match(TokenType.USING)
+                else None,
+            )
+        )
 
     def _parse_json_query_quote(self) -> exp.JSONExtractQuote | None:
         if not (self._match_text_seq("KEEP", "QUOTES") or self._match_text_seq("OMIT", "QUOTES")):

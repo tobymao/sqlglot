@@ -453,3 +453,7 @@ class Execute(Expression):
 
 class ExecuteSql(Execute):
     pass
+
+
+class ExecuteImmediate(Execute):
+    arg_types = {"this": True, "expressions": False}

@@ -22,6 +22,7 @@ class Trino(Presto):
         return exp.DType.INT
 
     class Tokenizer(Presto.Tokenizer):
+        COMMANDS = Presto.Tokenizer.COMMANDS - {TokenType.EXECUTE}
         KEYWORDS = {
             **Presto.Tokenizer.KEYWORDS,
             "REFRESH": TokenType.REFRESH,

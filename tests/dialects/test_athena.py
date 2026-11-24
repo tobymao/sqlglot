@@ -11,6 +11,15 @@ class TestAthena(Validator):
     dialect = "athena"
     maxDiff = None
 
+    def test_execute_command(self):
+        for sql in (
+            "EXECUTE IMMEDIATE 'SELECT 1'",
+            "EXECUTE IMMEDIATE 'SELECT ? AS x' USING 42",
+            "EXECUTE prepared_query USING 42",
+        ):
+            with self.subTest(sql=sql):
+                self.validate_identity(sql, check_command_warning=True).assert_is(exp.Command)
+
     def test_athena(self):
         self.validate_identity(r"SELECT '\d+'")
         self.validate_identity("SELECT 'foo''bar'")

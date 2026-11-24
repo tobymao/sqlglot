@@ -53,11 +53,18 @@ class DuckDB(Dialect):
     COERCES_TO = {
         **TypeAnnotator.COERCES_TO,
         **{
-            dtype: targets | {exp.DType.INT128}
+            dtype: targets | {exp.DType.INT128, exp.DType.BIGNUM}
             for dtype, targets in TypeAnnotator.COERCES_TO.items()
             if dtype in exp.DataType.SIGNED_INTEGER_TYPES
         },
-        exp.DType.INT128: TypeAnnotator.COERCES_TO[exp.DType.BIGINT],
+        exp.DType.INT128: TypeAnnotator.COERCES_TO[exp.DType.BIGINT] | {exp.DType.BIGNUM},
+        **{
+            dtype: {exp.DType.UINT128, exp.DType.BIGNUM}
+            for dtype in exp.DataType.UNSIGNED_INTEGER_TYPES
+        },
+        exp.DType.UINT128: {exp.DType.BIGNUM, exp.DType.FLOAT, exp.DType.DOUBLE},
+        exp.DType.FLOAT: TypeAnnotator.COERCES_TO[exp.DType.FLOAT] | {exp.DType.BIGNUM},
+        exp.DType.BIGNUM: {exp.DType.DOUBLE},
     }
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table

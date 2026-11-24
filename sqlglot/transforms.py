@@ -287,11 +287,9 @@ def remove_precision_parameterized_types(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
-def unnest_offset_select(
+def unnest_offset_columns(
     unnest: exp.Unnest, alias: exp.TableAlias | None, *, ordinality: bool
-) -> exp.Select:
-    """Project the UNNEST position in the source dialect's base alongside its value."""
-    unnest = unnest.copy()
+) -> tuple[list[exp.Identifier], exp.Identifier]:
     offset = unnest.args["offset"]
     if not isinstance(offset, exp.Identifier):
         offset = exp.to_identifier("offset" if ordinality else "ordinality")
@@ -302,6 +300,15 @@ def unnest_offset_select(
             find_new_name({offset.name.lower()}, default_name)
         )
         columns = [value]
+    return columns, offset
+
+
+def unnest_offset_select(
+    unnest: exp.Unnest, alias: exp.TableAlias | None, *, ordinality: bool
+) -> exp.Select:
+    """Project the UNNEST position in the source dialect's base alongside its value."""
+    unnest = unnest.copy()
+    columns, offset = unnest_offset_columns(unnest, alias, ordinality=ordinality)
     unnest.set("alias", exp.TableAlias(columns=[column.copy() for column in columns]))
     unnest.set("offset", offset)
     unnest.set("offset_base", int(ordinality))

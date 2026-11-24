@@ -272,6 +272,13 @@ class PrestoGenerator(generator.Generator):
     # https://github.com/prestodb/presto/issues/8200
     SUPPORTS_LEFT_JOIN_UNNEST = False
 
+    # Presto can correlate a joined UNNEST, but not a subquery containing it.
+    # Bind the array once and count its elements without SEQUENCE's length limit.
+    CORRELATED_UNNEST_OFFSET_ARRAY: t.ClassVar[exp.Expr | None] = exp.maybe_parse(
+        "FLATTEN(TRANSFORM(ARRAY(:arr), a -> ZIP_WITH("
+        "a, ARRAY_CUM_SUM(TRANSFORM(a, x -> CAST(1 AS BIGINT))), (x, i) -> ROW(x, i - 1))))"
+    )
+
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
     INTERVAL_ALLOWS_PLURAL_FORM = False
@@ -512,6 +519,26 @@ class PrestoGenerator(generator.Generator):
         "where",
         "with",
     }
+
+    def unnest_sql(self, expression: exp.Unnest) -> str:
+        if (
+            self.CORRELATED_UNNEST_OFFSET_ARRAY is not None
+            and expression.args.get("offset_base") == 0
+            and expression.args.get("offset")
+            and isinstance(expression.parent, exp.Join)
+            and len(expression.expressions) == 1
+            and expression.expressions[0].find(exp.Column)
+        ):
+            alias = expression.args.get("alias")
+            columns, offset = transforms.unnest_offset_columns(expression, alias, ordinality=True)
+            array = exp.replace_placeholders(
+                self.CORRELATED_UNNEST_OFFSET_ARRAY, arr=expression.expressions[0]
+            )
+            expression = exp.Unnest(
+                expressions=[array],
+                alias=exp.TableAlias(this=alias and alias.this, columns=[*columns, offset]),
+            )
+        return super().unnest_sql(expression)
 
     def datatype_sql(self, expression: exp.DataType) -> str:
         if not self.SUPPORTS_TEMPORAL_PRECISION and expression.this in exp.DataType.TEMPORAL_TYPES:

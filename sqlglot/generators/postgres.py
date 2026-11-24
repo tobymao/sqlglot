@@ -564,6 +564,11 @@ class PostgresGenerator(generator.Generator):
 
         return super().columndef_sql(expression, sep)
 
+    def identifier_sql(self, expression: exp.Identifier) -> str:
+        if not expression.quoted and expression.name.lower() == "offset":
+            expression = self.dialect.normalize_identifier(expression.copy())
+        return super().identifier_sql(expression)
+
     def unnest_sql(self, expression: exp.Unnest) -> str:
         if len(expression.expressions) == 1:
             arg = expression.expressions[0]

@@ -3947,6 +3947,29 @@ OPTIONS (
                 'FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS _t1(_value, "offset")) AS _t0',
             },
         )
+        presto_array_with_offsets = (
+            "FLATTEN(TRANSFORM(ARRAY[t.arr], a -> ZIP_WITH(a, "
+            "ARRAY_CUM_SUM(TRANSFORM(a, x -> CAST(1 AS BIGINT))), (x, i) -> ROW(x, i - 1))))"
+        )
+        self.validate_all(
+            "WITH t AS (SELECT 1 AS id, [10, 20] AS arr UNION ALL SELECT 2, [30]) "
+            "SELECT id, x, off FROM t CROSS JOIN UNNEST(t.arr) AS x WITH OFFSET AS off "
+            "ORDER BY id, off",
+            write={
+                "presto": "WITH t AS (SELECT 1 AS id, ARRAY[10, 20] AS arr UNION ALL SELECT 2, ARRAY[30]) "
+                f"SELECT id, x, off FROM t CROSS JOIN UNNEST({presto_array_with_offsets}) "
+                "AS _t0(x, off) ORDER BY id NULLS FIRST, off NULLS FIRST",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT [7, 7] AS arr) SELECT * FROM "
+            "(t CROSS JOIN UNNEST(t.arr) WITH OFFSET) ORDER BY offset",
+            write={
+                "presto": "WITH t AS (SELECT ARRAY[7, 7] AS arr) SELECT * FROM "
+                f"(t CROSS JOIN UNNEST({presto_array_with_offsets}) AS _t0(_value, offset)) "
+                "ORDER BY offset NULLS FIRST",
+            },
+        )
         self.validate_all(
             "WITH a AS (SELECT [10, 20] AS arr) SELECT * FROM a "
             "LEFT JOIN UNNEST(a.arr) AS x WITH OFFSET AS off ON off = 0",

@@ -2137,6 +2137,16 @@ FROM json_data, field_ids""",
         drop_if.assert_is(exp.Drop)
         drop_b.assert_is(exp.Drop)
 
+    def test_offset_identifier(self):
+        self.validate_identity(
+            'WITH t AS (SELECT 1 AS "offset") SELECT t.OFFSET FROM t',
+            'WITH t AS (SELECT 1 AS "offset") SELECT t."offset" FROM t',
+        )
+        self.validate_identity(
+            'WITH q AS (SELECT 1 AS OFFSET, 2 AS "OFFSET") SELECT q.offset, q."OFFSET" FROM q',
+            'WITH q AS (SELECT 1 AS "offset", 2 AS "OFFSET") SELECT q."offset", q."OFFSET" FROM q',
+        )
+
     def test_unnest(self):
         self.validate_identity(
             "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['foo', 'bar', 'baz']) AS x(a, b)"

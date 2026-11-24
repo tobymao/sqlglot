@@ -6579,7 +6579,8 @@ SINGLE = TRUE""",
 
     def test_alter_session(self):
         expr = self.validate_identity(
-            "ALTER SESSION SET autocommit = FALSE, QUERY_TAG = 'qtag', JSON_INDENT = 1"
+            "ALTER SESSION SET autocommit = FALSE, QUERY_TAG = 'qtag', JSON_INDENT = 1",
+            identify=True,
         )
         self.assertEqual(
             expr.find(exp.AlterSession),
@@ -6587,19 +6588,19 @@ SINGLE = TRUE""",
                 expressions=[
                     exp.SetItem(
                         this=exp.EQ(
-                            this=exp.Column(this=exp.Identifier(this="autocommit", quoted=False)),
+                            this=exp.var("autocommit"),
                             expression=exp.Boolean(this=False),
                         ),
                     ),
                     exp.SetItem(
                         this=exp.EQ(
-                            this=exp.Column(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
+                            this=exp.var("QUERY_TAG"),
                             expression=exp.Literal(this="qtag", is_string=True),
                         ),
                     ),
                     exp.SetItem(
                         this=exp.EQ(
-                            this=exp.Column(this=exp.Identifier(this="JSON_INDENT", quoted=False)),
+                            this=exp.var("JSON_INDENT"),
                             expression=exp.Literal(this="1", is_string=False),
                         ),
                     ),
@@ -6608,13 +6609,13 @@ SINGLE = TRUE""",
             ),
         )
 
-        expr = self.validate_identity("ALTER SESSION UNSET autocommit, QUERY_TAG")
+        expr = self.validate_identity("ALTER SESSION UNSET autocommit, QUERY_TAG", identify=True)
         self.assertEqual(
             expr.find(exp.AlterSession),
             exp.AlterSession(
                 expressions=[
-                    exp.SetItem(this=exp.Identifier(this="autocommit", quoted=False)),
-                    exp.SetItem(this=exp.Identifier(this="QUERY_TAG", quoted=False)),
+                    exp.SetItem(this=exp.var("autocommit")),
+                    exp.SetItem(this=exp.var("QUERY_TAG")),
                 ],
                 unset=True,
             ),
@@ -7017,7 +7018,7 @@ FROM SEMANTIC_VIEW(
         self.assertIsNotNone(set_item)
         self.assertIsNone(set_item.args.get("kind"))
 
-        expr = parse_one("SET a = 1", read="snowflake")
+        expr = self.validate_identity("SET a = 1", 'SET "a" = 1', identify=True)
         set_item = expr.find(exp.SetItem)
         self.assertIsNotNone(set_item)
         self.assertEqual(set_item.args.get("kind"), "VARIABLE")

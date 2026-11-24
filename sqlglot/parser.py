@@ -9794,14 +9794,18 @@ class Parser:
 
     def _parse_alter_session(self) -> exp.AlterSession:
         """Parse ALTER SESSION SET/UNSET statements."""
+
+        def parse_parameter() -> exp.Expr | None:
+            return self._parse_identifier() or self._parse_var(tokens=self.ID_VAR_TOKENS)
+
         if self._match(TokenType.SET):
-            expressions = self._parse_csv(lambda: self._parse_set_item_assignment())
+            expressions = self._parse_csv(
+                lambda: self._parse_set_item_assignment(parse_left=parse_parameter)
+            )
             return self.expression(exp.AlterSession(expressions=expressions, unset=False))
 
         self._match_text_seq("UNSET")
-        expressions = self._parse_csv(
-            lambda: self.expression(exp.SetItem(this=self._parse_id_var(any_token=True)))
-        )
+        expressions = self._parse_csv(lambda: self.expression(exp.SetItem(this=parse_parameter())))
         return self.expression(exp.AlterSession(expressions=expressions, unset=True))
 
     def _parse_alter(self) -> exp.Alter | exp.Command:
@@ -10155,13 +10159,18 @@ class Parser:
             return parser(self)
         return self._parse_as_command(self._prev)
 
-    def _parse_set_item_assignment(self, kind: str | None = None) -> exp.Expr | None:
+    def _parse_set_item_assignment(
+        self,
+        kind: str | None = None,
+        *,
+        parse_left: t.Callable[[], exp.Expr | None] | None = None,
+    ) -> exp.Expr | None:
         index = self._index
 
         if kind in ("GLOBAL", "SESSION") and self._match_text_seq("TRANSACTION"):
             return self._parse_set_transaction(global_=kind == "GLOBAL")
 
-        left = self._parse_primary() or self._parse_column()
+        left = parse_left() if parse_left else self._parse_primary() or self._parse_column()
         assignment_delimiter = self._match_texts(self.SET_ASSIGNMENT_DELIMITERS)
 
         if not left or (self.SET_REQUIRES_ASSIGNMENT_DELIMITER and not assignment_delimiter):

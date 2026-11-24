@@ -8738,6 +8738,7 @@ class Parser:
         # Checks if we can parse an order clause: WITHIN GROUP (ORDER BY <order_by_expression_list> [ASC | DESC]).
         # This is done "manually", instead of letting _parse_window parse it into an exp.WithinGroup node, so that
         # the STRING_AGG call is parsed like in MySQL / SQLite and can thus be transpiled more easily to them.
+        comments = self._prev_comments
         if not self._match_text_seq("WITHIN", "GROUP"):
             self._retreat(index)
             return self.validate_expression(exp.GroupConcat.from_arg_list(args), args)
@@ -8750,7 +8751,8 @@ class Parser:
                 this=self._parse_order(this=seq_get(args, 0)),
                 separator=seq_get(args, 1),
                 on_overflow=on_overflow,
-            )
+            ),
+            comments=comments,
         )
 
     def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:

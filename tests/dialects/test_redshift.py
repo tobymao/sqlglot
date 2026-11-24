@@ -26,6 +26,12 @@ class TestRedshift(Validator):
         )
         self.validate_identity("LISTAGG(DISTINCT x, '|') WITHIN GROUP (ORDER BY x)")
 
+    def test_listagg_comments(self):
+        self.validate_identity(
+            "SELECT LISTAGG(x, '|') /* values */ WITHIN GROUP (ORDER BY x) /* sorted */ AS xs FROM t",
+            "SELECT LISTAGG(x, '|') WITHIN GROUP (ORDER BY x) AS xs /* values */ /* sorted */ FROM t",
+        )
+
     def test_star_except(self):
         expression = parse_one("SELECT * EXCEPT (a) FROM t", read="bigquery")
 

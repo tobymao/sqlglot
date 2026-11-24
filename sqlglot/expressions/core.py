@@ -1413,7 +1413,8 @@ class Expression(Expr):
         # NOT binds more tightly than AND and OR, but more loosely than comparisons and arithmetic.
         if not issubclass(klass, Connector):
             left = _wrap(left, Not)
-            right = _wrap(right, Not)
+            if klass is not Is:  # A right-hand NOT is part of the IS NOT operator.
+                right = _wrap(right, Not)
 
         # A repeated operator can chain on the left, but SQL may reject chained predicates.
         if not isinstance(left, klass) or isinstance(left, Predicate):

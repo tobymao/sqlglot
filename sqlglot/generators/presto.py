@@ -266,6 +266,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
 class PrestoGenerator(generator.Generator):
     SELECT_KINDS = ()
+    SUPPORTS_EXECUTE_IMMEDIATE = False
     SUPPORTS_DECODE_CASE = False
     SUPPORTS_MULTI_ARG_CHR = False
     SUPPORTS_TEMPORAL_PRECISION = False

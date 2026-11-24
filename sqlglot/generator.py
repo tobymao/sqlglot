@@ -504,6 +504,7 @@ class Generator:
     SUPPORTS_SELECT_INTO = False
 
     SUPPORTS_OPTIMIZE = False
+    SUPPORTS_EXECUTE_IMMEDIATE = True
 
     # Whether UNLOGGED tables can be created
     SUPPORTS_UNLOGGED_TABLES = False
@@ -6888,6 +6889,14 @@ class Generator:
     def executesql_sql(self, expression: exp.ExecuteSql) -> str:
         self.unsupported("Unsupported Execute syntax")
         return ""
+
+    def executeimmediate_sql(self, expression: exp.ExecuteImmediate) -> str:
+        if not self.SUPPORTS_EXECUTE_IMMEDIATE:
+            self.unsupported("EXECUTE IMMEDIATE is not supported")
+            return ""
+        using = self.expressions(expression, flat=True)
+        using = f" USING {using}" if using else ""
+        return f"EXECUTE IMMEDIATE {self.sql(expression, 'this')}{using}"
 
     def altermodifysqlsecurity_sql(self, expression: exp.AlterModifySqlSecurity) -> str:
         props = self.expressions(expression, sep=" ")

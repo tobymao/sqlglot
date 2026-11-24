@@ -16,6 +16,7 @@ if t.TYPE_CHECKING:
 class AthenaTrinoParser(TrinoParser):
     STATEMENT_PARSERS = {
         **TrinoParser.STATEMENT_PARSERS,
+        TokenType.EXECUTE: lambda self: self._parse_command(),
         TokenType.USING: lambda self: self._parse_as_command(self._prev),
     }
 

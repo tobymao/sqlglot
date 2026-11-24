@@ -114,6 +114,7 @@ class _HiveGenerator(HiveGenerator):
 
 
 class AthenaTrinoGenerator(TrinoGenerator):
+    SUPPORTS_EXECUTE_IMMEDIATE = False
     PROPERTIES_LOCATION = {
         **TrinoGenerator.PROPERTIES_LOCATION,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,

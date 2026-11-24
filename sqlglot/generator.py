@@ -3542,7 +3542,9 @@ class Generator:
         )
         alias = self.sql(expression, "alias")
         alias = f" {alias}" if alias else ""
-        joins = "".join(self.sql(join) for join in expression.args.get("joins") or [])
+        joins = self.indent(
+            self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
+        )
         return f"{self.sql(expression, 'this')}{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}{joins}"
 
     def query_modifiers(self, expression: exp.Expr, *sqls: str) -> str:

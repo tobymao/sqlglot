@@ -4706,7 +4706,6 @@ class Parser:
         )
 
     def _parse_match_recognize(self, this: exp.Expr) -> exp.Expr:
-        """Wraps the relation `this` in the MATCH_RECOGNIZE that follows it, if any."""
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return this
 
@@ -5281,13 +5280,13 @@ class Parser:
                 self._retreat(index)
 
         if stream := self._parse_stream():
-            return stream
+            return self._parse_match_recognize(stream)
 
         if lateral := self._parse_lateral():
-            return lateral
+            return self._parse_match_recognize(lateral)
 
         if unnest := self._parse_unnest():
-            return unnest
+            return self._parse_match_recognize(unnest)
 
         if values := self._parse_derived_table_values():
             values.set("pivots", self._parse_pivots())
@@ -5380,12 +5379,6 @@ class Parser:
         if not self.dialect.ALIAS_POST_VERSION:
             this.set("version", self._parse_version())
 
-        this = self._parse_match_recognize(this)
-
-        if joins:
-            for join in self._parse_joins(alias_tokens=alias_tokens):
-                this.append("joins", join)
-
         if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
             this.set("ordinality", True)
             this.set("alias", self._parse_table_alias())
@@ -5399,6 +5392,12 @@ class Parser:
                     table_from_rows.set(arg, this.args.get(arg))
 
             this = table_from_rows
+
+        this = self._parse_match_recognize(this)
+
+        if joins:
+            for join in self._parse_joins(alias_tokens=alias_tokens):
+                this.append("joins", join)
 
         return this
 

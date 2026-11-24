@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 import sqlglot
+from sqlglot import exp
 from sqlglot.lineage import lineage
 from sqlglot.schema import MappingSchema
 
@@ -694,6 +695,19 @@ class TestLineage(unittest.TestCase):
 
         self.assertEqual(node.downstream[0].name, "_0.value")
         self.assertEqual(node.downstream[0].downstream[0].name, "sample_data.value")
+
+    def test_match_recognize(self) -> None:
+        sql = """
+        SELECT m.amt
+        FROM ev MATCH_RECOGNIZE (
+            PARTITION BY u ORDER BY ts ALL ROWS PER MATCH PATTERN (v+) DEFINE v AS e = 'view'
+        ) AS m
+        """
+        schema = {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "TEXT", "amt": "DOUBLE"}}
+        node = lineage("amt", sql, schema=schema, dialect="trino")
+
+        self.assertEqual([n.name for n in node.walk()], ["amt", "m.amt"])
+        self.assertIsInstance(node.downstream[0].source, exp.MatchRecognize)
 
     def test_pivot_with_alias(self) -> None:
         sql = """

@@ -1965,23 +1965,30 @@ SELECT ARRAY_AGG(piv) AS arr FROM unknown_table AS u PIVOT(SUM(u.v) FOR u.k IN (
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
 SELECT * FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES FIRST(v.ts) AS first_ts, o.amt AS amount PATTERN (v+ o) DEFINE v AS e = 'view', o AS e = 'order');
-SELECT ev.u AS u, ev.first_ts AS first_ts, ev.amount AS amount FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY ev.ts MEASURES FIRST(V.ts) AS first_ts, O.amt AS amount PATTERN (v+ o) DEFINE V AS e = 'view', O AS e = 'order') ev;
+SELECT _0.u AS u, _0.first_ts AS first_ts, _0.amount AS amount FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY ev.ts MEASURES FIRST(V.ts) AS first_ts, O.amt AS amount PATTERN (v+ o) DEFINE V AS e = 'view', O AS e = 'order') _0;
 
 # title: MATCH_RECOGNIZE with ALL ROWS PER MATCH outputs its keys, measures and other input columns
 # dialect: trino
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
 SELECT * FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a+) DEFINE a AS e = 'view');
-SELECT ev.u AS u, ev.ts AS ts, ev.c AS c, ev.e AS e, ev.amt AS amt FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY ev.ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a+) DEFINE A AS e = 'view') ev;
+SELECT _0.u AS u, _0.ts AS ts, _0.c AS c, _0.e AS e, _0.amt AS amt FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY ev.ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a+) DEFINE A AS e = 'view') _0;
 
-# title: the query around a MATCH_RECOGNIZE reads its output, by its input's name
+# title: Snowflake's ALL ROWS PER MATCH outputs its input columns and then its measures
+# dialect: snowflake
+# execute: false
+# schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+SELECT * FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES MATCH_NUMBER() AS n ALL ROWS PER MATCH PATTERN (v) DEFINE v AS TRUE);
+SELECT _0.U AS U, _0.TS AS TS, _0.E AS E, _0.AMT AS AMT, _0.N AS N FROM EV AS EV MATCH_RECOGNIZE (PARTITION BY EV.U ORDER BY EV.TS MEASURES MATCH_NUMBER() AS N ALL ROWS PER MATCH PATTERN (v) DEFINE V AS TRUE) _0;
+
+# title: the query around a MATCH_RECOGNIZE reads its output
 # dialect: trino
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
 SELECT u, n FROM ev AS x MATCH_RECOGNIZE (PARTITION BY x.u ORDER BY x.ts MEASURES MATCH_NUMBER() AS n PATTERN (a) DEFINE a AS TRUE) WHERE n > 1 ORDER BY n;
-SELECT x.u AS u, x.n AS n FROM ev AS x MATCH_RECOGNIZE (PARTITION BY x.u ORDER BY x.ts MEASURES MATCH_NUMBER() AS n PATTERN (a) DEFINE A AS TRUE) x WHERE x.n > 1 ORDER BY n;
+SELECT _0.u AS u, _0.n AS n FROM ev AS x MATCH_RECOGNIZE (PARTITION BY x.u ORDER BY x.ts MEASURES MATCH_NUMBER() AS n PATTERN (a) DEFINE A AS TRUE) _0 WHERE _0.n > 1 ORDER BY n;
 
-# title: a joined MATCH_RECOGNIZE is read by its own alias
+# title: a joined MATCH_RECOGNIZE
 # dialect: trino
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
@@ -1993,17 +2000,39 @@ SELECT m.n AS n, y.amt AS amt FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u O
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
 SELECT * FROM (SELECT u AS k, ts, e FROM ev) MATCH_RECOGNIZE (PARTITION BY k ORDER BY ts MEASURES LAST(a.ts) AS t PATTERN (a b*) DEFINE b AS e <> PREV(e));
-SELECT _0.k AS k, _0.t AS t FROM (SELECT ev.u AS k, ev.ts AS ts, ev.e AS e FROM ev AS ev) AS _0 MATCH_RECOGNIZE (PARTITION BY _0.k ORDER BY _0.ts MEASURES LAST(A.ts) AS t PATTERN (a b*) DEFINE B AS e <> PREV(e)) _0;
+SELECT _1.k AS k, _1.t AS t FROM (SELECT ev.u AS k, ev.ts AS ts, ev.e AS e FROM ev AS ev) AS _0 MATCH_RECOGNIZE (PARTITION BY _0.k ORDER BY _0.ts MEASURES LAST(A.ts) AS t PATTERN (a b*) DEFINE B AS e <> PREV(e)) _1;
+
+# title: MATCH_RECOGNIZE over VALUES
+# dialect: trino
+# execute: false
+# schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+SELECT * FROM (VALUES (1, 2, 3)) AS t(a, b, c) MATCH_RECOGNIZE (PARTITION BY a ORDER BY b MEASURES LAST(v.b) AS lb ALL ROWS PER MATCH PATTERN (v) DEFINE v AS b > 0);
+SELECT _0.a AS a, _0.b AS b, _0.lb AS lb, _0.c AS c FROM (VALUES (1, 2, 3)) AS t(a, b, c) MATCH_RECOGNIZE (PARTITION BY t.a ORDER BY t.b MEASURES LAST(V.b) AS lb ALL ROWS PER MATCH PATTERN (v) DEFINE V AS b > 0) _0;
+
+# title: parenthesized MATCH_RECOGNIZE
+# dialect: trino
+# execute: false
+# schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+SELECT * FROM (ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES FIRST(a.ts) AS f PATTERN (a+) DEFINE a AS e = 'view') AS m) AS z;
+SELECT z.u AS u, z.f AS f FROM (ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY ev.ts MEASURES FIRST(A.ts) AS f PATTERN (a+) DEFINE A AS e = 'view') m) AS z;
 
 # title: in MEASURES and DEFINE, a qualifier is a pattern variable, even if a source has its name
 # dialect: trino
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
-SELECT * FROM ev AS v MATCH_RECOGNIZE (PARTITION BY v.u ORDER BY v.ts MEASURES v.amt AS amount PATTERN ("V") DEFINE v AS amt > 0);
-SELECT v.u AS u, v.amount AS amount FROM ev AS v MATCH_RECOGNIZE (PARTITION BY v.u ORDER BY v.ts MEASURES V.amt AS amount PATTERN ("V") DEFINE V AS amt > 0) v;
+SELECT * FROM ev AS v MATCH_RECOGNIZE (PARTITION BY v.u ORDER BY v.ts MEASURES v.amt AS amount, CLASSIFIER(v) AS c PATTERN ("V") DEFINE v AS amt > (SELECT MAX(v.amt) FROM ev AS v));
+SELECT _0.u AS u, _0.amount AS amount, _0.c AS c FROM ev AS v MATCH_RECOGNIZE (PARTITION BY v.u ORDER BY v.ts MEASURES V.amt AS amount, CLASSIFIER(V) AS c PATTERN ("V") DEFINE V AS amt > (SELECT MAX(v.amt) AS _col_0 FROM ev AS v)) _0;
 
-# dialect: snowflake
+# title: an ordinal in a MATCH_RECOGNIZE's ORDER BY is a constant
+# dialect: trino
 # execute: false
 # schema: {"ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
-SELECT * FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES FIRST(v.ts) AS first_ts PATTERN (v+) DEFINE v AS e = 'view');
-SELECT EV.U AS U, EV.FIRST_TS AS FIRST_TS FROM EV AS EV MATCH_RECOGNIZE (PARTITION BY EV.U ORDER BY EV.TS MEASURES FIRST(V.TS) AS FIRST_TS PATTERN (v+) DEFINE V AS E = 'view') EV;
+SELECT n FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY 1 MEASURES MATCH_NUMBER() AS n PATTERN (a) DEFINE a AS TRUE);
+SELECT _0.n AS n FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY 1 MEASURES MATCH_NUMBER() AS n PATTERN (a) DEFINE A AS TRUE) _0;
+
+# title: MATCH_RECOGNIZE with ALL ROWS PER MATCH over a table without a schema
+# dialect: trino
+# execute: false
+# validate_qualify_columns: false
+SELECT * FROM unknown_table MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a) DEFINE a AS TRUE);
+SELECT * FROM unknown_table AS unknown_table MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a) DEFINE A AS TRUE) _0;

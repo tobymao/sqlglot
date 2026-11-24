@@ -560,6 +560,12 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_POSITIONAL_COLUMN_REFS = False
     """Whether qualified `$N` references the Nth column of their source."""
 
+    MATCH_RECOGNIZE_INPUT_COLUMNS_FIRST = False
+    """
+    Whether a MATCH_RECOGNIZE with ALL ROWS PER MATCH outputs its input columns and then its measures,
+    instead of its PARTITION BY and ORDER BY columns, its measures and then its other input columns.
+    """
+
     PREFER_CTE_ALIAS_COLUMN = False
     """
     Some dialects, such as Snowflake, allow you to reference a CTE column alias in the

@@ -76,7 +76,9 @@ class Scope:
         cte_scopes: List of all child scopes for CTEs
         derived_table_scopes: List of all child scopes for derived_tables
         udtf_scopes: List of all child scopes for user defined tabular functions
-        table_scopes: derived_table_scopes + udtf_scopes, in the order that they're defined
+        match_recognize_scopes: List of all child scopes for MATCH_RECOGNIZEs
+        table_scopes: derived_table_scopes + udtf_scopes + match_recognize_scopes, in the order
+            that they're defined
         set_operation_scopes: If this Scope is for a SetOperation expression, this will be
             a list of the left and right child scopes.
     """
@@ -241,7 +243,10 @@ class Scope:
 
                 self._ordered_sources.append(node)
             elif type(node) is exp.Lateral or (
-                isinstance(node, exp.UDTF) and isinstance(node.parent, (exp.From, exp.Join))
+                isinstance(node, exp.UDTF)
+                and (
+                    isinstance(node.parent, (exp.From, exp.Join)) or _is_match_recognize_input(node)
+                )
             ):
                 if _is_semi_or_anti_join_rhs(node):
                     self._semi_anti_join_tables.add(node.alias_or_name)
@@ -271,8 +276,7 @@ class Scope:
             ):
                 self._scans_all_subscope_columns = True
 
-        # MEASURES and DEFINE read their input's columns unqualified, or qualified by pattern
-        # variables, neither of which say which input columns they read
+        # MEASURES and DEFINE don't say which of the input's columns they read
         if isinstance(self.expression, exp.MatchRecognize):
             self._scans_all_subscope_columns = True
 
@@ -411,6 +415,7 @@ class Scope:
                     self.subquery_scopes,
                     self.udtf_scopes,
                     (dts for dts in self.derived_table_scopes if dts.can_be_correlated),
+                    (mrs for mrs in self.match_recognize_scopes if mrs.can_be_correlated),
                 )
                 for column in scope.external_columns
             ]
@@ -419,7 +424,7 @@ class Scope:
             named_selects = set(expr.named_selects) if isinstance(expr, exp.Query) else set()
 
             self._columns = []
-            is_match_recognize = self.is_match_recognize
+            is_match_recognize = isinstance(expr, exp.MatchRecognize)
             for column in columns + external_columns:
                 # Star RENAME sources are column labels, not references.
                 if isinstance(column.parent, exp.Alias) and column.parent.arg_key == "rename":
@@ -633,11 +638,6 @@ class Scope:
     def is_udtf(self) -> bool:
         """Determine if this scope is a UDTF (User Defined Table Function)"""
         return self.scope_type == ScopeType.UDTF
-
-    @property
-    def is_match_recognize(self) -> bool:
-        """Determine if this scope is a MATCH_RECOGNIZE"""
-        return self.scope_type == ScopeType.MATCH_RECOGNIZE
 
     @property
     def is_correlated_subquery(self) -> bool:
@@ -963,27 +963,25 @@ def _is_derived_table(expression: exp.Expr) -> bool:
 
 def _is_from_or_join(expression: exp.Expr) -> bool:
     """
-    Determine if `expression` is the FROM or JOIN clause of a SELECT statement.
+    Determine if `expression` is the FROM or JOIN clause of a SELECT statement, or the input of a
+    MATCH_RECOGNIZE in one.
     """
     parent = expression.parent
 
     # Subqueries can be arbitrarily nested
     while type(parent) is exp.Subquery:
+        expression = parent
         parent = parent.parent
 
     return type(parent) in (exp.From, exp.Join) or _is_match_recognize_input(expression)
 
 
 def _is_match_recognize_input(expression: exp.Expr) -> bool:
-    """Determine if `expression` is the relation a MATCH_RECOGNIZE reads, e.g. `t` in `t MATCH_RECOGNIZE (...)`."""
     return type(expression.parent) is exp.MatchRecognize and expression.arg_key == "this"
 
 
 def _is_pattern_column(column: exp.Column) -> bool:
-    """
-    Determine if `column` is in a MATCH_RECOGNIZE's MEASURES or DEFINE, where it reads the
-    current row or a pattern variable's rows, e.g. `price` or `A.price`.
-    """
+    """Determine if `column` is in a MATCH_RECOGNIZE's MEASURES or DEFINE, e.g. `A.price`."""
     node: exp.Expr | None = column
     while node is not None and type(node.parent) is not exp.MatchRecognize:
         node = node.parent
@@ -1008,11 +1006,11 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
     if from_:
         expressions.append(from_.this)
 
-    for join in scope.expression.args.get("joins") or []:
-        expressions.append(join.this)
-
     if isinstance(scope.expression, exp.MatchRecognize):
         expressions.append(scope.expression.this)
+    else:
+        for join in scope.expression.args.get("joins") or []:
+            expressions.append(join.this)
 
     if isinstance(scope.expression, (exp.Table, exp.Subquery)):
         # A Subquery-rooted scope, e.g., the FROM clause of a DML statement, a DDL source or
@@ -1057,8 +1055,7 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
             lateral_sources = None
             scope_type = ScopeType.MATCH_RECOGNIZE
             scopes = scope.match_recognize_scopes
-            if node is not scope.expression:
-                expressions.extend(join.this for join in node.args.get("joins") or [])
+            expressions.extend(join.this for join in node.args.get("joins") or [])
         elif isinstance(expression, exp.UDTF):
             lateral_sources = sources
             scope_type = ScopeType.UDTF
@@ -1171,8 +1168,8 @@ def walk_in_scope(
 
         yield node
 
-        # Only CTEs, Queries and MATCH_RECOGNIZEs can start child scopes; checking that first lets all
-        # other nodes (the vast majority) skip the rest of the boundary checks.
+        # Only CTEs, Queries and MATCH_RECOGNIZEs can start child scopes; checking that first lets
+        # all other nodes (the vast majority) skip the rest of the boundary checks.
         if (
             node is not expression
             and isinstance(node, (exp.CTE, exp.Query, exp.MatchRecognize))
@@ -1199,14 +1196,23 @@ def walk_in_scope(
             not include_udtfs
             and node is not expression
             and isinstance(node, exp.UDTF)
-            and (type(node) is exp.Lateral or isinstance(node.parent, (exp.From, exp.Join)))
+            and (
+                type(node) is exp.Lateral
+                or isinstance(node.parent, (exp.From, exp.Join))
+                or _is_match_recognize_input(node)
+            )
         ):
             continue
 
         if prune and prune(node):
             continue
 
-        for vs in reversed(node.args.values()):
+        args = node.args
+        if node is expression and type(node) is exp.MatchRecognize and args.get("joins"):
+            # A MATCH_RECOGNIZE's joins join its output, so they belong to the scope around it
+            args = {key: value for key, value in args.items() if key != "joins"}
+
+        for vs in reversed(args.values()):
             if isinstance(vs, list):
                 for v in reversed(vs):
                     if isinstance(v, exp.Expr):

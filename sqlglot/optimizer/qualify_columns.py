@@ -158,7 +158,7 @@ def validate_qualify_columns(expression: E, sql: str | None = None) -> E:
     """Raise an `OptimizeError` if any columns aren't qualified"""
     all_unqualified_columns = []
     for scope in traverse_scope(expression):
-        if isinstance(scope.expression, exp.Select):
+        if isinstance(scope.expression, (exp.Select, exp.MatchRecognize)):
             unqualified_columns = scope.unqualified_columns
 
             if scope.external_columns and not scope.is_correlated_subquery and not scope.pivots:
@@ -649,7 +649,7 @@ def _expand_order_by_and_distinct_on(
 ) -> None:
     expression = scope.expression
 
-    if not isinstance(expression, exp.Selectable):
+    if not isinstance(expression, exp.Selectable) or isinstance(expression, exp.MatchRecognize):
         return
 
     alias_names = {name for name, count in Counter(expression.named_selects).items() if count == 1}

@@ -40,6 +40,12 @@ def unnest_subqueries(expression: E) -> E:
         if not parent:
             continue
 
+        # A MATCH_RECOGNIZE's subqueries can't be joined to the query around it
+        if isinstance(select, exp.MatchRecognize) or (
+            scope.parent and isinstance(scope.parent.expression, exp.MatchRecognize)
+        ):
+            continue
+
         if isinstance(select.find_ancestor(exp.Anonymous, exp.Select), exp.Anonymous):
             continue
 

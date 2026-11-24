@@ -872,14 +872,6 @@ class MatchRecognizeMeasure(Expression):
 
 
 class MatchRecognize(Expression, DerivedTable):
-    """
-    A MATCH_RECOGNIZE over the relation `this`, e.g. `t MATCH_RECOGNIZE (...) AS m` in a FROM.
-
-    It replaces `this` with its output, so the query only sees `alias`. With ONE ROW PER MATCH,
-    the output is the PARTITION BY columns and the measures; with ALL ROWS PER MATCH, it's every
-    input column and the measures.
-    """
-
     arg_types = {
         "this": True,
         "partition_by": False,

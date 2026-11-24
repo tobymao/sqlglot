@@ -47,11 +47,8 @@ class OracleParser(parser.Parser):
     }
     ALIAS_TOKENS = ID_VAR_TOKENS
 
-    # These clauses can't follow GROUP BY, so e.g. `GROUP BY sample` refers to a column
-    QUERY_MODIFIER_TOKENS = parser.Parser.QUERY_MODIFIER_TOKENS - {
-        TokenType.MATCH_RECOGNIZE,
-        TokenType.TABLE_SAMPLE,
-    }
+    # TABLESAMPLE can't follow GROUP BY, so e.g. `GROUP BY sample` refers to a column
+    QUERY_MODIFIER_TOKENS = parser.Parser.QUERY_MODIFIER_TOKENS - {TokenType.TABLE_SAMPLE}
 
     VERSION_PHRASES = {
         **parser.Parser.VERSION_PHRASES,

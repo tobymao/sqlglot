@@ -409,7 +409,14 @@ def to_node(
                 table, col_source = next(iter(named_sources.items()))
                 c.set("table", exp.to_identifier(table))
 
-        if isinstance(col_source, Scope):
+        if isinstance(col_source, Scope) and isinstance(col_source.expression, exp.MatchRecognize):
+            # Columns aren't traced through a MATCH_RECOGNIZE's MEASURES and DEFINE
+            match = col_source.expression
+            leaf = Node(name=c.sql(comments=False), source=match, expression=match)
+            node.downstream.append(leaf)
+            if on_node:
+                on_node(leaf)
+        elif isinstance(col_source, Scope):
             reference_node_name = None
             if col_source.scope_type == ScopeType.DERIVED_TABLE and table not in source_names:
                 reference_node_name = table

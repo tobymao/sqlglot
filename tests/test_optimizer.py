@@ -21,7 +21,7 @@ from sqlglot.optimizer.journal import record, revert
 from sqlglot.optimizer.normalize import normalization_distance
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.resolver import Resolver
-from sqlglot.optimizer.scope import build_scope, traverse_scope, walk_in_scope
+from sqlglot.optimizer.scope import ScopeType, build_scope, traverse_scope, walk_in_scope
 from sqlglot.schema import MappingSchema
 from tests.helpers import (
     TPCDS_SCHEMA,
@@ -422,6 +422,32 @@ class TestOptimizer(unittest.TestCase):
             optimizer.qualify_tables.qualify_tables,
             db="db",
             catalog="c",
+        )
+
+    def test_qualify_match_recognize_with_joins(self):
+        # Joins can hang off of the MATCH_RECOGNIZE itself, e.g. when built with Select.from_
+        expression = exp.select("*").from_(
+            "ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts PATTERN (a) DEFINE a AS TRUE) AS m "
+            "JOIN (SELECT u, z FROM b) AS b ON m.u = b.u",
+            dialect="trino",
+        )
+        self.assertEqual(
+            [(s.scope_type, sorted(s.sources)) for s in traverse_scope(expression)],
+            [
+                (ScopeType.MATCH_RECOGNIZE, ["ev"]),
+                (ScopeType.DERIVED_TABLE, ["b"]),
+                (ScopeType.ROOT, ["b", "m"]),
+            ],
+        )
+        self.assertEqual(
+            optimizer.qualify.qualify(
+                expression,
+                schema={"ev": {"u": "INT", "ts": "INT"}, "b": {"u": "INT", "z": "INT"}},
+                dialect="trino",
+                identify=False,
+            ).sql("trino"),
+            "SELECT m.u AS u, b.u AS u, b.z AS z FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u "
+            "ORDER BY ev.ts PATTERN (a) DEFINE A AS TRUE) m JOIN (SELECT b.u AS u, b.z AS z FROM b AS b) AS b ON m.u = b.u",
         )
 
     def test_qualify_tables_copies_typed_alias_columns(self):
@@ -2400,6 +2426,15 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
 
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
+
+        # A MATCH_RECOGNIZE's subqueries can't be joined to the query around it
+        sql = "SELECT * FROM x MATCH_RECOGNIZE (PARTITION BY x.a ORDER BY x.b PATTERN (v) DEFINE V AS b > (SELECT SUM(y.b) AS b FROM y)) m"
+        self.assertEqual(
+            optimizer.unnest_subqueries.unnest_subqueries(parse_one(sql, read="trino")).sql(
+                "trino"
+            ),
+            sql,
+        )
 
     def test_unnest_scalar_cardinality(self):
         sql = "SELECT (SELECT y.b FROM y) + 1 AS c, RANK() OVER (ORDER BY x.a) AS r FROM x ORDER BY x.a"

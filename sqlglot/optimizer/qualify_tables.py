@@ -148,19 +148,8 @@ def qualify_tables(
             if pivot := seq_get(derived_table.args.get("pivots") or [], -1):
                 _set_alias(pivot, canonical_aliases)
 
-        if scope.match_recognize_scopes:
-            taken = {name for name, _ in scope.references}
-            for match_scope in scope.match_recognize_scopes:
-                # The MATCH_RECOGNIZE replaces its input, so it takes the input's name, as the
-                # query sees it, unless another relation in the FROM already has it
-                match = match_scope.expression
-                name = match.this.alias_or_name
-                _set_alias(
-                    match,
-                    canonical_aliases,
-                    target_alias=name if name and name not in taken else None,
-                    scope=scope,
-                )
+        for match_scope in scope.match_recognize_scopes:
+            _set_alias(match_scope.expression, canonical_aliases, scope=scope)
 
         table_aliases = {}
 

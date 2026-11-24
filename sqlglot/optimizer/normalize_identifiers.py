@@ -4,7 +4,8 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.dialects.dialect import Dialect, DialectType, NormalizationStrategy
-from sqlglot.tokenizer_core import TokenType
+from sqlglot.errors import TokenError
+from sqlglot.tokens import TokenType
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -76,7 +77,7 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
             continue
 
         if isinstance(node, exp.MatchRecognize):
-            pattern_variables.update(_normalize_pattern_variables(node, dialect))
+            pattern_variables.update(id(i) for i in _pattern_variables(node, dialect))
 
         # A dot chain is recorded once, at its outermost Dot. Ancestors are visited before
         # their descendants, so none of the names it wraps have been normalized yet
@@ -101,21 +102,19 @@ def normalize_identifiers(expression, dialect=None, store_original_column_identi
 
                 root.meta["dot_parts"] = dot_parts
 
-        if isinstance(node, exp.Identifier) and id(node) not in pattern_variables:
-            dialect.normalize_identifier(node)
+        if isinstance(node, exp.Identifier):
+            if id(node) not in pattern_variables:
+                dialect.normalize_identifier(node)
+            elif not node.quoted:
+                # Engines resolve unquoted pattern variables as uppercase, even when they lowercase
+                # other identifiers, e.g. Trino, and the PATTERN they must match is kept as text
+                node.set("this", node.name.upper())
 
     return expression
 
 
-def _normalize_pattern_variables(match: exp.MatchRecognize, dialect: Dialect) -> list[int]:
-    """
-    Uppercases the unquoted names of `match`'s pattern variables, e.g. `a` in `DEFINE a AS ...` and
-    `a.price` in its MEASURES and DEFINE, and returns the ids of their identifiers.
-
-    Engines resolve unquoted pattern variables as uppercase, as the SQL standard does with
-    identifiers, even when they lowercase other identifiers, e.g. Trino. The PATTERN is kept as
-    text, so the names that reference it have to match it this way once they're quoted.
-    """
+def _pattern_variables(match: exp.MatchRecognize, dialect: Dialect) -> list[exp.Identifier]:
+    """The identifiers naming `match`'s pattern variables, e.g. `a` in `DEFINE a AS a.x > 0`."""
     if dialect.normalization_strategy is NormalizationStrategy.CASE_SENSITIVE:
         return []
 
@@ -128,10 +127,15 @@ def _normalize_pattern_variables(match: exp.MatchRecognize, dialect: Dialect) ->
         if isinstance(alias := definition.args.get("alias"), exp.Identifier)
     ]
     names = {canonical(i.name, i.quoted) for i in defines}
+
     if pattern := match.args.get("pattern"):
+        try:
+            tokens = dialect.tokenize(pattern.name)
+        except TokenError:
+            tokens = []
         names.update(
             canonical(token.text, token.token_type == TokenType.IDENTIFIER)
-            for token in dialect.tokenize(pattern.name)
+            for token in tokens
             if token.token_type == TokenType.IDENTIFIER
             or (
                 (token.text[:1].isalpha() or token.text[:1] == "_")
@@ -140,19 +144,19 @@ def _normalize_pattern_variables(match: exp.MatchRecognize, dialect: Dialect) ->
         )
 
     identifiers = list(defines)
-    for key in ("measures", "define"):
-        for arg in match.args.get(key) or []:
-            for column in arg.find_all(exp.Column):
-                qualifier = column.args.get("table")
+    for arg in (*(match.args.get("measures") or []), *(match.args.get("define") or [])):
+        for node in arg.walk(prune=lambda n: isinstance(n, exp.Query)):
+            if not isinstance(node, exp.Column):
+                continue
+            parent = node.parent
+            if len(node.parts) > 1 or (
+                isinstance(parent, exp.Anonymous) and parent.name.upper() == "CLASSIFIER"
+            ):
+                qualifier = node.parts[0]
                 if (
                     isinstance(qualifier, exp.Identifier)
-                    and not column.args.get("db")
                     and canonical(qualifier.name, qualifier.quoted) in names
                 ):
                     identifiers.append(qualifier)
 
-    for identifier in identifiers:
-        if not identifier.quoted:
-            identifier.set("this", identifier.name.upper())
-
-    return [id(identifier) for identifier in identifiers]
+    return identifiers

@@ -308,23 +308,26 @@ class Resolver:
         return self._get_source_columns_cache[cache_key]
 
     def _get_match_recognize_columns(self, source: Scope) -> list[str]:
-        """
-        A MATCH_RECOGNIZE outputs its PARTITION BY columns and its measures, and with ALL ROWS
-        PER MATCH, its ORDER BY columns and its other input columns too, in that order.
-        """
         match = source.expression
-        rows = match.args.get("rows")
-        all_rows = rows is not None and rows.name.startswith("ALL ROWS")
-
-        keys = [e.output_name for e in match.args.get("partition_by") or []]
-        if all_rows and (order := match.args.get("order")):
-            keys.extend(o.this.output_name for o in order.expressions)
+        partition = [e.output_name for e in match.args.get("partition_by") or []]
         measures = [m.this.output_name for m in match.args.get("measures") or []]
 
-        names = [*keys, *measures]
-        if all_rows:
-            for input_columns in Resolver(source, self.schema)._get_all_source_columns().values():
-                names.extend(input_columns)
+        rows = match.args.get("rows")
+        if rows is None or not rows.name.startswith("ALL ROWS"):
+            names = [*partition, *measures]
+        else:
+            input_columns = Resolver(source, self.schema)._get_all_source_columns().values()
+            if any(not columns or "*" in columns for columns in input_columns):
+                return []
+
+            inputs = [name for columns in input_columns for name in columns]
+            if self.dialect.MATCH_RECOGNIZE_INPUT_COLUMNS_FIRST:
+                names = [*inputs, *measures]
+            else:
+                order = match.args.get("order")
+                keys = [o.this.output_name for o in order.expressions] if order else []
+                names = [*partition, *keys, *measures, *inputs]
+
         return [name for name in dict.fromkeys(names) if name]
 
     def _get_all_source_columns(self) -> dict[str, Sequence[str]]:

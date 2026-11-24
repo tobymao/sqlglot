@@ -195,11 +195,10 @@ class SparkGenerator(Spark2Generator):
         if not expression.args.get("empty_string_on_empty"):
             values = exp.Nullif(this=values, expression=exp.array())
 
-        return self.func(
-            "ARRAY_JOIN",
-            values,
-            expression.args.get("separator") or exp.Literal.string(","),
-        )
+        separator = expression.args.get("separator") or exp.Literal.string(",")
+        if expression.args.get("null_separator_is_empty") and not separator.is_string:
+            separator = exp.Coalesce(this=separator, expressions=[exp.Literal.string("")])
+        return self.func("ARRAY_JOIN", values, separator)
 
     def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:
         return super().arrayinsert_sql(expression, index_offset=1)

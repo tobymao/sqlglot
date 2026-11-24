@@ -36,6 +36,15 @@ class TestPostgres(Validator):
             "STRING_AGG(x, ',')",
             write={"databricks, version=15.4": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), ',')"},
         )
+        nullable = (
+            "SELECT ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+            "STRUCT(y IS NULL, y AS sort_key, x AS value)))).value, ARRAY()), COALESCE(sep, '')) "
+            "FROM t GROUP BY sep"
+        )
+        self.validate_all(
+            "SELECT STRING_AGG(x, sep ORDER BY y) FROM t GROUP BY sep",
+            write={"spark, version=3.5": nullable, "databricks, version=16.3": nullable},
+        )
         for sql in (
             "STRING_AGG(x, ',' ORDER BY y, z DESC)",
             "STRING_AGG(DISTINCT x, ',' ORDER BY x)",

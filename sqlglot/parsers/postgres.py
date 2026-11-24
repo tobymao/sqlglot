@@ -207,6 +207,9 @@ class PostgresParser(parser.Parser):
         ),
         "JSONB_EXISTS": lambda self: self._parse_jsonb_exists(),
         "JSON_VALUE": lambda self: self._parse_json_value(json_path=False),
+        "STRING_AGG": lambda self: self._parse_string_agg().set_kwargs(
+            {"null_separator_is_empty": True}
+        ),
     }
 
     BITWISE = {

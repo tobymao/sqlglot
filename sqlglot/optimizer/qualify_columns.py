@@ -72,6 +72,8 @@ def qualify_columns(
     dialect = schema.dialect or Dialect()
     pseudocolumns = dialect.PSEUDOCOLUMNS
     convert_dots_early = expand_alias_refs and dialect.PREFER_PROJECTION_ALIASES_IN_DOT_PATHS
+    expand_forward = expand_alias_refs and dialect.SUPPORTS_FORWARD_ALIAS_REFS
+    prepare_projection_aliases = convert_dots_early or expand_forward
 
     # Qualified scopes that still lack types, in traversal order (sources precede dependents)
     unannotated_scopes: list[Scope] = []
@@ -94,9 +96,10 @@ def qualify_columns(
 
         using_column_tables, using_columns = _expand_using(scope, resolver)
 
-        if convert_dots_early:
-            _convert_columns_to_dots(scope, resolver, prefer_projection_aliases=True)
-            if dialect.SUPPORTS_FORWARD_ALIAS_REFS:
+        if prepare_projection_aliases:
+            if convert_dots_early:
+                _convert_columns_to_dots(scope, resolver, prefer_projection_aliases=True)
+            if expand_forward:
                 _expand_forward_alias_refs(scope, resolver)
 
         if dialect.FORCE_EARLY_ALIAS_REF_EXPANSION and expand_alias_refs:

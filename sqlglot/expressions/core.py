@@ -1479,6 +1479,10 @@ class Expression(Expr):
         return between
 
     def is_(self, other: ExpOrStr) -> Is:
+        if isinstance(other, Not) and isinstance(other.this, (Null, Boolean)):
+            predicate = self._binop(Is, other.this)
+            predicate.set("negate", True)
+            return predicate
         return self._binop(Is, other)
 
     def like(self, other: ExpOrStr) -> Like:

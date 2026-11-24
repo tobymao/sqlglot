@@ -624,6 +624,7 @@ class Generator:
     ALTER_SET_WRAPPED = False
 
     # Whether to normalize the date parts in EXTRACT(<date_part> FROM <expr>) into a common representation
+    # using the dialect's general aliases as a fallback for parts without an EXTRACT-specific mapping.
     # For instance, to extract the day of week in ISO semantics, one can use ISODOW, DAYOFWEEKISO etc depending on the dialect.
     # TODO: The normalization should be done by default once we've tested it across all dialects.
     NORMALIZE_EXTRACT_DATE_PARTS = False
@@ -3952,14 +3953,18 @@ class Generator:
         order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
-    def extract_sql(self, expression: exp.Extract) -> str:
-        import sqlglot.dialects.dialect
+    def extract_date_part(self, part: exp.Expr) -> exp.Expr:
+        mapping = self.dialect.EXTRACT_DATE_PART_MAPPING
+        if self.NORMALIZE_EXTRACT_DATE_PARTS and part.name.upper() not in mapping:
+            mapping = self.dialect.DATE_PART_MAPPING
+        if mapping:
+            import sqlglot.dialects.dialect
 
-        this = (
-            sqlglot.dialects.dialect.map_date_part(expression.this, self.dialect)
-            if self.NORMALIZE_EXTRACT_DATE_PARTS
-            else expression.this
-        )
+            return sqlglot.dialects.dialect.map_date_part(part, mapping=mapping)
+        return part
+
+    def extract_sql(self, expression: exp.Extract) -> str:
+        this = self.extract_date_part(expression.this)
         if self.EXTRACT_ALLOWS_QUOTES:
             this_sql = self.sql(this)
         elif isinstance(this, exp.WeekStart):

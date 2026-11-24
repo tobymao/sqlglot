@@ -12,7 +12,7 @@ from sqlglot import (
     exp,
     parse_one,
 )
-from sqlglot.dialects import BigQuery, Hive, Snowflake, Spark2
+from sqlglot.dialects import BigQuery, DuckDB, Hive, Snowflake, Spark2
 from sqlglot.dialects.duckdb import WS_CONTROL_CHARS_TO_DUCK
 from sqlglot.generator import logger as generator_logger
 from sqlglot.parser import logger as parser_logger
@@ -6180,6 +6180,21 @@ FROM subquery2""",
         result = parse_one("SELECT DOUBLE_IT(5)", dialect=MyDialect)
         self.assertIsInstance(result.expressions[0], exp.Mul)
         self.assertEqual(result.sql(), "SELECT 2 * 5")
+
+    def test_custom_extract_date_parts(self):
+        class CustomDuckDB(DuckDB):
+            DATE_PART_MAPPING = {**DuckDB.DATE_PART_MAPPING, "ISO_WK": "WEEK"}
+
+        class CustomSnowflake(Snowflake):
+            DATE_PART_MAPPING = {**Snowflake.DATE_PART_MAPPING, "ISO_WK": "WEEKISO"}
+
+        self.validate_all(
+            "EXTRACT(ISO_WK FROM d)",
+            write={
+                CustomDuckDB: "EXTRACT(WEEK FROM d)",
+                CustomSnowflake: "DATE_PART(WEEKISO, d)",
+            },
+        )
 
     def test_agg(self):
         expression = self.validate_identity("SELECT AGG(m), AGG(m) AS x, AGG(t.m) FROM t")

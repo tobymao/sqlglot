@@ -112,6 +112,7 @@ class Snowflake(Dialect):
         "EPOCH_SECOND": "EPOCH_SECOND",
         "EPOCH_SECONDS": "EPOCH_SECOND",
     }
+    EXTRACT_DATE_PART_MAPPING = {"ISOYEAR": "YEAROFWEEKISO"}
 
     PSEUDOCOLUMNS = {"LEVEL"}
 

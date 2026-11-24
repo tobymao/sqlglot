@@ -1098,6 +1098,9 @@ class Dialect(metaclass=_Dialect):
         "CENTURIES": "CENTURY",
     }
 
+    # Aliases used only when generating EXTRACT.
+    EXTRACT_DATE_PART_MAPPING: t.ClassVar[dict[str, str]] = {}
+
     # Specifies what types a given type can be coerced into
     COERCES_TO: dict[exp.DType, set[exp.DType]] = {}
 
@@ -2595,23 +2598,27 @@ def week_unit_to_dow(unit: exp.Expr | None) -> int | None:
 
 
 @t.overload
-def map_date_part(part: exp.Expr, dialect: DialectType = Dialect) -> exp.Expr:
+def map_date_part(
+    part: exp.Expr, dialect: DialectType = Dialect, *, mapping: dict[str, str] | None = None
+) -> exp.Expr:
     pass
 
 
 @t.overload
-def map_date_part(part: exp.Expr | None, dialect: DialectType = Dialect) -> exp.Expr | None:
+def map_date_part(
+    part: exp.Expr | None, dialect: DialectType = Dialect, *, mapping: dict[str, str] | None = None
+) -> exp.Expr | None:
     pass
 
 
-def map_date_part(part, dialect: DialectType = Dialect):
-    mapped = (
-        Dialect.get_or_raise(dialect).DATE_PART_MAPPING.get(part.name.upper())
-        if part and not (isinstance(part, exp.Column) and len(part.parts) != 1)
-        else None
-    )
-    if mapped:
-        return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
+def map_date_part(part, dialect: DialectType = Dialect, *, mapping: dict[str, str] | None = None):
+    """Map a date part using explicit aliases or the dialect's general aliases."""
+    if part and not (isinstance(part, exp.Column) and len(part.parts) != 1):
+        if mapping is None:
+            mapping = Dialect.get_or_raise(dialect).DATE_PART_MAPPING
+        mapped = mapping.get(part.name.upper())
+        if mapped:
+            return exp.Literal.string(mapped) if part.is_string else exp.var(mapped)
 
     return part
 

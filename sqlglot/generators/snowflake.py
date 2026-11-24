@@ -401,6 +401,7 @@ class SnowflakeGenerator(generator.Generator):
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = False
     SUPPORTS_MEDIAN = True
     ARRAY_SIZE_NAME = "ARRAY_SIZE"
+    NORMALIZE_EXTRACT_DATE_PARTS = True
     SUPPORTS_DECODE_CASE = True
     ALTER_TABLE_INCLUDE_COLUMN_KEYWORD = False
     ALTER_TABLE_ADD_COLUMNS_WRAPPED = False
@@ -485,7 +486,7 @@ class SnowflakeGenerator(generator.Generator):
         exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
         exp.Explode: rename_func("FLATTEN"),
         exp.Extract: lambda self, e: self.func(
-            "DATE_PART", map_date_part(e.this, self.dialect), e.expression
+            "DATE_PART", self.extract_date_part(e.this), e.expression
         ),
         exp.Filter: no_filter_sql,
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),

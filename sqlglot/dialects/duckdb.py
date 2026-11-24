@@ -52,6 +52,7 @@ class DuckDB(Dialect):
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     DATE_PART_MAPPING.pop("WEEKDAY")
+    EXTRACT_DATE_PART_MAPPING = {"ISOWEEK": "WEEK"}
 
     INVERSE_TIME_MAPPING = {
         "%e": "%-d",  # BigQuery's space-padded day (%e) -> DuckDB's no-padding day (%-d)

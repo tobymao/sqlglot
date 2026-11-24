@@ -22,6 +22,7 @@ class Spark(Spark2):
     SUPPORTS_NULL_TYPE = True
     ARRAY_FUNCS_PROPAGATES_NULLS = True
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
+    EXTRACT_DATE_PART_MAPPING = {"ISODOW": "DOW_ISO", "ISOWEEK": "WEEK", "ISOYEAR": "YEAROFWEEK"}
 
     # Spark 3+ parses MM/dd/HH/hh/mm/ss strictly, unlike Spark 2 (SimpleDateFormat)
     TIME_MAPPING = {

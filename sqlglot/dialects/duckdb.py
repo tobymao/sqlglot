@@ -10,6 +10,7 @@ from sqlglot.dialects.dialect import (
     UsingColumnOrder,
 )
 from sqlglot.generators.duckdb import DuckDBGenerator, WS_CONTROL_CHARS_TO_DUCK  # noqa: F401
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.parsers.duckdb import DuckDBParser
 from sqlglot.tokens import TokenType
 from sqlglot.typing.duckdb import EXPRESSION_METADATA
@@ -39,6 +40,25 @@ class DuckDB(Dialect):
     USING_COLUMN_ORDER = UsingColumnOrder.IN_PLACE
     REGEXP_EXTRACT_NO_MATCH_RETURNS_NULL = False
     REGEXP_EXTRACT_MISSING_GROUP_RETURNS_EMPTY = True
+    INT_LITERAL_TYPES = (
+        (-(2**127) - 1, exp.DType.BIGNUM),
+        (-(2**63) - 1, exp.DType.INT128),
+        (-(2**31), exp.DType.BIGINT),  # DuckDB reads 2147483648 as BIGINT before negation.
+        (2**31 - 1, exp.DType.INT),
+        (2**63 - 1, exp.DType.BIGINT),
+        (2**127 - 1, exp.DType.INT128),
+        (2**128 - 1, exp.DType.UINT128),
+        (None, exp.DType.BIGNUM),
+    )
+    COERCES_TO = {
+        **TypeAnnotator.COERCES_TO,
+        **{
+            dtype: targets | {exp.DType.INT128}
+            for dtype, targets in TypeAnnotator.COERCES_TO.items()
+            if dtype in exp.DataType.SIGNED_INTEGER_TYPES
+        },
+        exp.DType.INT128: TypeAnnotator.COERCES_TO[exp.DType.BIGINT],
+    }
 
     # https://duckdb.org/docs/sql/introduction.html#creating-a-new-table
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE

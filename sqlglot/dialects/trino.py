@@ -11,15 +11,13 @@ class Trino(Presto):
     SUPPORTS_USER_DEFINED_TYPES = False
     LOG_BASE_FIRST = True
     CONCAT_WS_COALESCE = True
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
 
     def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
         value = int(expression.to_py())
         if isinstance(expression.parent, exp.Neg):
             value -= 1
-        for bound, int_type in self.INT_LITERAL_TYPES:
-            if bound is None or value <= bound:
-                return int_type
-        return exp.DType.INT
+        return self.integer_type_for_value(value)
 
     class Tokenizer(Presto.Tokenizer):
         COMMANDS = Presto.Tokenizer.COMMANDS - {TokenType.EXECUTE}

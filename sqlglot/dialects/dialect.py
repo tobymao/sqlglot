@@ -7,6 +7,7 @@ import string
 import typing as t
 import sys
 from collections.abc import Iterable, MutableSequence
+from decimal import Decimal
 from enum import Enum, auto
 from functools import reduce
 from builtins import type as Type
@@ -1411,7 +1412,10 @@ class Dialect(metaclass=_Dialect):
         ]
 
     def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
-        value = int(expression.to_py())
+        return self.integer_type_for_value(int(expression.to_py()))
+
+    def integer_type_for_value(self, value: int | Decimal) -> exp.DType:
+        """Return the type of an integer literal with the given value."""
         for bound, int_type in self.INT_LITERAL_TYPES:
             if bound is None or value <= bound:
                 return int_type

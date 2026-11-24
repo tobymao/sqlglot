@@ -160,6 +160,12 @@ class DuckDBParser(parser.Parser):
         TokenType.SIMILAR_TO: _parse_regexp_full_match,
     }
 
+    # Unary plus prevents DuckDB from folding an outer minus into an integer literal.
+    UNARY_PARSERS = {
+        **parser.Parser.UNARY_PARSERS,
+        TokenType.PLUS: lambda self: self.expression(exp.Pos(this=self._parse_unary())),
+    }
+
     EXPONENT = {
         **parser.Parser.EXPONENT,
         TokenType.CARET: exp.Pow,

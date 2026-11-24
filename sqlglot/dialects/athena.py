@@ -49,6 +49,8 @@ class Athena(Trino):
     - https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
     """
 
+    NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = False
+
     # This Tokenizer consumes a combination of HiveQL and Trino SQL and then processes the tokens
     # to disambiguate which dialect needs to be actually used in order to tokenize correctly.
     class Tokenizer(tokens.Tokenizer):
@@ -72,7 +74,7 @@ class Athena(Trino):
             super().__init__(dialect=dialect)
 
             self._hive_tokenizer = Hive().tokenizer()
-            self._trino_tokenizer = _TrinoTokenizer(Trino())
+            self._trino_tokenizer = _TrinoTokenizer(Athena())
 
         def tokenize(self, sql: str) -> list[Token]:
             # DML only needs Trino's tokenizer; possible Hive statements need disambiguation.

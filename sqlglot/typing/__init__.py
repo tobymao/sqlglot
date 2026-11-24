@@ -139,6 +139,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.Datetime,
             exp.DatetimeAdd,
             exp.DatetimeSub,
+            exp.TsOrDsToDatetime,
         }
     },
     **{

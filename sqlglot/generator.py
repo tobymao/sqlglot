@@ -622,7 +622,10 @@ class Generator:
     # Whether to wrap <props> in `AlterSet`, e.g., ALTER ... SET (<props>)
     ALTER_SET_WRAPPED = False
 
-    # Fall back to the dialect's general date-part aliases when generating EXTRACT.
+    # Whether to normalize the date parts in EXTRACT(<date_part> FROM <expr>) into a common representation
+    # using the dialect's general aliases as a fallback for parts without an EXTRACT-specific mapping.
+    # For instance, to extract the day of week in ISO semantics, one can use ISODOW, DAYOFWEEKISO etc depending on the dialect.
+    # TODO: The normalization should be done by default once we've tested it across all dialects.
     NORMALIZE_EXTRACT_DATE_PARTS = False
 
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated

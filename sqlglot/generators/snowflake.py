@@ -485,7 +485,9 @@ class SnowflakeGenerator(generator.Generator):
         exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
         exp.Explode: rename_func("FLATTEN"),
         exp.Extract: lambda self, e: self.func(
-            "DATE_PART", map_date_part(e.this, self.dialect), e.expression
+            "DATE_PART",
+            map_date_part(e.this, mapping=self.dialect.EXTRACT_DATE_PART_MAPPING),
+            e.expression,
         ),
         exp.Filter: no_filter_sql,
         exp.CosineDistance: rename_func("VECTOR_COSINE_SIMILARITY"),

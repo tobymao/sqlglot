@@ -4165,6 +4165,35 @@ OPTIONS (
         self.validate_identity("DATETIME_DIFF('2017-12-18', '2017-12-17', WEEK(MONDAY))")
 
         self.validate_all(
+            "SELECT EXTRACT(ISOWEEK FROM DATE '2017-01-01') AS w",
+            write={
+                **dict.fromkeys(
+                    ("duckdb", "postgres", "spark", "databricks", "trino"),
+                    "SELECT EXTRACT(WEEK FROM CAST('2017-01-01' AS DATE)) AS w",
+                ),
+                "bigquery": "SELECT EXTRACT(ISOWEEK FROM CAST('2017-01-01' AS DATE)) AS w",
+                "snowflake": "SELECT DATE_PART(WEEKISO, CAST('2017-01-01' AS DATE)) AS w",
+                "tsql": "SELECT DATEPART(ISO_WEEK, CAST('2017-01-01' AS DATE)) AS w",
+            },
+        )
+
+        self.validate_all(
+            "SELECT EXTRACT(ISOYEAR FROM DATE '2018-12-31') AS y",
+            write={
+                **dict.fromkeys(
+                    ("bigquery", "duckdb", "postgres"),
+                    "SELECT EXTRACT(ISOYEAR FROM CAST('2018-12-31' AS DATE)) AS y",
+                ),
+                **dict.fromkeys(
+                    ("spark", "databricks"),
+                    "SELECT EXTRACT(YEAROFWEEK FROM CAST('2018-12-31' AS DATE)) AS y",
+                ),
+                "trino": "SELECT EXTRACT(YEAR_OF_WEEK FROM CAST('2018-12-31' AS DATE)) AS y",
+                "snowflake": "SELECT DATE_PART(YEAROFWEEKISO, CAST('2018-12-31' AS DATE)) AS y",
+            },
+        )
+
+        self.validate_all(
             "SELECT LAST_DAY(DATE '2008-11-10', WEEK(SUNDAY))",
             write={
                 "bigquery": "SELECT LAST_DAY(CAST('2008-11-10' AS DATE), WEEK)",

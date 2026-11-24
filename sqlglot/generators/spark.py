@@ -185,11 +185,6 @@ class SparkGenerator(Spark2Generator):
     def anyvalue_sql(self, expression: exp.AnyValue) -> str:
         return self.function_fallback_sql(expression)
 
-    def extract_sql(self, expression: exp.Extract) -> str:
-        if expression.name.upper() == "ISODOW":
-            expression.set("this", exp.var("DOW_ISO"))
-        return super().extract_sql(expression)
-
     def datediff_sql(self, expression: exp.DateDiff) -> str:
         end = self.sql(expression, "this")
         start = self.sql(expression, "expression")

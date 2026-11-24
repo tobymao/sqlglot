@@ -622,11 +622,6 @@ class Generator:
     # Whether to wrap <props> in `AlterSet`, e.g., ALTER ... SET (<props>)
     ALTER_SET_WRAPPED = False
 
-    # Whether to normalize the date parts in EXTRACT(<date_part> FROM <expr>) into a common representation
-    # For instance, to extract the day of week in ISO semantics, one can use ISODOW, DAYOFWEEKISO etc depending on the dialect.
-    # TODO: The normalization should be done by default once we've tested it across all dialects.
-    NORMALIZE_EXTRACT_DATE_PARTS = False
-
     # The name to generate for the JSONPath expression. If `None`, only `this` will be generated
     PARSE_JSON_NAME: str | None = "PARSE_JSON"
 
@@ -3952,13 +3947,11 @@ class Generator:
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        import sqlglot.dialects.dialect
+        this = expression.this
+        if mapping := self.dialect.EXTRACT_DATE_PART_MAPPING:
+            import sqlglot.dialects.dialect
 
-        this = (
-            sqlglot.dialects.dialect.map_date_part(expression.this, self.dialect)
-            if self.NORMALIZE_EXTRACT_DATE_PARTS
-            else expression.this
-        )
+            this = sqlglot.dialects.dialect.map_date_part(this, mapping=mapping)
         if self.EXTRACT_ALLOWS_QUOTES:
             this_sql = self.sql(this)
         elif isinstance(this, exp.WeekStart):

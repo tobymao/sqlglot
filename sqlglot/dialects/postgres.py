@@ -30,6 +30,7 @@ class Postgres(Dialect):
     TABLESAMPLE_SIZE_IS_PERCENT = True
     TABLES_REFERENCEABLE_AS_COLUMNS = True
     OUTER_COLUMNS_SHADOW_TABLE_ALIASES = True
+    EXTRACT_DATE_PART_MAPPING = {"ISOWEEK": "WEEK"}
 
     DEFAULT_FUNCTIONS_COLUMN_NAMES = {
         exp.ExplodingGenerateSeries: "generate_series",

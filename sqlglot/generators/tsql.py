@@ -25,6 +25,7 @@ from sqlglot.time import format_time
 from collections import defaultdict
 
 DATE_PART_UNMAPPING = {
+    "ISOWEEK": "ISO_WEEK",
     "WEEKISO": "ISO_WEEK",
     "DAYOFWEEK": "WEEKDAY",
     "TIMEZONE_MINUTE": "TZOFFSET",

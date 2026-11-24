@@ -381,6 +381,7 @@ class Parser:
         "_prev_comments",
         "_pipe_cte_counter",
         "_chunks",
+        "_chunk_ends",
         "_chunk_index",
         "_tokens_size",
         "_node_count",
@@ -2049,6 +2050,7 @@ class Parser:
         self._prev_comments: list[str] = []
         self._pipe_cte_counter: int = 0
         self._chunks: list[list[Token]] = []
+        self._chunk_ends: dict[int, int] = {}
         self._chunk_index: i64 = 0
         self._node_count: int = 0
 
@@ -2064,6 +2066,7 @@ class Parser:
         self._prev_comments = []
         self._pipe_cte_counter = 0
         self._chunks = []
+        self._chunk_ends.clear()
         self._chunk_index = 0
         self._node_count = 0
 
@@ -2342,6 +2345,7 @@ class Parser:
         indexed_tokens = enumerate(raw_tokens)
         for i, token in indexed_tokens:
             if token.token_type == TokenType.SEMICOLON:
+                self._chunk_ends[len(chunks) - 1] = token.start
                 if token.comments:
                     chunks.append([token])
 
@@ -10240,10 +10244,16 @@ class Parser:
 
         return exp.var(option)
 
-    def _parse_as_command(self, start: Token) -> exp.Command:
+    def _parse_as_command(
+        self, start: Token, include_trailing_comments: bool = False
+    ) -> exp.Command:
         while self._curr:
             self._advance()
         text = self._find_sql(start, self._prev)
+        if include_trailing_comments and self._prev.comments and self._prev is not start:
+            # Trailing comments lie between the last token and the statement delimiter.
+            end = self._chunk_ends.get(self._chunk_index - 1)
+            text += self.sql[self._prev.end + 1 : end].rstrip()
         size = len(start.text)
         self._warn_unsupported()
         return exp.Command(this=text[:size], expression=text[size:])

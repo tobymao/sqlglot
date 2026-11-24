@@ -72,7 +72,7 @@ class TrinoParser(PrestoParser):
             TokenType.STRING,
             TokenType.UNICODE_STRING,
         ):
-            return self._parse_as_command(start)
+            return self._parse_as_command(start, include_trailing_comments=True)
 
         def parse_argument() -> exp.Expr | None:
             argument = self._parse_disjunction()

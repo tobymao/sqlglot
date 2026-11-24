@@ -1,6 +1,33 @@
 Changelog
 =========
 
+## [v30.35.0] - 2026-11-24
+### :sparkles: New Features
+- [`aea3182`](https://github.com/tobymao/sqlglot/commit/aea31829266585a4cf3881801af958f3f84cf71d) - **trino**: support EXECUTE IMMEDIATE *(PR [#9345](https://github.com/tobymao/sqlglot/pull/9345) by [@georgesittas](https://github.com/georgesittas))*
+
+### :bug: Bug Fixes
+- [`eb35161`](https://github.com/tobymao/sqlglot/commit/eb351618c1227967d54bc6257495c6c4ae44d8ea) - Add support for BigQuery ST_GEOGPOINT geography type *(PR [#9335](https://github.com/tobymao/sqlglot/pull/9335) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`7ca4a44`](https://github.com/tobymao/sqlglot/commit/7ca4a44abee05c1a9f679fa36313eeaf84c79e9c) - **optimizer**: dialect-aware integer literal typing for trino + presto + athena *(PR [#9278](https://github.com/tobymao/sqlglot/pull/9278) by [@fivetran-kwoodbeck](https://github.com/fivetran-kwoodbeck))*
+- [`54f9d5d`](https://github.com/tobymao/sqlglot/commit/54f9d5d6ec17f91a79322cc41891d7fc4787a758) - **bigquery**: parse TABLE arguments in table function calls [CODEX] *(PR [#9291](https://github.com/tobymao/sqlglot/pull/9291) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9275](https://github.com/tobymao/sqlglot/issues/9275) opened by [@mazum21](https://github.com/mazum21)*
+- [`17fd48f`](https://github.com/tobymao/sqlglot/commit/17fd48f5a2ade9838187be1dd7662604b040be8f) - **bigquery**: preserve null ordering in value windows *(PR [#9323](https://github.com/tobymao/sqlglot/pull/9323) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9309](https://github.com/tobymao/sqlglot/issues/9309) opened by [@joeharris76](https://github.com/joeharris76)*
+- [`8c054a7`](https://github.com/tobymao/sqlglot/commit/8c054a7a83fd4ca68bd9578b55eabb0ba1c0fd0b) - **bigquery**: add and subtract WEEK and longer units on a TIMESTAMP through DATETIME *(PR [#9334](https://github.com/tobymao/sqlglot/pull/9334) by [@VaggelisD](https://github.com/VaggelisD))*
+- [`a4db5e7`](https://github.com/tobymao/sqlglot/commit/a4db5e7f17472f18bb6008265d5e71f368bd024a) - **clickhouse**: resolve forward projection aliases [CODEX] *(PR [#9328](https://github.com/tobymao/sqlglot/pull/9328) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9277](https://github.com/tobymao/sqlglot/issues/9277) opened by [@jwhitaker-gridcog](https://github.com/jwhitaker-gridcog)*
+- [`7576807`](https://github.com/tobymao/sqlglot/commit/7576807fa36163b3f2e52921bbd2ce7c4da6f197) - **expressions**: preserve IS NOT predicates in the expression builder [CODEX] *(PR [#9340](https://github.com/tobymao/sqlglot/pull/9340) by [@georgesittas](https://github.com/georgesittas))*
+  - :arrow_lower_right: *fixes issue [#9338](https://github.com/tobymao/sqlglot/issues/9338) opened by [@travishofmeister](https://github.com/travishofmeister)*
+- [`b39bf82`](https://github.com/tobymao/sqlglot/commit/b39bf8268faf4752d0a95b5e474c596a933ea333) - **snowflake**: keep ALTER SESSION parameters unquoted *(PR [#9337](https://github.com/tobymao/sqlglot/pull/9337) by [@treysp](https://github.com/treysp))*
+  - :arrow_lower_right: *fixes issue [#9336](https://github.com/tobymao/sqlglot/issues/9336) opened by [@mday-io](https://github.com/mday-io)*
+- [`e998e87`](https://github.com/tobymao/sqlglot/commit/e998e87ad3296e95e964b24ecd5f82c3727bac41) - **bigquery**: infer the return type of one-argument DATETIME *(PR [#9343](https://github.com/tobymao/sqlglot/pull/9343) by [@fivetran-amrutabhimsenayachit](https://github.com/fivetran-amrutabhimsenayachit))*
+- [`e14b510`](https://github.com/tobymao/sqlglot/commit/e14b510233aa95c607cd2b892cc8ff114cc249b2) - **bigquery**: translate ISO week and year extraction *(PR [#9344](https://github.com/tobymao/sqlglot/pull/9344) by [@treysp](https://github.com/treysp))*
+  - :arrow_lower_right: *fixes issue [#9341](https://github.com/tobymao/sqlglot/issues/9341) opened by [@tushar-mahalya](https://github.com/tushar-mahalya)*
+- [`324cdef`](https://github.com/tobymao/sqlglot/commit/324cdefc4abf291f997c8b241f40c0f5444896a5) - **trino**: preserve trailing comments on EXECUTE commands *(PR [#9346](https://github.com/tobymao/sqlglot/pull/9346) by [@georgesittas](https://github.com/georgesittas))*
+
+### :wrench: Chores
+- [`5f34117`](https://github.com/tobymao/sqlglot/commit/5f341179474af86926b86306737b135b63ef1a66) - bump integration tests to the merged BigQuery DATETIME fixtures *(commit by [@georgesittas](https://github.com/georgesittas))*
+
+
 ## [v30.34.0] - 2026-11-23
 ### :boom: BREAKING CHANGES
 - due to [`534375c`](https://github.com/tobymao/sqlglot/commit/534375c62cffff607953f7ca69f4a5d6ad74e7be) - preserve inferred result types when simplifying conditionals [CODEX] *(PR [#9231](https://github.com/tobymao/sqlglot/pull/9231) by [@georgesittas](https://github.com/georgesittas))*:
@@ -17037,3 +17064,4 @@ pip install "sqlglot[c]"   # compiled — faster, but no subclassing
 [v30.32.0]: https://github.com/tobymao/sqlglot/compare/v30.31.0...v30.32.0
 [v30.33.0]: https://github.com/tobymao/sqlglot/compare/v30.32.0...v30.33.0
 [v30.34.0]: https://github.com/tobymao/sqlglot/compare/v30.33.0...v30.34.0
+[v30.35.0]: https://github.com/tobymao/sqlglot/compare/v30.34.0...v30.35.0

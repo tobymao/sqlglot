@@ -455,7 +455,7 @@ SELECT SUM(CASE WHEN EXISTS(SELECT 1 AS a WHERE FALSE) THEN 1 ELSE 0 END) AS tot
 # title: Scalar subquery outside an aggregate
 # execute: true
 SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x;
-SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0;
+SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x;
 
 # title: Scalar subquery in WHERE before aggregation
 # execute: true
@@ -470,7 +470,7 @@ SELECT x.b FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b 
 # title: Aggregate ancestor search stops at the current query
 # execute: true
 SELECT SUM((SELECT SUM(y.b) + (SELECT MAX(z.b) AS b FROM y AS z) AS b FROM y)) AS total FROM x;
-SELECT SUM(_u_1.b) AS total FROM x CROSS JOIN (SELECT SUM(y.b) + MAX(_u_0.b) AS b FROM y CROSS JOIN (SELECT MAX(z.b) AS b FROM y AS z) AS _u_0) AS _u_1;
+SELECT SUM(_u_1.b) AS total FROM x CROSS JOIN (SELECT SUM(y.b) + (SELECT MAX(z.b) AS b FROM y AS z) AS b FROM y) AS _u_1;
 
 # title: Scalar subquery inside a window aggregate over grouped rows
 # execute: true
@@ -481,6 +481,11 @@ SELECT x.b, SUM(MAX(_u_0.b)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b)
 # execute: true
 SELECT x.b, SUM((SELECT MAX(y.b) AS b FROM y)) FILTER(WHERE x.b > 1) OVER () AS total FROM x GROUP BY x.b ORDER BY x.b;
 SELECT x.b, SUM(MAX(_u_0.b)) FILTER(WHERE x.b > 1) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0 GROUP BY x.b ORDER BY x.b;
+
+# title: Preserve a scalar subquery inside a window function's FILTER over grouped rows
+# execute: true
+SELECT x.b, COUNT(*) FILTER(WHERE x.b < (SELECT MAX(y.b) AS b FROM y)) OVER () AS n FROM x GROUP BY x.b ORDER BY x.b;
+SELECT x.b, COUNT(*) FILTER(WHERE x.b < (SELECT MAX(y.b) AS b FROM y)) OVER () AS n FROM x GROUP BY x.b ORDER BY x.b;
 
 # title: Scalar subquery inside a grouped aggregate within a window aggregate
 # execute: true
@@ -515,7 +520,7 @@ SELECT x.a, SUM(_u_0.b) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b
 # title: Scalar subquery next to a window function over an aggregate
 # execute: true
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, SUM(SUM(x.a)) OVER () AS total FROM x;
-SELECT MAX(_u_0.b) + 1 AS c, SUM(SUM(x.a)) OVER () AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0;
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, SUM(SUM(x.a)) OVER () AS total FROM x;
 
 # title: Preserve a scalar subquery in a query whose only aggregate is in HAVING
 # execute: true
@@ -531,6 +536,16 @@ SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x ORDER BY COUNT(*);
 # execute: true
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY SUM(x.a)) = 1;
 SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c FROM x QUALIFY ROW_NUMBER() OVER (ORDER BY SUM(x.a)) = 1;
+
+# title: Preserve a scalar subquery in a query whose only aggregate is in DISTINCT ON
+# execute: true
+SELECT DISTINCT ON (SUM(x.a)) (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x;
+SELECT DISTINCT ON (SUM(x.a)) (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x;
+
+# title: Preserve a scalar subquery in a query whose only aggregate is in a named window
+# execute: true
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x WINDOW w AS (ORDER BY SUM(x.a));
+SELECT (SELECT MAX(y.b) AS b FROM y) + 1 AS c, RANK() OVER () AS r FROM x WINDOW w AS (ORDER BY SUM(x.a));
 
 # title: Preserve a scalar subquery with a HAVING that has no aggregates
 # execute: true
@@ -560,7 +575,7 @@ SELECT 3 < ALL (SELECT y.b AS b FROM y) AS c, COUNT(*) AS n FROM x;
 # title: Aggregate ancestor traversal stops at a CTE query
 # execute: true
 WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;
-WITH q AS (SELECT SUM(x.a) + MAX(_u_0.b) AS total FROM x CROSS JOIN (SELECT MAX(y.b) AS b FROM y) AS _u_0) SELECT q.total FROM q;
+WITH q AS (SELECT SUM(x.a) + (SELECT MAX(y.b) AS b FROM y) AS total FROM x) SELECT q.total FROM q;
 
 # title: Preserve a scalar subquery with an anonymous aggregate only in HAVING
 # execute: true

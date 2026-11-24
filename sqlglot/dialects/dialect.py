@@ -956,6 +956,9 @@ class Dialect(metaclass=_Dialect):
     Whether to prioritize non-literal types over literals during type annotation.
     """
 
+    # (inclusive max, type) pairs for integer literals, tried in order; a None max is unbounded
+    INT_LITERAL_TYPES: tuple[tuple[int | None, exp.DType], ...] = ((None, exp.DType.INT),)
+
     ALIAS_POST_VERSION = True
     """Whether the table alias comes after version (timestamp or iceberg snapshot)."""
 
@@ -1400,6 +1403,16 @@ class Dialect(metaclass=_Dialect):
             exp.to_identifier(f"_col_{i}")
             for i, _ in enumerate(expression.expressions[0].expressions)
         ]
+
+    def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
+        value = int(expression.to_py())
+        for bound, int_type in self.INT_LITERAL_TYPES:
+            if bound is None or value <= bound:
+                return int_type
+        return exp.DType.INT
+
+    def decimal_literal_type(self, text: str) -> exp.DataType | exp.DType:
+        return exp.DType.DOUBLE
 
 
 DialectType = t.Union[str, Dialect, Type[Dialect], None]

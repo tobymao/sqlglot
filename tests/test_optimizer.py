@@ -4088,12 +4088,14 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
             self.assertEqual(expression.type, exp.DataType.build(numeric_type))
 
     def test_typeddiv_annotation(self):
-        expressions = annotate_types(
-            parse_one("SELECT 2 / 3, 2 / 3.0", dialect="presto")
-        ).expressions
-
-        self.assertEqual(expressions[0].type.this, exp.DataType.Type.BIGINT)
-        self.assertEqual(expressions[1].type.this, exp.DataType.Type.DOUBLE)
+        sql = "SELECT 2147483647 / 2, 2147483648 / 2, 2 / 2147483648, 2 / 3.0"
+        for dialect in ("presto", "trino", "athena"):
+            with self.subTest(dialect=dialect):
+                query = annotate_types(parse_one(sql, dialect=dialect), dialect=dialect)
+                self.assertEqual(
+                    [e.type.this for e in query.expressions],
+                    [exp.DType.INT, exp.DType.BIGINT, exp.DType.BIGINT, exp.DType.DOUBLE],
+                )
 
         expressions = annotate_types(
             parse_one("SELECT SUM(2 / 3), CAST(2 AS DECIMAL) / 3", dialect="mysql")

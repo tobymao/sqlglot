@@ -1032,7 +1032,9 @@ class Generator:
         expression = self.preprocess(expression)
 
         self.unsupported_messages = []
-        sql = self.sql(expression).strip()
+        sql = self.sql(expression)
+        # A trailing newline in a raw command can terminate a line comment.
+        sql = sql.lstrip() if isinstance(expression, exp.Command) else sql.strip()
 
         if self.pretty:
             sql = sql.replace(self.SENTINEL_LINE_BREAK, "\n")
@@ -4503,7 +4505,8 @@ class Generator:
         return self.binary(expression, "COLLATE")
 
     def command_sql(self, expression: exp.Command) -> str:
-        return f"{self.sql(expression, 'this')} {expression.text('expression').strip()}"
+        args = expression.text("expression").lstrip()
+        return f"{self.sql(expression, 'this')} {args}".rstrip(" \t")
 
     def optimize_sql(self, expression: exp.Optimize) -> str:
         if not self.SUPPORTS_OPTIMIZE:

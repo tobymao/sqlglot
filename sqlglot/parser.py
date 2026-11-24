@@ -10253,7 +10253,7 @@ class Parser:
         if include_trailing_comments and self._prev.comments and self._prev is not start:
             # Trailing comments lie between the last token and the statement delimiter.
             end = self._chunk_ends.get(self._chunk_index - 1)
-            text += self.sql[self._prev.end + 1 : end].rstrip()
+            text += self.sql[self._prev.end + 1 : end]
         size = len(start.text)
         self._warn_unsupported()
         return exp.Command(this=text[:size], expression=text[size:])

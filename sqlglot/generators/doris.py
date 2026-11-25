@@ -38,6 +38,7 @@ class DorisGenerator(MySQLGenerator):
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
+        exp.DType.INT128: "LARGEINT",
         exp.DType.TEXT: "STRING",
         exp.DType.TIMESTAMP: "DATETIME",
         exp.DType.TIMESTAMPTZ: "DATETIME",

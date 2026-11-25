@@ -1031,6 +1031,15 @@ x < 1;
 x < 1 OR x <= 1;
 x <= 1;
 
+1 >= x AND x < 1;
+x < 1;
+
+1 >= x OR x < 1;
+x <= 1;
+
+NOT x > 1.50 AND x < 1.5;
+x < 1.5;
+
 x > 1 AND x > 2;
 x > 2;
 
@@ -1060,6 +1069,15 @@ x > 1;
 
 x > 1 OR x >= 1;
 x >= 1;
+
+1 <= x AND x > 1;
+x > 1;
+
+1 <= x OR x > 1;
+x >= 1;
+
+NOT x < CAST('2024-01-01' AS DATE) OR x > CAST('2024-01-01' AS DATE);
+x >= CAST('2024-01-01' AS DATE);
 
 x > 1 AND x >= 2;
 x >= 2;

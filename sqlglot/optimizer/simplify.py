@@ -1056,6 +1056,10 @@ class Simplifier:
                 else:
                     return None
 
+                if same_direction and left.__class__ is not right.__class__ and l == r:
+                    preferred = (exp.LTE, exp.GTE) if or_ else (exp.LT, exp.GT)
+                    return left if isinstance(left, preferred) else right
+
                 false = (
                     exp.false()
                     if left.meta_get("nonnull") is True and right.meta_get("nonnull") is True

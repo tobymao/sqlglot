@@ -371,19 +371,14 @@ class PostgresParser(parser.Parser):
         if part and part.is_string and exp.SAFE_IDENTIFIER_RE.fullmatch(part.name):
             part = exp.var(part.name.upper())
 
-        return self._build_extract(part, self._parse_assignment(), date_part=True)
+        extract = self._build_extract(part, self._parse_assignment())
+        extract.set("date_part", True)
+        return extract
 
-    def _build_extract(
-        self, part: exp.Expr | None, value: exp.Expr | None, *, date_part: bool = False
-    ) -> exp.Extract:
+    def _build_extract(self, part: exp.Expr | None, value: exp.Expr | None) -> exp.Extract:
         extract = super()._build_extract(part, value)
-        if date_part:
-            extract.set("date_part", True)
         if isinstance(part, (exp.Var, exp.Literal)) and part.name.upper() == "DOW":
-            from sqlglot.optimizer.annotate_types import annotate_types
-
             extract.set("zero_based_dow", True)
-            annotate_types(extract, dialect=self.dialect, overwrite_types=False)
         return extract
 
     def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:

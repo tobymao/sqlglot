@@ -1928,48 +1928,6 @@ WHERE
                         f"SELECT DATEPART({canonical}, '2024-11-21')",
                     )
 
-        dow_sql = "(DATEDIFF(DAY, '00010101', CAST(x AS DATE)) + 1) % 7"
-        for dow, doy, dtype in (
-            ("EXTRACT(dow FROM x)", "EXTRACT(doy FROM x)", "NUMERIC"),
-            ("EXTRACT('DoW' FROM x)", "EXTRACT('DoY' FROM x)", "NUMERIC"),
-            ("DATE_PART('dow', x)", "DATE_PART('doy', x)", "FLOAT"),
-        ):
-            self.validate_all(
-                f"SELECT DATEPART(DAYOFYEAR, x) FROM t WHERE CAST({dow_sql} AS {dtype}) = 0",
-                read={"postgres": f"SELECT {doy} FROM t WHERE {dow} = 0"},
-            )
-
-        self.validate_all(
-            f"SELECT CAST({dow_sql} AS FLOAT) / 2 FROM t",
-            read={
-                "postgres, version=13": "SELECT EXTRACT(DOW FROM x) / 2 FROM t",
-                "redshift": "SELECT DATE_PART(dow, x) / 2 FROM t",
-            },
-        )
-        self.validate_all(
-            f"SELECT ({dow_sql}) / 2 FROM t",
-            read={"redshift": "SELECT EXTRACT(DOW FROM CAST(x AS DATE)) / 2 FROM t"},
-        )
-        offset = "'2024-06-16 00:30:00+02:00'"
-        offset_dow = (
-            f"(DATEDIFF(DAY, '00010101', CAST(CAST({offset} AS DATETIMEOFFSET) AS DATE)) + 1) % 7"
-        )
-        for dialect, dtype in (("postgres", "NUMERIC"), ("redshift", "FLOAT")):
-            self.validate_all(
-                f"SELECT CAST({offset_dow} AS {dtype})",
-                read={dialect: f"SELECT EXTRACT(DOW FROM TIMESTAMPTZ {offset})"},
-            )
-
-        typed = annotate_types(
-            parse_one("SELECT EXTRACT(DOW FROM t.x) / 2 FROM t", read="redshift"),
-            schema={"t": {"x": "TIMESTAMPTZ"}},
-            dialect="redshift",
-        )
-        self.assertEqual(
-            typed.sql("tsql"),
-            "SELECT CAST((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7 AS FLOAT) / 2 FROM t",
-        )
-
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={
@@ -2013,6 +1971,61 @@ WHERE
         self.validate_identity(
             'SELECT DATEPART("dd", x)',
             "SELECT DATEPART(DAY, x)",
+        )
+
+    def test_extract_dow(self):
+        def validate(dialect, sql, expected):
+            with self.subTest(dialect=dialect, sql=sql):
+                expression = annotate_types(parse_one(sql, read=dialect), dialect=dialect)
+                self.assertEqual(expression.sql("tsql"), expected)
+
+        dow_sql = "(DATEDIFF(DAY, '00010101', CAST(x AS DATE)) + 1) % 7"
+        for dow, doy, dtype in (
+            ("EXTRACT(dow FROM x)", "EXTRACT(doy FROM x)", "NUMERIC"),
+            ("EXTRACT('DoW' FROM x)", "EXTRACT('DoY' FROM x)", "NUMERIC"),
+            ("DATE_PART('dow', x)", "DATE_PART('doy', x)", "FLOAT"),
+        ):
+            validate(
+                "postgres",
+                f"SELECT {doy} FROM t WHERE {dow} = 0",
+                f"SELECT DATEPART(DAYOFYEAR, x) FROM t WHERE CAST({dow_sql} AS {dtype}) = 0",
+            )
+
+        for dialect, sql in (
+            ("postgres, version=13", "SELECT EXTRACT(DOW FROM x) / 2 FROM t"),
+            ("redshift", "SELECT DATE_PART(dow, x) / 2 FROM t"),
+        ):
+            validate(dialect, sql, f"SELECT CAST({dow_sql} AS FLOAT) / 2 FROM t")
+
+        validate(
+            "redshift",
+            "SELECT EXTRACT(DOW FROM CAST(x AS DATE)) / 2 FROM t",
+            f"SELECT ({dow_sql}) / 2 FROM t",
+        )
+        offset = "'2024-06-16 00:30:00+02:00'"
+        offset_dow = (
+            f"(DATEDIFF(DAY, '00010101', CAST(CAST({offset} AS DATETIMEOFFSET) AS DATE)) + 1) % 7"
+        )
+        for dialect, dtype in (("postgres", "NUMERIC"), ("redshift", "FLOAT")):
+            validate(
+                dialect,
+                f"SELECT EXTRACT(DOW FROM TIMESTAMPTZ {offset})",
+                f"SELECT CAST({offset_dow} AS {dtype})",
+            )
+
+        expression = parse_one("SELECT EXTRACT(DOW FROM t.x) / 2 FROM t", read="redshift")
+        extract = expression.find(exp.Extract)
+        self.assertIsNone(extract.type)
+        annotate_types(expression, dialect="redshift")
+        self.assertTrue(extract.is_type(exp.DType.UNKNOWN))
+        self.assertEqual(
+            expression.sql("tsql"),
+            "SELECT ((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7) / 2 FROM t",
+        )
+        annotate_types(expression, schema={"t": {"x": "TIMESTAMPTZ"}}, dialect="redshift")
+        self.assertEqual(
+            expression.sql("tsql"),
+            "SELECT CAST((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7 AS FLOAT) / 2 FROM t",
         )
 
     def test_convert(self):

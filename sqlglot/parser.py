@@ -421,6 +421,9 @@ class Parser:
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DType.TEXT),
         ),
+        **dict.fromkeys(
+            exp.DayOfWeek.sql_names(), lambda args: exp.DayOfWeek(this=seq_get(args, 0))
+        ),
         "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
             start=seq_get(args, 0),
             end=seq_get(args, 1),

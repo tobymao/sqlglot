@@ -3610,9 +3610,6 @@ class TestDuckDB(Validator):
             dayofweek = self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
             self.assertTrue(dayofweek.args["zero_based"])
 
-        with self.assertRaises(ParseError):
-            self.parse_one("DAYOFWEEK(d, 1)")
-
         self.validate_all(
             "SELECT\n  2 * (\n    DAYOFWEEK(d) + 1\n  ) /* part */ /* weekday */",
             read={"bigquery": "SELECT 2 * EXTRACT(DAYOFWEEK /* part */ FROM d) /* weekday */"},

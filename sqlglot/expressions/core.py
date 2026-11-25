@@ -1329,14 +1329,14 @@ class Expression(Expr):
         if (
             args
             and isinstance(self, Func)
+            and len(args) > len(self.arg_types)
             and not self.is_var_len_args
-            and len(args) > (max_args := len(self.sql_arg_names or self.arg_types))
         ):
             if errors is None:
                 errors = []
             errors.append(
                 f"The number of provided arguments ({len(args)}) is greater than "
-                f"the maximum number of supported arguments ({max_args})"
+                f"the maximum number of supported arguments ({len(self.arg_types)})"
             )
 
         return errors or []
@@ -1674,8 +1674,6 @@ class Func(Condition):
         var_len_arg_key (str): the arg_types key that collects the variable length arguments.
             Arguments preceding it in arg_types are filled positionally; those following it (e.g.
             dialect flags) are never populated by from_arg_list.
-        sql_arg_names: positional SQL arguments for a fixed-arity function whose arg_types
-            also include internal flags. Defaults to all keys in arg_types.
         _sql_names (list): the SQL name (1st item in the list) and aliases (subsequent items) for this
             function expression. These values are used to map this node to a name during parsing as
             well as to provide the function's name during SQL string generation. By default the SQL
@@ -1684,7 +1682,6 @@ class Func(Condition):
 
     is_var_len_args: t.ClassVar[bool] = False
     var_len_arg_key: t.ClassVar[str] = "expressions"
-    sql_arg_names: t.ClassVar[tuple[str, ...]] = ()
     _sql_names: t.ClassVar[list[str]] = []
 
     @classmethod
@@ -1696,7 +1693,7 @@ class Func(Condition):
             args_dict = {arg_key: arg for arg, arg_key in zip(args, all_arg_keys[:var_len_index])}
             args_dict[cls.var_len_arg_key] = args[var_len_index:]
         else:
-            args_dict = dict(zip(cls.sql_arg_names or cls.arg_types, args))
+            args_dict = {arg_key: arg for arg, arg_key in zip(args, cls.arg_types)}
 
         return cls(**args_dict)
 

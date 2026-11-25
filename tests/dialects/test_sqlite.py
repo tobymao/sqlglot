@@ -362,6 +362,7 @@ class TestSQLite(Validator):
             write={
                 "sqlite": "SELECT GROUP_CONCAT(x, NULL) FROM t",
                 "duckdb": "SELECT LISTAGG(x, COALESCE(NULL, '')) FROM t",
+                "spark, version=3.5": "SELECT ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), COALESCE(NULL, '')) FROM t",
             },
         )
         for sql, expected in (

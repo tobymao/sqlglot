@@ -7,6 +7,31 @@ from tests.dialects.test_dialect import Validator
 class TestRedshift(Validator):
     dialect = "redshift"
 
+    def test_listagg_default_separator(self):
+        ordered = "LISTAGG(x) WITHIN GROUP (ORDER BY x)"
+        self.validate_all(
+            "LISTAGG(x, '') WITHIN GROUP (ORDER BY x)",
+            read=dict.fromkeys(("exasol", "oracle", "redshift", "trino"), ordered),
+        )
+        fallback = (
+            "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+            "STRUCT(x IS NULL, x AS sort_key, x AS value)))).value, ARRAY()), '')"
+        )
+        self.validate_all(
+            ordered, write={"spark, version=3.5": fallback, "databricks, version=16.3": fallback}
+        )
+        self.validate_all(
+            "LISTAGG(x)",
+            write={"spark, version=3.5": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), '')"},
+        )
+        self.validate_identity("LISTAGG(DISTINCT x, '|') WITHIN GROUP (ORDER BY x)")
+
+    def test_listagg_comments(self):
+        self.validate_identity(
+            "SELECT LISTAGG(x, '|') /* values */ WITHIN GROUP (ORDER BY x) /* sorted */ AS xs FROM t",
+            "SELECT LISTAGG(x, '|') WITHIN GROUP (ORDER BY x) AS xs /* values */ /* sorted */ FROM t",
+        )
+
     def test_star_except(self):
         expression = parse_one("SELECT * EXCEPT (a) FROM t", read="bigquery")
 
@@ -119,7 +144,7 @@ class TestRedshift(Validator):
                 # GROUP_CONCAT, LISTAGG and STRING_AGG are aliases in DuckDB
                 "duckdb": "LISTAGG(sellerid, ', ')",
                 "redshift": "LISTAGG(sellerid, ', ')",
-                "spark, version=3.0.0": "ARRAY_JOIN(COLLECT_LIST(sellerid), ', ')",
+                "spark, version=3.0.0": "ARRAY_JOIN(NULLIF(COLLECT_LIST(sellerid), ARRAY()), ', ')",
                 "spark, version=4.0.0": "LISTAGG(sellerid, ', ')",
                 "spark": "LISTAGG(sellerid, ', ')",
                 "databricks": "LISTAGG(sellerid, ', ')",

@@ -53,17 +53,6 @@ def _dateadd_sql(self: SparkGenerator, expression: exp.TsOrDsAdd | exp.Timestamp
     return this
 
 
-def _groupconcat_sql(self: SparkGenerator, expression: exp.GroupConcat) -> str:
-    if self.dialect.version < (4,):
-        expr = exp.ArrayToString(
-            this=exp.ArrayAgg(this=expression.this),
-            expression=expression.args.get("separator") or exp.Literal.string(""),
-        )
-        return self.sql(expr)
-
-    return groupconcat_sql(self, expression)
-
-
 class SparkGenerator(Spark2Generator):
     SUPPORTS_TO_NUMBER = True
     PAD_FILL_PATTERN_IS_REQUIRED = False
@@ -72,6 +61,7 @@ class SparkGenerator(Spark2Generator):
     SUPPORTS_UNIX_SECONDS = True
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (4, 0)
     ORDERED_PERCENTILE_MIN_VERSIONS = dict.fromkeys(exp.PERCENTILES, (3, 3))
+    LISTAGG_MIN_VERSION = (4, 0)
     SUPPORTS_DECODE_CASE = True
     SET_ASSIGNMENT_REQUIRES_VARIABLE_KEYWORD = True
 
@@ -116,7 +106,6 @@ class SparkGenerator(Spark2Generator):
             exp.DateFromUnixDate: rename_func("DATE_FROM_UNIX_DATE"),
             exp.DatetimeAdd: date_delta_to_binary_interval_op(cast=False),
             exp.DatetimeSub: date_delta_to_binary_interval_op(cast=False),
-            exp.GroupConcat: _groupconcat_sql,
             exp.EndsWith: rename_func("ENDSWITH"),
             exp.JSONKeys: rename_func("JSON_OBJECT_KEYS"),
             exp.PartitionedByProperty: lambda self, e: (
@@ -168,6 +157,48 @@ class SparkGenerator(Spark2Generator):
 
     def ignorenulls_sql(self, expression: exp.IgnoreNulls) -> str:
         return generator.Generator.ignorenulls_sql(self, expression)
+
+    def groupconcat_sql(self, expression: exp.GroupConcat) -> str:
+        if self.dialect.version >= self.LISTAGG_MIN_VERSION:
+            return groupconcat_sql(self, expression)
+
+        this = expression.this
+        if isinstance(this, exp.Limit) or (
+            isinstance(expression.parent, (exp.Filter, exp.Window)) and expression.arg_key == "this"
+        ):
+            self.unsupported("Cannot emulate LISTAGG with LIMIT, FILTER or OVER")
+            return groupconcat_sql(self, expression)
+
+        if isinstance(this, exp.Order):
+            if len(this.expressions) != 1 or isinstance(this.this, exp.Distinct):
+                self.unsupported(
+                    "Cannot emulate ordered LISTAGG with multiple sort keys or DISTINCT"
+                )
+                return groupconcat_sql(self, expression)
+
+            value, key = this.this, this.expressions[0]
+            asc = not key.args.get("desc")
+            fields = [exp.alias_(key.this, "sort_key"), exp.alias_(value, "value")]
+            if bool(key.args.get("nulls_first")) != asc:
+                # SORT_ARRAY treats NULL as the smallest key within a struct.
+                fields.insert(0, key.this.is_(exp.null()))
+            row = exp.If(
+                this=value.is_(exp.null()), true=exp.null(), false=exp.Struct(expressions=fields)
+            )
+            values: exp.Expr = exp.Dot(
+                this=exp.func("SORT_ARRAY", exp.ArrayAgg(this=row), exp.convert(asc)),
+                expression=exp.to_identifier("value"),
+            )
+        else:
+            values = exp.ArrayAgg(this=this)
+
+        if not expression.args.get("empty_string_on_empty"):
+            values = exp.Nullif(this=values, expression=exp.array())
+
+        separator = expression.args.get("separator") or exp.Literal.string(",")
+        if expression.args.get("null_separator_is_empty") and not separator.is_string:
+            separator = exp.Coalesce(this=separator, expressions=[exp.Literal.string("")])
+        return self.func("ARRAY_JOIN", values, separator)
 
     def arrayinsert_sql(self, expression: exp.ArrayInsert, index_offset: int = 0) -> str:
         return super().arrayinsert_sql(expression, index_offset=1)

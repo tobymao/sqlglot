@@ -352,6 +352,7 @@ class SnowflakeParser(parser.Parser):
     IDENTIFY_PIVOT_STRINGS = True
     TYPED_LAMBDA_ARGS = True
     DEFAULT_SAMPLING_METHOD = "BERNOULLI"
+    STRING_AGG_DEFAULT_SEPARATOR = ""
     COLON_IS_VARIANT_EXTRACT = True
     JSON_EXTRACT_REQUIRES_JSON_EXPRESSION = True
     SUPPORTS_NTH_VALUE_FROM_MODIFIER = True
@@ -1118,8 +1119,7 @@ class SnowflakeParser(parser.Parser):
 
     def _parse_listagg(self) -> exp.GroupConcat:
         expression = self._parse_string_agg()
-        if expression.args.get("separator") is None:
-            expression.set("separator", exp.Literal.string(""))
+        expression.set("empty_string_on_empty", True)
         return expression
 
     def _parse_object_construct_keep_null(self) -> exp.JSONObject:

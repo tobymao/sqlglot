@@ -8,6 +8,7 @@ from sqlglot.dialects.dialect import (
     concat_to_dpipe_sql,
     concat_ws_to_dpipe_sql,
     generatedasidentitycolumnconstraint_sql,
+    groupconcat_sql,
     json_extract_segments,
     no_tablesample_sql,
     rename_func,
@@ -97,7 +98,7 @@ class RedshiftGenerator(PostgresGenerator):
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.JSONExtract: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
         exp.JSONExtractScalar: json_extract_segments("JSON_EXTRACT_PATH_TEXT"),
-        exp.GroupConcat: rename_func("LISTAGG"),
+        exp.GroupConcat: groupconcat_sql,
         exp.Hex: lambda self, e: self.func("UPPER", self.func("TO_HEX", self.sql(e, "this"))),
         exp.RegexpExtract: rename_func("REGEXP_SUBSTR"),
         exp.Select: transforms.preprocess(

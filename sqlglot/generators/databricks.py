@@ -5,7 +5,6 @@ from sqlglot import exp, transforms
 from sqlglot.dialects.dialect import (
     date_delta_sql,
     timestamptrunc_sql,
-    groupconcat_sql,
 )
 from sqlglot.generators.spark import SparkGenerator
 
@@ -33,6 +32,7 @@ class DatabricksGenerator(SparkGenerator):
     SUPPORTS_OPTIMIZE = True
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (15, 2)
     ORDERED_PERCENTILE_MIN_VERSIONS = {exp.PercentileCont: (10, 4), exp.PercentileDisc: (11, 3)}
+    LISTAGG_MIN_VERSION = (16, 4)
 
     # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
     # CUME_DIST() OVER (ORDER BY NULL), which Databricks still rejects with
@@ -64,7 +64,6 @@ class DatabricksGenerator(SparkGenerator):
                 e.this,
             ),
             exp.DatetimeTrunc: timestamptrunc_sql(),
-            exp.GroupConcat: groupconcat_sql,
             exp.Select: transforms.preprocess(
                 [
                     transforms.eliminate_distinct_on,

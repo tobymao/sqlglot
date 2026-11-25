@@ -28,6 +28,8 @@ def _build_nullifzero(args: list) -> exp.If:
 
 
 class ExasolParser(parser.Parser):
+    STRING_AGG_DEFAULT_SEPARATOR = ""
+
     TABLE_ALIAS_TOKENS = parser.Parser.TABLE_ALIAS_TOKENS | {
         TokenType.ANTI,
         TokenType.SEMI,

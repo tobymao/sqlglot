@@ -513,7 +513,7 @@ class TestTrino(Validator):
         )
         self.validate_identity(
             "SELECT LISTAGG(col) WITHIN GROUP (ORDER BY col DESC) FROM tbl",
-            "SELECT LISTAGG(col, ',') WITHIN GROUP (ORDER BY col DESC) FROM tbl",
+            "SELECT LISTAGG(col, '') WITHIN GROUP (ORDER BY col DESC) FROM tbl",
         )
 
     def test_trim(self):

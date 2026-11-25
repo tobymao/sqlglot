@@ -11,6 +11,48 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_string_agg_spark_versions(self):
+        for ordering, null_key, sort_direction in (
+            ("ASC NULLS FIRST", "", ""),
+            ("ASC NULLS LAST", "y IS NULL, ", ""),
+            ("DESC NULLS FIRST", "y IS NULL, ", ", FALSE"),
+            ("DESC NULLS LAST", "", ", FALSE"),
+        ):
+            ordered = (
+                "ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+                f"STRUCT({null_key}y AS sort_key, x AS value))){sort_direction}).value, ARRAY()), ',')"
+            )
+            self.validate_all(
+                f"STRING_AGG(x, ',' ORDER BY y {ordering})",
+                write={"spark, version=3.5": ordered, "databricks, version=16.3": ordered},
+            )
+
+        native = "LISTAGG(x, ',') WITHIN GROUP (ORDER BY y DESC NULLS FIRST)"
+        self.validate_all(
+            "STRING_AGG(x, ',' ORDER BY y DESC)",
+            write={"spark, version=4.0": native, "databricks, version=16.4": native},
+        )
+        self.validate_all(
+            "STRING_AGG(x, ',')",
+            write={"databricks, version=15.4": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), ',')"},
+        )
+        nullable = (
+            "SELECT ARRAY_JOIN(NULLIF(SORT_ARRAY(COLLECT_LIST(IF(x IS NULL, NULL, "
+            "STRUCT(y IS NULL, y AS sort_key, x AS value)))).value, ARRAY()), COALESCE(sep, '')) "
+            "FROM t GROUP BY sep"
+        )
+        self.validate_all(
+            "SELECT STRING_AGG(x, sep ORDER BY y) FROM t GROUP BY sep",
+            write={"spark, version=3.5": nullable, "databricks, version=16.3": nullable},
+        )
+        for sql in (
+            "STRING_AGG(x, ',' ORDER BY y, z DESC)",
+            "STRING_AGG(DISTINCT x, ',' ORDER BY x)",
+            "STRING_AGG(x, ',') FILTER (WHERE ok)",
+            "STRING_AGG(x, ',') OVER (PARTITION BY g)",
+        ):
+            self.validate_all(sql, write={"spark, version=3.5": UnsupportedError})
+
     def test_convert(self):
         self.validate_identity(
             "SELECT ENCODE(CONVERT(DECODE('6162', 'hex'), 'UTF8', 'UTF8'), 'hex')"

@@ -32,6 +32,7 @@ def _build_date_delta(expr_type: Type[E]) -> t.Callable[[list], E]:
 
 class RedshiftParser(PostgresParser):
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.HIGH
+    STRING_AGG_DEFAULT_SEPARATOR = ""
 
     ID_VAR_TOKENS = {*PostgresParser.ID_VAR_TOKENS, TokenType.QUALIFY}
 
@@ -84,6 +85,7 @@ class RedshiftParser(PostgresParser):
 
     FUNCTION_PARSERS = {
         **PostgresParser.FUNCTION_PARSERS,
+        "LISTAGG": lambda self: self._parse_string_agg(),
         "DATE_PART": lambda self: self._parse_date_part(
             # Quoted "date_part" takes an expression, like PGDATE_PART.
             self._parse_assignment()

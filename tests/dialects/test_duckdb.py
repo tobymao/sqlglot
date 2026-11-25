@@ -2182,7 +2182,13 @@ class TestDuckDB(Validator):
         )
         self.validate_identity("LISTAGG(x, ', ')")
         self.validate_identity("STRING_AGG(x, ', ')", "LISTAGG(x, ', ')")
-        self.validate_identity("STRING_AGG(x, NULL)", "LISTAGG(x, NULL)")
+        self.validate_all(
+            "STRING_AGG(x, NULL)",
+            write={
+                "duckdb": "LISTAGG(x, NULL)",
+                "spark, version=3.5": "ARRAY_JOIN(NULLIF(COLLECT_LIST(x), ARRAY()), NULL)",
+            },
+        )
 
         self.validate_all(
             "SELECT CONCAT(foo)",

@@ -1414,7 +1414,11 @@ class Dialect(metaclass=_Dialect):
     def int_literal_type(self, expression: exp.Literal) -> exp.DataType | exp.DType:
         return self.integer_type_for_value(int(expression.to_py()))
 
-    def integer_type_for_value(self, value: int | Decimal) -> exp.DType:
+    def integer_literal_value(self, literal: exp.Literal) -> int | Decimal | None:
+        """Return the value of a numeric literal whose spelling gives it an integer type."""
+        return t.cast("int | Decimal", literal.to_py()) if literal.name.isdecimal() else None
+
+    def integer_type_for_value(self, value: int | Decimal) -> exp.DataType | exp.DType:
         """Return the type of an integer literal with the given value."""
         for bound, int_type in self.INT_LITERAL_TYPES:
             if bound is None or value <= bound:

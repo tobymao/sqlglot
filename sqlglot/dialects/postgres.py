@@ -9,6 +9,13 @@ from sqlglot.typing.postgres import EXPRESSION_METADATA
 
 
 class Postgres(Dialect):
+    INT_LITERAL_TYPES: tuple[tuple[int | None, exp.DType], ...] = (
+        (-(2**63) - 1, exp.DType.DECIMAL),
+        (-(2**31) - 1, exp.DType.BIGINT),
+        (2**31 - 1, exp.DType.INT),
+        (2**63 - 1, exp.DType.BIGINT),
+        (None, exp.DType.DECIMAL),
+    )
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
     INDEX_OFFSET = 1
     ASCII_ONLY_NORMALIZATION = True

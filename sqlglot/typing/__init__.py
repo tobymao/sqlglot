@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp
 from sqlglot.helper import subclasses
@@ -10,6 +11,34 @@ if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 ExprMetadataType = dict[Type[exp.Expr], dict[str, t.Any]]
+
+
+def annotate_signed_integer_literal(
+    self: TypeAnnotator, expression: exp.Literal | exp.Neg
+) -> exp.Expr:
+    # Fold nested negations before checking the dialect's bounds. For example,
+    # -9223372036854775808 fits in BIGINT and 9223372036854775808 exceeds its maximum.
+    operand: exp.Expr = expression
+    negated = False
+    while isinstance(operand, exp.Neg):
+        negated = not negated
+        operand = operand.this.unnest()
+    value = (
+        self.dialect.integer_literal_value(operand)
+        if isinstance(operand, exp.Literal) and operand.is_number
+        else None
+    )
+    if value is not None:
+        if negated:
+            # Decimal's unary minus can round across a type boundary. copy_negate()
+            # preserves every digit regardless of the current decimal precision.
+            value = value.copy_negate() if isinstance(value, Decimal) else -value
+        expression.meta["nonnull"] = True
+        return self._set_type(expression, self.dialect.integer_type_for_value(value))
+
+    if isinstance(expression, exp.Literal):
+        return self._annotate_literal(expression)
+    return self._annotate_unary(expression)
 
 
 def annotate_by_numeric_arg(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:

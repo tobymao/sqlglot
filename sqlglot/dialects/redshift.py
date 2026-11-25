@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
+
+from sqlglot import exp
 from sqlglot.typing.redshift import EXPRESSION_METADATA
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.postgres import Postgres
@@ -9,6 +12,12 @@ from sqlglot.tokens import TokenType
 
 
 class Redshift(Postgres):
+    # Redshift includes the signed 32-bit minimum in the negative BIGINT range.
+    INT_LITERAL_TYPES = tuple(
+        (-(2**31) if bound == -(2**31) - 1 else bound, dtype)
+        for bound, dtype in Postgres.INT_LITERAL_TYPES
+    )
+
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 
@@ -37,6 +46,24 @@ class Redshift(Postgres):
     Parser = RedshiftParser
 
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
+
+    def integer_literal_value(self, literal: exp.Literal) -> Decimal | None:
+        # Redshift treats 2. and 1.5e10 as integers, but keeps the scale in 2.0.
+        try:
+            value = Decimal(literal.name)
+        except InvalidOperation:
+            return None
+        exponent = value.as_tuple().exponent
+        return value if isinstance(exponent, int) and exponent >= 0 else None
+
+    def integer_type_for_value(self, value: int | Decimal) -> exp.DataType | exp.DType:
+        dtype = super().integer_type_for_value(value)
+        if dtype != exp.DType.DECIMAL:
+            return dtype
+        precision = max(20, Decimal(value).adjusted() + 1)
+        return (
+            exp.DataType.build(f"DECIMAL({precision}, 0)") if precision <= 38 else exp.DType.DOUBLE
+        )
 
     class Tokenizer(Postgres.Tokenizer):
         NUMERIC_ESCAPES = {"0": (8, 1, 3, 0o777)}

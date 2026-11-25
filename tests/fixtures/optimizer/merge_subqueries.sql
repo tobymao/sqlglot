@@ -887,6 +887,21 @@ SELECT x.a AS a, RAND() IS NULL AS missing FROM x AS x WHERE x.a > 1;
 SELECT COUNT(DISTINCT s.r) AS draws FROM (SELECT RANDOM() AS r FROM RANGE(1)) AS s CROSS JOIN y;
 SELECT COUNT(DISTINCT s.r) AS draws FROM (SELECT RANDOM() AS r FROM RANGE(0, 1) AS _0) AS s CROSS JOIN y AS y;
 
+# title: A parenthesized join repeats a CTE's random value
+# dialect: duckdb
+WITH s AS (SELECT RANDOM() AS r FROM RANGE(1)) SELECT COUNT(DISTINCT s.r) AS draws FROM (s CROSS JOIN y);
+WITH s AS (SELECT RANDOM() AS r FROM RANGE(0, 1) AS _0) SELECT COUNT(DISTINCT s.r) AS draws FROM (s CROSS JOIN y AS y);
+
+# title: A lateral view repeats the random value for each exploded element
+# dialect: spark
+WITH s AS (SELECT RAND() AS r FROM RANGE(1)) SELECT COUNT(DISTINCT s.r) AS draws FROM s LATERAL VIEW EXPLODE(ARRAY(1, 2, 3)) e AS i;
+WITH s AS (SELECT RAND() AS r FROM RANGE(1) AS _0) SELECT COUNT(DISTINCT s.r) AS draws FROM s AS s LATERAL VIEW EXPLODE(ARRAY(1, 2, 3)) e AS i;
+
+# title: A join inside a scalar subquery still allows the outer random projection to merge
+# dialect: duckdb
+SELECT s.r IS NULL AS missing, (SELECT COUNT(*) FROM y AS a CROSS JOIN y AS b) AS n FROM (SELECT RANDOM() AS r FROM RANGE(1)) AS s;
+SELECT RANDOM() IS NULL AS missing, (SELECT COUNT(*) AS _col_0 FROM y AS a CROSS JOIN y AS b) AS n FROM RANGE(0, 1) AS _0;
+
 # title: A set-returning projection repeats the value for each emitted row
 # dialect: duckdb
 SELECT COUNT(DISTINCT t.r) AS draws FROM (SELECT s.r, UNNEST([1, 2]) AS n FROM (SELECT RANDOM() AS r FROM RANGE(1)) AS s) AS t;

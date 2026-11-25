@@ -506,7 +506,7 @@ def _mergeable(
 
         # Even one reference may be evaluated repeatedly if the outer query multiplies rows.
         if seen and (
-            outer_args.get("joins")
+            outer_scope.find(exp.Join, exp.Lateral)
             or any(find_in_scope(s, *exp.SET_RETURNING_FUNCTIONS) for s in outer.selects)
         ):
             return False

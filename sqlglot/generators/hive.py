@@ -224,6 +224,7 @@ def _to_date_sql(self: HiveGenerator, expression: exp.TsOrDsToDate) -> str:
 
 
 class HiveGenerator(generator.Generator):
+    DAYOFWEEK_NAME = "DAYOFWEEK"
     BYTE_STRING_FUNCTION = "UNHEX"
     SELECT_KINDS = ()
     TRY_SUPPORTED = False
@@ -394,7 +395,6 @@ class HiveGenerator(generator.Generator):
         exp.PrimaryKeyColumnConstraint: lambda *_: "PRIMARY KEY",
         exp.WeekOfYear: rename_func("WEEKOFYEAR"),
         exp.DayOfMonth: rename_func("DAYOFMONTH"),
-        exp.DayOfWeek: rename_func("DAYOFWEEK"),
         exp.Levenshtein: unsupported_args("ins_cost", "del_cost", "sub_cost", "max_dist")(
             rename_func("LEVENSHTEIN")
         ),

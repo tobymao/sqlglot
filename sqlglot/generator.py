@@ -635,6 +635,9 @@ class Generator:
     # The function name of the exp.ArraySize expression
     ARRAY_SIZE_NAME: str = "ARRAY_LENGTH"
 
+    DAYOFWEEK_NAME = ""
+    DAYOFWEEK_ZERO_BASED = False
+
     # Override for sample variance; otherwise use the expression's function name.
     VARIANCE_NAME: str = ""
 
@@ -3954,6 +3957,19 @@ class Generator:
         order = expression.args.get("order")
         order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
+
+    def dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        if bool(expression.args.get("zero_based")) == self.DAYOFWEEK_ZERO_BASED:
+            return self._native_dayofweek_sql(expression)
+
+        adjusted = expression + 1 if self.DAYOFWEEK_ZERO_BASED else expression - 1
+        adjusted.this.set("zero_based", self.DAYOFWEEK_ZERO_BASED)
+        # The outer DayOfWeek already emits the function's comments.
+        adjusted.this.pop_comments()
+        return self.sql(exp.paren(adjusted, copy=False))
+
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.func(self.DAYOFWEEK_NAME or self.function_name(expression), expression.this)
 
     def extract_date_part(self, part: exp.Expr) -> exp.Expr:
         mapping = self.dialect.EXTRACT_DATE_PART_MAPPING

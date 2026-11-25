@@ -6,6 +6,7 @@ from sqlglot import exp, parser
 from sqlglot.dialects.dialect import (
     Dialect,
     binary_from_function,
+    build_dayofweek_zero_based,
     build_default_decimal_type,
     build_formatted_time,
     build_like,
@@ -549,6 +550,8 @@ class SnowflakeParser(parser.Parser):
             date_part_boundary=True,
         ),
         "DAYNAME": lambda args: exp.Dayname(this=seq_get(args, 0), abbreviated=True),
+        # With the default WEEK_START = 0, Sunday is zero.
+        "DAYOFWEEK": build_dayofweek_zero_based,
         "DAYOFWEEKISO": exp.DayOfWeekIso.from_arg_list,
         "DIV0": _build_if_from_div0,
         "DIV0NULL": _build_if_from_div0null,

@@ -189,6 +189,8 @@ MAKE_INTERVAL_KWARGS = ["year", "month", "day", "hour", "minute", "second"]
 
 
 class BigQueryParser(parser.Parser):
+    EXTRACT_FUNCTIONS = {"DAYOFWEEK": exp.DayOfWeek.from_arg_list}
+
     PREFIXED_PIVOT_COLUMNS: t.ClassVar = True
     LOG_DEFAULTS_TO_LN: t.ClassVar = True
     SUPPORTS_IMPLICIT_UNNEST: t.ClassVar = True

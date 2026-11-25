@@ -110,6 +110,7 @@ def _ts_or_ds_to_date_sql(self: MySQLGenerator, expression: exp.TsOrDsToDate) ->
 
 
 class MySQLGenerator(generator.Generator):
+    DAYOFWEEK_NAME = "DAYOFWEEK"
     BYTE_STRING_FUNCTION = "UNHEX"
     VARIANCE_NAME = "VAR_SAMP"
     SELECT_KINDS = ()
@@ -174,7 +175,7 @@ class MySQLGenerator(generator.Generator):
         exp.DateTrunc: _date_trunc_sql,
         exp.Day: remove_ts_or_ds_to_date(),
         exp.DayOfMonth: remove_ts_or_ds_to_date(rename_func("DAYOFMONTH")),
-        exp.DayOfWeek: remove_ts_or_ds_to_date(rename_func("DAYOFWEEK")),
+        exp.DayOfWeek: remove_ts_or_ds_to_date(generator.Generator.dayofweek_sql),
         exp.DayOfYear: remove_ts_or_ds_to_date(rename_func("DAYOFYEAR")),
         exp.GroupConcat: lambda self, e: (
             f"""GROUP_CONCAT({self.sql(e, "this")} SEPARATOR {self.sql(e, "separator") or "','"})"""

@@ -286,6 +286,7 @@ def _left_right_sql(self: PostgresGenerator, expression: exp.Left | exp.Right) -
 
 
 class PostgresGenerator(generator.Generator):
+    DAYOFWEEK_ZERO_BASED = True
     SELECT_KINDS = ()
     VARIANCE_NAME = "VAR_SAMP"
     DATE_PART_WITH_EXPRESSION = "DATE_PART"
@@ -504,6 +505,9 @@ class PostgresGenerator(generator.Generator):
         sql = super().with_properties(exp.Properties(expressions=with_properties))
         post_sql = self.expressions(sqls=post_with, sep=" ", indent=False)
         return sql + self.seg(post_sql, sep=" " if sql else "") if post_sql else sql
+
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.sql(exp.Extract(this=exp.var("DOW"), expression=expression.this))
 
     def extract_sql(self, expression: exp.Extract) -> str:
         if not expression.args.get("date_part"):

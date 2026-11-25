@@ -1607,6 +1607,8 @@ def _unqualify_pivot_columns(expression: exp.Expr) -> exp.Expr:
 
 
 class DuckDBGenerator(generator.Generator):
+    DAYOFWEEK_NAME = "DAYOFWEEK"
+    DAYOFWEEK_ZERO_BASED = True
     PARAMETER_TOKEN = "$"
     NAMED_PLACEHOLDER_TOKEN = "$"
     JOIN_HINTS = False
@@ -1718,7 +1720,6 @@ class DuckDBGenerator(generator.Generator):
         exp.CurrentVersion: rename_func("version"),
         exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
         exp.DayOfMonth: rename_func("DAYOFMONTH"),
-        exp.DayOfWeek: rename_func("DAYOFWEEK"),
         exp.DayOfWeekIso: rename_func("ISODOW"),
         exp.DayOfYear: rename_func("DAYOFYEAR"),
         exp.Dayname: lambda self, e: (

@@ -432,6 +432,9 @@ class TSQLGenerator(generator.Generator):
             "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
         )
 
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.func("DATEPART", "WEEKDAY", expression.this)
+
     def extract_sql(self, expression: exp.Extract) -> str:
         part = expression.this
         name = DATE_PART_UNMAPPING.get(part.name.upper()) or part

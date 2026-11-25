@@ -421,6 +421,9 @@ class Parser:
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DType.TEXT),
         ),
+        **dict.fromkeys(
+            exp.DayOfWeek.sql_names(), lambda args: exp.DayOfWeek(this=seq_get(args, 0))
+        ),
         "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
             start=seq_get(args, 0),
             end=seq_get(args, 1),
@@ -1589,6 +1592,8 @@ class Parser:
     FUNCTIONS_WITH_ALIASED_ARGS: t.ClassVar = {"STRUCT"}
 
     KEY_VALUE_DEFINITIONS: t.ClassVar = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
+
+    EXTRACT_FUNCTIONS: t.ClassVar[dict[str, t.Callable[[list], exp.Expr]]] = {}
 
     FUNCTION_PARSERS: t.ClassVar[dict[str, t.Callable]] = {
         **{
@@ -8569,16 +8574,19 @@ class Parser:
             )
         )
 
-    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+    def _parse_extract(self) -> exp.Expr:
         this = self._parse_function() or self._parse_var_or_string(upper=True)
 
-        if self._match(TokenType.FROM):
-            return self.expression(exp.Extract(this=this, expression=self._parse_bitwise()))
-
-        if not self._match(TokenType.COMMA):
+        if not self._match_set((TokenType.FROM, TokenType.COMMA)):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
-        return self.expression(exp.Extract(this=this, expression=self._parse_bitwise()))
+        expression = self._parse_bitwise()
+        if expression and isinstance(this, (exp.Var, exp.Literal)):
+            func = self.EXTRACT_FUNCTIONS.get(this.name.upper())
+            if func:
+                return self.expression(func([expression]), comments=this.pop_comments())
+
+        return self.expression(exp.Extract(this=this, expression=expression))
 
     def _parse_table_argument(self, table_token: Token | None = None) -> exp.Expr | None:
         if table_token is None and self._match(TokenType.TABLE):

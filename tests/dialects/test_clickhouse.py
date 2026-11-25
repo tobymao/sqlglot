@@ -185,6 +185,7 @@ class TestClickhouse(Validator):
             "toDayOfWeek(x)",
             read={
                 "": "DAYOFWEEK_ISO(x)",
+                "clickhouse": "DAYOFWEEK(x)",
                 "duckdb": "ISODOW(x)",
                 "snowflake": "DAYOFWEEKISO(x)",
             },

@@ -145,6 +145,13 @@ class TestDoris(Validator):
         )
         self.validate_identity("INSERT OVERWRITE TABLE test PARTITION(p1, p2) VALUES (1, 2)")
 
+    def test_collect_set(self):
+        expression = self.validate_identity("SELECT COLLECT_SET(v, 2) FROM t")
+        self.assertIsInstance(expression.expressions[0], exp.AggFunc)
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT COLLECT_SET(v, 2, 3) FROM t")
+
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")
         self.validate_identity("DATE_TRUNC(event_date, 'DAY')")

@@ -4081,6 +4081,23 @@ OPTIONS (
         self.assertEqual(self.parse_one(sql).sql("bigquery", pretty=True), expected)
 
     def test_unnest_with_offset(self):
+        self.validate_all(
+            "SELECT x, off FROM UNNEST([10, 20, 30]) AS x WITH OFFSET AS off",
+            write={
+                "duckdb": "SELECT x, off FROM (SELECT unnest, ordinality - 1 FROM "
+                "UNNEST([10, 20, 30]) WITH ORDINALITY) AS _t0(x, off)",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT [10, 20] AS arr) SELECT * FROM t "
+            "CROSS JOIN UNNEST(t.arr) AS x WITH OFFSET WHERE offset = 1",
+            write={
+                "duckdb": "WITH t AS (SELECT [10, 20] AS arr) SELECT * FROM t CROSS JOIN "
+                "(SELECT unnest, ordinality - 1 FROM UNNEST(t.arr) WITH ORDINALITY) "
+                'AS _t0(x, "offset") WHERE "offset" = 1',
+            },
+        )
+
         for offset, alias in (("", "offset"), (" AS pos", "pos")):
             self.validate_all(
                 f"SELECT x, {alias} FROM UNNEST([10, 20]) AS x WITH OFFSET{offset} ORDER BY {alias}",

@@ -61,6 +61,7 @@ class DorisGenerator(MySQLGenerator):
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
         exp.ArrayAgg: rename_func("COLLECT_LIST"),
+        exp.ArrayFilter: lambda self, e: self.func("ARRAY_FILTER", e.expression, e.this),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
         exp.CurrentDate: lambda self, _: self.func("CURRENT_DATE"),

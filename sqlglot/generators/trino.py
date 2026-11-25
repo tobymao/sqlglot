@@ -57,6 +57,15 @@ class TrinoGenerator(PrestoGenerator):
         exp.JSONPathSubscript,
     }
 
+    def unnest_sql(self, expression: exp.Unnest) -> str:
+        if query := transforms.unnest_with_offset(
+            expression, input_columns=("_value", "_ordinality")
+        ):
+            if isinstance(expression.parent, exp.Join):
+                return self.sql(exp.Lateral(this=query))
+            return self.sql(query)
+        return super().unnest_sql(expression)
+
     @unsupported_args("this")
     def currentschema_sql(self, expression: exp.CurrentSchema) -> str:
         return "CURRENT_SCHEMA"

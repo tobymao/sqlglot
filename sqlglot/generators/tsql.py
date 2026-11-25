@@ -231,6 +231,7 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.Day: remove_ts_or_ds_to_date(),
+        exp.DayOfWeek: lambda self, e: self.func("DATEPART", "WEEKDAY", e.this),
         exp.Filter: no_filter_sql,
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,

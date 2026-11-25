@@ -223,11 +223,17 @@ class DayOfMonth(Expression, Func):
 
 
 class DayOfWeek(Expression, Func):
+    """Sunday = 1, Saturday = 7."""
+
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
 class DayOfWeekIso(Expression, Func):
     _sql_names = ["DAYOFWEEK_ISO", "ISODOW"]
+
+
+class DayOfWeekZeroBased(Expression, Func):
+    """Sunday = 0, Saturday = 6."""
 
 
 class DayOfYear(Expression, Func):

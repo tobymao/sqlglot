@@ -3955,6 +3955,9 @@ class Generator:
         order = f" OVER ({self.order_sql(order, flat=True)})" if order else ""
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
+    def dayofweekzerobased_sql(self, expression: exp.DayOfWeekZeroBased) -> str:
+        return self.sql(exp.paren(exp.DayOfWeek(this=expression.this) - 1, copy=False))
+
     def extract_date_part(self, part: exp.Expr) -> exp.Expr:
         mapping = self.dialect.EXTRACT_DATE_PART_MAPPING
         if self.NORMALIZE_EXTRACT_DATE_PARTS and part.name.upper() not in mapping:

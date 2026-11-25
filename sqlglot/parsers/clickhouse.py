@@ -569,7 +569,7 @@ class ClickHouseParser(parser.Parser):
 
         return dtype
 
-    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+    def _parse_extract(self) -> exp.Expr:
         index = self._index
         this = self._parse_bitwise()
         if self._match(TokenType.FROM):

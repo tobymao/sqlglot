@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     date_delta_to_binary_sql,
     datestrtodate_sql,
+    dayofweek_from_zero_based_sql,
     filter_array_using_unnest,
     generate_series_sql,
     getbit_sql,
@@ -390,6 +391,10 @@ class PostgresGenerator(generator.Generator):
         exp.DatetimeAdd: _date_add_sql("+"),
         exp.DatetimeSub: _date_add_sql("-"),
         exp.Day: _day_month_year_sql,
+        exp.DayOfWeek: dayofweek_from_zero_based_sql,
+        exp.DayOfWeekZeroBased: lambda self, e: self.sql(
+            exp.Extract(this=exp.var("DOW"), expression=e.this)
+        ),
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),

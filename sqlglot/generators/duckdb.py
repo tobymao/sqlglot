@@ -18,6 +18,7 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     date_delta_to_binary_interval_op,
     datestrtodate_sql,
+    dayofweek_from_zero_based_sql,
     encode_decode_sql,
     explode_to_unnest_sql,
     generate_series_sql,
@@ -1718,8 +1719,9 @@ class DuckDBGenerator(generator.Generator):
         exp.CurrentVersion: rename_func("version"),
         exp.Localtime: unsupported_args("this")(lambda *_: "LOCALTIME"),
         exp.DayOfMonth: rename_func("DAYOFMONTH"),
-        exp.DayOfWeek: rename_func("DAYOFWEEK"),
+        exp.DayOfWeek: dayofweek_from_zero_based_sql,
         exp.DayOfWeekIso: rename_func("ISODOW"),
+        exp.DayOfWeekZeroBased: rename_func("DAYOFWEEK"),
         exp.DayOfYear: rename_func("DAYOFYEAR"),
         exp.Dayname: lambda self, e: (
             self.func("STRFTIME", e.this, exp.Literal.string("%a"))

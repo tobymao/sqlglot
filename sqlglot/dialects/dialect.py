@@ -2126,6 +2126,10 @@ def timestrtotime_sql(
     return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
 
 
+def dayofweek_from_zero_based_sql(self: Generator, expression: exp.DayOfWeek) -> str:
+    return self.sql(exp.paren(exp.DayOfWeekZeroBased(this=expression.this) + 1, copy=False))
+
+
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
     return self.sql(exp.cast(expression.this, exp.DType.DATE))
 

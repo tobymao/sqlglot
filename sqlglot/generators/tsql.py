@@ -440,12 +440,14 @@ class TSQLGenerator(generator.Generator):
         if expression.args.get("zero_based_dow"):
             # The earliest SQL Server date was a Monday, so the dividend is always positive.
             days = exp.DateDiff(
-                this=expression.expression.copy(),
+                this=exp.cast(expression.expression, exp.DType.DATE, dialect=self.dialect),
                 expression=exp.Literal.string("00010101"),
                 unit=exp.var("DAY"),
             )
-            dtype = exp.DType.DOUBLE if expression.args.get("date_part") else exp.DType.DECIMAL
-            return self.sql(exp.cast((days + 1) % 7, dtype, copy=False))
+            weekday = (days + 1) % 7
+            if expression.type and not expression.is_type(exp.DType.INT, exp.DType.UNKNOWN):
+                return self.sql(exp.cast(weekday, expression.type, copy=False))
+            return self.sql(exp.paren(weekday, copy=False))
 
         part = expression.this
         if not expression.args.get("date_part") or isinstance(part, (exp.Var, exp.Literal)):

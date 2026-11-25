@@ -8570,13 +8570,13 @@ class Parser:
     def _parse_extract(self) -> exp.Extract | exp.Anonymous:
         this = self._parse_function() or self._parse_var_or_string(upper=True)
 
-        if self._match(TokenType.FROM):
-            return self.expression(exp.Extract(this=this, expression=self._parse_bitwise()))
-
-        if not self._match(TokenType.COMMA):
+        if not self._match(TokenType.FROM) and not self._match(TokenType.COMMA):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
-        return self.expression(exp.Extract(this=this, expression=self._parse_bitwise()))
+        return self._build_extract(this, self._parse_bitwise())
+
+    def _build_extract(self, part: exp.Expr | None, value: exp.Expr | None) -> exp.Extract:
+        return self.expression(exp.Extract(this=part, expression=value))
 
     def _parse_table_argument(self, table_token: Token | None = None) -> exp.Expr | None:
         if table_token is None and self._match(TokenType.TABLE):

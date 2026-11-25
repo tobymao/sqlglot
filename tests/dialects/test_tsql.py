@@ -1928,14 +1928,14 @@ WHERE
                         f"SELECT DATEPART({canonical}, '2024-11-21')",
                     )
 
-        for dow, doy in (
-            ("EXTRACT(dow FROM x)", "EXTRACT(doy FROM x)"),
-            ("EXTRACT('DoW' FROM x)", "EXTRACT('DoY' FROM x)"),
-            ("DATE_PART('dow', x)", "DATE_PART('doy', x)"),
+        for dow, doy, dtype in (
+            ("EXTRACT(dow FROM x)", "EXTRACT(doy FROM x)", "NUMERIC"),
+            ("EXTRACT('DoW' FROM x)", "EXTRACT('DoY' FROM x)", "NUMERIC"),
+            ("DATE_PART('dow', x)", "DATE_PART('doy', x)", "FLOAT"),
         ):
             self.validate_all(
-                "SELECT DATEPART(WEEKDAY, x), DATEPART(DAYOFYEAR, x) FROM t",
-                read={"postgres": f"SELECT {dow}, {doy} FROM t"},
+                f"SELECT DATEPART(DAYOFYEAR, x) FROM t WHERE CAST((DATEDIFF(DAY, '00010101', x) + 1) % 7 AS {dtype}) = 0",
+                read={"postgres": f"SELECT {doy} FROM t WHERE {dow} = 0"},
             )
 
         self.validate_all(

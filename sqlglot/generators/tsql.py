@@ -28,7 +28,6 @@ DATE_PART_UNMAPPING = {
     "ISOWEEK": "ISO_WEEK",
     "WEEKISO": "ISO_WEEK",
     "DAYOFWEEK": "WEEKDAY",
-    "DOW": "WEEKDAY",
     "DOY": "DAYOFYEAR",
     "TIMEZONE_MINUTE": "TZOFFSET",
 }
@@ -435,6 +434,16 @@ class TSQLGenerator(generator.Generator):
         )
 
     def extract_sql(self, expression: exp.Extract) -> str:
+        if expression.args.get("zero_based_dow"):
+            # The earliest SQL Server date was a Monday, so the dividend is always positive.
+            days = exp.DateDiff(
+                this=expression.expression.copy(),
+                expression=exp.Literal.string("00010101"),
+                unit=exp.var("DAY"),
+            )
+            dtype = exp.DType.DOUBLE if expression.args.get("date_part") else exp.DType.DECIMAL
+            return self.sql(exp.cast((days + 1) % 7, dtype, copy=False))
+
         part = expression.this
         if not expression.args.get("date_part") or isinstance(part, (exp.Var, exp.Literal)):
             part = DATE_PART_UNMAPPING.get(part.name.upper()) or part

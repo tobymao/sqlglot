@@ -45,7 +45,12 @@ class DorisParser(MySQLParser):
         "ARRAY_FILTER": build_array_lambda_func(
             exp.ArrayFilter, "ARRAY_FILTER", supports_mask=True
         ),
-        "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
+        # ArrayUniqueAgg has no equivalent for Doris's max_size argument.
+        "COLLECT_SET": lambda args: (
+            exp.AnonymousAggFunc(this="COLLECT_SET", expressions=args)
+            if len(args) == 2
+            else exp.ArrayUniqueAgg.from_arg_list(args)
+        ),
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),
         "DATE_TRUNC": _build_date_trunc,

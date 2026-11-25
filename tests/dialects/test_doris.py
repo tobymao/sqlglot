@@ -109,6 +109,8 @@ class TestDoris(Validator):
         self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
         self.validate_identity("DROP TABLE my_table FORCE")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+        self.validate_identity("SELECT CAST('170141183460469231731687303715884105727' AS LARGEINT)")
+        self.validate_identity("SELECT CAST('10.0.0.1' AS IPV4), CAST('::1' AS IPV6)")
 
         # Doris 4.1 reserves these (grammar: DorisLexer.g4 keywords minus
         # DorisParser.g4 nonReserved; each verified against a live 4.1 FE —

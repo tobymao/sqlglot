@@ -5,6 +5,7 @@ from sqlglot.dialects.dialect import AliasPrecedence
 from sqlglot.dialects.mysql import MySQL
 from sqlglot.generators.doris import DorisGenerator
 from sqlglot.parsers.doris import DorisParser
+from sqlglot.tokens import TokenType
 
 
 class Doris(MySQL):
@@ -20,6 +21,13 @@ class Doris(MySQL):
     class Tokenizer(MySQL.Tokenizer):
         DASH_COMMENT_REQUIRES_BOUNDARY = False
         COMMENTS_TERMINATE_AT_NEWLINE_ONLY = False
+
+        KEYWORDS = {
+            **MySQL.Tokenizer.KEYWORDS,
+            "IPV4": TokenType.IPV4,
+            "IPV6": TokenType.IPV6,
+            "LARGEINT": TokenType.INT128,
+        }
 
     Parser = DorisParser
 

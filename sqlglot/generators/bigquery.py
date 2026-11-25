@@ -214,7 +214,9 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
 
 
 def _unnest_with_ordinality(expression: exp.Expr) -> exp.Expr:
-    for clause in [expression.args.get("from_"), *(expression.args.get("joins") or [])]:
+    from_ = expression.args.get("from_")
+    from_joins = from_.this.args.get("joins") if from_ else None
+    for clause in [from_, *(expression.args.get("joins") or []), *(from_joins or [])]:
         if clause is None:
             continue
 

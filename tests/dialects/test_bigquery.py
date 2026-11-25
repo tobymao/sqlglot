@@ -4156,6 +4156,12 @@ OPTIONS (
                 "postgres": "UPDATE items SET value = t.x FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS t(x, n) WHERE items.id = t.n",
             },
         )
+        self.validate_all(
+            "UPDATE items SET value = x FROM arrays AS a CROSS JOIN UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST(a.arr) AS _value WITH OFFSET AS _offset)) AS t WHERE items.id = n",
+            read={
+                "postgres": "UPDATE items SET value = x FROM arrays AS a CROSS JOIN UNNEST(a.arr) WITH ORDINALITY AS t(x, n) WHERE items.id = n",
+            },
+        )
 
     def test_generate_date_array(self):
         self.validate_all(

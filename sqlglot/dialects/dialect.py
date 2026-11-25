@@ -1916,6 +1916,23 @@ def months_between_sql(self: Generator, expression: exp.MonthsBetween) -> str:
     return self.sql(result)
 
 
+def build_array_lambda_func(
+    exp_class: Type[E], name: str, *, supports_mask: bool = False
+) -> t.Callable[[list[exp.Expr]], E | exp.Anonymous]:
+    def _builder(args: list[exp.Expr]) -> E | exp.Anonymous:
+        predicate = seq_get(args, 0)
+        if supports_mask and not isinstance(predicate, exp.Lambda):
+            if len(args) == 2:
+                return exp.Anonymous(this=name, expressions=args)
+        elif len(args) > 2:
+            # The shared expression can only apply a lambda to a single array.
+            return exp.Anonymous(this=name, expressions=args)
+
+        return exp_class(this=seq_get(args, 1), expression=predicate)
+
+    return _builder
+
+
 def build_formatted_time(
     exp_class: Type[E], dialect_override: str | None = None, default: bool | str | None = None
 ) -> t.Callable[[BuilderArgs, Dialect], E]:

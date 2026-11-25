@@ -2,20 +2,10 @@ from __future__ import annotations
 
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import build_date_delta_with_interval
+from sqlglot.dialects.dialect import build_array_lambda_func, build_date_delta_with_interval
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
-
-
-def _build_array_filter(args: list[exp.Expr]) -> exp.Expr:
-    has_lambda = isinstance(seq_get(args, 0), exp.Lambda)
-    if len(args) == 2 and has_lambda:
-        return exp.ArrayFilter(this=args[1], expression=args[0])
-    if len(args) == 2 or (len(args) > 2 and has_lambda):
-        # ArrayFilter cannot represent a boolean mask or a lambda over multiple arrays.
-        return exp.Anonymous(this="ARRAY_FILTER", expressions=args)
-    return exp.ArrayFilter.from_arg_list(args)
 
 
 # Accept both DATE_TRUNC(datetime, unit) and DATE_TRUNC(unit, datetime)
@@ -52,7 +42,9 @@ class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
-        "ARRAY_FILTER": _build_array_filter,
+        "ARRAY_FILTER": build_array_lambda_func(
+            exp.ArrayFilter, "ARRAY_FILTER", supports_mask=True
+        ),
         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),

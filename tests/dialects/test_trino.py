@@ -7,6 +7,17 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_current_schema(self):
+        self.validate_all(
+            'SELECT CURRENT_SCHEMA, "current_schema" FROM (VALUES (42)) AS t("current_schema")',
+            read={
+                "duckdb": "SELECT CURRENT_SCHEMA(), current_schema FROM (VALUES (42)) AS t(current_schema)"
+            },
+            write={
+                "duckdb": 'SELECT CURRENT_SCHEMA(), "current_schema" FROM (VALUES (42)) AS t("current_schema")'
+            },
+        )
+
     def test_execute_command_comments(self):
         statements = [
             "EXECUTE stmt USING 7 /* job; 42 */",

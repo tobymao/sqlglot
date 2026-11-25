@@ -34,6 +34,7 @@ class TrinoParser(PrestoParser):
     NO_PAREN_FUNCTIONS = {
         **PrestoParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
+        TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
     }
 
     FUNCTIONS = {

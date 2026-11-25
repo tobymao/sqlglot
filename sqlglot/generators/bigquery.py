@@ -213,6 +213,42 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def _unnest_with_ordinality(expression: exp.Expr) -> exp.Expr:
+    for clause in [expression.args.get("from_"), *(expression.args.get("joins") or [])]:
+        if clause is None:
+            continue
+
+        source = clause.this
+        unnest = source.this if isinstance(source, exp.Lateral) else source
+        if not isinstance(unnest, exp.Unnest) or unnest.args.get("offset_base") != 1:
+            continue
+
+        offset = unnest.args.get("offset")
+        alias = source.args.get("alias")
+        if not (
+            isinstance(offset, exp.Identifier)
+            and alias
+            and alias.this
+            and len(alias.columns) == 1
+            and len(unnest.expressions) == 1
+        ):
+            continue
+
+        value = exp.column("_value").as_(alias.columns[0])
+        position = (exp.column("_offset") + 1).as_(offset)
+        unnest.set("alias", exp.TableAlias(columns=[exp.to_identifier("_value")]))
+        unnest.set("offset", exp.to_identifier("_offset"))
+        unnest.set("offset_base", 0)
+        query = exp.Select(kind="STRUCT", expressions=[value, position]).from_(unnest, copy=False)
+
+        # An array subquery can read an array supplied by a preceding FROM item in BigQuery.
+        alias.set("columns", [alias.this])
+        alias.set("this", None)
+        clause.set("this", exp.Unnest(expressions=[exp.array(query, copy=False)], alias=alias))
+
+    return expression
+
+
 def _array_contains_sql(self: BigQueryGenerator, expression: exp.ArrayContains) -> str:
     return self.sql(
         exp.Exists(
@@ -576,6 +612,7 @@ class BigQueryGenerator(generator.Generator):
             [
                 _unnest_explode_generate_series,
                 transforms.explode_projection_to_unnest(),
+                _unnest_with_ordinality,
                 transforms.unqualify_unnest,
                 transforms.eliminate_distinct_on,
                 _alias_ordered_group,
@@ -583,6 +620,7 @@ class BigQueryGenerator(generator.Generator):
                 transforms.eliminate_semi_and_anti_joins,
             ]
         ),
+        exp.Update: transforms.preprocess([_unnest_with_ordinality]),
         exp.SHA: rename_func("SHA1"),
         exp.SHA2: sha256_sql,
         exp.SHA1Digest: rename_func("SHA1"),

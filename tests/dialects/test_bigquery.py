@@ -4135,6 +4135,28 @@ OPTIONS (
             },
         )
 
+    def test_unnest_with_ordinality(self):
+        self.validate_all(
+            "SELECT x, n FROM UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST([10, 20, 30]) AS _value WITH OFFSET AS _offset)) AS t WHERE n = 1",
+            read={
+                "duckdb": "SELECT x, n FROM UNNEST([10, 20, 30]) WITH ORDINALITY AS t(x, n) WHERE n = 1",
+                "postgres": "SELECT x, n FROM UNNEST(ARRAY[10, 20, 30]) WITH ORDINALITY AS t(x, n) WHERE n = 1",
+                "trino": "SELECT x, n FROM UNNEST(ARRAY[10, 20, 30]) WITH ORDINALITY AS t(x, n) WHERE n = 1",
+            },
+        )
+        self.validate_all(
+            "WITH a AS (SELECT [10, 20] AS arr, 99 AS n) SELECT t.x, t.n, a.n AS source_n FROM a CROSS JOIN UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST(a.arr) AS _value WITH OFFSET AS _offset)) AS t WHERE t.n = 1",
+            read={
+                "postgres": "WITH a AS (SELECT ARRAY[10, 20] AS arr, 99 AS n) SELECT t.x, t.n, a.n AS source_n FROM a CROSS JOIN LATERAL UNNEST(a.arr) WITH ORDINALITY AS t(x, n) WHERE t.n = 1",
+            },
+        )
+        self.validate_all(
+            "UPDATE items SET value = t.x FROM UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST([10, 20]) AS _value WITH OFFSET AS _offset)) AS t WHERE items.id = t.n",
+            read={
+                "postgres": "UPDATE items SET value = t.x FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS t(x, n) WHERE items.id = t.n",
+            },
+        )
+
     def test_generate_date_array(self):
         self.validate_all(
             "SELECT GENERATE_DATE_ARRAY('2016-10-05', '2016-10-08')",

@@ -5482,7 +5482,7 @@ class Parser:
 
         expressions = self._parse_wrapped_csv(self._parse_equality)
         offset: bool | exp.Expr = self._match_pair(TokenType.WITH, TokenType.ORDINALITY)
-        offset_base = None
+        offset_base = 1 if offset else None
 
         alias = self._parse_table_alias() if with_alias else None
 

@@ -4208,22 +4208,8 @@ class DuckDBGenerator(generator.Generator):
             select = exp.Select(expressions=[unnest_sql]).subquery(alias)
             return self.sql(select)
 
-        offset = expression.args.get("offset")
-        alias = expression.args.get("alias")
-        if (
-            expression.args.get("offset_base") == 0
-            and isinstance(offset, exp.Identifier)
-            and alias
-            and len(alias.columns) == 1
-            and len(expression.expressions) == 1
-        ):
-            unnest = exp.Unnest(expressions=expression.expressions, offset=True)
-            value = exp.column("unnest").as_(alias.columns[0])
-            value.add_comments(alias.comments)
-            query = exp.select(value, (exp.column("ordinality") - 1).as_(offset)).from_(
-                unnest, copy=False
-            )
-            return self.sql(query.subquery(alias.this, copy=False))
+        if query := transforms.unnest_with_offset(expression):
+            return self.sql(query)
 
         return super().unnest_sql(expression)
 

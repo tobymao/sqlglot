@@ -592,6 +592,12 @@ class PostgresGenerator(generator.Generator):
 
                 return f"JSON_ARRAY_ELEMENTS({arg_as_json}){alias}"
 
+            # PostgreSQL before 16 requires an alias for subqueries in FROM.
+            if query := transforms.unnest_with_offset(expression, require_alias=True):
+                if isinstance(expression.parent, exp.Join):
+                    return self.sql(exp.Lateral(this=query))
+                return self.sql(query)
+
         return super().unnest_sql(expression)
 
     def bracket_sql(self, expression: exp.Bracket) -> str:

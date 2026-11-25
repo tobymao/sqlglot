@@ -1065,7 +1065,7 @@ class TestSnowflake(Validator):
             "SELECT AI_CLASSIFY('text', ['travel', 'cooking'], OBJECT_CONSTRUCT('output_mode', 'multi'))"
         )
         self.validate_identity(
-            "SELECT * FROM table AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
+            "SELECT * FROM \"table\" AT (TIMESTAMP => '2024-07-24') UNPIVOT(a FOR b IN (c)) AS pivot_table"
         )
         self.validate_identity(
             "SELECT * FROM quarterly_sales PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2', '2023_Q3', '2023_Q4', '2024_Q1') DEFAULT ON NULL (0)) ORDER BY empid"
@@ -5109,6 +5109,30 @@ class TestSnowflake(Validator):
             "CREATE OR REPLACE FUNCTION repro_fn() RETURNS INT LANGUAGE PYTHON HANDLER = 'fn' RUNTIME_VERSION='3.11' PACKAGES=() AS '\\ndef fn():\\n    return 1\\n'"
         )
 
+    def test_reserved_keywords_as_identifiers(self):
+        for name in ("select", "group", "START", "current_date", "true", "try_cast"):
+            with self.subTest(name=name):
+                query = exp.select(exp.column(name)).from_("t")
+                self.assertEqual(query.sql("snowflake"), f'SELECT "{name}" FROM t')
+
+        query = (
+            exp.select(exp.column("using", table="Join").as_("left"))
+            .from_(exp.table_("lateral").as_("Join"))
+            .with_(
+                exp.TableAlias(
+                    this=exp.to_identifier("lateral"), columns=[exp.to_identifier("using")]
+                ),
+                as_="SELECT 42",
+            )
+        )
+        self.assertEqual(
+            query.sql("snowflake"),
+            'WITH "lateral"(using) AS (SELECT 42) SELECT "Join".using AS left FROM "lateral" AS "Join"',
+        )
+        self.validate_identity(
+            "WITH window AS (SELECT 1 AS window) SELECT window.window FROM window"
+        )
+
     def test_unreserved_keywords_as_identifiers(self):
         for name in ("returning", "glob", "using", "lateral", "exclude"):
             with self.subTest(name=name):
@@ -5440,28 +5464,28 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_all(
             "DESCRIBE TABLE db.table",
             write={
-                "snowflake": "DESCRIBE TABLE db.table",
+                "snowflake": 'DESCRIBE TABLE db."table"',
                 "spark": "DESCRIBE db.table",
             },
         )
         self.validate_all(
             "DESCRIBE db.table",
             write={
-                "snowflake": "DESCRIBE TABLE db.table",
+                "snowflake": 'DESCRIBE TABLE db."table"',
                 "spark": "DESCRIBE db.table",
             },
         )
         self.validate_all(
             "DESC TABLE db.table",
             write={
-                "snowflake": "DESCRIBE TABLE db.table",
+                "snowflake": 'DESCRIBE TABLE db."table"',
                 "spark": "DESCRIBE db.table",
             },
         )
         self.validate_all(
             "DESC VIEW db.table",
             write={
-                "snowflake": "DESCRIBE VIEW db.table",
+                "snowflake": 'DESCRIBE VIEW db."table"',
                 "spark": "DESCRIBE db.table",
             },
         )
@@ -5541,7 +5565,7 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
                 "bigquery": "REGEXP_EXTRACT(subject, pattern, pos, occ)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
                 "presto": 'REGEXP_EXTRACT(subject, pattern, "group")',
-                "snowflake": "REGEXP_SUBSTR(subject, pattern, pos, occ, params, group)",
+                "snowflake": 'REGEXP_SUBSTR(subject, pattern, pos, occ, params, "group")',
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },
         )
@@ -5572,17 +5596,17 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
             },
         )
         self.validate_all(
-            "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
+            "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', \"group\")",
             read={
                 "duckdb": "REGEXP_EXTRACT(subject, pattern, group)",
                 "hive": "REGEXP_EXTRACT(subject, pattern, group)",
                 "presto": "REGEXP_EXTRACT(subject, pattern, group)",
-                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', group)",
+                "snowflake": "REGEXP_SUBSTR(subject, pattern, 1, 1, 'c', \"group\")",
                 "spark": "REGEXP_EXTRACT(subject, pattern, group)",
             },
         )
 
-        self.validate_identity("REGEXP_SUBSTR_ALL(subject, pattern, pos, occ, param, group)")
+        self.validate_identity('REGEXP_SUBSTR_ALL(subject, pattern, pos, occ, param, "group")')
 
         # DuckDB transpilation tests for REGEXP_SUBSTR
         # DuckDB's default (no group) is semantically equivalent to group=0
@@ -6373,7 +6397,7 @@ CREDENTIALS = () WITH (
   SINGLE TRUE
 )""",
                 "snowflake": """COPY INTO 's3://example/data.csv'
-FROM EXTRA.EXAMPLE.TABLE
+FROM EXTRA.EXAMPLE."TABLE"
 CREDENTIALS = ()
 FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=(
   ''
@@ -6395,7 +6419,7 @@ SINGLE = TRUE""",
             """,
             write={
                 "": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION WITH (FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"'), HEADER TRUE, OVERWRITE TRUE, SINGLE TRUE)""",
-                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE.TABLE STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
+                "snowflake": """COPY INTO 's3://example/data.csv' FROM EXTRA.EXAMPLE."TABLE" STORAGE_INTEGRATION = S3_INTEGRATION FILE_FORMAT = (TYPE=CSV COMPRESSION=NONE NULL_IF=('') FIELD_OPTIONALLY_ENCLOSED_BY='"') HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE""",
             },
         )
 

@@ -335,20 +335,20 @@ class TestLineage(unittest.TestCase):
         self.assertEqual(downstream.source_name, "SNOWFLAKE.SCHEMA.MODEL")
         self.assertEqual(
             downstream.source.sql(dialect="snowflake"),
-            "SELECT TABLE.A AS A FROM SNOWFLAKE.SCHEMA.TABLE AS TABLE",
+            'SELECT "TABLE".A AS A FROM SNOWFLAKE.SCHEMA."TABLE" AS "TABLE"',
         )
-        self.assertEqual(downstream.expression.sql(dialect="snowflake"), "TABLE.A AS A")
+        self.assertEqual(downstream.expression.sql(dialect="snowflake"), '"TABLE".A AS A')
         self.assertEqual(len(downstream.downstream), 1)
 
         downstream = downstream.downstream[0]
         self.assertEqual(downstream.name, "TABLE.A")
         self.assertEqual(
             downstream.source.sql(dialect="snowflake"),
-            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
+            'SNOWFLAKE.SCHEMA."TABLE" AS "TABLE"',
         )
         self.assertEqual(
             downstream.expression.sql(dialect="snowflake"),
-            "SNOWFLAKE.SCHEMA.TABLE AS TABLE",
+            'SNOWFLAKE.SCHEMA."TABLE" AS "TABLE"',
         )
 
     def test_subquery(self) -> None:

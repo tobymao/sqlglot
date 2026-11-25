@@ -65,7 +65,7 @@ SELECT a AS a FROM x UNION SELECT a AS a FROM x;
 
 # dialect: snowflake
 SELECT a /* sqlglot.meta case_sensitive */, b FROM table /* sqlglot.meta case_sensitive */;
-SELECT a /* sqlglot.meta case_sensitive */, B FROM table /* sqlglot.meta case_sensitive */;
+SELECT a /* sqlglot.meta case_sensitive */, B FROM "table" /* sqlglot.meta case_sensitive */;
 
 # dialect: redshift
 SELECT COALESCE(json_val.a /* sqlglot.meta case_sensitive */, json_val.A /* sqlglot.meta case_sensitive */) FROM tbl;

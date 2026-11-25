@@ -32,8 +32,6 @@ from sqlglot.helper import find_new_name, flatten, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
-    RESERVED_CONTEXT_FUNCTIONS,
-    RESERVED_SCALAR_KEYWORDS,
     TIMESTAMP_TYPES,
     SnowflakeParser,
     build_object_construct,
@@ -482,6 +480,23 @@ class SnowflakeGenerator(generator.Generator):
         "with",
     }
 
+    RESERVED_CONTEXT_FUNCTIONS = {
+        "CURRENT_DATE",
+        "CURRENT_TIME",
+        "CURRENT_TIMESTAMP",
+        "CURRENT_USER",
+        "LOCALTIME",
+        "LOCALTIMESTAMP",
+    }
+    RESERVED_SCALAR_KEYWORDS = RESERVED_CONTEXT_FUNCTIONS | {
+        "CASE",
+        "CAST",
+        "FALSE",
+        "TRUE",
+        "TRY_CAST",
+        "WHEN",
+    }
+
     RESERVED_TABLE_KEYWORDS = {
         "CROSS",
         "FULL",
@@ -712,54 +727,46 @@ class SnowflakeGenerator(generator.Generator):
     }
 
     def identifier_sql(self, expression: exp.Identifier) -> str:
-        if not expression.quoted:
-            name = expression.name.upper()
-            parent = expression.parent
-            key = expression.arg_key
-            if name in RESERVED_SCALAR_KEYWORDS:
-                # A leading CASE or CURRENT_DATE starts an expression, but t.case and
-                # AS current_date are ordinary, case-insensitive identifiers.
-                if isinstance(parent, exp.Column):
-                    needs_quotes = not parent.is_star and expression is parent.parts[0]
-                elif isinstance(parent, exp.ColumnDef):
-                    needs_quotes = name in RESERVED_CONTEXT_FUNCTIONS
-                else:
-                    needs_quotes = not (
-                        isinstance(parent, (exp.Table, exp.TableAlias))
-                        or key == "alias"
-                        or (key == "expression" and isinstance(parent, exp.Dot))
-                    )
-                qualifier = (isinstance(parent, exp.Column) and key != "this") or (
-                    isinstance(parent, exp.Dot) and key == "this"
-                )
-            else:
-                # AS aliases (including PIVOT aliases) and their qualifiers accept join keywords.
+        parent = expression.parent
+        name = expression.name.upper()
+        if name in self.RESERVED_SCALAR_KEYWORDS:
+            if isinstance(parent, exp.Column):
+                quote = not parent.is_star and expression is parent.parts[0]
+                qualifier = expression is not parent.this
+            elif isinstance(parent, exp.Dot):
+                quote = parent.this is expression and not parent.is_star
                 qualifier = True
-                needs_quotes = name in self.RESERVED_TABLE_KEYWORDS and (
-                    (isinstance(parent, exp.Table) and expression is seq_get(parent.parts, 0))
-                    or (
-                        isinstance(parent, exp.TableAlias)
-                        and key == "this"
-                        and isinstance(parent.parent, exp.CTE)
-                    )
-                    or (isinstance(parent, exp.CTE) and key == "alias")
+            else:
+                quote = expression.arg_key != "alias" and not isinstance(
+                    parent, (exp.Table, exp.TableAlias, exp.ColumnDef, exp.Schema, exp.Join)
                 )
-            if needs_quotes:
-                expression = expression.copy()
-                if qualifier and not (
-                    expression.meta_get("case_sensitive")
-                    or (parent and parent.meta_get("case_sensitive"))
-                ):
-                    self.dialect.normalize_identifier(expression)
-                elif not qualifier and expression.name in RESERVED_CONTEXT_FUNCTIONS:
-                    # Even "CURRENT_DATE" calls the function in a scalar expression.
-                    if isinstance(parent, exp.ColumnDef):
-                        self.unsupported(f'Snowflake forbids the column definition "{name}"')
-                    else:
-                        self.unsupported(
-                            f'Snowflake requires a table qualifier to read the column "{name}"'
-                        )
-                expression.set("quoted", True)
+                qualifier = False
+            if quote and not qualifier and expression.name in self.RESERVED_CONTEXT_FUNCTIONS:
+                self.unsupported(
+                    f'Snowflake requires a table qualifier to read the column "{name}"'
+                )
+        elif name in self.RESERVED_TABLE_KEYWORDS and (
+            (isinstance(parent, exp.Table) and expression is seq_get(parent.parts, 0))
+            or (
+                isinstance(parent, exp.TableAlias)
+                and parent.this is expression
+                and isinstance(parent.parent, exp.CTE)
+            )
+            or (isinstance(parent, exp.CTE) and expression.arg_key == "alias")
+        ):
+            # FROM join needs quotes, but AS join and join.c already bind case-insensitively.
+            quote = qualifier = True
+        else:
+            return super().identifier_sql(expression)
+
+        if quote and not expression.quoted:
+            expression = expression.copy()
+            if qualifier and not (
+                expression.meta_get("case_sensitive")
+                or (parent and parent.meta_get("case_sensitive"))
+            ):
+                self.dialect.normalize_identifier(expression)
+            expression.set("quoted", True)
         return super().identifier_sql(expression)
 
     def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:

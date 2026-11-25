@@ -1353,14 +1353,17 @@ class TestParser(unittest.TestCase):
 
     def test_values_as_identifier(self):
         sql = "SELECT values FROM t WHERE values + 1 > x"
-        for dialect in ("bigquery", "clickhouse", "duckdb", "postgres", "redshift"):
+        for dialect in (
+            "bigquery",
+            "clickhouse",
+            "duckdb",
+            "postgres",
+            "redshift",
+            "snowflake",
+        ):
             with self.subTest(dialect):
-                self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), sql)
-
-        self.assertEqual(
-            parse_one(sql, dialect="snowflake").sql("snowflake"),
-            'SELECT "values" FROM t WHERE "values" + 1 > x',
-        )
+                expected = sql.replace("values", '"values"') if dialect == "snowflake" else sql
+                self.assertEqual(parse_one(sql, dialect=dialect).sql(dialect=dialect), expected)
 
     def test_alter_set(self):
         sqls = [

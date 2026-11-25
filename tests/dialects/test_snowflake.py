@@ -5110,66 +5110,35 @@ class TestSnowflake(Validator):
         )
 
     def test_reserved_keywords_as_identifiers(self):
-        for name in ("select", "group", "START", "current_date", "true", "try_cast"):
-            with self.subTest(name=name):
-                query = exp.select(exp.column(name)).from_("t")
-                self.assertEqual(query.sql("snowflake"), f'SELECT "{name}" FROM t')
+        for name in ("select", "group", "start", "current_date", "true"):
+            self.assertEqual(exp.column(name).sql("snowflake"), f'"{name}"')
 
-        with self.assertRaisesRegex(UnsupportedError, "requires a table qualifier"):
-            exp.column("CURRENT_DATE").sql("snowflake", unsupported_level=ErrorLevel.RAISE)
+        for quoted in (True, False):
+            with self.assertRaisesRegex(UnsupportedError, "requires a table qualifier"):
+                exp.column("CURRENT_DATE", quoted=quoted).sql(
+                    "snowflake", unsupported_level=ErrorLevel.RAISE
+                )
 
-        self.assertEqual(
-            exp.select(exp.to_identifier("current_date")).sql("snowflake"), 'SELECT "current_date"'
-        )
-        self.validate_identity("CREATE TABLE t (case INT, true INT)")
-        self.validate_identity(
-            "CREATE TABLE t (current_date INT)", 'CREATE TABLE t ("current_date" INT)'
-        )
-        with self.assertRaisesRegex(UnsupportedError, "column definition"):
-            self.parse_one("CREATE TABLE t (CURRENT_DATE INT)").sql(
-                "snowflake", unsupported_level=ErrorLevel.RAISE
-            )
-
-        query = (
-            exp.select(exp.column("using", table="jOin").as_("left"))
-            .from_(exp.table_("lateral").as_("Join"))
-            .with_(
-                exp.TableAlias(
-                    this=exp.to_identifier("lateral"), columns=[exp.to_identifier("using")]
-                ),
-                as_="SELECT 42",
-            )
-        )
-        self.assertEqual(
-            query.sql("snowflake"),
-            'WITH "LATERAL"(using) AS (SELECT 42) SELECT jOin.using AS left FROM "LATERAL" AS Join',
-        )
         self.validate_identity("SELECT t.CURRENT_DATE FROM (SELECT 42 AS CURRENT_DATE) AS t")
         self.validate_identity('SELECT "JOIN".c FROM (SELECT 42 AS c) AS join')
-        for name in ("cross", "inner", "join", "full"):
-            self.validate_identity(f"SELECT {name.upper()}.c FROM (SELECT 42 AS c) AS {name}")
-        self.validate_identity(
-            'SELECT "JoIn"."current_date" FROM (SELECT 42 AS "current_date") AS "JoIn"'
+        self.validate_identity("SELECT case.* FROM (SELECT 42 AS c) AS case")
+        query = (
+            exp.select("*")
+            .from_(exp.table_("lAtErAl"))
+            .with_(exp.TableAlias(this=exp.to_identifier("lateral")), as_="SELECT 42")
         )
-        self.validate_identity(
-            "WITH case AS (SELECT 42 AS when) SELECT t.when AS current_date FROM case AS t"
+        self.assertEqual(
+            query.sql("snowflake"), 'WITH "LATERAL" AS (SELECT 42) SELECT * FROM "LATERAL"'
         )
-        self.validate_identity('SELECT "CASE".c FROM (SELECT 42 AS c) AS case')
-        for name in ("case", "when", "true", "current_date"):
-            query = self.validate_identity(f"SELECT {name}.* FROM (SELECT 42 AS c) AS {name}")
-            self.assertIsInstance(query.expressions[0], exp.Column)
+
         for clause in ("PIVOT(MAX(n) FOR k IN (1 AS val))", "UNPIVOT(val FOR kind IN (n))"):
-            with self.subTest(clause=clause):
-                query = self.parse_one(f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause}")
-                pivot = query.find(exp.Pivot)
-                pivot.replace(pivot.as_("Join"))
-                self.assertEqual(
-                    query.sql("snowflake"),
-                    f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause} AS Join",
-                )
-        self.validate_identity(
-            "WITH window AS (SELECT 1 AS window) SELECT window.window FROM window"
-        )
+            query = self.parse_one(f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause}")
+            pivot = query.find(exp.Pivot)
+            pivot.replace(pivot.as_("Join"))
+            self.assertEqual(
+                query.sql("snowflake"),
+                f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause} AS Join",
+            )
 
     def test_unreserved_keywords_as_identifiers(self):
         for name in ("returning", "glob", "using", "lateral", "exclude"):

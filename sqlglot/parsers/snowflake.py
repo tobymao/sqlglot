@@ -71,23 +71,6 @@ def _build_date_from_parts(args: list) -> exp.DateFromParts:
     )
 
 
-RESERVED_CONTEXT_FUNCTIONS = {
-    "CURRENT_DATE",
-    "CURRENT_TIME",
-    "CURRENT_TIMESTAMP",
-    "CURRENT_USER",
-    "LOCALTIME",
-    "LOCALTIMESTAMP",
-}
-RESERVED_SCALAR_KEYWORDS = RESERVED_CONTEXT_FUNCTIONS | {
-    "CASE",
-    "CAST",
-    "FALSE",
-    "TRUE",
-    "TRY_CAST",
-    "WHEN",
-}
-
 # Timestamp types used in _build_datetime
 TIMESTAMP_TYPES = {
     exp.DType.TIMESTAMP: "TO_TIMESTAMP",
@@ -1271,22 +1254,6 @@ class SnowflakeParser(parser.Parser):
             return this
 
         return super()._parse_limit(this, top=top, skip_limit_token=skip_limit_token)
-
-    def _parse_field_def(self) -> exp.Expr | None:
-        if self._match_texts(RESERVED_SCALAR_KEYWORDS):
-            return self._parse_column_def(self._identifier_expression(quoted=False))
-        return super()._parse_field_def()
-
-    def _parse_column_reference(self) -> exp.Expr | None:
-        # CURRENT_DATE.* is a qualified wildcard even though CURRENT_DATE is a function.
-        if (
-            self._next.token_type == TokenType.DOT
-            and self._index + 2 < self._tokens_size
-            and self._tokens[self._index + 2].token_type == TokenType.STAR
-            and self._match_texts(RESERVED_SCALAR_KEYWORDS)
-        ):
-            return self.expression(exp.Column(this=self._identifier_expression(quoted=False)))
-        return super()._parse_column_reference()
 
     def _parse_id_var(
         self,

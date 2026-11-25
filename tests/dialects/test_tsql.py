@@ -1928,6 +1928,16 @@ WHERE
                         f"SELECT DATEPART({canonical}, '2024-11-21')",
                     )
 
+        for dow, doy in (
+            ("EXTRACT(dow FROM x)", "EXTRACT(doy FROM x)"),
+            ("EXTRACT('DoW' FROM x)", "EXTRACT('DoY' FROM x)"),
+            ("DATE_PART('dow', x)", "DATE_PART('doy', x)"),
+        ):
+            self.validate_all(
+                "SELECT 2 * ((DATEPART(WEEKDAY, x) + @@DATEFIRST - 1) % 7), DATEPART(DAYOFYEAR, x) FROM t",
+                read={"postgres": f"SELECT 2 * {dow}, {doy} FROM t"},
+            )
+
         self.validate_all(
             "SELECT DATEPART(month,'1970-01-01')",
             write={

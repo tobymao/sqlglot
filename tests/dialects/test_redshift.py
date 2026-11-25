@@ -100,6 +100,7 @@ class TestRedshift(Validator):
                 )
 
     def test_redshift(self):
+        self.validate_identity("SELECT 0 BETWEEN -60 AND +120")
         self.validate_identity("SELECT COSH(1.5)")
         self.validate_identity(
             "ROUND(CAST(a AS DOUBLE PRECISION) / CAST(b AS DOUBLE PRECISION), 2)"

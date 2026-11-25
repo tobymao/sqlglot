@@ -318,3 +318,13 @@ WITH "_t1" AS (SELECT "_t0"."a" + 1 AS "_c0" FROM "c"."db"."x" AS "_t0" ORDER BY
 # title: DML shell references live outside every scope, so the statement is left untouched
 MERGE INTO x USING (SELECT b FROM y) AS s ON x.b = s.b WHEN MATCHED THEN UPDATE SET a = 1;
 MERGE INTO "c"."db"."x" USING (SELECT "y"."b" AS "b" FROM "c"."db"."y" AS "y") AS "s" ON "x"."b" = "s"."b" WHEN MATCHED THEN UPDATE SET "a" = 1;
+
+# title: MATCH_RECOGNIZE alias is canonicalized and pattern variable stars are left alone
+# dialect: snowflake
+SELECT m FROM x AS e MATCH_RECOGNIZE (PARTITION BY a ORDER BY b MEASURES COUNT(e.*) AS m PATTERN (e+) DEFINE e AS TRUE);
+SELECT "_t1"."M" AS "M" FROM "C"."DB"."X" AS "_t0" MATCH_RECOGNIZE (PARTITION BY "_t0"."A" ORDER BY "_t0"."B" MEASURES COUNT("E".*) AS "M" PATTERN (e+) DEFINE "E" AS TRUE) "_t1";
+
+# title: MATCH_RECOGNIZE pattern variable references follow its input's canonical column names
+# dialect: trino
+SELECT * FROM (SELECT a, b FROM x) AS s MATCH_RECOGNIZE (PARTITION BY a ORDER BY b MEASURES LAST(v.b) AS m ALL ROWS PER MATCH PATTERN (v+) DEFINE v AS b > PREV(v.b)) AS z;
+SELECT "_t2"."_c0" AS "a", "_t2"."_c1" AS "b", "_t2"."m" AS "m" FROM (SELECT "_t0"."a" AS "_c0", "_t0"."b" AS "_c1" FROM "c"."db"."x" AS "_t0") AS "_t1" MATCH_RECOGNIZE (PARTITION BY "_t1"."_c0" ORDER BY "_t1"."_c1" MEASURES LAST("V"."_c1") AS "m" ALL ROWS PER MATCH PATTERN (v+) DEFINE "V" AS "_c1" > PREV("V"."_c1")) "_t2";

@@ -126,7 +126,12 @@ def _pattern_variables(match: exp.MatchRecognize, dialect: Dialect) -> list[exp.
         for definition in match.args.get("define") or []
         if isinstance(alias := definition.args.get("alias"), exp.Identifier)
     ]
-    names = {canonical(i.name, i.quoted) for i in defines}
+    subsets = [
+        identifier
+        for subset in match.args.get("subset") or []
+        for identifier in subset.find_all(exp.Identifier)
+    ]
+    names = {canonical(i.name, i.quoted) for i in (*defines, *subsets)}
 
     if pattern := match.args.get("pattern"):
         try:
@@ -143,7 +148,7 @@ def _pattern_variables(match: exp.MatchRecognize, dialect: Dialect) -> list[exp.
             )
         )
 
-    identifiers = list(defines)
+    identifiers = [*defines, *subsets]
     for arg in (*(match.args.get("measures") or []), *(match.args.get("define") or [])):
         for node in arg.walk(prune=lambda n: isinstance(n, exp.Query)):
             if not isinstance(node, exp.Column):

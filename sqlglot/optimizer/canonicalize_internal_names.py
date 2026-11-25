@@ -4,7 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import name_sequence, seq_get
-from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, ScopeType, find_all_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -97,6 +97,7 @@ def canonicalize_internal_names(expression: E) -> E:
 
             alias_holder: exp.Expr | None = None
             is_base_source = isinstance(source, exp.Table)
+            is_match_recognize = False
 
             if is_base_source:
                 canon_t = scope_table.get(id(source), "")
@@ -124,6 +125,9 @@ def canonicalize_internal_names(expression: E) -> E:
                     alias_holder = cte
                 elif source.is_udtf:
                     alias_holder = src_expr
+                elif source.scope_type == ScopeType.MATCH_RECOGNIZE:
+                    alias_holder = src_expr
+                    is_match_recognize = True
 
                 # A UDTF (unlike a CTE/subquery) can be a source in multiple scopes, so keep its alias_holder and share its column map across them
                 is_udtf_source = alias_holder is src_expr
@@ -169,7 +173,12 @@ def canonicalize_internal_names(expression: E) -> E:
                     continue
 
                 old_name = src_col.name
-                preserve_col = is_base_source or old_name in struct_field_names
+                # MATCH_RECOGNIZE outputs not renamed by its input keep their names
+                preserve_col = (
+                    is_base_source
+                    or old_name in struct_field_names
+                    or (is_match_recognize and old_name not in child_output)
+                )
                 canon_col = name_map.get(old_name)
 
                 if canon_col is None:
@@ -283,6 +292,16 @@ def canonicalize_internal_names(expression: E) -> E:
                     output_map.setdefault(k, v)
         elif scope.is_udtf and scope.subquery_scopes:
             output_map = scope_outputs.get(id(scope.subquery_scopes[0].expression), {}).copy()
+        elif scope.scope_type == ScopeType.MATCH_RECOGNIZE:
+            for source in scope.sources.values():
+                if isinstance(source, Scope):
+                    output_map.update(scope_outputs.get(id(source.expression), {}))
+
+            # Pattern variable references, e.g. `A.x`, read the input's columns
+            scope_columns = {id(col) for col in scope.columns}
+            for col in find_all_in_scope(scope_expr, exp.Column):
+                if col.table and id(col) not in scope_columns and col.name in output_map:
+                    _canon(col.this, output_map[col.name])
 
         scope_outputs[id(scope_expr)] = output_map
 

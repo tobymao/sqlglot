@@ -222,7 +222,10 @@ class Scope:
                 self._column_index.add(id(node))
 
                 if isinstance(node.this, exp.Star):
-                    self._stars.append(node)
+                    if not (
+                        isinstance(self.expression, exp.MatchRecognize) and _is_pattern_column(node)
+                    ):
+                        self._stars.append(node)
                 else:
                     self._raw_columns.append(node)
             elif isinstance(node, exp.Table) and not isinstance(node.parent, exp.JoinHint):

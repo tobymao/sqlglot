@@ -880,6 +880,7 @@ class MatchRecognize(Expression, DerivedTable):
         "rows": False,
         "after": False,
         "pattern": False,
+        "subset": False,
         "define": False,
         "alias": False,
         "joins": False,

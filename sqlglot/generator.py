@@ -3523,6 +3523,8 @@ class Generator:
         after = self.seg(after) if after else ""
         pattern = self.sql(expression, "pattern")
         pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
+        subset = self.expressions(expression, key="subset")
+        subset = self.seg(f"SUBSET{self.seg(subset)}") if subset else ""
         definition_sqls = [
             f"{self.sql(definition, 'alias')} AS {self.sql(definition, 'this')}"
             for definition in expression.args.get("define", [])
@@ -3537,9 +3539,10 @@ class Generator:
                 rows,
                 after,
                 pattern,
+                subset,
                 define,
             )
-        )
+        ).lstrip()
         alias = self.sql(expression, "alias")
         alias = f" {alias}" if alias else ""
         joins = self.indent(

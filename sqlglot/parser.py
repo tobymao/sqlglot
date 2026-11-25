@@ -4705,6 +4705,13 @@ class Parser:
             )
         )
 
+    def _parse_match_recognize_subset(self) -> exp.EQ:
+        this = self._parse_id_var()
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.EQ(this=this, expression=exp.Tuple(expressions=self._parse_wrapped_id_vars()))
+        )
+
     def _parse_match_recognize(self, this: exp.Expr) -> exp.Expr:
         if not self._match(TokenType.MATCH_RECOGNIZE):
             return this
@@ -4777,6 +4784,12 @@ class Parser:
         else:
             pattern = None
 
+        subset = (
+            self._parse_csv(self._parse_match_recognize_subset)
+            if self._match_text_seq("SUBSET")
+            else None
+        )
+
         define = (
             self._parse_csv(self._parse_name_as_expression)
             if self._match_text_seq("DEFINE")
@@ -4794,6 +4807,7 @@ class Parser:
                 rows=rows,
                 after=after,
                 pattern=pattern,
+                subset=subset,
                 define=define,
                 alias=self._parse_table_alias(),
             )

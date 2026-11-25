@@ -277,7 +277,7 @@ class TestParser(unittest.TestCase):
             (
                 "snowflake",
                 'SELECT * FROM t MATCH_RECOGNIZE(MEASURES "final" AS f PATTERN (a) DEFINE a AS TRUE)',
-                'SELECT * FROM t MATCH_RECOGNIZE ( MEASURES "final" AS f PATTERN (a) DEFINE a AS TRUE)',
+                'SELECT * FROM t MATCH_RECOGNIZE (MEASURES "final" AS f PATTERN (a) DEFINE a AS TRUE)',
             ),
         ]:
             with self.subTest(f"{dialect}: {sql}"):

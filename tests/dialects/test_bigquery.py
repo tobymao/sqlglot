@@ -4085,6 +4085,13 @@ OPTIONS (
             "SELECT x, off FROM UNNEST([10, 20, 30]) AS x WITH OFFSET AS off",
             write={
                 "duckdb": "SELECT x, off FROM (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST([10, 20, 30]) WITH ORDINALITY)",
+                "postgres": "SELECT x, off FROM (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST(ARRAY[10, 20, 30]) WITH ORDINALITY) AS x",
+            },
+        )
+        self.validate_all(
+            "WITH t AS (SELECT [10, 20] AS arr) SELECT x, off FROM t CROSS JOIN UNNEST(t.arr) AS x WITH OFFSET AS off WHERE off = 1",
+            write={
+                "postgres": "WITH t AS (SELECT ARRAY[10, 20] AS arr) SELECT x, off FROM t CROSS JOIN LATERAL (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST(t.arr) WITH ORDINALITY) AS x WHERE off = 1",
             },
         )
         self.validate_all(
@@ -4097,6 +4104,7 @@ OPTIONS (
             "SELECT _t0.*, off FROM (SELECT 42 AS id) AS _t0 CROSS JOIN UNNEST(ARRAY(SELECT x FROM UNNEST([7]) AS x)) AS y /* value */ WITH OFFSET AS off",
             write={
                 "duckdb": "SELECT _t0.*, off FROM (SELECT 42 AS id) AS _t0 CROSS JOIN (SELECT unnest AS y /* value */, ordinality - 1 AS off FROM UNNEST(ARRAY(SELECT x FROM UNNEST([7]) AS _t0(x))) WITH ORDINALITY)",
+                "postgres": "SELECT _t0.*, off FROM (SELECT 42 AS id) AS _t0 CROSS JOIN LATERAL (SELECT unnest AS y /* value */, ordinality - 1 AS off FROM UNNEST(ARRAY(SELECT x FROM UNNEST(ARRAY[7]) AS _t0(x))) WITH ORDINALITY) AS y",
             },
         )
 

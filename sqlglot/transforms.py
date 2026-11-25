@@ -287,6 +287,32 @@ def remove_precision_parameterized_types(expression: exp.Expr) -> exp.Expr:
     return expression
 
 
+def unnest_with_offset(
+    expression: exp.Unnest, *, require_alias: bool = False
+) -> exp.Subquery | None:
+    """Expose zero-based offsets using the native UNNEST and ordinality columns."""
+    offset = expression.args.get("offset")
+    alias = expression.args.get("alias")
+    if (
+        expression.args.get("offset_base") == 0
+        and isinstance(offset, exp.Identifier)
+        and alias
+        and len(alias.columns) == 1
+        and len(expression.expressions) == 1
+        and not expression.args.get("explode_array")
+    ):
+        unnest = exp.Unnest(expressions=expression.expressions, offset=True)
+        value = exp.column("unnest").as_(alias.columns[0])
+        value.add_comments(alias.comments)
+        query = exp.select(value, (exp.column("ordinality") - 1).as_(offset)).from_(
+            unnest, copy=False
+        )
+        table_alias = alias.this or (alias.columns[0] if require_alias else None)
+        return query.subquery(table_alias, copy=False)
+
+    return None
+
+
 def unqualify_unnest(expression: exp.Expr) -> exp.Expr:
     """Remove references to unnest table aliases, added by the optimizer's qualify_columns step."""
     from sqlglot.optimizer.scope import find_all_in_scope

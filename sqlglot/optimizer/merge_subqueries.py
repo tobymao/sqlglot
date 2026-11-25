@@ -8,7 +8,7 @@ from itertools import chain
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
 from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
-from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
+from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
     from sqlglot._typing import E
@@ -472,6 +472,7 @@ def _mergeable(
     # Single pass over the projections: replaces the separate AggFunc/Select/Explode and
     # Window tree walks, and precomputes what the checks below need per-projection.
     window_aliases: set[str] = set()
+    volatile_aliases: set[str] = set()
     number_literal_aliases: set[str] = set()
     column_free_aliases: set[str] = set()
     projections: dict[str, exp.Expr] = {}
@@ -487,10 +488,28 @@ def _mergeable(
                 return False
             if isinstance(node, exp.Window):
                 window_aliases.add(name)
+            elif isinstance(node, exp.NONDETERMINISTIC_FUNCTIONS):
+                volatile_aliases.add(name)
             if isinstance(node, exp.Column):
                 has_column = True
         if not has_column:
             column_free_aliases.add(name)
+
+    if volatile_aliases:
+        seen: set[str] = set()
+        for column in outer_scope.source_columns(inner_name):
+            name = column.name
+            if name in volatile_aliases:
+                if name in seen or column.find_ancestor(exp.Lambda, exp.Select) is not outer:
+                    return False
+                seen.add(name)
+
+        # Even one reference may be evaluated repeatedly if the outer query multiplies rows.
+        if seen and (
+            outer_scope.find(exp.Join, exp.Lateral)
+            or any(find_in_scope(s, *exp.SET_RETURNING_FUNCTIONS) for s in outer.selects)
+        ):
+            return False
 
     external_sources = {column.table for column in inner_scope.external_columns}
     if external_sources:

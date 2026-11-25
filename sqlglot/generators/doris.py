@@ -30,6 +30,7 @@ class DorisGenerator(MySQLGenerator):
         return f"{sql} USING ANALYZER {analyzer}" if analyzer else sql
 
     LAST_DAY_SUPPORTS_DATE_PART = False
+    NULL_ORDERING_SUPPORTED: bool | None = True
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
     VARCHAR_REQUIRES_SIZE = False
     WITH_PROPERTIES_PREFIX = "PROPERTIES"

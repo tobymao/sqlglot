@@ -33,6 +33,27 @@ class TestTrino(Validator):
         query.expressions[0].this.assert_is(exp.CurrentPath)
         query.expressions[1].this.assert_is(exp.Column)
 
+        for sql in ("SELECT CURRENT_PATH()", "SELECT CURRENT_PATH(1)"):
+            with self.subTest(sql=sql):
+                expr = parse_one(sql, dialect="duckdb")
+                expr.expressions[0].assert_is(exp.Anonymous)
+                self.assertEqual(expr.sql("duckdb"), sql)
+
+    def test_group_by_auto(self):
+        self.validate_identity(
+            "SELECT x, SUM(y) FROM (VALUES (1, 2), (1, 3)) AS t(x, y) GROUP BY AUTO"
+        )
+        self.validate_identity(
+            'SELECT "auto", COUNT(*) FROM (VALUES (1), (1)) AS t("auto") GROUP BY "auto"'
+        )
+        self.validate_identity(
+            "SELECT x, COUNT(*) FROM (VALUES (1, 2)) AS t(x, y) GROUP BY DISTINCT y, AUTO"
+        )
+        self.validate_all(
+            'SELECT COUNT(*) FROM (VALUES (1), (1)) AS t("auto") GROUP BY "auto"',
+            read={"athena": "SELECT COUNT(*) FROM (VALUES (1), (1)) AS t(auto) GROUP BY auto"},
+        )
+
     def test_current_schema(self):
         self.validate_all(
             'SELECT CURRENT_SCHEMA, "current_schema" FROM (VALUES (42)) AS t("current_schema")',

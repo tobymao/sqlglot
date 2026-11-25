@@ -282,6 +282,7 @@ class TokenType(IntEnum):
     CUBE = auto()
     CURRENT_DATE = auto()
     CURRENT_DATETIME = auto()
+    CURRENT_PATH = auto()
     CURRENT_SCHEMA = auto()
     CURRENT_TIME = auto()
     CURRENT_TIMESTAMP = auto()

@@ -767,6 +767,7 @@ class Parser:
         TokenType.CONSTRAINT,
         TokenType.COPY,
         TokenType.CUBE,
+        TokenType.CURRENT_PATH,
         TokenType.CURRENT_SCHEMA,
         TokenType.DECLARE,
         TokenType.DEFAULT,
@@ -918,6 +919,7 @@ class Parser:
         TokenType.COMMAND,
         TokenType.CURRENT_DATE,
         TokenType.CURRENT_DATETIME,
+        TokenType.CURRENT_PATH,
         TokenType.CURRENT_SCHEMA,
         TokenType.CURRENT_TIMESTAMP,
         TokenType.CURRENT_TIME,
@@ -1946,6 +1948,8 @@ class Parser:
 
     # Whether TABLE name can be used as shorthand for SELECT * FROM name.
     SUPPORTS_TABLE_QUERY: t.ClassVar = False
+
+    SUPPORTS_GROUP_BY_AUTO: t.ClassVar = False
 
     # Whether field names can be digit-prefixed, e.g. data.144A_FLAG or data.144 (BigQuery)
     SUPPORTS_DIGIT_PREFIXED_FIELD_NAMES: t.ClassVar = False
@@ -5842,15 +5846,7 @@ class Parser:
             if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
                 break
 
-            elements["expressions"].extend(
-                self._parse_csv(
-                    lambda: (
-                        self._parse_grouping_sets()
-                        or self._parse_cube_or_rollup()
-                        or self._parse_disjunction()
-                    )
-                )
-            )
+            elements["expressions"].extend(self._parse_csv(self._parse_grouping_element))
 
             before_with_index = self._index
 
@@ -5871,6 +5867,14 @@ class Parser:
                 break
 
         return self.expression(exp.Group(**elements), comments=comments)  # type: ignore
+
+    def _parse_grouping_element(self) -> exp.Expr | None:
+        if self.SUPPORTS_GROUP_BY_AUTO and self._match_text_seq("AUTO"):
+            return self.expression(exp.Var(this="AUTO"))
+
+        return (
+            self._parse_grouping_sets() or self._parse_cube_or_rollup() or self._parse_disjunction()
+        )
 
     def _parse_cube_or_rollup(self, with_prefix: bool = False) -> exp.Cube | exp.Rollup | None:
         if self._match(TokenType.CUBE):

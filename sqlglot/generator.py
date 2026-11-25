@@ -167,7 +167,6 @@ class Generator:
             f"CREDENTIALS=({self.expressions(e, 'expressions', sep=' ')})"
         ),
         exp.CurrentCatalog: lambda *_: "CURRENT_CATALOG",
-        exp.CurrentPath: lambda *_: "CURRENT_PATH",
         exp.SessionUser: lambda *_: "SESSION_USER",
         exp.DateFormatColumnConstraint: lambda self, e: f"FORMAT {self.sql(e, 'this')}",
         exp.DefaultColumnConstraint: lambda self, e: f"DEFAULT {self.sql(e, 'this')}",

@@ -23,7 +23,6 @@ class Trino(Presto):
         COMMANDS = Presto.Tokenizer.COMMANDS - {TokenType.EXECUTE}
         KEYWORDS = {
             **Presto.Tokenizer.KEYWORDS,
-            "CURRENT_PATH": TokenType.CURRENT_PATH,
             "REFRESH": TokenType.REFRESH,
             "DECLARE": TokenType.DECLARE,
         }

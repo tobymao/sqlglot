@@ -5,7 +5,6 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot.expressions.core import (
-    Condition,
     Expression,
     Func,
     Binary,
@@ -271,7 +270,7 @@ class CurrentOrganizationUser(Expression, Func):
     arg_types = {}
 
 
-class CurrentPath(Expression, Condition):
+class CurrentPath(Expression, Func):
     arg_types = {}
 
 

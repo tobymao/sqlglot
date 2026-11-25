@@ -35,8 +35,12 @@ class TrinoParser(PrestoParser):
     NO_PAREN_FUNCTIONS = {
         **PrestoParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
-        TokenType.CURRENT_PATH: exp.CurrentPath,
         TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
+    }
+
+    NO_PAREN_FUNCTION_PARSERS = {
+        **PrestoParser.NO_PAREN_FUNCTION_PARSERS,
+        "CURRENT_PATH": lambda self: self.expression(exp.CurrentPath()),
     }
 
     FUNCTIONS = {

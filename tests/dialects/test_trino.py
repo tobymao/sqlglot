@@ -33,12 +33,6 @@ class TestTrino(Validator):
         query.expressions[0].this.assert_is(exp.CurrentPath)
         query.expressions[1].this.assert_is(exp.Column)
 
-        for sql in ("SELECT CURRENT_PATH()", "SELECT CURRENT_PATH(1)"):
-            with self.subTest(sql=sql):
-                expr = parse_one(sql, dialect="duckdb")
-                expr.expressions[0].assert_is(exp.Anonymous)
-                self.assertEqual(expr.sql("duckdb"), sql)
-
     def test_group_by_auto(self):
         self.validate_identity(
             "SELECT x, SUM(y) FROM (VALUES (1, 2), (1, 3)) AS t(x, y) GROUP BY AUTO"

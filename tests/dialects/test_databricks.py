@@ -6,6 +6,41 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_reserved_table_aliases(self):
+        query = (
+            exp.select(exp.column("anti", "LeFt").as_("union"))
+            .from_(exp.to_table("mask").as_("LeFt", table=["anti"]))
+            .with_("mask", as_=exp.select("42"))
+        )
+        self.assertEqual(
+            query.sql(self.dialect),
+            "WITH mask AS (SELECT 42) SELECT LeFt.anti AS union FROM mask AS `LeFt`(anti)",
+        )
+
+        for alias in ("anti", "join", "mask", "union"):
+            with self.subTest(alias=alias):
+                table = exp.to_table("t").as_(alias)
+                query = exp.select("*").from_(table).with_("t", as_="SELECT 1")
+                self.assertEqual(
+                    query.sql(self.dialect), f"WITH t AS (SELECT 1) SELECT * FROM t AS `{alias}`"
+                )
+
+    def test_literal_column_names(self):
+        query = exp.select(
+            exp.column("NuLl"),
+            exp.column("true"),
+            exp.column("false"),
+            exp.column("true", "false"),
+            "NULL",
+            "TRUE",
+            "FALSE",
+        ).from_(exp.values([(1, 2, 3)], alias="false", columns=["NuLl", "true", "false"]))
+        self.assertEqual(
+            query.sql(self.dialect),
+            "SELECT `NuLl`, `true`, `false`, `false`.true, NULL, TRUE, FALSE "
+            "FROM VALUES (1, 2, 3) AS false(NuLl, true, false)",
+        )
+
     def test_unnest(self):
         self.validate_all(
             "SELECT b.name, t.id FROM a CROSS JOIN LATERAL EXPLODE(a.ids) AS t(id) "

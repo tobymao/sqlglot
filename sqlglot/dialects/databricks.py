@@ -17,6 +17,27 @@ class Databricks(Spark):
     COPY_PARAMS_ARE_CSV = False
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
+    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-reserved-words
+    RESERVED_TABLE_ALIASES = {
+        "ANTI",
+        "CROSS",
+        "EXCEPT",
+        "FULL",
+        "INNER",
+        "INTERSECT",
+        "JOIN",
+        "LATERAL",
+        "LEFT",
+        "MASK",
+        "MINUS",
+        "NATURAL",
+        "ON",
+        "RIGHT",
+        "SEMI",
+        "UNION",
+        "USING",
+    }
+
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:
         COERCES_TO[text_type] |= {
@@ -26,6 +47,27 @@ class Databricks(Spark):
             exp.DType.BOOLEAN,
             exp.DType.INTERVAL,
         }
+
+    def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
+        if super().can_quote(identifier, identify):
+            return True
+
+        parent = identifier.parent
+        name = identifier.name.upper()
+        if isinstance(parent, exp.Column):
+            # The first part of a column reference can be parsed as a literal, even in TRUE.c.
+            return name in ("NULL", "TRUE", "FALSE") and identifier is parent.parts[0]
+
+        if name not in self.RESERVED_TABLE_ALIASES:
+            return False
+
+        if isinstance(parent, exp.TableAlias):
+            return identifier is parent.this and not isinstance(parent.parent, exp.CTE)
+
+        # The as_ builder can attach an alias identifier directly to the relation.
+        return identifier.arg_key == "alias" and isinstance(
+            parent, (exp.Table, exp.Subquery, exp.UDTF)
+        )
 
     class JSONPathTokenizer(Spark.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']

@@ -216,7 +216,7 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
 def _unnest_with_ordinality(expression: exp.Expr) -> exp.Expr:
     from sqlglot.optimizer.scope import find_all_in_scope
 
-    for clause in find_all_in_scope(expression, exp.From, exp.Join):
+    for clause in find_all_in_scope(expression, exp.From, exp.Join, exp.Subquery):
         source = clause.this
         unnest = source.this if isinstance(source, exp.Lateral) else source
         if not isinstance(unnest, exp.Unnest) or unnest.args.get("offset_base") != 1:
@@ -232,6 +232,13 @@ def _unnest_with_ordinality(expression: exp.Expr) -> exp.Expr:
             and len(unnest.expressions) == 1
         ):
             continue
+
+        if isinstance(clause, exp.Subquery):
+            wrapper = clause.unwrap()
+            if wrapper.alias or wrapper.args.get("pivots"):
+                continue
+            # BigQuery allows parentheses around a join, but not around UNNEST alone.
+            clause = wrapper.replace(exp.Table(**wrapper.args))
 
         value = exp.column("_value").as_(alias.columns[0])
         position = (exp.column("_offset") + 1).as_(offset)

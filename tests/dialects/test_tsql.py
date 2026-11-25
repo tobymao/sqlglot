@@ -1934,8 +1934,8 @@ WHERE
             ("DATE_PART('dow', x)", "DATE_PART('doy', x)"),
         ):
             self.validate_all(
-                "SELECT 2 * ((DATEPART(WEEKDAY, x) + @@DATEFIRST - 1) % 7), DATEPART(DAYOFYEAR, x) FROM t",
-                read={"postgres": f"SELECT 2 * {dow}, {doy} FROM t"},
+                "SELECT DATEPART(WEEKDAY, x), DATEPART(DAYOFYEAR, x) FROM t",
+                read={"postgres": f"SELECT {dow}, {doy} FROM t"},
             )
 
         self.validate_all(

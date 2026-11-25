@@ -1238,6 +1238,9 @@ FUN() > 0;
 RAND() > 0 OR RAND() > 1;
 RAND() > 0 OR RAND() > 1;
 
+CAST(UUID() AS TEXT) > 'a' OR CAST(UUID() AS TEXT) > 'b';
+CAST(UUID() AS TEXT) > 'a' OR CAST(UUID() AS TEXT) > 'b';
+
 CAST(1 AS UINT) >= 0;
 TRUE;
 

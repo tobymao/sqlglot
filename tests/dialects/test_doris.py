@@ -58,30 +58,30 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
-            "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+            "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LAG(1) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+            "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LAG(1, 2) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1)",
+            "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LEAD(1) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1)",
+            "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LEAD(1, 2) OVER (ORDER BY 1)",
             },
         )
@@ -109,6 +109,10 @@ class TestDoris(Validator):
         self.validate_identity("DROP TABLE IF EXISTS example_db.my_table")
         self.validate_identity("DROP TABLE my_table FORCE")
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
+        self.validate_identity("SELECT CAST('170141183460469231731687303715884105727' AS LARGEINT)")
+        self.validate_identity("SELECT CAST('10.0.0.1' AS IPV4), CAST('::1' AS IPV6)")
+        self.validate_identity("SELECT x FROM t ORDER BY x ASC NULLS LAST")
+        self.validate_identity("SELECT x FROM t ORDER BY x DESC NULLS FIRST")
 
         # Doris 4.1 reserves these (grammar: DorisLexer.g4 keywords minus
         # DorisParser.g4 nonReserved; each verified against a live 4.1 FE —
@@ -142,6 +146,13 @@ class TestDoris(Validator):
             "CREATE TABLE IF NOT EXISTS example_tbl_unique (user_id BIGINT NOT NULL, user_name VARCHAR(50) NOT NULL, city VARCHAR(20), age SMALLINT, sex TINYINT) UNIQUE KEY (user_id, user_name) DISTRIBUTED BY HASH (user_id) BUCKETS 10 PROPERTIES ('enable_unique_key_merge_on_write'='true')"
         )
         self.validate_identity("INSERT OVERWRITE TABLE test PARTITION(p1, p2) VALUES (1, 2)")
+
+    def test_collect_set(self):
+        expression = self.validate_identity("SELECT COLLECT_SET(v, 2) FROM t")
+        self.assertIsInstance(expression.expressions[0], exp.AggFunc)
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT COLLECT_SET(v, 2, 3) FROM t")
 
     def test_time(self):
         self.validate_identity("TIMESTAMP('2022-01-01')")

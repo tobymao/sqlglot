@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing as t
+from decimal import Decimal
 
 from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
@@ -50,6 +51,28 @@ def _annotate_floor_ceil(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     if expression.this.is_type(exp.DType.DECIMAL):
         return self._set_type(expression, exp.DType.UNKNOWN)
     return annotate_int_as_double(self, expression)
+
+
+def _annotate_literal_or_neg(self: TypeAnnotator, expression: exp.Literal | exp.Neg) -> exp.Expr:
+    # The literal 9223372036854775808 is HUGEINT in DuckDB, but its negation fits
+    # in BIGINT. Resolve nested minus signs through parentheses before choosing the type.
+    operand: exp.Expr = expression
+    negated = False
+    while isinstance(operand, exp.Neg):
+        negated = not negated
+        operand = operand.this.unnest()
+    if operand.is_number and operand.name.isdecimal():
+        value = operand.to_py()
+        if negated:
+            # to_py() can return Decimal for very long literals. Unary minus can
+            # round across a type boundary at the current decimal precision.
+            value = value.copy_negate() if isinstance(value, Decimal) else -value
+        expression.meta["nonnull"] = True
+        return self._set_type(expression, self.dialect.integer_type_for_value(value))
+
+    if isinstance(expression, exp.Literal):
+        return self._annotate_literal(expression)
+    return self._annotate_unary(expression)
 
 
 def _annotate_add_sub(self: TypeAnnotator, expression: exp.Add | exp.Sub) -> exp.Expr:
@@ -140,6 +163,8 @@ EXPRESSION_METADATA = {
     },
     exp.Add: {"annotator": _annotate_add_sub},
     exp.Sub: {"annotator": _annotate_add_sub},
+    exp.Literal: {"annotator": _annotate_literal_or_neg},
+    exp.Neg: {"annotator": _annotate_literal_or_neg},
     exp.AtTimeZone: {"annotator": _annotate_at_time_zone},
     exp.DateBin: {"annotator": lambda self, e: self._annotate_by_args(e, "expression")},
     exp.DateTrunc: {"annotator": _annotate_date_trunc},

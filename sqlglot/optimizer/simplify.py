@@ -660,7 +660,7 @@ class Simplifier:
         exp.GTE: exp.LTE,
     }
 
-    NONDETERMINISTIC: t.ClassVar = (exp.Rand, exp.Randn)
+    NONDETERMINISTIC: t.ClassVar = exp.NONDETERMINISTIC_FUNCTIONS
     AND_OR: t.ClassVar = (exp.And, exp.Or)
 
     INVERSE_DATE_OPS: t.ClassVar[dict[type[exp.Expr], type[exp.Expr]]] = {

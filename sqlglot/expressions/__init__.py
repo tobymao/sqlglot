@@ -52,3 +52,5 @@ EXPR_CLASSES: dict[str, type[Expr]] = {cls.key: cls for cls in subclasses(__name
 
 # Functions that can return multiple rows. We include anonymous functions conservatively.
 SET_RETURNING_FUNCTIONS = (Anonymous, UDTF, ExplodingGenerateSeries)
+
+NONDETERMINISTIC_FUNCTIONS = (Rand, Randn, Uuid)

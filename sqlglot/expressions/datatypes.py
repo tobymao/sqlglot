@@ -260,6 +260,7 @@ class DataType(Expression):
 
     INTEGER_TYPES: t.ClassVar[set[DType]] = {
         DType.BIGINT,
+        DType.BIGNUM,
         DType.INT,
         DType.INT128,
         DType.INT256,
@@ -299,6 +300,7 @@ class DataType(Expression):
 
     NUMERIC_TYPES: t.ClassVar[set[DType]] = {
         DType.BIGINT,
+        DType.BIGNUM,
         DType.INT,
         DType.INT128,
         DType.INT256,

@@ -30,6 +30,7 @@ class DorisGenerator(MySQLGenerator):
         return f"{sql} USING ANALYZER {analyzer}" if analyzer else sql
 
     LAST_DAY_SUPPORTS_DATE_PART = False
+    NULL_ORDERING_SUPPORTED: bool | None = True
     SUPPORTS_ALTER_COLUMN_NULLABILITY = False
     VARCHAR_REQUIRES_SIZE = False
     WITH_PROPERTIES_PREFIX = "PROPERTIES"
@@ -38,6 +39,7 @@ class DorisGenerator(MySQLGenerator):
 
     TYPE_MAPPING = {
         **MySQLGenerator.TYPE_MAPPING,
+        exp.DType.INT128: "LARGEINT",
         exp.DType.TEXT: "STRING",
         exp.DType.TIMESTAMP: "DATETIME",
         exp.DType.TIMESTAMPTZ: "DATETIME",

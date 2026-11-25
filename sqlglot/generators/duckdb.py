@@ -47,6 +47,8 @@ from builtins import type as Type
 
 _SIMILAR_TO_REGEX_CHARS = frozenset(r"\|*+?{}()[]")
 
+_ROUND_SCALE_INTEGER_TYPES = exp.DataType.INTEGER_TYPES - {exp.DType.BIGNUM}
+
 _CONNECT_BY_ARGS_TO_SKIP = frozenset({"connect", "where", "from_", "with_", "expressions"})
 
 # Regex to detect time zones in timestamps of the form [+|-]TT[:tt]
@@ -1380,7 +1382,7 @@ def _scale_rounding_sql(
         this = exp.Paren(this=this)
 
     n_int = decimals
-    if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
+    if not (decimals.is_int or decimals.is_type(*_ROUND_SCALE_INTEGER_TYPES)):
         n_int = exp.cast(decimals, exp.DType.INT)
 
     pow_ = exp.Pow(this=exp.Literal.number("10"), expression=n_int)
@@ -4893,7 +4895,7 @@ class DuckDBGenerator(generator.Generator):
         # DuckDB requires the scale (decimals) argument to be an INT
         # Some dialects (e.g., Snowflake) allow non-integer scales and cast to an integer internally
         if decimals is not None and expression.args.get("casts_non_integer_decimals"):
-            if not (decimals.is_int or decimals.is_type(*exp.DataType.INTEGER_TYPES)):
+            if not (decimals.is_int or decimals.is_type(*_ROUND_SCALE_INTEGER_TYPES)):
                 decimals = exp.cast(decimals, exp.DType.INT)
 
         func = "ROUND"

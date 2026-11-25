@@ -6,7 +6,7 @@ from collections import defaultdict, deque
 from sqlglot import alias, exp
 from sqlglot.errors import OptimizeError
 from sqlglot.helper import seq_get
-from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
+from sqlglot.optimizer.helpers import has_implicit_grouping, projection_has_aggregate
 from sqlglot.optimizer.journal import Journal, record
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, traverse_scope
 
@@ -294,7 +294,7 @@ def projection_reachability(
 
         if isinstance(query, exp.Select):
             windows = query.args.get("windows")
-            group_all = is_implicit_group_by_all(query)
+            implicit_grouping = has_implicit_grouping(query)
             group_by_ordinals[scope] = _group_by_ordinal_refs(query)
             ordinals = {id(s) for _, s in group_by_ordinals[scope]}
             first_aggregate: DependencyNode | None = None
@@ -308,15 +308,15 @@ def projection_reachability(
                 else:
                     non_aggregates.append(output_node)
 
-                if group_all and not aggregate and has_column:
+                if implicit_grouping and not aggregate and has_column:
                     has_grouping_key = True
 
-                if id(selection) in ordinals or (group_all and not aggregate) or has_srf:
+                if id(selection) in ordinals or (implicit_grouping and not aggregate) or has_srf:
                     scope_node.dependencies.append(output_node)
 
             is_agg[scope] = first_aggregate is not None
             if first_aggregate and (
-                not query.args.get("group") or (group_all and not has_grouping_key)
+                not query.args.get("group") or (implicit_grouping and not has_grouping_key)
             ):
                 # Keeping a constant while dropping the last aggregate would turn one row into
                 # one per input row, even with GROUP BY ALL (constants don't infer grouping keys).

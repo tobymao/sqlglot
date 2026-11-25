@@ -449,6 +449,12 @@ FROM
   t1;
 WITH t1 AS (SELECT x.a AS a, x.b AS b, ROW_NUMBER() OVER (PARTITION BY x.a ORDER BY x.a) AS row_num FROM x AS x) SELECT SUM(t1.row_num) AS total_rows FROM t1 AS t1;
 
+# title: GROUP BY AUTO uses the projected window result as a grouping key
+# dialect: trino
+# execute: false
+SELECT q.rn, COUNT(*) AS n FROM (SELECT ROW_NUMBER() OVER (ORDER BY a) AS rn FROM x) AS q GROUP BY AUTO;
+SELECT q.rn AS rn, COUNT(*) AS n FROM (SELECT ROW_NUMBER() OVER (ORDER BY x.a) AS rn FROM x AS x) AS q GROUP BY AUTO;
+
 # title: Test prevent merging of window if in group by
 with t1 as (
   SELECT

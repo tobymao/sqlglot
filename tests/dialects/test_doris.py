@@ -90,14 +90,16 @@ class TestDoris(Validator):
         self.validate_identity("L2_DISTANCE(x, y)")
 
     def test_array_filter(self):
-        doris = "SELECT ARRAY_FILTER(x -> x > 1, arr) FROM t"
-        spark = "SELECT FILTER(arr, x -> x > 1) FROM t"
-        self.validate_all(doris, read={"spark": spark}, write={"doris": doris, "spark": spark})
-        self.validate_identity("SELECT ARRAY_FILTER((a, b) -> a > b, arr1, arr2) FROM t")
-        self.validate_identity("SELECT ARRAY_FILTER(arr, mask) FROM t")
+        self.validate_all(
+            "ARRAY_FILTER(x -> x > 1, arr)",
+            read={"spark": "FILTER(arr, x -> x > 1)"},
+            write={"doris": "ARRAY_FILTER(x -> x > 1, arr)", "spark": "FILTER(arr, x -> x > 1)"},
+        )
+        self.validate_identity("ARRAY_FILTER((a, b) -> a > b, arr1, arr2)")
+        self.validate_identity("ARRAY_FILTER(arr, mask)")
 
         for sql in ("ARRAY_FILTER()", "ARRAY_FILTER(x -> x > 1)", "ARRAY_FILTER(a, b, c)"):
-            with self.subTest(sql=sql), self.assertRaises(ParseError):
+            with self.assertRaises(ParseError, msg=sql):
                 self.parse_one(sql)
 
     def test_identity(self):

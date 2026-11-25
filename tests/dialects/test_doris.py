@@ -89,6 +89,18 @@ class TestDoris(Validator):
 
         self.validate_identity("L2_DISTANCE(x, y)")
 
+    def test_array_filter(self):
+        self.validate_all(
+            "ARRAY_FILTER(x -> x > 1, arr)",
+            read={"spark": "FILTER(arr, x -> x > 1)"},
+            write={
+                "doris": "ARRAY_FILTER(x -> x > 1, arr)",
+                "spark": "FILTER(arr, x -> x > 1)",
+            },
+        )
+        self.validate_identity("ARRAY_FILTER((a, b) -> a > b, arr1, arr2)")
+        self.validate_identity("ARRAY_FILTER(arr, mask)")
+
     def test_identity(self):
         self.validate_identity("CREATE TABLE t (c INT) PROPERTIES ('x'='y')")
         self.validate_identity("CREATE TABLE t (c INT) COMMENT 'c'")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 from sqlglot import exp
-from sqlglot.dialects.dialect import build_date_delta_with_interval
+from sqlglot.dialects.dialect import build_array_lambda_func, build_date_delta_with_interval
 from sqlglot.helper import seq_get
 from sqlglot.parsers.mysql import MySQLParser
 from sqlglot.tokens import TokenType
@@ -42,6 +42,9 @@ class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        "ARRAY_FILTER": build_array_lambda_func(
+            exp.ArrayFilter, "ARRAY_FILTER", supports_mask=True
+        ),
         "COLLECT_SET": exp.ArrayUniqueAgg.from_arg_list,
         "DATE_ADD": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
         "DATE_SUB": build_date_delta_with_interval(exp.DateSub, default_unit="DAY"),

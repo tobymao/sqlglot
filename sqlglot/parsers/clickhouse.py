@@ -6,6 +6,7 @@ from collections import deque
 
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import (
+    build_array_lambda_func,
     build_date_delta,
     build_formatted_time,
     build_json_extract_path,
@@ -87,20 +88,6 @@ def _build_split(exp_class: Type[E]) -> t.Callable[[list], E]:
     return lambda args: exp_class(
         this=seq_get(args, 1), expression=seq_get(args, 0), limit=seq_get(args, 2)
     )
-
-
-def _build_array_lambda_func(
-    exp_class: Type[E], name: str
-) -> t.Callable[[list], E | exp.Anonymous]:
-    def _builder(args: list) -> E | exp.Anonymous:
-        # Other dialects can't express arrayMap((x, y) -> x + y, arr1, arr2), which
-        # iterates over multiple arrays at once, so we keep it as an anonymous function
-        if len(args) > 2:
-            return exp.Anonymous(this=name, expressions=args)
-
-        return exp_class(this=seq_get(args, 1), expression=seq_get(args, 0))
-
-    return _builder
 
 
 # Skip the 'week' unit since ClickHouse's toStartOfWeek
@@ -303,8 +290,8 @@ class ClickHouseParser(parser.Parser):
         "ARRAYREVERSESORT": _build_array_sort("arrayReverseSort", asc=False),
         "ARRAYSLICE": exp.ArraySlice.from_arg_list,
         "ARRAYSORT": _build_array_sort("arraySort", asc=True),
-        "ARRAYFILTER": _build_array_lambda_func(exp.ArrayFilter, "arrayFilter"),
-        "ARRAYMAP": _build_array_lambda_func(exp.Transform, "arrayMap"),
+        "ARRAYFILTER": build_array_lambda_func(exp.ArrayFilter, "arrayFilter"),
+        "ARRAYMAP": build_array_lambda_func(exp.Transform, "arrayMap"),
         "CURRENTDATABASE": exp.CurrentDatabase.from_arg_list,
         "CURRENTSCHEMAS": exp.CurrentSchemas.from_arg_list,
         "COUNTIF": _build_count_if,

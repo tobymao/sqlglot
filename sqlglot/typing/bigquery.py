@@ -424,8 +424,22 @@ EXPRESSION_METADATA = {
     exp.ApproxTopK: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.ApproxTopSum: {"annotator": lambda self, e: _annotate_by_args_approx_top(self, e)},
     exp.Array: {"annotator": _annotate_array},
+    exp.Bracket: {
+        "annotator": lambda self, e: (
+            self._set_type(e, e.this.type)
+            if e.this.is_type(exp.DType.JSON)
+            else self._annotate_bracket(e)
+        )
+    },
     exp.Concat: {"annotator": _annotate_concat},
     exp.DateFromUnixDate: {"returns": exp.DType.DATE},
+    exp.Dot: {
+        "annotator": lambda self, e: (
+            self._set_type(e, e.this.type)
+            if e.this.is_type(exp.DType.JSON) and isinstance(e.expression, exp.Identifier)
+            else self._annotate_dot(e)
+        )
+    },
     exp.GenerateTimestampArray: {
         "annotator": lambda self, e: self._set_type(
             e, exp.DataType.from_str("ARRAY<TIMESTAMP>", dialect="bigquery")

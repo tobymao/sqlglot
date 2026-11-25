@@ -1973,7 +1973,7 @@ WHERE
             "SELECT DATEPART(DAY, x)",
         )
 
-    def test_extract_dow(self):
+    def test_extract_dow_doy(self):
         def validate(dialect, sql, expected):
             with self.subTest(dialect=dialect, sql=sql):
                 expression = annotate_types(parse_one(sql, read=dialect), dialect=dialect)
@@ -1987,8 +1987,8 @@ WHERE
         ):
             validate(
                 "postgres",
-                f"SELECT {doy} FROM t WHERE {dow} = 0",
-                f"SELECT DATEPART(DAYOFYEAR, x) FROM t WHERE CAST({dow_sql} AS {dtype}) = 0",
+                f"SELECT {doy} / 2 FROM t WHERE {dow} = 0",
+                f"SELECT CAST(DATEPART(DAYOFYEAR, x) AS {dtype}) / 2 FROM t WHERE CAST({dow_sql} AS {dtype}) = 0",
             )
 
         for dialect, sql in (
@@ -1999,8 +1999,8 @@ WHERE
 
         validate(
             "redshift",
-            "SELECT EXTRACT(DOW FROM CAST(x AS DATE)) / 2 FROM t",
-            f"SELECT ({dow_sql}) / 2 FROM t",
+            "SELECT EXTRACT(DOW FROM CAST(x AS DATE)) / 2, EXTRACT(DOY FROM CAST(x AS DATE)) / 2 FROM t",
+            f"SELECT ({dow_sql}) / 2, DATEPART(DAYOFYEAR, CAST(x AS DATE)) / 2 FROM t",
         )
         offset = "'2024-06-16 00:30:00+02:00'"
         offset_dow = (

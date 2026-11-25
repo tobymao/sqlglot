@@ -28,7 +28,6 @@ DATE_PART_UNMAPPING = {
     "ISOWEEK": "ISO_WEEK",
     "WEEKISO": "ISO_WEEK",
     "DAYOFWEEK": "WEEKDAY",
-    "DOY": "DAYOFYEAR",
     "TIMEZONE_MINUTE": "TZOFFSET",
 }
 
@@ -281,6 +280,7 @@ class TSQLGenerator(generator.Generator):
         exp.Uuid: lambda *_: "NEWID()",
         exp.Year: remove_ts_or_ds_to_date(),
         exp.DateFromParts: rename_func("DATEFROMPARTS"),
+        exp.DayOfYear: lambda self, e: self.func("DATEPART", "DAYOFYEAR", e.this),
     }
 
     PROPERTIES_LOCATION = {
@@ -444,16 +444,23 @@ class TSQLGenerator(generator.Generator):
                 expression=exp.Literal.string("00010101"),
                 unit=exp.var("DAY"),
             )
-            weekday = (days + 1) % 7
-            if expression.type and not expression.is_type(exp.DType.INT, exp.DType.UNKNOWN):
-                return self.sql(exp.cast(weekday, expression.type, copy=False))
-            return self.sql(exp.paren(weekday, copy=False))
+            result: exp.Expr = (days + 1) % 7
+        else:
+            part = expression.this
+            name = ""
+            if not expression.args.get("date_part") or isinstance(part, (exp.Var, exp.Literal)):
+                name = part.name.upper()
+            if name != "DOY":
+                return self.func(
+                    "DATEPART", DATE_PART_UNMAPPING.get(name) or part, expression.expression
+                )
+            result = exp.DayOfYear(this=expression.expression.copy())
 
-        part = expression.this
-        if not expression.args.get("date_part") or isinstance(part, (exp.Var, exp.Literal)):
-            part = DATE_PART_UNMAPPING.get(part.name.upper()) or part
-
-        return self.func("DATEPART", part, expression.expression)
+        if expression.type and not expression.is_type(exp.DType.INT, exp.DType.UNKNOWN):
+            result = exp.cast(result, expression.type, copy=False)
+        elif isinstance(result, exp.Mod):
+            result = exp.paren(result, copy=False)
+        return self.sql(result)
 
     def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
         nano = expression.args.get("nano")

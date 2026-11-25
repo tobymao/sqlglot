@@ -58,30 +58,30 @@ class TestDoris(Validator):
             },
         )
         self.validate_all(
-            "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+            "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LAG(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LAG(1) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+            "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LAG(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LAG(1, 2) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1)",
+            "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LEAD(1, 1, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LEAD(1) OVER (ORDER BY 1)",
             },
         )
         self.validate_all(
-            "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1)",
+            "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
             read={
-                "doris": "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1)",
+                "doris": "SELECT LEAD(1, 2, NULL) OVER (ORDER BY 1 NULLS LAST)",
                 "postgres": "SELECT LEAD(1, 2) OVER (ORDER BY 1)",
             },
         )
@@ -111,6 +111,8 @@ class TestDoris(Validator):
         self.validate_identity("SELECT CAST(`a`.`b` AS INT) FROM foo")
         self.validate_identity("SELECT CAST('170141183460469231731687303715884105727' AS LARGEINT)")
         self.validate_identity("SELECT CAST('10.0.0.1' AS IPV4), CAST('::1' AS IPV6)")
+        self.validate_identity("SELECT x FROM t ORDER BY x ASC NULLS LAST")
+        self.validate_identity("SELECT x FROM t ORDER BY x DESC NULLS FIRST")
 
         # Doris 4.1 reserves these (grammar: DorisLexer.g4 keywords minus
         # DorisParser.g4 nonReserved; each verified against a live 4.1 FE —

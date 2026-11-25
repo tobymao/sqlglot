@@ -4151,6 +4151,12 @@ OPTIONS (
             },
         )
         self.validate_all(
+            "WITH a AS (SELECT 1 AS id), b AS (SELECT 1 AS id) SELECT x FROM a JOIN (b CROSS JOIN UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST([10, 20]) AS _value WITH OFFSET AS _offset)) AS u) ON a.id = b.id WHERE u.n = 1",
+            read={
+                "postgres": "WITH a AS (SELECT 1 AS id), b AS (SELECT 1 AS id) SELECT x FROM a JOIN (b CROSS JOIN UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS u(x, n)) ON a.id = b.id WHERE u.n = 1",
+            },
+        )
+        self.validate_all(
             "UPDATE items SET value = t.x FROM UNNEST(ARRAY(SELECT AS STRUCT _value AS x, _offset + 1 AS n FROM UNNEST([10, 20]) AS _value WITH OFFSET AS _offset)) AS t WHERE items.id = t.n",
             read={
                 "postgres": "UPDATE items SET value = t.x FROM UNNEST(ARRAY[10, 20]) WITH ORDINALITY AS t(x, n) WHERE items.id = t.n",

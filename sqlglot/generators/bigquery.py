@@ -214,12 +214,9 @@ def _unnest_explode_generate_series(expression: exp.Expr) -> exp.Expr:
 
 
 def _unnest_with_ordinality(expression: exp.Expr) -> exp.Expr:
-    from_ = expression.args.get("from_")
-    from_joins = from_.this.args.get("joins") if from_ else None
-    for clause in [from_, *(expression.args.get("joins") or []), *(from_joins or [])]:
-        if clause is None:
-            continue
+    from sqlglot.optimizer.scope import find_all_in_scope
 
+    for clause in find_all_in_scope(expression, exp.From, exp.Join):
         source = clause.this
         unnest = source.this if isinstance(source, exp.Lateral) else source
         if not isinstance(unnest, exp.Unnest) or unnest.args.get("offset_base") != 1:

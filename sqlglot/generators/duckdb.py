@@ -4206,6 +4206,23 @@ class DuckDBGenerator(generator.Generator):
             select = exp.Select(expressions=[unnest_sql]).subquery(alias)
             return self.sql(select)
 
+        offset = expression.args.get("offset")
+        alias = expression.args.get("alias")
+        if (
+            expression.args.get("offset_base") == 0
+            and isinstance(offset, exp.Identifier)
+            and alias
+            and len(alias.columns) == 1
+            and len(expression.expressions) == 1
+        ):
+            # Adjust ordinality before exposing the BigQuery value and offset names.
+            unnest = exp.Unnest(expressions=expression.expressions, offset=True)
+            query = exp.select(exp.column("unnest"), exp.column("ordinality") - 1).from_(
+                unnest, copy=False
+            )
+            alias = exp.TableAlias(this=alias.this, columns=[*alias.columns, offset])
+            return self.sql(query.subquery(alias, copy=False))
+
         return super().unnest_sql(expression)
 
     def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:

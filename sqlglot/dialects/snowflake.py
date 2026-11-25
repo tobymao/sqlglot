@@ -116,33 +116,13 @@ class Snowflake(Dialect):
 
     PSEUDOCOLUMNS = {"LEVEL"}
 
-    RESERVED_TABLE_KEYWORDS = {
-        "cross",
-        "full",
-        "inner",
-        "join",
-        "lateral",
-        "left",
-        "natural",
-        "right",
-        "using",
-    }
-
     def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
-        parent = identifier.parent
-        key = identifier.arg_key
-        name = identifier.name.lower()
-        if name in self.RESERVED_TABLE_KEYWORDS and (
-            (key == "this" and isinstance(parent, (exp.Table, exp.TableAlias)))
-            or (key == "table" and isinstance(parent, exp.Column))
-            or (key == "alias" and isinstance(parent, (exp.Table, exp.DerivedTable)))
-        ):
-            return True
-
         # This disables quoting DUAL in SELECT ... FROM DUAL, because Snowflake treats an
         # unquoted DUAL keyword in a special way and does not map it to a user-defined table
         return super().can_quote(identifier, identify) and not (
-            isinstance(parent, exp.Table) and not identifier.quoted and name == "dual"
+            isinstance(identifier.parent, exp.Table)
+            and not identifier.quoted
+            and identifier.name.lower() == "dual"
         )
 
     class JSONPathTokenizer(jsonpath.JSONPathTokenizer):

@@ -1,6 +1,6 @@
 from unittest import mock
 
-from sqlglot import ParseError, TokenError, UnsupportedError, exp, parse_one, tokenize
+from sqlglot import ErrorLevel, ParseError, TokenError, UnsupportedError, exp, parse_one, tokenize
 from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from sqlglot.optimizer.qualify import qualify
@@ -5115,8 +5115,23 @@ class TestSnowflake(Validator):
                 query = exp.select(exp.column(name)).from_("t")
                 self.assertEqual(query.sql("snowflake"), f'SELECT "{name}" FROM t')
 
+        with self.assertRaisesRegex(UnsupportedError, "requires a table qualifier"):
+            exp.column("CURRENT_DATE").sql("snowflake", unsupported_level=ErrorLevel.RAISE)
+
+        self.assertEqual(
+            exp.select(exp.to_identifier("current_date")).sql("snowflake"), 'SELECT "current_date"'
+        )
+        self.validate_identity("CREATE TABLE t (case INT, true INT)")
+        self.validate_identity(
+            "CREATE TABLE t (current_date INT)", 'CREATE TABLE t ("current_date" INT)'
+        )
+        with self.assertRaisesRegex(UnsupportedError, "column definition"):
+            self.parse_one("CREATE TABLE t (CURRENT_DATE INT)").sql(
+                "snowflake", unsupported_level=ErrorLevel.RAISE
+            )
+
         query = (
-            exp.select(exp.column("using", table="Join").as_("left"))
+            exp.select(exp.column("using", table="jOin").as_("left"))
             .from_(exp.table_("lateral").as_("Join"))
             .with_(
                 exp.TableAlias(
@@ -5127,8 +5142,31 @@ class TestSnowflake(Validator):
         )
         self.assertEqual(
             query.sql("snowflake"),
-            'WITH "lateral"(using) AS (SELECT 42) SELECT "Join".using AS left FROM "lateral" AS "Join"',
+            'WITH "LATERAL"(using) AS (SELECT 42) SELECT jOin.using AS left FROM "LATERAL" AS Join',
         )
+        self.validate_identity("SELECT t.CURRENT_DATE FROM (SELECT 42 AS CURRENT_DATE) AS t")
+        self.validate_identity('SELECT "JOIN".c FROM (SELECT 42 AS c) AS join')
+        for name in ("cross", "inner", "join", "full"):
+            self.validate_identity(f"SELECT {name.upper()}.c FROM (SELECT 42 AS c) AS {name}")
+        self.validate_identity(
+            'SELECT "JoIn"."current_date" FROM (SELECT 42 AS "current_date") AS "JoIn"'
+        )
+        self.validate_identity(
+            "WITH case AS (SELECT 42 AS when) SELECT t.when AS current_date FROM case AS t"
+        )
+        self.validate_identity('SELECT "CASE".c FROM (SELECT 42 AS c) AS case')
+        for name in ("case", "when", "true", "current_date"):
+            query = self.validate_identity(f"SELECT {name}.* FROM (SELECT 42 AS c) AS {name}")
+            self.assertIsInstance(query.expressions[0], exp.Column)
+        for clause in ("PIVOT(MAX(n) FOR k IN (1 AS val))", "UNPIVOT(val FOR kind IN (n))"):
+            with self.subTest(clause=clause):
+                query = self.parse_one(f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause}")
+                pivot = query.find(exp.Pivot)
+                pivot.replace(pivot.as_("Join"))
+                self.assertEqual(
+                    query.sql("snowflake"),
+                    f"SELECT jOiN.val FROM (SELECT 1 AS k, 42 AS n) {clause} AS Join",
+                )
         self.validate_identity(
             "WITH window AS (SELECT 1 AS window) SELECT window.window FROM window"
         )

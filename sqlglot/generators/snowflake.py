@@ -32,6 +32,8 @@ from sqlglot.helper import find_new_name, flatten, seq_get
 from sqlglot.optimizer.scope import build_scope, find_all_in_scope
 from sqlglot.parsers.snowflake import (
     RANKING_WINDOW_FUNCTIONS_WITH_FRAME,
+    RESERVED_CONTEXT_FUNCTIONS,
+    RESERVED_SCALAR_KEYWORDS,
     TIMESTAMP_TYPES,
     SnowflakeParser,
     build_object_construct,
@@ -424,23 +426,16 @@ class SnowflakeGenerator(generator.Generator):
         "as",
         "between",
         "by",
-        "case",
-        "cast",
         "check",
         "column",
         "connect",
         "create",
         "current",
-        "current_date",
-        "current_time",
-        "current_timestamp",
-        "current_user",
         "delete",
         "distinct",
         "drop",
         "else",
         "exists",
-        "false",
         "following",
         "for",
         "from",
@@ -455,8 +450,6 @@ class SnowflakeGenerator(generator.Generator):
         "into",
         "is",
         "like",
-        "localtime",
-        "localtimestamp",
         "minus",
         "not",
         "null",
@@ -480,16 +473,25 @@ class SnowflakeGenerator(generator.Generator):
         "then",
         "to",
         "trigger",
-        "true",
-        "try_cast",
         "union",
         "unique",
         "update",
         "values",
-        "when",
         "whenever",
         "where",
         "with",
+    }
+
+    RESERVED_TABLE_KEYWORDS = {
+        "CROSS",
+        "FULL",
+        "INNER",
+        "JOIN",
+        "LATERAL",
+        "LEFT",
+        "NATURAL",
+        "RIGHT",
+        "USING",
     }
 
     TRANSFORMS = {
@@ -708,6 +710,57 @@ class SnowflakeGenerator(generator.Generator):
             "SHA2_BINARY", e.this, e.args.get("length") or exp.Literal.number(256)
         ),
     }
+
+    def identifier_sql(self, expression: exp.Identifier) -> str:
+        if not expression.quoted:
+            name = expression.name.upper()
+            parent = expression.parent
+            key = expression.arg_key
+            if name in RESERVED_SCALAR_KEYWORDS:
+                # A leading CASE or CURRENT_DATE starts an expression, but t.case and
+                # AS current_date are ordinary, case-insensitive identifiers.
+                if isinstance(parent, exp.Column):
+                    needs_quotes = not parent.is_star and expression is parent.parts[0]
+                elif isinstance(parent, exp.ColumnDef):
+                    needs_quotes = name in RESERVED_CONTEXT_FUNCTIONS
+                else:
+                    needs_quotes = not (
+                        isinstance(parent, (exp.Table, exp.TableAlias))
+                        or key == "alias"
+                        or (key == "expression" and isinstance(parent, exp.Dot))
+                    )
+                qualifier = (isinstance(parent, exp.Column) and key != "this") or (
+                    isinstance(parent, exp.Dot) and key == "this"
+                )
+            else:
+                # AS aliases (including PIVOT aliases) and their qualifiers accept join keywords.
+                qualifier = True
+                needs_quotes = name in self.RESERVED_TABLE_KEYWORDS and (
+                    (isinstance(parent, exp.Table) and expression is seq_get(parent.parts, 0))
+                    or (
+                        isinstance(parent, exp.TableAlias)
+                        and key == "this"
+                        and isinstance(parent.parent, exp.CTE)
+                    )
+                    or (isinstance(parent, exp.CTE) and key == "alias")
+                )
+            if needs_quotes:
+                expression = expression.copy()
+                if qualifier and not (
+                    expression.meta_get("case_sensitive")
+                    or (parent and parent.meta_get("case_sensitive"))
+                ):
+                    self.dialect.normalize_identifier(expression)
+                elif not qualifier and expression.name in RESERVED_CONTEXT_FUNCTIONS:
+                    # Even "CURRENT_DATE" calls the function in a scalar expression.
+                    if isinstance(parent, exp.ColumnDef):
+                        self.unsupported(f'Snowflake forbids the column definition "{name}"')
+                    else:
+                        self.unsupported(
+                            f'Snowflake requires a table qualifier to read the column "{name}"'
+                        )
+                expression.set("quoted", True)
+        return super().identifier_sql(expression)
 
     def dynamicidentifier_sql(self, expression: exp.DynamicIdentifier) -> str:
         this = self.func("IDENTIFIER", expression.this)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from sqlglot import exp
 from sqlglot.typing.redshift import EXPRESSION_METADATA
@@ -46,15 +46,6 @@ class Redshift(Postgres):
     Parser = RedshiftParser
 
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
-
-    def integer_literal_value(self, literal: exp.Literal) -> Decimal | None:
-        # Redshift treats 2. and 1.5e10 as integers, but keeps the scale in 2.0.
-        try:
-            value = Decimal(literal.name)
-        except InvalidOperation:
-            return None
-        exponent = value.as_tuple().exponent
-        return value if isinstance(exponent, int) and exponent >= 0 else None
 
     def integer_type_for_value(self, value: int | Decimal) -> exp.DataType | exp.DType:
         dtype = super().integer_type_for_value(value)

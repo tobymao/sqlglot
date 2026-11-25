@@ -13,6 +13,27 @@ class DatabricksParser(SparkParser):
     COLON_IS_VARIANT_EXTRACT = True
     COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
+    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-reserved-words
+    RESERVED_TABLE_ALIASES = {
+        "ANTI",
+        "CROSS",
+        "EXCEPT",
+        "FULL",
+        "INNER",
+        "INTERSECT",
+        "JOIN",
+        "LATERAL",
+        "LEFT",
+        "MASK",
+        "MINUS",
+        "NATURAL",
+        "ON",
+        "RIGHT",
+        "SEMI",
+        "UNION",
+        "USING",
+    }
+
     STATEMENT_PARSERS = {
         **SparkParser.STATEMENT_PARSERS,
         TokenType.OPTIMIZE: lambda self: self._parse_optimize(),
@@ -62,6 +83,17 @@ class DatabricksParser(SparkParser):
         *SparkParser.CAST_COLUMN_OPERATORS,
         TokenType.QDCOLON,
     }
+
+    def _parse_column_reference(self) -> exp.Expr | None:
+        this = super()._parse_column_reference()
+        if (
+            this is None
+            and self._next.token_type == TokenType.DOT
+            and self._match_texts(self.RESERVED_TABLE_ALIASES)
+        ):
+            identifier = self._identifier_expression(quoted=False)
+            return self.expression(exp.Column(this=identifier), comments=identifier.pop_comments())
+        return this
 
     def _parse_optimize(self) -> exp.Optimize | exp.Command:
         start = self._prev

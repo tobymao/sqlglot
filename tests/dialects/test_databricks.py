@@ -17,6 +17,9 @@ class TestDatabricks(Validator):
             "WITH mask AS (SELECT 42) SELECT LeFt.anti AS union FROM mask AS `LeFt`(anti)",
         )
 
+        self.validate_identity("SELECT jOiN.c FROM VALUES (42) AS `Join`(c)")
+        self.validate_identity("SELECT union.* FROM VALUES (42) AS `union`(c)")
+
         for alias in ("anti", "join", "mask", "union"):
             with self.subTest(alias=alias):
                 table = exp.to_table("t").as_(alias)
@@ -31,13 +34,14 @@ class TestDatabricks(Validator):
             exp.column("true"),
             exp.column("false"),
             exp.column("true", "false"),
+            exp.column("NuLl", "false").to_dot(),
             "NULL",
             "TRUE",
             "FALSE",
         ).from_(exp.values([(1, 2, 3)], alias="false", columns=["NuLl", "true", "false"]))
         self.assertEqual(
             query.sql(self.dialect),
-            "SELECT `NuLl`, `true`, `false`, `false`.true, NULL, TRUE, FALSE "
+            "SELECT `NuLl`, `true`, `false`, `false`.true, `false`.NuLl, NULL, TRUE, FALSE "
             "FROM VALUES (1, 2, 3) AS false(NuLl, true, false)",
         )
 

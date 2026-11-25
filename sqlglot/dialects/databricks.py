@@ -17,27 +17,6 @@ class Databricks(Spark):
     COPY_PARAMS_ARE_CSV = False
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
-    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-reserved-words
-    RESERVED_TABLE_ALIASES = {
-        "ANTI",
-        "CROSS",
-        "EXCEPT",
-        "FULL",
-        "INNER",
-        "INTERSECT",
-        "JOIN",
-        "LATERAL",
-        "LEFT",
-        "MASK",
-        "MINUS",
-        "NATURAL",
-        "ON",
-        "RIGHT",
-        "SEMI",
-        "UNION",
-        "USING",
-    }
-
     COERCES_TO = defaultdict(set, deepcopy(TypeAnnotator.COERCES_TO))
     for text_type in exp.DataType.TEXT_TYPES:
         COERCES_TO[text_type] |= {
@@ -54,11 +33,13 @@ class Databricks(Spark):
 
         parent = identifier.parent
         name = identifier.name.upper()
-        if isinstance(parent, exp.Column):
-            # The first part of a column reference can be parsed as a literal, even in TRUE.c.
-            return name in ("NULL", "TRUE", "FALSE") and identifier is parent.parts[0]
+        if name in ("NULL", "TRUE", "FALSE"):
+            # The first part can be parsed as a literal in both Column and Dot references.
+            return (isinstance(parent, exp.Column) and identifier is parent.parts[0]) or (
+                isinstance(parent, exp.Dot) and identifier is parent.this
+            )
 
-        if name not in self.RESERVED_TABLE_ALIASES:
+        if name not in DatabricksParser.RESERVED_TABLE_ALIASES:
             return False
 
         if isinstance(parent, exp.TableAlias):

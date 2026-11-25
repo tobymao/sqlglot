@@ -217,3 +217,12 @@ SELECT x.a, y.b FROM (x ASOF JOIN y ON x.a >= y.b) JOIN z ON x.a = z.b WHERE y.b
 # dialect: duckdb
 SELECT s.a, p.b FROM (SELECT a FROM x) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON s.a = p.b WHERE s.a = 2;
 SELECT s.a, p.b FROM (SELECT a FROM x WHERE a = 2) AS s JOIN (SELECT y.b FROM y POSITIONAL JOIN z) AS p ON p.b = s.a WHERE TRUE;
+
+-- Only the predicate on the deterministic projection can be pushed down
+# dialect: spark
+SELECT s.r FROM (SELECT x.a, x.a + RANDN() AS r FROM x) AS s WHERE s.r < 0.5 AND s.a = 1;
+SELECT s.r FROM (SELECT x.a, x.a + RANDN() AS r FROM x WHERE x.a = 1) AS s WHERE TRUE AND s.r < 0.5;
+
+-- Copying a scalar subquery into the filter would also copy its random call
+WITH s AS (SELECT (SELECT RAND()) AS r FROM x) SELECT s.r FROM s WHERE s.r < 0.5;
+WITH s AS (SELECT (SELECT RAND()) AS r FROM x) SELECT s.r FROM s WHERE s.r < 0.5;

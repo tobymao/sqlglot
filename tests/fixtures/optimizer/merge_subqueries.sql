@@ -869,3 +869,29 @@ SELECT z_2.b AS b FROM x AS y1 JOIN z AS z_2 ON EXISTS(SELECT 1 AS "1" FROM x AS
 # dialect: duckdb
 WITH p AS (SELECT x.a FROM x POSITIONAL JOIN y) SELECT s.a FROM (SELECT x.a FROM x) AS s CROSS JOIN p;
 WITH p AS (SELECT x.a AS a FROM x AS x POSITIONAL JOIN y AS y) SELECT x.a AS a FROM x AS x CROSS JOIN p AS p;
+
+# title: Both references use the same random value, including inside arithmetic
+SELECT s.r - s.r AS delta FROM (SELECT a + RAND() AS r FROM x) AS s;
+SELECT s.r - s.r AS delta FROM (SELECT x.a + RAND() AS r FROM x AS x) AS s;
+
+# title: Both references to a CTE's UUID use the same value
+WITH s AS (SELECT UUID() AS id FROM x) SELECT s.id = s.id AS same FROM s;
+WITH s AS (SELECT UUID() AS id FROM x AS x) SELECT s.id = s.id AS same FROM s AS s;
+
+# title: A volatile projection used once per row can still merge
+SELECT s.a, s.r IS NULL AS missing FROM (SELECT a, RAND() AS r FROM x) AS s WHERE s.a > 1;
+SELECT x.a AS a, RAND() IS NULL AS missing FROM x AS x WHERE x.a > 1;
+
+# title: A join repeats the projected value for each matching row
+# dialect: duckdb
+SELECT COUNT(DISTINCT s.r) AS draws FROM (SELECT RANDOM() AS r FROM RANGE(1)) AS s CROSS JOIN y;
+SELECT COUNT(DISTINCT s.r) AS draws FROM (SELECT RANDOM() AS r FROM RANGE(0, 1) AS _0) AS s CROSS JOIN y AS y;
+
+# title: A set-returning projection repeats the value for each emitted row
+# dialect: duckdb
+SELECT COUNT(DISTINCT t.r) AS draws FROM (SELECT s.r, UNNEST([1, 2]) AS n FROM (SELECT RANDOM() AS r FROM RANGE(1)) AS s) AS t;
+SELECT COUNT(DISTINCT t.r) AS draws FROM (SELECT s.r AS r, UNNEST([1, 2]) AS n FROM (SELECT RANDOM() AS r FROM RANGE(0, 1) AS _0) AS s) AS t;
+
+# title: A correlated subquery reads the value from the outer row
+SELECT (SELECT COUNT(DISTINCT s.r + y.b * 0) FROM y) AS draws FROM (SELECT RAND() AS r FROM x) AS s;
+SELECT (SELECT COUNT(DISTINCT s.r + y.b * 0) AS _col_0 FROM y AS y) AS draws FROM (SELECT RAND() AS r FROM x AS x) AS s;

@@ -254,7 +254,8 @@ def nodes_for_predicate(
     scope_ref_count: Mapping[int, int],
 ) -> dict[str, exp.Expr]:
     nodes: dict[str, exp.Expr] = {}
-    tables = exp.column_table_names(predicate)
+    columns = list(predicate.find_all(exp.Column))
+    tables = {c.table for c in columns if c.table}
     where_condition = isinstance(predicate.find_ancestor(exp.Join, exp.Where), exp.Where)
 
     for table in sorted(tables):
@@ -292,6 +293,7 @@ def nodes_for_predicate(
                 nodes[table] = node
 
         if isinstance(node, exp.Select) and len(tables) == 1:
+            referenced = {c.name for c in columns}
             distinct = node.args.get("distinct")
             has_window_or_srf = any(
                 find_in_scope(select, exp.Window, *exp.SET_RETURNING_FUNCTIONS)
@@ -308,6 +310,11 @@ def nodes_for_predicate(
                 and not node.args.get("offset")
                 and not node.args.get("qualify")
                 and not (distinct and distinct.args.get("on"))
+                # Replacing a reference in the filter would evaluate the projection again.
+                and not any(
+                    s.alias_or_name in referenced and s.find(*exp.NONDETERMINISTIC_FUNCTIONS)
+                    for s in node.selects
+                )
             ):
                 nodes[table] = node
     return nodes

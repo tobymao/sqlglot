@@ -109,3 +109,15 @@ WITH c AS (SELECT 1 AS y) UPDATE t SET x = 1 FROM (WITH i AS (SELECT x FROM t2) 
 -- CTE hoisted from a MERGE USING subquery stays within that subquery
 MERGE INTO t USING (SELECT id FROM (SELECT id FROM u) AS i) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = 1;
 MERGE INTO t USING (WITH i AS (SELECT id FROM u) SELECT id FROM i AS i) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET x = 1;
+
+-- Correlated derived table in a subquery is not hoisted
+SELECT x.a, (SELECT COUNT(*) FROM (SELECT y.b FROM y WHERE y.a = x.a LIMIT 1) AS s) AS c FROM x;
+SELECT x.a, (SELECT COUNT(*) FROM (SELECT y.b FROM y WHERE y.a = x.a LIMIT 1) AS s) AS c FROM x;
+
+-- Correlated CTE in a subquery is not hoisted, nor is a derived table that selects from it
+SELECT x.a, (WITH t AS (SELECT y.b FROM y WHERE y.a = x.a LIMIT 1) SELECT COUNT(*) FROM (SELECT b FROM t LIMIT 2) AS s) AS c FROM x;
+SELECT x.a, (WITH t AS (SELECT y.b FROM y WHERE y.a = x.a LIMIT 1) SELECT COUNT(*) FROM (SELECT b FROM t LIMIT 2) AS s) AS c FROM x;
+
+-- Derived table correlated to its own enclosing derived table's source is hoisted along with it
+SELECT * FROM (SELECT y.a, (SELECT COUNT(*) FROM (SELECT x.b FROM x WHERE x.a = y.a LIMIT 1) AS d) AS c FROM y) AS q;
+WITH q AS (SELECT y.a, (SELECT COUNT(*) FROM (SELECT x.b FROM x WHERE x.a = y.a LIMIT 1) AS d) AS c FROM y) SELECT * FROM q AS q;

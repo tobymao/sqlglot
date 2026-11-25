@@ -26,6 +26,13 @@ class TestTrino(Validator):
             },
         )
 
+    def test_current_path(self):
+        query = self.validate_identity(
+            'SELECT CURRENT_PATH AS p, "CURRENT_PATH" AS c FROM (VALUES (42)) AS t("CURRENT_PATH")'
+        )
+        query.expressions[0].this.assert_is(exp.CurrentPath)
+        query.expressions[1].this.assert_is(exp.Column)
+
     def test_current_schema(self):
         self.validate_all(
             'SELECT CURRENT_SCHEMA, "current_schema" FROM (VALUES (42)) AS t("current_schema")',

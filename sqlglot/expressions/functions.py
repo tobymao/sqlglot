@@ -270,6 +270,10 @@ class CurrentOrganizationUser(Expression, Func):
     arg_types = {}
 
 
+class CurrentPath(Expression, Func):
+    arg_types = {}
+
+
 class CurrentRegion(Expression, Func):
     arg_types = {}
 

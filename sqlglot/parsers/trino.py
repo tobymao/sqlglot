@@ -37,6 +37,11 @@ class TrinoParser(PrestoParser):
         TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
     }
 
+    NO_PAREN_FUNCTION_PARSERS = {
+        **PrestoParser.NO_PAREN_FUNCTION_PARSERS,
+        "CURRENT_PATH": lambda self: self.expression(exp.CurrentPath()),
+    }
+
     FUNCTIONS = {
         **PrestoParser.FUNCTIONS,
         "APPROX_PERCENTILE": lambda args: (

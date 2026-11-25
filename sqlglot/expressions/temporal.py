@@ -16,8 +16,6 @@ from sqlglot.expressions.core import (
 from sqlglot.expressions.datatypes import DataType, DType
 
 if t.TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from sqlglot.expressions.core import Expr, Neg
 
 
@@ -229,11 +227,6 @@ class DayOfWeek(Expression, Func):
 
     arg_types = {"this": True, "zero_based": False}
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
-
-    def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
-        if args and len(args) > 1:
-            return ["DAYOFWEEK accepts one argument"]
-        return super().error_messages(args)
 
 
 class DayOfWeekIso(Expression, Func):

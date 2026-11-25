@@ -3610,9 +3610,6 @@ class TestDuckDB(Validator):
             dayofweek = self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
             self.assertTrue(dayofweek.args["zero_based"])
 
-        with self.assertRaises(ParseError):
-            self.parse_one("DAYOFWEEK(d, 1)")
-
     def test_extract_date_parts(self):
         for part in ("WEEK", "WEEKOFYEAR"):
             # Both are synonyms for ISO week

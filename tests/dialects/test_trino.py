@@ -7,6 +7,25 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_reserved_keyword_identifiers(self):
+        for name in ("current_date", "CURRENT_USER", "unnest", "listagg", "json_serialize"):
+            with self.subTest(name=name):
+                query = exp.select(exp.column(name)).from_(
+                    exp.select(exp.Literal.number(42).as_(name)).subquery("t")
+                )
+                self.assertEqual(
+                    query.sql("trino"), f'SELECT "{name}" FROM (SELECT 42 AS "{name}") AS t'
+                )
+
+        self.validate_all(
+            "SELECT 1 AS execute",
+            write={
+                "athena": 'SELECT 1 AS "execute"',
+                "presto": 'SELECT 1 AS "execute"',
+                "trino": "SELECT 1 AS execute",
+            },
+        )
+
     def test_current_schema(self):
         self.validate_all(
             'SELECT CURRENT_SCHEMA, "current_schema" FROM (VALUES (42)) AS t("current_schema")',

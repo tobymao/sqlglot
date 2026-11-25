@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp, generator
 from sqlglot.generators.hive import HiveGenerator
+from sqlglot.generators.presto import PrestoGenerator
 from sqlglot.generators.trino import TrinoGenerator
 
 
@@ -115,6 +116,7 @@ class _HiveGenerator(HiveGenerator):
 
 class AthenaTrinoGenerator(TrinoGenerator):
     SUPPORTS_EXECUTE_IMMEDIATE = False
+    RESERVED_KEYWORDS = PrestoGenerator.RESERVED_KEYWORDS | {"current_schema"}
     PROPERTIES_LOCATION = {
         **TrinoGenerator.PROPERTIES_LOCATION,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,

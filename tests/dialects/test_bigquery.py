@@ -4086,12 +4086,14 @@ OPTIONS (
             write={
                 "duckdb": "SELECT x, off FROM (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST([10, 20, 30]) WITH ORDINALITY)",
                 "postgres": "SELECT x, off FROM (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST(ARRAY[10, 20, 30]) WITH ORDINALITY) AS x",
+                "trino": "SELECT x, off FROM (SELECT _value AS x, _ordinality - 1 AS off FROM UNNEST(ARRAY[10, 20, 30]) WITH ORDINALITY AS _u(_value, _ordinality))",
             },
         )
         self.validate_all(
             "WITH t AS (SELECT [10, 20] AS arr) SELECT x, off FROM t CROSS JOIN UNNEST(t.arr) AS x WITH OFFSET AS off WHERE off = 1",
             write={
                 "postgres": "WITH t AS (SELECT ARRAY[10, 20] AS arr) SELECT x, off FROM t CROSS JOIN LATERAL (SELECT unnest AS x, ordinality - 1 AS off FROM UNNEST(t.arr) WITH ORDINALITY) AS x WHERE off = 1",
+                "trino": "WITH t AS (SELECT ARRAY[10, 20] AS arr) SELECT x, off FROM t CROSS JOIN LATERAL (SELECT _value AS x, _ordinality - 1 AS off FROM UNNEST(t.arr) WITH ORDINALITY AS _u(_value, _ordinality)) WHERE off = 1",
             },
         )
         self.validate_all(

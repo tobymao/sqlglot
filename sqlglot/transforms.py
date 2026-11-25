@@ -288,9 +288,12 @@ def remove_precision_parameterized_types(expression: exp.Expr) -> exp.Expr:
 
 
 def unnest_with_offset(
-    expression: exp.Unnest, *, require_alias: bool = False
+    expression: exp.Unnest,
+    *,
+    require_alias: bool = False,
+    input_columns: tuple[str, str] | None = None,
 ) -> exp.Subquery | None:
-    """Expose zero-based offsets using the native UNNEST and ordinality columns."""
+    """Expose zero-based offsets from UNNEST WITH ORDINALITY."""
     offset = expression.args.get("offset")
     alias = expression.args.get("alias")
     if (
@@ -301,10 +304,13 @@ def unnest_with_offset(
         and len(expression.expressions) == 1
         and not expression.args.get("explode_array")
     ):
-        unnest = exp.Unnest(expressions=expression.expressions, offset=True)
-        value = exp.column("unnest").as_(alias.columns[0])
+        unnest: exp.Expr = exp.Unnest(expressions=expression.expressions, offset=True)
+        if input_columns:
+            unnest = unnest.as_("_u", table=input_columns, copy=False)
+        value_name, ordinality_name = input_columns or ("unnest", "ordinality")
+        value = exp.column(value_name).as_(alias.columns[0])
         value.add_comments(alias.comments)
-        query = exp.select(value, (exp.column("ordinality") - 1).as_(offset)).from_(
+        query = exp.select(value, (exp.column(ordinality_name) - 1).as_(offset)).from_(
             unnest, copy=False
         )
         table_alias = alias.this or (alias.columns[0] if require_alias else None)

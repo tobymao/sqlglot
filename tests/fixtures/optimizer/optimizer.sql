@@ -1752,3 +1752,21 @@ ORDER BY
   "y"."b",
   "z"."b",
   "w"."c";
+
+# title: correlated derived table is not hoisted into a CTE
+SELECT x.a, (SELECT COUNT(*) FROM (SELECT y.c FROM y WHERE y.b = x.b LIMIT 1) AS s) AS c FROM x;
+SELECT
+  "x"."a" AS "a",
+  (
+    SELECT
+      COUNT(*) AS "_col_0"
+    FROM (
+      SELECT
+        1 AS "_"
+      FROM "y" AS "y"
+      WHERE
+        "x"."b" = "y"."b"
+      LIMIT 1
+    ) AS "s"
+  ) AS "c"
+FROM "x" AS "x";

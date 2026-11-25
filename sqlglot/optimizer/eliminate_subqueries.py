@@ -80,6 +80,7 @@ def eliminate_subqueries(expression: E) -> E:
         for cte in with_exprs:
             existing_ctes[cte.this] = cte.alias
     new_ctes: list[exp.Expr] = []
+    inline: set[Scope] = set()
 
     # We're adding more CTEs, but we want to maintain the DAG order.
     # Derived tables within an existing CTE need to come before the existing CTE.
@@ -89,7 +90,7 @@ def eliminate_subqueries(expression: E) -> E:
             if scope is cte_scope:
                 # Don't try to eliminate this CTE itself
                 continue
-            new_cte = _eliminate(scope, existing_ctes, taken)
+            new_cte = _eliminate(scope, existing_ctes, taken, inline)
             if new_cte:
                 new_ctes.append(new_cte)
 
@@ -103,7 +104,7 @@ def eliminate_subqueries(expression: E) -> E:
         root.set_operation_scopes, root.subquery_scopes, root.table_scopes
     ):
         for child_scope in scope.traverse():
-            new_cte = _eliminate(child_scope, existing_ctes, taken)
+            new_cte = _eliminate(child_scope, existing_ctes, taken, inline)
             if new_cte:
                 new_ctes.append(new_cte)
 
@@ -120,8 +121,16 @@ def eliminate_subqueries(expression: E) -> E:
 
 
 def _eliminate(
-    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping
+    scope: Scope, existing_ctes: ExistingCTEsMapping, taken: TakenNameMapping, inline: set[Scope]
 ) -> exp.Expr | None:
+    if (scope.is_derived_table or scope.is_cte) and (
+        (scope.can_be_correlated and any(column.table for column in scope.external_columns))
+        or any(isinstance(source, Scope) and source in inline for source in scope.sources.values())
+    ):
+        # Hoisting this scope would move its outer references out of scope
+        inline.add(scope)
+        return None
+
     if scope.is_derived_table:
         return _eliminate_derived_table(scope, existing_ctes, taken)
 

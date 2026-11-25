@@ -871,7 +871,7 @@ class MatchRecognizeMeasure(Expression):
     }
 
 
-class MatchRecognize(Expression, DerivedTable):
+class MatchRecognize(Expression, Selectable):
     arg_types = {
         "this": True,
         "partition_by": False,

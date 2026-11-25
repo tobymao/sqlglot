@@ -1057,7 +1057,7 @@ def _traverse_tables(scope: Scope) -> Iterator[Scope]:
 
             continue
 
-        if not isinstance(expression, exp.DerivedTable):
+        if not isinstance(expression, (exp.DerivedTable, exp.MatchRecognize)):
             continue
 
         # TODO (mypyc): rebind to exp.Expr to avoid DerivedTable/UDTF trait vtable dispatch

@@ -3595,6 +3595,7 @@ class TestDuckDB(Validator):
                 "databricks": "(DAYOFWEEK(d) - 1) * 2",
                 "bigquery": "(EXTRACT(DAYOFWEEK FROM d) - 1) * 2",
                 "postgres": "EXTRACT(DOW FROM d) * 2",
+                "presto": "(DAY_OF_WEEK(d) % 7) * 2",
                 "tsql": "(DATEPART(WEEKDAY, d) - 1) * 2",
                 "snowflake": "DAYOFWEEK(d) * 2",
             },
@@ -3606,7 +3607,11 @@ class TestDuckDB(Validator):
             "EXTRACT(DOW FROM d)",
             "EXTRACT('weekday' FROM d)",
         ):
-            self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeekZeroBased)
+            dayofweek = self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
+            self.assertTrue(dayofweek.args["zero_based"])
+
+        with self.assertRaises(ParseError):
+            self.parse_one("DAYOFWEEK(d, 1)")
 
     def test_extract_date_parts(self):
         for part in ("WEEK", "WEEKOFYEAR"):

@@ -14,7 +14,6 @@ from sqlglot.dialects.dialect import (
     count_if_to_sum,
     date_delta_to_binary_sql,
     datestrtodate_sql,
-    dayofweek_from_zero_based_sql,
     filter_array_using_unnest,
     generate_series_sql,
     getbit_sql,
@@ -287,6 +286,7 @@ def _left_right_sql(self: PostgresGenerator, expression: exp.Left | exp.Right) -
 
 
 class PostgresGenerator(generator.Generator):
+    DAYOFWEEK_ZERO_BASED = True
     SELECT_KINDS = ()
     VARIANCE_NAME = "VAR_SAMP"
     DATE_PART_WITH_EXPRESSION = "DATE_PART"
@@ -391,10 +391,6 @@ class PostgresGenerator(generator.Generator):
         exp.DatetimeAdd: _date_add_sql("+"),
         exp.DatetimeSub: _date_add_sql("-"),
         exp.Day: _day_month_year_sql,
-        exp.DayOfWeek: dayofweek_from_zero_based_sql,
-        exp.DayOfWeekZeroBased: lambda self, e: self.sql(
-            exp.Extract(this=exp.var("DOW"), expression=e.this)
-        ),
         exp.Explode: rename_func("UNNEST"),
         exp.ExplodingGenerateSeries: rename_func("GENERATE_SERIES"),
         exp.GenerateSeries: generate_series_sql("GENERATE_SERIES"),
@@ -509,6 +505,9 @@ class PostgresGenerator(generator.Generator):
         sql = super().with_properties(exp.Properties(expressions=with_properties))
         post_sql = self.expressions(sqls=post_with, sep=" ", indent=False)
         return sql + self.seg(post_sql, sep=" " if sql else "") if post_sql else sql
+
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.sql(exp.Extract(this=exp.var("DOW"), expression=expression.this))
 
     def extract_sql(self, expression: exp.Extract) -> str:
         if not expression.args.get("date_part"):

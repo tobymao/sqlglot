@@ -231,7 +231,6 @@ class TSQLGenerator(generator.Generator):
         exp.CurrentTimestampLTZ: rename_func("SYSDATETIMEOFFSET"),
         exp.DateStrToDate: datestrtodate_sql,
         exp.Day: remove_ts_or_ds_to_date(),
-        exp.DayOfWeek: lambda self, e: self.func("DATEPART", "WEEKDAY", e.this),
         exp.Filter: no_filter_sql,
         exp.GeneratedAsIdentityColumnConstraint: generatedasidentitycolumnconstraint_sql,
         exp.GroupConcat: _string_agg_sql,
@@ -432,6 +431,9 @@ class TSQLGenerator(generator.Generator):
         return self.func(
             "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
         )
+
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.func("DATEPART", "WEEKDAY", expression.this)
 
     def extract_sql(self, expression: exp.Extract) -> str:
         part = expression.this

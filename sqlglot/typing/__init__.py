@@ -196,7 +196,6 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.DatetimeDiff,
             exp.DayOfMonth,
             exp.DayOfWeek,
-            exp.DayOfWeekZeroBased,
             exp.DayOfYear,
             exp.Getbit,
             exp.Hour,

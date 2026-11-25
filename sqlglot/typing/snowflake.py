@@ -499,7 +499,6 @@ EXPRESSION_METADATA = {
         for expr_type in {
             exp.DayOfMonth,
             exp.DayOfWeek,
-            exp.DayOfWeekZeroBased,
             exp.DayOfYear,
             exp.Quarter,
         }

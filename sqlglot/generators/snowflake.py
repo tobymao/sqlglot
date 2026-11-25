@@ -9,7 +9,6 @@ from sqlglot.dialects.dialect import (
     array_concat_sql,
     date_delta_sql,
     datestrtodate_sql,
-    dayofweek_from_zero_based_sql,
     groupconcat_sql,
     if_sql,
     inline_array_sql,
@@ -376,6 +375,8 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
+    DAYOFWEEK_NAME = "DAYOFWEEK"
+    DAYOFWEEK_ZERO_BASED = True
     BYTE_STRING_FUNCTION = "HEX_DECODE_BINARY"
     SELECT_KINDS = ()
     PARAMETER_TOKEN = "$"
@@ -481,9 +482,7 @@ class SnowflakeGenerator(generator.Generator):
             e.args.get("aead"),
         ),
         exp.DayOfMonth: rename_func("DAYOFMONTH"),
-        exp.DayOfWeek: dayofweek_from_zero_based_sql,
         exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
-        exp.DayOfWeekZeroBased: rename_func("DAYOFWEEK"),
         exp.DayOfYear: rename_func("DAYOFYEAR"),
         exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),
         exp.Explode: rename_func("FLATTEN"),

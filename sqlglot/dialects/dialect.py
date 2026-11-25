@@ -2126,8 +2126,8 @@ def timestrtotime_sql(
     return self.sql(exp.cast(expression.this, datatype, dialect=self.dialect))
 
 
-def dayofweek_from_zero_based_sql(self: Generator, expression: exp.DayOfWeek) -> str:
-    return self.sql(exp.paren(exp.DayOfWeekZeroBased(this=expression.this) + 1, copy=False))
+def build_dayofweek_zero_based(args: BuilderArgs) -> exp.DayOfWeek:
+    return exp.DayOfWeek(this=seq_get(args, 0), zero_based=True)
 
 
 def datestrtodate_sql(self: Generator, expression: exp.DateStrToDate) -> str:
@@ -2445,10 +2445,10 @@ def ts_or_ds_add_cast(expression: exp.TsOrDsAdd) -> exp.TsOrDsAdd:
 
 
 def remove_ts_or_ds_to_date(
-    to_sql: t.Callable[[Generator, exp.Expr], str] | None = None,
+    to_sql: t.Callable[[Generator, F], str] | None = None,
     args: tuple[str, ...] = ("this",),
-) -> t.Callable[[Generator, exp.Func], str]:
-    def func(self: Generator, expression: exp.Func) -> str:
+) -> t.Callable[[Generator, F], str]:
+    def func(self: Generator, expression: F) -> str:
         for arg_key in args:
             arg = expression.args.get(arg_key)
             if isinstance(arg, (exp.TsOrDsToDate, exp.TsOrDsToTimestamp)) and not arg.args.get(

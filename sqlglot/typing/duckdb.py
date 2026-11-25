@@ -102,7 +102,6 @@ EXPRESSION_METADATA = {
             exp.DayOfMonth,
             exp.DayOfWeek,
             exp.DayOfWeekIso,
-            exp.DayOfWeekZeroBased,
             exp.DayOfYear,
             exp.Extract,
             exp.Hour,

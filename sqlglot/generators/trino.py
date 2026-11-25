@@ -18,7 +18,38 @@ class TrinoGenerator(PrestoGenerator):
     SUPPORTS_LEFT_JOIN_UNNEST = True
     EXCEPT_INTERSECT_SUPPORT_ALL_CLAUSE = True
     DECLARE_DEFAULT_ASSIGNMENT = "DEFAULT"
-    RESERVED_KEYWORDS = PrestoGenerator.RESERVED_KEYWORDS | {"current_schema"}
+
+    # https://trino.io/docs/current/language/reserved.html
+    RESERVED_KEYWORDS = (PrestoGenerator.RESERVED_KEYWORDS - {"execute"}) | {
+        "auto",
+        "cube",
+        "current_catalog",
+        "current_date",
+        "current_path",
+        "current_role",
+        "current_schema",
+        "current_user",
+        "grouping",
+        "json_array",
+        "json_exists",
+        "json_object",
+        "json_query",
+        "json_serialize",
+        "json_table",
+        "json_value",
+        "listagg",
+        "localtime",
+        "localtimestamp",
+        "normalize",
+        "overlaps",
+        "recursive",
+        "rollup",
+        "skip",
+        "trim",
+        "uescape",
+        "unnest",
+    }
+
     PROPERTIES_LOCATION = {
         **PrestoGenerator.PROPERTIES_LOCATION,
         exp.LocationProperty: exp.Properties.Location.POST_WITH,
@@ -30,6 +61,7 @@ class TrinoGenerator(PrestoGenerator):
             f"REDUCE({self.sql(e, 'this')}, 0, (acc, x) -> acc + x, acc -> acc)"
         ),
         exp.ArrayUniqueAgg: lambda self, e: f"ARRAY_AGG(DISTINCT {self.sql(e, 'this')})",
+        exp.CurrentPath: lambda *_: "CURRENT_PATH",
         exp.CurrentVersion: rename_func("VERSION"),
         exp.FromISO8601TimestampNanos: rename_func("FROM_ISO8601_TIMESTAMP_NANOS"),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),

@@ -184,7 +184,6 @@ class Spark2Generator(HiveGenerator):
                 "TRUNC", e.this, weekstart_unit_to_str(self, e)
             ),
             exp.DayOfMonth: rename_func("DAYOFMONTH"),
-            exp.DayOfWeek: rename_func("DAYOFWEEK"),
             # (DAY_OF_WEEK(datetime) % 7) + 1 is equivalent to DAYOFWEEK_ISO(datetime)
             exp.DayOfWeekIso: lambda self, e: f"(({self.func('DAYOFWEEK', e.this)} % 7) + 1)",
             exp.DayOfYear: rename_func("DAYOFYEAR"),

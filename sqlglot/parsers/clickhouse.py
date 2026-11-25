@@ -333,7 +333,9 @@ class ClickHouseParser(parser.Parser):
         "TIMESTAMPSUB": build_date_delta(exp.TimestampSub, default_unit=None),
         "TIMESTAMP_ADD": build_date_delta(exp.TimestampAdd, default_unit=None),
         "TIMESTAMPADD": build_date_delta(exp.TimestampAdd, default_unit=None),
-        "TODAYOFWEEK": _build_without_extra_args(exp.DayOfWeekIso, "toDayOfWeek"),
+        **dict.fromkeys(
+            ("TODAYOFWEEK", "DAYOFWEEK"), _build_without_extra_args(exp.DayOfWeekIso, "toDayOfWeek")
+        ),
         "TOISOWEEK": _build_without_extra_args(exp.WeekOfYear, "toISOWeek"),
         "TOISOYEAR": _build_without_extra_args(exp.YearOfWeekIso, "toISOYear"),
         "TOMONDAY": _build_timestamp_trunc("WEEK"),
@@ -569,7 +571,7 @@ class ClickHouseParser(parser.Parser):
 
         return dtype
 
-    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+    def _parse_extract(self) -> exp.Expr:
         index = self._index
         this = self._parse_bitwise()
         if self._match(TokenType.FROM):

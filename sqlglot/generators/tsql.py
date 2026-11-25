@@ -433,6 +433,9 @@ class TSQLGenerator(generator.Generator):
             "PARSENAME", this, exp.Literal.number(split_count + 1 - part_index.to_py())
         )
 
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.func("DATEPART", "WEEKDAY", expression.this)
+
     def extract_sql(self, expression: exp.Extract) -> str:
         if expression.args.get("zero_based_dow"):
             # The earliest SQL Server date was a Monday, so the dividend is always positive.

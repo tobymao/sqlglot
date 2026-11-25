@@ -320,6 +320,9 @@ class ExasolGenerator(generator.Generator):
         processed = _group_by_all(processed)
         return super().select_sql(t.cast(exp.Select, processed))
 
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return f"CAST(TO_CHAR({self.sql(expression, 'this')}, 'D') AS INTEGER)"
+
     def datatype_sql(self, expression: exp.DataType) -> str:
         # Exasol supports a fixed default precision of 3 for TIMESTAMP WITH LOCAL TIME ZONE
         # and does not allow specifying a different custom precision
@@ -352,7 +355,6 @@ class ExasolGenerator(generator.Generator):
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/div.htm#DIV
         exp.IntDiv: rename_func("DIV"),
         exp.TsOrDsDiff: _date_diff_sql,
-        exp.DayOfWeek: lambda self, e: f"CAST(TO_CHAR({self.sql(e, 'this')}, 'D') AS INTEGER)",
         exp.DatetimeTrunc: timestamptrunc_sql(),
         exp.GroupConcat: lambda self, e: groupconcat_sql(self, e, on_overflow=True),
         # https://docs.exasol.com/db/latest/sql_references/functions/alphabeticallistfunctions/edit_distance.htm#EDIT_DISTANCE

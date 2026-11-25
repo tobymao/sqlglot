@@ -421,6 +421,9 @@ class Parser:
             this=seq_get(args, 0),
             to=exp.DataType(this=exp.DType.TEXT),
         ),
+        **dict.fromkeys(
+            exp.DayOfWeek.sql_names(), lambda args: exp.DayOfWeek(this=seq_get(args, 0))
+        ),
         "GENERATE_DATE_ARRAY": lambda args: exp.GenerateDateArray(
             start=seq_get(args, 0),
             end=seq_get(args, 1),
@@ -1590,6 +1593,8 @@ class Parser:
 
     KEY_VALUE_DEFINITIONS: t.ClassVar = (exp.Alias, exp.EQ, exp.PropertyEQ, exp.Slice)
 
+    EXTRACT_FUNCTIONS: t.ClassVar[dict[str, t.Callable[[list], exp.Expr]]] = {}
+
     FUNCTION_PARSERS: t.ClassVar[dict[str, t.Callable]] = {
         **{
             name: lambda self: self._parse_distinct_arg_function(exp.ArgMax)
@@ -1946,6 +1951,8 @@ class Parser:
 
     # Whether TABLE name can be used as shorthand for SELECT * FROM name.
     SUPPORTS_TABLE_QUERY: t.ClassVar = False
+
+    SUPPORTS_GROUP_BY_AUTO: t.ClassVar = False
 
     # Whether field names can be digit-prefixed, e.g. data.144A_FLAG or data.144 (BigQuery)
     SUPPORTS_DIGIT_PREFIXED_FIELD_NAMES: t.ClassVar = False
@@ -5842,15 +5849,7 @@ class Parser:
             if self._match_set(self.QUERY_MODIFIER_TOKENS, advance=False):
                 break
 
-            elements["expressions"].extend(
-                self._parse_csv(
-                    lambda: (
-                        self._parse_grouping_sets()
-                        or self._parse_cube_or_rollup()
-                        or self._parse_disjunction()
-                    )
-                )
-            )
+            elements["expressions"].extend(self._parse_csv(self._parse_grouping_element))
 
             before_with_index = self._index
 
@@ -5871,6 +5870,14 @@ class Parser:
                 break
 
         return self.expression(exp.Group(**elements), comments=comments)  # type: ignore
+
+    def _parse_grouping_element(self) -> exp.Expr | None:
+        if self.SUPPORTS_GROUP_BY_AUTO and self._match_text_seq("AUTO"):
+            return self.expression(exp.Var(this="AUTO"))
+
+        return (
+            self._parse_grouping_sets() or self._parse_cube_or_rollup() or self._parse_disjunction()
+        )
 
     def _parse_cube_or_rollup(self, with_prefix: bool = False) -> exp.Cube | exp.Rollup | None:
         if self._match(TokenType.CUBE):
@@ -8567,13 +8574,19 @@ class Parser:
             )
         )
 
-    def _parse_extract(self) -> exp.Extract | exp.Anonymous:
+    def _parse_extract(self) -> exp.Expr:
         this = self._parse_function() or self._parse_var_or_string(upper=True)
 
-        if not self._match(TokenType.FROM) and not self._match(TokenType.COMMA):
+        if not self._match_set((TokenType.FROM, TokenType.COMMA)):
             self.raise_error("Expected FROM or comma after EXTRACT", self._prev)
 
-        return self._build_extract(this, self._parse_bitwise())
+        expression = self._parse_bitwise()
+        if expression and isinstance(this, (exp.Var, exp.Literal)):
+            func = self.EXTRACT_FUNCTIONS.get(this.name.upper())
+            if func:
+                return self.expression(func([expression]), comments=this.pop_comments())
+
+        return self._build_extract(this, expression)
 
     def _build_extract(self, part: exp.Expr | None, value: exp.Expr | None) -> exp.Extract:
         return self.expression(exp.Extract(this=part, expression=value))

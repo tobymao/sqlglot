@@ -7,6 +7,47 @@ from tests.dialects.test_dialect import Validator
 class TestTrino(Validator):
     dialect = "trino"
 
+    def test_reserved_keyword_identifiers(self):
+        for name in ("current_date", "CURRENT_USER", "unnest", "listagg", "json_serialize"):
+            with self.subTest(name=name):
+                query = exp.select(exp.column(name)).from_(
+                    exp.select(exp.Literal.number(42).as_(name)).subquery("t")
+                )
+                self.assertEqual(
+                    query.sql("trino"), f'SELECT "{name}" FROM (SELECT 42 AS "{name}") AS t'
+                )
+
+        self.validate_all(
+            "SELECT 1 AS execute",
+            write={
+                "athena": 'SELECT 1 AS "execute"',
+                "presto": 'SELECT 1 AS "execute"',
+                "trino": "SELECT 1 AS execute",
+            },
+        )
+
+    def test_current_path(self):
+        query = self.validate_identity(
+            'SELECT CURRENT_PATH AS p, "CURRENT_PATH" AS c FROM (VALUES (42)) AS t("CURRENT_PATH")'
+        )
+        query.expressions[0].this.assert_is(exp.CurrentPath)
+        query.expressions[1].this.assert_is(exp.Column)
+
+    def test_group_by_auto(self):
+        self.validate_identity(
+            "SELECT x, SUM(y) FROM (VALUES (1, 2), (1, 3)) AS t(x, y) GROUP BY AUTO"
+        )
+        self.validate_identity(
+            'SELECT "auto", COUNT(*) FROM (VALUES (1), (1)) AS t("auto") GROUP BY "auto"'
+        )
+        self.validate_identity(
+            "SELECT x, COUNT(*) FROM (VALUES (1, 2)) AS t(x, y) GROUP BY DISTINCT y, AUTO"
+        )
+        self.validate_all(
+            'SELECT COUNT(*) FROM (VALUES (1), (1)) AS t("auto") GROUP BY "auto"',
+            read={"athena": "SELECT COUNT(*) FROM (VALUES (1), (1)) AS t(auto) GROUP BY auto"},
+        )
+
     def test_current_schema(self):
         self.validate_all(
             'SELECT CURRENT_SCHEMA, "current_schema" FROM (VALUES (42)) AS t("current_schema")',

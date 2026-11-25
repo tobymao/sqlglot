@@ -6,6 +6,7 @@ from sqlglot import exp, parser
 from sqlglot.trie import new_trie
 from sqlglot.dialects.dialect import (
     binary_from_function,
+    build_dayofweek_zero_based,
     build_default_decimal_type,
     build_formatted_time,
     build_regexp_extract,
@@ -120,6 +121,8 @@ _parse_regexp_full_match = binary_range_parser(exp.RegexpFullMatch)
 
 
 class DuckDBParser(parser.Parser):
+    EXTRACT_FUNCTIONS = dict.fromkeys(("DAYOFWEEK", "DOW", "WEEKDAY"), build_dayofweek_zero_based)
+
     SUPPORTS_TABLE_QUERY = True
 
     IS_PREDICATE_PRECEDENCE = IsPredicatePrecedence.LOW
@@ -201,6 +204,7 @@ class DuckDBParser(parser.Parser):
         "DATE_DIFF": _build_date_diff,
         "DATE_TRUNC": _build_date_trunc,
         "DATETRUNC": _build_date_trunc,
+        **dict.fromkeys(("DAYOFWEEK", "WEEKDAY"), build_dayofweek_zero_based),
         "DECODE": lambda args: exp.Decode(
             this=seq_get(args, 0), charset=exp.Literal.string("utf-8")
         ),

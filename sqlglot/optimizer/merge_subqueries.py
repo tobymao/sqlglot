@@ -7,7 +7,11 @@ from itertools import chain
 
 from sqlglot import expressions as exp
 from sqlglot.helper import find_new_name, seq_get
-from sqlglot.optimizer.helpers import is_implicit_group_by_all, projection_has_aggregate
+from sqlglot.optimizer.helpers import (
+    has_implicit_grouping,
+    is_implicit_group_by_all,
+    projection_has_aggregate,
+)
 from sqlglot.optimizer.scope import Scope, find_all_in_scope, find_in_scope, traverse_scope
 
 if t.TYPE_CHECKING:
@@ -285,9 +289,7 @@ def _mergeable(
         """A window function's result depends on the full row set it sees, so merging the
         subquery into the outer query is unsafe when:
           - the outer query filters or joins (WHERE/JOIN), which changes that row set,
-          - the outer query is a bare GROUP BY ALL, which implicitly groups by every
-            projection (unlike ALL as a grouping-sets modifier, e.g. GROUP BY ALL
-            CUBE (...)), or
+          - the outer query infers grouping keys from its projections (GROUP BY ALL or AUTO), or
           - a window column is referenced in an operation that isn't pushed down
             (GROUP BY, ORDER BY, HAVING, aggregate).
         """
@@ -297,7 +299,7 @@ def _mergeable(
         if outer_args.get("where") or outer_args.get("joins"):
             return True
 
-        if is_implicit_group_by_all(t.cast(exp.Select, outer)):
+        if has_implicit_grouping(t.cast(exp.Select, outer)):
             return True
 
         return any(

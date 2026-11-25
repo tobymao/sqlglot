@@ -265,6 +265,7 @@ def amend_exploded_column_table(expression: exp.Expr) -> exp.Expr:
 
 
 class PrestoGenerator(generator.Generator):
+    DAYOFWEEK_ZERO_BASED = True
     SELECT_KINDS = ()
     SUPPORTS_EXECUTE_IMMEDIATE = False
     SUPPORTS_DECODE_CASE = False
@@ -361,7 +362,6 @@ class PrestoGenerator(generator.Generator):
             f"CAST(DATE_FORMAT({self.sql(e, 'this')}, {type(self.dialect).DATEINT_FORMAT}) AS INT)"
         ),
         exp.DateSub: _date_delta_sql("DATE_ADD", negate_interval=True),
-        exp.DayOfWeek: lambda self, e: f"(({self.func('DAY_OF_WEEK', e.this)} % 7) + 1)",
         exp.DayOfWeekIso: rename_func("DAY_OF_WEEK"),
         exp.Decode: lambda self, e: encode_decode_sql(self, e, "FROM_UTF8"),
         exp.DiToDate: lambda self, e: (
@@ -526,6 +526,10 @@ class PrestoGenerator(generator.Generator):
             return self.func("ANY_MATCH", expression.this, expression.expression)
 
         return super().exists_sql(expression)
+
+    def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        # ISO Sunday is 7, so modulo 7 gives Sunday = 0.
+        return self.sql(exp.paren(exp.DayOfWeekIso(this=expression.this) % 7, copy=False))
 
     def extract_sql(self, expression: exp.Extract) -> str:
         date_part = expression.name

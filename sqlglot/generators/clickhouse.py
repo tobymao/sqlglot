@@ -449,6 +449,11 @@ class ClickHouseGenerator(generator.Generator):
         exp.DType.MULTIPOLYGON,
     }
 
+    def dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
+        return self.func(
+            "toDayOfWeek", expression.this, "2" if expression.args.get("zero_based") else "3"
+        )
+
     def arrayremove_sql(self, expression: exp.ArrayRemove) -> str:
         return remove_from_array_using_filter(
             self,

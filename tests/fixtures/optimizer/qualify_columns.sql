@@ -2036,3 +2036,24 @@ SELECT _0.n AS n FROM ev AS ev MATCH_RECOGNIZE (PARTITION BY ev.u ORDER BY 1 MEA
 # validate_qualify_columns: false
 SELECT * FROM unknown_table MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a) DEFINE a AS TRUE);
 SELECT * FROM unknown_table AS unknown_table MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES CLASSIFIER() AS c ALL ROWS PER MATCH PATTERN (a) DEFINE A AS TRUE) _0;
+
+# title: MATCH_RECOGNIZE in UPDATE ... FROM
+# dialect: snowflake
+# execute: false
+# schema: {"t": {"u": "INT", "x": "INT"}, "ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+UPDATE t SET x = m.c FROM ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES COUNT(*) AS c, LAST(a.amt) AS l PATTERN (a+) DEFINE a AS e = 'view') AS m WHERE t.u = m.u;
+UPDATE T SET X = M.C FROM EV AS EV MATCH_RECOGNIZE (PARTITION BY EV.U ORDER BY EV.TS MEASURES COUNT(*) AS C, LAST(A.AMT) AS L PATTERN (a+) DEFINE A AS E = 'view') M WHERE T.U = M.U;
+
+# title: MATCH_RECOGNIZE over a derived table in MERGE ... USING
+# dialect: snowflake
+# execute: false
+# schema: {"t": {"u": "INT", "x": "INT"}, "ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+MERGE INTO t USING (SELECT u, ts, e FROM ev) MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES COUNT(*) AS c PATTERN (a+) DEFINE a AS a.e = 'view') AS m ON t.u = m.u WHEN MATCHED THEN UPDATE SET x = m.c;
+MERGE INTO T USING (SELECT EV.U AS U, EV.TS AS TS, EV.E AS E FROM EV AS EV) AS _0 MATCH_RECOGNIZE (PARTITION BY _0.U ORDER BY _0.TS MEASURES COUNT(*) AS C PATTERN (a+) DEFINE A AS A.E = 'view') M ON T.U = M.U WHEN MATCHED THEN UPDATE SET X = M.C;
+
+# title: MATCH_RECOGNIZE in DELETE ... USING
+# dialect: snowflake
+# execute: false
+# schema: {"t": {"u": "INT", "x": "INT"}, "ev": {"u": "INT", "ts": "TIMESTAMP", "e": "VARCHAR", "amt": "DOUBLE"}}
+DELETE FROM t USING ev MATCH_RECOGNIZE (PARTITION BY u ORDER BY ts MEASURES COUNT(*) AS c PATTERN (a+) DEFINE a AS e = 'view') AS m WHERE t.u = m.u AND m.c > 1;
+DELETE FROM T USING EV AS EV MATCH_RECOGNIZE (PARTITION BY EV.U ORDER BY EV.TS MEASURES COUNT(*) AS C PATTERN (a+) DEFINE A AS E = 'view') M WHERE T.U = M.U AND M.C > 1;

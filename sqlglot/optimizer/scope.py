@@ -792,9 +792,9 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
     elif isinstance(expression, exp.DML):
         yield from _traverse_ctes(scope)
 
-        # Bare tables in relation position (e.g. UPDATE ... FROM t, DELETE / MERGE ... USING t)
-        # aren't part of any query, so they're scoped as standalone tables; `_traverse_tables`
-        # also picks up any joins hanging off of them
+        # Bare tables and MATCH_RECOGNIZEs in relation position (e.g. UPDATE ... FROM t,
+        # DELETE / MERGE ... USING t) aren't part of any query, so they're scoped standalone;
+        # `_traverse_tables` also picks up any joins hanging off of them
         relations: list[exp.Expr] = []
         from_ = expression.args.get("from_")
 
@@ -810,6 +810,15 @@ def _traverse_scope(scope: Scope) -> Iterator[Scope]:
         for relation in relations:
             if isinstance(relation, exp.Table):
                 yield from _traverse_scope(Scope(relation, cte_sources=scope.cte_sources))
+            elif isinstance(relation, exp.MatchRecognize):
+                yield from _traverse_scope(
+                    Scope(
+                        relation,
+                        cte_sources=scope.cte_sources,
+                        scope_type=ScopeType.MATCH_RECOGNIZE,
+                    )
+                )
+                relations.extend(join.this for join in relation.args.get("joins") or [])
 
         for query in find_all_in_scope(expression, exp.Query):
             # This check ensures we don't yield the CTE/nested queries twice

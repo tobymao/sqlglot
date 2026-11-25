@@ -8579,7 +8579,7 @@ class Parser:
         if expression and isinstance(this, (exp.Var, exp.Literal)):
             func = self.EXTRACT_FUNCTIONS.get(this.name.upper())
             if func:
-                return self.expression(func([expression]))
+                return self.expression(func([expression]), comments=this.pop_comments())
 
         return self.expression(exp.Extract(this=this, expression=expression))
 

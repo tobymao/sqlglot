@@ -207,7 +207,17 @@ class TestClickhouse(Validator):
             },
             write={"duckdb": "EXTRACT(ISOYEAR FROM x)", "snowflake": "YEAROFWEEKISO(x)"},
         )
-        self.validate_identity("toDayOfWeek(x, 3)")
+        self.validate_all(
+            "toDayOfWeek(x, 2)",
+            read={"duckdb": "EXTRACT(DOW FROM x)", "clickhouse": "DAYOFWEEK(x, 2)"},
+        )
+        self.validate_all(
+            "toDayOfWeek(x, 3)",
+            read={"bigquery": "EXTRACT(DAYOFWEEK FROM x)", "clickhouse": "DAYOFWEEK(x, 3)"},
+        )
+        self.validate_identity("DAYOFWEEK(x, 0)", "toDayOfWeek(x, 0)")
+        self.validate_identity("DAYOFWEEK(x, 1, 'UTC')", "toDayOfWeek(x, 1, 'UTC')")
+        self.validate_transpile("DAYOFWEEK(x)", "ISODOW(x)", "duckdb")
         self.validate_identity("toISOWeek(x, 'UTC')")
         self.validate_identity("toISOYear(x, 'UTC')")
         self.validate_identity("SELECT * FROM foo WHERE x GLOBAL IN (SELECT * FROM bar)")

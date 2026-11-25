@@ -3959,10 +3959,14 @@ class Generator:
         return f"NEXT VALUE FOR {self.sql(expression, 'this')}{order}"
 
     def dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
-        sql = self._native_dayofweek_sql(expression)
         if bool(expression.args.get("zero_based")) == self.DAYOFWEEK_ZERO_BASED:
-            return sql
-        return f"({sql} {'+' if self.DAYOFWEEK_ZERO_BASED else '-'} 1)"
+            return self._native_dayofweek_sql(expression)
+
+        adjusted = expression + 1 if self.DAYOFWEEK_ZERO_BASED else expression - 1
+        adjusted.this.set("zero_based", self.DAYOFWEEK_ZERO_BASED)
+        # The outer DayOfWeek already emits the function's comments.
+        adjusted.this.pop_comments()
+        return self.sql(exp.paren(adjusted, copy=False))
 
     def _native_dayofweek_sql(self, expression: exp.DayOfWeek) -> str:
         return self.func(self.DAYOFWEEK_NAME or self.function_name(expression), expression.this)

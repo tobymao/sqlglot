@@ -3610,6 +3610,19 @@ class TestDuckDB(Validator):
             dayofweek = self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
             self.assertTrue(dayofweek.args["zero_based"])
 
+        self.validate_all(
+            "SELECT\n  2 * (\n    DAYOFWEEK(d) + 1\n  ) /* weekday */",
+            read={"bigquery": "SELECT 2 * EXTRACT(DAYOFWEEK FROM d) /* weekday */"},
+            pretty=True,
+        )
+        self.validate_all(
+            "SELECT 2 * DAYOFWEEK(d) /* weekday */",
+            write={
+                "bigquery": "SELECT\n  2 * (\n    EXTRACT(DAYOFWEEK FROM d) - 1\n  ) /* weekday */"
+            },
+            pretty=True,
+        )
+
     def test_extract_date_parts(self):
         for part in ("WEEK", "WEEKOFYEAR"):
             # Both are synonyms for ISO week

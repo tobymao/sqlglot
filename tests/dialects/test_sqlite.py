@@ -1509,6 +1509,30 @@ class TestSQLite(Validator):
         )
         self.assertEqual(query.sql("sqlite"), "SELECT CAST(STRFTIME('%d', t.d) AS INTEGER) FROM t")
 
+        self.validate_all(
+            "SELECT CAST(STRFTIME('%j', DATE('2024-03-31')) AS INTEGER)",
+            read={
+                "postgres": "SELECT EXTRACT(DOY FROM DATE '2024-03-31')",
+                "duckdb": "SELECT EXTRACT(DAYOFYEAR FROM DATE '2024-03-31')",
+            },
+        )
+        self.validate_all(
+            "SELECT ((CAST(STRFTIME('%m', DATE('2024-04-01')) AS INTEGER) + 2) / 3)",
+            read={"postgres": "SELECT EXTRACT(QUARTER FROM DATE '2024-04-01')"},
+        )
+
+    def test_extract_quarter_and_day_of_year(self):
+        sql = parse_one(
+            "WITH t(d) AS (VALUES ('2024-03-31'), ('2024-04-01'), ('2024-12-31'), (NULL)) "
+            "SELECT 12 / EXTRACT(QUARTER FROM CAST(d AS DATE)), EXTRACT(DOY FROM CAST(d AS DATE)) "
+            "FROM t ORDER BY d NULLS LAST",
+            read="postgres",
+        ).sql("sqlite")
+        with closing(sqlite3.connect(":memory:")) as conn:
+            self.assertEqual(
+                conn.execute(sql).fetchall(), [(12, 91), (6, 92), (3, 366), (None, None)]
+            )
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
         self.validate_identity(

@@ -28,7 +28,14 @@ DATETIME_TYPES = (
     exp.DType.TIMESTAMPTZ,
     exp.DType.TIMESTAMPLTZ,
 )
-DATE_PART_FORMATS = {"YEAR": "%Y", "MONTH": "%m", "DAY": "%d"}
+DATE_PART_FORMATS = {
+    "YEAR": "%Y",
+    "MONTH": "%m",
+    "DAY": "%d",
+    "DOY": "%j",
+    "DAYOFYEAR": "%j",
+    "QUARTER": "%m",
+}
 
 
 def _transform_create(expression: exp.Expr) -> exp.Expr:
@@ -336,12 +343,18 @@ class SQLiteGenerator(generator.Generator):
         return super().attimezone_sql(expression)
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        fmt = DATE_PART_FORMATS.get(expression.name.upper())
+        part = expression.name.upper()
+        fmt = DATE_PART_FORMATS.get(part)
         value = expression.expression
         # PostgreSQL DATE_PART returns double precision even for integral fields.
         if fmt and value.unnest().is_type(exp.DType.DATE) and not expression.args.get("date_part"):
             formatted = exp.TimeToStr(this=value.copy(), format=exp.Literal.string(fmt))
-            return self.sql(exp.cast(formatted, exp.DType.INT, copy=False))
+            field = exp.cast(formatted, exp.DType.INT, copy=False)
+            if part == "QUARTER":
+                quarter = (field + 2) / 3
+                quarter.set("typed", True)
+                return self.sql(exp.paren(quarter, copy=False))
+            return self.sql(field)
 
         return super().extract_sql(expression)
 

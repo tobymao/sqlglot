@@ -6,21 +6,16 @@ from sqlglot import exp
 from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
 
 if t.TYPE_CHECKING:
-    from sqlglot.dialects.dialect import Dialect
     from sqlglot.optimizer.annotate_types import TypeAnnotator
 
 
-def extract_type(dialect: Dialect, date_part: bool = False) -> exp.DType:
-    # PostgreSQL 14 changed EXTRACT's return type from double precision to numeric.
-    if date_part or (dialect.version < (14,) and dialect == "postgres"):
-        return exp.DType.DOUBLE
-    return exp.DType.DECIMAL
-
-
 def _annotate_extract(self: TypeAnnotator, expression: exp.Extract) -> exp.Expr:
-    return self._set_type(
-        expression, extract_type(self.dialect, expression.args.get("date_part", False))
-    )
+    # PostgreSQL 14 changed EXTRACT's return type from double precision to numeric.
+    if expression.args.get("date_part") or (
+        self.dialect.version < (14,) and self.dialect == "postgres"
+    ):
+        return self._set_type(expression, exp.DType.DOUBLE)
+    return self._set_type(expression, exp.DType.DECIMAL)
 
 
 def _annotate_math_function(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:

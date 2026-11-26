@@ -354,11 +354,13 @@ class SQLiteGenerator(generator.Generator):
                 quarter = (field + 2) / 3
                 quarter.set("typed", True)
                 field = quarter
-            dtype = expression.type or expression.args.get("return_type")
-            as_real = dtype and dtype.is_type(*exp.DataType.REAL_TYPES)
-            return self.sql(
-                exp.cast(field, exp.DType.DOUBLE if as_real else exp.DType.INT, copy=False)
+            # Default to REAL so division preserves fractions when EXTRACT is untyped.
+            dtype = (
+                exp.DType.INT
+                if expression.is_type(*exp.DataType.INTEGER_TYPES)
+                else exp.DType.DOUBLE
             )
+            return self.sql(exp.cast(field, dtype, copy=False))
 
         return super().extract_sql(expression)
 

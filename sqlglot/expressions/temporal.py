@@ -248,7 +248,6 @@ class Extract(Expression, Func):
         "date_part": False,
         "zero_based_dow": False,
         "uses_session_timezone": False,
-        "return_type": False,
     }
 
 

@@ -1491,32 +1491,36 @@ class TestSQLite(Validator):
     def test_extract_date_parts(self):
         for part, fmt in (("YEAR", "%Y"), ("MONTH", "%m"), ("DAY", "%d")):
             self.validate_all(
-                f"SELECT CAST(STRFTIME('{fmt}', DATE('2024-03-05')) AS INTEGER)",
-                read={"duckdb": f"SELECT EXTRACT({part} FROM DATE '2024-03-05')"},
-            )
-            self.validate_all(
                 f"SELECT CAST(STRFTIME('{fmt}', DATE('2024-03-05')) AS REAL)",
-                read={"postgres": f"SELECT EXTRACT('{part.lower()}' FROM DATE '2024-03-05')"},
+                read={
+                    "postgres": f"SELECT EXTRACT('{part.lower()}' FROM DATE '2024-03-05')",
+                    "duckdb": f"SELECT EXTRACT({part} FROM DATE '2024-03-05')",
+                },
             )
 
         self.validate_all(
             "SELECT CAST(STRFTIME('%Y', DATE(d)) AS REAL) FROM t",
             read={"postgres": "SELECT EXTRACT(YEAR FROM CAST(d AS DATE)) FROM t"},
         )
-        query = annotate_types(
-            parse_one("SELECT EXTRACT(DAY FROM t.d) FROM t", read="postgres"),
-            schema={"t": {"d": "DATE"}},
-            dialect="postgres",
-            overwrite_types=False,
-        )
-        self.assertEqual(query.sql("sqlite"), "SELECT CAST(STRFTIME('%d', t.d) AS REAL) FROM t")
+        for source, dtype in (("postgres", "REAL"), ("duckdb", "INTEGER")):
+            query = annotate_types(
+                parse_one("SELECT EXTRACT(DAY FROM t.d) FROM t", read=source),
+                schema={"t": {"d": "DATE"}},
+                dialect=source,
+            )
+            self.assertEqual(
+                query.sql("sqlite"), f"SELECT CAST(STRFTIME('%d', t.d) AS {dtype}) FROM t"
+            )
 
         self.validate_all(
-            "SELECT CAST(STRFTIME('%j', DATE('2024-03-31')) AS INTEGER)",
-            read={"duckdb": "SELECT EXTRACT(DAYOFYEAR FROM DATE '2024-03-31')"},
+            "SELECT CAST(STRFTIME('%j', DATE('2024-03-31')) AS REAL)",
+            read={
+                "postgres": "SELECT EXTRACT(DOY FROM DATE '2024-03-31')",
+                "duckdb": "SELECT EXTRACT(DAYOFYEAR FROM DATE '2024-03-31')",
+            },
         )
         self.validate_all(
-            "SELECT CAST((STRFTIME('%m', DATE('2024-04-01')) + 2) / 3 AS INTEGER)",
+            "SELECT CAST((STRFTIME('%m', DATE('2024-04-01')) + 2) / 3 AS REAL)",
             read={"duckdb": "SELECT EXTRACT(QUARTER FROM DATE '2024-04-01')"},
         )
 

@@ -8586,7 +8586,10 @@ class Parser:
             if func:
                 return self.expression(func([expression]), comments=this.pop_comments())
 
-        return self.expression(exp.Extract(this=this, expression=expression))
+        return self._build_extract(this, expression)
+
+    def _build_extract(self, part: exp.Expr | None, value: exp.Expr | None) -> exp.Extract:
+        return self.expression(exp.Extract(this=part, expression=value))
 
     def _parse_table_argument(self, table_token: Token | None = None) -> exp.Expr | None:
         if table_token is None and self._match(TokenType.TABLE):

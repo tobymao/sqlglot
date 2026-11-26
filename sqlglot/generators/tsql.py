@@ -280,6 +280,7 @@ class TSQLGenerator(generator.Generator):
         exp.Uuid: lambda *_: "NEWID()",
         exp.Year: remove_ts_or_ds_to_date(),
         exp.DateFromParts: rename_func("DATEFROMPARTS"),
+        exp.DayOfYear: lambda self, e: self.func("DATEPART", "DAYOFYEAR", e.this),
     }
 
     PROPERTIES_LOCATION = {
@@ -436,10 +437,38 @@ class TSQLGenerator(generator.Generator):
         return self.func("DATEPART", "WEEKDAY", expression.this)
 
     def extract_sql(self, expression: exp.Extract) -> str:
-        part = expression.this
-        name = DATE_PART_UNMAPPING.get(part.name.upper()) or part
+        if expression.args.get("uses_session_timezone") and expression.expression.is_type(
+            exp.DType.TIMESTAMPTZ
+        ):
+            self.unsupported(
+                f"Extracting {expression.this.name.upper()} from TIMESTAMPTZ depends on the source session time zone. "
+                "Use AT TIME ZONE on the input to make the time zone explicit."
+            )
 
-        return self.func("DATEPART", name, expression.expression)
+        if expression.args.get("zero_based_dow"):
+            # The earliest SQL Server date was a Monday, so the dividend is always positive.
+            days = exp.DateDiff(
+                this=exp.cast(expression.expression, exp.DType.DATE, dialect=self.dialect),
+                expression=exp.Literal.string("00010101"),
+                unit=exp.var("DAY"),
+            )
+            result: exp.Expr = (days + 1) % 7
+        else:
+            part = expression.this
+            name = ""
+            if not expression.args.get("date_part") or isinstance(part, (exp.Var, exp.Literal)):
+                name = part.name.upper()
+            if name != "DOY":
+                return self.func(
+                    "DATEPART", DATE_PART_UNMAPPING.get(name) or part, expression.expression
+                )
+            result = exp.DayOfYear(this=expression.expression.copy())
+
+        if expression.type and not expression.is_type(exp.DType.INT, exp.DType.UNKNOWN):
+            result = exp.cast(result, expression.type, copy=False)
+        elif isinstance(result, exp.Mod):
+            result = exp.paren(result, copy=False)
+        return self.sql(result)
 
     def timefromparts_sql(self, expression: exp.TimeFromParts) -> str:
         nano = expression.args.get("nano")

@@ -3164,7 +3164,8 @@ class Generator:
         if expression.args.get("view"):
             alias = expression.args["alias"]
             columns = self.expressions(alias, key="columns", flat=True)
-            table = f" {alias.name}" if alias.name else ""
+            table = self.sql(alias.this if isinstance(alias, exp.TableAlias) else alias)
+            table = f" {table}" if table else ""
             columns = f" AS {columns}" if columns else ""
             op_sql = self.seg(f"LATERAL VIEW{' OUTER' if expression.args.get('outer') else ''}")
             return f"{op_sql}{self.sep()}{this}{table}{columns}"

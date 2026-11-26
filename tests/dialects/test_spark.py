@@ -1763,7 +1763,7 @@ TBLPROPERTIES (
 
                 self.assertEqual(
                     annotated.sql("spark"),
-                    "WITH `test_table` AS (SELECT 12345 AS `id_column`, ARRAY(STRUCT('John' AS `name`, 30 AS `age`), STRUCT('Mary' AS `name`, 20 AS `age`), STRUCT('Mike' AS `name`, 80 AS `age`), STRUCT('Dan' AS `name`, 50 AS `age`)) AS `struct_column`) SELECT `test_table`.`id_column` AS `id_column`, `explode_view`.`new_column`.`name` AS `name`, `explode_view`.`new_column`.`age` AS `age` FROM `test_table` AS `test_table` LATERAL VIEW EXPLODE(`test_table`.`struct_column`) explode_view AS `new_column`",
+                    "WITH `test_table` AS (SELECT 12345 AS `id_column`, ARRAY(STRUCT('John' AS `name`, 30 AS `age`), STRUCT('Mary' AS `name`, 20 AS `age`), STRUCT('Mike' AS `name`, 80 AS `age`), STRUCT('Dan' AS `name`, 50 AS `age`)) AS `struct_column`) SELECT `test_table`.`id_column` AS `id_column`, `explode_view`.`new_column`.`name` AS `name`, `explode_view`.`new_column`.`age` AS `age` FROM `test_table` AS `test_table` LATERAL VIEW EXPLODE(`test_table`.`struct_column`) `explode_view` AS `new_column`",
                 )
                 self.assertEqual(
                     annotated.sql("presto"),

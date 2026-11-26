@@ -1503,7 +1503,7 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(
             expression.sql(dialect="spark"),
-            "SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+            "SELECT `ci`.`name` AS `name`, `ci`.`age` AS `age` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) `ci` AS `ci`",
         )
         self.assertEqual(expression.selects[0].type, exp.DataType.build("STRING", dialect="spark"))
         self.assertEqual(expression.selects[1].type, exp.DataType.build("INT", dialect="spark"))
@@ -1523,7 +1523,7 @@ class TestOptimizer(unittest.TestCase):
         )
         self.assertEqual(
             expression.sql(dialect="spark"),
-            "SELECT (SELECT SUM(`ci`.`amount`) AS `_col_0` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci` WHERE `ci`.`type` = 'promotion') AS `total` FROM `my_table` AS `my_table`",
+            "SELECT (SELECT SUM(`ci`.`amount`) AS `_col_0` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) `ci` AS `ci` WHERE `ci`.`type` = 'promotion') AS `total` FROM `my_table` AS `my_table`",
         )
         self.assertEqual(expression.selects[0].type, exp.DataType.build("DOUBLE", dialect="spark"))
 
@@ -1538,7 +1538,7 @@ class TestOptimizer(unittest.TestCase):
                 schema=schema,
                 dialect="spark",
             ).sql(dialect="spark"),
-            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) ci AS `ci`",
+            "SELECT `ci`.`name` AS `name` FROM `my_table` AS `my_table` LATERAL VIEW EXPLODE(`my_table`.`items`) `ci` AS `ci`",
         )
 
         # Resolving an unqualified lateral column whose table is missing from the schema must

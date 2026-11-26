@@ -19,6 +19,19 @@ class TestDatabricks(Validator):
 
         self.validate_identity("SELECT jOiN.c FROM VALUES (42) AS `Join`(c)")
         self.validate_identity("SELECT union.* FROM VALUES (42) AS `union`(c)")
+        self.validate_identity(
+            "SELECT `view alias`.x FROM (SELECT ARRAY(42) AS xs) AS t "
+            "LATERAL VIEW EXPLODE(xs) `view alias` AS x"
+        )
+
+        lateral = exp.Lateral(this=exp.Explode(this=exp.column("xs")), view=True).as_("join")
+        query = (
+            exp.select("col").from_(exp.select("ARRAY(42) AS xs").subquery("t")).lateral(lateral)
+        )
+        self.assertEqual(
+            query.sql(self.dialect),
+            "SELECT col FROM (SELECT ARRAY(42) AS xs) AS t LATERAL VIEW EXPLODE(xs) `join`",
+        )
 
         for alias in ("anti", "join", "mask", "union"):
             with self.subTest(alias=alias):
@@ -31,7 +44,7 @@ class TestDatabricks(Validator):
     def test_literal_column_names(self):
         query = exp.select(
             exp.column("NuLl"),
-            exp.column("true"),
+            exp.column("true").to_dot(),
             exp.column("false"),
             exp.column("true", "false"),
             exp.column("NuLl", "false").to_dot(),
@@ -43,6 +56,11 @@ class TestDatabricks(Validator):
             query.sql(self.dialect),
             "SELECT `NuLl`, `true`, `false`, `false`.true, `false`.NuLl, NULL, TRUE, FALSE "
             "FROM VALUES (1, 2, 3) AS false(NuLl, true, false)",
+        )
+        self.validate_all(
+            "SELECT `true` FROM (SELECT 42 AS true, ROW_NUMBER() OVER (PARTITION BY id ORDER BY id) "
+            "AS _row_number FROM (SELECT 1 AS id) AS t) AS _t WHERE _row_number = 1",
+            read={"postgres": "SELECT DISTINCT ON (id) 42 AS true FROM (SELECT 1 AS id) AS t"},
         )
 
     def test_unnest(self):

@@ -187,7 +187,7 @@ def eliminate_distinct_on(expression: exp.Expr) -> exp.Expr:
                 select = select.replace(exp.alias_(select, alias, quoted=quoted))
 
             taken_names.add(select.output_name)
-            new_selects.append(select.args["alias"])
+            new_selects.append(exp.column(select.args["alias"]))
 
         return (
             exp.select(*new_selects, copy=False)

@@ -34,6 +34,8 @@ class Databricks(Spark):
         parent = identifier.parent
         name = identifier.name.upper()
         if name in ("NULL", "TRUE", "FALSE"):
+            if isinstance(parent, exp.Select) and identifier.arg_key == "expressions":
+                return True
             # The first part can be parsed as a literal in both Column and Dot references.
             return (isinstance(parent, exp.Column) and identifier is parent.parts[0]) or (
                 isinstance(parent, exp.Dot) and identifier is parent.this

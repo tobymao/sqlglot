@@ -30,7 +30,7 @@ SELECT
   "q"."m" AS "m"
 FROM "z" AS "z"
 LATERAL VIEW
-EXPLODE(ARRAY(1, 2)) q AS "m";
+EXPLODE(ARRAY(1, 2)) "q" AS "m";
 
 # title: unnest
 # execute: false

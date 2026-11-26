@@ -978,7 +978,7 @@ class ClickHouseParser(parser.Parser):
         self._match(TokenType.EQ)
         if self._match(TokenType.CURRENT_USER):
             return exp.DefinerProperty(this=exp.Var(this=self._prev.text.upper()))
-        return exp.DefinerProperty(this=self._parse_string())
+        return exp.DefinerProperty(this=self._parse_string() or self._parse_id_var())
 
     def _parse_projection_def(self) -> exp.ProjectionDef | None:
         if not self._match(TokenType.PROJECTION):

@@ -48,13 +48,7 @@ EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
     exp.Div: {"annotator": lambda self, e: self._annotate_div(e, coerce_integer_operands=True)},
     exp.Literal: {"annotator": annotate_signed_integer_literal},
-    exp.Neg: {
-        "annotator": lambda self, e: (
-            annotate_signed_integer_literal(self, e)
-            if isinstance(e.this, exp.Literal) or self.dialect not in ("materialize", "risingwave")
-            else self._annotate_unary(e)
-        )
-    },
+    exp.Neg: {"annotator": annotate_signed_integer_literal},
     **{
         expr_type: {"returns": exp.DType.INT}
         for expr_type in {

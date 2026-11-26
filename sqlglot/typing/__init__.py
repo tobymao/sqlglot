@@ -39,6 +39,12 @@ def annotate_signed_integer_literal(
     return self._annotate_unary(expression)
 
 
+def annotate_negated_literal(self: TypeAnnotator, expression: exp.Neg) -> exp.Expr:
+    if isinstance(expression.this, exp.Literal):
+        return annotate_signed_integer_literal(self, expression)
+    return self._annotate_unary(expression)
+
+
 def annotate_by_numeric_arg(self: TypeAnnotator, expression: exp.Expr) -> exp.Expr:
     """
     Annotates math functions (e.g. FLOOR) that preserve numeric and unknown types, and return INT

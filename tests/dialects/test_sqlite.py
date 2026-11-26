@@ -1488,6 +1488,57 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT DATE(now), STRFTIME('%f', now) FROM t")
 
+    def test_extract_date_parts(self):
+        for part, fmt in (("YEAR", "%Y"), ("MONTH", "%m"), ("DAY", "%d")):
+            self.validate_all(
+                f"SELECT CAST(STRFTIME('{fmt}', DATE('2024-03-05')) AS REAL)",
+                read={
+                    "postgres": f"SELECT EXTRACT('{part.lower()}' FROM DATE '2024-03-05')",
+                    "duckdb": f"SELECT EXTRACT({part} FROM DATE '2024-03-05')",
+                },
+            )
+
+        self.validate_all(
+            "SELECT CAST(STRFTIME('%Y', DATE(d)) AS REAL) FROM t",
+            read={"postgres": "SELECT EXTRACT(YEAR FROM CAST(d AS DATE)) FROM t"},
+        )
+        for source, dtype in (("postgres", "REAL"), ("duckdb", "INTEGER")):
+            query = annotate_types(
+                parse_one("SELECT EXTRACT(DAY FROM t.d) FROM t", read=source),
+                schema={"t": {"d": "DATE"}},
+                dialect=source,
+            )
+            self.assertEqual(
+                query.sql("sqlite"), f"SELECT CAST(STRFTIME('%d', t.d) AS {dtype}) FROM t"
+            )
+
+        self.validate_all(
+            "SELECT CAST(STRFTIME('%j', DATE('2024-03-31')) AS REAL)",
+            read={
+                "postgres": "SELECT EXTRACT(DOY FROM DATE '2024-03-31')",
+                "duckdb": "SELECT EXTRACT(DAYOFYEAR FROM DATE '2024-03-31')",
+            },
+        )
+        self.validate_all(
+            "SELECT CAST((STRFTIME('%m', DATE('2024-04-01')) + 2) / 3 AS REAL)",
+            read={"duckdb": "SELECT EXTRACT(QUARTER FROM DATE '2024-04-01')"},
+        )
+
+    def test_extract_quarter_and_day_of_year(self):
+        query = parse_one(
+            "WITH t(d) AS (VALUES ('2024-03-31'), ('2024-04-01'), ('2024-12-31'), (NULL)) "
+            "SELECT 5 / EXTRACT(QUARTER FROM CAST(d AS DATE)), "
+            "5 / EXTRACT(MONTH FROM CAST(d AS DATE)), EXTRACT(DOY FROM CAST(d AS DATE)) "
+            "FROM t ORDER BY d NULLS LAST",
+            read="postgres",
+        )
+        with closing(sqlite3.connect(":memory:")) as conn:
+            for expr in (query, annotate_types(query.copy(), dialect="postgres")):
+                self.assertEqual(
+                    conn.execute(expr.sql("sqlite")).fetchall(),
+                    [(5, 5 / 3, 91), (2.5, 1.25, 92), (1.25, 5 / 12, 366), (None, None, None)],
+                )
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
         self.validate_identity(

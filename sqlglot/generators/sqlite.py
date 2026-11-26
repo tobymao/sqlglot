@@ -28,6 +28,14 @@ DATETIME_TYPES = (
     exp.DType.TIMESTAMPTZ,
     exp.DType.TIMESTAMPLTZ,
 )
+DATE_PART_FORMATS = {
+    "YEAR": "%Y",
+    "MONTH": "%m",
+    "DAY": "%d",
+    "DOY": "%j",
+    "DAYOFYEAR": "%j",
+    "QUARTER": "%m",
+}
 
 
 def _transform_create(expression: exp.Expr) -> exp.Expr:
@@ -333,6 +341,28 @@ class SQLiteGenerator(generator.Generator):
                 return "'now'"
             return self.func("STRFTIME", "'%Y-%m-%d %H:%M:%f'", "'now'")
         return super().attimezone_sql(expression)
+
+    def extract_sql(self, expression: exp.Extract) -> str:
+        part = expression.name.upper()
+        fmt = DATE_PART_FORMATS.get(part)
+        value = expression.expression
+        # PostgreSQL DATE_PART returns double precision even for integral fields.
+        if fmt and value.unnest().is_type(exp.DType.DATE) and not expression.args.get("date_part"):
+            field: exp.Expr = exp.TimeToStr(this=value.copy(), format=exp.Literal.string(fmt))
+            if part == "QUARTER":
+                # Adding 2 to the two-digit month coerces it to an integer before division.
+                quarter = (field + 2) / 3
+                quarter.set("typed", True)
+                field = quarter
+            # Default to REAL so division preserves fractions when EXTRACT is untyped.
+            dtype = (
+                exp.DType.INT
+                if expression.is_type(*exp.DataType.INTEGER_TYPES)
+                else exp.DType.DOUBLE
+            )
+            return self.sql(exp.cast(field, dtype, copy=False))
+
+        return super().extract_sql(expression)
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:
         return self._date_delta_sql(expression, expression.this, expression.expression)

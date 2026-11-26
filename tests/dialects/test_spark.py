@@ -420,6 +420,8 @@ TBLPROPERTIES (
         )
 
     def test_spark(self):
+        self.validate_identity("SELECT -+2147483648, -(+2147483648)")
+
         # COLLATE on CHAR/VARCHAR should be preserved when the type is rewritten to STRING
         self.validate_identity(
             "SELECT CAST('a' AS CHAR(10) COLLATE UTF8_BINARY)",

@@ -10,6 +10,14 @@ from sqlglot.typing.spark2 import EXPRESSION_METADATA
 
 
 class Spark2(Hive):
+    # Spark includes a direct minus in the literal and rejects precision above 38.
+    INT_LITERAL_TYPES = (
+        (-(2**63) - 1, exp.DType.INT),
+        (-(2**31) - 1, exp.DType.BIGINT),
+        (2**31 - 1, exp.DType.INT),
+        (2**63 - 1, exp.DType.BIGINT),
+        (None, exp.DType.INT),
+    )
     ALTER_TABLE_SUPPORTS_CASCADE = False
     COLUMN_ALIAS_PRECEDENCE = {
         **Hive.COLUMN_ALIAS_PRECEDENCE,

@@ -4,6 +4,7 @@ import typing as t
 
 from sqlglot import exp
 from sqlglot.helper import ensure_list
+from sqlglot.typing import annotate_negated_literal
 from sqlglot.typing.hive import EXPRESSION_METADATA as HIVE_EXPRESSION_METADATA
 
 if t.TYPE_CHECKING:
@@ -45,6 +46,7 @@ def _annotate_by_similar_args(self: TypeAnnotator, expression: E, *arg_keys: str
 
 EXPRESSION_METADATA: ExprMetadataType = {
     **HIVE_EXPRESSION_METADATA,
+    exp.Neg: {"annotator": annotate_negated_literal},
     **{
         expr_type: {"returns": exp.DType.DOUBLE}
         for expr_type in {

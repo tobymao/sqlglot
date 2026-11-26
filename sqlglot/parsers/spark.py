@@ -53,6 +53,8 @@ def _build_dateadd(args: list) -> exp.Expr:
 
 
 class SparkParser(Spark2Parser):
+    EXTRACT_FUNCTIONS = dict.fromkeys(("DAYOFWEEK", "DOW"), Spark2Parser.FUNCTIONS["DAYOFWEEK"])
+
     DECIMAL_LITERALS_ALLOW_NEGATIVE_SCALE = False
     STRING_AGG_DEFAULT_SEPARATOR = ""
 

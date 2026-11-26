@@ -13,6 +13,7 @@ FRACTIONAL_SECONDS_RE = re.compile(r":\d+\.(\d+)")
 
 class TrinoParser(PrestoParser):
     STRING_AGG_DEFAULT_SEPARATOR = ""
+    SUPPORTS_GROUP_BY_AUTO = True
 
     STATEMENT_PARSERS = {
         **PrestoParser.STATEMENT_PARSERS,
@@ -35,6 +36,11 @@ class TrinoParser(PrestoParser):
         **PrestoParser.NO_PAREN_FUNCTIONS,
         TokenType.CURRENT_CATALOG: exp.CurrentCatalog,
         TokenType.CURRENT_SCHEMA: exp.CurrentSchema,
+    }
+
+    NO_PAREN_FUNCTION_PARSERS = {
+        **PrestoParser.NO_PAREN_FUNCTION_PARSERS,
+        "CURRENT_PATH": lambda self: self.expression(exp.CurrentPath()),
     }
 
     FUNCTIONS = {

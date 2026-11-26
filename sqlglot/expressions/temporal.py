@@ -223,6 +223,9 @@ class DayOfMonth(Expression, Func):
 
 
 class DayOfWeek(Expression, Func):
+    """Sunday is 1 by default, or 0 when zero_based is set."""
+
+    arg_types = {"this": True, "zero_based": False}
     _sql_names = ["DAY_OF_WEEK", "DAYOFWEEK"]
 
 
@@ -239,7 +242,13 @@ class Dayname(Expression, Func):
 
 
 class Extract(Expression, Func):
-    arg_types = {"this": True, "expression": True, "date_part": False}
+    arg_types = {
+        "this": True,
+        "expression": True,
+        "date_part": False,
+        "zero_based_dow": False,
+        "uses_session_timezone": False,
+    }
 
 
 class GetExtract(Expression, Func):

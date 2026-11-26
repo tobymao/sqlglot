@@ -3574,13 +3574,61 @@ class TestDuckDB(Validator):
         self.validate_identity("SHOW TABLES FROM my_database.my_schema").assert_is(exp.Show)
         self.validate_identity("SHOW ALL TABLES").assert_is(exp.Show)
 
+    def test_dayofweek(self):
+        self.validate_all(
+            "(DAYOFWEEK(CAST('2009-07-30' AS DATE)) + 1) * 2",
+            read={
+                "mysql": "DAYOFWEEK('2009-07-30') * 2",
+                "spark": "DAYOFWEEK('2009-07-30') * 2",
+                "databricks": "EXTRACT(DOW FROM '2009-07-30') * 2",
+                "bigquery": "EXTRACT(DAYOFWEEK FROM DATE '2009-07-30') * 2",
+            },
+        )
+
+        self.validate_all(
+            "DAYOFWEEK(d) * 2",
+            read={"snowflake": "DAYOFWEEK(d) * 2"},
+            write={
+                "duckdb": "DAYOFWEEK(d) * 2",
+                "mysql": "(DAYOFWEEK(d) - 1) * 2",
+                "spark": "(DAYOFWEEK(d) - 1) * 2",
+                "databricks": "(DAYOFWEEK(d) - 1) * 2",
+                "bigquery": "(EXTRACT(DAYOFWEEK FROM d) - 1) * 2",
+                "postgres": "EXTRACT(DOW FROM d) * 2",
+                "presto": "(DAY_OF_WEEK(d) % 7) * 2",
+                "tsql": "(DATEPART(WEEKDAY, d) - 1) * 2",
+                "snowflake": "DAYOFWEEK(d) * 2",
+            },
+        )
+
+        for sql in (
+            "WEEKDAY(d)",
+            "EXTRACT(DAYOFWEEK FROM d)",
+            "EXTRACT(DOW FROM d)",
+            "EXTRACT('weekday' FROM d)",
+        ):
+            dayofweek = self.validate_identity(sql, "DAYOFWEEK(d)").assert_is(exp.DayOfWeek)
+            self.assertTrue(dayofweek.args["zero_based"])
+
+        self.validate_all(
+            "SELECT\n  2 * (\n    DAYOFWEEK(d) + 1\n  ) /* part */ /* weekday */",
+            read={"bigquery": "SELECT 2 * EXTRACT(DAYOFWEEK /* part */ FROM d) /* weekday */"},
+            pretty=True,
+        )
+        self.validate_all(
+            "SELECT 2 * DAYOFWEEK(d) /* weekday */",
+            write={
+                "bigquery": "SELECT\n  2 * (\n    EXTRACT(DAYOFWEEK FROM d) - 1\n  ) /* weekday */"
+            },
+            pretty=True,
+        )
+
     def test_extract_date_parts(self):
         for part in ("WEEK", "WEEKOFYEAR"):
             # Both are synonyms for ISO week
             self.validate_identity(f"EXTRACT({part} FROM foo)", "EXTRACT(WEEK FROM foo)")
 
         for part in (
-            "WEEKDAY",
             "ISOYEAR",
             "ISODOW",
             "YEARWEEK",

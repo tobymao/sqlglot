@@ -42,6 +42,10 @@ class DorisParser(MySQLParser):
     FUNCTIONS = {
         **MySQLParser.FUNCTIONS,
         "ADDDATE": build_date_delta_with_interval(exp.DateAdd, default_unit="DAY"),
+        # In Doris, ARRAY((SELECT ...)) takes the scalar result as one element.
+        "ARRAY": lambda args: exp.Array(
+            expressions=args, value_constructor=len(args) == 1 and isinstance(args[0], exp.Subquery)
+        ),
         "ARRAY_FILTER": build_array_lambda_func(
             exp.ArrayFilter, "ARRAY_FILTER", supports_mask=True
         ),

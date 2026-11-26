@@ -273,6 +273,7 @@ EXPRESSION_METADATA: ExprMetadataType = {
             exp.ConcatWs,
             exp.Chr,
             exp.CurrentCatalog,
+            exp.CurrentPath,
             exp.CurrentRole,
             exp.CurrentSchema,
             exp.CurrentVersion,

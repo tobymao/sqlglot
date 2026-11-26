@@ -375,6 +375,8 @@ def _eliminate_dot_variant_lookup(expression: exp.Expr) -> exp.Expr:
 
 
 class SnowflakeGenerator(generator.Generator):
+    DAYOFWEEK_NAME = "DAYOFWEEK"
+    DAYOFWEEK_ZERO_BASED = True
     BYTE_STRING_FUNCTION = "HEX_DECODE_BINARY"
     SELECT_KINDS = ()
     PARAMETER_TOKEN = "$"
@@ -480,7 +482,6 @@ class SnowflakeGenerator(generator.Generator):
             e.args.get("aead"),
         ),
         exp.DayOfMonth: rename_func("DAYOFMONTH"),
-        exp.DayOfWeek: rename_func("DAYOFWEEK"),
         exp.DayOfWeekIso: rename_func("DAYOFWEEKISO"),
         exp.DayOfYear: rename_func("DAYOFYEAR"),
         exp.DotProduct: rename_func("VECTOR_INNER_PRODUCT"),

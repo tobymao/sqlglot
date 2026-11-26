@@ -588,6 +588,13 @@ class DorisGenerator(MySQLGenerator):
         "year",
     }
 
+    def array_sql(self, expression: exp.Array) -> str:
+        args = expression.expressions
+        has_single_query_arg = len(args) == 1 and isinstance(args[0], (exp.Query, exp.Values))
+        if has_single_query_arg and not expression.args.get("value_constructor"):
+            self.unsupported("Doris does not support ARRAY constructors from a query")
+        return self.func("ARRAY", *args)
+
     def uniquekeyproperty_sql(
         self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"
     ) -> str:

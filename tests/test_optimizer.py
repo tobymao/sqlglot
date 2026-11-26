@@ -2401,6 +2401,17 @@ SELECT :with_,WITH :expressions,CTE :this,UNION :this,SELECT :expressions,1,:exp
     def test_unnest_subqueries(self):
         self.check_file("unnest_subqueries", optimizer.unnest_subqueries.unnest_subqueries)
 
+    def test_unnest_trino_group_by_auto(self):
+        for query in (
+            "SELECT x.a, (SELECT COUNT(*) AS n FROM y WHERE y.b = x.a GROUP BY AUTO) FROM x",
+            "SELECT x.a FROM x WHERE EXISTS (SELECT COUNT(*) FROM y WHERE y.b = x.a GROUP BY ALL y.b, AUTO)",
+        ):
+            with self.subTest(query):
+                expression = parse_one(query, dialect="trino")
+                self.assertEqual(
+                    optimizer.unnest_subqueries.unnest_subqueries(expression.copy()), expression
+                )
+
     def test_unnest_scalar_cardinality(self):
         sql = "SELECT (SELECT y.b FROM y) + 1 AS c, RANK() OVER (ORDER BY x.a) AS r FROM x ORDER BY x.a"
         rewritten = optimizer.optimize(sql, dialect="sqlite", schema=self.schema).sql("sqlite")

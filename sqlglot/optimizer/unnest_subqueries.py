@@ -3,7 +3,11 @@ from __future__ import annotations
 from sqlglot import exp
 from sqlglot.helper import name_sequence
 from sqlglot.optimizer.scope import Scope, ScopeType, find_in_scope, traverse_scope
-from sqlglot.optimizer.helpers import projection_has_aggregate
+from sqlglot.optimizer.helpers import (
+    is_auto_grouping_element,
+    is_implicit_group_by_all,
+    projection_has_aggregate,
+)
 from sqlglot._typing import E
 
 
@@ -304,7 +308,7 @@ def decorrelate(select, parent_select, external_columns, next_alias_name):
 
         # GROUP BY ALL groups by the non-aggregate projections, so without any it's a no-op
         if not group or (
-            group.args.get("all")
+            is_implicit_group_by_all(select)
             and all(find_in_scope(projection, exp.AggFunc) for projection in select.selects)
         ):
             if _has_aggregate_projection(select):
@@ -575,11 +579,12 @@ def _replace(expression: exp.Expr, condition: exp.ExpOrStr) -> exp.Expr:
 
 
 def _is_plain_group(group: exp.Group) -> bool:
-    # Grouping sets produce a row for the grand total even when no rows pass the WHERE
+    # Grouping sets can produce a grand total on empty input. AUTO can infer no keys at all.
     return not any(
         group.args.get(arg) for arg in ("grouping_sets", "cube", "rollup", "totals")
     ) and not any(
         isinstance(e, (exp.Rollup, exp.Cube, exp.GroupingSets))
+        or is_auto_grouping_element(e)
         or (isinstance(e, exp.Tuple) and not e.expressions)
         for e in group.expressions
     )

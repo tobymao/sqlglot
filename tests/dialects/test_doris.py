@@ -1,9 +1,27 @@
-from sqlglot import ParseError, UnsupportedError, exp
+from sqlglot import ErrorLevel, ParseError, UnsupportedError, exp, parse_one
 from tests.dialects.test_dialect import Validator
 
 
 class TestDoris(Validator):
     dialect = "doris"
+
+    def test_array_constructor(self):
+        for dialect, sql, expected in (
+            ("postgres", "SELECT ARRAY[1, NULL, 2] AS xs", "SELECT ARRAY(1, NULL, 2) AS xs"),
+            ("postgres", "SELECT ARRAY[]::INT[]", "SELECT CAST(ARRAY() AS ARRAY<INT>)"),
+            ("postgres", "SELECT ARRAY[(SELECT 1)]", "SELECT ARRAY((SELECT 1))"),
+            ("postgres", "SELECT ARRAY[(SELECT 1), 2]", "SELECT ARRAY((SELECT 1), 2)"),
+            ("doris", "SELECT ARRAY((SELECT 1))", "SELECT ARRAY((SELECT 1))"),
+            ("bigquery", "SELECT [1, 1]", "SELECT ARRAY(1, 1)"),
+            ("doris", "SELECT ARRAY(ARRAY(1), ARRAY(2))", "SELECT ARRAY(ARRAY(1), ARRAY(2))"),
+        ):
+            with self.subTest(dialect=dialect, sql=sql):
+                self.assertEqual(
+                    parse_one(sql, read=dialect).sql("doris", unsupported_level=ErrorLevel.RAISE),
+                    expected,
+                )
+
+        self.validate_all("SELECT ARRAY(1, NULL, 2)", write={"mysql": UnsupportedError})
 
     def test_doris(self):
         self.validate_all(

@@ -290,6 +290,14 @@ SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL CUBE (x.a, x
 SELECT t.s FROM (SELECT a, b, SUM(b) AS s FROM x GROUP BY ALL a, b) t;
 SELECT t.s AS s FROM (SELECT SUM(x.b) AS s FROM x AS x GROUP BY ALL x.a, x.b) AS t;
 
+# dialect: trino
+SELECT q.s FROM (SELECT a, SUM(b) AS s, MAX(b) AS unused FROM x GROUP BY AUTO) AS q;
+SELECT q.s AS s FROM (SELECT x.a AS a, SUM(x.b) AS s FROM x AS x GROUP BY AUTO) AS q;
+
+# dialect: trino
+SELECT q.s FROM (SELECT a, SUM(b) AS s FROM x GROUP BY DISTINCT b, AUTO) AS q;
+SELECT q.s AS s FROM (SELECT x.a AS a, SUM(x.b) AS s FROM x AS x GROUP BY DISTINCT x.b, AUTO) AS q;
+
 --------------------------------------
 -- GROUP BY ordinals nested in GROUPING SETS / CUBE / ROLLUP reference projections
 -- positionally, so pruning must not shift what they point at

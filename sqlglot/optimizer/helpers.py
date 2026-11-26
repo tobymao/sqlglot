@@ -23,6 +23,20 @@ def is_implicit_group_by_all(select: exp.Select) -> bool:
     )
 
 
+def is_auto_grouping_element(key: exp.Expr) -> bool:
+    return isinstance(key, exp.Var) and key.name.upper() == "AUTO"
+
+
+def has_implicit_grouping(select: exp.Select) -> bool:
+    """Bare GROUP BY ALL and Trino's AUTO grouping element infer keys from the SELECT list."""
+    group = select.args.get("group")
+    if not group:
+        return False
+    if group.expressions:
+        return any(is_auto_grouping_element(key) for key in group.expressions)
+    return is_implicit_group_by_all(select)
+
+
 def projection_has_aggregate(
     projection: exp.Expr,
     windows: list[exp.Window] | None = None,

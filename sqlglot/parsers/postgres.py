@@ -148,6 +148,7 @@ class PostgresParser(parser.Parser):
         "VERSION": exp.CurrentVersion.from_arg_list,
         "DATE_TRUNC": build_timestamp_trunc,
         "DIV": lambda args: exp.cast(binary_from_function(exp.IntDiv)(args), exp.DType.DECIMAL),
+        "EVERY": exp.LogicalAnd.from_arg_list,
         "GENERATE_SERIES": _build_generate_series,
         "GET_BIT": lambda args: exp.Getbit(
             this=seq_get(args, 0), expression=seq_get(args, 1), zero_is_msb=True

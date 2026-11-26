@@ -11,6 +11,12 @@ class TestPostgres(Validator):
     maxDiff = None
     dialect = "postgres"
 
+    def test_every(self):
+        self.validate_all(
+            "SELECT EVERY(TRUE)",
+            write={"postgres": "SELECT BOOL_AND(TRUE)", "doris": "SELECT MIN(TRUE)"},
+        )
+
     def test_string_agg_spark_versions(self):
         for ordering, null_key, sort_direction in (
             ("ASC NULLS FIRST", "", ""),

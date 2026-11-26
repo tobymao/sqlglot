@@ -694,6 +694,15 @@ class PostgresGenerator(generator.Generator):
         predicate = exp.SimilarTo(this=expression.this, expression=expression.expression)
         return self.sql(exp.paren(predicate, copy=False))
 
+    # PostgreSQL reads adjacent +~ and ~+ as single operator names.
+    def pos_sql(self, expression: exp.Pos) -> str:
+        operand = self.sql(expression, "this")
+        return f"+ {operand}" if operand.startswith("~") else f"+{operand}"
+
+    def bitwisenot_sql(self, expression: exp.BitwiseNot) -> str:
+        operand = self.sql(expression, "this")
+        return f"~ {operand}" if operand.startswith("+") else f"~{operand}"
+
     def regexplike_sql(self, expression: exp.RegexpLike) -> str:
         flag = expression.args.get("flag")
         if not flag:

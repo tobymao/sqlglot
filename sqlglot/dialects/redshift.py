@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sqlglot import exp
 from sqlglot.typing.redshift import EXPRESSION_METADATA
 from sqlglot.dialects.dialect import NormalizationStrategy
 from sqlglot.dialects.postgres import Postgres
@@ -9,6 +10,17 @@ from sqlglot.tokens import TokenType
 
 
 class Redshift(Postgres):
+    # Keep the INT fallback for DECIMAL-sized integers outside BIGINT.
+    INT_LITERAL_TYPES = (
+        (-(10**38), exp.DType.DOUBLE),
+        (-(2**63) - 1, exp.DType.INT),
+        (-(2**31), exp.DType.BIGINT),  # Redshift types the signed 32-bit minimum as BIGINT.
+        (2**31 - 1, exp.DType.INT),
+        (2**63 - 1, exp.DType.BIGINT),
+        (10**38 - 1, exp.DType.INT),
+        (None, exp.DType.DOUBLE),
+    )
+
     # https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
     NORMALIZATION_STRATEGY = NormalizationStrategy.CASE_INSENSITIVE
 

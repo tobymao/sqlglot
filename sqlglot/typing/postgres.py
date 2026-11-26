@@ -3,7 +3,11 @@ from __future__ import annotations
 import typing as t
 
 from sqlglot import exp
-from sqlglot.typing import EXPRESSION_METADATA, annotate_int_as_double
+from sqlglot.typing import (
+    EXPRESSION_METADATA,
+    annotate_int_as_double,
+    annotate_signed_integer_literal,
+)
 
 if t.TYPE_CHECKING:
     from sqlglot.optimizer.annotate_types import TypeAnnotator
@@ -42,6 +46,9 @@ def _annotate_add_sub(self: TypeAnnotator, expression: exp.Add | exp.Sub) -> exp
 
 EXPRESSION_METADATA = {
     **EXPRESSION_METADATA,
+    exp.Div: {"annotator": lambda self, e: self._annotate_div(e, coerce_integer_operands=True)},
+    exp.Literal: {"annotator": annotate_signed_integer_literal},
+    exp.Neg: {"annotator": annotate_signed_integer_literal},
     **{
         expr_type: {"returns": exp.DType.INT}
         for expr_type in {

@@ -32,6 +32,11 @@ class SQLite(Dialect):
     FOLD_MIXED_TEMPORAL_COMPARISONS = False
     INTERSECT_BINDS_TIGHTER_THAN_UNION_AND_EXCEPT = False
     NUMBERS_CAN_BE_UNDERSCORE_SEPARATED = True
+    INT_LITERAL_TYPES = (
+        (-(2**63) - 1, exp.DType.DOUBLE),
+        (2**63 - 1, exp.DType.INT),
+        (None, exp.DType.DOUBLE),
+    )
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 
     TIME_MAPPING = {

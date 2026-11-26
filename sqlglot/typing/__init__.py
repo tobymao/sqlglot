@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import typing as t
 from decimal import Decimal
 
@@ -24,13 +23,16 @@ def annotate_signed_integer_literal(
     while isinstance(operand, exp.Neg):
         negated = not negated
         operand = operand.this.unnest()
-    if operand.is_number and re.fullmatch(r"[+-]?\d+", operand.name):
-        value = operand.to_py()
-        if negated:
-            # Decimal's unary minus can round very long integers across a type boundary.
-            value = value.copy_negate() if isinstance(value, Decimal) else -value
-        expression.meta["nonnull"] = True
-        return self._set_type(expression, self.dialect.integer_type_for_value(value))
+    if isinstance(operand, exp.Literal) and not operand.is_string:
+        text = operand.this
+        digits = text[1:] if text.startswith(("+", "-")) else text
+        if digits.isdecimal():
+            value = t.cast("int | Decimal", operand.to_py())
+            if negated:
+                # Decimal's unary minus can round very long integers across a type boundary.
+                value = value.copy_negate() if isinstance(value, Decimal) else -value
+            expression.meta["nonnull"] = True
+            return self._set_type(expression, self.dialect.integer_type_for_value(value))
 
     if isinstance(expression, exp.Literal):
         return self._annotate_literal(expression)

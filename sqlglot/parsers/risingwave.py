@@ -11,6 +11,11 @@ class RisingWaveParser(PostgresParser):
 
     FUNCTIONS = {k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "EVERY"}
 
+    UNARY_PARSERS = {
+        **PostgresParser.UNARY_PARSERS,
+        TokenType.PLUS: lambda self: self._parse_unary(),
+    }
+
     PROPERTY_PARSERS = {
         **PostgresParser.PROPERTY_PARSERS,
         "ENCODE": lambda self: self._parse_encode_property(),

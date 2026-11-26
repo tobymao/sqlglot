@@ -237,7 +237,7 @@ class PostgresParser(parser.Parser):
 
     UNARY_PARSERS = {
         **parser.Parser.UNARY_PARSERS,
-        TokenType.PLUS: lambda self: self._parse_unary_plus(),
+        TokenType.PLUS: lambda self: self.expression(exp.Pos(this=self._parse_unary())),
         TokenType.AT_SIGN: lambda self: self.expression(exp.Abs(this=self._parse_term())),
         # The `~` token is remapped from TILDE to RLIKE in Postgres due to the binary REGEXP LIKE operator
         TokenType.RLIKE: lambda self: self.expression(exp.BitwiseNot(this=self._parse_unary())),
@@ -275,17 +275,6 @@ class PostgresParser(parser.Parser):
     }
 
     ARG_MODE_TOKENS: t.ClassVar = {TokenType.IN, TokenType.OUT, TokenType.INOUT, TokenType.VARIADIC}
-
-    def _parse_unary_plus(self) -> exp.Expr | None:
-        this = self._parse_unary()
-        if this is not None and self.dialect != "risingwave":
-            operand = this.unnest()
-            while isinstance(operand, (exp.Neg, exp.Pos)):
-                operand = operand.this.unnest()
-            # Unary plus prevents an outer minus from folding into an integer literal.
-            if operand.is_number and operand.name.isdecimal():
-                return self.expression(exp.Pos(this=this))
-        return this
 
     def _parse_parameter_mode(self) -> TokenType | None:
         """

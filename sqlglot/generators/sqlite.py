@@ -348,13 +348,17 @@ class SQLiteGenerator(generator.Generator):
         value = expression.expression
         # PostgreSQL DATE_PART returns double precision even for integral fields.
         if fmt and value.unnest().is_type(exp.DType.DATE) and not expression.args.get("date_part"):
-            formatted = exp.TimeToStr(this=value.copy(), format=exp.Literal.string(fmt))
-            field = exp.cast(formatted, exp.DType.INT, copy=False)
+            field: exp.Expr = exp.TimeToStr(this=value.copy(), format=exp.Literal.string(fmt))
             if part == "QUARTER":
+                # Adding 2 to the two-digit month coerces it to an integer before division.
                 quarter = (field + 2) / 3
                 quarter.set("typed", True)
-                return self.sql(exp.paren(quarter, copy=False))
-            return self.sql(field)
+                field = quarter
+            dtype = expression.type or expression.args.get("return_type")
+            as_real = dtype and dtype.is_type(*exp.DataType.REAL_TYPES)
+            return self.sql(
+                exp.cast(field, exp.DType.DOUBLE if as_real else exp.DType.INT, copy=False)
+            )
 
         return super().extract_sql(expression)
 

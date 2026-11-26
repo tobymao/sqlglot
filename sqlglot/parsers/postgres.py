@@ -14,6 +14,7 @@ from sqlglot.dialects.dialect import (
 from sqlglot.helper import is_int, seq_get
 from sqlglot.parser import IsPredicatePrecedence, binary_range_parser
 from sqlglot.tokens import TokenType
+from sqlglot.typing.postgres import extract_type
 
 if t.TYPE_CHECKING:
     from sqlglot.dialects.dialect import Dialect
@@ -366,6 +367,12 @@ class PostgresParser(parser.Parser):
         )
         self._match_text_seq("S")
         return self.expression(exp.Placeholder(this=this))
+
+    def _parse_extract(self) -> exp.Expr:
+        extract = super()._parse_extract()
+        if self.dialect == "postgres":
+            extract.set("return_type", extract_type(self.dialect).into_expr())
+        return extract
 
     def _parse_date_part(self, part: exp.Expr | None) -> exp.Extract:
         self._match(TokenType.COMMA)

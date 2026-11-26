@@ -33,7 +33,12 @@ class DatabricksParser(SparkParser):
 
     NO_PAREN_FUNCTION_PARSERS = {
         **SparkParser.NO_PAREN_FUNCTION_PARSERS,
-        "CURDATE": lambda self: self._parse_curdate(),
+        "CURDATE": lambda self: self.expression(
+            self._parse_wrapped(exp.CurrentDate, optional=True)
+        ),
+        "CURRENT_PATH": lambda self: self.expression(
+            self._parse_wrapped(exp.CurrentPath, optional=True)
+        ),
     }
 
     FUNCTION_PARSERS = {
@@ -87,12 +92,6 @@ class DatabricksParser(SparkParser):
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())
         return self.expression(command)
-
-    def _parse_curdate(self) -> exp.CurrentDate:
-        # CURDATE, an alias for CURRENT_DATE, has optional parentheses
-        if self._match(TokenType.L_PAREN):
-            self._match_r_paren()
-        return self.expression(exp.CurrentDate())
 
     def _parse_primary_key_part(self) -> exp.Expr | None:
         this = super()._parse_primary_key_part()

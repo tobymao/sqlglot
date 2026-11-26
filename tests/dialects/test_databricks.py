@@ -6,6 +6,22 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
+    def test_current_path(self):
+        query = self.validate_identity(
+            "SELECT CuRrEnT_PaTh, CURRENT_PATH()", "SELECT CURRENT_PATH, CURRENT_PATH"
+        )
+        for function in query.selects:
+            function.assert_is(exp.CurrentPath)
+        self.validate_all(
+            "SELECT `current_path`, t.`current_path` FROM (SELECT 42 AS `current_path`) AS t",
+            read={
+                "postgres": "SELECT current_path, t.current_path FROM (SELECT 42 AS current_path) AS t"
+            },
+            write={
+                "postgres": 'SELECT "current_path", t."current_path" FROM (SELECT 42 AS "current_path") AS t'
+            },
+        )
+
     def test_unnest(self):
         self.validate_all(
             "SELECT b.name, t.id FROM a CROSS JOIN LATERAL EXPLODE(a.ids) AS t(id) "

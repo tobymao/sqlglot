@@ -27,15 +27,6 @@ class Databricks(Spark):
             exp.DType.INTERVAL,
         }
 
-    def can_quote(self, identifier: exp.Identifier, identify: str | bool = "safe") -> bool:
-        parent = identifier.parent
-        return super().can_quote(identifier, identify) or (
-            identifier.name.upper() == "CURRENT_PATH"
-            and isinstance(parent, exp.Column)
-            and not parent.is_star
-            and identifier is parent.parts[0]
-        )
-
     class JSONPathTokenizer(Spark.JSONPathTokenizer):
         IDENTIFIERS = ["`", '"']
 

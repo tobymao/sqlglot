@@ -33,7 +33,12 @@ class DatabricksParser(SparkParser):
 
     NO_PAREN_FUNCTION_PARSERS = {
         **SparkParser.NO_PAREN_FUNCTION_PARSERS,
-        "CURDATE": lambda self: self._parse_curdate(),
+        "CURDATE": lambda self: self.expression(
+            self._parse_wrapped(exp.CurrentDate, optional=True)
+        ),
+        "CURRENT_PATH": lambda self: self.expression(
+            self._parse_wrapped(exp.CurrentPath, optional=True)
+        ),
     }
 
     FUNCTION_PARSERS = {
@@ -87,55 +92,6 @@ class DatabricksParser(SparkParser):
         command = self._parse_as_command(start)
         command.set("this", start.text.upper())
         return self.expression(command)
-
-    def _parse_atom(self) -> exp.Expr | None:
-        # CURRENT_PATH is a session function in scalar expressions, but a name in USING and DDL.
-        if (
-            self._curr.token_type == TokenType.VAR
-            and self._curr.text.upper() == "CURRENT_PATH"
-            and self._next.token_type not in (TokenType.L_PAREN, TokenType.DOT)
-        ):
-            self._advance()
-            return self._parse_colon_as_variant_extract(
-                self._parse_column_ops(self.expression(exp.CurrentPath(), self._prev))
-            )
-        return super()._parse_atom()
-
-    def _parse_curdate(self) -> exp.CurrentDate:
-        # CURDATE, an alias for CURRENT_DATE, has optional parentheses
-        if self._match(TokenType.L_PAREN):
-            self._match_r_paren()
-        return self.expression(exp.CurrentDate())
-
-    def _parse_star_op(self, *keywords: str) -> list[exp.Expr] | None:
-        if (
-            keywords[0] == "EXCEPT"
-            and self._next.token_type == TokenType.L_PAREN
-            and self._match_texts(keywords)
-        ):
-            return self._parse_wrapped_csv(self._parse_column)
-        return super()._parse_star_op(*keywords)
-
-    def _parse_update_assignment(self) -> exp.Expr | None:
-        if self._curr.text.upper() == "CURRENT_PATH" and self._next.token_type == TokenType.EQ:
-            column = self._parse_column()
-            self._advance()
-            comments = self._prev_comments
-            return self.expression(
-                exp.EQ(this=column, expression=self._parse_disjunction()), comments=comments
-            )
-        return super()._parse_update_assignment()
-
-    def _parse_value(self, values: bool = True) -> exp.Tuple | None:
-        if (
-            not values
-            and self._prev.token_type == TokenType.INSERT
-            and self._curr.token_type == TokenType.L_PAREN
-        ):
-            return self.expression(
-                exp.Tuple(expressions=self._parse_wrapped_csv(self._parse_column))
-            )
-        return super()._parse_value(values)
 
     def _parse_primary_key_part(self) -> exp.Expr | None:
         this = super()._parse_primary_key_part()

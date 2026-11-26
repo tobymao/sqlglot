@@ -33,6 +33,7 @@ class DatabricksGenerator(SparkGenerator):
     MERGE_SCHEMA_EVOLUTION_MIN_VERSION = (15, 2)
     ORDERED_PERCENTILE_MIN_VERSIONS = {exp.PercentileCont: (10, 4), exp.PercentileDisc: (11, 3)}
     LISTAGG_MIN_VERSION = (16, 4)
+    RESERVED_KEYWORDS = SparkGenerator.RESERVED_KEYWORDS | {"current_path"}
 
     # Known limitation: with no partition keys to order by, CUME_DIST() OVER () becomes
     # CUME_DIST() OVER (ORDER BY NULL), which Databricks still rejects with

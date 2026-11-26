@@ -2219,6 +2219,15 @@ FROM json_data, field_ids""",
             },
         )
 
+    def test_array_query_constructor(self):
+        for sql in (
+            "SELECT ARRAY(SELECT 1)",
+            "SELECT ARRAY(SELECT 1 UNION ALL SELECT 2)",
+            "SELECT ARRAY((SELECT 1))",
+            "SELECT ARRAY(VALUES (1), (2))",
+        ):
+            self.validate_all(sql, write={"doris": UnsupportedError})
+
     def test_array_offset(self):
         with self.assertLogs(helper_logger) as cm:
             self.validate_all(

@@ -10,7 +10,9 @@ from sqlglot.tokens import TokenType
 class MaterializeParser(PostgresParser):
     TYPED_LAMBDA_ARGS = True
 
-    FUNCTIONS = {k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "CARDINALITY"}
+    FUNCTIONS = {
+        k: v for k, v in PostgresParser.FUNCTIONS.items() if k not in ("CARDINALITY", "EVERY")
+    }
 
     NO_PAREN_FUNCTION_PARSERS = {
         **PostgresParser.NO_PAREN_FUNCTION_PARSERS,

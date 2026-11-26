@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing as t
+
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
 from sqlglot.helper import seq_get
@@ -14,7 +16,7 @@ class DatabricksParser(SparkParser):
     COLON_CHAIN_IS_SINGLE_EXTRACT = False
 
     # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-reserved-words
-    RESERVED_TABLE_ALIASES = {
+    RESERVED_TABLE_ALIASES: t.ClassVar[set[str]] = {
         "ANTI",
         "CROSS",
         "EXCEPT",

@@ -6,62 +6,42 @@ from tests.dialects.test_dialect import Validator
 class TestDatabricks(Validator):
     dialect = "databricks"
 
-    def test_reserved_table_aliases(self):
-        query = (
-            exp.select(exp.column("anti", "LeFt").as_("union"))
-            .from_(exp.to_table("mask").as_("LeFt", table=["anti"]))
-            .with_("mask", as_=exp.select("42"))
-        )
+    def test_current_path(self):
+        source = " FROM (SELECT 42 AS current_path) AS t"
+        projections = self.validate_identity(
+            "SELECT CuRrEnT_PaTh, CURRENT_PATH(), `current_path`, t.current_path" + source,
+            "SELECT CURRENT_PATH, CURRENT_PATH, `current_path`, t.current_path" + source,
+        ).selects
         self.assertEqual(
-            query.sql(self.dialect),
-            "WITH mask AS (SELECT 42) SELECT LeFt.anti AS union FROM mask AS `LeFt`(anti)",
-        )
-
-        self.validate_identity("SELECT jOiN.c FROM VALUES (42) AS `Join`(c)")
-        self.validate_identity("SELECT union.* FROM VALUES (42) AS `union`(c)")
-        self.validate_identity(
-            "SELECT `view alias`.x FROM (SELECT ARRAY(42) AS xs) AS t "
-            "LATERAL VIEW EXPLODE(xs) `view alias` AS x"
-        )
-
-        lateral = exp.Lateral(this=exp.Explode(this=exp.column("xs")), view=True).as_("join")
-        query = (
-            exp.select("col").from_(exp.select("ARRAY(42) AS xs").subquery("t")).lateral(lateral)
-        )
-        self.assertEqual(
-            query.sql(self.dialect),
-            "SELECT col FROM (SELECT ARRAY(42) AS xs) AS t LATERAL VIEW EXPLODE(xs) `join`",
-        )
-
-        for alias in ("anti", "join", "mask", "union"):
-            with self.subTest(alias=alias):
-                table = exp.to_table("t").as_(alias)
-                query = exp.select("*").from_(table).with_("t", as_="SELECT 1")
-                self.assertEqual(
-                    query.sql(self.dialect), f"WITH t AS (SELECT 1) SELECT * FROM t AS `{alias}`"
-                )
-
-    def test_literal_column_names(self):
-        query = exp.select(
-            exp.column("NuLl"),
-            exp.column("true").to_dot(),
-            exp.column("false"),
-            exp.column("true", "false"),
-            exp.column("NuLl", "false").to_dot(),
-            "NULL",
-            "TRUE",
-            "FALSE",
-        ).from_(exp.values([(1, 2, 3)], alias="false", columns=["NuLl", "true", "false"]))
-        self.assertEqual(
-            query.sql(self.dialect),
-            "SELECT `NuLl`, `true`, `false`, `false`.true, `false`.NuLl, NULL, TRUE, FALSE "
-            "FROM VALUES (1, 2, 3) AS false(NuLl, true, false)",
+            [type(e) for e in projections],
+            [exp.CurrentPath, exp.CurrentPath, exp.Column, exp.Column],
         )
         self.validate_all(
-            "SELECT `true` FROM (SELECT 42 AS true, ROW_NUMBER() OVER (PARTITION BY id ORDER BY id) "
-            "AS _row_number FROM (SELECT 1 AS id) AS t) AS _t WHERE _row_number = 1",
-            read={"postgres": "SELECT DISTINCT ON (id) 42 AS true FROM (SELECT 1 AS id) AS t"},
+            "SELECT `current_path`, t.current_path" + source,
+            read={"postgres": "SELECT current_path, t.current_path" + source},
         )
+        source = " FROM (SELECT 42 AS c) AS current_path"
+        self.validate_all(
+            "SELECT `current_path`.c, current_path.*" + source,
+            read={"postgres": "SELECT current_path.c, current_path.*" + source},
+            write={"databricks": "SELECT `current_path`.c, current_path.*" + source},
+        )
+        self.validate_identity(
+            "SELECT * FROM (SELECT 1 AS current_path) AS x "
+            "JOIN (SELECT 1 AS current_path) AS y USING (current_path)"
+        )
+        self.validate_identity(
+            "SELECT * EXCEPT (current_path) FROM (SELECT 42 AS current_path, 1 AS c) AS t",
+            "SELECT * EXCEPT (`current_path`) FROM (SELECT 42 AS current_path, 1 AS c) AS t",
+        ).find(exp.Star).args["except_"][0].assert_is(exp.Column)
+        self.validate_identity(
+            "UPDATE t SET current_path = CURRENT_PATH()",
+            "UPDATE t SET `current_path` = CURRENT_PATH",
+        ).expressions[0].this.assert_is(exp.Column)
+        self.validate_identity(
+            "MERGE INTO t USING s ON FALSE WHEN NOT MATCHED THEN INSERT (current_path) VALUES (current_path)",
+            "MERGE INTO t USING s ON FALSE WHEN NOT MATCHED THEN INSERT (`current_path`) VALUES (CURRENT_PATH)",
+        ).find(exp.Insert).this.expressions[0].assert_is(exp.Column)
 
     def test_unnest(self):
         self.validate_all(

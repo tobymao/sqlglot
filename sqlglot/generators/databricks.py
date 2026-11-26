@@ -51,6 +51,7 @@ class DatabricksGenerator(SparkGenerator):
         k: v
         for k, v in {
             **SparkGenerator.TRANSFORMS,
+            exp.CurrentPath: lambda *_: "CURRENT_PATH",
             exp.CurrentVersion: lambda *_: "CURRENT_VERSION()",
             exp.DateAdd: date_delta_sql("DATEADD"),
             exp.DateDiff: date_delta_sql("DATEDIFF"),

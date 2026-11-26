@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import typing as t
-
 from sqlglot import exp, parser
 from sqlglot.dialects.dialect import build_date_delta, build_formatted_time
 from sqlglot.helper import seq_get
@@ -14,27 +12,6 @@ class DatabricksParser(SparkParser):
     STRICT_CAST = True
     COLON_IS_VARIANT_EXTRACT = True
     COLON_CHAIN_IS_SINGLE_EXTRACT = False
-
-    # https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-reserved-words
-    RESERVED_TABLE_ALIASES: t.ClassVar[set[str]] = {
-        "ANTI",
-        "CROSS",
-        "EXCEPT",
-        "FULL",
-        "INNER",
-        "INTERSECT",
-        "JOIN",
-        "LATERAL",
-        "LEFT",
-        "MASK",
-        "MINUS",
-        "NATURAL",
-        "ON",
-        "RIGHT",
-        "SEMI",
-        "UNION",
-        "USING",
-    }
 
     STATEMENT_PARSERS = {
         **SparkParser.STATEMENT_PARSERS,
@@ -86,17 +63,6 @@ class DatabricksParser(SparkParser):
         TokenType.QDCOLON,
     }
 
-    def _parse_column_reference(self) -> exp.Expr | None:
-        this = super()._parse_column_reference()
-        if (
-            this is None
-            and self._next.token_type == TokenType.DOT
-            and self._match_texts(self.RESERVED_TABLE_ALIASES)
-        ):
-            identifier = self._identifier_expression(quoted=False)
-            return self.expression(exp.Column(this=identifier), comments=identifier.pop_comments())
-        return this
-
     def _parse_optimize(self) -> exp.Optimize | exp.Command:
         start = self._prev
         table = self._parse_table_parts_fast(allow_keywords=True)
@@ -122,11 +88,54 @@ class DatabricksParser(SparkParser):
         command.set("this", start.text.upper())
         return self.expression(command)
 
+    def _parse_atom(self) -> exp.Expr | None:
+        # CURRENT_PATH is a session function in scalar expressions, but a name in USING and DDL.
+        if (
+            self._curr.token_type == TokenType.VAR
+            and self._curr.text.upper() == "CURRENT_PATH"
+            and self._next.token_type not in (TokenType.L_PAREN, TokenType.DOT)
+        ):
+            self._advance()
+            return self._parse_colon_as_variant_extract(
+                self._parse_column_ops(self.expression(exp.CurrentPath(), self._prev))
+            )
+        return super()._parse_atom()
+
     def _parse_curdate(self) -> exp.CurrentDate:
         # CURDATE, an alias for CURRENT_DATE, has optional parentheses
         if self._match(TokenType.L_PAREN):
             self._match_r_paren()
         return self.expression(exp.CurrentDate())
+
+    def _parse_star_op(self, *keywords: str) -> list[exp.Expr] | None:
+        if (
+            keywords[0] == "EXCEPT"
+            and self._next.token_type == TokenType.L_PAREN
+            and self._match_texts(keywords)
+        ):
+            return self._parse_wrapped_csv(self._parse_column)
+        return super()._parse_star_op(*keywords)
+
+    def _parse_update_assignment(self) -> exp.Expr | None:
+        if self._curr.text.upper() == "CURRENT_PATH" and self._next.token_type == TokenType.EQ:
+            column = self._parse_column()
+            self._advance()
+            comments = self._prev_comments
+            return self.expression(
+                exp.EQ(this=column, expression=self._parse_disjunction()), comments=comments
+            )
+        return super()._parse_update_assignment()
+
+    def _parse_value(self, values: bool = True) -> exp.Tuple | None:
+        if (
+            not values
+            and self._prev.token_type == TokenType.INSERT
+            and self._curr.token_type == TokenType.L_PAREN
+        ):
+            return self.expression(
+                exp.Tuple(expressions=self._parse_wrapped_csv(self._parse_column))
+            )
+        return super()._parse_value(values)
 
     def _parse_primary_key_part(self) -> exp.Expr | None:
         this = super()._parse_primary_key_part()

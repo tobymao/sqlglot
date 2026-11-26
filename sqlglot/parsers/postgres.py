@@ -377,8 +377,10 @@ class PostgresParser(parser.Parser):
 
     def _build_extract(self, part: exp.Expr | None, value: exp.Expr | None) -> exp.Extract:
         extract = super()._build_extract(part, value)
-        if isinstance(part, (exp.Var, exp.Literal)) and part.name.upper() == "DOW":
-            extract.set("zero_based_dow", True)
+        if isinstance(part, (exp.Var, exp.Literal)) and part.name.upper() in ("DOW", "DOY"):
+            extract.set("uses_session_timezone", True)
+            if part.name.upper() == "DOW":
+                extract.set("zero_based_dow", True)
         return extract
 
     def _parse_convert(self, strict: bool, safe: bool | None = None) -> exp.Expr | None:

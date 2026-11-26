@@ -2007,11 +2007,12 @@ WHERE
             f"(DATEDIFF(DAY, '00010101', CAST(CAST({offset} AS DATETIMEOFFSET) AS DATE)) + 1) % 7"
         )
         for dialect, dtype in (("postgres", "NUMERIC"), ("redshift", "FLOAT")):
-            validate(
-                dialect,
-                f"SELECT EXTRACT(DOW FROM TIMESTAMPTZ {offset})",
-                f"SELECT CAST({offset_dow} AS {dtype})",
-            )
+            with self.assertLogs("sqlglot", level="WARNING"):
+                validate(
+                    dialect,
+                    f"SELECT EXTRACT(DOW FROM TIMESTAMPTZ {offset})",
+                    f"SELECT CAST({offset_dow} AS {dtype})",
+                )
 
         expression = parse_one("SELECT EXTRACT(DOW FROM t.x) / 2 FROM t", read="redshift")
         extract = expression.find(exp.Extract)
@@ -2023,9 +2024,42 @@ WHERE
             "SELECT ((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7) / 2 FROM t",
         )
         annotate_types(expression, schema={"t": {"x": "TIMESTAMPTZ"}}, dialect="redshift")
+        with self.assertLogs("sqlglot", level="WARNING"):
+            self.assertEqual(
+                expression.sql("tsql"),
+                "SELECT CAST((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7 AS FLOAT) / 2 FROM t",
+            )
+
+    def test_extract_dow_doy_session_timezone(self):
+        schema = {"t": {"x": "TIMESTAMPTZ"}}
+        for part in ("DOW", "DOY"):
+            with self.subTest(part=part):
+                sql = f"SELECT EXTRACT({part} FROM t.x) FROM t"
+                expression = annotate_types(
+                    parse_one(sql, read="postgres"), schema=schema, dialect="postgres"
+                )
+                with self.assertRaisesRegex(UnsupportedError, f"{part}.*source session time zone"):
+                    expression.sql("tsql", unsupported_level=ErrorLevel.RAISE)
+
+        local = "t.x AT TIME ZONE 'UTC'"
+        sql = f"SELECT EXTRACT(DOW FROM {local}), EXTRACT(DOY FROM {local}) FROM t"
+        expression = annotate_types(
+            parse_one(sql, read="postgres"), schema=schema, dialect="postgres"
+        )
         self.assertEqual(
-            expression.sql("tsql"),
-            "SELECT CAST((DATEDIFF(DAY, '00010101', CAST(t.x AS DATE)) + 1) % 7 AS FLOAT) / 2 FROM t",
+            expression.sql("tsql", unsupported_level=ErrorLevel.RAISE),
+            f"SELECT CAST((DATEDIFF(DAY, '00010101', CAST({local} AS DATE)) + 1) % 7 AS NUMERIC), "
+            f"CAST(DATEPART(DAYOFYEAR, {local}) AS NUMERIC) FROM t",
+        )
+
+        expression = annotate_types(
+            parse_one("SELECT EXTRACT(DOY FROM t.x) FROM t", read="presto"),
+            schema={"t": {"x": "TIMESTAMP WITH TIME ZONE"}},
+            dialect="presto",
+        )
+        self.assertEqual(
+            expression.sql("tsql", unsupported_level=ErrorLevel.RAISE),
+            "SELECT DATEPART(DAYOFYEAR, t.x) FROM t",
         )
 
     def test_convert(self):

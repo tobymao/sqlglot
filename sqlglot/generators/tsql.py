@@ -437,6 +437,14 @@ class TSQLGenerator(generator.Generator):
         return self.func("DATEPART", "WEEKDAY", expression.this)
 
     def extract_sql(self, expression: exp.Extract) -> str:
+        if expression.args.get("uses_session_timezone") and expression.expression.is_type(
+            exp.DType.TIMESTAMPTZ
+        ):
+            self.unsupported(
+                f"Extracting {expression.this.name.upper()} from TIMESTAMPTZ depends on the source session time zone. "
+                "Use AT TIME ZONE on the input to make the time zone explicit."
+            )
+
         if expression.args.get("zero_based_dow"):
             # The earliest SQL Server date was a Monday, so the dividend is always positive.
             days = exp.DateDiff(

@@ -1488,6 +1488,27 @@ class TestSQLite(Validator):
         )
         self.validate_identity("SELECT DATE(now), STRFTIME('%f', now) FROM t")
 
+    def test_extract_date_parts(self):
+        for part, fmt in (("YEAR", "%Y"), ("MONTH", "%m"), ("DAY", "%d")):
+            self.validate_all(
+                f"SELECT CAST(STRFTIME('{fmt}', DATE('2024-03-05')) AS INTEGER)",
+                read={
+                    "postgres": f"SELECT EXTRACT('{part.lower()}' FROM DATE '2024-03-05')",
+                    "duckdb": f"SELECT EXTRACT({part} FROM DATE '2024-03-05')",
+                },
+            )
+
+        self.validate_all(
+            "SELECT CAST(STRFTIME('%Y', DATE(d)) AS INTEGER) FROM t",
+            read={"postgres": "SELECT EXTRACT(YEAR FROM CAST(d AS DATE)) FROM t"},
+        )
+        query = annotate_types(
+            parse_one("SELECT EXTRACT(DAY FROM t.d) FROM t", read="postgres"),
+            schema={"t": {"d": "DATE"}},
+            dialect="postgres",
+        )
+        self.assertEqual(query.sql("sqlite"), "SELECT CAST(STRFTIME('%d', t.d) AS INTEGER) FROM t")
+
     def test_strftime(self):
         self.validate_identity("SELECT STRFTIME('%Y-%m-%d', '2016-10-16', 'start of month')")
         self.validate_identity(

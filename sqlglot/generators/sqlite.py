@@ -28,6 +28,7 @@ DATETIME_TYPES = (
     exp.DType.TIMESTAMPTZ,
     exp.DType.TIMESTAMPLTZ,
 )
+DATE_PART_FORMATS = {"YEAR": "%Y", "MONTH": "%m", "DAY": "%d"}
 
 
 def _transform_create(expression: exp.Expr) -> exp.Expr:
@@ -333,6 +334,16 @@ class SQLiteGenerator(generator.Generator):
                 return "'now'"
             return self.func("STRFTIME", "'%Y-%m-%d %H:%M:%f'", "'now'")
         return super().attimezone_sql(expression)
+
+    def extract_sql(self, expression: exp.Extract) -> str:
+        fmt = DATE_PART_FORMATS.get(expression.name.upper())
+        value = expression.expression
+        # PostgreSQL DATE_PART returns double precision even for integral fields.
+        if fmt and value.unnest().is_type(exp.DType.DATE) and not expression.args.get("date_part"):
+            formatted = exp.TimeToStr(this=value.copy(), format=exp.Literal.string(fmt))
+            return self.sql(exp.cast(formatted, exp.DType.INT, copy=False))
+
+        return super().extract_sql(expression)
 
     def dateadd_sql(self, expression: exp.DateAdd) -> str:
         return self._date_delta_sql(expression, expression.this, expression.expression)

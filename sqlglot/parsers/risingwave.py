@@ -9,6 +9,8 @@ from sqlglot.tokens import TokenType
 class RisingWaveParser(PostgresParser):
     WRAPPED_TRANSFORM_COLUMN_CONSTRAINT = False
 
+    FUNCTIONS = {k: v for k, v in PostgresParser.FUNCTIONS.items() if k != "EVERY"}
+
     PROPERTY_PARSERS = {
         **PostgresParser.PROPERTY_PARSERS,
         "ENCODE": lambda self: self._parse_encode_property(),

@@ -2416,6 +2416,9 @@ LIFETIME(MIN 0 MAX 0)""",
 
     def test_sql_security(self):
         stmts = [
+            "CREATE VIEW v (a Int32) DEFINER=default SQL SECURITY DEFINER AS SELECT 1 AS a",
+            "CREATE VIEW v DEFINER=alice SQL SECURITY DEFINER AS SELECT 1",
+            'CREATE VIEW v DEFINER="Alice-Smith" SQL SECURITY DEFINER AS SELECT 1',
             "CREATE VIEW v DEFINER='alice' SQL SECURITY DEFINER AS SELECT 1",
             "CREATE VIEW v SQL SECURITY DEFINER DEFINER='alice' AS SELECT 1",
             "CREATE VIEW v SQL SECURITY DEFINER DEFINER=CURRENT_USER AS SELECT 1",
@@ -2429,7 +2432,7 @@ LIFETIME(MIN 0 MAX 0)""",
         ]
         for stmt in stmts:
             with self.subTest(stmt):
-                self.validate_identity(stmt)
+                self.assertIsInstance(self.validate_identity(stmt), (exp.Create, exp.Alter))
 
     def test_refreshable_materialized_view(self):
         statements = [

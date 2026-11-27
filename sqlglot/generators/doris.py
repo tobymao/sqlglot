@@ -5,12 +5,14 @@ import typing as t
 from sqlglot import exp
 from sqlglot.dialects.dialect import (
     approx_count_distinct_sql,
+    no_filter_sql,
     property_sql,
     rename_func,
     time_format,
     weekstart_unit_to_str,
 )
 from sqlglot.generators.mysql import MySQLGenerator
+from sqlglot.optimizer.scope import find_in_scope
 
 
 def _lag_lead_sql(self, expression: exp.Lag | exp.Lead) -> str:
@@ -586,6 +588,31 @@ class DorisGenerator(MySQLGenerator):
         "xor",
         "year",
     }
+
+    def filter_sql(self, expression: exp.Filter) -> str:
+        agg = expression.this
+        arg = agg.this
+        count_star = isinstance(agg, exp.Count) and (arg is None or arg == exp.Star())
+        if isinstance(arg, exp.Distinct) and len(arg.expressions) == 1:
+            arg = arg.expressions[0]
+        if isinstance(arg, exp.Paren):
+            arg = arg.unnest()
+
+        if (
+            not isinstance(agg, (exp.Count, exp.Sum, exp.Avg, exp.Min, exp.Max, exp.AnyValue))
+            or (isinstance(expression.parent, exp.Window) and expression.arg_key == "this")
+            or agg.expressions
+            or isinstance(arg, (exp.Distinct, exp.Order, exp.Limit, exp.HavingMax, exp.Tuple))
+            or (not count_star and find_in_scope(agg, exp.Star))
+        ):
+            self.unsupported("Cannot rewrite this aggregate FILTER for Doris")
+            return super().filter_sql(expression)
+
+        expression = expression.copy()
+        if count_star:
+            # Rewrite COUNT(*) as COUNT(1) to avoid generating COUNT_IF, which Doris lacks.
+            expression.this.set("this", exp.Literal.number(1))
+        return no_filter_sql(self, expression)
 
     def array_sql(self, expression: exp.Array) -> str:
         args = expression.expressions

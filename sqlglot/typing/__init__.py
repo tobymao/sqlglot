@@ -14,12 +14,15 @@ ExprMetadataType = dict[Type[exp.Expr], dict[str, t.Any]]
 
 
 def annotate_signed_integer_literal(
-    self: TypeAnnotator, expression: exp.Literal | exp.Neg
+    self: TypeAnnotator,
+    expression: exp.Literal | exp.Neg,
+    *,
+    negated_operand: exp.Expr | None = None,
 ) -> exp.Expr:
     # Fold nested negations before checking the dialect's bounds. For example,
     # -9223372036854775808 fits in BIGINT and 9223372036854775808 exceeds its maximum.
-    operand: exp.Expr = expression
-    negated = False
+    operand: exp.Expr = expression if negated_operand is None else negated_operand
+    negated = negated_operand is not None
     while isinstance(operand, exp.Neg):
         negated = not negated
         operand = operand.this.unnest()

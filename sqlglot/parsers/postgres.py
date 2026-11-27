@@ -137,6 +137,7 @@ class PostgresParser(parser.Parser):
 
     FUNCTIONS = {
         **parser.Parser.FUNCTIONS,
+        "ARRAY_AGG": lambda args: exp.ArrayAgg(this=seq_get(args, 0), null_on_empty=True),
         "ARRAY_PREPEND": lambda args: exp.ArrayPrepend(
             this=seq_get(args, 1), expression=seq_get(args, 0)
         ),

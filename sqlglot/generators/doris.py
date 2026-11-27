@@ -57,12 +57,11 @@ class DorisGenerator(MySQLGenerator):
     TIMESTAMP_FUNC_TYPES: t.ClassVar[set[exp.DType]] = set()
 
     TRANSFORMS = {
-        **MySQLGenerator.TRANSFORMS,
+        **{k: v for k, v in MySQLGenerator.TRANSFORMS.items() if k != exp.ArrayAgg},
         exp.AddMonths: rename_func("MONTHS_ADD"),
         exp.ApproxDistinct: approx_count_distinct_sql,
         exp.ArgMax: rename_func("MAX_BY"),
         exp.ArgMin: rename_func("MIN_BY"),
-        exp.ArrayAgg: rename_func("COLLECT_LIST"),
         exp.ArrayFilter: lambda self, e: self.func("ARRAY_FILTER", e.expression, e.this),
         exp.ArrayToString: rename_func("ARRAY_JOIN"),
         exp.ArrayUniqueAgg: rename_func("COLLECT_SET"),
@@ -594,6 +593,27 @@ class DorisGenerator(MySQLGenerator):
         if has_single_query_arg and not expression.args.get("value_constructor"):
             self.unsupported("Doris does not support ARRAY constructors from a query")
         return self.func("ARRAY", *args)
+
+    def arrayagg_sql(self, expression: exp.ArrayAgg) -> str:
+        name = "COLLECT_LIST" if expression.args.get("nulls_excluded") else "ARRAY_AGG"
+        sql = self.func(name, expression.this)
+        if isinstance(expression.this, exp.Order) or isinstance(
+            expression.parent, (exp.Filter, exp.WithinGroup)
+        ):
+            self.unsupported(f"Doris does not support aggregate ORDER BY or FILTER on {name}")
+            return sql
+        if expression.args.get("null_on_empty") and not (
+            isinstance(expression.parent, exp.Window) and expression.arg_key == "this"
+        ):
+            return self.func("NULLIF", sql, exp.array())
+        return sql
+
+    def window_sql(self, expression: exp.Window) -> str:
+        sql = super().window_sql(expression)
+        agg = expression.this
+        if isinstance(agg, exp.ArrayAgg) and agg.args.get("null_on_empty"):
+            return self.func("NULLIF", sql, exp.array())
+        return sql
 
     def uniquekeyproperty_sql(
         self, expression: exp.UniqueKeyProperty, prefix: str = "UNIQUE KEY"

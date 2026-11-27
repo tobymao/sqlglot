@@ -1229,6 +1229,12 @@ class Dialect(metaclass=_Dialect):
             return AliasPrecedence.ALIAS
         return self.COLUMN_ALIAS_PRECEDENCE.get(type(clause), AliasPrecedence.ALIAS)
 
+    def match_recognize_applies_to_join(self, join: exp.Join) -> bool:
+        """Whether MATCH_RECOGNIZE directly after the right operand binds to the whole join."""
+        return self.MATCH_RECOGNIZE_APPLIES_TO_JOINS and any(
+            join.args.get(k) for k in exp.Join.QUALIFIERS
+        )
+
     def normalize_identifier(self, expression: E) -> E:
         """
         Transforms an identifier in a way that resembles how it'd be resolved by this dialect.

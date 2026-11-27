@@ -4994,15 +4994,6 @@ class Parser:
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         comments = (join_comments or []) + comments
 
-        # An explicit condition following the match binds it to the right operand. Preserve
-        # that grouping before adding an implicit ON TRUE for dialects that allow bare joins.
-        if (
-            isinstance(kwargs["this"], exp.MatchRecognize)
-            and self.dialect.MATCH_RECOGNIZE_APPLIES_TO_JOINS
-            and (kwargs.get("on") or kwargs.get("using"))
-        ):
-            kwargs["this"] = exp.Subquery(this=kwargs["this"])
-
         if (
             self.ADD_JOIN_ON_TRUE
             and not kwargs.get("on")
@@ -5641,12 +5632,10 @@ class Parser:
             this.append("joins", join)
 
             if applies_to_joins:
-                # A MATCH_RECOGNIZE applies to all the relations joined before it, unless the join
-                # condition of the relation it comes after follows it. A comma isn't a join here
                 match = join.this
-                if isinstance(match, exp.MatchRecognize) and any(
-                    join.args.get(k) for k in exp.Join.QUALIFIERS
-                ):
+                if isinstance(
+                    match, exp.MatchRecognize
+                ) and self.dialect.match_recognize_applies_to_join(join):
                     join.set("this", match.this)
                     this = self._match_recognize_joins(this, match)
                 elif self._curr.token_type == TokenType.MATCH_RECOGNIZE:
@@ -5667,8 +5656,8 @@ class Parser:
         Makes `match`, or else the MATCH_RECOGNIZE that follows, apply to the relations joined in
         `this`, which is either a query or the first of these relations.
 
-        Example:
-            `a JOIN b ON ... MATCH_RECOGNIZE (...)` -> `(a JOIN b ON ...) MATCH_RECOGNIZE (...)`
+        For `a JOIN b ON ... MATCH_RECOGNIZE (...)`, the input is the relation
+        `a JOIN b ON ...`, including the join condition.
         """
         joins = this.args["joins"]
 
@@ -5686,11 +5675,10 @@ class Parser:
             relation = self._wrap_join_source(relation)
         relation.set("joins", [*(relation.args.get("joins") or []), *joins[start:]])
 
-        joined = exp.Subquery(this=relation)
         if match:
-            match.set("this", joined)
+            match.set("this", relation)
         else:
-            match = self._parse_match_recognize(joined)
+            match = self._parse_match_recognize(relation)
 
         if parent:
             parent.set("this", match)

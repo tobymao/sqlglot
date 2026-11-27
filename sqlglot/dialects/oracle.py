@@ -62,6 +62,11 @@ class Oracle(Dialect):
             identifier.quoted or not isinstance(identifier.parent, exp.Pseudocolumn)
         ) and super().can_quote(identifier, identify=identify)
 
+    def match_recognize_applies_to_join(self, join: exp.Join) -> bool:
+        return not (
+            join.args.get("on") or join.args.get("using")
+        ) and super().match_recognize_applies_to_join(join)
+
     class Tokenizer(tokens.Tokenizer):
         VAR_SINGLE_TOKENS = {"@", "$", "#"}
 

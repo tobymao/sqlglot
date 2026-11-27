@@ -204,38 +204,25 @@ class TestDatabricks(Validator):
         self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
 
         # MATCH_RECOGNIZE applies to all of the relations joined before it
-        self.validate_identity(
-            f"SELECT * FROM c JOIN a ON c.p = a.x {clause} m",
-            f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m",
-        )
-        self.validate_identity(
-            f"SELECT * FROM c CROSS JOIN a {clause} m",
-            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
-        )
+        self.validate_identity(f"SELECT * FROM c JOIN a ON c.p = a.x {clause} m")
+        self.validate_identity(f"SELECT * FROM c CROSS JOIN a {clause} m")
         self.validate_identity(
             f"SELECT * FROM c, a {clause} m",
-            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
+            f"SELECT * FROM c CROSS JOIN a {clause} m",
         )
 
         # So a joined relation is wrapped together with its MATCH_RECOGNIZE
-        self.validate_identity(
-            f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x",
-            f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x",
-        )
         self.validate_identity(f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x")
 
         values = "(VALUES (1), (2)) AS v(x) CROSS JOIN b"
         joined_match = (
             "MATCH_RECOGNIZE (ORDER BY v.x MEASURES COUNT(*) AS n PATTERN (P+) DEFINE P AS y > 0)"
         )
-        expression = self.validate_identity(
-            f"SELECT * FROM {values} {joined_match}",
-            f"SELECT * FROM ({values}) {joined_match}",
-        )
+        expression = self.validate_identity(f"SELECT * FROM {values} {joined_match}")
         self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
         self.validate_identity(
             f"SELECT * FROM a LEFT JOIN b {clause}",
-            f"SELECT * FROM (a LEFT JOIN b ON TRUE) {clause}",
+            f"SELECT * FROM a LEFT JOIN b ON TRUE {clause}",
         )
 
         for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):

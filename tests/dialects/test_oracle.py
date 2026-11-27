@@ -846,26 +846,32 @@ FROM XMLTABLE(
         self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
         self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) s {clause} m")
         self.validate_identity(
-            f"SELECT * FROM LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b {clause}",
-            f"SELECT * FROM (LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b) {clause}",
+            f"SELECT * FROM LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b {clause}"
         )
 
         # MATCH_RECOGNIZE applies to the relations joined before it
-        self.validate_identity(
-            f"SELECT * FROM c CROSS JOIN a {clause} m",
-            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
-        )
+        self.validate_identity(f"SELECT * FROM c CROSS JOIN a {clause} m")
         self.validate_identity(f"SELECT * FROM (c CROSS JOIN a) {clause} m")
 
-        # So a joined relation is wrapped together with its MATCH_RECOGNIZE
+        values = "(VALUES (1, 1), (1, 2)) v(g, h)"
+        match = "MATCH_RECOGNIZE (PARTITION BY g ORDER BY h MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS h > 0 AND k = 1)"
+        for source in (f"{values} CROSS JOIN c", f"dual d, {values} CROSS JOIN c"):
+            with self.subTest(source=source):
+                query = self.validate_identity(
+                    f"WITH c AS (SELECT 1 AS k FROM dual) SELECT * FROM {source} {match}"
+                )
+                self.assertEqual(
+                    query.find(exp.MatchRecognize).this.args["joins"][0].this.name, "c"
+                )
+
+        # An ON or USING following the match binds it to the right operand.
+        self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
+        self.validate_identity(f"SELECT * FROM a JOIN b {clause} m USING (x)")
         self.validate_identity(
-            f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x",
-            f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x",
+            "WITH c AS (SELECT 1 AS k FROM dual) SELECT * FROM c JOIN (VALUES (1, 1), (1, 2)) AS v(g, h) "
+            "MATCH_RECOGNIZE (PARTITION BY g ORDER BY h MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS h > 0) m ON c.k = m.g"
         )
-        self.validate_identity(
-            f"SELECT * FROM a {clause} m, b {clause} n",
-            f"SELECT * FROM a {clause} m, (b {clause} n)",
-        )
+        self.validate_identity(f"SELECT * FROM a {clause} m, b {clause} n")
         self.validate_identity(f"SELECT * FROM c CROSS JOIN (a {clause} m)")
 
         self.validate_identity(

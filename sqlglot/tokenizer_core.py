@@ -588,7 +588,7 @@ class TokenizerCore:
         "numeric_literals",
         "var_single_tokens",
         "string_escapes_allowed_in_raw_strings",
-        "heredoc_tag_is_identifier",
+        "heredoc_tag_pattern",
         "heredoc_string_alternative",
         "keyword_trie",
         "numbers_can_be_underscore_separated",
@@ -626,7 +626,7 @@ class TokenizerCore:
         numeric_literals: dict[str, str],
         var_single_tokens: set[str],
         string_escapes_allowed_in_raw_strings: bool,
-        heredoc_tag_is_identifier: bool,
+        heredoc_tag_pattern: re.Pattern[str] | None,
         heredoc_string_alternative: TokenType,
         keyword_trie: dict,
         numbers_can_be_underscore_separated: bool,
@@ -661,7 +661,7 @@ class TokenizerCore:
         self.numeric_literals = numeric_literals
         self.var_single_tokens = var_single_tokens
         self.string_escapes_allowed_in_raw_strings = string_escapes_allowed_in_raw_strings
-        self.heredoc_tag_is_identifier = heredoc_tag_is_identifier
+        self.heredoc_tag_pattern = heredoc_tag_pattern
         self.heredoc_string_alternative = heredoc_string_alternative
         self.keyword_trie = keyword_trie
         self.numbers_can_be_underscore_separated = numbers_can_be_underscore_separated
@@ -1200,28 +1200,18 @@ class TokenizerCore:
             elif token_type == TokenType.BIT_STRING:
                 base = 2
             elif token_type == TokenType.HEREDOC_STRING:
-                self._advance()
-
-                if self._char == end:
-                    tag = ""
+                if self.heredoc_tag_pattern:
+                    match = self.heredoc_tag_pattern.match(self.sql, self._current)
+                    tag = match[0] if match else ""
+                    if not self.sql.startswith(end, self._current + len(tag)):
+                        self._add(self.heredoc_string_alternative)
+                        return True
+                    for _ in tag:
+                        self._advance()
+                    self._advance(len(end))
                 else:
-                    tag = self._extract_string(
-                        end,
-                        raw_string=True,
-                        raise_unmatched=not self.heredoc_tag_is_identifier,
-                    )
-
-                if (
-                    tag
-                    and self.heredoc_tag_is_identifier
-                    and (self._end or tag.isdigit() or any(c.isspace() for c in tag))
-                ):
-                    if not self._end:
-                        self._advance(-1)
-
-                    self._advance(-len(tag))
-                    self._add(self.heredoc_string_alternative)
-                    return True
+                    self._advance()
+                    tag = "" if self._char == end else self._extract_string(end, raw_string=True)
 
                 end = f"{start}{tag}{end}"
         else:
@@ -1417,7 +1407,6 @@ class TokenizerCore:
         delimiter: str,
         escapes: set[str] | None = None,
         raw_string: bool = False,
-        raise_unmatched: bool = True,
         bytes_literal: bool = False,
     ) -> str:
         """
@@ -1527,13 +1516,11 @@ class TokenizerCore:
             else:
                 if self._chars(delim_size) == delimiter:
                     if delim_size > 1:
-                        self._advance(delim_size - 1)
+                        for _ in range(delim_size - 1):
+                            self._advance()
                     break
 
                 if self._end:
-                    if not raise_unmatched:
-                        return text + self._char
-
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import typing as t
 
 from sqlglot import tokenizer_core
@@ -7,6 +8,8 @@ from sqlglot.trie import new_trie
 
 from sqlglot.tokenizer_core import Token, TokenizerCore, TokenType
 
+# PostgreSQL allows any non-ASCII character in a dollar-quote tag.
+_IDENTIFIER_HEREDOC_TAG = re.compile(r"[A-Za-z_\x80-\U0010ffff][A-Za-z_0-9\x80-\U0010ffff]*")
 
 # The sqlglotc distribution ships no importable `sqlglotc` module; it overlays
 # compiled .so files onto sqlglot's modules, so detect it via the compiled core.
@@ -184,6 +187,9 @@ class Tokenizer(_TokenizerBase):
 
     # Whether the heredoc tags follow the same lexical rules as unquoted identifiers
     HEREDOC_TAG_IS_IDENTIFIER = False
+
+    # Overrides the identifier rule for dialects with a different tag syntax.
+    HEREDOC_TAG_PATTERN: t.ClassVar[re.Pattern[str] | None] = None
 
     # Token that we'll generate as a fallback if the heredoc prefix doesn't correspond to a heredoc
     HEREDOC_STRING_ALTERNATIVE = TokenType.VAR
@@ -602,7 +608,8 @@ class Tokenizer(_TokenizerBase):
             numeric_literals=self.NUMERIC_LITERALS,
             var_single_tokens=self.VAR_SINGLE_TOKENS,
             string_escapes_allowed_in_raw_strings=self.STRING_ESCAPES_ALLOWED_IN_RAW_STRINGS,
-            heredoc_tag_is_identifier=self.HEREDOC_TAG_IS_IDENTIFIER,
+            heredoc_tag_pattern=self.HEREDOC_TAG_PATTERN
+            or (_IDENTIFIER_HEREDOC_TAG if self.HEREDOC_TAG_IS_IDENTIFIER else None),
             heredoc_string_alternative=self.HEREDOC_STRING_ALTERNATIVE,
             keyword_trie=self._KEYWORD_TRIE,
             numbers_can_be_underscore_separated=self.dialect.NUMBERS_CAN_BE_UNDERSCORE_SEPARATED,

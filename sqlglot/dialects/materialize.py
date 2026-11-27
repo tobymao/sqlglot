@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from sqlglot import exp
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generators.materialize import MaterializeGenerator
@@ -17,6 +19,8 @@ class Materialize(Postgres):
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
 
     class Tokenizer(Postgres.Tokenizer):
+        # An ASCII digit after $ starts a parameter. Other characters can start a tag.
+        HEREDOC_TAG_PATTERN = re.compile(r"[^0-9$][^$]*")
         UNICODE_IDENTIFIERS = []
         NUMERIC_ESCAPES = {"u": (16, 4, 4, 0xFFFF), "U": (16, 8, 8, 0x10FFFF)}
 

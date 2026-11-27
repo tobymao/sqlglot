@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from sqlglot import exp
 from sqlglot.dialects.postgres import Postgres
 from sqlglot.generators.risingwave import RisingWaveGenerator
@@ -21,6 +23,8 @@ class RisingWave(Postgres):
     UNESCAPED_SEQUENCES = {"\\a": "a", "\\v": "v"}
 
     class Tokenizer(Postgres.Tokenizer):
+        # RisingWave 3.0 accepts alphanumeric tags with a leading digit.
+        HEREDOC_TAG_PATTERN = re.compile(r"\w+")
         UNICODE_IDENTIFIERS = []
 
         KEYWORDS = {

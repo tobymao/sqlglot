@@ -42,6 +42,11 @@ class Spark2Parser(HiveParser):
 
     FUNC_TOKENS = HiveParser.FUNC_TOKENS | {TokenType.AND, TokenType.OR, TokenType.DIV}
 
+    UNARY_PARSERS = {
+        **HiveParser.UNARY_PARSERS,
+        TokenType.PLUS: lambda self: self._parse_unary_plus(),
+    }
+
     FUNCTIONS = {
         **HiveParser.FUNCTIONS,
         "AGGREGATE": exp.Reduce.from_arg_list,
@@ -125,6 +130,13 @@ class Spark2Parser(HiveParser):
         "SHUFFLE_HASH": lambda self: self._parse_join_hint("SHUFFLE_HASH"),
         "SHUFFLE_REPLICATE_NL": lambda self: self._parse_join_hint("SHUFFLE_REPLICATE_NL"),
     }
+
+    def _parse_unary_plus(self) -> exp.Expr | None:
+        operand = self._parse_unary()
+        # In -+2147483648, the plus prevents the minus from being part of the integer literal.
+        if isinstance(operand, exp.Literal) and not operand.is_string and operand.this.isdecimal():
+            return self.expression(exp.Pos(this=operand))
+        return operand
 
     def _parse_property(self) -> exp.Expr | list[exp.Expr] | None:
         if self._match_text_seq("OPTIONS", "(", advance=False):

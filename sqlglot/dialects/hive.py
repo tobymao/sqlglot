@@ -17,6 +17,17 @@ from sqlglot.typing.hive import EXPRESSION_METADATA
 
 
 class Hive(Dialect):
+    # Hive types the magnitude before applying a unary sign. Keep the INT fallback
+    # for values that need a parameterized DECIMAL until decimal coercion is supported.
+    INT_LITERAL_TYPES: tuple[tuple[int | None, exp.DType], ...] = (
+        (-(10**38), exp.DType.DOUBLE),
+        (-(2**63), exp.DType.INT),
+        (-(2**31), exp.DType.BIGINT),
+        (2**31 - 1, exp.DType.INT),
+        (2**63 - 1, exp.DType.BIGINT),
+        (10**38 - 1, exp.DType.INT),
+        (None, exp.DType.DOUBLE),
+    )
     ALIAS_POST_TABLESAMPLE = True
     IDENTIFIERS_CAN_START_WITH_DIGIT = True
     SUPPORTS_USER_DEFINED_TYPES = False

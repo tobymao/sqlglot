@@ -184,6 +184,7 @@ class ClickHouseGenerator(generator.Generator):
     TRY_SUPPORTED = False
     SUPPORTS_UESCAPE = False
     SUPPORTS_DECODE_CASE = False
+    SUPPORTS_NESTED_JSON_SELECT = True
 
     AFTER_HAVING_MODIFIER_TRANSFORMS = generator.AFTER_HAVING_MODIFIER_TRANSFORMS
 
@@ -778,9 +779,6 @@ class ClickHouseGenerator(generator.Generator):
 
     def projectiondef_sql(self, expression: exp.ProjectionDef) -> str:
         return f"PROJECTION {self.sql(expression.this)} {self.wrap(expression.expression)}"
-
-    def nestedjsonselect_sql(self, expression: exp.NestedJSONSelect) -> str:
-        return f"{self.sql(expression, 'this')}.^{self.sql(expression, 'expression')}"
 
     def is_sql(self, expression: exp.Is) -> str:
         is_sql = super().is_sql(expression)

@@ -534,6 +534,9 @@ class Generator:
     # Whether the JSON extraction operators expect a value of type JSON
     JSON_TYPE_REQUIRED_FOR_EXTRACTION = False
 
+    # Whether the .^ operator can select nested JSON objects
+    SUPPORTS_NESTED_JSON_SELECT = False
+
     # Whether bracketed keys like ["foo"] are supported in JSON paths
     JSON_PATH_BRACKETED_KEY_SUPPORTED = True
 
@@ -4881,6 +4884,11 @@ class Generator:
 
     def dot_sql(self, expression: exp.Dot) -> str:
         return f"{self.sql(expression, 'this')}.{self.sql(expression, 'expression')}"
+
+    def nestedjsonselect_sql(self, expression: exp.NestedJSONSelect) -> str:
+        if not self.SUPPORTS_NESTED_JSON_SELECT and self.dialect != "":
+            self.unsupported("Selecting nested JSON objects with .^ is not supported")
+        return f"{self.sql(expression, 'this')}.^{self.sql(expression, 'expression')}"
 
     def eq_sql(self, expression: exp.EQ) -> str:
         return self.binary(expression, "=")

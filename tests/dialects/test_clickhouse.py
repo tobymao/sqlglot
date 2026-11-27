@@ -8,7 +8,7 @@ from sqlglot.optimizer.annotate_types import annotate_types
 from sqlglot.optimizer.qualify import qualify
 from sqlglot.optimizer.qualify_columns import quote_identifiers
 from tests.dialects.test_dialect import Validator
-from sqlglot.errors import ErrorLevel, ParseError
+from sqlglot.errors import ErrorLevel, ParseError, UnsupportedError
 
 
 class TestClickhouse(Validator):
@@ -20,11 +20,16 @@ class TestClickhouse(Validator):
                 with self.subTest(sql=sql, error_level=error_level), self.assertRaises(ParseError):
                     self.parse_one(sql, error_level=error_level)
 
-    def test_clickhouse(self):
-        self.validate_identity(
+    def test_nested_json_select(self):
+        query = self.validate_identity(
             "SELECT col.^nested, t.col2.^nested, t.col3.^nested.twice FROM t"
-        ).selects[0].assert_is(exp.NestedJSONSelect)
+        )
+        nested = query.selects[0].assert_is(exp.NestedJSONSelect)
+        self.assertEqual(str(nested), "col.^nested")
+        with self.assertRaises(UnsupportedError):
+            nested.sql("postgres", unsupported_level=ErrorLevel.RAISE)
 
+    def test_clickhouse(self):
         self.validate_identity(
             "cast(notEmpty(report_task_id)?report_task_id:'-1' AS text)",
             "CAST(CASE WHEN notEmpty(report_task_id) THEN report_task_id ELSE '-1' END AS String)",

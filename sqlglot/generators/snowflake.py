@@ -700,14 +700,22 @@ class SnowflakeGenerator(generator.Generator):
             source = relation.this
             if not isinstance(source, exp.UNWRAPPED_QUERIES) and source.args.get("joins"):
                 relation.set("this", exp.select("*").from_(source, copy=False))
-                keys = [*(expression.args.get("partition_by") or []), expression.args.get("order")]
-                if any(column.table for key in keys if key for column in key.find_all(exp.Column)):
+                keys: list[exp.Expr] = expression.args.get("partition_by") or []
+                if order := expression.args.get("order"):
+                    keys = [*keys, *order.expressions]
+                qualifiers = []
+                for key in keys:
+                    if isinstance(key, exp.Ordered):
+                        key = key.this
+                    columns = (key,) if isinstance(key, exp.Column) else key.find_all(exp.Column)
+                    for column in columns:
+                        qualifiers.extend(column.parts[:-1])
+                if qualifiers:
                     self.unsupported(
                         "Qualified MATCH_RECOGNIZE keys require unique column names across the joined input in Snowflake"
                     )
-                    for key in keys:
-                        if key:
-                            transforms.unqualify_columns(key)
+                    for qualifier in qualifiers:
+                        qualifier.pop()
                 break
             relation = source
         return super().matchrecognize_sql(expression)

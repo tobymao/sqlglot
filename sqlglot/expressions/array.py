@@ -413,6 +413,5 @@ class StGeogPoint(Expression, Func):
 
 
 class StGeogFromGeoJson(Expression, Func):
-    arg_types = {"this": True, "expressions": False}
-    is_var_len_args = True
+    arg_types = {"this": True, "make_valid": False}
     _sql_names = ["ST_GEOGFROMGEOJSON"]

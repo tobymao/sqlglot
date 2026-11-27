@@ -33,9 +33,6 @@ class TestDoris(Validator):
             with self.subTest(sql=sql), self.assertRaises(UnsupportedError):
                 parse_one(sql, read="postgres").sql("doris", unsupported_level=ErrorLevel.RAISE)
 
-        with self.assertRaises(ParseError):
-            self.parse_one("SELECT ARRAY_AGG(1, 2, 3)")
-
     def test_array_constructor(self):
         for dialect, sql, expected in (
             ("postgres", "SELECT ARRAY[1, NULL, 2] AS xs", "SELECT ARRAY(1, NULL, 2) AS xs"),

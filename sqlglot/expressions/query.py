@@ -873,14 +873,17 @@ class MatchRecognizeMeasure(Expression):
 
 class MatchRecognize(Expression):
     arg_types = {
+        "this": True,
         "partition_by": False,
         "order": False,
         "measures": False,
         "rows": False,
         "after": False,
         "pattern": False,
+        "subset": False,
         "define": False,
         "alias": False,
+        "joins": False,
     }
 
 

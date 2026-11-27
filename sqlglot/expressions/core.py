@@ -2547,7 +2547,6 @@ def convert(value: t.Any, copy: bool = False) -> Expr:
 
 
 QUERY_MODIFIERS = {
-    "match": False,
     "laterals": False,
     "joins": False,
     "connect": False,

@@ -3526,9 +3526,11 @@ class Generator:
         after = self.seg(after) if after else ""
         pattern = self.sql(expression, "pattern")
         pattern = self.seg(f"PATTERN ({pattern})") if pattern else ""
+        subset = self.expressions(expression, key="subset")
+        subset = self.seg(f"SUBSET{self.seg(subset)}") if subset else ""
         definition_sqls = [
             f"{self.sql(definition, 'alias')} AS {self.sql(definition, 'this')}"
-            for definition in expression.args.get("define", [])
+            for definition in expression.args.get("define") or []
         ]
         definitions = self.expressions(sqls=definition_sqls)
         define = self.seg(f"DEFINE{self.seg(definitions)}") if definitions else ""
@@ -3540,12 +3542,16 @@ class Generator:
                 rows,
                 after,
                 pattern,
+                subset,
                 define,
             )
-        )
+        ).lstrip()
         alias = self.sql(expression, "alias")
         alias = f" {alias}" if alias else ""
-        return f"{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}"
+        joins = self.indent(
+            self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
+        )
+        return f"{self.sql(expression, 'this')}{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}{joins}"
 
     def query_modifiers(self, expression: exp.Expr, *sqls: str) -> str:
         limit = expression.args.get("limit")
@@ -3565,7 +3571,6 @@ class Generator:
         return csv(
             *sqls,
             *[self.sql(join) for join in expression.args.get("joins") or []],
-            self.sql(expression, "match"),
             *[self.sql(lateral) for lateral in expression.args.get("laterals") or []],
             self.sql(expression, "prewhere"),
             self.sql(expression, "where"),

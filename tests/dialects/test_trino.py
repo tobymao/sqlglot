@@ -544,6 +544,30 @@ class TestTrino(Validator):
 
         self.validate_identity("SELECT VERSION()")
 
+    def test_match_recognize(self):
+        clause = "MATCH_RECOGNIZE (PARTITION BY x ORDER BY y PATTERN (A+) DEFINE A AS y > 0)"
+
+        # MATCH_RECOGNIZE applies to the relation before it, not to the joins around it
+        self.validate_identity(f"SELECT * FROM a AS o {clause} m JOIN b ON m.x = b.x")
+        self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
+        self.validate_identity(f"SELECT * FROM a {clause} m JOIN b {clause} n ON m.x = n.x")
+        self.validate_identity(f"SELECT * FROM a {clause} m, b {clause} n")
+        self.validate_identity(f"SELECT * FROM (a {clause} m)")
+        self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
+
+        self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
+        self.validate_identity(f"SELECT * FROM (VALUES (1, 1), (1, 2)) AS v(x, y) {clause} m")
+        self.validate_identity(
+            "SELECT * FROM UNNEST(ARRAY[1, 2]) AS u(y) MATCH_RECOGNIZE (ORDER BY y MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS y > 0) m"
+        )
+        self.validate_identity(
+            "SELECT * FROM TABLE(SEQUENCE(start => 1, stop => 3)) MATCH_RECOGNIZE (ORDER BY sequential_number MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS sequential_number > 0) m"
+        )
+
+        self.validate_identity(
+            "SELECT * FROM a MATCH_RECOGNIZE (ORDER BY y MEASURES CLASSIFIER(AB) AS c PATTERN (A B+) SUBSET AB = (A, B), BB = (B) DEFINE B AS AB.y > 0)"
+        )
+
     def test_listagg(self):
         self.validate_identity(
             "SELECT LISTAGG(DISTINCT col, ',') WITHIN GROUP (ORDER BY col ASC) FROM tbl"

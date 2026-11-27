@@ -839,6 +839,37 @@ FROM XMLTABLE(
         )
 
     def test_match_recognize(self):
+        clause = "MATCH_RECOGNIZE (PARTITION BY x ORDER BY y PATTERN (A+) DEFINE A AS y > 0)"
+
+        self.validate_identity(f"SELECT * FROM a o {clause} m JOIN b ON m.x = b.x")
+        self.validate_identity(f"SELECT * FROM (a {clause} m)")
+        self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
+        self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) s {clause} m")
+
+        # MATCH_RECOGNIZE applies to the relations joined before it
+        self.validate_identity(
+            f"SELECT * FROM c CROSS JOIN a {clause} m",
+            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
+        )
+        self.validate_all(
+            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
+            write={"trino": f"SELECT * FROM (c CROSS JOIN a) {clause} m"},
+        )
+
+        # So a joined relation is wrapped together with its MATCH_RECOGNIZE
+        self.validate_identity(
+            f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x",
+            f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x",
+        )
+        self.validate_identity(
+            f"SELECT * FROM a {clause} m, b {clause} n",
+            f"SELECT * FROM a {clause} m, (b {clause} n)",
+        )
+        self.validate_all(
+            f"SELECT * FROM c CROSS JOIN (a {clause} m)",
+            read={"trino": f"SELECT * FROM c CROSS JOIN a {clause} m"},
+        )
+
         self.validate_identity(
             """SELECT
   *

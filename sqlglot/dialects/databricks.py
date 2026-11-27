@@ -14,6 +14,7 @@ from sqlglot.typing.databricks import EXPRESSION_METADATA
 
 class Databricks(Spark):
     SAFE_DIVISION = False
+    MATCH_RECOGNIZE_APPLIES_TO_JOINS = True
     COPY_PARAMS_ARE_CSV = False
     EXPRESSION_METADATA = EXPRESSION_METADATA.copy()
 

@@ -561,6 +561,12 @@ class Dialect(metaclass=_Dialect):
     SUPPORTS_POSITIONAL_COLUMN_REFS = False
     """Whether qualified `$N` references the Nth column of their source."""
 
+    MATCH_RECOGNIZE_APPLIES_TO_JOINS = False
+    """
+    Whether MATCH_RECOGNIZE applies to the relations joined before it, e.g. to `a CROSS JOIN b` in
+    `a CROSS JOIN b MATCH_RECOGNIZE (...)`, instead of only to the relation it follows.
+    """
+
     PREFER_CTE_ALIAS_COLUMN = False
     """
     Some dialects, such as Snowflake, allow you to reference a CTE column alias in the

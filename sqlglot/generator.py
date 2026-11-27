@@ -3551,7 +3551,11 @@ class Generator:
         joins = self.indent(
             self.expressions(expression, key="joins", sep="", flat=True), skip_first=True
         )
-        return f"{self.sql(expression, 'this')}{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}{joins}"
+        sql = f"{self.sql(expression, 'this')}{self.seg('MATCH_RECOGNIZE')} {self.wrap(body)}{alias}{joins}"
+
+        # Unwrapped, it would apply to the relations joined before it
+        joined = isinstance(expression.parent, exp.Join)
+        return self.wrap(sql) if joined and self.dialect.MATCH_RECOGNIZE_APPLIES_TO_JOINS else sql
 
     def query_modifiers(self, expression: exp.Expr, *sqls: str) -> str:
         limit = expression.args.get("limit")

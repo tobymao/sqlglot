@@ -554,6 +554,8 @@ class TestTrino(Validator):
         self.validate_identity(f"SELECT * FROM a {clause} m, b {clause} n")
         self.validate_identity(f"SELECT * FROM (a {clause} m)")
         self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
+        self.validate_identity(f"SELECT * FROM (a CROSS JOIN c) {clause} m")
+        self.validate_identity(f"SELECT * FROM a CROSS JOIN b {clause} m")
 
         self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
         self.validate_identity(f"SELECT * FROM (VALUES (1, 1), (1, 2)) AS v(x, y) {clause} m")

@@ -196,6 +196,42 @@ class TestDatabricks(Validator):
         self.assertEqual(match.alias, "T")
         self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
 
+        clause = "MATCH_RECOGNIZE (PARTITION BY x ORDER BY y MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS y > 0)"
+
+        self.validate_identity(f"SELECT * FROM a AS o {clause} m JOIN b ON m.x = b.z")
+        self.validate_identity(f"SELECT * FROM (a {clause} m)")
+        self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.z)")
+        self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
+
+        # MATCH_RECOGNIZE applies to all of the relations joined before it
+        self.validate_identity(
+            f"SELECT * FROM c JOIN a ON c.p = a.x {clause} m",
+            f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m",
+        )
+        self.validate_identity(
+            f"SELECT * FROM c CROSS JOIN a {clause} m",
+            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
+        )
+        self.validate_identity(
+            f"SELECT * FROM c, a {clause} m",
+            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
+        )
+
+        # So a joined relation is wrapped together with its MATCH_RECOGNIZE
+        self.validate_identity(f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x")
+
+        clause = (
+            "MATCH_RECOGNIZE (PARTITION BY x MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS y > 0)"
+        )
+        self.validate_all(
+            f"SELECT * FROM c JOIN (a {clause} m) ON c.p = m.x",
+            read={"trino": f"SELECT * FROM c JOIN a {clause} m ON c.p = m.x"},
+        )
+        self.validate_all(
+            f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m",
+            write={"trino": f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m"},
+        )
+
         for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):
             with self.subTest(rows=rows):
                 self.validate_identity(

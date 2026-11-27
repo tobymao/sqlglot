@@ -5,6 +5,12 @@ class TestRisingWave(Validator):
     dialect = "risingwave"
     maxDiff = None
 
+    def test_heredoc(self):
+        self.validate_identity(
+            "CREATE FUNCTION f(x INT) RETURNS INT LANGUAGE SQL AS $1a$SELECT x + 1$1a$",
+            "CREATE FUNCTION f(x INT) RETURNS INT LANGUAGE SQL AS $$SELECT x + 1$$",
+        )
+
     def test_risingwave(self):
         self.validate_all(
             "SELECT a FROM tbl",

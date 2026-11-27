@@ -4,6 +4,10 @@ from tests.dialects.test_dialect import Validator
 class TestMaterialize(Validator):
     dialect = "materialize"
 
+    def test_heredoc(self):
+        query = self.validate_identity("SELECT $1,$2, $a-\nb$ok$a-\nb$", "SELECT $1, $2, 'ok'")
+        self.assertEqual(query.expressions[-1].meta["line"], 3)
+
     def test_array_length(self):
         self.validate_identity("SELECT ARRAY_LENGTH(ARRAY[1, 2], 1)")
         self.validate_all(

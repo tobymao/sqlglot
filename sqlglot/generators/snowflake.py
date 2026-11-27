@@ -693,6 +693,25 @@ class SnowflakeGenerator(generator.Generator):
     def with_properties(self, properties: exp.Properties) -> str:
         return self.properties(properties, wrapped=False, prefix=self.sep(""), sep=" ")
 
+    def matchrecognize_sql(self, expression: exp.MatchRecognize) -> str:
+        self._warn_unsupported_arg(expression, "subset")
+        relation = expression.this
+        while isinstance(relation, exp.Subquery):
+            source = relation.this
+            if not isinstance(source, exp.UNWRAPPED_QUERIES) and source.args.get("joins"):
+                relation.set("this", exp.select("*").from_(source, copy=False))
+                keys = [*(expression.args.get("partition_by") or []), expression.args.get("order")]
+                if any(column.table for key in keys if key for column in key.find_all(exp.Column)):
+                    self.unsupported(
+                        "Qualified MATCH_RECOGNIZE keys require unique column names across the joined input in Snowflake"
+                    )
+                    for key in keys:
+                        if key:
+                            transforms.unqualify_columns(key)
+                break
+            relation = source
+        return super().matchrecognize_sql(expression)
+
     def values_sql(self, expression: exp.Values, values_as_table: bool = True) -> str:
         if expression.find(*self.UNSUPPORTED_VALUES_EXPRESSIONS):
             values_as_table = False

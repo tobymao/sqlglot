@@ -845,6 +845,10 @@ FROM XMLTABLE(
         self.validate_identity(f"SELECT * FROM (a {clause} m)")
         self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
         self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) s {clause} m")
+        self.validate_identity(
+            f"SELECT * FROM LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b {clause}",
+            f"SELECT * FROM (LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b) {clause}",
+        )
 
         # MATCH_RECOGNIZE applies to the relations joined before it
         self.validate_identity(

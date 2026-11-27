@@ -4169,8 +4169,9 @@ class Parser:
                 else self._parse_select(nested=True, parse_set_operation=False)
             )
 
-            # Transform exp.Values into a exp.Table to pass through parse_query_modifiers
-            # in case a modifier (e.g. join) is following
+            if table and this and "joins" not in this.arg_types:
+                this = self._parse_table_joins(this)
+
             if table and isinstance(this, exp.Values) and this.alias:
                 alias = this.args["alias"].pop()
                 this = exp.Table(this=this, alias=alias)
@@ -4993,13 +4994,21 @@ class Parser:
         comments = [c for token in (method, side, kind) if token for c in token.comments]
         comments = (join_comments or []) + comments
 
+        # An explicit condition following the match binds it to the right operand. Preserve
+        # that grouping before adding an implicit ON TRUE for dialects that allow bare joins.
+        if (
+            isinstance(kwargs["this"], exp.MatchRecognize)
+            and self.dialect.MATCH_RECOGNIZE_APPLIES_TO_JOINS
+            and (kwargs.get("on") or kwargs.get("using"))
+        ):
+            kwargs["this"] = exp.Subquery(this=kwargs["this"])
+
         if (
             self.ADD_JOIN_ON_TRUE
             and not kwargs.get("on")
             and not kwargs.get("using")
             and not kwargs.get("method")
             and kwargs.get("kind") in (None, "INNER", "OUTER")
-            and not isinstance(kwargs["this"], exp.MatchRecognize)
         ):
             kwargs["on"] = exp.true()
 
@@ -5627,16 +5636,16 @@ class Parser:
         applies_to_joins = self.dialect.MATCH_RECOGNIZE_APPLIES_TO_JOINS
 
         for join in self._parse_joins(alias_tokens=alias_tokens):
+            if "joins" not in this.arg_types:
+                this = self._wrap_join_source(this)
             this.append("joins", join)
 
             if applies_to_joins:
                 # A MATCH_RECOGNIZE applies to all the relations joined before it, unless the join
                 # condition of the relation it comes after follows it. A comma isn't a join here
                 match = join.this
-                if (
-                    isinstance(match, exp.MatchRecognize)
-                    and (join.kind or join.side or join.method)
-                    and not (join.args.get("on") or join.args.get("using"))
+                if isinstance(match, exp.MatchRecognize) and any(
+                    join.args.get(k) for k in exp.Join.QUALIFIERS
                 ):
                     join.set("this", match.this)
                     this = self._match_recognize_joins(this, match)
@@ -5644,6 +5653,14 @@ class Parser:
                     this = self._match_recognize_joins(this)
 
         return this
+
+    def _wrap_join_source(self, relation: exp.Expr) -> exp.Table | exp.Subquery:
+        alias = relation.args.get("alias")
+        if isinstance(relation, exp.Values):
+            return exp.Subquery(this=relation, alias=alias.pop() if alias else None)
+        if isinstance(relation, exp.Lateral) and isinstance(relation.this, exp.Subquery) and alias:
+            return exp.Table(this=relation, alias=alias.pop())
+        return exp.Table(this=relation)
 
     def _match_recognize_joins(self, this: exp.Expr, match: exp.Expr | None = None) -> exp.Expr:
         """
@@ -5664,12 +5681,10 @@ class Parser:
         parent = joins[start - 1] if start else this.args.get("from_")
         relation = parent.this if parent else this
 
+        this.set("joins", joins[:start] or None)
         if "joins" not in relation.arg_types:
-            self.raise_error("Expecting a relation that can be joined before MATCH_RECOGNIZE")
-
-        if parent:
-            this.set("joins", joins[:start] or None)
-            relation.set("joins", [*(relation.args.get("joins") or []), *joins[start:]])
+            relation = self._wrap_join_source(relation)
+        relation.set("joins", [*(relation.args.get("joins") or []), *joins[start:]])
 
         joined = exp.Subquery(this=relation)
         if match:

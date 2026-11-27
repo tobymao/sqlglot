@@ -5,6 +5,37 @@ from tests.dialects.test_dialect import Validator
 class TestDoris(Validator):
     dialect = "doris"
 
+    def test_array_agg(self):
+        self.validate_all(
+            "SELECT NULLIF(ARRAY_AGG(x), ARRAY()), NULLIF(ARRAY_AGG(DISTINCT x), ARRAY()) "
+            "FROM (SELECT CAST(NULL AS INT) AS x UNION ALL SELECT CAST(NULL AS INT)) AS t",
+            read={
+                "postgres": "SELECT ARRAY_AGG(x), ARRAY_AGG(DISTINCT x) "
+                "FROM (VALUES (NULL::INT), (NULL::INT)) AS t(x)"
+            },
+        )
+        self.validate_all(
+            "SELECT NULLIF(ARRAY_AGG(1), ARRAY()) WHERE FALSE",
+            read={"postgres": "SELECT ARRAY_AGG(1) WHERE FALSE"},
+        )
+        self.validate_all(
+            "SELECT NULLIF(ARRAY_AGG(x) OVER (ORDER BY x NULLS LAST ROWS BETWEEN 1 PRECEDING "
+            "AND 1 PRECEDING), ARRAY()) FROM t",
+            read={
+                "postgres": "SELECT ARRAY_AGG(x) OVER (ORDER BY x ROWS BETWEEN 1 PRECEDING "
+                "AND 1 PRECEDING) FROM t"
+            },
+        )
+        self.validate_identity("SELECT ARRAY_AGG(1), COLLECT_LIST(1)")
+        self.validate_all("SELECT COLLECT_LIST(1)", read={"spark": "SELECT COLLECT_LIST(1)"})
+
+        for sql in ("SELECT ARRAY_AGG(1 ORDER BY 1)", "SELECT ARRAY_AGG(1) FILTER (WHERE TRUE)"):
+            with self.subTest(sql=sql), self.assertRaises(UnsupportedError):
+                parse_one(sql, read="postgres").sql("doris", unsupported_level=ErrorLevel.RAISE)
+
+        with self.assertRaises(ParseError):
+            self.parse_one("SELECT ARRAY_AGG(1, 2, 3)")
+
     def test_array_constructor(self):
         for dialect, sql, expected in (
             ("postgres", "SELECT ARRAY[1, NULL, 2] AS xs", "SELECT ARRAY(1, NULL, 2) AS xs"),

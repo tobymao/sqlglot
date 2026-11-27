@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlglot.expressions.core import Expression, Func, AggFunc, Binary
 
 
@@ -75,7 +77,12 @@ class ArgMin(Expression, AggFunc):
 
 
 class ArrayAgg(Expression, AggFunc):
-    arg_types = {"this": True, "nulls_excluded": False}
+    arg_types = {"this": True, "nulls_excluded": False, "null_on_empty": False}
+
+    def error_messages(self, args: Sequence[object] | None = None) -> list[str]:
+        if args and len(args) > 1:
+            return ["ARRAY_AGG accepts only one argument"]
+        return super().error_messages(args)
 
 
 class ArrayConcatAgg(Expression, AggFunc):

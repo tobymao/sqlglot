@@ -410,3 +410,8 @@ class StY(Expression, Func):
 class StGeogPoint(Expression, Func):
     arg_types = {"this": True, "expression": True}
     _sql_names = ["ST_GEOGPOINT"]
+
+
+class StGeogFromGeoJson(Expression, Func):
+    arg_types = {"this": True, "make_valid": False}
+    _sql_names = ["ST_GEOGFROMGEOJSON"]

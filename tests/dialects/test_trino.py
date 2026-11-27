@@ -547,7 +547,6 @@ class TestTrino(Validator):
     def test_match_recognize(self):
         clause = "MATCH_RECOGNIZE (PARTITION BY x ORDER BY y PATTERN (A+) DEFINE A AS y > 0)"
 
-        # MATCH_RECOGNIZE applies to the relation before it, not to the joins around it
         self.validate_identity(f"SELECT * FROM a AS o {clause} m JOIN b ON m.x = b.x")
         self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
         self.validate_identity(f"SELECT * FROM a {clause} m JOIN b {clause} n ON m.x = n.x")

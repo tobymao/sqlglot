@@ -849,7 +849,6 @@ FROM XMLTABLE(
             f"SELECT * FROM LATERAL (SELECT 1 AS x FROM dual) v CROSS JOIN b {clause}"
         )
 
-        # MATCH_RECOGNIZE applies to the relations joined before it
         self.validate_identity(f"SELECT * FROM c CROSS JOIN a {clause} m")
         self.validate_identity(f"SELECT * FROM (c CROSS JOIN a) {clause} m")
 
@@ -864,7 +863,6 @@ FROM XMLTABLE(
                     query.find(exp.MatchRecognize).this.args["joins"][0].this.name, "c"
                 )
 
-        # An ON or USING following the match binds it to the right operand.
         self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
         self.validate_identity(f"SELECT * FROM a JOIN b {clause} m USING (x)")
         self.validate_identity(

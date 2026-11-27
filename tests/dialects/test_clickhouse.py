@@ -2211,6 +2211,16 @@ LIFETIME(MIN 0 MAX 0)""",
         self.validate_identity(
             "SELECT * FROM arrays_test ARRAY JOIN [1, 2, 3] AS arr_external1, ['a', 'b', 'c'] AS arr_external2, splitByString(',', 'asd,qwerty,zxc') AS arr_external3"
         )
+        self.validate_identity(
+            "CREATE MATERIALIZED VIEW mv TO dst AS SELECT x FROM t "
+            "ARRAY JOIN (JSONExtractKeysAndValuesRaw(s)).2 AS x"
+        ).assert_is(exp.Create)
+        self.validate_identity("SELECT x FROM t ARRAY JOIN JSONExtractKeysAndValuesRaw(s).2 AS x")
+        self.validate_identity("SELECT x, y FROM t LEFT ARRAY JOIN tup.2 AS x, arr[1] AS y")
+        self.validate_identity(
+            "SELECT x, y FROM t INNER ARRAY JOIN (identity(arr))[1] AS x, identity(tup).a AS y"
+        )
+        self.validate_identity("SELECT x FROM t ARRAY JOIN arr ARRAY JOIN arr AS x")
 
     def test_traverse_scope(self):
         sql = "SELECT * FROM t FINAL"

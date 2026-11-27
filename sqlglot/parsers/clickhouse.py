@@ -725,6 +725,9 @@ class ClickHouseParser(parser.Parser):
         side = self._prev if self._match_set(self.JOIN_SIDES) else None
         kind = self._prev if self._match_set(self.JOIN_KINDS) else None
 
+        if kind and kind.token_type == TokenType.ARRAY:
+            return method, side or kind_pre, kind
+
         return method, side or kind, kind_pre or kind
 
     def _parse_join(
@@ -736,16 +739,9 @@ class ClickHouseParser(parser.Parser):
         join = super()._parse_join(
             skip_join_token=skip_join_token, parse_bracket=True, alias_tokens=alias_tokens
         )
-        if join:
-            if join.method == "GLOBAL":
-                join.set("method", None)
-                join.set("global_", "GLOBAL")
-
-            # tbl ARRAY JOIN arr <-- this should be a `Column` reference, not a `Table`
-            # https://clickhouse.com/docs/en/sql-reference/statements/select/array-join
-            if join.kind == "ARRAY":
-                for table in join.find_all(exp.Table):
-                    table.replace(table.to_column())
+        if join and join.method == "GLOBAL":
+            join.set("method", None)
+            join.set("global_", "GLOBAL")
 
         return join
 

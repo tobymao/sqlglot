@@ -4892,6 +4892,18 @@ class Parser:
 
         return self._parse_wrapped_csv(_parse_column_as_identifier, optional=True)
 
+    def _parse_array_join_expression(
+        self, alias_tokens: t.Collection[TokenType] | None
+    ) -> exp.Expr | None:
+        this = self._parse_assignment()
+        if this is None:
+            self.raise_error("Expected expression in ARRAY JOIN")
+
+        alias = self._parse_table_alias(alias_tokens)
+        if alias:
+            return self.expression(exp.Alias(this=this, alias=alias.this), comments=alias.comments)
+        return this
+
     def _parse_join(
         self,
         skip_join_token: bool = False,
@@ -4926,13 +4938,16 @@ class Parser:
         if not skip_join_token and not join and not outer_apply and not cross_apply:
             return None
 
-        kwargs: dict[str, t.Any] = {
-            "this": self._parse_table(parse_bracket=parse_bracket, alias_tokens=alias_tokens)
-        }
-        if kind and kind.token_type == TokenType.ARRAY and self._match(TokenType.COMMA):
-            kwargs["expressions"] = self._parse_csv(
-                lambda: self._parse_table(parse_bracket=parse_bracket, alias_tokens=alias_tokens)
-            )
+        if kind and kind.token_type == TokenType.ARRAY:
+            expressions = self._parse_csv(lambda: self._parse_array_join_expression(alias_tokens))
+            kwargs: dict[str, t.Any] = {
+                "this": seq_get(expressions, 0),
+                "expressions": expressions[1:],
+            }
+        else:
+            kwargs = {
+                "this": self._parse_table(parse_bracket=parse_bracket, alias_tokens=alias_tokens)
+            }
 
         if method:
             kwargs["method"] = method.text.upper()

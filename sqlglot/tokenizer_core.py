@@ -12,6 +12,8 @@ _CHAR_UPPER: dict[str, str] = {chr(i): chr(i).upper() for i in range(97, 123)}
 _DIGIT_CHARS: frozenset[str] = frozenset("0123456789")
 _DIGIT_VALUES: dict[str, int] = {c: int(c, 16) for c in "0123456789abcdefABCDEF"}
 _OCTAL_CHARS: frozenset[str] = frozenset("01234567")
+# PostgreSQL allows any non-ASCII character in a dollar-quote tag.
+_HEREDOC_TAG = re.compile(r"[A-Za-z_\x80-\U0010ffff][A-Za-z_0-9\x80-\U0010ffff]*")
 # PostgreSQL continues a quoted string across a newline, including after a line comment.
 _QUOTE_CONTINUATION = re.compile(
     r"[ \t\f\v]*(?:--[^\r\n]*)?[\r\n](?:[ \t\f\v\r\n]|--[^\r\n]*[\r\n])*'"
@@ -1200,28 +1202,16 @@ class TokenizerCore:
             elif token_type == TokenType.BIT_STRING:
                 base = 2
             elif token_type == TokenType.HEREDOC_STRING:
-                self._advance()
-
-                if self._char == end:
-                    tag = ""
+                if self.heredoc_tag_is_identifier:
+                    match = _HEREDOC_TAG.match(self.sql, self._current)
+                    tag = match[0] if match else ""
+                    if not self.sql.startswith(end, self._current + len(tag)):
+                        self._add(self.heredoc_string_alternative)
+                        return True
+                    self._advance(len(tag) + len(end))
                 else:
-                    tag = self._extract_string(
-                        end,
-                        raw_string=True,
-                        raise_unmatched=not self.heredoc_tag_is_identifier,
-                    )
-
-                if (
-                    tag
-                    and self.heredoc_tag_is_identifier
-                    and (self._end or tag.isdigit() or any(c.isspace() for c in tag))
-                ):
-                    if not self._end:
-                        self._advance(-1)
-
-                    self._advance(-len(tag))
-                    self._add(self.heredoc_string_alternative)
-                    return True
+                    self._advance()
+                    tag = "" if self._char == end else self._extract_string(end, raw_string=True)
 
                 end = f"{start}{tag}{end}"
         else:
@@ -1417,7 +1407,6 @@ class TokenizerCore:
         delimiter: str,
         escapes: set[str] | None = None,
         raw_string: bool = False,
-        raise_unmatched: bool = True,
         bytes_literal: bool = False,
     ) -> str:
         """
@@ -1531,9 +1520,6 @@ class TokenizerCore:
                     break
 
                 if self._end:
-                    if not raise_unmatched:
-                        return text + self._char
-
                     raise TokenError(f"Missing {delimiter} from {self._line}:{self._start}")
 
                 current = self._current - 1

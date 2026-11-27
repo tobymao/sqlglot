@@ -3323,6 +3323,7 @@ class TestDuckDB(Validator):
         )
 
     def test_parameter_token(self):
+        self.validate_identity("SELECT $foo,$bar", "SELECT $foo, $bar")
         self.validate_all(
             "SELECT $foo",
             read={"bigquery": "SELECT @foo"},

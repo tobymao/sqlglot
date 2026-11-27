@@ -33,6 +33,36 @@ class TestDoris(Validator):
             with self.subTest(sql=sql), self.assertRaises(UnsupportedError):
                 parse_one(sql, read="postgres").sql("doris", unsupported_level=ErrorLevel.RAISE)
 
+    def test_aggregate_filter(self):
+        for func in ("COUNT", "SUM", "AVG", "MIN", "MAX", "ANY_VALUE"):
+            with self.subTest(func=func):
+                self.validate_all(
+                    f"SELECT {func}(IF(p, x, NULL)) FROM t",
+                    read={"postgres": f"SELECT {func}(x) FILTER (WHERE p) FROM t"},
+                )
+
+        self.validate_all(
+            "SELECT COUNT(IF(p, 1, NULL)) FROM t",
+            read={"duckdb": "SELECT COUNT() FILTER (WHERE p) FROM t"},
+        )
+
+        for dialect, aggregate in (
+            ("postgres", "ARRAY_AGG(x) FILTER (WHERE p)"),
+            ("postgres", "COUNT(t.*) FILTER (WHERE p)"),
+            ("postgres", "COUNT(DISTINCT t.*) FILTER (WHERE p)"),
+            ("postgres", "COUNT(DISTINCT (x, y)) FILTER (WHERE p)"),
+            ("postgres", "SUM(x ORDER BY x) FILTER (WHERE p)"),
+            ("postgres", "SUM(x) FILTER (WHERE p) OVER ()"),
+            ("spark", "COUNT(DISTINCT x, y) FILTER (WHERE p)"),
+        ):
+            with (
+                self.subTest(aggregate=aggregate),
+                self.assertRaisesRegex(UnsupportedError, "FILTER"),
+            ):
+                parse_one(f"SELECT {aggregate} FROM t", read=dialect).sql(
+                    "doris", unsupported_level=ErrorLevel.RAISE
+                )
+
     def test_array_constructor(self):
         for dialect, sql, expected in (
             ("postgres", "SELECT ARRAY[1, NULL, 2] AS xs", "SELECT ARRAY(1, NULL, 2) AS xs"),

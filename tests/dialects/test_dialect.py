@@ -4784,6 +4784,7 @@ FROM subquery2""",
             "SELECT SUM(x) FILTER(WHERE c = 'US'), COUNT(*) FILTER(WHERE c > 1), COUNT(DISTINCT x) FILTER(WHERE c > 1) FROM t",
             write={
                 "bigquery": "SELECT SUM(IF(c = 'US', x, NULL)), COUNTIF(c > 1), COUNT(DISTINCT IF(c > 1, x, NULL)) FROM t",
+                "doris": "SELECT SUM(IF(c = 'US', x, NULL)), COUNT(IF(c > 1, 1, NULL)), COUNT(DISTINCT IF(c > 1, x, NULL)) FROM t",
                 "snowflake": "SELECT SUM(IFF(c = 'US', x, NULL)), COUNT_IF(c > 1), COUNT(DISTINCT IFF(c > 1, x, NULL)) FROM t",
                 "tsql": "SELECT SUM(IIF(c = 'US', x, NULL)), COUNT(IIF(c > 1, 1, NULL)), COUNT_BIG(DISTINCT IIF(c > 1, x, NULL)) FROM t",
             },

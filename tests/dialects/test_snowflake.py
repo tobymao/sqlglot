@@ -5957,6 +5957,9 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         self.validate_identity(f"SELECT * FROM (a {clause} m)")
         self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
         self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
+        self.validate_identity(
+            f"SELECT * FROM (SELECT a.x, b.y FROM a CROSS JOIN b) AS s {clause} m"
+        )
 
         for window_frame in ("", "FINAL ", "RUNNING "):
             for row in (

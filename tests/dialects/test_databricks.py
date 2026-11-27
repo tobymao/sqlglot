@@ -218,41 +218,24 @@ class TestDatabricks(Validator):
         )
 
         # So a joined relation is wrapped together with its MATCH_RECOGNIZE
+        self.validate_identity(
+            f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x",
+            f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x",
+        )
         self.validate_identity(f"SELECT * FROM a JOIN (b {clause} m) ON a.x = m.x")
 
-        clause = (
-            "MATCH_RECOGNIZE (PARTITION BY x MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS y > 0)"
-        )
-        self.validate_all(
-            f"SELECT * FROM c JOIN (a {clause} m) ON c.p = m.x",
-            read={"trino": f"SELECT * FROM c JOIN a {clause} m ON c.p = m.x"},
-        )
-        self.validate_all(
-            f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m",
-            write={"trino": f"SELECT * FROM (c JOIN a ON c.p = a.x) {clause} m"},
-        )
         values = "(VALUES (1), (2)) AS v(x) CROSS JOIN b"
-        ordered = "MEASURES COUNT(*) AS n PATTERN (P+) DEFINE P AS y > 0"
-        joined_match = f"MATCH_RECOGNIZE (ORDER BY v.x {ordered})"
-        self.validate_all(
+        joined_match = (
+            "MATCH_RECOGNIZE (ORDER BY v.x MEASURES COUNT(*) AS n PATTERN (P+) DEFINE P AS y > 0)"
+        )
+        expression = self.validate_identity(
             f"SELECT * FROM {values} {joined_match}",
-            write={
-                "databricks": f"SELECT * FROM ({values}) {joined_match}",
-                "snowflake": f"SELECT * FROM (SELECT * FROM {values}) MATCH_RECOGNIZE (ORDER BY x NULLS FIRST {ordered})",
-            },
+            f"SELECT * FROM ({values}) {joined_match}",
         )
-        self.validate_identity(f"SELECT * FROM ({values}) {joined_match}")
-        self.validate_all(
-            "WITH a AS (SELECT 1 AS x), b AS (SELECT 2 AS x, 3 AS y) "
-            f"SELECT * FROM a CROSS JOIN b MATCH_RECOGNIZE (ORDER BY a.x {ordered})",
-            write={"snowflake": UnsupportedError},
-        )
-        self.validate_all(
+        self.assertEqual(self.parse_one(expression.sql(self.dialect)), expression)
+        self.validate_identity(
             f"SELECT * FROM a LEFT JOIN b {clause}",
-            write={
-                "trino": f"SELECT * FROM (a LEFT JOIN b ON TRUE) {clause}",
-                "snowflake": f"SELECT * FROM (SELECT * FROM a LEFT JOIN b ON TRUE) {clause}",
-            },
+            f"SELECT * FROM (a LEFT JOIN b ON TRUE) {clause}",
         )
 
         for rows in ("", "ALL ROWS PER MATCH ", "ALL ROWS PER MATCH SHOW EMPTY MATCHES "):

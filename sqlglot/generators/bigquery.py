@@ -546,7 +546,6 @@ class BigQueryGenerator(generator.Generator):
         exp.JSONKeysAtDepth: rename_func("JSON_KEYS"),
         exp.JSONValueArray: rename_func("JSON_VALUE_ARRAY"),
         exp.Levenshtein: _levenshtein_sql,
-        exp.MatchRecognize: unsupported_args("subset")(generator.Generator.matchrecognize_sql),
         exp.Max: max_or_greatest,
         exp.MD5: lambda self, e: self.func("TO_HEX", self.func("MD5", e.this)),
         exp.MD5Digest: rename_func("MD5"),

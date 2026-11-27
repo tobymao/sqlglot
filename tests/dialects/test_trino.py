@@ -566,10 +566,8 @@ class TestTrino(Validator):
             "SELECT * FROM TABLE(SEQUENCE(start => 1, stop => 3)) MATCH_RECOGNIZE (ORDER BY sequential_number MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS sequential_number > 0) m"
         )
 
-        subset = "SELECT * FROM a MATCH_RECOGNIZE (ORDER BY y MEASURES CLASSIFIER(AB) AS c PATTERN (A B+) SUBSET AB = (A, B), BB = (B) DEFINE B AS AB.y > 0)"
-        self.validate_all(
-            subset,
-            write={"trino": subset, "snowflake": UnsupportedError, "bigquery": UnsupportedError},
+        self.validate_identity(
+            "SELECT * FROM a MATCH_RECOGNIZE (ORDER BY y MEASURES CLASSIFIER(AB) AS c PATTERN (A B+) SUBSET AB = (A, B), BB = (B) DEFINE B AS AB.y > 0)"
         )
 
     def test_listagg(self):

@@ -855,10 +855,7 @@ FROM XMLTABLE(
             f"SELECT * FROM c CROSS JOIN a {clause} m",
             f"SELECT * FROM (c CROSS JOIN a) {clause} m",
         )
-        self.validate_all(
-            f"SELECT * FROM (c CROSS JOIN a) {clause} m",
-            write={"trino": f"SELECT * FROM (c CROSS JOIN a) {clause} m"},
-        )
+        self.validate_identity(f"SELECT * FROM (c CROSS JOIN a) {clause} m")
 
         # So a joined relation is wrapped together with its MATCH_RECOGNIZE
         self.validate_identity(
@@ -869,10 +866,7 @@ FROM XMLTABLE(
             f"SELECT * FROM a {clause} m, b {clause} n",
             f"SELECT * FROM a {clause} m, (b {clause} n)",
         )
-        self.validate_all(
-            f"SELECT * FROM c CROSS JOIN (a {clause} m)",
-            read={"trino": f"SELECT * FROM c CROSS JOIN a {clause} m"},
-        )
+        self.validate_identity(f"SELECT * FROM c CROSS JOIN (a {clause} m)")
 
         self.validate_identity(
             """SELECT

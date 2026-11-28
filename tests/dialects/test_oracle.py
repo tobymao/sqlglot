@@ -854,14 +854,15 @@ FROM XMLTABLE(
 
         values = "(VALUES (1, 1), (1, 2)) v(g, h)"
         match = "MATCH_RECOGNIZE (PARTITION BY g ORDER BY h MEASURES COUNT(*) AS n PATTERN (A+) DEFINE A AS h > 0 AND k = 1)"
-        for source in (f"{values} CROSS JOIN c", f"dual d, {values} CROSS JOIN c"):
-            with self.subTest(source=source):
-                query = self.validate_identity(
-                    f"WITH c AS (SELECT 1 AS k FROM dual) SELECT * FROM {source} {match}"
-                )
-                self.assertEqual(
-                    query.find(exp.MatchRecognize).this.args["joins"][0].this.name, "c"
-                )
+        query = self.validate_identity(
+            f"WITH c AS (SELECT 1 AS k FROM dual) SELECT * FROM {values} CROSS JOIN c {match}"
+        )
+        self.assertEqual(query.args["from_"].this.this.args["joins"][0].this.name, "c")
+
+        query = self.validate_identity(
+            f"WITH c AS (SELECT 1 AS k FROM dual) SELECT * FROM dual d, {values} CROSS JOIN c {match}"
+        )
+        self.assertEqual(query.args["joins"][0].this.this.args["joins"][0].this.name, "c")
 
         self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
         self.validate_identity(f"SELECT * FROM a JOIN b {clause} m USING (x)")

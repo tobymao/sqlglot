@@ -17,6 +17,7 @@ class Oracle(Dialect):
     # Assume NLS_TERRITORY = 'AMERICA' for the DAY, DY and D truncation formats.
     WEEK_OFFSET = -1
     ALIAS_POST_TABLESAMPLE = True
+    MATCH_RECOGNIZE_APPLIES_TO_JOINS = True
     LOCKING_READS_SUPPORTED = True
     TABLESAMPLE_SIZE_IS_PERCENT = True
     NULL_ORDERING = "nulls_are_large"
@@ -60,6 +61,11 @@ class Oracle(Dialect):
         return (
             identifier.quoted or not isinstance(identifier.parent, exp.Pseudocolumn)
         ) and super().can_quote(identifier, identify=identify)
+
+    def match_recognize_applies_to_join(self, join: exp.Join) -> bool:
+        return not (
+            join.args.get("on") or join.args.get("using")
+        ) and super().match_recognize_applies_to_join(join)
 
     class Tokenizer(tokens.Tokenizer):
         VAR_SINGLE_TOKENS = {"@", "$", "#"}

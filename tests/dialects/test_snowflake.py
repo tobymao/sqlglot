@@ -5946,6 +5946,20 @@ FROM persons AS p, LATERAL FLATTEN(input => p.c, path => 'contact') AS _flattene
         )
 
     def test_match_recognize(self):
+        clause = "MATCH_RECOGNIZE (PARTITION BY x ORDER BY y PATTERN (A+) DEFINE A AS y > 0)"
+
+        self.validate_identity(f"SELECT * FROM a AS o {clause} m JOIN b ON m.x = b.x")
+        self.validate_identity(f"SELECT * FROM a JOIN b {clause} m ON a.x = m.x")
+        self.validate_identity(f"SELECT * FROM a CROSS JOIN b {clause} m")
+        self.validate_identity(f"SELECT * FROM a {clause} m JOIN b {clause} n ON m.x = n.x")
+        self.validate_identity(f"SELECT * FROM a {clause} m, b {clause} n")
+        self.validate_identity(f"SELECT * FROM (a {clause} m)")
+        self.validate_identity(f"SELECT * FROM (a {clause} m JOIN b ON m.x = b.x)")
+        self.validate_identity(f"SELECT * FROM (SELECT x, y FROM a WHERE y > 1) AS s {clause} m")
+        self.validate_identity(
+            f"SELECT * FROM (SELECT a.x, b.y FROM a CROSS JOIN b) AS s {clause} m"
+        )
+
         for window_frame in ("", "FINAL ", "RUNNING "):
             for row in (
                 "ONE ROW PER MATCH",

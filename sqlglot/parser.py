@@ -1634,7 +1634,6 @@ class Parser:
     }
 
     QUERY_MODIFIER_PARSERS: t.ClassVar = {
-        TokenType.MATCH_RECOGNIZE: lambda self: ("match", self._parse_match_recognize()),
         TokenType.PREWHERE: lambda self: ("prewhere", self._parse_prewhere()),
         TokenType.WHERE: lambda self: ("where", self._parse_where()),
         TokenType.GROUP_BY: lambda self: ("group", self._parse_group()),
@@ -1891,7 +1890,13 @@ class Parser:
 
     SECURITY_PROPERTY_KEYWORDS: t.ClassVar = {"DEFINER", "INVOKER", "NONE"}
 
-    MODIFIABLES: t.ClassVar = (exp.Query, exp.Table, exp.TableFromRows, exp.Values)
+    MODIFIABLES: t.ClassVar = (
+        exp.Query,
+        exp.Table,
+        exp.TableFromRows,
+        exp.Values,
+        exp.MatchRecognize,
+    )
 
     STRICT_CAST: t.ClassVar = True
 
@@ -4164,8 +4169,9 @@ class Parser:
                 else self._parse_select(nested=True, parse_set_operation=False)
             )
 
-            # Transform exp.Values into a exp.Table to pass through parse_query_modifiers
-            # in case a modifier (e.g. join) is following
+            if table and this and "joins" not in this.arg_types:
+                this = self._parse_table_joins(this)
+
             if table and isinstance(this, exp.Values) and this.alias:
                 alias = this.args["alias"].pop()
                 this = exp.Table(this=this, alias=alias)
@@ -4577,8 +4583,7 @@ class Parser:
 
     def _parse_query_modifiers(self, this):
         if isinstance(this, self.MODIFIABLES):
-            for join in self._parse_joins():
-                this.append("joins", join)
+            this = self._parse_table_joins(this)
             for lateral in iter(self._parse_lateral, None):
                 this.append("laterals", lateral)
 
@@ -4716,9 +4721,16 @@ class Parser:
             )
         )
 
-    def _parse_match_recognize(self) -> exp.MatchRecognize | None:
+    def _parse_match_recognize_subset(self) -> exp.EQ:
+        this = self._parse_id_var()
+        self._match(TokenType.EQ)
+        return self.expression(
+            exp.EQ(this=this, expression=exp.Tuple(expressions=self._parse_wrapped_id_vars()))
+        )
+
+    def _parse_match_recognize(self, this: exp.Expr) -> exp.Expr:
         if not self._match(TokenType.MATCH_RECOGNIZE):
-            return None
+            return this
 
         self._match_l_paren()
 
@@ -4788,6 +4800,12 @@ class Parser:
         else:
             pattern = None
 
+        subset = (
+            self._parse_csv(self._parse_match_recognize_subset)
+            if self._match_text_seq("SUBSET")
+            else None
+        )
+
         define = (
             self._parse_csv(self._parse_name_as_expression)
             if self._match_text_seq("DEFINE")
@@ -4798,12 +4816,14 @@ class Parser:
 
         return self.expression(
             exp.MatchRecognize(
+                this=this,
                 partition_by=partition,
                 order=order,
                 measures=measures,
                 rows=rows,
                 after=after,
                 pattern=pattern,
+                subset=subset,
                 define=define,
                 alias=self._parse_table_alias(),
             )
@@ -5305,25 +5325,23 @@ class Parser:
                 self._retreat(index)
 
         if stream := self._parse_stream():
-            return stream
+            return self._parse_match_recognize(stream)
 
         if lateral := self._parse_lateral():
-            return lateral
+            return self._parse_match_recognize(lateral)
 
         if unnest := self._parse_unnest():
-            return unnest
+            return self._parse_match_recognize(unnest)
 
         if values := self._parse_derived_table_values():
             values.set("pivots", self._parse_pivots())
-            return values
+            return self._parse_match_recognize(values)
 
         if subquery := self._parse_select(table=True, consume_pipe=consume_pipe):
             if not subquery.args.get("pivots"):
                 subquery.set("pivots", self._parse_pivots())
-            if joins:
-                for join in self._parse_joins():
-                    subquery.append("joins", join)
-            return subquery
+            source = self._parse_match_recognize(subquery)
+            return self._parse_table_joins(source) if joins else source
 
         bracket = parse_bracket and self._parse_bracket(None)
         bracket = self.expression(exp.Table(this=bracket)) if bracket else None
@@ -5403,10 +5421,6 @@ class Parser:
         if not self.dialect.ALIAS_POST_VERSION:
             this.set("version", self._parse_version())
 
-        if joins:
-            for join in self._parse_joins(alias_tokens=alias_tokens):
-                this.append("joins", join)
-
         if self._match_pair(TokenType.WITH, TokenType.ORDINALITY):
             this.set("ordinality", True)
             this.set("alias", self._parse_table_alias())
@@ -5421,7 +5435,8 @@ class Parser:
 
             this = table_from_rows
 
-        return this
+        this = self._parse_match_recognize(this)
+        return self._parse_table_joins(this, alias_tokens=alias_tokens) if joins else this
 
     def _parse_version(self) -> exp.Version | None:
         for phrase, this in self.VERSION_PHRASES.items():
@@ -5620,6 +5635,71 @@ class Parser:
         self, alias_tokens: t.Collection[TokenType] | None = None
     ) -> t.Iterator[exp.Join]:
         return iter(lambda: self._parse_join(alias_tokens=alias_tokens), None)
+
+    def _parse_table_joins(
+        self, this: exp.Expr, alias_tokens: t.Collection[TokenType] | None = None
+    ) -> exp.Expr:
+        applies_to_joins = self.dialect.MATCH_RECOGNIZE_APPLIES_TO_JOINS
+
+        for join in self._parse_joins(alias_tokens=alias_tokens):
+            if "joins" not in this.arg_types:
+                this = self._wrap_join_source(this)
+            this.append("joins", join)
+
+            if applies_to_joins:
+                match = join.this
+                if isinstance(
+                    match, exp.MatchRecognize
+                ) and self.dialect.match_recognize_applies_to_join(join):
+                    join.set("this", match.this)
+                    this = self._match_recognize_joins(this, match)
+                elif self._curr.token_type == TokenType.MATCH_RECOGNIZE:
+                    this = self._match_recognize_joins(this)
+
+        return this
+
+    def _wrap_join_source(self, relation: exp.Expr) -> exp.Table | exp.Subquery:
+        alias = relation.args.get("alias")
+        if isinstance(relation, exp.Values):
+            return exp.Subquery(this=relation, alias=alias.pop() if alias else None)
+        if isinstance(relation, exp.Lateral) and isinstance(relation.this, exp.Subquery) and alias:
+            return exp.Table(this=relation, alias=alias.pop())
+        return exp.Table(this=relation)
+
+    def _match_recognize_joins(self, this: exp.Expr, match: exp.Expr | None = None) -> exp.Expr:
+        """
+        Makes `match`, or else the MATCH_RECOGNIZE that follows, apply to the relations joined in
+        `this`, which is either a query or the first of these relations.
+
+        For `a JOIN b ON ... MATCH_RECOGNIZE (...)`, the input is the relation
+        `a JOIN b ON ...`, including the join condition.
+        """
+        joins = this.args["joins"]
+
+        # The joined relations start after the last comma, unless commas are joins like any other
+        start = len(joins)
+        while start and any(joins[start - 1].args.get(k) for k in exp.Join.QUALIFIERS):
+            start -= 1
+
+        # The first of them is held by that comma's join or by the query's FROM, if it isn't `this`
+        parent = joins[start - 1] if start else this.args.get("from_")
+        relation = parent.this if parent else this
+
+        this.set("joins", joins[:start] or None)
+        if "joins" not in relation.arg_types:
+            relation = self._wrap_join_source(relation)
+        relation.set("joins", [*(relation.args.get("joins") or []), *joins[start:]])
+
+        if match:
+            match.set("this", relation)
+        else:
+            match = self._parse_match_recognize(relation)
+
+        if parent:
+            parent.set("this", match)
+            return this
+
+        return match
 
     def _parse_unpivot_columns(self) -> exp.UnpivotColumns | None:
         if not self._match(TokenType.INTO):
